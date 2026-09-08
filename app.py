@@ -24,6 +24,7 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 import zipfile
 
 import database as D
+import ai_service as AI
 
 ROOT = Path(__file__).resolve().parent
 STATUSES = ('new','open','pending_customer','pending_internal','resolved','closed')
@@ -114,6 +115,9 @@ def message_list(db, conversation_id, public=False):
     result = D.rows(db,'SELECT id,author_name,kind,body,delivery,created_at FROM messages WHERE conversation_id=?'+extra+' ORDER BY created_at,rowid',(conversation_id,))
     for message in result:
         message['attachments'] = D.rows(db,'SELECT id,name,mime,size FROM attachments WHERE message_id=?',(message['id'],))
+        meta = D.one(db,'SELECT source,citations FROM ai_message_meta WHERE message_id=?',(message['id'],))
+        message['source'] = meta['source'] if meta else 'human'
+        message['citations'] = json.loads(meta['citations']) if meta else []
     return result
 
 
@@ -337,6 +341,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.workspace_route(cd,td,ctx,path,body)
         except APIError as error:
             self.send(error.status,{'error':error.message})
+        except AI.AIError as error:
+            self.send(429 if error.code=='quota' else 400,{'error':str(error)})
         except sqlite3.IntegrityError:
             self.send(409,{'error':'ข้อมูลซ้ำหรือรายการที่อ้างอิงไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง'})
         except (BrokenPipeError,ConnectionResetError,TimeoutError):
@@ -405,6 +411,8 @@ class Handler(BaseHTTPRequestHandler):
     def workspace_route(self,cd,db,ctx,path,body):
         method = self.command
         scope,params = team_scope(ctx,'t')
+        if path.startswith('/api/ai/'):
+            return self.ai_route(cd,db,ctx,path,body)
         if path=='/api/workspace' and method=='GET':
             team_members = members(cd,ctx['tenant_id'])
             if ctx['role']=='agent':
@@ -412,7 +420,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200,{'tenant':{'id':ctx['tenant_id'],'name':ctx['tenant_name'],'slug':ctx['slug']},
                  'role':ctx['role'],'team_id':ctx['team_id'],'members':team_members,
                  'teams':D.rows(db,'SELECT * FROM teams ORDER BY name'),
-                 'settings':dict(db.execute('SELECT key,value FROM settings').fetchall())})
+                 'settings':dict(db.execute('SELECT key,value FROM settings').fetchall()),
+                 'ai':{**AI.config(db),'key_configured':bool(AI.read_key(ctx['tenant_id']))}})
         if path=='/api/tickets' and method=='GET':
             result = D.rows(db,f'''SELECT t.*,c.name AS contact_name,c.company FROM tickets t
                       JOIN contacts c ON c.id=t.contact_id WHERE {scope} ORDER BY t.updated_at DESC,t.number DESC''',params)
@@ -443,6 +452,7 @@ class Handler(BaseHTTPRequestHandler):
                 convs = D.rows(db,'SELECT c.* FROM conversations c JOIN ticket_conversations tc ON tc.conversation_id=c.id WHERE tc.ticket_id=?',(ticket['id'],))
                 for conv in convs:
                     conv['messages'] = message_list(db,conv['id'])
+                    conv['ai'] = AI.conversation_state(db,conv['id'])
                     conv.pop('portal_token',None)
                 return self.send(200,{'ticket':ticket,'contact':D.one(db,'SELECT * FROM contacts WHERE id=?',(ticket['contact_id'],)),
                          'conversations':convs,'events':D.rows(db,'SELECT * FROM audit_logs WHERE entity=? ORDER BY id DESC LIMIT 40',(ticket['id'],))})
@@ -470,17 +480,20 @@ class Handler(BaseHTTPRequestHandler):
                 (SELECT kind FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_kind
                 FROM conversations c JOIN contacts p ON p.id=c.contact_id LEFT JOIN ticket_conversations tc ON tc.conversation_id=c.id
                 LEFT JOIN tickets t ON t.id=tc.ticket_id WHERE {conv_scope} ORDER BY c.updated_at DESC''',conv_params)})
-        match = re.fullmatch(r'/api/conversations/([a-f0-9]{32})(?:/(messages|ticket))?',path)
+        match = re.fullmatch(r'/api/conversations/([a-f0-9]{32})(?:/(messages|ticket|ai-draft|ai-mode))?',path)
         if match:
             conv = get_scoped(db,'conversations',match[1],ctx)
             if method=='GET' and not match[2]:
                 conv.pop('portal_token',None)
+                conv['ai'] = AI.conversation_state(db,conv['id'])
                 return self.send(200,{'conversation':conv,'messages':message_list(db,conv['id']),
                          'contact':D.one(db,'SELECT * FROM contacts WHERE id=?',(conv['contact_id'],)),
                          'ticket':D.one(db,'SELECT t.* FROM tickets t JOIN ticket_conversations tc ON tc.ticket_id=t.id WHERE tc.conversation_id=?',(conv['id'],))})
             if method=='PATCH' and not match[2]:
                 require(body.get('status') in ('open','closed'),'สถานะไม่ถูกต้อง')
                 db.execute('UPDATE conversations SET status=?,updated_at=? WHERE id=?',(body['status'],D.now(),conv['id']))
+                if body['status']=='closed':
+                    AI.stop_bot(db,conv['id'])
                 D.audit(db,ctx['name'],'conversation.'+body['status'],conv['id'])
                 db.commit()
                 return self.send(200,{'ok':True})
@@ -489,9 +502,31 @@ class Handler(BaseHTTPRequestHandler):
                 require(kind in ('reply','note'),'ชนิดข้อความไม่ถูกต้อง')
                 require(kind=='note' or conv['channel']=='web','เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าช่วยเหลือเพื่อสนทนากับลูกค้า')
                 mid = store_message(db,ctx['tenant_id'],conv['id'],ctx['id'],ctx['name'],kind,body)
+                if kind=='reply':
+                    AI.stop_bot(db,conv['id'])
                 D.audit(db,ctx['name'],'message.'+kind,conv['id'])
                 db.commit()
                 return self.send(201,{'id':mid})
+            if method=='POST' and match[2]=='ai-draft':
+                limited(('ai-draft',ctx['tenant_id'],ctx['id']),10,60)
+                db.execute('BEGIN IMMEDIATE')
+                job_id = AI.enqueue(db,ctx['tenant_id'],'draft',conv['id'],ctx['id'])
+                AI.stop_bot(db,conv['id'])
+                db.commit()
+                return self.send(201,{'id':job_id,'status':'pending'})
+            if method=='POST' and match[2]=='ai-mode':
+                mode = body.get('mode')
+                require(mode in ('human','bot'),'โหมดไม่ถูกต้อง')
+                db.execute('BEGIN IMMEDIATE')
+                if mode=='human':
+                    AI.handoff(db,conv['id'],'staff')
+                else:
+                    require(conv['channel']=='web' and conv['status']=='open','เปิด AI ได้เฉพาะบทสนทนาเว็บที่ยังเปิดอยู่')
+                    require(AI.config(db)['chatbot_enabled'] and AI.read_key(ctx['tenant_id']),'กรุณาเปิด Chatbot และตั้งค่า API Key ในองค์กรก่อน')
+                    db.execute("INSERT INTO ai_conversations VALUES(?,'bot','',?) ON CONFLICT(conversation_id) DO UPDATE SET mode='bot',reason='',updated_at=excluded.updated_at",(conv['id'],D.now()))
+                    D.audit(db,ctx['name'],'ai.resumed',conv['id'])
+                db.commit()
+                return self.send(200,{'ok':True})
             if method=='POST' and match[2]=='ticket':
                 db.execute('BEGIN IMMEDIATE')
                 require(not D.one(db,'SELECT 1 FROM ticket_conversations WHERE conversation_id=?',(conv['id'],)),'บทสนทนานี้เชื่อมเคสแล้ว',409)
@@ -624,6 +659,69 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_attachment(ctx['tenant_id'],file)
         raise APIError(404,'ไม่พบรายการ')
 
+    def ai_route(self,cd,db,ctx,path,body):
+        if path=='/api/ai/settings':
+            require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กรจัดการ AI ได้',403)
+            if self.command=='GET':
+                return self.send(200,AI.overview(db,ctx['tenant_id']))
+            if self.command=='PATCH':
+                cfg = AI.config(db)
+                for key in ('drafts_enabled','chatbot_enabled'):
+                    value = body.get(key,cfg[key])
+                    require(type(value) is bool,'สถานะ AI ไม่ถูกต้อง')
+                    cfg[key] = value
+                model = body.get('model',cfg['model'])
+                require(isinstance(model,str) and re.fullmatch(r'[A-Za-z0-9_.:-]{1,100}',model),'ชื่อโมเดลไม่ถูกต้อง')
+                for name,low,high in [('daily_limit',1,10000),('conversation_limit',1,100),('max_output_tokens',200,2000)]:
+                    value = body.get(name,cfg[name])
+                    require(type(value) is int and low<=value<=high,f'{name} ต้องเป็นจำนวนเต็มระหว่าง {low}–{high}')
+                    cfg[name] = value
+                key = body.get('api_key','')
+                require(isinstance(key,str) and (not key or re.fullmatch(r'sk-[A-Za-z0-9_\-]{16,500}',key)),'รูปแบบ API Key ไม่ถูกต้อง')
+                remove = body.get('remove_key',False)
+                require(type(remove) is bool and not (remove and key),'ข้อมูลลบ API Key ไม่ถูกต้อง')
+                effective_key = '' if remove else key or AI.read_key(ctx['tenant_id'])
+                require(effective_key or not (cfg['drafts_enabled'] or cfg['chatbot_enabled']),'ต้องตั้งค่า API Key ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบคีย์')
+                db.execute('BEGIN IMMEDIATE')
+                if key or remove:
+                    AI.write_key(ctx['tenant_id'],effective_key)
+                pairs = [('ai_drafts',str(int(cfg['drafts_enabled']))),('ai_chatbot',str(int(cfg['chatbot_enabled']))),
+                         ('ai_model',model),('ai_daily_limit',str(cfg['daily_limit'])),('ai_conversation_limit',str(cfg['conversation_limit'])),
+                         ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_version',D.uid())]
+                db.executemany('UPDATE settings SET value=? WHERE key=?',[(value,key) for key,value in pairs])
+                # An edit invalidates in-flight work, including key/model changes.
+                waiting = D.rows(db,"SELECT DISTINCT conversation_id FROM ai_jobs WHERE mode='bot' AND status IN ('pending','running')")
+                db.execute("UPDATE ai_jobs SET status='cancelled',error='stale',updated_at=? WHERE status IN ('pending','running')",(D.now(),))
+                for row in waiting:
+                    AI.handoff(db,row['conversation_id'],'settings_changed')
+                if not cfg['chatbot_enabled']:
+                    db.execute("UPDATE ai_conversations SET mode='human',reason='disabled',updated_at=? WHERE mode='bot'",(D.now(),))
+                D.audit(db,ctx['name'],'ai.settings_updated',ctx['tenant_id'])
+                db.commit()
+                return self.send(200,AI.overview(db,ctx['tenant_id']))
+        if path=='/api/ai/test' and self.command=='POST':
+            require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
+            limited(('ai-test',ctx['tenant_id']),3,60)
+            db.execute('BEGIN IMMEDIATE')
+            job_id = AI.enqueue(db,ctx['tenant_id'],'test',requested_by=ctx['id'])
+            db.commit()
+            return self.send(201,{'id':job_id,'status':'pending'})
+        match = re.fullmatch(r'/api/ai/jobs/([a-f0-9]{32})',path)
+        if match and self.command=='GET':
+            job = D.one(db,'SELECT * FROM ai_jobs WHERE id=? AND requested_by=?',(match[1],ctx['id']))
+            require(job,'ไม่พบงาน AI',404)
+            if job['conversation_id']:
+                get_scoped(db,'conversations',job['conversation_id'],ctx)
+            else:
+                require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
+            result = json.loads(job['result'])
+            signature = result.pop('_context_hash',None)
+            if job['mode']=='draft' and job['status']=='done' and (signature!=AI.snapshot(db,job)[2] or job['config_version']!=AI.config(db)['version']):
+                job['status'],job['error'],result = 'cancelled','stale',{}
+            return self.send(200,{'id':job['id'],'status':job['status'],'result':result,
+                 'error':AI.ERRORS.get(job['error'],''),'input_tokens':job['input_tokens'],'output_tokens':job['output_tokens']})
+        raise APIError(404,'ไม่พบรายการ AI')
+
     def validate_team(self,db,ctx,team_id):
         require(isinstance(team_id,str) and D.one(db,'SELECT id FROM teams WHERE id=?',(team_id,)),'ไม่พบทีม')
         require(ctx['role']!='agent' or ctx['team_id']==team_id,'ไม่มีสิทธิ์มอบหมายข้ามทีม',403)
@@ -638,7 +736,7 @@ class Handler(BaseHTTPRequestHandler):
         return self.send(200,path.read_bytes(),file['mime'],{'Content-Disposition':f"attachment; filename=download{Path(file['name']).suffix}; filename*=UTF-8''{quote(file['name'])}"})
 
     def public_route(self,path,body):
-        match = re.fullmatch(r'/api/public/([a-z0-9-]+)(?:/(conversations|session|messages|attachments)(?:/([a-f0-9]{32}))?)?',path)
+        match = re.fullmatch(r'/api/public/([a-z0-9-]+)(?:/(conversations|session|messages|attachments|handoff)(?:/([a-f0-9]{32}))?)?',path)
         require(match,'ไม่พบหน้าช่วยเหลือ',404)
         slug,action,file_id = match.groups()
         limited(('public',self.client_address[0]),180 if self.command=='GET' else 30,60)
@@ -649,8 +747,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not action and self.command=='GET':
                     return self.send(200,{'organization':{'name':org['name'],'slug':slug},
                            'welcome':db.execute("SELECT value FROM settings WHERE key='welcome'").fetchone()[0],
+                           'ai_enabled':AI.config(db)['chatbot_enabled'] and bool(AI.read_key(org['id'])),
                            'articles':D.rows(db,"SELECT id,title,category,body,updated_at FROM knowledge_articles WHERE visibility='public' ORDER BY updated_at DESC")})
                 if action=='conversations' and self.command=='POST':
+                    db.execute('BEGIN IMMEDIATE')
                     name,email,subject = field(body,'name',100),email_field(body),field(body,'subject',300)
                     require(field(body,'body',20000),'กรุณาระบุรายละเอียด')
                     cid,conv_id,token = D.uid(),D.uid(),secrets.token_urlsafe(32)
@@ -659,6 +759,7 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('INSERT INTO contacts VALUES(?,?,?,?,?,?,?,?)',(cid,name,email,'','','','portal',D.now()))
                     db.execute('INSERT INTO conversations VALUES(?,?,?,?,?,?,?,?,?)',(conv_id,cid,subject,'web',team_id,'open',D.token_hash(token),D.now(),D.now()))
                     store_message(db,org['id'],conv_id,None,name,'customer',body)
+                    AI.on_customer_message(db,org['id'],conv_id,body['body'],is_new=True)
                     D.audit(db,'ผู้ติดต่อผ่านเว็บ','conversation.created',conv_id)
                     db.commit()
                     return self.send(201,{'token':token,'conversation_id':conv_id})
@@ -668,10 +769,17 @@ class Handler(BaseHTTPRequestHandler):
                 require(conv,'ลิงก์ติดตามไม่ถูกต้อง',404)
                 if action=='session' and self.command=='GET':
                     ticket = D.one(db,'SELECT t.number,t.status FROM tickets t JOIN ticket_conversations tc ON tc.ticket_id=t.id WHERE tc.conversation_id=?',(conv['id'],))
-                    return self.send(200,{'conversation':{'id':conv['id'],'subject':conv['subject'],'status':conv['status']},'messages':message_list(db,conv['id'],True),'ticket':ticket})
+                    return self.send(200,{'conversation':{'id':conv['id'],'subject':conv['subject'],'status':conv['status']},'messages':message_list(db,conv['id'],True),'ticket':ticket,'ai':AI.conversation_state(db,conv['id'])})
+                if action=='handoff' and self.command=='POST':
+                    db.execute('BEGIN IMMEDIATE')
+                    AI.handoff(db,conv['id'])
+                    db.commit()
+                    return self.send(200,{'ok':True})
                 if action=='messages' and self.command=='POST':
+                    db.execute('BEGIN IMMEDIATE')
                     contact = D.one(db,'SELECT name FROM contacts WHERE id=?',(conv['contact_id'],))
                     mid = store_message(db,org['id'],conv['id'],None,contact['name'],'customer',body)
+                    AI.on_customer_message(db,org['id'],conv['id'],body.get('body',''))
                     db.commit()
                     return self.send(201,{'id':mid})
                 if action=='attachments' and file_id and self.command=='GET':
@@ -717,12 +825,15 @@ def main():
     server = ThreadingHTTPServer((args.host,args.port),Handler)
     server.daemon_threads = True
     server.secure_cookies = args.secure_cookies
+    worker = AI.Worker()
+    worker.start()
     print(f'\n  Bookdose Customer Service\n  Open http://localhost:{args.port}\n  Data: {D.DATA}\n  Press Ctrl+C to stop.\n',flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print('\nBookdose stopped. Your data is saved.')
     finally:
+        worker.stop.set()
         server.server_close()
 
 

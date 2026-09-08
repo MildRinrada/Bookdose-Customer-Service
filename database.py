@@ -115,6 +115,40 @@ def init():
             entity TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
         );
         ''')
+        tenant_ids = [row[0] for row in db.execute('SELECT id FROM tenants')]
+    for tenant_id in tenant_ids:
+        with tenant(tenant_id) as td:
+            migrate_ai(td)
+
+
+def migrate_ai(db):
+    """Additive, repeatable migration; original business rows are left intact."""
+    db.executescript('''
+    CREATE TABLE IF NOT EXISTS ai_conversations (
+        conversation_id TEXT PRIMARY KEY REFERENCES conversations(id),
+        mode TEXT NOT NULL CHECK(mode IN ('human','bot')),
+        reason TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS ai_jobs (
+        id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
+        trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
+        mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test')),
+        status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
+        result TEXT NOT NULL DEFAULT '{}', error TEXT NOT NULL DEFAULT '',
+        lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,
+        output_tokens INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS ai_bot_trigger ON ai_jobs(trigger_id) WHERE mode='bot';
+    CREATE INDEX IF NOT EXISTS ai_jobs_pending ON ai_jobs(status,created_at);
+    CREATE TABLE IF NOT EXISTS ai_message_meta (
+        message_id TEXT PRIMARY KEY REFERENCES messages(id),
+        source TEXT NOT NULL CHECK(source IN ('ai','system')), citations TEXT NOT NULL DEFAULT '[]'
+    );
+    ''')
+    db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',[
+        ('ai_drafts','0'),('ai_chatbot','0'),('ai_model','gpt-4.1-mini'),
+        ('ai_daily_limit','100'),('ai_conversation_limit','20'),('ai_max_output_tokens','1000'),
+        ('ai_version','0')])
 
 
 def create_tenant(db, name, slug, admin_id, demo=False):
@@ -174,6 +208,7 @@ def create_tenant(db, name, slug, admin_id, demo=False):
             ('canned_reply','สวัสดีค่ะ ขอบคุณที่ติดต่อเข้ามา ทีมงานรับเรื่องและกำลังตรวจสอบให้นะคะ');
         ''')
         td.execute('INSERT INTO teams VALUES(?,?)',(team_id,'Customer Success'))
+        migrate_ai(td)
         if demo:
             seed_demo(td, admin_id, team_id)
         audit(td,'ระบบ','organization.created',tenant_id,name)
@@ -195,7 +230,7 @@ def create_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, 
                 (timestamp+dt.timedelta(hours=float(settings['resolution_hours']))).isoformat(timespec='seconds')))
     if conversation_id:
         db.execute('INSERT INTO ticket_conversations VALUES(?,?)',(ticket_id,conversation_id))
-        response = db.execute("SELECT MIN(created_at) FROM messages WHERE conversation_id=? AND kind='reply'",(conversation_id,)).fetchone()[0]
+        response = db.execute("SELECT MIN(created_at) FROM messages WHERE conversation_id=? AND kind='reply' AND id NOT IN (SELECT message_id FROM ai_message_meta)",(conversation_id,)).fetchone()[0]
         if response:
             db.execute('UPDATE tickets SET first_response_at=? WHERE id=?',(response,ticket_id))
     return ticket_id

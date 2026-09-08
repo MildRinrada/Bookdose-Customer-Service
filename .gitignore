@@ -4,3 +4,13 @@ __pycache__/
 *.pyc
 .DS_Store
 test-results/
+restored-data/
+secrets/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.openai-key
+*.zip
+.env
+.env.*
+!.env.example

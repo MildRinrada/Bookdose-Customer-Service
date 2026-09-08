@@ -25,6 +25,8 @@ import zipfile
 
 import database as D
 import ai_service as AI
+import channel_service as CS
+import channel_transport as CT
 
 ROOT = Path(__file__).resolve().parent
 STATUSES = ('new','open','pending_customer','pending_internal','resolved','closed')
@@ -116,6 +118,7 @@ def message_list(db, conversation_id, public=False):
     for message in result:
         message['attachments'] = D.rows(db,'SELECT id,name,mime,size FROM attachments WHERE message_id=?',(message['id'],))
         meta = D.one(db,'SELECT source,citations FROM ai_message_meta WHERE message_id=?',(message['id'],))
+        message['channel_delivery'] = CS.delivery(db,message['id']) if not public else None
         message['source'] = meta['source'] if meta else 'human'
         message['citations'] = json.loads(meta['citations']) if meta else []
     return result
@@ -166,7 +169,7 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
         path.chmod(0o600)
         db.execute('INSERT INTO attachments VALUES(?,?,?,?,?,?)',(file_id,mid,name,mime,len(content),file_id))
     db.execute('UPDATE conversations SET updated_at=? WHERE id=?',(D.now(),conversation_id))
-    if kind=='reply':
+    if kind=='reply' and D.one(db,'SELECT channel FROM conversations WHERE id=?',(conversation_id,))['channel'] not in ('line','email'):
         db.execute('''UPDATE tickets SET first_response_at=COALESCE(first_response_at,?),updated_at=?
            WHERE id IN (SELECT ticket_id FROM ticket_conversations WHERE conversation_id=?)''',(D.now(),D.now(),conversation_id))
     if kind=='customer':
@@ -297,6 +300,16 @@ class Handler(BaseHTTPRequestHandler):
                 require(file.resolve().is_relative_to(ROOT/'static') and file.is_file(),'ไม่พบหน้านี้',404)
                 mime = mimetypes.guess_type(file.name)[0] or 'application/octet-stream'
                 return self.send(200,file.read_bytes(),mime+'; charset=utf-8')
+            webhook = re.fullmatch(r'/api/webhooks/line/([a-f0-9]{32})',path)
+            if webhook and self.command=='POST':
+                length=self.headers.get('Content-Length','')
+                require(length.isdigit() and 0<int(length)<=2*1024*1024,'ขนาด Webhook ไม่ถูกต้อง',413)
+                raw=self.rfile.read(int(length))
+                require(len(raw)==int(length),'Webhook ไม่ครบ',400)
+                with D.control() as cd:
+                    try:CS.accept_line(cd,webhook[1],raw,self.headers.get('X-Line-Signature',''))
+                    except PermissionError:raise APIError(403,'ลายเซ็น Webhook ไม่ถูกต้อง') from None
+                return self.send(200,{'ok':True})
             body = self.json_body() if self.command!='GET' else {}
             if path.startswith('/api/public/'):
                 return self.public_route(path,body)
@@ -343,6 +356,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send(error.status,{'error':error.message})
         except AI.AIError as error:
             self.send(429 if error.code=='quota' else 400,{'error':str(error)})
+        except CS.ConfigError as error:
+            self.send(400,{'error':str(error)})
+        except CT.ChannelError as error:
+            self.send(503 if error.code=='disabled' or error.retryable else 400,{'error':str(error)})
         except sqlite3.IntegrityError:
             self.send(409,{'error':'ข้อมูลซ้ำหรือรายการที่อ้างอิงไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง'})
         except (BrokenPipeError,ConnectionResetError,TimeoutError):
@@ -411,6 +428,30 @@ class Handler(BaseHTTPRequestHandler):
     def workspace_route(self,cd,db,ctx,path,body):
         method = self.command
         scope,params = team_scope(ctx,'t')
+        if path=='/api/channels' and method=='GET':
+            require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
+            return self.send(200,CS.overview(db,ctx['tenant_id']))
+        channel=re.fullmatch(r'/api/channels/(line|email)(?:/(test|sync))?',path)
+        if channel:
+            require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
+            limited(('channel-config',ctx['tenant_id']),20,60)
+            if method=='PATCH' and not channel[2]:
+                return self.send(200,CS.save_channel(cd,db,ctx,channel[1],body))
+            if method=='POST' and channel[2]=='test':
+                CS.test_channel(db,ctx['tenant_id'],channel[1])
+                return self.send(200,{'ok':True})
+            if method=='POST' and channel[1]=='email' and channel[2]=='sync':
+                db.execute("UPDATE channel_settings SET next_poll=NULL WHERE kind='email'")
+                db.commit()
+                return self.send(200,{'ok':True})
+        retry=re.fullmatch(r'/api/messages/([a-f0-9]{32})/retry',path)
+        if retry and method=='POST':
+            db.execute('BEGIN IMMEDIATE')
+            message=D.one(db,'SELECT conversation_id FROM messages WHERE id=?',(retry[1],))
+            require(message,'ไม่พบข้อความ',404)
+            get_scoped(db,'conversations',message['conversation_id'],ctx)
+            CS.retry_message(db,ctx,retry[1]);db.commit()
+            return self.send(200,{'ok':True})
         if path.startswith('/api/ai/'):
             return self.ai_route(cd,db,ctx,path,body)
         if path=='/api/workspace' and method=='GET':
@@ -500,8 +541,13 @@ class Handler(BaseHTTPRequestHandler):
             if method=='POST' and match[2]=='messages':
                 kind = body.get('kind','reply')
                 require(kind in ('reply','note'),'ชนิดข้อความไม่ถูกต้อง')
-                require(kind=='note' or conv['channel']=='web','เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าช่วยเหลือเพื่อสนทนากับลูกค้า')
+                require(kind=='note' or conv['channel'] in ('web','line','email'),'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าช่วยเหลือเพื่อสนทนากับลูกค้า')
+                db.execute('BEGIN IMMEDIATE')
+                if kind=='reply' and conv['channel'] in ('line','email'):
+                    CS.check_reply(db,ctx['tenant_id'],conv,body)
                 mid = store_message(db,ctx['tenant_id'],conv['id'],ctx['id'],ctx['name'],kind,body)
+                if kind=='reply' and conv['channel'] in ('line','email'):
+                    CS.enqueue_reply(db,ctx,conv,mid)
                 if kind=='reply':
                     AI.stop_bot(db,conv['id'])
                 D.audit(db,ctx['name'],'message.'+kind,conv['id'])
@@ -827,6 +873,8 @@ def main():
     server.secure_cookies = args.secure_cookies
     worker = AI.Worker()
     worker.start()
+    channels = CS.Worker(store_message)
+    channels.start()
     print(f'\n  Bookdose Customer Service\n  Open http://localhost:{args.port}\n  Data: {D.DATA}\n  Press Ctrl+C to stop.\n',flush=True)
     try:
         server.serve_forever()
@@ -834,6 +882,7 @@ def main():
         print('\nBookdose stopped. Your data is saved.')
     finally:
         worker.stop.set()
+        channels.stop.set()
         server.server_close()
 
 

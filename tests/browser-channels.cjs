@@ -32,14 +32,14 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     assert.equal(res.status(),200);
     fs.mkdirSync(path.join(root,'test-results'),{recursive:true});
     await page.screenshot({path:path.join(root,'test-results','channel-settings-desktop.png'),fullPage:true});
-    await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await page.screenshot({path:path.join(root,'test-results','channel-settings-mobile.png'),fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
     for(const kind of ['LINE','Email']){
       await page.goto(base+'/#inbox');
       for(let attempt=0;attempt<10&&await page.locator('.inbox-item').filter({hasText:kind+' browser test'}).count()===0;attempt++){await page.waitForTimeout(600);await page.reload();}
       await page.locator('.inbox-item').filter({hasText:kind+' browser test'}).click();await page.locator('.composer[data-channel="'+kind.toLowerCase()+'"]').waitFor();
-      assert.equal(await page.locator('.composer [name="files"]').isDisabled(),kind==='LINE');
+      assert.equal(await page.locator('.composer [name="files"]').isDisabled(),false);
       await page.locator('.composer textarea').fill('ตอบกลับ '+kind+' ที่ตรวจแล้ว');
       if(kind==='Email')await page.locator('.composer [name="files"]').setInputFiles({name:'reply.txt',mimeType:'text/plain',buffer:Buffer.from('attachment')});
       await page.locator('.composer button[type="submit"]').click();

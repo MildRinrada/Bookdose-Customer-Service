@@ -1,4 +1,4 @@
-"""Tenant-scoped AI drafts and a durable, conservative web chatbot worker.
+"""Tenant-scoped AI drafts and a durable, conservative multichannel chatbot worker.
 
 No provider call occurs on an inbound customer's request. Jobs and messages are
 committed together; provider calls run without an open database transaction.
@@ -87,15 +87,21 @@ def stop_bot(db,conversation_id,reason='staff'):
     db.execute('''INSERT INTO ai_conversations VALUES(?,'human',?,?) ON CONFLICT(conversation_id)
                   DO UPDATE SET mode='human',reason=excluded.reason,updated_at=excluded.updated_at''',
                (conversation_id,reason,D.now()))
+    import channel_service as CS
+    CS.cancel_ai_outbox(db,conversation_id)
     db.execute("UPDATE ai_jobs SET status='cancelled',error='stale',updated_at=? WHERE conversation_id=? AND mode='bot' AND status IN ('pending','running')",(D.now(),conversation_id))
 
 
-def system_message(db,conversation_id,body,source='system',citations=None):
+def system_message(db,conversation_id,body,source='system',citations=None,job=None,signature=None):
     mid = D.uid()
     db.execute('INSERT INTO messages VALUES(?,?,?,?,?,?,?,?)',
                (mid,conversation_id,None,'Bookdose AI' if source=='ai' else 'ระบบ','reply',body,'stored',D.now()))
     db.execute('INSERT INTO ai_message_meta VALUES(?,?,?)',(mid,source,json.dumps(citations or [],ensure_ascii=False)))
     db.execute('UPDATE conversations SET updated_at=? WHERE id=?',(D.now(),conversation_id))
+    conv=D.one(db,'SELECT channel FROM conversations WHERE id=?',(conversation_id,))
+    if conv['channel'] in ('line','email'):
+        import channel_service as CS
+        CS.queue_ai(db,mid,job,signature,notice=source!='ai')
     # AI and system notices deliberately do not satisfy the human first-response SLA.
     return mid
 
@@ -109,7 +115,7 @@ def handoff(db,conversation_id,reason='customer'):
     db.execute("UPDATE conversations SET status='open' WHERE id=?",(conversation_id,))
     db.execute("UPDATE tickets SET status='open',resolved_at=NULL,updated_at=? WHERE id=? AND status IN ('resolved','closed','pending_customer')",(D.now(),tid))
     if previous['mode']=='bot' or not previous['reason']:
-        system_message(db,conversation_id,HANDOFF_MESSAGE)
+        system_message(db,conversation_id,HANDOFF_MESSAGE if conv['channel']=='web' else 'ส่งเรื่องให้เจ้าหน้าที่แล้วค่ะ ทีมงานจะตอบกลับผ่านช่องทางนี้')
         D.audit(db,'Bookdose AI','ai.handoff',conversation_id,reason)
     return tid
 
@@ -118,9 +124,19 @@ def requests_human(text):
     return bool(re.search(r'คุยกับ(?:คน|เจ้าหน้าที่|พนักงาน)|ติดต่อเจ้าหน้าที่|ขอ(?:คน|เจ้าหน้าที่)|human\s*(?:agent|please)|talk to (?:a )?(?:person|human)|refund|คืนเงิน|ยกเลิกสัญญา',text,re.I))
 
 
+def bot_enabled(db,conversation_id):
+    conv=D.one(db,'SELECT * FROM conversations WHERE id=?',(conversation_id,))
+    if not conv:return False
+    if conv['channel']=='web':return config(db)['chatbot_enabled']
+    if conv['channel'] in ('line','email'):
+        import channel_service as CS
+        return CS.bot_enabled(db,conv)
+    return False
+
+
 def enqueue(db,tenant_id,mode,conversation_id=None,requested_by=None):
     cfg = config(db)
-    if (mode=='bot' and not cfg['chatbot_enabled']) or (mode=='draft' and not cfg['drafts_enabled']):
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode=='draft' and not cfg['drafts_enabled']):
         raise AIError('disabled')
     if not read_key(tenant_id):
         raise AIError('not_configured')
@@ -149,7 +165,7 @@ def enqueue(db,tenant_id,mode,conversation_id=None,requested_by=None):
 def on_customer_message(db,tenant_id,conversation_id,body,is_new=False):
     cfg = config(db)
     if is_new:
-        enabled = cfg['chatbot_enabled'] and bool(read_key(tenant_id))
+        enabled = bot_enabled(db,conversation_id) and bool(read_key(tenant_id))
         db.execute('INSERT OR IGNORE INTO ai_conversations VALUES(?,?,?,?)',(conversation_id,'bot' if enabled else 'human','',D.now()))
     if requests_human(body):
         handoff(db,conversation_id)
@@ -197,11 +213,17 @@ def retrieve(db,query,public_only):
     return [item[3] for item in candidates[:5]]
 
 
-def snapshot(db,job):
+def snapshot(db,job,exclude_message=None):
     conv = D.one(db,'SELECT * FROM conversations WHERE id=?',(job['conversation_id'],))
     public = job['mode']=='bot'
+    extra=" AND kind!='note'" if public else ''
+    params=[conv['id']]
+    if exclude_message:extra+=' AND id!=?';params.append(exclude_message)
+    thread=D.one(db,'SELECT source_type FROM line_threads WHERE conversation_id=?',(conv['id'],))
+    if public and thread and thread['source_type']!='user':
+        extra+=' AND id=?';params.append(job['trigger_id'])
     messages = D.rows(db,'''SELECT id,kind,body,(SELECT COUNT(*) FROM attachments a WHERE a.message_id=messages.id) AS attachment_count
-                           FROM messages WHERE conversation_id=?'''+(" AND kind!='note'" if public else '')+' ORDER BY rowid DESC LIMIT 14',(conv['id'],))[::-1]
+                           FROM messages WHERE conversation_id=?'''+extra+' ORDER BY rowid DESC LIMIT 14',params)[::-1]
     latest_customer = next((m['body'] for m in reversed(messages) if m['kind']=='customer'),'')
     articles = retrieve(db,conv['subject']+' '+latest_customer,public)
     # Do not transmit contact records, visitor tokens, names, emails, or attachments.
@@ -285,7 +307,7 @@ def permitted(cd,tenant_id,job,db):
     if not D.one(cd,"SELECT 1 FROM tenants WHERE id=? AND status='active'",(tenant_id,)):
         return False
     if job['mode']=='bot':
-        return conversation_state(db,job['conversation_id'])['mode']=='bot'
+        return bot_enabled(db,job['conversation_id']) and conversation_state(db,job['conversation_id'])['mode']=='bot'
     membership = D.one(cd,'SELECT * FROM memberships WHERE tenant_id=? AND user_id=? AND active=1',(tenant_id,job['requested_by']))
     if not membership:
         return False
@@ -312,7 +334,7 @@ def process_one(tenant_id):
         if not job:
             return False
         cfg = config(db)
-        enabled = job['mode']=='test' or cfg['chatbot_enabled' if job['mode']=='bot' else 'drafts_enabled']
+        enabled = job['mode']=='test' or (bot_enabled(db,job['conversation_id']) if job['mode']=='bot' else cfg['drafts_enabled'])
         if not permitted(cd,tenant_id,job,db) or cfg['version']!=job['config_version'] or not enabled:
             db.execute("UPDATE ai_jobs SET status='cancelled',error='stale',updated_at=? WHERE id=?",(D.now(),job['id']))
             return True
@@ -364,7 +386,7 @@ def process_one(tenant_id):
             if error or result.get('needs_human'):
                 handoff(db,job['conversation_id'],error or 'insufficient_knowledge')
             else:
-                system_message(db,job['conversation_id'],result['answer'],'ai',result['citations'])
+                system_message(db,job['conversation_id'],result['answer'],'ai',result['citations'],job,signature)
         D.audit(db,'Bookdose AI','ai.'+('failed' if error else 'completed'),job['conversation_id'] or job['id'],job['mode']+(':'+error if error else ''))
     return True
 

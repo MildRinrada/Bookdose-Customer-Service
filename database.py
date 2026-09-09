@@ -129,6 +129,20 @@ def init():
 
 def migrate_channels(db):
     db.executescript('''
+    CREATE TABLE IF NOT EXISTS oauth_refresh (kind TEXT PRIMARY KEY,lease TEXT NOT NULL,expires_at REAL NOT NULL);
+    CREATE TABLE IF NOT EXISTS line_threads (
+        conversation_id TEXT PRIMARY KEY REFERENCES conversations(id), source_type TEXT NOT NULL,
+        source_id TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, last_event_time TEXT
+    );
+    CREATE TABLE IF NOT EXISTS channel_file_links (
+        token_hash TEXT PRIMARY KEY,attachment_id TEXT NOT NULL REFERENCES attachments(id),
+        message_id TEXT NOT NULL REFERENCES messages(id),expires_at TEXT NOT NULL,revoked INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS channel_outbox_payload (outbox_id TEXT PRIMARY KEY REFERENCES channel_outbox(id),payload TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS channel_ai_guard (
+        message_id TEXT PRIMARY KEY REFERENCES messages(id),job_id TEXT,config_version TEXT NOT NULL,
+        signature TEXT,trigger_id TEXT,notice INTEGER NOT NULL DEFAULT 0
+    );
     CREATE TABLE IF NOT EXISTS channel_settings (
         kind TEXT PRIMARY KEY CHECK(kind IN ('line','email')), route_id TEXT NOT NULL UNIQUE,
         enabled INTEGER NOT NULL DEFAULT 0, config TEXT NOT NULL DEFAULT '{}',

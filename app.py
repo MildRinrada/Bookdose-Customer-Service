@@ -27,6 +27,8 @@ import database as D
 import ai_service as AI
 import channel_service as CS
 import channel_transport as CT
+import email_oauth as EO
+import channel_files as CF
 
 ROOT = Path(__file__).resolve().parent
 STATUSES = ('new','open','pending_customer','pending_internal','resolved','closed')
@@ -269,7 +271,7 @@ class Handler(BaseHTTPRequestHandler):
         ctx = D.one(db,'''SELECT m.*,t.name AS tenant_name,t.slug FROM memberships m JOIN tenants t ON t.id=m.tenant_id
                       WHERE m.user_id=? AND m.tenant_id=? AND m.active=1 AND t.status='active' ''',(session['user_id'],session['tenant_id']))
         require(ctx,'ไม่มีสิทธิ์เข้าองค์กรนี้ หรือองค์กรถูกระงับ',403)
-        ctx.update(id=session['user_id'],name=session['name'])
+        ctx.update(id=session['user_id'],name=session['name'],session_token=session['token'])
         return ctx
 
     def do_GET(self):
@@ -294,6 +296,13 @@ class Handler(BaseHTTPRequestHandler):
             if self.command!='GET':
                 origin = self.headers.get('Origin')
                 require(not origin or origin in ('http://'+host,'https://'+host),'ไม่อนุญาตคำขอจากเว็บไซต์อื่น',403)
+            if path==EO.CALLBACK and self.command=='GET':
+                return self.send(200,(ROOT/'static'/'oauth-callback.html').read_bytes(),'text/html; charset=utf-8')
+            file_link=re.fullmatch(r'/api/channel-files/([a-f0-9]{32})/([A-Za-z0-9_-]{43})',path)
+            if file_link and self.command=='GET':
+                with D.control() as cd:file=CF.resolve(cd,file_link[1],file_link[2])
+                require(file,'ลิงก์ไฟล์ไม่ถูกต้อง หมดอายุ หรือถูกถอนแล้ว',404)
+                return self.send_attachment(file_link[1],file)
             if not path.startswith('/api/'):
                 require(self.command=='GET','ไม่พบหน้านี้',404)
                 file = ROOT/'static'/('index.html' if path=='/' or path.startswith('/support/') else path.lstrip('/'))
@@ -428,6 +437,21 @@ class Handler(BaseHTTPRequestHandler):
     def workspace_route(self,cd,db,ctx,path,body):
         method = self.command
         scope,params = team_scope(ctx,'t')
+        if path in ('/api/channels/email/oauth/start','/api/channels/email/oauth/complete') and method=='POST':
+            require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
+            limited(('email-oauth',ctx['tenant_id'],ctx['id']),10,60)
+            if path.endswith('/start'):
+                db.execute('BEGIN IMMEDIATE')
+                return self.send(200,EO.start(db,ctx,'https://'+self.headers.get('Host','')))
+            return self.send(200,EO.complete(cd,db,ctx,body))
+        revoke=re.fullmatch(r'/api/messages/([a-f0-9]{32})/revoke-files',path)
+        if revoke and method=='POST':
+            db.execute('BEGIN IMMEDIATE')
+            message=D.one(db,'SELECT conversation_id FROM messages WHERE id=?',(revoke[1],))
+            require(message,'ไม่พบข้อความ',404)
+            get_scoped(db,'conversations',message['conversation_id'],ctx)
+            CF.revoke(db,revoke[1]);D.audit(db,ctx['name'],'message.files_revoked',message['conversation_id']);db.commit()
+            return self.send(200,{'ok':True})
         if path=='/api/channels' and method=='GET':
             require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
             return self.send(200,CS.overview(db,ctx['tenant_id']))
@@ -462,6 +486,7 @@ class Handler(BaseHTTPRequestHandler):
                  'role':ctx['role'],'team_id':ctx['team_id'],'members':team_members,
                  'teams':D.rows(db,'SELECT * FROM teams ORDER BY name'),
                  'settings':dict(db.execute('SELECT key,value FROM settings').fetchall()),
+                 'channels':{kind:{'chatbot_enabled':bool((CS.setting(db,kind) or {}).get('config',{}).get('chatbot_enabled')),'enabled':bool((CS.setting(db,kind) or {}).get('enabled'))} for kind in ('line','email')},
                  'ai':{**AI.config(db),'key_configured':bool(AI.read_key(ctx['tenant_id']))}})
         if path=='/api/tickets' and method=='GET':
             result = D.rows(db,f'''SELECT t.*,c.name AS contact_name,c.company FROM tickets t
@@ -494,6 +519,7 @@ class Handler(BaseHTTPRequestHandler):
                 for conv in convs:
                     conv['messages'] = message_list(db,conv['id'])
                     conv['ai'] = AI.conversation_state(db,conv['id'])
+                    conv['line'] = D.one(db,'SELECT source_type,active FROM line_threads WHERE conversation_id=?',(conv['id'],))
                     conv.pop('portal_token',None)
                 return self.send(200,{'ticket':ticket,'contact':D.one(db,'SELECT * FROM contacts WHERE id=?',(ticket['contact_id'],)),
                          'conversations':convs,'events':D.rows(db,'SELECT * FROM audit_logs WHERE entity=? ORDER BY id DESC LIMIT 40',(ticket['id'],))})
@@ -527,6 +553,7 @@ class Handler(BaseHTTPRequestHandler):
             if method=='GET' and not match[2]:
                 conv.pop('portal_token',None)
                 conv['ai'] = AI.conversation_state(db,conv['id'])
+                conv['line'] = D.one(db,'SELECT source_type,active FROM line_threads WHERE conversation_id=?',(conv['id'],))
                 return self.send(200,{'conversation':conv,'messages':message_list(db,conv['id']),
                          'contact':D.one(db,'SELECT * FROM contacts WHERE id=?',(conv['contact_id'],)),
                          'ticket':D.one(db,'SELECT t.* FROM tickets t JOIN ticket_conversations tc ON tc.ticket_id=t.id WHERE tc.conversation_id=?',(conv['id'],))})
@@ -567,8 +594,8 @@ class Handler(BaseHTTPRequestHandler):
                 if mode=='human':
                     AI.handoff(db,conv['id'],'staff')
                 else:
-                    require(conv['channel']=='web' and conv['status']=='open','เปิด AI ได้เฉพาะบทสนทนาเว็บที่ยังเปิดอยู่')
-                    require(AI.config(db)['chatbot_enabled'] and AI.read_key(ctx['tenant_id']),'กรุณาเปิด Chatbot และตั้งค่า API Key ในองค์กรก่อน')
+                    require(conv['channel'] in ('web','line','email') and conv['status']=='open','เปิด AI ได้เฉพาะบทสนทนาที่เปิดอยู่')
+                    require(AI.bot_enabled(db,conv['id']) and AI.read_key(ctx['tenant_id']),'กรุณาเปิด Chatbot สำหรับช่องทางนี้และตั้งค่า API Key ก่อน')
                     db.execute("INSERT INTO ai_conversations VALUES(?,'bot','',?) ON CONFLICT(conversation_id) DO UPDATE SET mode='bot',reason='',updated_at=excluded.updated_at",(conv['id'],D.now()))
                     D.audit(db,ctx['name'],'ai.resumed',conv['id'])
                 db.commit()
@@ -741,7 +768,7 @@ class Handler(BaseHTTPRequestHandler):
                 for row in waiting:
                     AI.handoff(db,row['conversation_id'],'settings_changed')
                 if not cfg['chatbot_enabled']:
-                    db.execute("UPDATE ai_conversations SET mode='human',reason='disabled',updated_at=? WHERE mode='bot'",(D.now(),))
+                    db.execute("UPDATE ai_conversations SET mode='human',reason='disabled',updated_at=? WHERE mode='bot' AND conversation_id IN (SELECT id FROM conversations WHERE channel='web')",(D.now(),))
                 D.audit(db,ctx['name'],'ai.settings_updated',ctx['tenant_id'])
                 db.commit()
                 return self.send(200,AI.overview(db,ctx['tenant_id']))

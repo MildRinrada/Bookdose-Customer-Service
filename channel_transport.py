@@ -19,6 +19,8 @@ import urllib.request
 MAX_MAIL = 8*1024*1024
 MAX_FILES = 5*1024*1024
 ERRORS = {
+    'oauth_expired':'สิทธิ์ OAuth หมดอายุหรือถูกถอน กรุณาเชื่อมบัญชีอีเมลใหม่',
+    'files_expired':'ลิงก์ไฟล์หมดอายุหรือถูกถอน กรุณาสร้างข้อความใหม่',
     'credentials':'ข้อมูลบัญชีหรือสิทธิ์การเชื่อมต่อไม่ถูกต้อง',
     'network':'ติดต่อบริการปลายทางไม่ได้ กรุณาตรวจเครือข่ายและชื่อเซิร์ฟเวอร์',
     'host':'ใช้ชื่อเซิร์ฟเวอร์สาธารณะเท่านั้น ไม่อนุญาตที่อยู่เครือข่ายภายใน',
@@ -75,7 +77,7 @@ def verify_line(secret):
 
 def send_line(secret,recipient,text,retry_key):
     _,_,provider_id=line_request(secret['access_token'],'/v2/bot/message/push',
-        {'to':recipient,'messages':[{'type':'text','text':text}]},retry_key)
+        {'to':recipient,'messages':text if isinstance(text,list) else [{'type':'text','text':text}]},retry_key)
     return provider_id
 
 
@@ -150,7 +152,12 @@ def smtp_session(cfg,secret):
         else:
             client=SafeSMTP(cfg['smtp_host'],587,timeout=12)
             client.ehlo();client.starttls(context=ssl.create_default_context());client.ehlo()
-        client.login(cfg['username'],secret['password'])
+        if cfg.get('auth_mode','password')!='password':
+            token=secret.get('auth_token')
+            if not token:raise ChannelError('oauth_expired')
+            value=f"user={cfg['username']}\x01auth=Bearer {token}\x01\x01"
+            client.auth('XOAUTH2',lambda challenge=None:value if challenge is None else '')
+        else:client.login(cfg['username'],secret['password'])
         yield client
     except smtplib.SMTPAuthenticationError:raise ChannelError('credentials') from None
     except smtplib.SMTPNotSupportedError:raise ChannelError('credentials') from None
@@ -166,7 +173,13 @@ def imap_session(cfg,secret):
     client=None
     try:
         client=SafeIMAP(cfg['imap_host'],993,ssl_context=ssl.create_default_context(),timeout=12)
-        client.login(cfg['username'],secret['password'])
+        if cfg.get('auth_mode','password')!='password':
+            token=secret.get('auth_token')
+            if not token:raise ChannelError('oauth_expired')
+            value=f"user={cfg['username']}\x01auth=Bearer {token}\x01\x01".encode()
+            answers=iter((value,b''))
+            client.authenticate('XOAUTH2',lambda challenge:next(answers,b''))
+        else:client.login(cfg['username'],secret['password'])
         result,_=client.select('INBOX',readonly=True)
         if result!='OK':raise ChannelError('credentials')
         yield client

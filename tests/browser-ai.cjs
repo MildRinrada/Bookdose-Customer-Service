@@ -24,7 +24,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     await staff.getByRole('button',{name:'สร้างพื้นที่ทำงาน'}).click();await staff.locator('.stats-grid').waitFor();
     await staff.goto(base+'/#settings');
     await staff.locator('#ai-key').fill('sk-browser-test-not-real-0123456789');
-    await staff.locator('[name="drafts_enabled"]').check();await staff.locator('[name="chatbot_enabled"]').check();
+    await staff.locator('[name="drafts_enabled"]').check();await staff.locator('#ai-settings [name="chatbot_enabled"]').check();
     await staff.getByRole('button',{name:'บันทึกการตั้งค่า AI'}).click();
     await staff.getByText('บันทึก API Key แล้ว',{exact:true}).waitFor();
     assert.equal(await staff.locator('#ai-key').inputValue(),'');

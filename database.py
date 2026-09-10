@@ -119,6 +119,20 @@ def init():
             kind TEXT NOT NULL CHECK(kind IN ('line','email')), identity TEXT,
             UNIQUE(tenant_id,kind), UNIQUE(kind,identity)
         );
+        CREATE TABLE IF NOT EXISTS platform_settings (
+            key TEXT PRIMARY KEY, value TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS pending_registrations (
+            email TEXT PRIMARY KEY COLLATE NOCASE, name TEXT NOT NULL, password TEXT NOT NULL,
+            organization TEXT NOT NULL, slug TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE,
+            expires_at TEXT NOT NULL, created_at TEXT NOT NULL, last_sent_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS email_verifications (
+            user_id TEXT PRIMARY KEY REFERENCES users(id), verified_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS user_profiles (
+            user_id TEXT PRIMARY KEY REFERENCES users(id), avatar TEXT NOT NULL DEFAULT ''
+        );
         ''')
         tenant_ids = [row[0] for row in db.execute('SELECT id FROM tenants')]
     for tenant_id in tenant_ids:
@@ -127,7 +141,14 @@ def init():
             migrate_channels(td)
 
 
+def migrate_contacts(db):
+    db.execute('''CREATE TABLE IF NOT EXISTS contact_names (
+        contact_id TEXT PRIMARY KEY REFERENCES contacts(id), first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL DEFAULT '')''')
+
+
 def migrate_channels(db):
+    migrate_contacts(db)
     db.executescript('''
     CREATE TABLE IF NOT EXISTS oauth_refresh (kind TEXT PRIMARY KEY,lease TEXT NOT NULL,expires_at REAL NOT NULL);
     CREATE TABLE IF NOT EXISTS line_threads (

@@ -172,7 +172,7 @@ class ChannelTests(unittest.TestCase):
             self.assertEqual(self.admin.call('/api/channels/line',{'enabled':True,'team_id':team,'channel_secret':'secret-for-tests','access_token':'token'},'PATCH')[0],400)
         for row in self.ok(self.admin,'/api/channels'):self.assertFalse(row['credentials_configured'])
         self.admin.switch(original)
-        self.ok(self.admin,'/api/platform/tenants/'+original,{'status':'suspended'},'PATCH')
+        self.ok(self.admin,'/api/platform/tenants/'+original,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
         self.assertEqual(self.webhook(route)[0],503)
         with patch.object(T,'send_line') as send:C.process_outbox(original);send.assert_not_called()
         self.assertEqual(self.job(mid)['status'],'failed')

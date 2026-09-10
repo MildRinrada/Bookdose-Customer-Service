@@ -20,6 +20,8 @@ import sys
 import tempfile
 import threading
 import time
+import unicodedata
+import struct
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 import zipfile
 
@@ -29,6 +31,7 @@ import channel_service as CS
 import channel_transport as CT
 import email_oauth as EO
 import channel_files as CF
+import registration_service as RS
 
 ROOT = Path(__file__).resolve().parent
 STATUSES = ('new','open','pending_customer','pending_internal','resolved','closed')
@@ -58,8 +61,44 @@ def field(body, name, maximum=500, required=True):
 
 def email_field(body):
     email = field(body,'email',254).lower()
-    require(re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email), 'กรุณาระบุอีเมลให้ถูกต้อง')
+    require(re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+",email)
+            and '..' not in email.split('@')[0] and not email.startswith('.') and '.@' not in email,
+            'กรุณาระบุอีเมลให้ถูกต้อง เช่น name@example.com')
     return email
+
+
+def person_name(body,key='name',required=True):
+    value = field(body,key,100,required)
+    require(not value or (any(unicodedata.category(c).startswith('L') for c in value)
+            and all(unicodedata.category(c)[0] in ('L','M') or c in " .-'’·" for c in value)),
+            'ชื่อใช้ตัวอักษรไทยหรือต่างประเทศ เว้นวรรค จุด ขีด และอัญประกาศได้ ไม่รองรับสัญลักษณ์หรือสคริปต์')
+    return value
+
+
+def contact_values(body):
+    split = 'first_name' in body or 'last_name' in body
+    first = person_name(body,'first_name') if split else person_name(body)
+    last = person_name(body,'last_name',False) if split else ''
+    name = (first+' '+last).strip()
+    require(len(name)<=100,'ชื่อและนามสกุลรวมต้องไม่เกิน 100 ตัวอักษร')
+    email = email_field(body) if field(body,'email',254,False) else ''
+    phone = field(body,'phone',40,False)
+    require(not phone or re.fullmatch(r'[0-9+() .-]{3,40}',phone),'โทรศัพท์ใช้ตัวเลข + ( ) จุด เว้นวรรค และขีด เช่น 081-234-5678')
+    return (name,email,phone,field(body,'company',150,False),field(body,'notes',3000,False)),(first,last)
+
+
+def audit_display(control_db,events,tenant_db=None,tenant_id=None):
+    user_rows = D.rows(control_db,'SELECT u.id,u.name,u.email FROM users u JOIN memberships m ON m.user_id=u.id WHERE m.tenant_id=?',(tenant_id,)) if tenant_id else D.rows(control_db,'SELECT id,name,email FROM users')
+    users = {u['id']:u['name']+' · '+u['email'] for u in user_rows}
+    org_rows = D.rows(control_db,'SELECT id,name FROM tenants WHERE id=?',(tenant_id,)) if tenant_id else D.rows(control_db,'SELECT id,name FROM tenants')
+    entities = {t['id']:t['name'] for t in org_rows}
+    entities.update(users)
+    if tenant_db:
+        entities.update({t['id']:'BD-'+str(t['number'])+' · '+t['subject'] for t in D.rows(tenant_db,'SELECT id,number,subject FROM tickets')})
+        entities.update({c['id']:c['name'] for c in D.rows(tenant_db,'SELECT id,name FROM contacts')})
+        entities.update({a['id']:a['title'] for a in D.rows(tenant_db,'SELECT id,title FROM knowledge_articles')})
+    return [{**e,'actor_display':users.get(e['actor'],e['actor']),
+             'entity_display':entities.get(e['entity'],'รายการที่เกี่ยวข้อง')} for e in events]
 
 
 def new_password(body):
@@ -225,7 +264,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options','nosniff')
         self.send_header('Referrer-Policy','no-referrer')
         self.send_header('X-Frame-Options','DENY')
-        self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+        self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
         for key,value in (headers or {}).items():
             self.send_header(key,value)
         self.end_headers()
@@ -298,6 +337,8 @@ class Handler(BaseHTTPRequestHandler):
                 require(not origin or origin in ('http://'+host,'https://'+host),'ไม่อนุญาตคำขอจากเว็บไซต์อื่น',403)
             if path==EO.CALLBACK and self.command=='GET':
                 return self.send(200,(ROOT/'static'/'oauth-callback.html').read_bytes(),'text/html; charset=utf-8')
+            if path in ('/register','/register/') and self.command=='GET':
+                return self.send(302,{},headers={'Location':'/#register'})
             file_link=re.fullmatch(r'/api/channel-files/([a-f0-9]{32})/([A-Za-z0-9_-]{43})',path)
             if file_link and self.command=='GET':
                 with D.control() as cd:file=CF.resolve(cd,file_link[1],file_link[2])
@@ -322,13 +363,18 @@ class Handler(BaseHTTPRequestHandler):
             body = self.json_body() if self.command!='GET' else {}
             if path.startswith('/api/public/'):
                 return self.public_route(path,body)
+            if path in ('/api/register','/api/register/resend','/api/register/verify') and self.command=='POST':
+                return self.registration_route(path,body)
             if path in ('/api/setup','/api/login') and self.command=='POST':
                 return self.auth_route(path,body)
             with D.control() as cd:
                 session = self.session(cd,optional=path=='/api/bootstrap')
                 if path=='/api/bootstrap' and self.command=='GET':
                     return self.send(200,{'setup_required':cd.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0,
+                         'setup_token_required':bool(os.environ.get('BOOKDOSE_SETUP_TOKEN')) or os.environ.get('RENDER')=='true',
+                         'registration_available':RS.ready(cd),
                          'user':{'id':session['user_id'],'name':session['name'],'email':session['email'],'platform_admin':bool(session['platform_admin'])} if session else None,
+                         'avatar':(D.one(cd,'SELECT avatar FROM user_profiles WHERE user_id=?',(session['user_id'],)) or {}).get('avatar','') if session else '',
                          'csrf':session['csrf'] if session else None,'tenant_id':session['tenant_id'] if session else None,
                          'memberships':D.rows(cd,'''SELECT t.id,t.name,t.slug,t.status,m.role FROM memberships m JOIN tenants t ON t.id=m.tenant_id
                              WHERE m.user_id=? AND m.active=1 ORDER BY t.name''',(session['user_id'],)) if session else []})
@@ -353,6 +399,23 @@ class Handler(BaseHTTPRequestHandler):
                     headers = self.new_session(cd,session['user_id'])
                     cd.commit()
                     return self.send(200,{'ok':True},headers=headers)
+                if path=='/api/account/profile' and self.command=='POST':
+                    name = person_name(body)
+                    avatar = field(body,'avatar',180000,False)
+                    if avatar:
+                        require(avatar.startswith('data:image/png;base64,'),'รูปโปรไฟล์ต้องเป็น PNG')
+                        try:
+                            raw = base64.b64decode(avatar.split(',',1)[1],validate=True)
+                            require(len(raw)>=33 and raw.startswith(b'\x89PNG\r\n\x1a\n') and raw[12:16]==b'IHDR','รูปโปรไฟล์ไม่ถูกต้อง')
+                            width,height=struct.unpack('>II',raw[16:24])
+                            require(0<width<=512 and 0<height<=512 and len(raw)<=128*1024,'รูปโปรไฟล์ต้องไม่เกิน 512 × 512 และ 128 KB')
+                        except (ValueError,struct.error):
+                            raise APIError(400,'รูปโปรไฟล์ไม่ถูกต้อง')
+                    cd.execute('UPDATE users SET name=? WHERE id=?',(name,session['user_id']))
+                    cd.execute('INSERT INTO user_profiles VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET avatar=excluded.avatar',(session['user_id'],avatar))
+                    D.audit(cd,session['user_id'],'account.profile_updated',session['user_id'])
+                    cd.commit()
+                    return self.send(200,{'ok':True})
                 if path.startswith('/api/platform'):
                     require(session['platform_admin'],'เฉพาะผู้ดูแลแพลตฟอร์ม',403)
                     return self.platform_route(cd,session,path,body)
@@ -363,6 +426,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.workspace_route(cd,td,ctx,path,body)
         except APIError as error:
             self.send(error.status,{'error':error.message})
+        except RS.RegistrationError as error:
+            self.send(error.status,{'error':str(error)})
         except AI.AIError as error:
             self.send(429 if error.code=='quota' else 400,{'error':str(error)})
         except CS.ConfigError as error:
@@ -377,11 +442,43 @@ class Handler(BaseHTTPRequestHandler):
             print(f'[{D.now()}] Server error: {type(error).__name__}',file=sys.stderr,flush=True)
             self.send(500,{'error':'ระบบไม่สามารถทำรายการได้ กรุณาลองใหม่'})
 
+    def registration_route(self,path,body):
+        verifying = path.endswith('/verify')
+        limited(('verify' if verifying else 'register',self.client_address[0]),20 if verifying else 5,900)
+        with SETUP_LOCK, D.control() as db:
+            db.execute('BEGIN IMMEDIATE')
+            require(D.one(db,'SELECT id FROM users WHERE platform_admin=1'),
+                    'ระบบยังไม่พร้อมรับสมัคร กรุณาให้เจ้าของระบบตั้งค่าครั้งแรกก่อน',409)
+            require(not self.session(db,True),'กรุณาออกจากระบบก่อนสมัครหรือยืนยันบัญชีองค์กรใหม่',409)
+            if verifying:
+                user_id = RS.verify(db,body.get('token'))
+                headers = self.new_session(db,user_id)
+                db.commit()
+                return self.send(201,{'ok':True},headers=headers)
+            if path=='/api/register':
+                name, email = field(body,'name',100),email_field(body)
+                org, slug = field(body,'organization',100),field(body,'slug',60)
+                require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*',slug),'รหัสองค์กรใช้ a-z, 0-9 และขีดกลาง')
+                password = new_password(body)
+                require(body.get('password_confirm')==body.get('password'),'รหัสผ่านยืนยันไม่ตรงกัน')
+                task = RS.prepare(db,applicant={'name':name,'email':email,'password':password,'organization':org,'slug':slug})
+            else:
+                task = RS.prepare(db,email=email_field(body))
+            db.commit()
+        # SMTP may take seconds; release both the write transaction and setup lock first.
+        RS.deliver(task)
+        return self.send(202,{'ok':True,'verification_required':True})
+
     def auth_route(self,path,body):
         limited(('login',self.client_address[0]),15,900)
         with SETUP_LOCK, D.control() as db:
             if path=='/api/setup':
                 require(db.execute('SELECT COUNT(*) FROM users').fetchone()[0]==0,'ระบบตั้งค่าเรียบร้อยแล้ว',409)
+                setup_token = os.environ.get('BOOKDOSE_SETUP_TOKEN','')
+                require(os.environ.get('RENDER')!='true' or len(setup_token)>=32,'กรุณาตั้ง BOOKDOSE_SETUP_TOKEN อย่างน้อย 32 ตัวอักษรในโฮสต์ก่อนตั้งค่าระบบ',503)
+                if setup_token:
+                    supplied = body.get('setup_token','')
+                    require(isinstance(supplied,str) and secrets.compare_digest(supplied.encode(),setup_token.encode()),'รหัสตั้งค่าระบบไม่ถูกต้อง',403)
                 name, email, password = field(body,'name',100),email_field(body),new_password(body)
                 org, slug = field(body,'organization',100),field(body,'slug',60)
                 require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*',slug),'รหัสองค์กรใช้ a-z, 0-9 และขีดกลาง')
@@ -405,10 +502,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200,{'ok':True},headers=headers)
 
     def platform_route(self,cd,session,path,body):
+        if path=='/api/platform/registration':
+            if self.command=='GET':
+                return self.send(200,RS.public_config(cd))
+            if self.command=='POST':
+                RS.save_config(cd,body)
+                D.audit(cd,session['user_id'],'registration.settings_updated','platform')
+                cd.commit()
+                return self.send(200,RS.public_config(cd))
         if path=='/api/platform/tenants':
             if self.command=='GET':
                 return self.send(200,{'tenants':D.rows(cd,'''SELECT t.*,(SELECT COUNT(*) FROM memberships m WHERE m.tenant_id=t.id AND m.active=1) AS member_count FROM tenants t ORDER BY t.created_at'''),
-                                      'audit':D.rows(cd,'SELECT * FROM audit_logs ORDER BY id DESC LIMIT 100')})
+                                      'audit':audit_display(cd,D.rows(cd,'SELECT * FROM audit_logs ORDER BY id DESC LIMIT 100'))})
             if self.command=='POST':
                 name,slug = field(body,'name',100),field(body,'slug',60)
                 require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*',slug),'รหัสองค์กรใช้ a-z, 0-9 และขีดกลาง')
@@ -427,7 +532,10 @@ class Handler(BaseHTTPRequestHandler):
         if match and self.command=='PATCH':
             status = body.get('status')
             require(status in ('active','suspended'),'สถานะไม่ถูกต้อง')
-            require(D.one(cd,'SELECT id FROM tenants WHERE id=?',(match[1],)),'ไม่พบองค์กร',404)
+            org = D.one(cd,'SELECT id,name FROM tenants WHERE id=?',(match[1],))
+            require(org,'ไม่พบองค์กร',404)
+            if status=='suspended':
+                require(body.get('confirmation') in ('CONFIRM',org['name']),'กรุณาพิมพ์ CONFIRM หรือชื่อองค์กรเพื่อยืนยันการระงับ')
             cd.execute('UPDATE tenants SET status=? WHERE id=?',(status,match[1]))
             D.audit(cd,session['name'],'tenant.'+status,match[1])
             cd.commit()
@@ -544,7 +652,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200,{'conversations':D.rows(db,f'''SELECT c.id,c.contact_id,c.subject,c.channel,c.team_id,c.status,c.created_at,c.updated_at,
                 p.name AS contact_name,p.company,tc.ticket_id,t.number AS ticket_number,
                 (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS preview,
-                (SELECT kind FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_kind
+                (SELECT kind FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_kind,
+                (SELECT kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_kind
                 FROM conversations c JOIN contacts p ON p.id=c.contact_id LEFT JOIN ticket_conversations tc ON tc.conversation_id=c.id
                 LEFT JOIN tickets t ON t.id=tc.ticket_id WHERE {conv_scope} ORDER BY c.updated_at DESC''',conv_params)})
         match = re.fullmatch(r'/api/conversations/([a-f0-9]{32})(?:/(messages|ticket|ai-draft|ai-mode))?',path)
@@ -619,10 +728,12 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/contacts':
             if method=='GET':
                 where,args = ('1=1',[]) if ctx['role']!='agent' else ('''c.created_by=? OR c.id IN (SELECT contact_id FROM conversations WHERE team_id=?) OR c.id IN (SELECT contact_id FROM tickets WHERE team_id=?)''',[ctx['id'],ctx['team_id'],ctx['team_id']])
-                return self.send(200,{'contacts':D.rows(db,f'SELECT c.* FROM contacts c WHERE {where} ORDER BY c.name',args)})
+                return self.send(200,{'contacts':D.rows(db,f'SELECT c.*,n.first_name,n.last_name FROM contacts c LEFT JOIN contact_names n ON n.contact_id=c.id WHERE {where} ORDER BY c.name',args)})
             if method=='POST':
                 cid = D.uid()
-                db.execute('INSERT INTO contacts VALUES(?,?,?,?,?,?,?,?)',(cid,field(body,'name',100),field(body,'email',254,False),field(body,'phone',40,False),field(body,'company',150,False),field(body,'notes',3000,False),ctx['id'],D.now()))
+                values,names = contact_values(body)
+                db.execute('INSERT INTO contacts VALUES(?,?,?,?,?,?,?,?)',(cid,*values,ctx['id'],D.now()))
+                db.execute('INSERT INTO contact_names VALUES(?,?,?)',(cid,*names))
                 D.audit(db,ctx['name'],'contact.created',cid)
                 db.commit()
                 return self.send(201,{'id':cid})
@@ -631,7 +742,9 @@ class Handler(BaseHTTPRequestHandler):
             require(contact_visible(db,match[1],ctx),'ไม่พบลูกค้า',404)
             # Shared contact details are edited by managers to avoid cross-team mutations.
             require(ctx['role'] in ('admin','manager'),'เฉพาะผู้ดูแลหรือหัวหน้าทีมแก้ไขข้อมูลลูกค้าได้',403)
-            db.execute('UPDATE contacts SET name=?,email=?,phone=?,company=?,notes=? WHERE id=?',(field(body,'name',100),field(body,'email',254,False),field(body,'phone',40,False),field(body,'company',150,False),field(body,'notes',3000,False),match[1]))
+            values,names = contact_values(body)
+            db.execute('UPDATE contacts SET name=?,email=?,phone=?,company=?,notes=? WHERE id=?',(*values,match[1]))
+            db.execute('INSERT INTO contact_names VALUES(?,?,?) ON CONFLICT(contact_id) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name',(match[1],*names))
             D.audit(db,ctx['name'],'contact.updated',match[1])
             db.commit()
             return self.send(200,{'ok':True})
@@ -706,7 +819,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200,{'id':user_id})
         if path=='/api/audit' and method=='GET':
             require(ctx['role'] in ('admin','manager'),'เฉพาะผู้ดูแลหรือหัวหน้าทีม',403)
-            return self.send(200,{'events':D.rows(db,'SELECT * FROM audit_logs ORDER BY id DESC LIMIT 300')})
+            return self.send(200,{'events':audit_display(cd,D.rows(db,'SELECT * FROM audit_logs ORDER BY id DESC LIMIT 300'),db,ctx['tenant_id'])})
         if path=='/api/export/tickets.csv' and method=='GET':
             records = D.rows(db,f'''SELECT t.number,t.subject,c.name AS customer,t.status,t.priority,t.category,t.created_at,t.first_response_at,t.resolved_at
                 FROM tickets t JOIN contacts c ON c.id=t.contact_id WHERE {scope} ORDER BY t.number''',params)
@@ -824,7 +937,7 @@ class Handler(BaseHTTPRequestHandler):
                            'articles':D.rows(db,"SELECT id,title,category,body,updated_at FROM knowledge_articles WHERE visibility='public' ORDER BY updated_at DESC")})
                 if action=='conversations' and self.command=='POST':
                     db.execute('BEGIN IMMEDIATE')
-                    name,email,subject = field(body,'name',100),email_field(body),field(body,'subject',300)
+                    name,email,subject = person_name(body),email_field(body),field(body,'subject',300)
                     require(field(body,'body',20000),'กรุณาระบุรายละเอียด')
                     cid,conv_id,token = D.uid(),D.uid(),secrets.token_urlsafe(32)
                     # Never merge contacts based on unverified visitor-supplied email.
@@ -885,6 +998,8 @@ def main():
                 archive.extract(entry,D.DATA)
         with D.control() as db:
             db.execute('DELETE FROM sessions')
+            if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name='pending_registrations'"):
+                db.execute('DELETE FROM pending_registrations')
         print(f'Restored to {D.DATA}. All staff sessions have been signed out.')
         return
     D.init()

@@ -22,7 +22,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     await staff.locator('[name="name"]').fill('ผู้ดูแล AI');await staff.locator('[name="email"]').fill('ai-test@example.com');
     await staff.locator('[name="password"]').fill('Browser-ai-test-123!');
     await staff.getByRole('button',{name:'สร้างพื้นที่ทำงาน'}).click();await staff.locator('.stats-grid').waitFor();
-    await staff.goto(base+'/#settings');
+    await staff.goto(base+'/#settings?tab=ai');
     await staff.locator('#ai-key').fill('sk-browser-test-not-real-0123456789');
     await staff.locator('[name="drafts_enabled"]').check();await staff.locator('#ai-settings [name="chatbot_enabled"]').check();
     await staff.getByRole('button',{name:'บันทึกการตั้งค่า AI'}).click();

@@ -279,7 +279,7 @@ class AITests(unittest.TestCase):
     def test_suspend_during_generation_cancels_without_publishing(self):
         self.enable();self.article();visitor,conv=self.visitor()
         def suspend(*args):
-            self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'suspended'},'PATCH')
+            self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
             return fake_provider(*args)
         self.run_job(provider=suspend)
         self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'active'},'PATCH')

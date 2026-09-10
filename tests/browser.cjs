@@ -12,7 +12,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
   const root=path.resolve(__dirname,'..');
   const port=18789;
   const base=`http://127.0.0.1:${port}`;
-  const server=spawn('python3',['app.py','--port',String(port)],{cwd:root,env:{...process.env,BOOKDOSE_DATA:path.join(temp,'data')},stdio:['ignore','pipe','pipe']});
+  const server=spawn('python3',['tests/registration_fixture_server.py','--port',String(port)],{cwd:root,env:{...process.env,BOOKDOSE_DATA:path.join(temp,'data')},stdio:['ignore','pipe','pipe']});
   let browser;
   const errors=[];
   server.stderr.on('data',data=>errors.push(`server: ${data}`));
@@ -28,6 +28,9 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     const page=await context.newPage();
     function watch(p){p.on('pageerror',error=>errors.push(error.message));p.on('console',message=>{if(message.type()==='error')errors.push(message.text());});}
     watch(page);
+    await page.goto(base+'/register');
+    await page.getByRole('heading',{name:'ยังไม่เปิดรับสมัครองค์กร'}).waitFor();
+    assert.equal(await page.locator('[data-form="setup"]').count(),0);
     await page.goto(base);
     await page.locator('[data-form="setup"]').waitFor();
     await page.locator('[name="name"]').fill('พี่แนน');
@@ -39,6 +42,69 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     assert.equal(await page.locator('tbody tr').count(),5);
     fs.mkdirSync(path.join(root,'test-results'),{recursive:true});
     await page.screenshot({path:path.join(root,'test-results','dashboard-desktop.png'),fullPage:true});
+
+    await page.goto(base+'/#platform');
+    const registrationSettings=page.locator('[data-form="registration-settings"]');
+    await registrationSettings.waitFor();
+    await registrationSettings.locator('[name="enabled"]').check();
+    await registrationSettings.locator('[name="public_base_url"]').fill(base);
+    await registrationSettings.locator('[name="address"]').fill('mailer@example.com');
+    await registrationSettings.locator('[name="smtp_host"]').fill('smtp.example.com');
+    await registrationSettings.locator('[name="username"]').fill('mailer@example.com');
+    await registrationSettings.locator('[name="password"]').fill('Fixture-mail-password!');
+    await registrationSettings.getByRole('button',{name:'บันทึกอีเมลยืนยัน'}).click();
+    await page.getByRole('status').filter({hasText:'บันทึกอีเมลยืนยันแล้ว'}).waitFor();
+
+    // Organizations can register through the login page, on desktop and mobile.
+    const signupContext=await browser.newContext({viewport:{width:1440,height:1050},locale:'th-TH'});
+    const signup=await signupContext.newPage();
+    watch(signup);
+    await signup.goto(base);
+    await signup.getByRole('link',{name:'สมัครองค์กรใหม่',exact:true}).click();
+    await signup.locator('[data-form="register"]').waitFor();
+    await signup.reload();
+    await signup.locator('[data-form="register"]').waitFor();
+    await signup.getByRole('link',{name:'เข้าสู่ระบบ',exact:true}).click();
+    await signup.locator('[data-form="login"]').waitFor();
+    await signup.goto(base+'/register');
+    await signup.locator('[data-form="register"]').waitFor();
+    await signup.screenshot({path:path.join(root,'test-results','register-desktop.png'),fullPage:true});
+    await signup.setViewportSize({width:390,height:844});
+    assert.equal(await signup.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await signup.locator('[name="name"]').fill('ผู้ดูแลใหม่');
+    await signup.locator('[name="email"]').fill('registered@example.com');
+    await signup.locator('[name="password"]').fill('Register-test-123!');
+    await signup.locator('[name="password_confirm"]').fill('Wrong-password-123!');
+    await signup.locator('[name="organization"]').fill('องค์กรสมัครเอง');
+    await signup.locator('[name="slug"]').fill('registered-company');
+    await signup.getByRole('button',{name:'สมัครและส่งอีเมลยืนยัน'}).click();
+    await signup.getByRole('alert').filter({hasText:'รหัสผ่านยืนยันไม่ตรงกัน'}).waitFor();
+    await signup.locator('[name="password_confirm"]').fill('Register-test-123!');
+    await signup.screenshot({path:path.join(root,'test-results','register-mobile.png'),fullPage:true});
+    await signup.getByRole('button',{name:'สมัครและส่งอีเมลยืนยัน'}).click();
+    await signup.getByRole('heading',{name:'กรุณาตรวจอีเมลของคุณ'}).waitFor();
+    assert.equal(await signup.evaluate(()=>fetch('/api/bootstrap').then(r=>r.json()).then(b=>b.user)),null);
+    await signup.reload();
+    await signup.getByRole('heading',{name:'กรุณาตรวจอีเมลของคุณ'}).waitFor();
+    const mail=JSON.parse(fs.readFileSync(path.join(temp,'verification-mail.json'),'utf8'));
+    assert.equal(mail.recipient,'registered@example.com');
+    const verificationLink=mail.body.match(/http:\/\/127\.0\.0\.1:\d+\/#verify-email\?token=[A-Za-z0-9_-]+/)[0];
+    await signup.goto(verificationLink);
+    await signup.getByRole('heading',{name:'ยืนยันอีเมลของคุณ',exact:true}).waitFor();
+    assert.equal(await signup.evaluate(()=>fetch('/api/bootstrap').then(r=>r.json()).then(b=>b.user)),null);
+    await signup.screenshot({path:path.join(root,'test-results','verify-email-mobile.png'),fullPage:true});
+    await signup.getByRole('button',{name:'ยืนยันอีเมลและสร้างองค์กร'}).click();
+    await signup.getByRole('heading',{name:'สวัสดี, ผู้ดูแลใหม่ 👋'}).waitFor();
+    const signupBoot=await signup.evaluate(()=>fetch('/api/bootstrap').then(r=>r.json()));
+    assert.equal(signupBoot.user.platform_admin,false);
+    assert.equal(signupBoot.memberships.length,1);
+    assert.equal(signupBoot.memberships[0].slug,'registered-company');
+    assert.equal(await signup.locator('a[href="#platform"]').count(),0);
+    await signup.goto(base+'/#settings');
+    await signup.getByRole('heading',{name:'ตั้งค่าองค์กร',exact:true}).waitFor();
+    await signup.reload();
+    await signup.getByRole('heading',{name:'ตั้งค่าองค์กร',exact:true}).waitFor();
+    await signupContext.close();
 
     // Every navigation loads actual data and no frontend exceptions.
     for(const [route,title] of [['tickets','เคสบริการ'],['inbox','กล่องข้อความ'],['contacts','ข้อมูลลูกค้า'],['knowledge','คลังความรู้'],['reports','รายงานการบริการ'],['settings','ตั้งค่าองค์กร'],['audit','ประวัติการทำงาน'],['platform','จัดการแพลตฟอร์ม']]){
@@ -127,7 +193,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     await page.getByRole('heading',{name:'ข้อมูลลูกค้า',exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.deepEqual(errors,[]);
-    console.log('Browser checks passed: setup, 8 modules, ticket editing, customer conversation, private notes, reply, resolution, public knowledge, CSV, desktop and mobile.');
+    console.log('Browser checks passed: setup, organization registration and isolation, 8 modules, ticket editing, customer conversation, private notes, reply, resolution, public knowledge, CSV, desktop and mobile.');
   }finally{
     if(browser)await browser.close();
     server.kill('SIGTERM');

@@ -15,7 +15,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     await page.goto(base);await page.locator('[name="name"]').fill('ผู้ดูแลช่องทาง');
     await page.locator('[name="email"]').fill('channels@example.com');await page.locator('[name="password"]').fill('Browser-channel-test-123!');
     await page.getByRole('button',{name:'สร้างพื้นที่ทำงาน'}).click();await page.locator('.stats-grid').waitFor();
-    await page.goto(base+'/#settings');await page.locator('#line-channel_secret').fill('browser-secret');
+    await page.goto(base+'/#settings?tab=connections');await page.locator('#line-channel_secret').fill('browser-secret');
     await page.locator('#line-access_token').fill('browser-token');await page.locator('#channel-line [name="enabled"]').check();
     const saveLine=page.waitForResponse(r=>r.url().endsWith('/api/channels/line')&&r.request().method()==='PATCH');
     await page.getByRole('button',{name:'บันทึก LINE',exact:true}).click();assert.equal((await saveLine).status(),200);

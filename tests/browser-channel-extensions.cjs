@@ -14,7 +14,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     page.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
     await page.goto(base);await page.locator('[name="name"]').fill('ผู้ดูแลทดสอบ');await page.locator('[name="email"]').fill('extensions@example.com');await page.locator('[name="password"]').fill('Browser-extension-123!');
     await page.getByRole('button',{name:'สร้างพื้นที่ทำงาน'}).click();await page.locator('.stats-grid').waitFor();
-    await page.goto(base+'/#settings');await page.locator('#ai-key').fill('sk-browser-extensions-0123456789');await page.locator('[name="drafts_enabled"]').check();
+    await page.goto(base+'/#settings?tab=ai');await page.locator('#ai-key').fill('sk-browser-extensions-0123456789');await page.locator('[name="drafts_enabled"]').check();
     await page.getByRole('button',{name:'บันทึกการตั้งค่า AI'}).click();await page.getByText('บันทึก API Key แล้ว',{exact:true}).waitFor();
     await page.goto(base+'/#knowledge');await page.getByRole('button',{name:'เขียนบทความ'}).click();
     await page.locator('[name="title"]').fill('ดาวน์โหลดรายงาน');await page.locator('#article-visibility').selectOption('public');
@@ -26,7 +26,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
       assert.equal((await response).status(),200);await page.waitForFunction(()=>!document.querySelector('button[type="submit"]:disabled'));
       await page.waitForTimeout(200);
     };
-    await page.goto(base+'/#settings');
+    await page.goto(base+'/#settings?tab=connections');
     for(const provider of ['google','microsoft']){
       await page.locator('#email-auth_mode').selectOption(provider);await page.locator('#email-address').fill('support@example.com');await page.locator('#email-username').fill('support@example.com');
       await page.locator('#email-oauth_client_id').fill(provider+'-browser-client');await page.locator('#email-oauth_client_secret').fill('browser-client-secret');

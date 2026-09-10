@@ -1,0 +1,41 @@
+html { font-size:100%; }
+html[data-text-size="large"] { font-size:112.5%; }
+html[data-text-size="larger"] { font-size:125%; }
+html[data-text-size="largest"] { font-size:150%; }
+.text-size-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0; }
+.text-size-controls label { color:#334155; font-size:1rem; font-weight:600; }
+.text-size-controls select { width:auto; min-height:44px; max-width:100%; font-size:1rem; border:1px solid #8992a5; color:#26354a; background:#fff; padding:8px 28px 8px 10px; cursor:pointer; }
+.auth-form>.text-size-controls { justify-content:flex-end; margin-bottom:24px; }
+.portal>.text-size-controls { justify-content:flex-end; margin-bottom:16px; }
+.top-actions { flex-wrap:wrap; }
+.topbar { flex-shrink:0; }
+.portal-header>.text-size-controls { margin-right:auto; }
+.field,.card-body,.profile>.grow { min-width:0; }
+.profile strong,.profile .muted,.workspace-select select { overflow-wrap:anywhere; }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .auth-story h1 { letter-spacing:0; }
+/* Larger text can need more height than a fixed chat viewport provides. */
+html:is([data-text-size="larger"],[data-text-size="largest"]) body:has(.inbox-layout) { overflow:auto; }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .app-main:has(.inbox-layout) { height:auto; min-height:100dvh; }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .content:has(.inbox-layout) { display:block; }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .inbox-layout { min-height:0; }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .inbox-list { max-height:1000px; }
+html:is([data-text-size="larger"],[data-text-size="largest"]) .inbox-detail>.thread { flex:none; height:50vh; min-height:240px; max-height:600px; }
+@media(max-width:1100px) {
+  .top-actions>.text-size-controls { flex-basis:100%; justify-content:flex-end; }
+  html[data-text-size="largest"] .inbox-layout { grid-template-columns:1fr; }
+  html[data-text-size="largest"] .inbox-list { max-height:300px; }
+}
+@media(max-width:760px) {
+  .top-actions { flex-basis:100%; }
+  .top-actions>.text-size-controls { flex-basis:auto; margin-right:auto; justify-content:flex-start; }
+  .text-size-controls { max-width:100%; }
+  .portal-header>.text-size-controls { width:100%; }
+  html:is([data-text-size="larger"],[data-text-size="largest"]) .stats-grid { grid-template-columns:1fr; }
+  html:is([data-text-size="larger"],[data-text-size="largest"]) .brand { flex-wrap:wrap; }
+  html[data-text-size="largest"] .sidebar { width:min(340px,92vw); }
+  html[data-text-size="largest"] .page-heading>.flex { flex-wrap:wrap; }
+  html[data-text-size="largest"] .auth-story h1 { font-size:1.6rem; overflow-wrap:anywhere; }
+  html[data-text-size="largest"] .bar-row { grid-template-columns:1fr; }
+  html[data-text-size="largest"] .channel-row { flex-wrap:wrap; }
+}

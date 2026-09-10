@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: bookdose-customer-service
+    runtime: python
+    region: singapore
+    plan: 0.5c-512mb
+    branch: main
+    buildCommand: python -m compileall -q .
+    startCommand: python app.py --host 0.0.0.0 --port $PORT --secure-cookies
+    healthCheckPath: /api/bootstrap
+    autoDeployTrigger: "off"
+    numInstances: 1
+    envVars:
+      - key: BOOKDOSE_DATA
+        value: /var/data/bookdose
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: BOOKDOSE_SETUP_TOKEN
+        generateValue: true
+    disk:
+      name: bookdose-data
+      mountPath: /var/data
+      sizeGB: 1

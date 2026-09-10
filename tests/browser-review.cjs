@@ -54,7 +54,23 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     await page.getByRole('button',{name:'คัดลอกลิงก์',exact:true}).click();const articleURL=await page.evaluate(()=>navigator.clipboard.readText());assert(articleURL.includes('/#knowledge/'));await page.getByRole('button',{name:'ปิด',exact:true}).click();await page.goto(articleURL);await page.getByRole('heading',{name:'คู่มือการทดสอบ',exact:true}).waitFor();assert.equal(await page.evaluate(()=>window.reviewInjected),undefined);await shot('article');await page.getByRole('button',{name:'ปิด',exact:true}).click();
 
     await goto('inbox','กล่องข้อความ');await page.locator('.inbox-item').filter({hasText:'ทดสอบรายการรอตอบ'}).click();await page.locator('.inbox-detail h2').filter({hasText:'ทดสอบรายการรอตอบ'}).waitFor();assert.equal(await page.locator('.inbox-item.selected').getAttribute('class').then(s=>s.includes('needs-reply')),true);
+    const chatTools=page.locator('.composer-tools summary');
+    for(const percentage of ['80','100']){
+      await page.setViewportSize({width:1440,height:900});await page.getByLabel('ขนาดตัวอักษร',{exact:true}).selectOption(percentage);
+      const reading=await page.locator('.inbox-detail>.thread').boundingBox(),writing=await page.locator('.composer').boundingBox();
+      assert(reading.height>=300,percentage+'% needs at least 300px to read messages');
+      assert(reading.height>writing.height,percentage+'% conversation should have more room than composer');
+      const send=await page.locator('.composer button[type="submit"]').boundingBox();assert(send.y+send.height<=900,'Send must stay visible');
+    }
+    await page.locator('.composer textarea').fill('ข้อความร่างต้องอยู่ครบเมื่อเปิดปิดเครื่องมือ');
+    await chatTools.click();await page.getByRole('button',{name:'ค้นคู่มือเพื่อร่างคำตอบ'}).waitFor();await chatTools.click();
+    assert.equal(await page.locator('.composer textarea').inputValue(),'ข้อความร่างต้องอยู่ครบเมื่อเปิดปิดเครื่องมือ');
+    await shot('inbox-reading');
+    await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Inbox mobile overflow');
+    await chatTools.click();assert(await page.getByRole('button',{name:'ค้นคู่มือเพื่อร่างคำตอบ'}).isVisible());await chatTools.click();await shot('inbox-reading-mobile');
+    await page.setViewportSize({width:1440,height:1050});await chatTools.click();
     await page.getByRole('button',{name:'ค้นคู่มือเพื่อร่างคำตอบ'}).click();await page.locator('#modal .article-card').filter({hasText:'คู่มือการทดสอบ'}).click();await page.getByRole('button',{name:'แทรกในช่องร่างข้อความ'}).click();assert((await page.locator('.composer [name="body"]').inputValue()).includes('ขั้นตอนแรก'));assert.equal(await page.locator('.thread script').count(),0);await shot('inbox');
+    await chatTools.click();
     const submitBox=await page.locator('.composer button[type="submit"]').boundingBox();assert(submitBox.y+submitBox.height<=1050,'Composer must remain visible in desktop inbox');
 
     await goto('tickets','เคสบริการ');await page.locator('[data-select-all]').check();await page.locator('[data-density]').selectOption('compact');assert.equal(await page.locator('.density-compact').count(),1);

@@ -50,6 +50,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     await customer.locator('#portal-ai-status').filter({hasText:'เจ้าหน้าที่ดูแลเรื่องนี้'}).waitFor();
     await staff.goto(base+'/#inbox');
     await staff.locator('.inbox-item').filter({hasText:'ดาวน์โหลดรายงานการอ่าน'}).click();
+    await staff.locator('.composer-tools summary').click();
     await staff.getByRole('button',{name:'AI ช่วยร่างคำตอบ',exact:true}).click();
     await staff.locator('.ai-result').waitFor();
     assert.equal(await customer.locator('.message').count(),3); // Customer, bot, system handoff. No draft sent.

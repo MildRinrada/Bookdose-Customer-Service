@@ -26,6 +26,7 @@ from backend.middleware.rate_limit import limited
 from backend.middleware.security import SECURITY_HEADERS, check_host_and_origin
 from backend.modules.ai import routes as ai_routes
 from backend.modules.auth import routes as auth_routes
+from backend.modules.automation import routes as automation_routes, service as automation
 from backend.modules.channels import routes as channel_routes
 from backend.modules.contacts import routes as contact_routes
 from backend.modules.conversations import routes as conversation_routes
@@ -41,7 +42,7 @@ from backend.utils.validation import require
 
 ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *organization_routes.ROUTES,
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
-          *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES]
+          *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES]
 # URL prefix -> folder. Other paths are looked up in public/; nothing outside these folders is ever served.
 STATIC_FOLDERS = {'css':settings.CSS_DIR,'frontend':settings.FRONTEND_DIR}
 MAX_JSON_BYTES = 8*1024*1024
@@ -177,6 +178,8 @@ class Handler(BaseHTTPRequestHandler):
             self.ctx = auth.select_workspace(self)
             with D.tenant(self.ctx['tenant_id']) as db:
                 self.db = db
+                # For the live agent monitor: who is using the app right now.
+                automation.touch_activity(db,self.ctx)
                 if not self.run(path,'workspace'):
                     raise APIError(404,'ไม่พบรายการ AI' if path.startswith('/api/ai/') else 'ไม่พบรายการ')
 

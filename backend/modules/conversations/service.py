@@ -1,16 +1,20 @@
-"""Conversation rules: the staff inbox, replies and notes, AI draft and mode, linking to a case,
-and storing messages (used by staff, the support page and LINE / Email)."""
+"""Conversation rules: the staff inbox, replies and notes (with @mentions), AI draft and mode, linking to a case,
+and storing messages (used by staff, the support page and LINE / Email / Facebook)."""
 import json
 
 from backend.database import audit, db as D
 from backend.middleware.access import visible_team, get_scoped
 from backend.modules.ai import service as ai
-from backend.modules.channels import service as channels
+from backend.modules.automation import service as automation
+from backend.modules.channels import facebook, service as channels
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository, schema
 from backend.modules.tickets import repository as tickets, schema as ticket_schema, service as ticket_service
 from backend.utils.security import uid
 from backend.utils.validation import require
+
+# Channels whose replies are delivered by a provider (queued), rather than read on the support page.
+EXTERNAL = ('line','email','facebook')
 
 
 def visible_conversation(db, ctx, conversation_id):
@@ -39,21 +43,32 @@ def set_conversation_status(db, ctx, conv, body):
     db.commit()
 
 
-def post_staff_message(db, ctx, conv, body):
-    """Store a reply or internal note; LINE/Email replies are queued for delivery and a human reply stops the bot."""
+def post_staff_message(db, ctx, conv, body, cd=None):
+    """Store a reply or internal note in its own transaction. cd (the control database) lets a note notify the
+    members it @mentions."""
     kind = schema.staff_message_kind(body)
-    require(kind=='note' or conv['channel'] in ('web','line','email'),'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าช่วยเหลือเพื่อสนทนากับลูกค้า')
     D.begin(db)
-    external = kind=='reply' and conv['channel'] in ('line','email')
+    mid = store_staff_message(db,ctx,conv,kind,body,cd)
+    db.commit()
+    return mid
+
+
+def store_staff_message(db, ctx, conv, kind, body, cd=None):
+    """A reply or internal note inside the caller's transaction (also used by macros). LINE / Email / Facebook
+    replies are queued for delivery, a human reply stops the bot, and a note records its @mentions."""
+    require(kind=='note' or conv['channel'] in ('web',)+EXTERNAL,'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าช่วยเหลือเพื่อสนทนากับลูกค้า')
+    external = kind=='reply' and conv['channel'] in EXTERNAL
+    provider = facebook if conv['channel']=='facebook' else channels
     if external:
-        channels.check_reply(db,ctx['tenant_id'],conv,body)
+        provider.check_reply(db,ctx['tenant_id'],conv,body)
     mid = store_message(db,ctx['tenant_id'],conv['id'],ctx['id'],ctx['name'],kind,body)
     if external:
-        channels.enqueue_reply(db,ctx,conv,mid)
+        provider.enqueue_reply(db,ctx,conv,mid)
     if kind=='reply':
         ai.stop_bot(db,conv['id'])
+    else:
+        automation.record_mentions(cd,db,ctx,conv,mid,str(body.get('body') or ''))
     audit.record(db,ctx['name'],'message.'+kind,conv['id'])
-    db.commit()
     return mid
 
 
@@ -112,19 +127,24 @@ def attachment_content(tenant_id, file):
 
 
 def message_list(db, conversation_id, public=False):
-    """Messages with attachments, delivery state (staff only), and whether AI or the system wrote them."""
+    """Messages with attachments, delivery state (staff only), whether AI or the system wrote them, and whether a
+    message is the satisfaction survey."""
     result = repository.list_messages(db,conversation_id,public)
+    surveys = automation.survey_message_ids(db,conversation_id)
     for message in result:
         message['attachments'] = repository.attachments_of(db,message['id'])
         meta = repository.ai_meta(db,message['id'])
         message['channel_delivery'] = channels.delivery(db,message['id']) if not public else None
         message['source'] = meta['source'] if meta else 'human'
         message['citations'] = json.loads(meta['citations']) if meta else []
+        message['survey'] = message['id'] in surveys
     return result
 
 
 def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, body):
-    """Save a message with up to 3 attachments and update the conversation and its case (first response, reopening)."""
+    """Save a message with up to 3 attachments and update the conversation and its case (first response, reopening).
+    A customer's answer to the satisfaction survey is recorded as the rating and reopens nothing; the first customer
+    message of a conversation goes through the routing rules, which may open its case."""
     text,uploads = schema.message_content(body)
     mid = uid()
     repository.insert_message(db,mid,conversation_id,author_id,author_name,kind,text)
@@ -133,10 +153,14 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
         repository.save_attachment_file(tenant_id,file_id,content)
         repository.insert_attachment(db,file_id,mid,name,mime,len(content),file_id)
     repository.touch(db,conversation_id)
-    # LINE / Email replies count as the first response only once the provider accepts them.
-    if kind=='reply' and repository.find(db,conversation_id)['channel'] not in ('line','email'):
+    # LINE / Email / Facebook replies count as the first response only once the provider accepts them.
+    if kind=='reply' and repository.find(db,conversation_id)['channel'] not in EXTERNAL:
         tickets.record_first_response(db,conversation_id)
     if kind=='customer':
+        if not uploads and automation.take_rating(db,conversation_id,text):
+            return mid
         repository.reopen(db,conversation_id)
         tickets.reopen_for_conversation(db,conversation_id)
+        if repository.customer_message_count(db,conversation_id)==1:
+            automation.on_new_conversation(db,conversation_id)
     return mid

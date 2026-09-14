@@ -1,6 +1,6 @@
 <tr>
   {{#selectable}}<td><input type="checkbox" data-ticket-select="{{id}}" {{#selected}}checked{{/selected}} aria-label="เลือกเคส BD-{{number}}"></td>{{/selectable}}
-  <td><a class="ticket-title" href="#tickets/{{id}}" title="{{subject}}">{{subject}}</a><span class="ticket-id">BD-{{number}} · {{category}}</span></td>
+  <td><a class="ticket-title" href="#tickets/{{id}}" title="{{subject}}">{{subject}}</a><span class="ticket-id">BD-{{number}} · {{category}}</span>{{#escalated}}<span class="badge escalated" title="ยกระดับอัตโนมัติ: {{escalated}}">{{icon:bolt}}ยกระดับ</span>{{/escalated}}</td>
   <td class="customer-col"><div class="flex">{{{avatar}}}<div><div class="customer-name" title="{{customer}}">{{customer}}</div><div class="muted">{{company}}</div></div></div></td>
   <td>{{{status}}}</td>
   {{#compact}}

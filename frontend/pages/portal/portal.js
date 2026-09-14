@@ -72,6 +72,15 @@ function renderPortalHome(){
     subjectField:inputField('เรื่องที่ต้องการความช่วยเหลือ','subject',{max:300,placeholder:'สรุปสั้น ๆ ว่าเรื่องอะไร'})}));
 }
 
+/* After a case is closed the customer is asked how it went: five stars, one tap. Once answered, a thank-you. */
+const ratingLabels={1:'ไม่พอใจ',2:'ไม่ค่อยพอใจ',3:'เฉย ๆ',4:'พอใจ',5:'พอใจมาก'};
+
+function portalSurveyHTML(survey){
+  if(!survey||(!survey.pending&&!survey.rating))return '';
+  return render('pages/portal/portal-survey',{pending:survey.pending,rating:survey.rating,starText:survey.rating?starsText(survey.rating):'',
+    stars:[1,2,3,4,5].map(value=>render('pages/portal/star-button',{value,label:ratingLabels[value]})).join('')});
+}
+
 async function loadPortalSession(){
   clearInterval(pollTimer);
   const data=await api(`/api/public/${state.portal.slug}/session`);state.portal.session=data;
@@ -79,6 +88,7 @@ async function loadPortalSession(){
   portalShell(render('pages/portal/portal-session',{subject:data.conversation.subject,
     stateLabel:view.label,stateHint:view.hint,tone:view.tone,steps:portalStepsHTML(view.step),
     reference:data.ticket?`BD-${data.ticket.number}`:'',promise:replyPromise(),
+    survey:portalSurveyHTML(data.survey),surveyKey:JSON.stringify(data.survey),
     aiStatus:aiPortalStatus(data),messages:messagesHTML(data.messages,true),
     composer:composer(data.conversation.id,{publicView:true})}));
   $('#portal-thread').scrollTop=$('#portal-thread').scrollHeight;
@@ -95,6 +105,8 @@ async function pollPortal(){
     const node=$('#portal-thread');if(!node)return;
     $('#portal-ai-status').innerHTML=aiPortalStatus(data);
     syncMessageThread(node,messagesHTML(data.messages,true));
+    const survey=$('#portal-survey'),key=JSON.stringify(data.survey);
+    if(survey&&survey.dataset.key!==key){survey.dataset.key=key;survey.innerHTML=portalSurveyHTML(data.survey);}
     const view=portalState(data),head=$('#portal-state');
     if(head&&head.dataset.tone!==view.tone){
       head.dataset.tone=view.tone;head.className='portal-state tone-'+view.tone;
@@ -112,13 +124,24 @@ async function initPortal(){
   try{
     state.portal.info=await api(`/api/public/${slug}`);
     document.title=`ศูนย์ช่วยเหลือ ${state.portal.info.organization.name} · Bookdose`;
-    if(state.portal.token)await loadPortalSession();else renderPortalHome();
+    if(state.portal.token)await loadPortalSession();
+    else{
+      renderPortalHome();
+      // A link the team sent from the knowledge base opens that article straight away.
+      const article=new URLSearchParams(location.hash.slice(1)).get('article');
+      if(article&&state.portal.info.articles.some(a=>a.id===article))actions['read-article'](null,article);
+    }
   }catch(error){$('#app').innerHTML=render('pages/portal/portal-unavailable',{brand:brand(),message:empty('เปิดหน้าช่วยเหลือไม่สำเร็จ',error.message,'lock',render('pages/portal/retry-button'))});}
 }
 
 Object.assign(actions,{
   'portal-new':async(button,id)=>{location.hash='';state.portal.token=null;state.portal.query='';state.portal.category='';clearInterval(pollTimer);renderPortalHome();return;},
   'copy-tracking':async(button,id)=>{await copyText(location.href);return;},
+  'portal-rate':async(button,id)=>{
+    $$('[data-action="portal-rate"]').forEach(b=>b.disabled=true);
+    try{await api(`/api/public/${state.portal.slug}/csat`,{rating:Number(button.dataset.value)});toast('ขอบคุณสำหรับคะแนนค่ะ');}
+    finally{await pollPortal();}
+    return;},
   'portal-category':async(button,id)=>{state.portal.category=button.dataset.value;
     $$('[data-action="portal-category"]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));refreshPortalArticles();return;},
   // The form is further down on a phone; this puts the reader in it with the cursor ready.

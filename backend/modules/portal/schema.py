@@ -15,6 +15,6 @@ def organization_view(org, welcome, ai_enabled, articles, response_hours=''):
             'articles':articles,'response_hours':response_hours}
 
 
-def conversation_view(conv, messages, ticket, ai_state):
+def conversation_view(conv, messages, ticket, ai_state, survey=None):
     return {'conversation':{'id':conv['id'],'subject':conv['subject'],'status':conv['status']},'messages':messages,
-            'ticket':{'number':ticket['number'],'status':ticket['status']} if ticket else None,'ai':ai_state}
+            'ticket':{'number':ticket['number'],'status':ticket['status']} if ticket else None,'ai':ai_state,'survey':survey}

@@ -14,16 +14,25 @@ const needsReply=c=>c.last_public_kind==='customer'&&c.status==='open';
 
 let inboxListHTML='';
 
+// Every channel lands in this one list; the dropdown narrows it to one channel.
+const inboxChannels={web:'Web Support',line:'LINE',email:'Email',facebook:'Facebook',manual:'บันทึกเอง'};
+
 function inboxMatches(c,filter=uiState.inboxFilter,query=uiState.inboxQuery){
   const q=query.trim().toLowerCase();
   return (filter==='all'||(filter==='open'&&c.status==='open')||(filter==='waiting'&&needsReply(c)))
+    &&(!uiState.inboxChannel||c.channel===uiState.inboxChannel)
     &&(!q||[c.contact_name,c.company,c.subject,c.preview,c.ticket_number?`BD-${c.ticket_number}`:''].some(v=>String(v||'').toLowerCase().includes(q)));
+}
+
+function inboxChannelOptions(){
+  return options(Object.fromEntries(Object.entries(inboxChannels).map(([key,label])=>[key,`${label} (${state.conversations.filter(c=>c.channel===key).length})`])),uiState.inboxChannel);
 }
 
 function inboxPage(selected){
   inboxListHTML=inboxItems();
   return render('pages/inbox/inbox',{hasDetail:!!selected,items:inboxListHTML,
     search:searchInput('inbox-search','ค้นหาบทสนทนา','ค้นหาชื่อ เรื่อง หรือเลขเคส',uiState.inboxQuery),
+    channelFilter:filterSelect('inbox-channel','กรองตามช่องทาง',inboxChannelOptions(),'ทุกช่องทาง'),
     tabs:Object.entries(inboxFilters).map(([key,label])=>filterPill('inbox-filter',key,label,{pressed:uiState.inboxFilter===key,count:state.conversations.filter(c=>inboxMatches(c,key,'')).length})).join(''),
     detail:selected?inboxDetail(selected):empty('เลือกบทสนทนาเพื่อเริ่มดูแล','เมื่อมีลูกค้าส่งเรื่อง ข้อความจะแสดงทางด้านซ้าย','chat')});
 }
@@ -48,7 +57,14 @@ function inboxDetail(data){
   return render('pages/inbox/conversation-view',{id:c.id,subject:c.subject,avatar:avatar(data.contact.name,2),contactName:data.contact.name,contactEmail:data.contact.email,
     channelBadge:channelBadge(c.channel),aiControls:aiControls(c.id),ticket:t,ticketBadge:t?badge(t.status):'',ticketPriority:t&&['high','urgent'].includes(t.priority)?priority(t.priority):'',closed:!open,
     nextStatus:open?'closed':'open',statusAction:open?'ปิดบทสนทนา':'เปิดบทสนทนาอีกครั้ง',statusIcon:icon(open?'checkCircle':'chat'),
-    lineGroup:c.line&&c.line.source_type!=='user',privacyTag:privacyTag(),messages:messagesHTML(data.messages),composer:composer(c.id,{manual:c.channel==='manual',channel:c.channel,compact:true})});
+    lineGroup:c.line&&c.line.source_type!=='user',facebook:c.channel==='facebook',privacyTag:privacyTag(),messages:messagesHTML(data.messages),threadFilter:threadFilterHTML(data.messages),
+    composer:composer(c.id,{manual:c.channel==='manual',channel:c.channel,compact:true})});
+}
+
+// "All messages" or only the team's internal notes, for reading the back-room discussion on its own.
+function threadFilterHTML(messages){
+  return filterPill('thread-filter','all','ทุกข้อความ',{pressed:true})
+    +filterPill('thread-filter','notes','เฉพาะบันทึกภายใน',{count:messages.filter(m=>m.kind==='note').length});
 }
 
 /* Inbox card: channel + customer + reply dot + time, subject, then the last message with the case number. */
@@ -74,7 +90,7 @@ function messagesHTML(messages,publicView=false){
   return messages.map(m=>{
     const when=new Date(m.created_at),divider=when.toDateString()!==day?render('pages/inbox/thread-day',{label:dayLabel(when)}):'';day=when.toDateString();
     return divider+render('pages/inbox/message',{id:m.id,kind:m.kind,avatar:avatar(m.author_name,m.kind==='customer'?2:0),author:m.author_name,
-      isNote:m.kind==='note',isAI:m.kind!=='note'&&m.source==='ai',time:clockTime.format(when),fullTime:date(m.created_at,true),iso:m.created_at,
+      isNote:m.kind==='note',isAI:m.kind!=='note'&&m.source==='ai',isSurvey:Boolean(m.survey),time:clockTime.format(when),fullTime:date(m.created_at,true),iso:m.created_at,
       // What the team writes may carry formatting from the composer tools; what a customer types is shown as typed.
       body:m.body,rich:m.kind!=='customer'&&/(\*\*|__|^[-*] |^\d+\. |^#{1,2} |`|\[.+\]\(.+\))/m.test(m.body),bodyHTML:markdownToHTML(m.body),
       files:m.attachments.map(a=>messageAttachment(a,publicView)).join(''),
@@ -89,6 +105,35 @@ function composer(conversationId,{publicView=false,manual=false,channel='web',co
     line:channel==='line',maxLength:channel==='line'?5000:20000,draft:publicView?'':uiState.drafts[conversationId]||'',
     aiControls:publicView||compact?'':aiControls(conversationId),aiDraftButton:publicView?'':aiDraftButton(conversationId)});
 }
+
+// Text put into a composer by a tool (an article, a mention) appears in the editor and is kept as the draft.
+function insertIntoComposer(form,text){
+  const area=form.elements.body;
+  area.value=(area.value.trim()?area.value.replace(/\s+$/,'')+'\n\n':'')+text;
+  area.dispatchEvent(new Event('input',{bubbles:true}));
+  ($('.richtext',form)||area).focus();
+}
+
+/* Knowledge search from the composer: find an article and send its public link in one click, or put its text in
+   the draft. kbComposer is the composer the search was opened from. */
+let kbComposer=null;
+
+function kbRows(query=''){
+  const q=query.trim().toLowerCase(),canReply=kbComposer&&kbComposer.dataset.channel!=='manual';
+  const found=state.articles.filter(a=>!q||[a.title,a.body,a.category].some(v=>String(v||'').toLowerCase().includes(q)))
+    .sort((a,b)=>(b.visibility==='public')-(a.visibility==='public')).slice(0,30);
+  return found.map(a=>render('pages/inbox/knowledge-row',{id:a.id,title:a.title,category:a.category,isPublic:a.visibility==='public',
+    canSend:canReply&&a.visibility==='public',excerpt:plainText(a.body).slice(0,160)})).join('')
+    ||empty('ไม่พบบทความ','ลองคำค้นอื่น หรือเพิ่มบทความในคลังความรู้','book');
+}
+
+// A link the customer can open without signing in; chat channels get the address on its own line.
+function articleLinkText(article,channel){
+  const url=`${location.origin}/support/${state.work.tenant.slug}#article=${article.id}`;
+  return channel==='web'?`แนะนำบทความ: [${article.title}](${url})`:`แนะนำบทความ: ${article.title}\n${url}`;
+}
+
+let mentionForm=null;
 
 function renderFilePills(input,list){list.innerHTML=[...input.files].map((f,i)=>render('pages/inbox/file-pill',{name:f.name,size:Math.ceil(f.size/1024),index:i})).join('');}
 
@@ -128,7 +173,42 @@ Object.assign(actions,{
   'inbox-filter':async(button,id)=>{uiState.inboxFilter=button.dataset.value;refreshInboxList();return;},
   'file-remove':async(button,id)=>{const form=button.closest('form'),input=form.querySelector('input[type="file"]'),keep=new DataTransfer();[...input.files].forEach((f,i)=>{if(i!==Number(button.dataset.index))keep.items.add(f);});input.files=keep.files;renderFilePills(input,form.querySelector('[data-file-list]'));form.elements.body?.focus();return;},
   'canned':async(button,id)=>{const form=button.closest('form'),area=$('textarea',form);area.value=state.work.settings.canned_reply;area.dispatchEvent(new Event('input',{bubbles:true}));($('.richtext',form)||area).focus();},
-  'chat-knowledge':async(button,id)=>{state.articles=(await api('/api/articles')).articles;modal('เลือกบทความสำหรับร่างคำตอบ',render('pages/inbox/choose-article',{cards:articleCards(state.articles)}));return;},
+  'chat-knowledge':async(button,id)=>{
+    kbComposer=button.closest('form');state.articles=(await api('/api/articles')).articles;
+    modal('ค้นหาคลังความรู้',render('pages/inbox/knowledge-search',{search:searchInput('kb-search','ค้นหาบทความ','ค้นหาชื่อบทความ เนื้อหา หรือหมวดหมู่'),
+      rows:kbRows(),channel:channelNames[kbComposer?.dataset.channel]||''}),{wide:true});
+    $('#kb-search')?.focus();return;},
+  'kb-send-link':async(button,id)=>{
+    const article=state.articles.find(a=>a.id===id),form=kbComposer;
+    if(!form||!document.contains(form))throw new Error('กรุณาเปิดบทสนทนาก่อน');
+    button.disabled=true;
+    try{await api(`/api/conversations/${form.dataset.conversation}/messages`,{kind:'reply',body:articleLinkText(article,form.dataset.channel)});}
+    finally{button.disabled=false;}
+    closeModal(true);await pollStaffMessages();toast(`ส่งลิงก์ “${article.title}” ให้ลูกค้าแล้ว`);return;},
+  'kb-insert':async(button,id)=>{
+    const article=state.articles.find(a=>a.id===id),form=kbComposer&&document.contains(kbComposer)?kbComposer:$('.composer');
+    if(!form)throw new Error('กรุณาเปิดบทสนทนาก่อน');
+    closeModal(true);insertIntoComposer(form,article.body);toast('แทรกเนื้อหาในช่องร่างแล้ว กรุณาตรวจสอบก่อนส่ง');return;},
+  'mention-menu':async(button,id)=>{
+    mentionForm=button.closest('form');
+    const people=state.work.members.filter(m=>m.active&&m.id!==state.boot.user.id);
+    sheet('แท็กเพื่อนร่วมทีม',render('pages/inbox/mention-menu',{items:people.map((m,i)=>render('pages/inbox/mention-item',
+      {name:m.name,avatar:avatar(m.name,i),detail:`${roleLabels[m.role]} · ${teamName(m.team_id)}`})).join('')}));return;},
+  'mention-insert':async(button,id)=>{
+    const form=mentionForm;closeSheet();
+    if(!form||!document.contains(form))return;
+    // A mention belongs in an internal note: the customer never sees it.
+    const note=form.querySelector('input[name="kind"][value="note"]');
+    if(note&&!note.checked){note.checked=true;note.dispatchEvent(new Event('change',{bubbles:true}));}
+    const text=`@${button.dataset.name} `,editor=$('.richtext',form);
+    if(editor){editor.focus();richRestore(editor);document.execCommand('insertText',false,text);editor.dispatchEvent(new Event('input',{bubbles:true}));}
+    else insertIntoComposer(form,text);
+    return;},
+  'thread-filter':async(button,id)=>{
+    const scope=button.closest('[data-thread-scope]'),thread=$('[data-thread]',scope);if(!thread)return;
+    thread.classList.toggle('notes-only',button.dataset.value==='notes');
+    $$('[data-action="thread-filter"]',scope).forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+    thread.scrollTop=thread.scrollHeight;return;},
   'conversation-ticket':async(button,id)=>{const result=await api(`/api/conversations/${id}/ticket`,{});toast('เปิดเคสจากบทสนทนาแล้ว');location.hash=`tickets/${result.id}`;},
   'conversation-status':async(button,id)=>{await api(`/api/conversations/${id}`,{status:button.dataset.status},'PATCH');toast(button.dataset.status==='closed'?'ปิดบทสนทนาแล้ว':'เปิดบทสนทนาแล้ว');return route();},
   'download-file':async(button,id)=>{return download(button.dataset.public==='yes'?`/api/public/${state.portal.slug}/attachments/${id}`:`/api/attachments/${id}`,button.dataset.name);},
@@ -147,8 +227,10 @@ Object.assign(forms,{
 });
 
 document.addEventListener('change',e=>{const n=e.target;if(n.name==='kind'&&n.form?.classList.contains('composer')){const area=n.form.elements.body;if(!n.form.dataset.replyPlaceholder)n.form.dataset.replyPlaceholder=area.placeholder;area.placeholder=n.value==='note'?'บันทึกภายใน… ลูกค้าจะไม่เห็นข้อความนี้':n.form.dataset.replyPlaceholder;}});
+document.addEventListener('change',e=>{if(e.target.id==='inbox-channel'){uiState.inboxChannel=e.target.value;refreshInboxList();}});
 document.addEventListener('input',e=>{const n=e.target;
   if(n.id==='inbox-search'){uiState.inboxQuery=n.value;refreshInboxList();}
+  if(n.id==='kb-search'){const list=$('#kb-results');if(list)list.innerHTML=kbRows(n.value);}
   if(n.matches?.('.composer textarea')){
     if(!n.classList.contains('rich-source'))autoGrow(n);
     if(n.form?.dataset.form==='message')uiState.drafts[n.form.dataset.conversation]=n.value;

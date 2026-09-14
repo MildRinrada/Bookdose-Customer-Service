@@ -2,7 +2,7 @@
 <div class="page-heading">
   <div>
     <h1>{{subject}}</h1>
-    <p class="case-meta"><strong>BD-{{number}}</strong>{{{status}}}{{{priorityTag}}}{{#overdue}}<span class="badge suspended">⚠ เกินกำหนด SLA</span>{{/overdue}}<span>เปิดเรื่อง {{created}} · {{category}}</span>{{{privacyTag}}}</p>
+    <p class="case-meta"><strong>BD-{{number}}</strong>{{{status}}}{{{priorityTag}}}{{#overdue}}<span class="badge suspended">⚠ เกินกำหนด SLA</span>{{/overdue}}{{#escalation}}<span class="badge escalated">{{icon:bolt}}{{escalation}}</span>{{/escalation}}<span>เปิดเรื่อง {{created}} · {{category}}</span>{{{privacyTag}}}</p>
   </div>
 </div>
 <div class="detail-layout">
@@ -20,6 +20,21 @@
       <button class="btn primary" type="submit">บันทึกการเปลี่ยนแปลง</button>
       {{#canDelete}}<button class="btn subtle danger-link" type="button" data-action="delete-ticket" data-id="{{id}}">{{icon:close}}ลบเคสนี้</button>{{/canDelete}}
     </form>
+    <div class="info-block">
+      <h3>ปุ่มลัด (Macro)</h3>
+      <div class="macro-buttons">{{{macroButtons}}}</div>
+      {{^macroButtons}}<p class="small muted">ยังไม่มี Macro{{#canManage}} · <a href="#automation">สร้างที่หน้าระบบอัตโนมัติ</a>{{/canManage}}</p>{{/macroButtons}}
+    </div>
+    <div class="info-block">
+      <h3>เตือนติดตามผล</h3>
+      <div class="followup-list">{{{followups}}}</div>
+      <form class="followup-form" data-form="followup" data-id="{{id}}">
+        <label class="sr-only" for="followup-hours">เตือนเมื่อ</label><select id="followup-hours" name="hours">{{{followupOptions}}}</select>
+        <button class="btn sm" type="submit">{{icon:clock}}ตั้งเตือน</button>
+        <label class="sr-only" for="followup-note">เรื่องที่ต้องติดตาม</label><input id="followup-note" name="note" maxlength="300" placeholder="เรื่องที่ต้องติดตาม (ไม่บังคับ)">
+      </form>
+    </div>
+    {{#survey}}<div class="info-block"><h3>ความพึงพอใจ (CSAT)</h3>{{{survey}}}</div>{{/survey}}
     <div class="info-block">
       <h3>ข้อมูลลูกค้า</h3>
       <div class="flex case-customer">{{{contactAvatar}}}<strong>{{contactName}}</strong></div>

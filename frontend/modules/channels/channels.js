@@ -1,8 +1,8 @@
-/* LINE and Email: delivery status under messages, the settings panels (with Email OAuth) and their actions.
-   Markup: modules/channels/*.html. */
+/* LINE, Email and Facebook Messenger: delivery status under messages, the settings panels (with Email OAuth)
+   and their actions. Markup: modules/channels/*.html. */
 
 'use strict';
-const channelNames={web:'Web Support',line:'LINE',email:'Email',manual:'บันทึกเอง'};
+const channelNames={web:'Web Support',line:'LINE',email:'Email',facebook:'Facebook',manual:'บันทึกเอง'};
 const deliveryNames={queued:'รอส่ง',sending:'กำลังส่ง',accepted:'บริการปลายทางรับข้อความแล้ว',failed:'ส่งไม่สำเร็จ',unknown:'ไม่ทราบผลการส่ง'};
 
 function channelDeliveryHTML(m){
@@ -10,8 +10,34 @@ function channelDeliveryHTML(m){
   return render('modules/channels/channel-delivery',{tracked:!!delivery,id:m.id,label:deliveryNames[m.delivery]||m.delivery,accepted:m.delivery==='accepted',
     error:delivery?.error,hasFileLinks:delivery?.has_file_links,retryable:delivery?.retryable});
 }
-function channelSummaryHTML(){return (state.channelSettings||[]).map(c=>render('modules/channels/channel-summary-row',{icon:icon(c.kind==='line'?'chat':'mail'),name:channelNames[c.kind],
-  account:c.config.display_name||c.config.address||'ตั้งค่าบัญชีด้านล่าง',live:c.enabled&&c.credentials_configured})).join('');}
+function channelSummaryHTML(){
+  const fb=state.facebookSettings;
+  return (state.channelSettings||[]).map(c=>render('modules/channels/channel-summary-row',{icon:icon(c.kind==='line'?'chat':'mail'),name:channelNames[c.kind],
+    account:c.config.display_name||c.config.address||'ตั้งค่าบัญชีด้านล่าง',live:c.enabled&&c.credentials_configured})).join('')
+    +(fb?render('modules/channels/channel-summary-row',{icon:icon('facebook'),name:'Facebook Messenger',account:fb.config.page_name||'ตั้งค่าเพจด้านล่าง',live:fb.enabled&&fb.credentials_configured}):'');
+}
+
+function facebookSettingsPanel(){
+  const c=state.facebookSettings;if(!c)return '';
+  const v=c.config,field=(name,label)=>render('modules/channels/channel-field',{kind:'facebook',name,label,type:'password',value:'',required:false,max:2000,autocomplete:'new-password',secret:true});
+  return render('modules/channels/facebook-settings',{configured:c.credentials_configured,enabled:c.enabled,pageName:v.page_name,pageId:v.page_id,
+    tokenField:field('page_access_token','Page Access Token'),secretField:field('app_secret','App Secret (Meta App)'),teamOptions:teamOptions(v.team_id),
+    webhookURL:c.route_id?`${location.origin}/api/webhooks/facebook/${c.route_id}`:'',verifyToken:v.verify_token,lastError:c.last_error,
+    lastChecked:c.last_checked?date(c.last_checked,true):'-',lastReceived:c.last_received?date(c.last_received,true):'-',
+    outbox:c.outbox.map(o=>render('modules/channels/outbox-badge',{label:deliveryNames[o.status]||o.status,count:o.count})).join('')});
+}
+
+Object.assign(actions,{
+  'facebook-test':async(button,id)=>{await api('/api/channels/facebook/test',{});toast('เชื่อมต่อเพจสำเร็จ (ยังไม่ได้ส่งข้อความจริง)');await route();},
+  'facebook-copy':async(button,id)=>{await copyText(button.dataset.value);},
+});
+
+Object.assign(forms,{
+  'facebook-settings':async(form,data)=>{
+    data.enabled=form.elements.enabled.checked;data.remove_credentials=form.elements.remove_credentials.checked;
+    await api('/api/channels/facebook',data,'PATCH');toast('บันทึก Facebook Messenger แล้ว');await route();
+  },
+});
 function channelSettingsPanel(){return state.channelSettings.map(c=>{
   const k=c.kind,v=c.config;
   const field=(name,label,type='text',value='',required=false)=>render('modules/channels/channel-field',{kind:k,name,label,type,value,required,max:type==='password'?2000:254,autocomplete:type==='password'?'new-password':'off',secret:type==='password'});

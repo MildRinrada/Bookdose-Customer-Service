@@ -1,5 +1,6 @@
-"""LINE and Email channels.
-Control database: channel_routes maps a LINE bot / mailbox to its organization (one account belongs to one organization).
+"""LINE, Email and Facebook Messenger channels.
+Control database: channel_routes maps a LINE bot / mailbox to its organization (one account belongs to one organization);
+facebook_routes does the same for a Facebook Page. Facebook keeps its own settings row; its replies share the outbox.
 Tenant database: settings, received events (inbox), replies waiting to be delivered (outbox), and per-conversation links."""
 
 KINDS = ('line','email')
@@ -9,6 +10,9 @@ CREATE TABLE IF NOT EXISTS channel_routes (
     id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id),
     kind TEXT NOT NULL CHECK(kind IN ('line','email')), identity TEXT,
     UNIQUE(tenant_id,kind), UNIQUE(kind,identity)
+);
+CREATE TABLE IF NOT EXISTS facebook_routes (
+    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL REFERENCES tenants(id), page_id TEXT UNIQUE
 );
 '''
 
@@ -55,6 +59,11 @@ CREATE TABLE IF NOT EXISTS channel_outbox (
 );
 CREATE TABLE IF NOT EXISTS email_reply_refs (
     reference TEXT PRIMARY KEY, conversation_id TEXT NOT NULL REFERENCES conversations(id), route_id TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS facebook_settings (
+    id INTEGER PRIMARY KEY CHECK(id=1), route_id TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0,
+    config TEXT NOT NULL DEFAULT '{}', generation TEXT NOT NULL, last_error TEXT NOT NULL DEFAULT '',
+    last_checked TEXT, last_received TEXT
 );
 CREATE INDEX IF NOT EXISTS channel_outbox_pending ON channel_outbox(status,next_attempt_at);
 CREATE INDEX IF NOT EXISTS channel_inbox_pending ON channel_inbox(status,created_at);

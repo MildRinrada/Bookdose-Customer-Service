@@ -14,7 +14,7 @@ from backend.exceptions.errors import ChannelError, CHANNEL_ERRORS
 from backend.extensions import channel_transport as T
 from backend.middleware.access import get_scoped
 from backend.modules.ai import service as ai
-from backend.modules.channels import email_oauth as O, file_links as F, repository, schema
+from backend.modules.channels import email_oauth as O, facebook, file_links as F, repository, schema
 from backend.modules.channels.model import KINDS
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations, service as conversation_service
@@ -459,6 +459,8 @@ def line_retry_window_passed(job):
 
 def retry_message(db, ctx, mid):
     job = repository.outbox_for_message(db,mid)
+    if job and job['kind']==facebook.KIND:
+        return facebook.retry(db,ctx,job)
     require(not repository.find_ai_guard(db,mid),'ข้อความ AI ที่ยกเลิกแล้วไม่ส่งซ้ำ กรุณาตรวจและส่งข้อความใหม่')
     require(F.valid(db,mid),'ลิงก์ไฟล์หมดอายุหรือถูกถอน กรุณาสร้างข้อความใหม่')
     require(job and job['status']=='failed','ส่งซ้ำได้เฉพาะรายการที่ยืนยันว่าส่งไม่สำเร็จ')
@@ -651,7 +653,8 @@ def cancel_ai_outbox(db, conversation_id):
 
 
 class Worker:
-    """Two background threads: LINE events and outgoing replies every second, email polling every two seconds."""
+    """Two background threads: LINE events and outgoing replies (LINE, Email, Facebook) every second,
+    email polling every two seconds."""
     def __init__(self, store_message):
         self.stop = threading.Event()
         self.store_message = store_message
@@ -675,6 +678,7 @@ class Worker:
                         else:
                             process_outbox(tid)
                             process_line(tid,self.store_message)
+                            facebook.process_outbox(tid)
                     except Exception as error:
                         print(f'Channel worker: {type(error).__name__}; retrying scan',flush=True)
             except Exception as error:

@@ -75,6 +75,10 @@ def insert_message(db, message_id, conversation_id, author_id, author_name, kind
     db.execute('INSERT INTO messages VALUES(?,?,?,?,?,?,?,?)',(message_id,conversation_id,author_id,author_name,kind,body,'stored',created_at or now()))
 
 
+def customer_message_count(db, conversation_id):
+    return db.execute("SELECT COUNT(*) FROM messages WHERE conversation_id=? AND kind='customer'",(conversation_id,)).fetchone()[0]
+
+
 def latest_message_id(db, conversation_id, kind=None):
     extra = ' AND kind=?' if kind else ''
     row = one(db,'SELECT id FROM messages WHERE conversation_id=?'+extra+' ORDER BY rowid DESC LIMIT 1',(conversation_id,kind) if kind else (conversation_id,))

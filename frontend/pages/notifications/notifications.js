@@ -4,12 +4,17 @@
 
 'use strict';
 
-const notificationKinds={ticket:{label:'เคสบริการ',icon:'ticket'},inbox:{label:'กล่องข้อความ',icon:'inbox'}};
+const notificationKinds={me:{label:'ถึงคุณ',icon:'at'},ticket:{label:'เคสบริการ',icon:'ticket'},inbox:{label:'กล่องข้อความ',icon:'inbox'}};
 
 /* One list, newest first. A case that is past its SLA or still unassigned needs someone; a conversation whose
-   last message came from the customer is waiting for a reply. */
+   last message came from the customer is waiting for a reply; and what is addressed to you: a case escalated to
+   you, a follow-up reminder that is due, a colleague who @mentioned you. */
 function notificationItems(){
-  const items=[];
+  const items=[],alerts=state.alerts,now=new Date();
+  for(const e of alerts?.escalations||[])items.push({kind:'me',tone:'late',icon:'bolt',title:`BD-${e.number} ยกระดับมาหาคุณ`,detail:e.subject,at:e.escalated_at,href:`#tickets/${e.ticket_id}`});
+  for(const f of alerts?.followups||[])if(new Date(f.due_at)<=now)items.push({kind:'me',tone:'waiting',icon:'clock',title:`ถึงเวลาติดตาม BD-${f.number}`,detail:f.note,at:f.due_at,href:`#tickets/${f.ticket_id}`});
+  for(const m of alerts?.mentions||[])items.push({kind:'me',tone:'new',icon:'at',title:`${m.author_name} กล่าวถึงคุณ`,detail:plainText(m.body).slice(0,120),at:m.created_at,
+    href:m.ticket_id?`#tickets/${m.ticket_id}`:`#inbox/${m.conversation_id}`});
   for(const t of state.tickets||[]){
     if(overdue(t))items.push({kind:'ticket',tone:'late',icon:'clock',title:`BD-${t.number} เกินกำหนด SLA`,detail:t.subject,at:t.updated_at,href:`#tickets/${t.id}`});
     else if(t.status==='new'&&!t.assignee_id)items.push({kind:'ticket',tone:'new',icon:'ticket',title:`BD-${t.number} ยังไม่มีผู้รับผิดชอบ`,detail:t.subject,at:t.created_at,href:`#tickets/${t.id}`});
@@ -62,7 +67,7 @@ async function openNotifications(){
   setProfileMenu(false);
   panel.innerHTML=notificationMenuHTML(notificationItems(),true);
   setNotificationMenu(true);
-  if(state.work)state.conversations=(await api('/api/conversations')).conversations;
+  if(state.work)[state.conversations,state.alerts]=await Promise.all([api('/api/conversations').then(r=>r.conversations),api('/api/automation/alerts')]);
   if(panel.hidden)return;
   panel.innerHTML=notificationMenuHTML(notificationItems());
   updateNotificationBadge();

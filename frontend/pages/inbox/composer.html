@@ -27,7 +27,9 @@
       <label class="tool-btn" for="files-{{id}}" title="แนบไฟล์ หรือลากไฟล์มาวางในกล่องข้อความ">{{icon:paperclip}}<span>แนบไฟล์</span></label>
       {{^publicView}}
         <button type="button" class="tool-btn" data-action="canned" aria-label="แทรกคำตอบสำเร็จรูป" title="แทรกคำตอบสำเร็จรูป">{{icon:bolt}}<span>คำตอบสำเร็จรูป</span></button>
-        <button type="button" class="tool-btn" data-action="chat-knowledge" aria-label="ค้นคู่มือเพื่อร่างคำตอบ" title="ค้นคู่มือเพื่อร่างคำตอบ">{{icon:book}}<span>ค้นคู่มือ</span></button>
+        <button type="button" class="tool-btn" data-action="chat-knowledge" aria-label="ค้นคลังความรู้" title="ค้นคลังความรู้ ส่งลิงก์บทความให้ลูกค้าหรือแทรกเนื้อหา">{{icon:book}}<span>ค้นคู่มือ</span></button>
+        <button type="button" class="tool-btn" data-action="macro-menu" data-kind="conversation" data-id="{{id}}" aria-label="ใช้ Macro" title="Macro: ทำหลายขั้นตอนในคลิกเดียว">{{icon:macro}}<span>Macro</span></button>
+        <button type="button" class="tool-btn" data-action="mention-menu" aria-label="แท็กเพื่อนร่วมทีม" title="แท็กเพื่อนร่วมทีมในบันทึกภายใน (@) ลูกค้าไม่เห็น">{{icon:at}}<span>แท็กทีม</span></button>
         {{{aiDraftButton}}}
       {{/publicView}}
     </div>

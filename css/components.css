@@ -524,7 +524,7 @@ dialog.drawer {
   height: 34px;
   border-radius: 50%;
   border: 2px solid #fff;
-  background: #59429f;
+  background: rgb(38, 41, 45);
   color: #fff;
 }
 .photo-camera .icon {

@@ -20,7 +20,7 @@ def update_status(req, conversation_id):
 
 def post_message(req, conversation_id):
     conv = service.visible_conversation(req.db,req.ctx,conversation_id)
-    return req.send(201,{'id':service.post_staff_message(req.db,req.ctx,conv,req.body)})
+    return req.send(201,{'id':service.post_staff_message(req.db,req.ctx,conv,req.body,req.cd)})
 
 
 def link_ticket(req, conversation_id):

@@ -3,9 +3,12 @@
   <div class="inbox-list">
     <div class="inbox-tools">
       {{{search}}}
-      <div class="inbox-tabs" role="group" aria-label="แสดงบทสนทนา">{{{tabs}}}</div>
+      <div class="inbox-filter-row">
+        <div class="inbox-tabs" role="group" aria-label="แสดงบทสนทนา">{{{tabs}}}</div>
+        {{{channelFilter}}}
+      </div>
     </div>
     <div id="inbox-items">{{{items}}}</div>
   </div>
-  <div class="inbox-detail">{{{detail}}}</div>
+  <div class="inbox-detail" data-thread-scope>{{{detail}}}</div>
 </section>

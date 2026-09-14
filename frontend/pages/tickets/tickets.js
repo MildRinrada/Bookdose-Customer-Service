@@ -99,6 +99,7 @@ function ticketTable(tickets,compact=false){
   const rows=(slice?slice.shown:tickets).map((t,i)=>render('pages/tickets/ticket-row',{id:t.id,number:t.number,subject:t.subject,category:t.category,
     customer:t.contact_name,company:t.company||'-',avatar:avatar(t.contact_name,i),status:badge(t.status),priority:priority(t.priority),
     assignee:memberName(t.assignee_id),late:lateBy(t),updated:date(t.updated_at),compact,selectable,selected:uiState.selected.has(t.id),
+    escalated:t.escalated_at&&!isDone(t)?escalationReasons[t.escalation_reason]||'ยกระดับแล้ว':'',
     actions:state.work?ticketQuickActions(t,compact):''})).join('');
   return render('pages/tickets/ticket-table',{density:uiState.density,compact,selectable,rows,pager:slice?pagerHTML(slice,'เคส'):''});
 }
@@ -170,10 +171,13 @@ function downloadTicketsCSV(tickets,filename){
 }
 
 function ticketDetail(data){
-  const t=data.ticket,c=data.contact;
+  const t=data.ticket,c=data.contact,extra=data.automation||{followups:[],escalation:null,survey:null},e=extra.escalation;
   return render('pages/tickets/ticket-detail',{canDelete:state.work.role==='admin',id:t.id,subject:t.subject,number:t.number,created:date(t.created_at,true),category:t.category,status:badge(t.status),priorityTag:priority(t.priority),
     conversations:data.conversations.map(conv=>render('pages/tickets/ticket-conversation',{id:conv.id,channelBadge:channelBadge(conv.channel),
-      contactName:c.name,messages:messagesHTML(conv.messages),composer:composer(conv.id,{manual:conv.channel==='manual',channel:conv.channel})})).join(''),
+      contactName:c.name,messages:messagesHTML(conv.messages),threadFilter:threadFilterHTML(conv.messages),composer:composer(conv.id,{manual:conv.channel==='manual',channel:conv.channel})})).join(''),
+    macroButtons:macroButtons({kind:'ticket',id:t.id}),canManage:state.work.role!=='agent',
+    followups:followupsHTML(extra.followups),followupOptions:options(followupChoices,'24'),survey:surveyHTML(extra.survey),
+    escalation:e?`${escalationReasons[e.reason]||'ยกระดับแล้ว'}${e.to_user_id?` · ${e.reason==='unclaimed'?'ย้ายให้':'แจ้ง'} ${memberName(e.to_user_id)}`:''}`:'',
     history:auditHTML(data.events),
     statusOptions:options(statusLabels,t.status),priorityOptions:options(priorityLabels,t.priority),teamOptions:teamOptions(t.team_id),assigneePicker:memberPicker('case-assignee',t.team_id,t.assignee_id||''),
     contactAvatar:avatar(c.name,2),contactName:c.name,contactId:c.id,contactEmail:c.email,contactPhone:c.phone,contactPhoneHref:String(c.phone||'').replace(/[^\d+]/g,''),contactCompany:c.company,

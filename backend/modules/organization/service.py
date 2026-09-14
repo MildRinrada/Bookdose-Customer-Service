@@ -5,6 +5,7 @@ from backend.exceptions.errors import APIError
 from backend.middleware.access import validate_team
 from backend.modules.ai import service as ai
 from backend.modules.auth import repository as users
+from backend.modules.automation import service as automation
 from backend.modules.channels import service as channels
 from backend.modules.organization import repository, schema
 from backend.modules.tickets import repository as tickets
@@ -22,6 +23,7 @@ def workspace_overview(cd, db, ctx):
             'teams':repository.teams(db),
             'settings':repository.settings(db),
             'channels':channels.workspace_summary(db),
+            'macros':automation.macro_list(db),
             'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id'])}}
 
 

@@ -10,6 +10,7 @@ from config import settings
 from backend.database import db as D
 from backend.database.backup import make_backup, restore_backup
 from backend.modules.ai.service import Worker as AIWorker
+from backend.modules.automation.service import Worker as AutomationWorker
 from backend.modules.channels.service import Worker as ChannelWorker
 from backend.modules.conversations.service import store_message
 from backend.server import Handler
@@ -43,6 +44,8 @@ def main():
     ai_worker.start()
     channel_worker = ChannelWorker(store_message)
     channel_worker.start()
+    automation_worker = AutomationWorker()
+    automation_worker.start()
     print(f'\n  Bookdose Customer Service\n  Open http://localhost:{args.port}\n  Data: {D.DATA}\n  Press Ctrl+C to stop.\n',flush=True)
     try:
         server.serve_forever()
@@ -51,6 +54,7 @@ def main():
     finally:
         ai_worker.stop.set()
         channel_worker.stop.set()
+        automation_worker.stop.set()
         server.server_close()
 
 

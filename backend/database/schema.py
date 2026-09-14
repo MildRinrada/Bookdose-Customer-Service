@@ -2,6 +2,7 @@
 from backend.database import audit
 from backend.modules.ai import model as ai
 from backend.modules.auth import model as auth
+from backend.modules.automation import model as automation
 from backend.modules.channels import model as channels
 from backend.modules.contacts import model as contacts
 from backend.modules.conversations import model as conversations
@@ -34,3 +35,5 @@ def upgrade_tenant(db):
     db.execute(contacts.NAME_TABLE)
     db.executescript(channels.TENANT_TABLES)
     db.execute(trash.TENANT_TABLES)
+    db.executescript(automation.TENANT_TABLES)
+    db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',automation.DEFAULT_SETTINGS)

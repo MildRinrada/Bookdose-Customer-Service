@@ -1,6 +1,7 @@
 """Sample customers, cases and articles for a new organization when "demo data" is chosen at first-run setup."""
 import datetime as dt
 
+from backend.modules.automation import repository as automation
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations
 from backend.modules.knowledge import repository as knowledge
@@ -19,6 +20,10 @@ SAMPLE_ARTICLES = [
     ('เริ่มต้นใช้งาน Bookdose e-Library','เริ่มต้นใช้งาน','บทความตัวอย่างสำหรับทีมงาน\n\n1. เปิดเว็บไซต์ห้องสมุดที่องค์กรของคุณแจ้งไว้\n2. เข้าสู่ระบบด้วยบัญชีที่ได้รับจากผู้ดูแล\n3. เลือกหนังสือที่ต้องการและกดอ่าน\n\nหากไม่สามารถเข้าสู่ระบบได้ กรุณาติดต่อผู้ดูแลองค์กรเพื่อยืนยันสิทธิ์การใช้งาน'),
     ('รับเรื่องอย่างไรให้ช่วยเหลือลูกค้าได้เร็วขึ้น','แนวทางบริการ','ขอข้อมูลจากลูกค้าให้ครบก่อนส่งต่อทีมเทคนิค\n\n• อุปกรณ์และเบราว์เซอร์ที่ใช้\n• ขั้นตอนที่พบปัญหา\n• เวลาที่เกิดปัญหา\n• ภาพหน้าจอที่ไม่มีข้อมูลรหัสผ่าน\n\nบันทึกข้อมูลการวิเคราะห์ในบันทึกภายในเคส'),
 ]
+
+
+SAMPLE_MACRO = {'name':'ขอข้อมูลเพิ่มเติม','set_status':'pending_customer','followup_hours':24,
+                'reply':'สวัสดีค่ะคุณ{customer} เพื่อให้ทีมตรวจสอบเคส {case} ได้เร็วขึ้น รบกวนส่งภาพหน้าจอ อุปกรณ์ที่ใช้ และเวลาที่พบปัญหาเพิ่มเติมนะคะ ขอบคุณค่ะ'}
 
 
 def seed_demo(db, user_id, team_id):
@@ -41,3 +46,4 @@ def seed_demo(db, user_id, team_id):
             tickets.set_first_response_due(db,tid,iso(utc_now()-dt.timedelta(minutes=35)))
     for title,category,body in SAMPLE_ARTICLES:
         knowledge.insert(db,uid(),title,category,body,'internal','ทีม Bookdose')
+    automation.insert_macro(db,uid(),SAMPLE_MACRO,user_id)

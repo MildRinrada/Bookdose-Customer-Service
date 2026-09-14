@@ -1,6 +1,6 @@
 /* Design tokens, element defaults (typography, links, form controls, focus) and small utility classes. */
 :root {
-  --bg: #f5f5f1;
+  --bg: #fff;
   --paper: #fff;
   --accent: rgb(38, 41, 45);
   --accent-hover: #3a4246;

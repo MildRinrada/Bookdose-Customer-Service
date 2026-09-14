@@ -53,7 +53,7 @@ function buildShell(content){
     workspaceOptions:b.memberships.filter(m=>m.status==='active').map(m=>option(m.id,m.name,m.id===b.tenant_id)).join(''),
     workspaceNav:w?nav('dashboard','dashboard')+nav('inbox','inbox')+nav('tickets','ticket')+nav('contacts','users')+nav('knowledge','book')+nav('reports','chart'):'',
     // Organization tools and platform tools are separate sections: they act on different scopes.
-    manageNav:(w&&w.role!=='agent'?nav('audit','shield')+nav('trash','trash'):'')+(w?.role==='admin'?nav('settings','settings'):''),
+    manageNav:(w&&w.role!=='agent'?nav('automation','macro')+nav('audit','shield')+nav('trash','trash'):'')+(w?.role==='admin'?nav('settings','settings'):''),
     platformNav:b.user.platform_admin?nav('platform','globe'):'',
     tenantSlug:w?.tenant.slug||'',profilePhoto:userAvatar(),userName:b.user.name,roleLabel:w?roleLabels[w.role]:'ผู้ดูแลแพลตฟอร์ม',
     crumbLabel:crumbRoot().label,crumbHref:crumbRoot().href,

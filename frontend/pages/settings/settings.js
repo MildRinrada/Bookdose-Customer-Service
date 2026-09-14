@@ -8,7 +8,7 @@
 const settingsTabs={
   overview:{label:'ภาพรวมและบริการ',hint:'ข้อมูลองค์กร มาตรฐาน SLA และข้อความอัตโนมัติ',icon:'settings'},
   teams:{label:'ทีมและสมาชิก',hint:'ใครอยู่ทีมไหน และมีสิทธิ์แค่ไหน',icon:'users'},
-  connections:{label:'LINE / Email',hint:'ช่องทางที่ลูกค้าติดต่อเข้ามา',icon:'inbox'},
+  connections:{label:'LINE / Email / Facebook',hint:'ช่องทางที่ลูกค้าติดต่อเข้ามา',icon:'inbox'},
   ai:{label:'AI Assistant',hint:'ผู้ช่วยร่างคำตอบและแชทบอทหน้าช่วยเหลือ',icon:'sparkle'},
 };
 
@@ -27,7 +27,7 @@ function settingsPage(){
     resolutionHoursField:inputField('แก้ไขเคสภายใน (ชม.)','resolution_hours',{type:'number',value:s.resolution_hours}),
     membersPanel:membersPanel(),
     teamCards:w.teams.map(t=>render('pages/settings/team-row',{name:t.name,members:w.members.filter(m=>m.active&&m.team_id===t.id).length})).join(''),
-    channelPanels:channelSettingsPanel(),aiPanel:aiSettingsPanel()});
+    channelPanels:channelSettingsPanel()+facebookSettingsPanel(),aiPanel:aiSettingsPanel()});
 }
 
 /* The member list is a list like any other in the app: the same search box, the same filter pills and the same

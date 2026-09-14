@@ -4,6 +4,7 @@ import secrets
 
 from backend.database import audit, db as D
 from backend.modules.ai import service as ai
+from backend.modules.automation import service as automation
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations, service as conversation_service
 from backend.modules.knowledge import repository as knowledge
@@ -52,7 +53,13 @@ def conversation_for_token(db, token):
 
 def conversation_view(db, conv):
     return schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
-                                    tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']))
+                                    tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
+                                    automation.portal_survey(db,conv['id']))
+
+
+def rate_service(db, conv, body):
+    """The visitor answers the satisfaction survey with the star buttons."""
+    automation.rate_from_portal(db,conv,body)
 
 
 def hand_off_to_staff(db, conv):

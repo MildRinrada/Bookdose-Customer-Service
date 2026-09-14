@@ -1,9 +1,10 @@
-"""HTTP handlers for LINE / Email settings, OAuth, delivery retries, the LINE webhook and temporary file links."""
+"""HTTP handlers for LINE / Email / Facebook settings, OAuth, delivery retries, the LINE and Facebook webhooks
+and temporary file links."""
 from config import settings
 from backend.exceptions.errors import APIError
 from backend.middleware.auth import require_role
 from backend.middleware.rate_limit import limited
-from backend.modules.channels import service
+from backend.modules.channels import facebook, service
 from backend.utils.validation import require
 
 MAX_WEBHOOK_BYTES = 2*1024*1024
@@ -18,16 +19,53 @@ def download_file_link(req, tenant_id, token):
     return req.send_download(*service.file_link_download(tenant_id,token))
 
 
-def receive_line_webhook(req, route_id):
-    """The raw body is needed to check LINE's signature, so it is read here instead of as JSON."""
+def _raw_body(req):
+    """Webhook signatures cover the exact bytes sent, so the body is read here instead of as JSON."""
     length = req.headers.get('Content-Length','')
     require(length.isdigit() and 0<int(length)<=MAX_WEBHOOK_BYTES,'ขนาด Webhook ไม่ถูกต้อง',413)
     raw = req.rfile.read(int(length))
     require(len(raw)==int(length),'Webhook ไม่ครบ',400)
+    return raw
+
+
+def receive_line_webhook(req, route_id):
+    raw = _raw_body(req)
     try:
         service.accept_line_webhook(route_id,raw,req.headers.get('X-Line-Signature',''))
     except PermissionError:
         raise APIError(403,'ลายเซ็น Webhook ไม่ถูกต้อง') from None
+    return req.send(200,{'ok':True})
+
+
+def verify_facebook_webhook(req, route_id):
+    """Meta calls this once when the webhook URL is saved in the app dashboard."""
+    return req.send(200,facebook.verify_subscription(route_id,req.query).encode(),'text/plain; charset=utf-8')
+
+
+def receive_facebook_webhook(req, route_id):
+    raw = _raw_body(req)
+    try:
+        facebook.accept_webhook(route_id,raw,req.headers.get('X-Hub-Signature-256',''))
+    except PermissionError:
+        raise APIError(403,'ลายเซ็น Webhook ไม่ถูกต้อง') from None
+    return req.send(200,{'ok':True})
+
+
+@require_role('admin')
+def facebook_overview(req):
+    return req.send(200,facebook.overview(req.db,req.ctx['tenant_id']))
+
+
+@require_role('admin')
+def save_facebook(req):
+    _limit_settings(req)
+    return req.send(200,facebook.save(req.cd,req.db,req.ctx,req.body))
+
+
+@require_role('admin')
+def test_facebook(req):
+    _limit_settings(req)
+    facebook.test(req.db,req.ctx['tenant_id'])
     return req.send(200,{'ok':True})
 
 

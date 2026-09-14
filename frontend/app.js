@@ -6,6 +6,8 @@
    the case list and the screen's own data all go out together. Screens whose access depends on the role
    (settings, audit, platform) are fetched once the role is known. */
 function pageRequest(page,id){
+  if(page==='dashboard')return api(dashboardPath());
+  if(page==='automation')return api('/api/automation');
   if(page==='tickets'&&id)return api(`/api/tickets/${id}`);
   if(page==='inbox')return Promise.all([api('/api/conversations'),id?api(`/api/conversations/${id}`):null]);
   if(page==='contacts')return api('/api/contacts');
@@ -21,6 +23,7 @@ function startRequests(page,id,warm){
   const requests={boot:api('/api/bootstrap')};
   if(warm){
     requests.work=api('/api/workspace');
+    requests.alerts=api('/api/automation/alerts');
     if(CASE_LIST_SCREENS.includes(page)||!state.tickets.length)requests.cases=api('/api/tickets');
     requests.data=pageRequest(page,id);
   }
@@ -82,10 +85,11 @@ async function route(){
     if(membership){
       if(!pageData){pageData=pageRequest(page,id);pageData?.catch(()=>{/* Reported where the screen awaits it. */});}
       try{
-        const [work,cases]=await Promise.all([requests.work??api('/api/workspace'),requests.cases??(state.tickets.length?null:api('/api/tickets'))]);
-        state.work=work;if(cases)state.tickets=cases.tickets;
+        const [work,cases,alerts]=await Promise.all([requests.work??api('/api/workspace'),requests.cases??(state.tickets.length?null:api('/api/tickets')),
+          requests.alerts??api('/api/automation/alerts')]);
+        state.work=work;state.alerts=alerts;if(cases)state.tickets=cases.tickets;
       }catch(error){if(!warm)throw error;state.coldStart=true;return route();}
-    }else{state.work=null;state.tickets=[];}
+    }else{state.work=null;state.tickets=[];state.alerts=null;}
     if(epoch!==state.epoch)return;
     let content;
     if(page==='platform'&&state.boot.user.platform_admin){content=platformPage(await api('/api/platform/tenants'))+registrationSettingsPanel(await api('/api/platform/registration'));}
@@ -105,18 +109,38 @@ async function route(){
     else if(page==='knowledge'){state.articles=(await pageData).articles;content=knowledgePage();}
     else if(page==='notifications'){state.conversations=(await pageData).conversations;content=notificationsPage();}
     else if(page==='reports'){content=reportsPage();}
-    else if(page==='settings'&&state.work.role==='admin'){[state.aiSettings,state.channelSettings]=await Promise.all([api('/api/ai/settings'),api('/api/channels')]);content=settingsPage();}
+    else if(page==='settings'&&state.work.role==='admin'){[state.aiSettings,state.channelSettings,state.facebookSettings]=await Promise.all([api('/api/ai/settings'),api('/api/channels'),api('/api/channels/facebook')]);content=settingsPage();}
+    else if(page==='automation'&&state.work.role!=='agent'){content=automationPage(await pageData);}
     else if(page==='audit'&&state.work.role!=='agent'){content=auditPage((await api('/api/audit')).events);}
     else if(page==='trash'&&state.work.role!=='agent'){content=trashPage(await api('/api/trash'));}
-    else{state.route='dashboard';content=dashboard();}
+    else{
+      // The overview's own data (reminders, mentions, manager view); without it the rest of the overview still opens.
+      state.route='dashboard';
+      state.dash=await (page==='dashboard'&&pageData?pageData:api(dashboardPath())).catch(()=>null);
+      if(state.dash)state.alerts=state.dash.me;
+      content=dashboard();
+    }
     if(epoch!==state.epoch)return;
     shell(content);state.lastHash=location.hash;if(page==='knowledge'&&id)openArticle(id);document.title=`${pageLabels[state.route]||'Bookdose'} · Bookdose`;
+    markMentionsSeen();
     $$('input[name$="_hours"]').forEach(n=>{n.min='0.25';n.max='8760';n.step='0.25';});
     initRichFields();
     restoreScroll(`${state.route}/${id||''}`);
     scrollThreadsToEnd();$('.inbox-item.selected')?.scrollIntoView({block:'nearest'});
     if(state.detail||state.route==='inbox')pollTimer=setInterval(pollStaffMessages,12000);
+    else if(state.route==='dashboard')pollTimer=setInterval(refreshDashboard,30000);
   }catch(error){if(epoch!==state.epoch)return;const content=empty('เปิดพื้นที่ทำงานไม่สำเร็จ',error.message,'lock',render('ui/retry-actions'));if(state.boot?.user)shell(content);else $('#app').innerHTML=content;}
+}
+
+/* Opening the conversation (or the case holding it) where someone @mentioned you counts as reading the mention. */
+function markMentionsSeen(){
+  const open=state.route==='inbox'&&state.detail?.conversation?[state.detail.conversation.id]
+    :state.route==='tickets'&&state.detail?.conversations?state.detail.conversations.map(c=>c.id):[];
+  const seen=[...new Set((state.alerts?.mentions||[]).filter(m=>open.includes(m.conversation_id)).map(m=>m.conversation_id))];
+  if(!seen.length)return;
+  state.alerts.mentions=state.alerts.mentions.filter(m=>!seen.includes(m.conversation_id));
+  updateNotificationBadge();
+  seen.forEach(id=>api('/api/mentions/read',{conversation_id:id}).catch(()=>{}));
 }
 
 function resetViewStateForTenant(){if(uiState.tenantId!==state.boot.tenant_id){uiState.tenantId=state.boot.tenant_id;uiState.selected.clear();uiState.report={};uiState.category='';uiState.visibility='';uiState.articleQuery='';}}

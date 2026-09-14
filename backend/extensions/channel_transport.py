@@ -1,4 +1,5 @@
-"""LINE Messaging API over HTTPS and TLS-only IMAP/SMTP, plus parsing and building email. No credentials in logs."""
+"""LINE Messaging API and the Facebook Graph API over HTTPS, TLS-only IMAP/SMTP, plus parsing and building email.
+No credentials in logs."""
 import base64
 from contextlib import contextmanager
 from email import policy
@@ -14,6 +15,7 @@ import smtplib
 import socket
 import ssl
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from backend.exceptions.errors import ChannelError
@@ -268,6 +270,41 @@ def build_email(cfg,recipient,subject,text,message_id,reference,attachments):
         major,minor=file['mime'].split('/',1)
         mail.add_attachment(file['content'],maintype=major,subtype=minor,filename=file['name'])
     return mail
+
+
+GRAPH_API='https://graph.facebook.com/v23.0'
+
+
+def facebook_request(token,path,body=None,sending=False):
+    """Graph API call with the Page token as the access_token parameter, as the Messenger Platform documents.
+    A send whose answer is lost may already have been delivered, so it is reported as uncertain, never retried."""
+    url=GRAPH_API+path+('&' if '?' in path else '?')+urllib.parse.urlencode({'access_token':token})
+    req=urllib.request.Request(url,data=json.dumps(body,ensure_ascii=False).encode() if body is not None else None,
+        headers={'Content-Type':'application/json'} if body is not None else {})
+    try:
+        with open_without_redirects(req,15) as response:
+            return json.loads(response.read(1_000_000) or b'{}')
+    except urllib.error.HTTPError as error:
+        code=error.code;error.close()
+        if code in (401,403):raise ChannelError('credentials') from None
+        raise ChannelError('temporary' if code>=500 or code==429 else 'rejected',retryable=code>=500 or code==429) from None
+    except (OSError,urllib.error.URLError,TimeoutError,ValueError):
+        raise ChannelError('unknown' if sending else 'network',retryable=not sending,uncertain=sending) from None
+
+
+def verify_facebook(token):
+    """The Page behind a Page access token: {'identity': page id, 'display_name': page name}."""
+    try:data=facebook_request(token,'/me?fields=id,name')
+    except ChannelError as error:
+        if error.code=='rejected':raise ChannelError('credentials') from None
+        raise
+    if not isinstance(data,dict) or not re.fullmatch(r'[0-9]{1,40}',str(data.get('id',''))):raise ChannelError('credentials')
+    return {'identity':str(data['id']),'display_name':str(data.get('name') or 'Facebook Page')[:100]}
+
+
+def send_facebook(token,recipient,text):
+    data=facebook_request(token,'/me/messages',{'recipient':{'id':recipient},'messaging_type':'RESPONSE','message':{'text':text}},sending=True)
+    return str(data.get('message_id',''))[:200] if isinstance(data,dict) else ''
 
 
 def send_email(cfg,secret,recipient,mail):

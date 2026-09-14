@@ -1,0 +1,5 @@
+<div class="followup-item{{#late}} late{{/late}}{{#done}} done{{/done}}">
+  <span class="followup-icon">{{icon:clock}}</span>
+  <div class="grow"><strong>{{note}}</strong><span class="tiny muted">{{when}} · ตั้งโดย {{by}}</span></div>
+  {{^done}}<button class="btn sm" data-action="followup-done" data-id="{{id}}">{{icon:check}}เสร็จแล้ว</button>{{/done}}
+</div>

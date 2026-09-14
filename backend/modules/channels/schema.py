@@ -30,9 +30,12 @@ def remove_credentials(body, enabled):
     return remove
 
 
+CREDENTIAL_KEYS = {'line':('channel_secret','access_token'),'facebook':('page_access_token','app_secret'),'email':('password',)}
+
+
 def credentials(body, kind, secret):
     """Copy newly typed credentials into `secret`; empty fields keep the saved value."""
-    for key in ('channel_secret','access_token') if kind=='line' else ('password',):
+    for key in CREDENTIAL_KEYS[kind]:
         value = body.get(key,'')
         require(isinstance(value,str) and len(value)<=2000 and not any(ord(c)<32 for c in value),f'ข้อมูล {key} ไม่ถูกต้อง')
         if value:
@@ -104,6 +107,22 @@ def line_webhook_events(raw, identity):
     require(isinstance(events,list) and len(events)<=100,'Webhook events ไม่ถูกต้อง')
     for event in events:
         require(isinstance(event,dict) and isinstance(event.get('webhookEventId'),str) and 1<=len(event['webhookEventId'])<=100,'Webhook event ID ไม่ถูกต้อง')
+    return events
+
+
+def facebook_events(raw, page_id):
+    """The messaging events of a Page webhook addressed to the connected Page; entries for other Pages are ignored."""
+    try:
+        data = json.loads(raw)
+    except (ValueError,UnicodeError):
+        raise APIError(400,'Webhook JSON ไม่ถูกต้อง') from None
+    require(isinstance(data,dict) and data.get('object')=='page','Webhook ไม่ใช่เหตุการณ์ของเพจ Facebook')
+    entries = data.get('entry')
+    require(isinstance(entries,list) and len(entries)<=100,'Webhook entry ไม่ถูกต้อง')
+    events = []
+    for entry in entries:
+        if isinstance(entry,dict) and page_id and str(entry.get('id'))==page_id and isinstance(entry.get('messaging'),list):
+            events.extend(event for event in entry['messaging'][:100] if isinstance(event,dict))
     return events
 
 

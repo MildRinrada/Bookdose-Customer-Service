@@ -245,16 +245,21 @@ def fail_queued(db, kind):
     db.execute("UPDATE messages SET delivery='failed' WHERE id IN (SELECT message_id FROM channel_outbox WHERE kind=? AND status='failed')",(kind,))
 
 
-def stale_sending(db, started_before):
-    return rows(db,"SELECT * FROM channel_outbox WHERE status='sending' AND updated_at<?",(started_before,))
+# LINE / Email and Facebook have separate delivery rounds, so these take the kinds a round handles.
+def _kinds(kinds):
+    return 'kind IN ('+','.join('?'*len(kinds))+')'
 
 
-def any_sending(db):
-    return bool(one(db,"SELECT 1 FROM channel_outbox WHERE status='sending'"))
+def stale_sending(db, started_before, kinds=KINDS):
+    return rows(db,f"SELECT * FROM channel_outbox WHERE status='sending' AND updated_at<? AND {_kinds(kinds)}",(started_before,*kinds))
 
 
-def next_queued(db):
-    return one(db,"SELECT * FROM channel_outbox WHERE status='queued' AND (next_attempt_at IS NULL OR next_attempt_at<=?) ORDER BY rowid LIMIT 1",(now(),))
+def any_sending(db, kinds=KINDS):
+    return bool(one(db,f"SELECT 1 FROM channel_outbox WHERE status='sending' AND {_kinds(kinds)}",kinds))
+
+
+def next_queued(db, kinds=KINDS):
+    return one(db,f"SELECT * FROM channel_outbox WHERE status='queued' AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND {_kinds(kinds)} ORDER BY rowid LIMIT 1",(now(),*kinds))
 
 
 def claim_outbox(db, job_id, lease, attempts):
@@ -314,6 +319,47 @@ def has_active_file_links(db, message_id):
 
 def revoke_file_links(db, message_id):
     db.execute('UPDATE channel_file_links SET revoked=1 WHERE message_id=?',(message_id,))
+
+
+# Facebook Messenger: the Page's route (control database) and the organization's settings row (tenant database)
+def active_facebook_route(cd, route_id):
+    return one(cd,"SELECT r.* FROM facebook_routes r JOIN tenants t ON t.id=r.tenant_id WHERE r.id=? AND t.status='active'",(route_id,))
+
+
+def facebook_page_taken(cd, page_id, route_id):
+    return bool(one(cd,'SELECT 1 FROM facebook_routes WHERE page_id=? AND id!=?',(page_id,route_id)))
+
+
+def save_facebook_route(cd, route_id, tenant_id, page_id):
+    cd.execute('INSERT INTO facebook_routes VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET page_id=excluded.page_id',(route_id,tenant_id,page_id))
+
+
+def find_facebook_setting(db):
+    row = one(db,'SELECT * FROM facebook_settings WHERE id=1')
+    if row:
+        row['config'] = json.loads(row['config'])
+    return row
+
+
+def save_facebook_setting(db, route_id, enabled, config_json, generation, last_checked):
+    """New settings start a new generation and clear the last error."""
+    db.execute('''INSERT INTO facebook_settings(id,route_id,enabled,config,generation,last_checked) VALUES(1,?,?,?,?,?)
+                  ON CONFLICT(id) DO UPDATE SET enabled=excluded.enabled,config=excluded.config,generation=excluded.generation,
+                  last_error='',last_checked=excluded.last_checked''',(route_id,int(enabled),config_json,generation,last_checked))
+
+
+def set_facebook_check(db, error):
+    db.execute('UPDATE facebook_settings SET last_error=?,last_checked=? WHERE id=1',(error,now()))
+
+
+def set_facebook_received(db):
+    db.execute("UPDATE facebook_settings SET last_received=?,last_error='' WHERE id=1",(now(),))
+
+
+def insert_channel_event(db, route_id, event_key, kind, generation):
+    """A received event that was handled at once (recorded so a redelivery is recognised)."""
+    db.execute('''INSERT INTO channel_inbox(id,route_id,event_key,kind,generation,status,created_at,updated_at)
+                  VALUES(?,?,?,?,?,'done',?,?)''',(uid(),route_id,event_key,kind,generation,now(),now()))
 
 
 # Email OAuth token refresh: a short lease so only one worker refreshes at a time

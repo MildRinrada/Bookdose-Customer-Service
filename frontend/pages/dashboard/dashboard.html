@@ -18,6 +18,13 @@
     <div class="table-footer"><span>แสดงสูงสุด 6 เคสล่าสุด</span><a href="#tickets">ไปที่เคสบริการ →</a></div>
   </section>
   <aside class="stack dashboard-aside">
+    <section class="card me-card">
+      <div class="card-header">
+        <div><h2>ถึงคุณ</h2><p>ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ</p></div>
+        <span class="badge {{#meCount}}pending_customer{{/meCount}}" id="me-count">{{meCount}} รายการ</span>
+      </div>
+      <div class="card-body" id="me-items">{{{meItems}}}</div>
+    </section>
     <section class="card action-needed">
       <div class="card-header">
         <div><h2>เคสที่ต้องดำเนินการทันที</h2><p>Action Needed</p></div>
@@ -40,4 +47,5 @@
     </section>
   </aside>
 </div>
+{{#managerView}}<section class="manager-view" id="manager-view" aria-labelledby="manager-title">{{{managerView}}}</section>{{/managerView}}
 <div class="section-bottom"><span>พื้นที่ทำงาน {{tenantName}} · ข้อมูลตามสิทธิ์ของคุณ</span><span>Made for meaningful support. ♡</span></div>

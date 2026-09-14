@@ -48,13 +48,18 @@ const paths = {
   trash:'M4 7h16 M10 11v6 M14 11v6 M6 7l1 14h10l1-14 M9 7V4h6v3',
   restore:'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5',
   code:'M8 6l-6 6 6 6 M16 6l6 6-6 6',
+  // Automation, mentions, ratings and Facebook Messenger
+  macro:'M4 4h16v16H4z M13 7l-4 6h4l-2 4 5-6h-4z',
+  at:'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1',
+  star:'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z',
+  facebook:'M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.3S17.5 2 12 2z M6.5 13.5l3.8-4 2 2 3.7-4-3.8 4-2-2z',
 };
 
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || paths.file}"/></svg>`;
 
 const brand = () => render('ui/brand');
 
-const channelIcons = {web:'globe',line:'chat',email:'mail',manual:'file'};
+const channelIcons = {web:'globe',line:'chat',email:'mail',facebook:'facebook',manual:'file'};
 
 const statusLabels = {new:'ใหม่',open:'กำลังดำเนินการ',pending_customer:'รอลูกค้า',pending_internal:'รอทีมภายใน',resolved:'แก้ไขแล้ว',closed:'ปิดเคสแล้ว'};
 
@@ -62,16 +67,19 @@ const priorityLabels = {low:'ต่ำ',normal:'ปกติ',high:'สูง',u
 
 const roleLabels = {admin:'ผู้ดูแลองค์กร',manager:'หัวหน้าทีม',agent:'เจ้าหน้าที่'};
 
-const pageLabels = {dashboard:'ภาพรวม',inbox:'กล่องข้อความ',tickets:'เคสบริการ',contacts:'ข้อมูลลูกค้า',knowledge:'คลังความรู้',reports:'รายงาน',settings:'ตั้งค่าองค์กร',audit:'ประวัติการทำงาน',trash:'ถังขยะ',notifications:'การแจ้งเตือน',platform:'จัดการแพลตฟอร์ม'};
+const pageLabels = {dashboard:'ภาพรวม',inbox:'กล่องข้อความ',tickets:'เคสบริการ',contacts:'ข้อมูลลูกค้า',knowledge:'คลังความรู้',reports:'รายงาน',automation:'ระบบอัตโนมัติ',settings:'ตั้งค่าองค์กร',audit:'ประวัติการทำงาน',trash:'ถังขยะ',notifications:'การแจ้งเตือน',platform:'จัดการแพลตฟอร์ม'};
 
-const eventLabels = {'organization.created':'สร้างองค์กร','ticket.created':'เปิดเคสใหม่','ticket.updated':'อัปเดตเคส','message.reply':'ตอบกลับลูกค้า','message.note':'เพิ่มบันทึกภายใน','conversation.created':'รับเรื่องใหม่ผ่านเว็บ','conversation.linked':'เชื่อมบทสนทนากับเคส','conversation.closed':'ปิดบทสนทนา','conversation.open':'เปิดบทสนทนาอีกครั้ง','contact.created':'เพิ่มลูกค้า','contact.updated':'แก้ไขข้อมูลลูกค้า','contact.merged':'รวมข้อมูลลูกค้าที่ซ้ำ','article.saved':'บันทึกบทความ','article.deleted':'ลบบทความ','ticket.deleted':'ลบเคส','contact.deleted':'ลบข้อมูลลูกค้า','ticket.restored':'กู้คืนเคสจากถังขยะ','contact.restored':'กู้คืนข้อมูลลูกค้า','article.restored':'กู้คืนบทความ','ticket.purged':'ลบเคสถาวร','contact.purged':'ลบข้อมูลลูกค้าถาวร','article.purged':'ลบบทความถาวร','settings.updated':'ปรับการตั้งค่า','team.created':'เพิ่มทีม','member.updated':'จัดการสมาชิก','tickets.exported':'ส่งออกรายงานเคส','backup.created':'สำรองข้อมูลองค์กร','tenant.created':'สร้างองค์กร','tenant.suspended':'ระงับองค์กร','tenant.active':'เปิดใช้งานองค์กร','tenant.support_access':'ผู้ดูแลแพลตฟอร์มเข้าองค์กรด้วยสิทธิ์ Support Access','auth.login':'เข้าสู่ระบบ'};
+const eventLabels = {'organization.created':'สร้างองค์กร','ticket.created':'เปิดเคสใหม่','ticket.updated':'อัปเดตเคส','message.reply':'ตอบกลับลูกค้า','message.note':'เพิ่มบันทึกภายใน','conversation.created':'รับเรื่องใหม่ผ่านเว็บ','conversation.linked':'เชื่อมบทสนทนากับเคส','conversation.closed':'ปิดบทสนทนา','conversation.open':'เปิดบทสนทนาอีกครั้ง','contact.created':'เพิ่มลูกค้า','contact.updated':'แก้ไขข้อมูลลูกค้า','contact.merged':'รวมข้อมูลลูกค้าที่ซ้ำ','article.saved':'บันทึกบทความ','article.deleted':'ลบบทความ','ticket.deleted':'ลบเคส','contact.deleted':'ลบข้อมูลลูกค้า','ticket.restored':'กู้คืนเคสจากถังขยะ','contact.restored':'กู้คืนข้อมูลลูกค้า','article.restored':'กู้คืนบทความ','ticket.purged':'ลบเคสถาวร','contact.purged':'ลบข้อมูลลูกค้าถาวร','article.purged':'ลบบทความถาวร','settings.updated':'ปรับการตั้งค่า','team.created':'เพิ่มทีม','member.updated':'จัดการสมาชิก','tickets.exported':'ส่งออกรายงานเคส','backup.created':'สำรองข้อมูลองค์กร','tenant.created':'สร้างองค์กร','tenant.suspended':'ระงับองค์กร','tenant.active':'เปิดใช้งานองค์กร','tenant.support_access':'ผู้ดูแลแพลตฟอร์มเข้าองค์กรด้วยสิทธิ์ Support Access','auth.login':'เข้าสู่ระบบ',
+  'automation.rule_applied':'กฎรับเรื่องอัตโนมัติทำงาน','automation.rule_saved':'บันทึกกฎรับเรื่อง','automation.rule_deleted':'ลบกฎรับเรื่อง','automation.macro_saved':'บันทึก Macro','automation.macro_deleted':'ลบ Macro','automation.settings_updated':'ปรับการตั้งค่าอัตโนมัติ',
+  'ticket.escalated':'ยกระดับเคสอัตโนมัติ','macro.run':'ใช้ Macro','followup.created':'ตั้งเตือนติดตามผล','followup.done':'ปิดรายการติดตามผล','csat.sent':'ส่งแบบประเมินความพึงพอใจ','csat.rated':'ลูกค้าให้คะแนนความพึงพอใจ'};
 
-const state = {boot:null,work:null,tickets:[],contacts:[],conversations:[],articles:[],trash:null,route:'dashboard',detail:null,filter:{},epoch:0,portal:null};
+// dash: the dashboard's own data (manager view); alerts: mentions, follow-ups and escalations for the signed-in member.
+const state = {boot:null,work:null,tickets:[],contacts:[],conversations:[],articles:[],trash:null,route:'dashboard',detail:null,filter:{},epoch:0,portal:null,dash:null,alerts:null};
 
 let toastTimer, pollTimer;
 
 /* Review improvements: accessible controls, scoped views and safe article formatting. */
-const uiState={selected:new Set(),density:'comfortable',contactSort:'name',contactDirection:1,contactQuery:'',contactFilter:'all',contactCompany:'',inboxFilter:'open',inboxQuery:'',drafts:{},category:'',visibility:'',articleQuery:'',articleSort:'updated',notificationFilter:'all',notificationMenuFilter:'all',pager:{},report:{},audit:{},trash:{},members:{},platform:{},settingsTab:'overview',combos:{}};
+const uiState={selected:new Set(),density:'comfortable',contactSort:'name',contactDirection:1,contactQuery:'',contactFilter:'all',contactCompany:'',inboxFilter:'open',inboxQuery:'',inboxChannel:'',drafts:{},category:'',visibility:'',articleQuery:'',articleSort:'updated',notificationFilter:'all',notificationMenuFilter:'all',pager:{},report:{},audit:{},trash:{},members:{},platform:{},settingsTab:'overview',combos:{}};
 
 function avatar(name,index=0){return render('ui/avatar',{variant:index%4,initials:[...String(name || '?')].slice(0,2).join('')});}
 

@@ -1,0 +1,20 @@
+<form data-form="rule" data-id="{{id}}" class="stack">
+  {{{nameField}}}
+  <fieldset class="auto-fieldset">
+    <legend>ถ้าเรื่องใหม่…</legend>
+    <div class="form-grid">
+      <div class="field"><label for="rule-channel">มาจากช่องทาง</label><select id="rule-channel" name="channel">{{{channelOptions}}}</select></div>
+      <div class="field"><label for="rule-keywords">มีคำในหัวเรื่องหรือข้อความ</label><textarea id="rule-keywords" name="keywords" maxlength="2000" rows="2" placeholder="เช่น ชำระเงิน, โอนเงิน, ใบเสร็จ">{{keywords}}</textarea><span class="tiny muted">คั่นด้วยจุลภาค ตรงคำใดคำหนึ่งก็ทำงาน · เว้นว่างเพื่อใช้กับทุกเรื่องจากช่องทางนี้</span></div>
+    </div>
+  </fieldset>
+  <fieldset class="auto-fieldset">
+    <legend>…ให้ระบบ</legend>
+    <div class="form-grid">
+      <div class="field"><label for="rule-priority">ตั้งความเร่งด่วน</label><select id="rule-priority" name="set_priority">{{{priorityOptions}}}</select></div>
+      <div class="field"><label for="rule-team">ส่งให้ทีม</label><select id="rule-team" name="set_team_id">{{{teamOptions}}}</select></div>
+      <div class="field"><label for="rule-assignee">มอบหมายให้</label><select id="rule-assignee" name="set_assignee_id">{{{assigneeOptions}}}</select></div>
+    </div>
+  </fieldset>
+  <label class="check"><input type="checkbox" name="enabled" {{#enabled}}checked{{/enabled}}>เปิดใช้งานกฎนี้</label>
+  {{{formActions}}}
+</form>

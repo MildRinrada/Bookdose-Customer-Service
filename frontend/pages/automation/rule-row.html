@@ -1,0 +1,11 @@
+<article class="auto-row{{^enabled}} is-off{{/enabled}}">
+  <div class="auto-row-main">
+    <div class="auto-row-title"><strong>{{name}}</strong>{{^enabled}}<span class="badge closed">ปิดใช้งาน</span>{{/enabled}}</div>
+    <p class="auto-flow"><span class="auto-chip when">ถ้า</span><span>{{condition}}</span><span class="auto-chip then">ให้</span><span>{{actions}}</span></p>
+  </div>
+  <div class="auto-row-actions">
+    <button class="btn sm" data-action="rule-toggle" data-id="{{id}}">{{#enabled}}ปิดกฎ{{/enabled}}{{^enabled}}เปิดกฎ{{/enabled}}</button>
+    <button class="btn sm" data-action="rule-edit" data-id="{{id}}">{{icon:edit}}แก้ไข</button>
+    <button class="icon-btn danger-link" data-action="rule-delete" data-id="{{id}}" aria-label="ลบกฎ {{name}}" title="ลบกฎ">{{icon:trash}}</button>
+  </div>
+</article>

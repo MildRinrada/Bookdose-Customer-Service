@@ -25,5 +25,10 @@ def post_message(req):
     return req.send(201,{'id':service.post_customer_message(req.db,req.org['id'],req.conversation,req.body)})
 
 
+def rate(req):
+    service.rate_service(req.db,req.conversation,req.body)
+    return req.send(200,{'ok':True})
+
+
 def download_attachment(req, file_id):
     return req.send_download(*service.public_attachment(req.db,req.org['id'],req.conversation,file_id))

@@ -1,0 +1,25 @@
+<main class="portal">
+  {{{brand}}}
+  <section class="card mt">
+    <div class="card-body">
+      {{#signedIn}}<h1>กรุณาออกจากระบบก่อนยืนยันบัญชีใหม่</h1><p>ขณะนี้เข้าสู่ระบบด้วย {{email}}</p><button class="btn" data-action="verification-logout">ออกจากระบบเพื่อยืนยันอีเมล</button> <a href="#dashboard">กลับพื้นที่ทำงาน</a>{{/signedIn}}
+      {{#verify}}
+        <h1>ยืนยันอีเมลของคุณ</h1>
+        <p>กดปุ่มด้านล่างเพื่อยืนยันอีเมลและสร้างองค์กรที่คุณสมัครไว้</p>
+        <form data-form="verify-email"><input type="hidden" name="token" value="{{token}}"><button class="btn primary" type="submit">ยืนยันอีเมลและสร้างองค์กร</button></form>
+        <p class="small"><a href="#resend-email">ลิงก์หมดอายุหรือใช้ไม่ได้? ขอลิงก์ใหม่</a></p>
+      {{/verify}}
+      {{#resend}}
+        <h1>{{#checkEmail}}กรุณาตรวจอีเมลของคุณ{{/checkEmail}}{{^checkEmail}}ขอลิงก์ยืนยันอีเมลใหม่{{/checkEmail}}</h1>
+        <p>{{#checkEmail}}หากอีเมลนี้มีคำขอสมัครที่รอยืนยัน ระบบจะส่งลิงก์ให้ กรุณาตรวจกล่องจดหมายและสแปม{{/checkEmail}} ลิงก์มีอายุ 1 ชั่วโมง ให้เปิดลิงก์แล้วกดยืนยันเพื่อเข้าใช้งาน</p>
+        <form data-form="resend-email">
+          {{{emailField}}}
+          <p class="tiny muted">ขอลิงก์ใหม่ได้หลังรอ 1 นาที ลิงก์ใหม่จะยกเลิกลิงก์เดิม หากสมัครเกิน 24 ชั่วโมงแล้ว ให้สมัครใหม่</p>
+          <button class="btn primary" type="submit">ส่งลิงก์ยืนยันใหม่</button>
+          <div class="small" role="status" data-resend-status></div>
+        </form>
+      {{/resend}}
+      <p class="small mt"><a href="#login">เข้าสู่ระบบ</a> · <a href="#register">สมัครองค์กรใหม่</a></p>
+    </div>
+  </section>
+</main>

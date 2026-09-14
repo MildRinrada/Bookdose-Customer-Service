@@ -1,0 +1,43 @@
+<div class="page-heading dashboard-heading">
+  <h1>สวัสดี {{firstName}} 👋 <span class="dashboard-summary">{{#activeCount}}วันนี้มี <strong>{{activeCount}}</strong> เคสที่รอการดูแล{{/activeCount}}{{^activeCount}}ยังไม่มีเคสที่รอการดูแล{{/activeCount}}</span></h1>
+  <div class="flex"><span class="date-label">{{icon:calendar}} {{today}}</span>{{{newTicketButton}}}</div>
+</div>
+<div class="stats-grid">{{{stats}}}</div>
+<div class="dashboard-grid">
+  <section class="card">
+    <div class="card-header">
+      <div><h2>เคสล่าสุด</h2><p>ติดตามทุกเรื่องให้ได้รับการดูแลอย่างต่อเนื่อง</p></div>
+      <a class="btn subtle small" href="#tickets">ดูทั้งหมด {{icon:arrow}}</a>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-action="dashboard-tab" data-filter="all">ทั้งหมด <span>{{allCount}}</span></button>
+      <button class="tab" data-action="dashboard-tab" data-filter="mine">มอบหมายให้ฉัน <span>{{mineCount}}</span></button>
+      <button class="tab" data-action="dashboard-tab" data-filter="new">เคสใหม่ <span>{{newCount}}</span></button>
+    </div>
+    <div id="dashboard-tickets">{{{recentTable}}}</div>
+    <div class="table-footer"><span>แสดงสูงสุด 6 เคสล่าสุด</span><a href="#tickets">ไปที่เคสบริการ →</a></div>
+  </section>
+  <aside class="stack dashboard-aside">
+    <section class="card action-needed">
+      <div class="card-header">
+        <div><h2>เคสที่ต้องดำเนินการทันที</h2><p>Action Needed</p></div>
+        <span class="badge {{#neededCount}}suspended{{/neededCount}}">{{neededCount}} เคส</span>
+      </div>
+      <div class="card-body">
+        {{{neededItems}}}{{^neededItems}}<div class="empty-mini">ไม่มีเคสที่ต้องเร่งดำเนินการ ✨</div>{{/neededItems}}
+        {{#moreNeeded}}<a class="small" href="#tickets?filter=active">ดูอีก {{moreNeeded}} เคส →</a>{{/moreNeeded}}
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header"><div><h2>เคสเข้าใหม่</h2><p>ย้อนหลัง 7 วัน · แกนตั้ง: จำนวนเคส</p></div>{{icon:chart}}</div>
+      <div class="card-body">
+        <div class="case-chart">
+          <div class="chart-y" aria-hidden="true"><span class="y-top">{{chartMax}}</span>{{#chartMid}}<span class="y-mid">{{chartMid}}</span>{{/chartMid}}<span class="y-bottom">0</span></div>
+          <div class="mini-chart">{{{chartColumns}}}</div>
+        </div>
+        <div class="chart-legend">ชี้หรือแตะที่แท่งเพื่อดูจำนวนเคส</div>
+      </div>
+    </section>
+  </aside>
+</div>
+<div class="section-bottom"><span>พื้นที่ทำงาน {{tenantName}} · ข้อมูลตามสิทธิ์ของคุณ</span><span>Made for meaningful support. ♡</span></div>

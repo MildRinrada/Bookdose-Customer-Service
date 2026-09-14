@@ -1,0 +1,38 @@
+<form class="composer {{#compact}}composer-compact{{/compact}}" data-form="{{formName}}" data-conversation="{{id}}" data-channel="{{channel}}">
+  {{^publicView}}
+    {{^compact}}<div class="composer-head"><div class="flex wrap" data-ai-controls="{{id}}">{{{aiControls}}}</div></div>{{/compact}}
+    <div data-ai-panel="{{id}}" aria-live="polite"></div>
+  {{/publicView}}
+  <label class="sr-only" for="compose-{{id}}">ข้อความ</label>
+  {{^publicView}}<div class="richtext composer-input" contenteditable="true" role="textbox" aria-multiline="true" aria-label="ข้อความ" aria-keyshortcuts="Control+Enter Meta+Enter" data-rich-for="compose-{{id}}" data-placeholder="{{#manual}}บันทึกรายละเอียดการติดตามงาน…{{/manual}}{{^manual}}พิมพ์ข้อความของคุณที่นี่…{{/manual}} ({{sendShortcut}} เพื่อส่ง)"></div>{{/publicView}}
+  <textarea id="compose-{{id}}" name="body" maxlength="{{maxLength}}" {{^publicView}}class="rich-source" tabindex="-1" aria-hidden="true"{{/publicView}} {{#publicView}}aria-keyshortcuts="Control+Enter Meta+Enter"{{/publicView}} placeholder="{{#manual}}บันทึกรายละเอียดการติดตามงาน…{{/manual}}{{^manual}}พิมพ์ข้อความของคุณที่นี่…{{/manual}}">{{draft}}</textarea>
+  <div class="file-list" data-file-list aria-live="polite"></div>
+  <div class="composer-bottom">
+    {{^publicView}}
+      <div class="composer-tabs composer-mode" role="radiogroup" aria-label="ประเภทข้อความ">
+        <label><input type="radio" name="kind" value="reply" {{#manual}}disabled{{/manual}}{{^manual}}checked{{/manual}}>{{icon:send}}ตอบกลับลูกค้า</label>
+        <label><input type="radio" name="kind" value="note" {{#manual}}checked{{/manual}}>{{icon:lock}}บันทึกภายใน</label>
+      </div>
+      <span class="note-hint">{{icon:lock}}ลูกค้าจะไม่เห็นข้อความนี้</span>
+    {{/publicView}}
+    <div class="composer-actions">
+      {{^publicView}}<div class="composer-format" role="group" aria-label="จัดรูปแบบข้อความ">
+        <button class="tool" type="button" data-action="editor-format" data-format="bold" aria-label="ตัวหนา" title="ตัวหนา (Ctrl+B)"><b>B</b></button>
+        <button class="tool" type="button" data-action="editor-format" data-format="italic" aria-label="ตัวเอียง" title="ตัวเอียง (Ctrl+I)"><i>I</i></button>
+        <button class="tool" type="button" data-action="editor-format" data-format="bullet" aria-label="รายการหัวข้อย่อย" title="รายการหัวข้อย่อย">{{icon:list}}</button>
+        <button class="tool" type="button" data-action="editor-format" data-format="link" aria-label="ลิงก์" title="ลิงก์ (Ctrl+K)">{{icon:link}}</button>
+      </div>
+      <span class="tool-divider" aria-hidden="true"></span>{{/publicView}}
+      <input id="files-{{id}}" class="attach-input" type="file" name="files" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt" data-file-ready="1" aria-label="แนบไฟล์ สูงสุด 3 ไฟล์ รวม 5 MB">
+      <label class="tool-btn" for="files-{{id}}" title="แนบไฟล์ หรือลากไฟล์มาวางในกล่องข้อความ">{{icon:paperclip}}<span>แนบไฟล์</span></label>
+      {{^publicView}}
+        <button type="button" class="tool-btn" data-action="canned" aria-label="แทรกคำตอบสำเร็จรูป" title="แทรกคำตอบสำเร็จรูป">{{icon:bolt}}<span>คำตอบสำเร็จรูป</span></button>
+        <button type="button" class="tool-btn" data-action="chat-knowledge" aria-label="ค้นคู่มือเพื่อร่างคำตอบ" title="ค้นคู่มือเพื่อร่างคำตอบ">{{icon:book}}<span>ค้นคู่มือ</span></button>
+        {{{aiDraftButton}}}
+      {{/publicView}}
+    </div>
+    <button class="btn primary composer-send" type="submit" title="ส่ง ({{sendShortcut}})">{{icon:send}}<span class="send-reply">{{#manual}}บันทึก{{/manual}}{{^manual}}ส่งข้อความ{{/manual}}</span><span class="send-note">บันทึกภายใน</span></button>
+  </div>
+  <div class="composer-tip">{{#line}}LINE: รูปขนาดเล็กแสดงในแชต ไฟล์อื่นเป็นลิงก์ 7 วัน · ต้องตั้งโดเมน HTTPS{{/line}}{{^line}}ลากรูป วิดีโอ หรือเอกสารมาวางได้ · สูงสุด 3 ไฟล์ รวม 5 MB{{/line}}</div>
+  {{#manual}}<p class="tiny muted mt">เคสนี้บันทึกโดยเจ้าหน้าที่ ยังไม่มีหน้าติดตามสำหรับลูกค้า</p>{{/manual}}
+</form>

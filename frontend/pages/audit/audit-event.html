@@ -1,0 +1,8 @@
+<li class="audit-event tone-{{tone}}">
+  <time datetime="{{iso}}" title="{{full}}">{{time}}</time>
+  <span class="audit-icon" title="{{groupLabel}}">{{{icon}}}</span>
+  <div class="audit-body">
+    <p class="audit-line"><strong title="{{actor}}">{{actorName}}</strong> <span class="audit-label">{{label}}</span>{{#entityHref}} <a class="audit-entity" href="{{entityHref}}">{{entityName}}{{icon:arrow}}</a>{{/entityHref}}{{^entityHref}}{{#entityName}} <span class="audit-entity plain">{{entityName}}</span>{{/entityName}}{{/entityHref}}</p>
+    {{#changes}}<p class="audit-changes">{{changes}}</p>{{/changes}}
+  </div>
+</li>

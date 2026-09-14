@@ -14,8 +14,8 @@ import urllib.error
 import zipfile
 import test_app as base
 from test_app import app, D
-import channel_service as C
-import channel_transport as T
+from backend.extensions import channel_transport as T
+from backend.modules.channels import service as C
 
 BOT='U'+'a'*32
 SENDER='U'+'b'*32
@@ -114,6 +114,12 @@ class ChannelTests(unittest.TestCase):
             C.process_line(self.org,app.store_message)
         data=self.ok(self.admin,'/api/conversations/'+conv['id'])
         self.assertEqual(len(data['messages'][-1]['attachments']),1)
+        self.webhook(cfg['route_id'],[self.event('video',message={'id':'125','type':'video'})])
+        content=b'\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom'
+        with patch.object(T,'line_request',return_value=(content,'video/mp4',None)):
+            C.process_line(self.org,app.store_message)
+        media=self.ok(self.admin,'/api/conversations/'+conv['id'])['messages'][-1]['attachments'][0]
+        self.assertEqual((media['name'],media['mime']),('video.mp4','video/mp4'))
 
     def test_line_late_event_does_not_reopen(self):
         conv=self.incoming_line();self.ok(self.admin,'/api/conversations/'+conv['id'],{'status':'closed'},'PATCH')

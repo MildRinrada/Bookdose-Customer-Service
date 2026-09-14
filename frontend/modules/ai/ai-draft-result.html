@@ -1,0 +1,9 @@
+<div class="ai-result">
+  <div class="flex between"><strong class="small">{{icon:sparkle}}ร่างจาก AI · ยังไม่ได้ส่ง</strong><button type="button" class="icon-btn" data-action="ai-dismiss" aria-label="ปิดร่าง AI">{{icon:close}}</button></div>
+  <p class="tiny muted mt">สรุปสำหรับเจ้าหน้าที่: {{summary}}</p>
+  {{#needsHuman}}<div class="notice warning mb">เรื่องนี้ต้องให้เจ้าหน้าที่ตรวจสอบเพิ่มเติม AI ยังยืนยันคำตอบไม่ได้</div>{{/needsHuman}}
+  {{#answer}}<div class="pre small">{{answer}}</div>{{/answer}}
+  {{{citations}}}
+  <p class="tiny muted mt">ตรวจข้อมูลและความเหมาะสมก่อนส่ง โดยเฉพาะร่างที่อ้างอิงข้อมูลภายใน</p>
+  {{#answer}}<button class="btn primary sm" type="button" data-action="ai-use-draft" data-job="{{jobId}}">นำร่างใส่ช่องข้อความ</button>{{/answer}}
+</div>

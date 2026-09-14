@@ -21,8 +21,12 @@ import zipfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import app
-import database as D
-import registration_service as RS
+from backend.database import db as D
+from backend.extensions import channel_transport as T
+from backend.middleware import rate_limit
+from backend.modules.platform import repository as platform_repository
+from backend.utils.dates import after
+from backend.utils.security import password_ok
 
 
 class Client:
@@ -77,7 +81,7 @@ class IntegrationTests(unittest.TestCase):
         self.original_data=D.DATA
         D.DATA=Path(self.temporary.name)/'data'
         D.init()
-        app.RATES.clear()
+        rate_limit.RATES.clear()
         self.server=app.ThreadingHTTPServer(('127.0.0.1',0),QuietHandler)
         self.server.daemon_threads=True
         self.server.secure_cookies=False
@@ -117,7 +121,7 @@ class IntegrationTests(unittest.TestCase):
         cfg={'enabled':True,'smtp_host':'smtp.example.com','smtp_port':465,'username':'mailer@example.com',
              'address':'mailer@example.com','public_base_url':'https://bookdose.example.com','password':'Secret-smtp-password'}
         self.ok(self.admin,'/api/platform/registration',cfg)
-        self.mailer=patch.object(RS.T,'send_email',return_value='message-id').start()
+        self.mailer=patch.object(T,'send_email',return_value='message-id').start()
         self.addCleanup(patch.stopall)
         return cfg
 
@@ -151,7 +155,7 @@ class IntegrationTests(unittest.TestCase):
         with D.control() as db:
             user=D.one(db,'SELECT * FROM users WHERE email=?',('new@example.com',))
             self.assertNotEqual(user['password'],payload['password'])
-            self.assertTrue(D.password_ok(payload['password'],user['password']))
+            self.assertTrue(password_ok(payload['password'],user['password']))
             self.assertTrue(D.one(db,"SELECT id FROM audit_logs WHERE action='tenant.register' AND entity=?",(client.tenant,)))
         self.ok(client,'/api/logout',{})
         returning=Client(self.base)
@@ -256,9 +260,9 @@ class IntegrationTests(unittest.TestCase):
             self.assertNotIn('New-password-123!',json.dumps(pending))
             self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],1)
             self.assertEqual(db.execute('SELECT COUNT(*) FROM tenants').fetchone()[0],1)
-            db.execute('UPDATE pending_registrations SET expires_at=?',(RS.after(-1),))
+            db.execute('UPDATE pending_registrations SET expires_at=?',(after(seconds=-1),))
         self.assertEqual(client.call('/api/register/verify',{'token':token})[0],400)
-        with D.control() as db:db.execute('UPDATE pending_registrations SET expires_at=?',(RS.after(3600),))
+        with D.control() as db:db.execute('UPDATE pending_registrations SET expires_at=?',(after(seconds=3600),))
         self.assertEqual(client.call('/api/register/verify',{'token':'X'*43})[0],400)
         self.assertEqual(client.call('/api/register/verify',{'token':token})[0],201)
         self.assertEqual(Client(self.base).call('/api/register/verify',{'token':token})[0],400)
@@ -273,13 +277,13 @@ class IntegrationTests(unittest.TestCase):
         original=self.email_token()
         self.assertEqual(client.call('/api/register/resend',{'email':'new@example.com'})[0],202)
         self.assertEqual(self.mailer.call_count,1)
-        with D.control() as db:db.execute('UPDATE pending_registrations SET last_sent_at=?',(RS.after(-61),))
+        with D.control() as db:db.execute('UPDATE pending_registrations SET last_sent_at=?',(after(seconds=-61),))
         self.assertEqual(client.call('/api/register',self.registration(organization='Attacker',password='Attacker-password!',password_confirm='Attacker-password!'))[0],202)
         with D.control() as db:
             pending=D.one(db,'SELECT * FROM pending_registrations')
             self.assertEqual(pending['organization'],'องค์กรใหม่')
-            self.assertTrue(D.password_ok('New-password-123!',pending['password']))
-            db.execute('UPDATE pending_registrations SET last_sent_at=?',(RS.after(-61),))
+            self.assertTrue(password_ok('New-password-123!',pending['password']))
+            db.execute('UPDATE pending_registrations SET last_sent_at=?',(after(seconds=-61),))
         self.assertEqual(client.call('/api/register/resend',{'email':'NEW@example.com'})[0],202)
         token=self.email_token()
         self.assertNotEqual(token,original)
@@ -295,7 +299,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue(public['has_password'])
         self.assertNotIn('Secret-smtp-password',json.dumps(public))
         self.assertNotIn('smtp_host',json.dumps(visitor.boot()))
-        self.assertEqual(RS.secret_path().stat().st_mode&0o777,0o600)
+        self.assertEqual(platform_repository.registration_secret_path().stat().st_mode&0o777,0o600)
         for origin in ('http://evil.example','https://user:pass@example.com','https://example.com/path','https://example.com/?x=1','https://[bad'):
             self.assertEqual(self.admin.call('/api/platform/registration',{**cfg,'public_base_url':origin})[0],400)
         member=self.create_member(role='admin')
@@ -307,13 +311,13 @@ class IntegrationTests(unittest.TestCase):
 
     def test_verification_mail_failure_allows_explicit_resend_and_trusted_link(self):
         self.enable_registration_mail()
-        self.mailer.side_effect=RS.T.ChannelError('unknown',uncertain=True)
+        self.mailer.side_effect=T.ChannelError('unknown',uncertain=True)
         client=Client(self.base)
         status,result=client.call('/api/register',self.registration())
         self.assertEqual(status,503)
         self.assertNotIn('Secret-smtp-password',json.dumps(result))
         self.assertIsNone(client.boot()['user'])
-        with D.control() as db:db.execute('UPDATE pending_registrations SET last_sent_at=?',(RS.after(-61),))
+        with D.control() as db:db.execute('UPDATE pending_registrations SET last_sent_at=?',(after(seconds=-61),))
         self.mailer.side_effect=None
         self.assertEqual(client.call('/api/register/resend',{'email':'new@example.com'})[0],202)
         mail=self.mailer.call_args.args[3]
@@ -330,7 +334,7 @@ class IntegrationTests(unittest.TestCase):
         self.mailer.assert_not_called()
         self.assertEqual(client.call('/api/register',self.registration())[0],202)
         token=self.email_token()
-        with D.control() as db:db.execute('UPDATE pending_registrations SET created_at=?',(RS.after(-86401),))
+        with D.control() as db:db.execute('UPDATE pending_registrations SET created_at=?',(after(seconds=-86401),))
         self.assertEqual(client.call('/api/register/resend',{'email':'new@example.com'})[0],202)
         self.assertEqual(self.mailer.call_count,1)
         self.assertEqual(client.call('/api/register',self.registration(slug='fresh-org'))[0],202)
@@ -354,6 +358,8 @@ class IntegrationTests(unittest.TestCase):
         self.ok(self.admin,f'/api/conversations/{conversation}/messages',{'kind':'note','body':'PRIVATE INTERNAL NOTE','attachments':[file]})
         note=self.ok(self.admin,f'/api/conversations/{conversation}')['messages'][-1]
         file_id=note['attachments'][0]['id']
+        listed=lambda:next(t for t in self.ok(self.admin,'/api/tickets')['tickets'] if t['id']==ticket)
+        self.assertEqual(listed()['last_public_kind'],'customer')
         public=self.ok(visitor,'/api/public/alpha/session')
         self.assertNotIn('PRIVATE INTERNAL NOTE',json.dumps(public))
         self.assertEqual(visitor.call(f'/api/public/alpha/attachments/{file_id}')[0],404)
@@ -361,6 +367,7 @@ class IntegrationTests(unittest.TestCase):
         self.ok(self.admin,f'/api/conversations/{conversation}/messages',{'kind':'reply','body':'ช่วยเหลือเรียบร้อยแล้ว','attachments':[{'name':'guide.txt','data':base64.b64encode(b'Public guide').decode()}]})
         public=self.ok(visitor,'/api/public/alpha/session')
         self.assertEqual(public['messages'][-1]['body'],'ช่วยเหลือเรียบร้อยแล้ว')
+        self.assertEqual(listed()['last_public_kind'],'reply')
         public_file=public['messages'][-1]['attachments'][0]['id']
         self.assertEqual(visitor.call(f'/api/public/alpha/attachments/{public_file}')[1],b'Public guide')
         self.assertIsNotNone(self.ok(self.admin,f'/api/tickets/{ticket}')['ticket']['first_response_at'])
@@ -401,6 +408,29 @@ class IntegrationTests(unittest.TestCase):
         tenant_admin=Client(self.base);tenant_admin.login('private@example.com')
         self.assertEqual(tenant_admin.call('/api/platform/tenants')[0],403)
         self.assertEqual(self.ok(tenant_admin,'/api/tickets')['tickets'],[])
+
+    def test_platform_support_access_is_explicit_audited_and_revocable(self):
+        other=self.ok(self.admin,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
+        path=f'/api/platform/tenants/{other}/support-access'
+        self.assertEqual(self.admin.call(path,{})[0],400)
+        self.assertEqual(self.admin.call(path,{'reason':'ab'})[0],400)
+        tenant_admin=Client(self.base);tenant_admin.login('private@example.com')
+        self.assertEqual(tenant_admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],403)
+        self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #123'})
+        self.assertEqual(self.admin.call(path,{'reason':'ตรวจสอบคำร้อง #123'})[0],409)
+        self.assertTrue(any(e['action']=='tenant.support_access' and e['entity']==other and e['detail']=='ตรวจสอบคำร้อง #123' for e in self.ok(self.admin,'/api/platform/tenants')['audit']))
+        self.assertTrue(any(e['action']=='tenant.support_access' and e['detail']=='ตรวจสอบคำร้อง #123' for e in self.ok(tenant_admin,'/api/audit')['events']))
+        self.admin.switch(other)
+        self.assertEqual(self.ok(self.admin,'/api/workspace')['role'],'manager')
+        self.assertEqual(self.admin.call('/api/tickets')[0],200)
+        team=self.ok(tenant_admin,'/api/workspace')['team_id']
+        self.ok(tenant_admin,'/api/members/'+self.boot['user']['id'],{'team_id':team,'role':'manager','active':False},'PATCH')
+        self.assertEqual(self.admin.call('/api/tickets')[0],403)
+        self.assertEqual(self.admin.call(path,{'reason':'ขอเข้าอีกครั้ง'})[0],409)
+        self.admin.switch(self.org)
+        third=self.ok(self.admin,'/api/platform/tenants',{'name':'Third Org','slug':'third','email':'third@example.com','admin_name':'ผู้ดูแล 3','password':'Test-password-123!'})['id']
+        self.ok(self.admin,'/api/platform/tenants/'+third,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        self.assertEqual(self.admin.call(f'/api/platform/tenants/{third}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
 
     def test_team_boundaries_and_live_revocation(self):
         other_team=self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']
@@ -452,6 +482,98 @@ class IntegrationTests(unittest.TestCase):
         fake=Client(self.base);fake.portal='z'*43
         self.assertEqual(fake.call('/api/public/alpha/session')[0],404)
 
+    def test_duplicate_contacts_merge_on_staff_request(self):
+        first,c1=self.visitor(email='same@example.com')
+        second,c2=self.visitor(email='same@example.com')
+        keep=self.ok(self.admin,'/api/conversations/'+c1)['contact']['id']
+        drop=self.ok(self.admin,'/api/conversations/'+c2)['contact']['id']
+        self.ok(self.admin,'/api/contacts/'+drop,{'first_name':'ลูกค้าทดสอบ','email':'same@example.com','phone':'081-234-5678','notes':'duplicate note'},'PATCH')
+        ticket=self.ok(self.admin,'/api/tickets',{'subject':'Duplicate case','contact_id':drop})['id']
+        agent,_=self.create_member()
+        self.assertEqual(agent.call(f'/api/contacts/{keep}/merge',{'contact_ids':[drop]})[0],403)
+        self.assertEqual(self.admin.call(f'/api/contacts/{keep}/merge',{'contact_ids':[keep]})[0],400)
+        self.assertEqual(self.admin.call(f'/api/contacts/{keep}/merge',{'contact_ids':['0'*32]})[0],404)
+        self.ok(self.admin,f'/api/contacts/{keep}/merge',{'contact_ids':[drop]})
+        contacts={c['id']:c for c in self.ok(self.admin,'/api/contacts')['contacts']}
+        self.assertNotIn(drop,contacts)
+        self.assertEqual((contacts[keep]['phone'],contacts[keep]['notes']),('081-234-5678','duplicate note'))
+        self.assertEqual(self.ok(self.admin,'/api/tickets/'+ticket)['contact']['id'],keep)
+        self.assertEqual(self.ok(self.admin,'/api/conversations/'+c2)['contact']['id'],keep)
+        self.assertEqual(self.ok(self.admin,'/api/audit')['events'][0]['action'],'contact.merged')
+        # Each visitor's link still shows only their own conversation.
+        self.ok(first,'/api/public/alpha/messages',{'body':'FIRST VISITOR ONLY'})
+        self.assertNotIn('FIRST VISITOR ONLY',json.dumps(self.ok(second,'/api/public/alpha/session')))
+
+    def test_deleting_is_restricted_audited_and_refuses_to_orphan(self):
+        """Cases, customers and articles can be removed, but only by the right role, never leaving history behind."""
+        agent,_ = self.create_member(email='del-agent@example.com')
+        manager,_ = self.create_member(role='manager',email='del-manager@example.com')
+        contact = self.ok(self.admin,'/api/contacts',{'first_name':'ลูกค้าลบได้','email':'delete@example.com'})['id']
+        keeper = self.ok(self.admin,'/api/contacts',{'first_name':'ลูกค้ามีเคส','email':'keep@example.com'})['id']
+        ticket = self.ok(self.admin,'/api/tickets',{'subject':'เคสสำหรับลบ','contact_id':keeper})
+        article = self.ok(self.admin,'/api/articles',{'title':'บทความสำหรับลบ','category':'ทั่วไป','body':'เนื้อหา'})['id']
+        # Articles: managers may, agents may not.
+        self.assertEqual(agent.call('/api/articles/'+article,None,'DELETE')[0],403)
+        self.ok(manager,'/api/articles/'+article,None,'DELETE')
+        self.assertNotIn(article,[a['id'] for a in self.ok(self.admin,'/api/articles')['articles']])
+        # A customer with a case is never silently orphaned.
+        status,body = self.admin.call('/api/contacts/'+keeper,None,'DELETE')
+        self.assertEqual(status,400)
+        self.assertIn('เคส',body['error'])
+        self.assertEqual(agent.call('/api/contacts/'+contact,None,'DELETE')[0],403)
+        self.ok(manager,'/api/contacts/'+contact,None,'DELETE')
+        self.assertNotIn(contact,[c['id'] for c in self.ok(self.admin,'/api/contacts')['contacts']])
+        # Cases: admins only, and the conversation stays in the inbox.
+        _,conversation = self.visitor()
+        self.ok(self.admin,f'/api/conversations/{conversation}/ticket',{})
+        linked = self.ok(self.admin,'/api/conversations/'+conversation)['ticket']['id']
+        self.assertEqual(manager.call('/api/tickets/'+linked,None,'DELETE')[0],403)
+        self.ok(self.admin,'/api/tickets/'+linked,None,'DELETE')
+        self.assertEqual(self.admin.call('/api/tickets/'+linked)[0],404)
+        self.assertIsNone(self.ok(self.admin,'/api/conversations/'+conversation)['ticket'])
+        # Every deletion is in the activity log, with what was removed.
+        actions = [e['action'] for e in self.ok(self.admin,'/api/audit')['events']]
+        for action in ('article.deleted','contact.deleted','ticket.deleted'):
+            self.assertIn(action,actions)
+        deleted = next(e for e in self.ok(self.admin,'/api/audit')['events'] if e['action']=='ticket.deleted')
+        self.assertIn('BD-',deleted['detail'])
+
+    def test_deleted_items_wait_in_the_trash_and_can_be_restored(self):
+        """Nothing is thrown away by one click: a delete goes to the recycle bin, comes back whole, or is cleared."""
+        agent,_ = self.create_member(email='trash-agent@example.com')
+        contact = self.ok(self.admin,'/api/contacts',{'first_name':'ลูกค้ากู้คืน','email':'restore@example.com'})['id']
+        article = self.ok(self.admin,'/api/articles',{'title':'บทความกู้คืน','category':'คู่มือ','body':'เนื้อหาเดิม'})['id']
+        _,conversation = self.visitor()
+        self.ok(self.admin,f'/api/conversations/{conversation}/ticket',{})
+        ticket = self.ok(self.admin,'/api/conversations/'+conversation)['ticket']['id']
+        self.assertEqual(agent.call('/api/trash')[0],403)
+        for path in ('/api/articles/'+article,'/api/contacts/'+contact,'/api/tickets/'+ticket):
+            self.ok(self.admin,path,None,'DELETE')
+        trash = self.ok(self.admin,'/api/trash')
+        self.assertEqual(trash['keep_days'],30)
+        self.assertEqual({item['kind'] for item in trash['items']},{'article','contact','ticket'})
+        self.assertTrue(all(item['days_left']==30 for item in trash['items']))
+        # Restoring puts the rows back exactly as they were, including the case's conversation link.
+        for kind in ('contact','article','ticket'):
+            item = next(i for i in self.ok(self.admin,'/api/trash')['items'] if i['kind']==kind)
+            self.ok(self.admin,f"/api/trash/{item['id']}/restore",{})
+        self.assertIn(contact,[c['id'] for c in self.ok(self.admin,'/api/contacts')['contacts']])
+        restored = next(a for a in self.ok(self.admin,'/api/articles')['articles'] if a['id']==article)
+        self.assertEqual(restored['body'],'เนื้อหาเดิม')
+        self.assertEqual(self.ok(self.admin,'/api/tickets/'+ticket)['ticket']['id'],ticket)
+        self.assertEqual(self.ok(self.admin,'/api/conversations/'+conversation)['ticket']['id'],ticket)
+        self.assertEqual(self.ok(self.admin,'/api/trash')['items'],[])
+        # Clearing one for good removes it from the bin, and both steps are in the activity log.
+        self.ok(self.admin,'/api/articles/'+article,None,'DELETE')
+        item = self.ok(self.admin,'/api/trash')['items'][0]
+        self.assertEqual(agent.call('/api/trash/'+item['id'],None,'DELETE')[0],403)
+        self.ok(self.admin,'/api/trash/'+item['id'],None,'DELETE')
+        self.assertEqual(self.ok(self.admin,'/api/trash')['items'],[])
+        self.assertEqual(self.admin.call(f"/api/trash/{item['id']}/restore",{})[0],404)
+        actions = [e['action'] for e in self.ok(self.admin,'/api/audit')['events']]
+        for action in ('article.restored','ticket.restored','contact.restored','article.purged'):
+            self.assertIn(action,actions)
+
     def test_knowledge_visibility_and_agent_permissions(self):
         public=Client(self.base)
         self.assertEqual(self.ok(public,'/api/public/alpha')['articles'],[])
@@ -472,11 +594,44 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(fresh.call('/api/login',{'email':'admin@example.com','password':'Test-password-123!'})[0],401)
         fresh.login('admin@example.com',' New-password-456! ')
 
+    def test_inline_media_upload_types_and_private_access(self):
+        visitor,conversation=self.visitor()
+        samples={
+            'clip.mp4':('video/mp4',b'\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom'),
+            'clip.webm':('video/webm',b'\x1a\x45\xdf\xa3\x87\x42\x82\x84webm'),
+            'image.gif':('image/gif',b'GIF89a'+b'\x00'*16),
+            'image.webp':('image/webp',b'RIFF\x10\x00\x00\x00WEBPVP8 '+b'\x00'*16),
+        }
+        for name,(mime,content) in samples.items():
+            upload={'name':name,'data':base64.b64encode(content).decode()}
+            self.ok(visitor,'/api/public/alpha/messages',{'attachments':[upload]})
+            media=self.ok(self.admin,'/api/conversations/'+conversation)['messages'][-1]['attachments'][0]
+            self.assertEqual(media['mime'],mime)
+            self.assertEqual(self.admin.call('/api/attachments/'+media['id'])[1],content)
+            self.assertEqual(visitor.call('/api/public/alpha/attachments/'+media['id'])[1],content)
+            self.assertEqual(Client(self.base).call('/api/attachments/'+media['id'])[0],401)
+            self.assertEqual(visitor.call('/api/public/alpha/messages',{'attachments':[{'name':name,'data':base64.b64encode(b'not media').decode()}]})[0],400)
+        self.ok(self.admin,'/api/conversations/'+conversation+'/messages',{
+            'kind':'note','attachments':[{'name':'private.mp4','data':base64.b64encode(samples['clip.mp4'][1]).decode()}]})
+        private=self.ok(self.admin,'/api/conversations/'+conversation)['messages'][-1]['attachments'][0]
+        self.assertEqual(visitor.call('/api/public/alpha/attachments/'+private['id'])[0],404)
+        self.assertNotIn(private['id'],json.dumps(self.ok(visitor,'/api/public/alpha/session')))
+
     def test_validation_attachments_and_manual_channel(self):
         visitor,conversation=self.visitor()
         self.assertEqual(self.admin.call('/api/conversations/'+conversation+'/messages',{'body':'x','attachments':[{'name':'bad.html','data':base64.b64encode(b'<script>bad</script>').decode()}]})[0],400)
         self.assertEqual(self.admin.call('/api/conversations/'+conversation+'/messages',{'body':'x','attachments':[{'name':'fake.png','data':base64.b64encode(b'not png').decode()}]})[0],400)
         self.assertEqual(len(self.ok(visitor,'/api/public/alpha/session')['messages']),1)
+        # The support page is open to anyone, so the same rules are enforced for a visitor's uploads.
+        png=base64.b64encode(b'\x89PNG\r\n\x1a\n'+b'0'*32).decode()
+        for bad in ([{'name':'setup.exe','data':base64.b64encode(b'MZ\x90\x00program').decode()}],
+                    [{'name':'invoice.pdf.exe','data':base64.b64encode(b'MZ\x90\x00program').decode()}],
+                    [{'name':'photo.png','data':base64.b64encode(b'MZ\x90\x00program').decode()}],
+                    [{'name':'../../escape.txt','data':base64.b64encode(b'hello').decode()}],
+                    [{'name':'empty.txt','data':''}],
+                    [{'name':f'{n}.png','data':png} for n in range(4)]):
+            self.assertEqual(visitor.call('/api/public/alpha/messages',{'body':'x','attachments':bad})[0],400)
+        self.ok(visitor,'/api/public/alpha/messages',{'body':'ภาพหน้าจอค่ะ','attachments':[{'name':'screen.png','data':png}]})
         contact=self.ok(self.admin,'/api/contacts')['contacts'][0]
         ticket=self.ok(self.admin,'/api/tickets',{'subject':'Manual work','contact_id':contact['id'],'body':'staff record'})['id']
         data=self.ok(self.admin,'/api/tickets/'+ticket)
@@ -511,7 +666,7 @@ class IntegrationTests(unittest.TestCase):
         archive.write_bytes(app.make_backup())
         restore_dir=Path(self.temporary.name)/'restored'
         env={**os.environ,'BOOKDOSE_DATA':str(restore_dir)}
-        result=subprocess.run([sys.executable,str(app.ROOT/'app.py'),'--restore',str(archive)],env=env,capture_output=True,text=True)
+        result=subprocess.run([sys.executable,app.__file__,'--restore',str(archive)],env=env,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
         with closing(sqlite3.connect(restore_dir/'control.sqlite3')) as cd:
             self.assertEqual(cd.execute('SELECT COUNT(*) FROM sessions').fetchone()[0],0)
@@ -521,8 +676,16 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(td.execute('SELECT COUNT(*) FROM tickets').fetchone()[0],5)
             key=td.execute('SELECT storage_key FROM attachments').fetchone()[0]
         self.assertEqual((restore_dir/'files'/self.org/key).read_bytes(),b'round trip')
-        again=subprocess.run([sys.executable,str(app.ROOT/'app.py'),'--restore',str(archive)],env=env,capture_output=True)
+        again=subprocess.run([sys.executable,app.__file__,'--restore',str(archive)],env=env,capture_output=True)
         self.assertNotEqual(again.returncode,0)
+
+    def test_templates_bundle_serves_every_html_template(self):
+        status,bundle=Client(self.base).call('/templates.json')
+        self.assertEqual(status,200)
+        self.assertIn('pages/dashboard/dashboard',bundle)
+        self.assertIn('ui/modal',bundle)
+        self.assertTrue(all(name.split('/')[0] in ('pages','ui','shell','modules') for name in bundle))
+        self.assertIn('{{',bundle['ui/option'])
 
     def test_review_contact_names_and_public_validation(self):
         contact=self.ok(self.admin,'/api/contacts',{'first_name':'สมชาย','last_name':"O’Connor-Smith",'email':'person@example.com','phone':'+66 (81) 234-5678'})['id']

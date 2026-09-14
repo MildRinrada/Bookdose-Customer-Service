@@ -1,0 +1,9 @@
+<div class="cropper">
+  <canvas class="crop-canvas" id="crop-canvas" width="320" height="320" role="img" aria-label="ตัวอย่างรูปโปรไฟล์ ลากเพื่อเลื่อนตำแหน่ง"></canvas>
+  <p class="crop-hint muted">ลากรูปเพื่อเลื่อนตำแหน่ง ส่วนที่อยู่ในวงกลมคือรูปที่จะใช้</p>
+  <label class="crop-zoom" for="crop-zoom">ย่อ-ขยาย<input id="crop-zoom" type="range" min="1" max="3" step="0.01" value="1"></label>
+  <div class="form-actions">
+    <button type="button" class="btn" data-action="close-sheet">ยกเลิก</button>
+    <button type="button" class="btn primary" data-action="apply-crop">{{icon:check}}ใช้รูปนี้</button>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+<tr class="linked-row" data-href="#tickets/{{id}}">
+  <td>{{subject}}<div>BD-{{number}}</div></td>
+  <td>{{{status}}} {{#overdue}}<span class="badge suspended">⚠ เกิน SLA</span>{{/overdue}}</td>
+  <td>{{assignee}}</td>
+  <td>{{created}}<div class="muted">อัปเดต {{updated}}</div></td>
+  <td><a class="btn subtle" href="#tickets/{{id}}" aria-label="เปิดเคส BD-{{number}}">{{icon:arrow}}</a></td>
+</tr>

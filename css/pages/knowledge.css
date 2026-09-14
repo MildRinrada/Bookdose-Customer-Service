@@ -1,0 +1,189 @@
+/* Knowledge base: article cards, the reading view, and the editor with its toolbar and live preview. */
+.knowledge-filters {
+  border-bottom: 0;
+  padding-bottom: 10px;
+}
+.knowledge-tags {
+  margin: 0 0 20px;
+}
+.article-count {
+  white-space: nowrap;
+}
+.article-grid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 18px;
+}
+/* A card is the article itself: what it is about, then the title, then a plain-text taste of the content. */
+.article-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color .15s,box-shadow .15s;
+}
+.article-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.article-category {
+  background: #f1eefb;
+  color: #5b4a80;
+}
+.article-card h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* The card shows the start of the article the way the article really reads: headings, bold and bullet lists
+   keep their shape, cut off after a few lines instead of being flattened into one run-on line. */
+.article-excerpt {
+  color: #4b5563;
+  line-height: 1.75;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.article-excerpt p,.article-excerpt ul,.article-excerpt ol,.article-excerpt pre {
+  margin: 0 0 6px;
+}
+.article-excerpt ul,.article-excerpt ol {
+  padding-left: 20px;
+}
+.article-excerpt li {
+  margin-bottom: 2px;
+}
+.article-excerpt h3,.article-excerpt h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #334155;
+}
+.article-excerpt pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* A picture would make the cards different heights; the article itself shows it. */
+.article-excerpt img {
+  display: none;
+}
+.article-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.article-card-foot .icon {
+  width: 15px;
+  height: 15px;
+}
+.article-card:hover,.article-card:focus-visible {
+  border-color: #7959ba;
+  box-shadow: 0 4px 14px #35256b20;
+}
+.article-content {
+  color: #26354a;
+  font-size: 1rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.article-content h3 {
+  font-size: 1.375rem;
+  margin: 22px 0 12px;
+}
+.article-content h4 {
+  font-size: 1.1875rem;
+  margin: 18px 0 10px;
+}
+.article-content>:first-child {
+  margin-top: 0;
+}
+.article-content p {
+  margin-bottom: 14px;
+}
+.article-content li {
+  padding-left: 6px;
+  margin-bottom: 8px;
+}
+.article-content pre {
+  white-space: pre-wrap;
+  background: #edf1f7;
+  padding: 16px;
+  border-radius: 8px;
+}
+.article-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 12px 0;
+}
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+/* Editor: one row of tools, then writing and preview side by side. */
+.editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.editor-head label {
+  margin: 0;
+}
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 5px 6px;
+  border: 1px solid #c7ccdc;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: #f7f8fc;
+}
+/* One editable area under the toolbar: the article is written the way it will be read. */
+.editor-input {
+  height: clamp(190px,26vh,400px);
+  border-color: #c7ccdc;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+/* The editor is sized so the whole form - including save - fits a normal screen without scrolling. */
+.article-editor .form-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.editor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+@media (max-width: 1180px) {
+  .article-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+@media (max-width: 760px) {
+  .article-grid {
+    grid-template-columns: 1fr;
+  }
+}

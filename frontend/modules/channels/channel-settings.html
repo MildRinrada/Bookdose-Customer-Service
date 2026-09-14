@@ -1,0 +1,42 @@
+<section class="card mt" id="channel-{{kind}}">
+  <div class="card-header"><h2>{{name}} · เชื่อมบัญชีจริง</h2><span class="badge">{{#configured}}บันทึกข้อมูลเชื่อมต่อแล้ว{{/configured}}{{^configured}}ยังไม่มีข้อมูลเชื่อมต่อ{{/configured}}</span></div>
+  <form class="card-body" data-form="channel-settings" data-kind="{{kind}}">
+    <div class="notice mb">{{#line}}รับข้อความส่วนตัวและกลุ่มจาก LINE OA ตอบข้อความ รูป และลิงก์เอกสารผ่านบัญชีเดิม ต้องเปิดโปรแกรมไว้และใช้ Webhook URL แบบ HTTPS ที่ LINE เข้าถึงได้{{/line}}{{#email}}รับอีเมลผ่าน IMAP (TLS 993) และส่งผ่าน SMTP ใช้รหัสผ่านหรือ App Password เดียวกันทั้งสองบริการ เริ่มรับเฉพาะอีเมลใหม่หลังเปิดครั้งแรก เลือกใช้รหัสผ่าน หรือ OAuth ของ Google / Microsoft ได้{{/email}}</div>
+    <div class="form-grid">
+      {{#line}}
+        {{{channelSecretField}}}{{{accessTokenField}}}{{{publicBaseURLField}}}
+        <label class="check"><input name="groups_enabled" type="checkbox" {{#groupsEnabled}}checked{{/groupsEnabled}}>รับและตอบในกลุ่ม LINE</label>
+        <label class="check"><input name="group_chatbot_enabled" type="checkbox" {{#groupChatbotEnabled}}checked{{/groupChatbotEnabled}}>ให้ AI ตอบในกลุ่มเมื่อเรียก /bookdose หรือเมนชัน</label>
+      {{/line}}
+      {{#email}}
+        {{{oauthFields}}}{{{addressField}}}{{{usernameField}}}{{{passwordField}}}{{{imapHostField}}}{{{smtpHostField}}}
+        <div class="field"><label for="email-smtp_port">การเชื่อมต่อ SMTP</label><select id="email-smtp_port" name="smtp_port">{{{smtpPortOptions}}}</select></div>
+        <div class="field"><label for="email-poll_seconds">ตรวจอีเมลทุก (วินาที)</label><input id="email-poll_seconds" name="poll_seconds" type="number" min="30" max="600" value="{{pollSeconds}}" required></div>
+      {{/email}}
+      <div class="field"><label for="{{kind}}-team">ทีมรับเรื่องใหม่</label><select name="team_id" id="{{kind}}-team">{{{teamOptions}}}</select></div>
+      <label class="check"><input name="enabled" type="checkbox" {{#enabled}}checked{{/enabled}}>เปิดรับและส่ง {{name}}</label>
+      <label class="check"><input name="chatbot_enabled" type="checkbox" {{#chatbotEnabled}}checked{{/chatbotEnabled}}>เปิด Chatbot ตอบอัตโนมัติบน {{name}}</label>
+      <label class="check"><input name="remove_credentials" type="checkbox">ลบข้อมูลเชื่อมต่อ (ปิดช่องทางก่อนบันทึก)</label>
+    </div>
+    <p class="tiny muted mt">ข้อมูลลับเก็บฝั่งเซิร์ฟเวอร์ ไม่แสดงกลับและไม่รวมในไฟล์สำรอง การแก้ตั้งค่าจะยกเลิกข้อความที่ยังรอส่ง ให้เจ้าหน้าที่ตรวจแล้วส่งใหม่</p>
+    <div class="flex wrap mt">
+      <button class="btn primary" type="submit">บันทึก {{name}}</button>
+      <button class="btn" type="button" data-action="channel-test" data-kind="{{kind}}" {{^configured}}disabled{{/configured}}>ทดสอบบัญชีที่บันทึกไว้</button>
+      {{#email}}<button class="btn" type="button" data-action="channel-sync" data-kind="email">ตรวจอีเมลรอบถัดไปทันที</button>{{/email}}
+    </div>
+    <p class="tiny muted mt">ทดสอบการเข้าสู่ระบบเท่านั้น ไม่ส่งข้อความทดสอบ</p>
+    {{#webhookURL}}
+      <div class="notice mt">
+        <strong>Webhook URL</strong><p class="channel-url">{{webhookURL}}</p>
+        <button class="btn sm" type="button" data-action="channel-copy" data-route="{{routeId}}">คัดลอก Webhook URL</button>
+        <p>ถ้าเปิดผ่าน localhost ให้เปลี่ยนเป็นโดเมน HTTPS สาธารณะที่ชี้มายังเซิร์ฟเวอร์นี้ แล้วใส่ URL ใน LINE Developers พร้อมเปิด Use webhook</p>
+      </div>
+    {{/webhookURL}}
+    <div class="mt" role="status">
+      {{#lastError}}<p class="notice">{{lastError}}</p>{{/lastError}}
+      <p class="small muted">ตรวจล่าสุด: {{lastChecked}} · รับข้อความล่าสุด: {{lastReceived}}</p>
+      <div class="flex wrap">{{{outbox}}}</div>
+    </div>
+    <p class="tiny muted mt">เมื่อเปิด Chatbot ระบบจะส่งข้อความและความรู้สาธารณะที่เกี่ยวข้องให้ OpenAI เพื่อสร้างคำตอบ มีค่าใช้บริการตามบัญชี AI และช่องทาง ต้องตั้ง API Key ในส่วน AI ก่อน เปิดใช้กับเรื่องใหม่ ส่วนเรื่องเดิมให้กดเปิด AI เป็นรายบทสนทนา</p>
+  </form>
+</section>

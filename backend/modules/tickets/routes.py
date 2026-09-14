@@ -1,0 +1,11 @@
+from backend.modules.tickets import controller
+from backend.utils.routing import ID
+
+ROUTES = [
+    ('GET',   '/api/tickets',            controller.list_tickets,   'workspace'),
+    ('POST',  '/api/tickets',            controller.create_ticket,  'workspace'),
+    ('GET',   f'/api/tickets/{ID}',      controller.show_ticket,    'workspace'),
+    ('PATCH', f'/api/tickets/{ID}',      controller.update_ticket,  'workspace'),
+    ('DELETE',f'/api/tickets/{ID}',      controller.delete_ticket,  'workspace'),
+    ('GET',   '/api/export/tickets.csv', controller.export_tickets, 'workspace'),
+]

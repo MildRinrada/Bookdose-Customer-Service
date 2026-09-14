@@ -1,0 +1,46 @@
+<form data-form="article" data-id="{{id}}" class="article-editor">
+  <div class="stack">
+    {{{titleField}}}
+    <div class="form-grid">
+      <div class="field">
+        <label for="article-category">หมวดหมู่</label>
+        <input id="article-category" name="category" list="article-categories" required maxlength="80" value="{{category}}" placeholder="เลือกหมวดเดิมหรือพิมพ์หมวดใหม่">
+        <datalist id="article-categories">{{{categoryOptions}}}</datalist>
+        <small class="muted">พิมพ์เพื่อสร้างหมวดใหม่ หรือกดเลือกจากหมวดที่มีอยู่</small>
+      </div>
+      <div class="field">
+        <label for="article-visibility">สิทธิ์การอ่าน</label>
+        <select id="article-visibility" name="visibility">{{{visibilityOptions}}}</select>
+        <small class="muted">“เผยแพร่ให้ลูกค้า” จะแสดงในหน้าช่วยเหลือลูกค้าด้วย</small>
+      </div>
+    </div>
+    <div class="field editor-field">
+      <div class="editor-head">
+        <label for="article-body">เนื้อหาบทความ</label>
+      </div>
+      <div class="editor-toolbar" role="toolbar" aria-label="จัดรูปแบบบทความ">
+        <button class="tool" type="button" data-action="editor-format" data-format="bold" aria-label="ตัวหนา" title="ตัวหนา (Ctrl+B)"><b>B</b></button>
+        <button class="tool" type="button" data-action="editor-format" data-format="italic" aria-label="ตัวเอียง" title="ตัวเอียง (Ctrl+I)"><i>I</i></button>
+        <button class="tool" type="button" data-action="editor-format" data-format="underline" aria-label="ขีดเส้นใต้" title="ขีดเส้นใต้ (Ctrl+U)"><u>U</u></button>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <button class="tool" type="button" data-action="editor-format" data-format="h1" aria-label="หัวข้อใหญ่" title="หัวข้อใหญ่">H1</button>
+        <button class="tool" type="button" data-action="editor-format" data-format="h2" aria-label="หัวข้อย่อย" title="หัวข้อย่อย">H2</button>
+        <button class="tool" type="button" data-action="editor-format" data-format="normal" aria-label="ข้อความปกติ" title="ข้อความปกติ">ปกติ</button>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <button class="tool" type="button" data-action="editor-format" data-format="bullet" aria-label="รายการหัวข้อย่อย" title="รายการหัวข้อย่อย">{{icon:list}}</button>
+        <button class="tool" type="button" data-action="editor-format" data-format="number" aria-label="รายการลำดับเลข" title="รายการลำดับเลข">{{icon:listOrdered}}</button>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <button class="tool" type="button" data-action="editor-format" data-format="link" aria-label="ลิงก์" title="ลิงก์ (Ctrl+K)">{{icon:link}}</button>
+        <button class="tool" type="button" data-action="editor-format" data-format="image" aria-label="รูปภาพ" title="รูปภาพ">{{icon:image}}</button>
+        <button class="tool" type="button" data-action="editor-format" data-format="code" aria-label="โค้ด" title="โค้ด">{{icon:code}}</button>
+      </div>
+      <div class="richtext article-content editor-input" contenteditable="true" role="textbox" aria-multiline="true" aria-label="เนื้อหาบทความ" data-rich-for="article-body" data-placeholder="เขียนขั้นตอน วิธีแก้ปัญหา หรือคำตอบที่ทีมใช้บ่อย"></div>
+      <textarea id="article-body" class="rich-source" name="body" maxlength="50000" tabindex="-1" aria-hidden="true">{{body}}</textarea>
+      <div class="editor-foot">
+        <small class="muted">เลือกข้อความแล้วกดปุ่มจัดรูปแบบ · ข้อความที่เห็นคือหน้าตาที่บันทึก</small>
+        <small class="muted" data-word-count></small>
+      </div>
+    </div>
+  </div>
+  {{{formActions}}}
+</form>

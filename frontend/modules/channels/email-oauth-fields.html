@@ -1,0 +1,4 @@
+<div class="field"><label for="email-auth_mode">วิธีเข้าสู่ระบบ Email</label><select id="email-auth_mode" name="auth_mode">{{{authModeOptions}}}</select></div>
+<div class="notice span-2">OAuth: ลงทะเบียน Web application ขององค์กรกับ Google Cloud หรือ Microsoft Entra แล้วกรอก Client ID/Secret และ Redirect URI บันทึกโดยยังไม่เปิดช่องทาง จากนั้นกดเชื่อมบัญชี เมื่ออนุญาตสำเร็จจึงเปิดรับและส่ง Email</div>
+{{{clientIdField}}}{{{clientSecretField}}}{{{redirectURIField}}}
+<div class="field"><label>เชื่อมบัญชี OAuth ที่บันทึกไว้</label><button type="button" class="btn" data-action="channel-oauth" {{^canConnect}}disabled{{/canConnect}}>เข้าสู่ Google / Microsoft</button><span class="tiny muted">{{#configured}}มีข้อมูลเชื่อมต่อแล้ว{{/configured}}{{^configured}}ยังไม่ได้เชื่อมบัญชี{{/configured}} · token เก็บฝั่งเซิร์ฟเวอร์</span></div>

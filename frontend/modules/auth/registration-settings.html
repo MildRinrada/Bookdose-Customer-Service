@@ -1,0 +1,17 @@
+<section class="card mt">
+  <div class="card-header"><h2>อีเมลยืนยันการสมัครองค์กร</h2></div>
+  <div class="card-body">
+    <p class="small muted">ตั้งค่าอีเมลผู้ส่งของ Bookdose และโดเมนเว็บไซต์ เพื่อให้ลูกค้ายืนยันอีเมลก่อนสร้างองค์กร</p>
+    <form data-form="registration-settings">
+      <div class="form-grid">
+        <label class="check span-2"><input type="checkbox" name="enabled" {{#enabled}}checked{{/enabled}}>เปิดรับสมัครองค์กรพร้อมยืนยันอีเมล</label>
+        {{{baseURLField}}}{{{addressField}}}{{{hostField}}}
+        <div class="field"><label for="registration-port">พอร์ต SMTP</label><select id="registration-port" name="smtp_port"><option value="465" {{#port465}}selected{{/port465}}>465 · TLS</option><option value="587" {{#port587}}selected{{/port587}}>587 · STARTTLS</option></select></div>
+        {{{usernameField}}}
+        <div class="field"><label for="registration-password">รหัสผ่าน SMTP / App Password</label><input id="registration-password" type="password" name="password" maxlength="2000" autocomplete="new-password" placeholder="{{#hasPassword}}บันทึกไว้แล้ว เว้นว่างเพื่อใช้ค่าเดิม{{/hasPassword}}{{^hasPassword}}รหัสผ่านสำหรับส่งอีเมล{{/hasPassword}}"></div>
+      </div>
+      <p class="tiny muted">หากเปลี่ยนเซิร์ฟเวอร์ พอร์ต หรือชื่อผู้ใช้ ต้องกรอกรหัสผ่านใหม่ ใช้บัญชีที่ผู้ให้บริการอนุญาตให้ส่งผ่าน SMTP ด้วยรหัสผ่าน / App Password การบันทึกยังไม่ได้ทดสอบส่งอีเมล</p>
+      <button class="btn primary" type="submit">บันทึกอีเมลยืนยัน</button>
+    </form>
+  </div>
+</section>

@@ -56,7 +56,7 @@ python3 app.py
 
 ## ขั้นตอนใช้งานประจำวัน
 
-**ปรับขนาดตัวอักษร:** เลือก “ขนาดตัวอักษร” บริเวณด้านบนของหน้า มี ปกติ / ใหญ่ / ใหญ่มาก / ใหญ่พิเศษ (100%, 112.5%, 125%, 150% ของขนาดพื้นฐานเบราว์เซอร์) ใช้ได้ทั้งหน้าเข้าสู่ระบบ หน้าพนักงาน และหน้าช่วยเหลือลูกค้า โปรแกรมจดจำในเบราว์เซอร์เดิมและใช้ร่วมกันระหว่างแท็บ กลับค่าเริ่มต้นด้วยการเลือก “ปกติ” หากเบราว์เซอร์ปิดการจัดเก็บข้อมูล ยังปรับขนาดในหน้าปัจจุบันได้
+**ปรับขนาดตัวอักษร:** กด **A− / A+** บริเวณด้านบนของหน้าเพื่อลดหรือเพิ่มครั้งละ 10% หรือเลือกเปอร์เซ็นต์โดยตรงได้ตั้งแต่ **80% ถึง 150%** (ค่าเริ่มต้น 100% ของขนาดพื้นฐานเบราว์เซอร์) ใช้ได้ทั้งหน้าเข้าสู่ระบบ หน้าพนักงาน และหน้าช่วยเหลือลูกค้า โปรแกรมจดจำในเบราว์เซอร์เดิมและใช้ร่วมกันระหว่างแท็บ กลับค่าเริ่มต้นด้วยการเลือก “100%” หากเบราว์เซอร์ปิดการจัดเก็บข้อมูล ยังปรับขนาดในหน้าปัจจุบันได้
 
 1. **ตั้งค่าองค์กร:** เพิ่มทีมและสมาชิก กำหนด SLA และข้อความต้อนรับ สมาชิกใหม่ได้รับบัญชีใช้งานทันที ผู้ดูแลแจ้งรหัสผ่านให้เจ้าตัวด้วยช่องทางที่เหมาะสม โปรแกรมไม่ส่งอีเมลเชิญ
 2. **เปิดหน้าช่วยเหลือ:** ใช้ปุ่มทางซ้าย หรือเปิด `/support/bookdose` ตามรหัสองค์กร ลูกค้ากรอกชื่อ อีเมล เรื่อง และรายละเอียด
@@ -66,7 +66,7 @@ python3 app.py
 6. **ปิดงาน:** เปลี่ยนสถานะเป็นแก้ไขแล้วหรือปิดเคส ลูกค้าส่งข้อความเพิ่มในเรื่องเดิมจะเปิดเคสกลับมาเป็นกำลังดำเนินการโดยอัตโนมัติ
 7. **รายงาน:** เลือกช่วงวันที่สร้างเคส ทีม และผู้รับผิดชอบ ดูสถานะ เวลาตอบเฉลี่ย และเปรียบเทียบช่วงก่อนหน้าที่ยาวเท่ากัน CSV หน้ารายงานใช้ตัวกรองเดียวกับรายงาน ส่วนหน้าเคสเลือก Checkbox เพื่อส่งออกเฉพาะเคสที่เลือกได้ ทุกส่วนจำกัดข้อมูลตามสิทธิ์
 
-ไฟล์แนบรองรับ PNG, JPG, PDF และ TXT สูงสุด 3 ไฟล์ต่อข้อความ รวมไม่เกิน 5 MB ไฟล์ในบันทึกภายในเปิดได้เฉพาะเจ้าหน้าที่ที่มีสิทธิ์ในบทสนทนานั้น
+ไฟล์แนบรองรับ PNG, JPG, GIF, WebP, MP4, WebM, PDF และ TXT สูงสุด 3 ไฟล์ต่อข้อความ รวมไม่เกิน 5 MB ภาพแสดงในบทสนทนาและกดขยายได้ วิดีโอมีปุ่มเล่นในข้อความโดยไม่เล่นอัตโนมัติ ไฟล์ในบันทึกภายในเปิดได้เฉพาะเจ้าหน้าที่ที่มีสิทธิ์ในบทสนทนานั้น
 
 คลังความรู้เลือกได้ระหว่าง **ภายในองค์กร** และ **เผยแพร่ให้ลูกค้า** บทความสาธารณะจะแสดงในหน้าช่วยเหลือขององค์กร
 
@@ -157,9 +157,8 @@ SLA ใช้เวลาต่อเนื่อง 24 ชั่วโมง �
 ## ทดสอบ
 
 ```sh
-python3 -m unittest discover -s tests -v
-node --check static/app.js
-node --check static/ai.js
+python3 scripts/check.py        # ตรวจ syntax Python + JavaScript แล้วรัน tests ทั้งหมด
+python3 -m unittest discover -s tests -v   # หรือรันเฉพาะ tests
 ```
 
 การทดสอบใช้โฟลเดอร์ชั่วคราว ไม่แตะข้อมูลจริง ครอบคลุมระบบเดิม รวมถึงร่าง AI ที่ยังไม่ส่ง, Chatbot, ขอบเขตความรู้และคีย์รายองค์กร, ถอนสิทธิ์ระหว่างประมวลผล, ส่งต่อเจ้าหน้าที่, งานซ้ำ/ล้าสมัย, โควตา, ความล้มเหลวของบริการ และรูปแบบ HTTP สำหรับ Responses API โดยใช้ผู้ให้บริการจำลอง ไม่ใช้ API Key หรือคิดค่าบริการจริง ต้องทดสอบการเชื่อมต่อกับบัญชีจริงจากหน้าตั้งค่าอีกครั้งก่อนใช้งาน AI จริง
@@ -168,12 +167,58 @@ node --check static/ai.js
 
 ## โครงสร้างซอร์สโค้ด
 
+Backend แยกตาม feature ใน `backend/modules/<feature>/` แต่ละ feature แบ่งหน้าที่เป็นชั้น
+**Route → Controller → Service → Repository → Database**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `routes.py` | รายการ endpoint: method, URL, controller และระดับการเข้าถึง (ไม่มี logic ไม่มี query) |
+| `controller.py` | รับ request เรียก service และส่ง response (status, cookie, ไฟล์ดาวน์โหลด) |
+| `service.py` | กฎธุรกิจทั้งหมด เรียก repository หรือ service ของ feature อื่น |
+| `repository.py` | Database query และไฟล์ข้อมูลบนดิสก์ (ไม่มีกฎธุรกิจ) |
+| `model.py` | ตารางและค่าที่อนุญาตของ feature |
+| `schema.py` | ตรวจข้อมูลที่ส่งเข้ามา และจัดรูปข้อมูลที่ส่งกลับ |
+
+ไฟล์ไหนไม่มีเนื้อหาจะไม่สร้าง เช่น `portal` ไม่มีตารางของตัวเองจึงไม่มี `model.py` / `repository.py`
+
 ```text
-app.py           HTTP server, API, access checks, uploads, backup / restore
-database.py      Schema, password hashing, tenant storage, seed examples
-ai_service.py    Responses API, retrieval, private credentials, durable jobs, handoff
-static/          หน้าจอ HTML / CSS / JavaScript ไม่มี build step
-tests/           HTTP integration tests
+app.py                     จุดเริ่มโปรแกรม: python app.py / --backup / --restore
+config/settings.py         ค่าตั้งจาก environment หรือไฟล์ .env (ดู .env.example)
+backend/
+  server.py                HTTP server: ส่งแต่ละ request ผ่าน middleware ตามระดับการเข้าถึง แล้วเรียก controller
+  modules/
+    auth/                  เข้าสู่ระบบ ตั้งค่าครั้งแรก สมัครองค์กรพร้อมยืนยันอีเมล เซสชัน บัญชีผู้ใช้
+    platform/              ผู้ดูแลแพลตฟอร์ม: สร้าง/ระงับองค์กร และอีเมลที่ใช้ส่งลิงก์ยืนยันการสมัคร
+    organization/          ภาพรวมพื้นที่ทำงาน ตั้งค่า SLA ทีม สมาชิก ประวัติการทำงาน สำรองข้อมูลองค์กร
+    tickets/               เคสบริการ SLA และส่งออก CSV
+    conversations/         กล่องข้อความ ข้อความ ไฟล์แนบ
+    contacts/              ข้อมูลลูกค้า
+    knowledge/             คลังความรู้
+    portal/                หน้าช่วยเหลือสำหรับลูกค้า
+    ai/                    ร่างคำตอบ AI, Chatbot, คิวงาน AI และ worker
+    channels/              LINE / Email: ตั้งค่า รับ-ส่งข้อความ outbox worker (+ email_oauth.py, file_links.py)
+  middleware/              security headers + ตรวจ Host/Origin, เซสชัน/CSRF/สิทธิ์ตามบทบาท,
+                           ขอบเขตทีมของเจ้าหน้าที่ (access.py), จำกัดความถี่คำขอ
+  database/                การเชื่อมต่อ SQLite (db.py), สร้างตารางจาก model ของทุก feature (schema.py),
+                           audit log, สำรอง/กู้คืน (backup.py), ข้อมูลตัวอย่าง (seed.py)
+  exceptions/              ชนิด error ทั้งหมด (errors.py) และการแปลงเป็น HTTP status (handlers.py)
+  extensions/              ต่อบริการภายนอก: OpenAI (openai_client.py), LINE / IMAP / SMTP (channel_transport.py)
+  utils/                   ตัวช่วยที่ใช้ซ้ำ: validation, วันเวลา, hashing/id, ไฟล์ส่วนตัว, HTTP, route table
+frontend/                  หน้าจอ ไม่มี build step (สคริปต์ธรรมดาโหลดตามลำดับใน public/index.html)
+  core.js                  ตัวช่วยพื้นฐาน, state, จัดรูปแบบข้อมูล, ตาราง actions / forms
+  template.js              render(ชื่อ, ข้อมูล) เติมค่าลง template: {{ค่า}} (escape ให้), {{{HTML จาก render อื่น}}},
+                           {{#เงื่อนไข}}…{{/เงื่อนไข}}, {{^เงื่อนไข}}…{{/เงื่อนไข}}, {{icon:ชื่อ}}
+                           ชื่อ template คือ path ใต้ frontend/ ไม่มี .html เช่น pages/dashboard
+  services/api.js          เรียก API ของ server
+  app.js                   router, ตัวส่งต่อ action / form และจุดเริ่มทำงาน
+  pages/                   หนึ่งหน้าจอ = <หน้า>.html + <หน้า>.js (เตรียมข้อมูลให้ template + action / form ของหน้านั้น)
+  components/              ชิ้นส่วนที่ใช้ซ้ำ (*.html), modals/*.html, ui.js (modal, ฟอร์ม, combobox), shell.js (sidebar, top bar)
+  modules/                 feature ที่ใช้หลายหน้า: ai/, channels/, auth/ (สมัครองค์กร), text-size/
+  assets/                  รูปภาพ (favicon)
+public/                    index.html และ oauth-callback.html
+css/                       base → components → layout → pages/*.css → text-size.css
+tests/                     HTTP integration tests และ browser tests
+scripts/check.py           ตรวจ syntax และรัน tests ทั้งหมด
 ```
 
 

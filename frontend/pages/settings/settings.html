@@ -1,0 +1,74 @@
+<div class="page-heading">
+  <div><h1>ตั้งค่าองค์กร</h1><p>{{tenantName}} · คุณเข้าใช้งานในฐานะ{{roleLabel}}</p></div>
+  <div class="flex"><a class="btn subtle" href="/support/{{tenantSlug}}" target="_blank" rel="noopener">{{icon:external}}เปิดหน้าช่วยเหลือ</a></div>
+</div>
+<div class="settings-frame">
+  <nav class="settings-nav" role="tablist" aria-label="หมวดการตั้งค่า">{{{tabs}}}</nav>
+  <div class="settings-panels">
+    <section id="settings-overview" role="tabpanel" aria-label="ภาพรวมและบริการ" {{^tab.overview}}hidden{{/tab.overview}}>
+      <section class="card">
+        <div class="card-header"><h2>ข้อมูลองค์กร</h2></div>
+        <div class="card-body">
+          <div class="org-identity">
+            {{{orgAvatar}}}
+            <div class="org-facts">
+              <strong class="org-name">{{tenantName}}</strong>
+              <span class="muted">รหัสองค์กร <code>{{tenantSlug}}</code> · สมาชิกที่ใช้งาน {{memberCount}} คน · {{teamCount}} ทีม</span>
+            </div>
+          </div>
+          <div class="portal-link">
+            <div class="grow"><span class="muted">ลิงก์หน้าช่วยเหลือสำหรับลูกค้า</span><a class="portal-url" href="/support/{{tenantSlug}}" target="_blank" rel="noopener">{{origin}}/support/{{tenantSlug}}</a></div>
+            <button class="btn subtle" data-action="copy-portal">{{icon:link}}คัดลอกลิงก์</button>
+          </div>
+        </div>
+      </section>
+      <form data-form="settings">
+        <section class="card">
+          <div class="card-header"><div><h2>มาตรฐานการบริการ (SLA)</h2><p>ใช้กับเคสที่เปิดใหม่ · นับต่อเนื่อง 24 ชั่วโมง รวมวันหยุด</p></div></div>
+          <div class="card-body"><div class="form-grid">{{{responseHoursField}}}{{{resolutionHoursField}}}</div></div>
+        </section>
+        <section class="card">
+          <div class="card-header"><div><h2>ข้อความอัตโนมัติ</h2><p>ข้อความที่ลูกค้าเห็นในหน้าช่วยเหลือ และคำตอบสำเร็จรูปที่ทีมหยิบไปใช้ได้ในกล่องข้อความ</p></div></div>
+          <div class="card-body">
+            <div class="field"><label for="welcome">ข้อความต้อนรับในหน้าช่วยเหลือ</label><textarea id="welcome" name="welcome" maxlength="500" required>{{welcome}}</textarea></div>
+            <div class="field"><label for="canned-reply">คำตอบสำเร็จรูปของทีม</label><textarea id="canned-reply" name="canned_reply" maxlength="3000" required>{{cannedReply}}</textarea></div>
+          </div>
+        </section>
+        <div class="settings-save"><span class="muted">การแก้ไขจะมีผลทันทีหลังบันทึก</span><button class="btn primary" type="submit">{{icon:check}}บันทึกการตั้งค่า</button></div>
+      </form>
+      <section class="card">
+        <div class="card-header"><h2>ช่องทางรับเรื่อง</h2></div>
+        <div class="card-body">
+          <div class="channel-row"><div class="channel-icon">{{icon:globe}}</div><div class="grow"><h3>Web Support</h3><p>รับเรื่องและสนทนาผ่านหน้าช่วยเหลือ</p></div><span class="badge resolved">พร้อมใช้งาน</span></div>
+          {{{channelSummary}}}
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-header"><h2>ข้อมูลและการสำรอง</h2>{{icon:shield}}</div>
+        <div class="card-body">
+          <p class="muted">ดาวน์โหลดฐานข้อมูลและไฟล์แนบขององค์กรนี้เป็น ZIP เพื่อเก็บสำรอง ไฟล์ที่ได้มีรายละเอียดลูกค้าและบันทึกภายใน จึงควรเก็บในที่ปลอดภัย</p>
+          <div class="settings-row-actions">
+            <button class="btn" data-action="backup">{{icon:download}}สำรองข้อมูลองค์กร</button>
+            <a class="btn subtle" href="#trash">{{icon:trash}}ดูถังขยะ</a>
+          </div>
+          <p class="tiny muted mt">รายการที่ลบจะอยู่ในถังขยะ 30 วันก่อนถูกลบถาวร · การสำรองทั้งระบบและกู้คืนทำผ่านคำสั่งที่อธิบายใน README.md</p>
+        </div>
+      </section>
+    </section>
+    <section id="settings-teams" role="tabpanel" aria-label="ทีมและสมาชิก" {{^tab.teams}}hidden{{/tab.teams}}>
+      <section class="card">
+        <div class="card-header">
+          <div><h2>สมาชิกในองค์กร</h2><p>ผู้ดูแลองค์กรและหัวหน้าทีมเห็นงานทุกทีม เจ้าหน้าที่เห็นเฉพาะทีมของตน</p></div>
+          <button class="btn" data-action="new-member">{{icon:plus}}เพิ่มสมาชิก</button>
+        </div>
+        <div id="members-panel">{{{membersPanel}}}</div>
+      </section>
+      <section class="card">
+        <div class="card-header"><div><h2>ทีมในองค์กร</h2><p>เคสและบทสนทนาถูกมอบหมายตามทีม</p></div><button class="btn sm" data-action="new-team">{{icon:plus}}เพิ่มทีม</button></div>
+        <div class="card-body"><div class="team-grid">{{{teamCards}}}</div></div>
+      </section>
+    </section>
+    <section id="settings-connections" role="tabpanel" aria-label="LINE / Email" {{^tab.connections}}hidden{{/tab.connections}}>{{{channelPanels}}}</section>
+    <section id="settings-ai" role="tabpanel" aria-label="AI Assistant" {{^tab.ai}}hidden{{/tab.ai}}>{{{aiPanel}}}</section>
+  </div>
+</div>

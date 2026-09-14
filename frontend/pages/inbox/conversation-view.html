@@ -1,0 +1,17 @@
+<div class="card-header conv-header">
+  <a class="icon-btn conv-back" href="#inbox" aria-label="กลับไปที่รายการบทสนทนา">{{icon:back}}</a>
+  {{{avatar}}}
+  <div class="conv-title">
+    <h2 title="{{subject}}">{{subject}}</h2>
+    <p class="conv-meta"><strong>{{contactName}}</strong>{{#contactEmail}}<span class="conv-email" title="{{contactEmail}}">{{contactEmail}}</span>{{/contactEmail}}{{{channelBadge}}}{{#ticket}}<a class="conv-case-link" href="#tickets/{{ticket.id}}" title="เปิดรายละเอียดเคส BD-{{ticket.number}}">BD-{{ticket.number}}{{{ticketBadge}}}{{{ticketPriority}}}</a>{{/ticket}}{{#closed}}<span class="badge closed">ปิดบทสนทนาแล้ว</span>{{/closed}}</p>
+  </div>
+  <div class="conv-actions">
+    <span class="inbox-ai-status" data-ai-controls="{{id}}">{{{aiControls}}}</span>
+    {{^ticket}}<button class="btn sm" data-action="conversation-ticket" data-id="{{id}}">{{icon:plus}}เปิดเคส</button>{{/ticket}}
+    <button class="btn sm" data-action="conversation-status" data-id="{{id}}" data-status="{{nextStatus}}">{{{statusIcon}}}{{statusAction}}</button>
+  </div>
+</div>
+<p class="conv-privacy">{{{privacyTag}}}</p>
+{{#lineGroup}}<div class="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม · เรียก AI ด้วย /bookdose หรือเมนชันบอต</div>{{/lineGroup}}
+<div class="thread" data-thread="{{id}}">{{{messages}}}</div>
+{{{composer}}}

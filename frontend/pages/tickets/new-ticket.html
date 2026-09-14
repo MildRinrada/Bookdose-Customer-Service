@@ -1,0 +1,12 @@
+<form data-form="ticket">
+  <div class="form-grid">
+    <div class="field span-2"><label for="new-subject">เรื่องที่ต้องการให้ช่วยเหลือ</label><input id="new-subject" name="subject" required maxlength="300" placeholder="สรุปเรื่องให้ทีมเข้าใจได้ง่าย"></div>
+    <div class="field span-2"><label for="new-contact">ลูกค้า</label>{{{contactPicker}}}<button type="button" class="btn subtle" data-action="contact-for-ticket">+ เพิ่มลูกค้าใหม่</button></div>
+    <div class="field"><label for="new-priority">ความเร่งด่วน</label><select id="new-priority" name="priority">{{{priorityOptions}}}</select></div>
+    {{{categoryField}}}
+    <div class="field"><label for="new-team">ทีมรับผิดชอบ</label><select id="new-team" name="team_id">{{{teamOptions}}}</select></div>
+    <div class="field"><label for="new-assignee">ผู้รับผิดชอบ</label>{{{assigneePicker}}}</div>
+    <div class="field span-2"><label for="new-body">รายละเอียด / บันทึกภายใน</label><textarea id="new-body" name="body" maxlength="20000" placeholder="รายละเอียดปัญหาและข้อมูลที่ทีมควรทราบ"></textarea></div>
+  </div>
+  {{{formActions}}}
+</form>

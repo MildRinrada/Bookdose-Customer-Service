@@ -1,0 +1,16 @@
+<li class="trash-item trash-{{kind}}">
+  <span class="trash-icon">{{{icon}}}</span>
+  <div class="trash-body">
+    <strong class="trash-title">{{title}}</strong>
+    <span class="trash-meta">{{label}}{{#detail}} · {{detail}}{{/detail}}</span>
+    <span class="trash-meta">ลบโดย {{actor}} · <time datetime="{{iso}}" title="{{full}}">{{ago}}</time></span>
+  </div>
+  <span class="trash-left {{#soon}}soon{{/soon}}">{{icon:clock}}เหลืออีก {{days}} วัน</span>
+  <div class="trash-actions">
+    {{#canRestore}}
+      <button class="btn sm" data-action="restore-item" data-id="{{id}}">{{icon:restore}}กู้คืน</button>
+      <button class="btn sm subtle trash-purge" data-action="purge-item" data-id="{{id}}">{{icon:trash}}ลบถาวร</button>
+    {{/canRestore}}
+    {{^canRestore}}<span class="tiny muted">ต้องเป็นผู้ดูแลองค์กรจึงกู้คืนได้</span>{{/canRestore}}
+  </div>
+</li>

@@ -7,9 +7,8 @@ import time
 from urllib.parse import parse_qs,urlsplit,urlencode
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import app
-import channel_transport as T
-import email_oauth as O
-import ai_service as AI
+from backend.extensions import channel_transport as T, openai_client
+from backend.modules.channels import email_oauth as O
 from ai_fixture_server import fake_provider
 
 def fetch(cfg,secret,checkpoint):
@@ -30,7 +29,7 @@ if __name__=='__main__':
         query=parse_qs(urlsplit(original_start(db,ctx,origin)['url']).query)
         return {'url':'/oauth/email/callback?'+urlencode({'state':query['state'][0],'code':'browser-code'})}
     O.start=fake_authorization
-    AI.call_provider=fake_provider
+    openai_client.call_provider=fake_provider
     T.verify_line=lambda secret:{'identity':'U'+'a'*32,'display_name':'Browser OA'}
     T.verify_email=lambda cfg,secret:{'uidvalidity':'100','uidnext':5}
     T.fetch_email=fetch

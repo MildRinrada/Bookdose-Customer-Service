@@ -1,0 +1,15 @@
+<div class="page-heading">
+  <div><h1>ประวัติการทำงาน</h1><p>ใครทำอะไรกับข้อมูลในองค์กรนี้ · เก็บกิจกรรมล่าสุดสูงสุด 300 รายการ</p></div>
+  <div class="flex"></div>
+</div>
+<section class="filters audit-filters">
+  {{{search}}}
+  <div class="filter-pills" role="group" aria-label="ประเภทกิจกรรม">{{{groupPills}}}</div>
+  <div class="report-fields audit-dates">
+    <label class="report-field"><span>ตั้งแต่</span><input type="date" id="audit-from" value="{{from}}"></label>
+    <label class="report-field"><span>ถึง</span><input type="date" id="audit-to" value="{{to}}"></label>
+    {{#filtered}}<button type="button" class="btn subtle" data-action="clear-audit">{{icon:close}}ล้างตัวกรอง</button>{{/filtered}}
+  </div>
+  <span class="muted article-count" role="status">{{count}} กิจกรรม</span>
+</section>
+<div id="audit-events">{{{events}}}</div>

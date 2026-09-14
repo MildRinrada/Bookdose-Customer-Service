@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import app
-import ai_service as AI
+from backend.extensions import openai_client
 
 def fake_provider(key,cfg,payload,mode):
     if mode=='test':
@@ -20,5 +20,5 @@ def fake_provider(key,cfg,payload,mode):
 if __name__=='__main__':
     if 'bookdose-browser-ai-' not in os.environ.get('BOOKDOSE_DATA',''):
         raise SystemExit('Only run this fixture with a temporary browser-test directory')
-    AI.call_provider=fake_provider
+    openai_client.call_provider=fake_provider
     app.main()

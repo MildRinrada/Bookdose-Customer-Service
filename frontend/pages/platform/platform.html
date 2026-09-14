@@ -1,0 +1,16 @@
+<div class="page-heading">
+  <div><h1>จัดการแพลตฟอร์ม</h1><p>{{total}} องค์กรบนระบบนี้ · สมาชิกที่ใช้งานรวม {{members}} คน</p></div>
+  <div class="flex"><button class="btn primary" data-action="new-tenant">{{icon:plus}}สร้างองค์กร</button></div>
+</div>
+<p class="muted platform-note">{{icon:lock}}<span>หน้านี้ทำงานระดับแพลตฟอร์ม ใช้สร้าง ระงับ และเปิดใช้งานองค์กร เคสและบทสนทนาเป็นข้อมูลของลูกค้าแต่ละองค์กร จึงเปิดได้เฉพาะองค์กรที่คุณเป็นสมาชิก ดูได้ในคอลัมน์ “พื้นที่ทำงานของคุณ”</span></p>
+<section class="card">
+  <div class="filters platform-filters">
+    {{{search}}}
+    <div class="filter-pills" role="group" aria-label="สถานะองค์กร">{{{statusPills}}}</div>
+  </div>
+  <div id="platform-organizations">{{{organizations}}}</div>
+</section>
+<section class="card mt">
+  <div class="card-header"><div><h2>ประวัติแพลตฟอร์ม</h2><p>การสร้าง ระงับ และเปิดใช้งานองค์กร 30 รายการล่าสุด</p></div>{{icon:shield}}</div>
+  <div class="card-body">{{{history}}}</div>
+</section>

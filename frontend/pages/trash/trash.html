@@ -1,0 +1,11 @@
+<div class="page-heading">
+  <div><h1>ถังขยะ</h1><p>รายการที่ถูกลบจะเก็บไว้ที่นี่ {{keepDays}} วัน กู้คืนได้ก่อนครบกำหนด หลังจากนั้นระบบจะลบถาวรให้เอง</p></div>
+  <div class="flex"><button class="btn subtle" data-action="refresh">{{icon:clock}}รีเฟรช</button></div>
+</div>
+<section class="filters trash-filters">
+  {{{search}}}
+  <div class="filter-pills" role="group" aria-label="ประเภทรายการ">{{{pills}}}</div>
+  <span class="muted article-count" role="status">{{count}} จาก {{total}} รายการ</span>
+</section>
+{{#count}}<ul class="trash-list">{{{items}}}</ul>{{{pager}}}{{/count}}
+{{^count}}{{{empty}}}{{/count}}

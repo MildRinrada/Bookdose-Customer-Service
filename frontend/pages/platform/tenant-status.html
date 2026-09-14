@@ -1,0 +1,6 @@
+<form data-form="tenant-status" data-id="{{id}}" data-status="{{status}}">
+  <p class="notice {{#suspending}}danger-notice{{/suspending}}">{{#suspending}}⚠ สมาชิกและลูกค้าขององค์กรนี้จะเข้าใช้งานไม่ได้จนกว่าจะเปิดใช้งานอีกครั้ง{{/suspending}}{{^suspending}}สมาชิกและลูกค้าจะกลับมาใช้งานองค์กรนี้ได้{{/suspending}}</p>
+  <strong>{{name}}</strong>
+  {{{confirmField}}}
+  {{{formActions}}}
+</form>

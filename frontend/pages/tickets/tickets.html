@@ -1,0 +1,12 @@
+<div class="page-heading">
+  <div><h1>เคสบริการ</h1><p>ติดตาม จัดลำดับ และมอบหมายทุกเรื่องให้ทีมของคุณ</p></div>
+  <div class="flex"><button class="btn subtle" data-action="export">{{icon:download}}ส่งออก CSV</button>{{{newTicketButton}}}</div>
+</div>
+<section class="card">
+  <div class="filters">
+    {{{search}}}{{{statusFilter}}}{{{priorityFilter}}}
+  </div>
+  {{{toolbar}}}
+  <div id="ticket-table">{{{table}}}</div>
+  <div class="table-footer"><span>ข้อมูลตามองค์กรและทีมที่คุณมีสิทธิ์</span></div>
+</section>

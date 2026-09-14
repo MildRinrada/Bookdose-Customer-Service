@@ -13,10 +13,9 @@ import test_app as base
 import test_channels as channels
 import test_ai as ai
 from test_app import app,D
-import channel_service as C
-import channel_transport as T
-import email_oauth as O
-import ai_service as AI
+from backend.extensions import channel_transport as T, openai_client as OpenAI
+from backend.modules.ai import service as AI
+from backend.modules.channels import service as C, email_oauth as O
 
 class ExtensionTests(unittest.TestCase):
     setUp=base.IntegrationTests.setUp
@@ -161,7 +160,7 @@ class ExtensionTests(unittest.TestCase):
         with patch.object(T,'send_line',return_value='accepted') as send:C.process_outbox(self.org);self.assertEqual(send.call_args.args[1],'C'+'c'*32)
         with D.tenant(self.org) as db:route=C.setting(db,'line')['route_id']
         self.webhook(route,[self.event('chatter',source={'type':'group','groupId':'C'+'c'*32,'userId':'U'+'d'*32},message={'type':'text','text':'PRIVATE CHATTER'})]);C.process_line(self.org,app.store_message)
-        with patch.object(AI,'call_provider') as provider:AI.process_one(self.org);provider.assert_not_called()
+        with patch.object(OpenAI,'call_provider') as provider:AI.process_one(self.org);provider.assert_not_called()
         self.webhook(route,[self.event('called',source={'type':'group','groupId':'C'+'c'*32,'userId':'U'+'d'*32},message={'type':'text','text':'/bookdose ดาวน์โหลดรายงานการอ่านอย่างไร'})]);C.process_line(self.org,app.store_message)
         provider=self.run_job();self.assertNotIn('PRIVATE CHATTER',json.dumps(provider.call_args.args[2]))
 
@@ -170,7 +169,7 @@ class ExtensionTests(unittest.TestCase):
         cfg=self.configure(chatbot_enabled=True,groups_enabled=True,group_chatbot_enabled=True)
         source={'type':'group','groupId':'C'+'c'*32,'userId':channels.SENDER}
         self.webhook(cfg['route_id'],[self.event('first-chatter',source=source,message={'type':'text','text':'สวัสดีสมาชิกกลุ่ม'})]);C.process_line(self.org,app.store_message)
-        with patch.object(AI,'call_provider') as provider:AI.process_one(self.org);provider.assert_not_called()
+        with patch.object(OpenAI,'call_provider') as provider:AI.process_one(self.org);provider.assert_not_called()
         self.webhook(cfg['route_id'],[self.event('call-after-chatter',source=source,message={'type':'text','text':'/bookdose ดาวน์โหลดรายงานการอ่านอย่างไร'})]);C.process_line(self.org,app.store_message)
         self.assertEqual(self.run_job().call_count,1)
         self.webhook(cfg['route_id'],[self.event('new-chatter',source=source,message={'type':'text','text':'มีข้อมูลเพิ่มเติม'})]);C.process_line(self.org,app.store_message)

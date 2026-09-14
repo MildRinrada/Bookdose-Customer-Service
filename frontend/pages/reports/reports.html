@@ -1,0 +1,37 @@
+<div class="page-heading">
+  <div><h1>รายงานการบริการ</h1><p>{{rangeLabel}} · เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน</p></div>
+  <div class="flex"><button class="btn subtle" data-action="report-export">{{icon:download}}ดาวน์โหลด CSV</button></div>
+</div>
+<form class="filters report-filters" data-form="report-filter">
+  <div class="filter-pills" role="group" aria-label="ช่วงเวลา">{{{rangePills}}}</div>
+  <div class="report-fields">
+    <label class="report-field"><span>ตั้งแต่</span><input type="date" name="from" value="{{from}}" required></label>
+    <label class="report-field"><span>ถึง</span><input type="date" name="to" value="{{to}}" required></label>
+    <label class="report-field"><span>ทีม</span><select name="team"><option value="">ทุกทีมที่มีสิทธิ์</option>{{{teamOptions}}}</select></label>
+    <label class="report-field"><span>ผู้รับผิดชอบ</span><select name="assignee"><option value="">ทุกคนที่มีสิทธิ์</option>{{{assigneeOptions}}}</select></label>
+    <button class="btn" type="submit">แสดงรายงาน</button>
+  </div>
+</form>
+{{#late}}<a class="notice warning report-alert" href="#tickets?filter=overdue">{{icon:clock}}ช่วงนี้มี {{late}} เคสเกิน SLA · เปิดรายการเคสเกิน SLA ทั้งหมด {{icon:arrow}}</a>{{/late}}
+{{#total}}
+  <div class="stats-grid">{{{stats}}}</div>
+  <section class="card report-chart">
+    <div class="card-header"><h2>ปริมาณเคสต่อวัน</h2><span class="muted">{{busiest}}</span></div>
+    <div class="card-body"><div class="chart">{{{columns}}}</div></div>
+  </section>
+  <div class="report-grid">
+    <section class="card"><div class="card-header"><h2>เคสตามสถานะ</h2></div><div class="card-body">{{{statusBars}}}</div></section>
+    <section class="card"><div class="card-header"><h2>เคสตามความเร่งด่วน</h2></div><div class="card-body">{{{priorityBars}}}</div></section>
+  </div>
+  <section class="card">
+    <div class="card-header"><h2>ผลงานตามผู้รับผิดชอบ</h2><span class="muted">เรียงตามจำนวนเคสมากที่สุด</span></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>ผู้รับผิดชอบ</th><th>เคสทั้งหมด</th><th>ยังดูแลอยู่</th><th>เกิน SLA</th><th>ตอบกลับเฉลี่ย</th><th>ตอบทัน SLA</th></tr></thead>
+        <tbody>{{{people}}}</tbody>
+      </table>
+    </div>
+  </section>
+{{/total}}
+{{^total}}{{{emptyState}}}{{/total}}
+<p class="muted">SLA และเวลาเฉลี่ยคำนวณจากเคสที่ตอบกลับครั้งแรกแล้ว ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม</p>

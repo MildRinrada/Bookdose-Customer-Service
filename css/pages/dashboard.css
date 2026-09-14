@@ -1,0 +1,451 @@
+/* Dashboard: greeting, stat highlight, recent cases table, Action Needed list, new-cases chart. */
+.hero-strip {
+  padding: 22px 25px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+  overflow: hidden;
+  position: relative;
+  min-height: 106px;
+  background: #f0edf8;
+  border: 1px solid #ded7ed;
+}
+.hero-strip h2 {
+  font-size: 1.0625rem;
+  margin-bottom: 5px;
+  color: #403156;
+}
+.hero-strip p {
+  font-size: 1rem;
+  color: #736487;
+  margin: 0;
+}
+.hero-art {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  transform: rotate(-8deg);
+  margin-right: 15px;
+  color: #716093;
+}
+.hero-art .icon {
+  width: 50px;
+  height: 50px;
+  padding: 10px;
+  background: #ffffff80;
+  border: 1px solid white;
+  border-radius: 14px;
+}
+.hero-art .icon:last-child {
+  width: 36px;
+  height: 36px;
+  margin-top: 24px;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 300px;
+  gap: 22px;
+  align-items: start;
+}
+.sla-item {
+  padding: 14px 0;
+  border-bottom: 1px solid #f2f2f7;
+}
+.sla-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.sla-item a {
+  color: #656076;
+  font-size: 1rem;
+  display: block;
+  margin: 5px 0 4px;
+}
+.sla-item .time {
+  color: #855d5e;
+  font-size: 1rem;
+}
+.sla-item .icon {
+  width: 12px;
+  height: 12px;
+}
+.empty-mini {
+  padding: 14px 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+.mini-chart {
+  display: flex;
+  align-items: end;
+  height: 125px;
+  padding-top: 15px;
+  margin: 10px 0 0;
+  gap: 6px;
+}
+/* The trend line keeps its arrow right after the words instead of dropping it on a line of its own. */
+.stat-foot .icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+}
+.chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  height: 100%;
+  gap: 5px;
+  min-width: 0;
+}
+/* A day with no cases shows nothing above the baseline, so the shape of the chart is the shape of the work. */
+.chart-col progress {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 17px;
+  height: 80px;
+  border: 0;
+  appearance: none;
+  border-radius: 5px 5px 0 0;
+  overflow: hidden;
+  background: transparent;
+}
+.chart-col progress::-webkit-progress-bar {
+  background: transparent;
+}
+.chart-col progress::-webkit-progress-value {
+  background: #b4a0e3;
+  border-radius: 5px 5px 0 0;
+}
+.chart-col progress::-moz-progress-bar {
+  background: #b4a0e3;
+}
+.chart {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+}
+.chart-col progress::-moz-progress-bar {
+  background: #b4a0e3;
+}
+.chart-col small {
+  font-size: 1rem;
+  color: #69666f;
+  white-space: nowrap;
+}
+.chart-col b {
+  font-size: 1rem;
+  color: #706386;
+  font-weight: 500;
+}
+.chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 1rem;
+  color: #6f6976;
+  margin-top: 15px;
+}
+.chart-legend::before {
+  content: '';
+  height: 6px;
+  width: 6px;
+  background: #b4a0e3;
+  border-radius: 2px;
+}
+@media (min-width:1550px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0,1fr) 340px;
+  }
+}
+@media (max-width:1180px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0,1fr) 260px;
+  }
+  .dashboard-table .customer-col {
+    display: none;
+  }
+}
+@media (max-width:950px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .dashboard-aside>.card {
+    margin: 0;
+  }
+  .hero-art {
+    display: none;
+  }
+}
+@media (max-width:760px) {
+  .hero-strip {
+    padding: 19px;
+    min-height: 100px;
+    margin-bottom: 20px;
+  }
+  .hero-strip h2 {
+    font-size: 1rem;
+  }
+  .dashboard-aside {
+    grid-template-columns: 1fr;
+  }
+}
+.hero-strip {
+  min-height: 0;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+}
+.hero-strip h2 {
+  font-size: 1.125rem;
+}
+.hero-strip p {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+.hero-art {
+  display: none;
+}
+.dashboard-heading {
+  margin-bottom: 20px;
+}
+.dashboard-heading h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 1.5rem;
+}
+.dashboard-summary {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+.dashboard-summary strong {
+  color: #422385;
+  font-weight: 700;
+}
+.dashboard-table table {
+  table-layout: fixed;
+}
+.dashboard-table th,.dashboard-table td {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.dashboard-table th {
+  white-space: normal;
+}
+.dashboard-table .col-customer {
+  width: 25%;
+}
+.dashboard-table .col-status {
+  width: 10rem;
+}
+.dashboard-table .col-priority {
+  width: 8.5rem;
+}
+.dashboard-table .ticket-title {
+  max-width: 100%;
+}
+/* One quiet action button per case; the controls open only on request. */
+.dashboard-table .col-actions {
+  width: 60px;
+}
+.dashboard-table .dashboard-action-cell {
+  padding-left: 4px;
+  padding-right: 12px;
+  text-align: right;
+}
+.dashboard-action-toggle {
+  font-size: 1.5rem;
+}
+.dashboard-quick-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(20rem, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 28px #26354a26;
+}
+.dashboard-quick-menu .row-actions {
+  position: static;
+  transform: none;
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  white-space: normal;
+  opacity: 1;
+  pointer-events: auto;
+}
+.dashboard-quick-menu .quick-select {
+  width: 100%;
+  max-width: 100%;
+}
+.dashboard-table .customer-col .flex {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.dashboard-table .customer-col .flex>div {
+  min-width: 0;
+}
+.dashboard-table .customer-name,.dashboard-table .customer-col .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action-needed .card-header p {
+  margin: 2px 0 0;
+}
+.action-needed .sla-item {
+  border-left: 3px solid transparent;
+  padding-left: 10px;
+}
+.action-needed .sla-item.danger {
+  border-left-color: #c51c31;
+}
+.action-needed .sla-item.warn {
+  border-left-color: #c7811a;
+}
+.action-needed .sla-item.info {
+  border-left-color: #6d8fc7;
+}
+.action-needed .sla-item.danger .time {
+  color: #a31525;
+  font-weight: 600;
+}
+.action-needed .sla-item.warn .time {
+  color: #80460a;
+  font-weight: 600;
+}
+.action-needed .sla-item.info .time {
+  color: #1f4f8f;
+}
+@media (max-width:1180px) {
+  .dashboard-table table {
+    table-layout: auto;
+  }
+  .dashboard-table col {
+    width: auto;
+  }
+}
+.case-chart {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.chart-y {
+  position: relative;
+  width: 1.75rem;
+  height: 110px;
+  flex-shrink: 0;
+  color: #4b5563;
+  text-align: right;
+}
+.chart-y span {
+  position: absolute;
+  right: 0;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+.chart-y .y-top {
+  top: 0;
+}
+.chart-y .y-mid {
+  top: 50%;
+}
+.chart-y .y-bottom {
+  top: 100%;
+}
+.case-chart .mini-chart {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  align-items: flex-start;
+  gap: 4px;
+  background: linear-gradient(#e3e7ef,#e3e7ef) 0 0/100% 1px no-repeat,linear-gradient(#e3e7ef,#e3e7ef) 0 55px/100% 1px no-repeat,linear-gradient(#aeb7c7,#aeb7c7) 0 109px/100% 1px no-repeat;
+}
+.case-chart .chart-col {
+  position: relative;
+  height: auto;
+  justify-content: flex-start;
+  gap: 6px;
+  border-radius: 6px;
+  cursor: default;
+}
+.case-chart .chart-col progress {
+  height: 110px;
+  width: 18px;
+  background: transparent;
+  border-radius: 5px 5px 0 0;
+}
+.case-chart .chart-col progress::-webkit-progress-bar {
+  background: transparent;
+}
+.case-chart .chart-col progress::-webkit-progress-value {
+  background: #8b6fd6;
+  border-radius: 5px 5px 0 0;
+}
+.case-chart .chart-col progress::-moz-progress-bar {
+  background: #8b6fd6;
+}
+.case-chart .chart-col:is(:hover,:focus-visible) progress::-webkit-progress-value {
+  background: #4f2fa8;
+}
+.case-chart .chart-col:is(:hover,:focus-visible) progress::-moz-progress-bar {
+  background: #4f2fa8;
+}
+.case-chart .chart-col small {
+  color: #4b5563;
+}
+.case-chart .chart-col::after {
+  content: attr(data-tip);
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 1rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.case-chart .chart-col:is(:hover,:focus-visible)::after {
+  display: block;
+}
+.case-chart .chart-col:first-child::after {
+  left: 0;
+  transform: none;
+}
+.case-chart .chart-col:last-child::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.case-chart+.chart-legend::before {
+  display: none;
+}
+@media (max-width:1250px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

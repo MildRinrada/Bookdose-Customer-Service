@@ -1,0 +1,358 @@
+/* Cases list, row quick actions and case detail. */
+.ticket-title {
+  font-size: 1rem;
+  font-weight: 550;
+  color: #555369;
+  display: block;
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+.ticket-id {
+  color: #696773;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.customer-name {
+  font-size: 1rem;
+  color: #26354a;
+  font-weight: 500;
+}
+.customer-company {
+  font-size: 1rem;
+  color: #696973;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 21px;
+  font-size: 1rem;
+  color: #686673;
+  border-top: 1px solid var(--line);
+}
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 285px;
+  gap: 22px;
+}
+.info-block {
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.info-block:last-child {
+  border: 0;
+}
+.info-block h3 {
+  font-size: 1rem;
+  margin-bottom: 15px;
+}
+.info-block .field {
+  margin-bottom: 13px;
+}
+.info-block label {
+  font-size: 1rem;
+}
+.info-block select {
+  font-size: 1rem;
+  padding: 9px;
+}
+.info-pair {
+  font-size: 1rem;
+  color: #726779;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.info-pair strong {
+  display: block;
+  font-size: 1rem;
+  color: #6d6573;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+/* Case heading: the number and the three facts that decide what to do next sit together under the subject. */
+.case-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+.case-meta strong {
+  color: #1e293b;
+}
+/* Narrow cards drop the link to its own line instead of squeezing the title into a column of letters. */
+.conv-card-header {
+  flex-wrap: wrap;
+}
+.conv-card-header>.flex {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.conv-card-header h2 {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.conv-card-header .btn {
+  flex-shrink: 0;
+}
+.case-customer {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.case-customer strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.case-customer-link {
+  width: 100%;
+  margin-top: 12px;
+}
+.info-pair a {
+  color: var(--purple);
+  text-decoration: none;
+}
+.info-pair a:hover {
+  text-decoration: underline;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #736680;
+  font-size: 1rem;
+  margin-bottom: 14px;
+}
+.back-link .icon {
+  width: 14px;
+  height: 14px;
+}
+@media (max-width:950px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+  .detail-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width:760px) {
+  .ticket-title {
+    max-width: 260px;
+  }
+  .detail-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+.muted,.small,.tiny,.ticket-id,.customer-company,.date-label {
+  color: #4b5563;
+}
+.linked-row {
+  cursor: pointer;
+}
+.density-compact td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.density-comfortable td {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.ticket-id {
+  color: #374151;
+}
+.quick-cell {
+  position: relative;
+}
+.row-actions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 28px;
+  background: linear-gradient(90deg,#edf2fc00,#edf2fc 24px);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+}
+tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.row-actions .btn {
+  min-height: 40px;
+  padding: 6px 12px;
+}
+.quick-select {
+  min-height: 40px;
+  max-width: 170px;
+  padding: 6px 34px 6px 10px;
+  border: 1px solid #8992a5;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #202b3c;
+  font: inherit;
+  cursor: pointer;
+}
+.quick-select:focus-visible,.row-actions .btn:focus-visible {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 1px;
+}
+@media (hover:none) {
+  .row-actions {
+    position: static;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+    background: none;
+    padding: 8px 0 0;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+}
+/* Toolbar: data filters (chips) on the left, display options with the count on the right.
+   When cases are selected it is replaced by the bulk-action bar. */
+.ticket-toolbar {
+  justify-content: space-between;
+}
+.filters[hidden] {
+  display: none;
+}
+.filter-chips,.display-options,.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.display-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#ticket-count {
+  color: #475569;
+}
+.bulk-bar {
+  background: #f3effd;
+}
+.bulk-bar strong {
+  color: #422385;
+  margin-right: 6px;
+}
+/* Full case list: fixed-width status columns, the rest goes to subject and customer. */
+.ticket-list table {
+  table-layout: fixed;
+  min-width: 64rem;
+}
+.ticket-list th,.ticket-list td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.ticket-list th {
+  white-space: normal;
+}
+.ticket-list .col-check {
+  width: 3rem;
+}
+.ticket-list .col-customer {
+  width: 13rem;
+}
+.ticket-list .col-status {
+  width: 10.5rem;
+}
+.ticket-list .col-priority {
+  width: 7.5rem;
+}
+.ticket-list .col-assignee {
+  width: 9rem;
+}
+.ticket-list .col-updated {
+  width: 7.5rem;
+}
+.ticket-list .ticket-title {
+  max-width: 100%;
+}
+.ticket-list .customer-col .flex {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.ticket-list .customer-col .flex>div {
+  min-width: 0;
+}
+.ticket-list .customer-name,.ticket-list .customer-col .muted,.ticket-list .assignee-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sla-late {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #a31525;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sla-late .icon {
+  width: 16px;
+  height: 16px;
+}
+/* Quick view drawer. */
+.ticket-preview h3 {
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.ticket-preview h4 {
+  margin: 20px 0 10px;
+  font-size: 1rem;
+}
+.preview-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin: 16px 0 0;
+}
+.preview-meta dt {
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+.preview-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.preview-contact {
+  display: block;
+}
+.preview-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (max-width:760px) {
+  .display-options label {
+    flex-wrap: wrap;
+  }
+  .display-options {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .bulk-bar>select {
+    flex: 1 1 100%;
+  }
+  .preview-meta {
+    grid-template-columns: 1fr;
+  }
+}

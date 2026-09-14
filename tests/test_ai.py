@@ -12,8 +12,9 @@ import zipfile
 
 import test_app as base
 import app
-import ai_service as AI
-import database as D
+from backend.database import db as D
+from backend.extensions import openai_client as OpenAI
+from backend.modules.ai import service as AI, repository as AIR
 
 FAKE_KEY = 'sk-unit-test-not-a-real-key-0123456789'
 
@@ -48,7 +49,7 @@ class AITests(unittest.TestCase):
         return client,result['conversation_id']
 
     def run_job(self,tenant=None,provider=fake_provider):
-        with patch.object(AI,'call_provider',side_effect=provider) as mock:
+        with patch.object(OpenAI,'call_provider',side_effect=provider) as mock:
             AI.process_one(tenant or self.org)
             return mock
 
@@ -61,7 +62,7 @@ class AITests(unittest.TestCase):
         self.assertTrue(enabled['key_configured'])
         self.assertNotIn(FAKE_KEY,json.dumps(enabled))
         self.assertNotIn(FAKE_KEY,json.dumps(self.ok(self.admin,'/api/workspace')))
-        self.assertEqual(stat.S_IMODE(AI.key_path(self.org).stat().st_mode),0o600)
+        self.assertEqual(stat.S_IMODE(AIR.key_path(self.org).stat().st_mode),0o600)
         with zipfile.ZipFile(io.BytesIO(app.make_backup())) as backup:
             self.assertFalse(any('secret' in name for name in backup.namelist()))
             self.assertFalse(any(FAKE_KEY.encode() in backup.read(name) for name in backup.namelist()))
@@ -71,7 +72,7 @@ class AITests(unittest.TestCase):
         self.assertEqual(agent.call('/api/ai/test',{})[0],403)
         self.assertEqual(self.admin.call('/api/ai/settings',{'remove_key':True},'PATCH')[0],400)
         self.ok(self.admin,'/api/ai/settings',{'remove_key':True,'drafts_enabled':False,'chatbot_enabled':False},'PATCH')
-        self.assertFalse(AI.key_path(self.org).exists())
+        self.assertFalse(AIR.key_path(self.org).exists())
 
     def test_bot_uses_only_public_knowledge_and_no_private_notes(self):
         self.enable();public_id=self.article();private_id=self.article('internal')
@@ -238,16 +239,16 @@ class AITests(unittest.TestCase):
                 return Response(json.dumps({'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(output)}]}],
                     'usage':{'input_tokens':12,'output_tokens':8}}).encode())
         cfg={'model':AI.DEFAULT_MODEL,'max_output_tokens':1000}
-        with patch.object(AI.urllib.request,'build_opener',return_value=Opener()):
-            result,usage=AI.call_provider(FAKE_KEY,cfg,{'test':'only'},'test')
+        with patch.object(OpenAI.urllib.request,'build_opener',return_value=Opener()):
+            result,usage=OpenAI.call_provider(FAKE_KEY,cfg,{'test':'only'},'test')
         self.assertEqual(result,output)
         payload=json.loads(captured[0].data)
         self.assertEqual(captured[0].full_url,'https://api.openai.com/v1/responses')
         self.assertFalse(payload['store']);self.assertTrue(payload['text']['format']['strict'])
         self.assertNotIn(FAKE_KEY,captured[0].data.decode())
-        with patch.object(AI.urllib.request,'build_opener') as opener:
+        with patch.object(OpenAI.urllib.request,'build_opener') as opener:
             opener.return_value.open.side_effect=urllib.error.HTTPError('https://api.openai.com',401,'PRIVATE PROVIDER DETAIL',{},None)
-            with self.assertRaises(AI.AIError) as error:AI.call_provider(FAKE_KEY,cfg,{},'test')
+            with self.assertRaises(AI.AIError) as error:OpenAI.call_provider(FAKE_KEY,cfg,{},'test')
         self.assertNotIn('PRIVATE',str(error.exception));self.assertEqual(error.exception.code,'unauthorized')
 
     def test_expired_running_job_handoffs_without_reissuing_request(self):

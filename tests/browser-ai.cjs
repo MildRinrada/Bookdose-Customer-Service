@@ -61,7 +61,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'/opt/homebrew/lib/node_
     await staff.locator('.composer button[type="submit"]').click();
     await customer.getByText('เจ้าหน้าที่ตรวจสอบแล้ว ดาวน์โหลดตามขั้นตอนในคู่มือได้เลยค่ะ',{exact:true}).waitFor({timeout:30000});
     await staff.getByRole('button',{name:'ให้ AI ดูแลข้อความถัดไป'}).click();
-    await staff.locator('[data-ai-controls]').filter({hasText:'AI ดูแลบทสนทนา'}).waitFor();
+    await staff.locator('[data-ai-controls]').filter({hasText:'AI ดูแลอยู่'}).waitFor();
     assert.deepEqual(errors,[]);
     console.log('AI browser checks passed: settings, private key handling, connection test, public chatbot/citations, mobile layout, human handoff, staff draft review and manual send, resume bot. Provider mocked.');
   }finally{

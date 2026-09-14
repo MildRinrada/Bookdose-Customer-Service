@@ -1,0 +1,26 @@
+<tr class="{{^active}}org-suspended{{/active}}">
+  <td>
+    <div class="org-cell">
+      {{{avatar}}}
+      <div class="org-text"><strong class="truncate">{{name}}</strong><span class="muted">สร้าง {{created}}</span></div>
+    </div>
+  </td>
+  <td>
+    <div class="org-portal">
+      <a href="/support/{{slug}}" target="_blank" rel="noopener" title="เปิดหน้าช่วยเหลือของ {{name}} ในแท็บใหม่">/support/{{slug}}</a>
+      <button class="icon-btn sm" data-action="copy-portal-link" data-slug="{{slug}}" aria-label="คัดลอกลิงก์หน้าช่วยเหลือของ {{name}}" title="คัดลอกลิงก์">{{icon:link}}</button>
+    </div>
+  </td>
+  <td class="org-members">{{members}}</td>
+  <td>{{{status}}}</td>
+  <td>
+    {{#current}}<span class="org-access">{{icon:check}}ใช้งานอยู่ตอนนี้</span>{{/current}}
+    {{#canOpen}}<button class="btn sm" data-action="open-tenant" data-id="{{id}}" title="สลับไปทำงานในองค์กร {{name}}">{{icon:arrow}}เปิดพื้นที่ทำงาน</button>{{/canOpen}}
+    {{#canRequest}}<button class="btn sm" data-action="support-access" data-id="{{id}}" data-name="{{name}}" title="คุณยังไม่ได้เป็นสมาชิก · ขอเข้าองค์กรเพื่อ Support พร้อมบันทึกเหตุผล">{{icon:shield}}ขอ Support Access</button>{{/canRequest}}
+    {{^canRequest}}{{#noAccess}}<span class="org-access muted" title="ต้องเป็นสมาชิกขององค์กรนี้จึงจะอ่านเคสและบทสนทนาได้">{{icon:lock}}{{noAccess}}</span>{{/noAccess}}{{/canRequest}}
+  </td>
+  <td>
+    {{#active}}<button class="btn sm subtle org-suspend" data-action="tenant-status" data-id="{{id}}" data-status="suspended" data-name="{{name}}">{{icon:lock}}ระงับองค์กร</button>{{/active}}
+    {{^active}}<button class="btn sm" data-action="tenant-status" data-id="{{id}}" data-status="active" data-name="{{name}}">{{icon:check}}เปิดใช้งาน</button>{{/active}}
+  </td>
+</tr>

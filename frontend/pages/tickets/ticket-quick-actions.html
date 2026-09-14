@@ -1,0 +1,6 @@
+<div class="row-actions" role="group" aria-label="จัดการด่วน BD-{{number}}">
+  <button type="button" class="btn sm" data-action="ticket-preview" data-id="{{id}}" aria-label="ดูตัวอย่าง BD-{{number}}" title="ดูตัวอย่าง (Quick View)">{{icon:eye}}{{#menu}}ดูตัวอย่างเคส{{/menu}}</button>
+  {{#canClaim}}<button type="button" class="btn sm primary" data-action="quick-claim" data-id="{{id}}">{{icon:check}}รับเคส</button>{{/canClaim}}
+  <select class="quick-select" data-quick="status" data-lazy="1" data-id="{{id}}" aria-label="เปลี่ยนสถานะ BD-{{number}}" title="เปลี่ยนสถานะ">{{{statusOptions}}}</select>
+  <select class="quick-select" data-quick="assignee_id" data-lazy="1" data-id="{{id}}" aria-label="มอบหมาย BD-{{number}}" title="มอบหมาย (Assign)">{{{assigneeOptions}}}</select>
+</div>

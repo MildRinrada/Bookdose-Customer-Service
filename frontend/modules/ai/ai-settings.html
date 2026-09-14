@@ -1,0 +1,29 @@
+<section class="card mt" id="ai-settings">
+  <div class="card-header">
+    <div><h2>{{icon:sparkle}} AI Assistant & Chatbot</h2><p>ตั้งค่าแยกสำหรับ {{tenantName}}</p></div>
+    <span class="badge {{#keyConfigured}}resolved{{/keyConfigured}}">{{#keyConfigured}}บันทึก API Key แล้ว{{/keyConfigured}}{{^keyConfigured}}ยังไม่ได้ตั้งค่า API Key{{/keyConfigured}}</span>
+  </div>
+  <form class="card-body" data-form="ai-settings">
+    <div class="notice mb">เมื่อเปิดใช้ ระบบจะส่งข้อความและบทความที่เกี่ยวข้องไปยัง OpenAI เพื่อสร้างคำตอบ มีค่าใช้บริการตามบัญชี API ของคุณ Chatbot อ่านเฉพาะบทความที่เผยแพร่ให้ลูกค้า ส่วนร่างสำหรับเจ้าหน้าที่อาจใช้บทความและบันทึกภายใน</div>
+    <div class="form-grid">
+      <div class="field"><label for="ai-key">OpenAI API Key</label><input type="password" id="ai-key" name="api_key" autocomplete="new-password" placeholder="{{#keyConfigured}}เว้นว่างเพื่อใช้คีย์เดิม{{/keyConfigured}}{{^keyConfigured}}sk-…{{/keyConfigured}}" maxlength="503"><span class="tiny muted">เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิมและไม่รวมในไฟล์สำรอง</span></div>
+      <div class="field"><label for="ai-model">โมเดล</label><input id="ai-model" name="model" value="{{model}}" required maxlength="100"><span class="tiny muted">ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์ และรองรับ Structured Outputs</span></div>
+      <label class="check"><input type="checkbox" name="drafts_enabled" {{#draftsEnabled}}checked{{/draftsEnabled}}>เปิด AI ช่วยร่างคำตอบให้เจ้าหน้าที่</label>
+      <label class="check"><input type="checkbox" name="chatbot_enabled" {{#chatbotEnabled}}checked{{/chatbotEnabled}}>เปิด Chatbot ตอบลูกค้าผ่าน Web Support</label>
+      <div class="field"><label for="ai-daily">เพดานคำขอ AI ต่อวัน / องค์กร (UTC)</label><input id="ai-daily" name="daily_limit" type="number" min="1" max="10000" value="{{dailyLimit}}" required></div>
+      <div class="field"><label for="ai-conversation">เพดานคำตอบ Chatbot ต่อบทสนทนา</label><input id="ai-conversation" name="conversation_limit" type="number" min="1" max="100" value="{{conversationLimit}}" required></div>
+      <div class="field"><label for="ai-output">จำนวน output tokens สูงสุดต่อคำขอ</label><input id="ai-output" name="max_output_tokens" type="number" min="200" max="2000" value="{{maxOutputTokens}}" required></div>
+      <label class="check"><input name="remove_key" type="checkbox">ลบ API Key (ปิดทั้งสองโหมดก่อนบันทึก)</label>
+    </div>
+    <div class="flex wrap mt">
+      <button class="btn primary" type="submit">บันทึกการตั้งค่า AI</button>
+      <button class="btn" type="button" data-action="ai-test" {{^keyConfigured}}disabled{{/keyConfigured}}>{{icon:checkCircle}}ทดสอบการเชื่อมต่อ</button>
+      <span class="tiny muted">การทดสอบใช้ข้อความตัวอย่าง ไม่มีข้อมูลลูกค้า</span>
+    </div>
+    <div id="ai-test-result" role="status" class="mt"></div>
+  </form>
+  <div class="card-body">
+    <div class="flex wrap"><span class="badge">วันนี้ {{requests}} / {{dailyLimit}} คำขอ</span><span class="badge">Input {{inputTokens}} tokens</span><span class="badge">Output {{outputTokens}} tokens</span></div>
+    <p class="tiny muted mt">เพดานนับงานที่รับเข้าคิว รวมงานทดสอบและงานไม่สำเร็จ ไม่ใช่วงเงินเป็นบาท เปิด Chatbot แล้วจะเริ่มกับบทสนทนาใหม่ บทสนทนาเดิมให้เจ้าหน้าที่เลือกเปิดเป็นรายเรื่อง</p>
+  </div>
+</section>

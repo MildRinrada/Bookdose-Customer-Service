@@ -1,0 +1,175 @@
+/* Activity log: a day at a time, one line per event, with the time on the left like a timeline. */
+.audit-filters {
+  gap: 12px 16px;
+}
+.audit-filters .filter-pills {
+  margin: 0;
+  width: 100%;
+}
+.audit-dates {
+  width: auto;
+}
+.audit-day {
+  margin-bottom: 22px;
+}
+/* The day stays in view while its events scroll past. */
+.audit-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 10px 4px;
+  background: var(--bg);
+  font-size: 1rem;
+  color: #334155;
+}
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.audit-event {
+  display: grid;
+  grid-template-columns: 4.5rem 40px minmax(0,1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f2f2f7;
+}
+.audit-event:last-child {
+  border-bottom: 0;
+}
+.audit-event:hover {
+  background: #fbfaff;
+}
+.audit-event>time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding-top: 8px;
+  white-space: nowrap;
+}
+.audit-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #eef1f7;
+  color: #475569;
+}
+.audit-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+/* Each kind of activity keeps its colour, and anything that removes data stands out. */
+.tone-ai .audit-icon {
+  background: #eee9fb;
+  color: #5b3ea8;
+}
+.tone-security .audit-icon {
+  background: #fdeade;
+  color: #8a4212;
+}
+.tone-settings .audit-icon {
+  background: #e4edfa;
+  color: #2b5488;
+}
+.tone-danger .audit-icon {
+  background: #fde7ea;
+  color: #a3182b;
+}
+.tone-danger .audit-label {
+  color: #a3182b;
+  font-weight: 650;
+}
+.audit-body {
+  min-width: 0;
+  padding-top: 6px;
+}
+.audit-line {
+  margin: 0;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+.audit-line strong {
+  color: #1e293b;
+  font-weight: 650;
+}
+.audit-entity {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 1px 9px;
+  border-radius: 20px;
+  background: #f1eefb;
+  color: #5b4a80;
+  text-decoration: none;
+}
+.audit-entity .icon {
+  width: 14px;
+  height: 14px;
+}
+a.audit-entity:hover {
+  background: #e8dffc;
+  color: #422385;
+}
+.audit-entity.plain {
+  background: #eef1f7;
+  color: #475569;
+}
+.audit-changes {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.empty-mini {
+  padding: 40px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  color: var(--muted);
+}
+/* Narrow screens: the time moves above the line instead of squeezing it. */
+@media (max-width: 760px) {
+  .audit-event {
+    grid-template-columns: 36px minmax(0,1fr);
+    padding: 12px 14px;
+  }
+  .audit-event>time {
+    grid-column: 1/-1;
+    padding-top: 0;
+  }
+  .audit-day-head {
+    padding: 8px 2px;
+  }
+}
+/* The same rows inside a card (a case's history, the platform log) sit flat instead of a card within a card. */
+.card-body .audit-day {
+  margin-bottom: 14px;
+}
+.card-body .audit-day:last-child {
+  margin-bottom: 0;
+}
+.card-body .audit-list {
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+.card-body .audit-day-head {
+  background: #fff;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.card-body .audit-event {
+  padding: 12px 0;
+}

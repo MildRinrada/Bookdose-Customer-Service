@@ -1,0 +1,2 @@
+{{^tracked}}<div class="message-footer">พร้อมอ่านในหน้าติดตามเรื่อง</div>{{/tracked}}
+{{#tracked}}<div class="message-footer" role="status">{{label}}{{#accepted}} · ยังไม่ยืนยันการส่งถึงหรืออ่าน{{/accepted}}{{#error}}<p>{{error}}</p>{{/error}}{{#hasFileLinks}}<button type="button" class="btn sm" data-action="channel-revoke-files" data-id="{{id}}">ถอนลิงก์ไฟล์</button>{{/hasFileLinks}}{{#retryable}}<button type="button" class="btn sm" data-action="channel-retry" data-id="{{id}}">ลองส่งอีกครั้ง</button>{{/retryable}}</div>{{/tracked}}

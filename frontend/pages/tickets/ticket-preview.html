@@ -1,0 +1,15 @@
+<div class="ticket-preview">
+  <h3>{{subject}}</h3>
+  <p class="muted">{{category}} · เปิดเมื่อ {{created}}</p>
+  <dl class="preview-meta">
+    <div><dt>สถานะ</dt><dd>{{{status}}}</dd></div>
+    <div><dt>ความเร่งด่วน</dt><dd>{{{priority}}}</dd></div>
+    <div><dt>ผู้รับผิดชอบ</dt><dd>{{assignee}}</dd></div>
+    <div><dt>ทีม</dt><dd>{{team}}</dd></div>
+    <div><dt>กำหนดแก้ไข</dt><dd>{{resolutionDue}}{{#late}} <span class="sla-late">{{icon:clock}}เกิน {{late}}</span>{{/late}}</dd></div>
+    <div><dt>ลูกค้า</dt><dd>{{contactName}}<span class="muted preview-contact">{{contactEmail}} · {{contactPhone}}</span></dd></div>
+  </dl>
+  <h4>ข้อความล่าสุด</h4>
+  <div class="preview-thread">{{{messages}}}</div>
+  <div class="form-actions"><a class="btn primary" href="#tickets/{{id}}">{{icon:arrow}}เปิดเคสเต็มหน้า</a></div>
+</div>

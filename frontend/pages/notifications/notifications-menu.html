@@ -1,0 +1,11 @@
+<div class="note-menu-head">
+  <strong>การแจ้งเตือน</strong>
+  {{#count}}<span class="tag-count">{{count}}</span>{{/count}}
+  {{^count}}<span class="muted">ไม่มีรายการ</span>{{/count}}
+</div>
+<div class="note-menu-tabs filter-pills" role="group" aria-label="ประเภทการแจ้งเตือน">{{{tabs}}}</div>
+<div class="note-menu-body">
+  {{#shown}}<div class="note-list">{{{list}}}</div>{{/shown}}
+  {{^shown}}{{#loading}}<p class="note-loading" role="status">กำลังตรวจสอบรายการล่าสุด…</p>{{/loading}}{{^loading}}{{{empty}}}{{/loading}}{{/shown}}
+</div>
+<a class="note-menu-foot" href="#notifications">ดูการแจ้งเตือนทั้งหมด {{icon:arrow}}</a>

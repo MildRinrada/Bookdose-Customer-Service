@@ -1,0 +1,186 @@
+/* Design tokens, element defaults (typography, links, form controls, focus) and small utility classes. */
+:root {
+  --bg: #f5f5f1;
+  --paper: #fff;
+  --accent: rgb(38, 41, 45);
+  --accent-hover: #3a4246;
+  --link: #2f6385;
+  --info-soft: #eaf1f6;
+  --surface-hover: #eff1ec;
+  --control-line: #87928c;
+  --focus: #4d8cad;
+  --green: #327b61;
+  --green-soft: #e9f3ed;
+  --red: #b84339;
+  --red-soft: #fbefec;
+  --amber: #916215;
+  --amber-soft: #fbf0db;
+  /* Compatibility for existing components; new theme rules use semantic tokens. */
+  --purple: var(--accent);
+  --purple-light: var(--surface-hover);
+  --shadow: 0 3px 14px #26292d04;
+  --font: -apple-system,BlinkMacSystemFont,'Thonburi','Leelawadee UI',sans-serif;
+  --ink: rgb(38, 41, 45);
+  --muted: #65716b;
+  --line: rgb(227, 227, 222);
+}
+* {
+  box-sizing: border-box;
+}
+/* Hidden means hidden: a class such as .btn{display:inline-flex} would otherwise win over the browser's
+   own [hidden] rule, and a panel or a button that JavaScript hid would stay on the screen. */
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: var(--font);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+button,input,select,textarea {
+  font: inherit;
+}
+button,a,input,select,textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+h1,h2,h3,p {
+  margin-top: 0;
+}
+h1 {
+  font-size: 1.6875rem;
+  letter-spacing: -.5px;
+  line-height: 1.4;
+  margin-bottom: 7px;
+}
+h2 {
+  font-size: 1.0625rem;
+  margin-bottom: 0;
+}
+h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+p {
+  margin-bottom: 12px;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 1rem;
+}
+.tiny {
+  font-size: 1rem;
+}
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+.flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.between {
+  justify-content: space-between;
+}
+.wrap {
+  flex-wrap: wrap;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.stack {
+  display: grid;
+  gap: 18px;
+}
+.gap-8 {
+  gap: 8px;
+}
+.mt {
+  margin-top: 22px;
+}
+.mb {
+  margin-bottom: 20px;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+input::placeholder,textarea::placeholder {
+  color: #626d7d;
+  opacity: 1;
+}
+textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.7;
+}
+.span-2 {
+  grid-column: 1/-1;
+}
+.loading-line {
+  padding: 45px;
+  text-align: center;
+  color: #6e6378;
+  font-size: 1rem;
+}
+@media (max-width:760px) {
+  h1 {
+    font-size: 1.4375rem;
+  }
+  .span-2 {
+    grid-column: auto;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+small,code {
+  font-size: 1rem;
+}
+input[type=checkbox],input[type=radio] {
+  min-height: 20px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--purple);
+}

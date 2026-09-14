@@ -1,0 +1,1405 @@
+/* Inbox: conversation list and header, chat bubbles, composer and AI drafts. */
+.thread {
+  padding: 24px;
+  min-height: 280px;
+  max-height: 570px;
+  overflow: auto;
+  background: #fff;
+}
+.message {
+  margin-bottom: 23px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: 95%;
+}
+.message .bubble {
+  background: #f6f5f9;
+  border: 1px solid #f0edf4;
+  border-radius: 0 10px 10px;
+  padding: 12px 15px;
+  font-size: 1rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.message.reply {
+  margin-left: 8%;
+  flex-direction: row-reverse;
+  max-width: 92%;
+}
+/* A reply written with the formatting tools is shown formatted, with chat-sized spacing. */
+.bubble.rich {
+  white-space: normal;
+}
+.bubble.rich p {
+  margin: 0 0 8px;
+}
+.bubble.rich>:last-child {
+  margin-bottom: 0;
+}
+.bubble.rich ul,.bubble.rich ol {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+.bubble.rich h3,.bubble.rich h4 {
+  margin: 4px 0 6px;
+  font-size: 1.0625rem;
+}
+/* Links stay readable on the coloured reply bubble. */
+.bubble.rich a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.bubble.rich code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #00000014;
+}
+.bubble.rich pre {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #00000014;
+  white-space: pre-wrap;
+}
+.message.reply .bubble {
+  background: #f3eefb;
+  border-color: #eae0f7;
+  border-radius: 10px 0 10px 10px;
+}
+.message.note .bubble {
+  background: #fffaee;
+  border: 1px solid #f4e9cf;
+}
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 1rem;
+  color: #6e6576;
+  margin-bottom: 6px;
+}
+.message-header strong {
+  font-weight: 550;
+  color: #72657d;
+}
+.message-footer {
+  font-size: 1rem;
+  color: #6e6478;
+  margin-top: 4px;
+}
+.message-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1rem;
+  border: 1px solid #e8dff2;
+  color: #77608d;
+  border-radius: 5px;
+  background: #fff;
+  padding: 4px 8px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.file-chip .icon {
+  width: 12px;
+  height: 12px;
+}
+/* Media is readable in the conversation; file names and download remain secondary. */
+.message .grow,.message-files {
+  min-width: 0;
+}
+.message:has(.message-media)>.grow {
+  flex: 0 1 392px;
+}
+.message-media {
+  width: min(360px, 100%);
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #d5dbe4;
+  border-radius: 10px;
+  background: #f5f6f9;
+  color: #26354a;
+  white-space: normal;
+}
+.media-image-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.message-media img,.message-media video {
+  display: block;
+  width: 100%;
+  height: 240px;
+  object-fit: contain;
+  background: #eef0f5;
+}
+.message-media video {
+  background: #111827;
+}
+.media-placeholder,.media-error {
+  min-height: 240px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  color: #475569;
+}
+.message-media:not([data-media-state="loading"]) .media-placeholder,
+.message-media:not([data-media-state="error"]) .media-error,
+.message-media:not([data-media-state="ready"]) .media-image-button,
+.message-media:not([data-media-state="ready"]) video {
+  display: none;
+}
+.message-media figcaption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  font-size: .875rem;
+  line-height: 1.4;
+  background: #fff;
+}
+.media-filename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.media-image-button:focus-visible {
+  outline: 3px solid #8b6fd6;
+  outline-offset: -3px;
+}
+.media-viewer img {
+  display: block;
+  width: 100%;
+  max-height: 75dvh;
+  object-fit: contain;
+}
+.composer {
+  padding: 18px 22px;
+  border-top: 1px solid var(--line);
+  background: #fdfcfe;
+  position: relative;
+}
+.composer textarea,.composer-input {
+  border: 0;
+  box-shadow: none;
+  font-size: 1rem;
+  background: white;
+  margin: 10px 0;
+  padding: 12px;
+  min-height: 90px;
+}
+.composer-input {
+  max-height: 40vh;
+}
+.composer textarea:focus {
+  outline: none;
+}
+.composer-input:focus-visible {
+  outline: 2px solid #b4a0f0;
+  outline-offset: -2px;
+}
+.composer-tabs {
+  display: flex;
+  gap: 17px;
+  font-size: 1rem;
+  flex-wrap: wrap;
+}
+.composer-tabs label {
+  cursor: pointer;
+  color: #6e6476;
+  padding: 9px 12px;
+  border: 1px solid #a3adbc;
+  border-radius: 8px;
+}
+.composer-tabs label:has(input:checked) {
+  font-weight: 600;
+  color: #422385;
+  background: #e8dffc;
+  border-color: #7959ba;
+}
+.composer-tabs input {
+  margin: 0 5px 0 0;
+  accent-color: var(--purple);
+  vertical-align: middle;
+}
+.composer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.composer-tip {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-top: 4px;
+}
+.inbox-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0,1fr);
+  min-height: 650px;
+}
+.inbox-list {
+  border-right: 1px solid var(--line);
+  max-height: 780px;
+  overflow: auto;
+}
+.inbox-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: white;
+  padding: 19px;
+  color: inherit;
+  border-left: 4px solid transparent;
+}
+.inbox-item:hover,.inbox-item.selected {
+  background: #f8f5fd;
+}
+.inbox-item.selected {
+  border-left: 3px solid var(--purple);
+  padding-left: 16px;
+}
+.inbox-item strong {
+  font-size: 1rem;
+  font-weight: 550;
+}
+.inbox-item h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 9px 0 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inbox-item p {
+  font-size: 1rem;
+  color: #6e6774;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+.inbox-item .small {
+  font-size: 1rem;
+  color: #6d6473;
+}
+.unread-dot {
+  display: inline-block;
+  margin-right: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b45309;
+  box-shadow: 0 0 0 3px #fde3b0;
+  flex-shrink: 0;
+}
+.inbox-detail {
+  min-width: 0;
+}
+.inbox-detail .thread {
+  height: 410px;
+}
+.inbox-detail .card-header {
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width:1180px) {
+  .inbox-layout {
+    grid-template-columns: 285px minmax(0,1fr);
+  }
+}
+@media (max-width:950px) {
+  .inbox-layout {
+    grid-template-columns: 240px minmax(0,1fr);
+  }
+  .inbox-item {
+    padding: 14px;
+  }
+  .inbox-detail .thread {
+    padding: 17px;
+  }
+  .composer {
+    padding: 16px;
+  }
+  .composer-tip {
+    display: none;
+  }
+}
+@media (max-width:760px) {
+  .inbox-layout {
+    grid-template-columns: 1fr;
+  }
+  .inbox-list {
+    max-height: 270px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .inbox-detail .thread {
+    height: 380px;
+  }
+  .thread {
+    padding: 18px;
+  }
+  .message {
+    max-width: 100%;
+  }
+  .message.reply {
+    margin-left: 3%;
+    max-width: 97%;
+  }
+  .message-header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .composer-bottom {
+    flex-wrap: wrap;
+  }
+  .composer-tabs {
+    gap: 9px;
+  }
+  .message .avatar {
+    width: 27px;
+    height: 27px;
+    font-size: 1rem;
+  }
+}
+.ai-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 0 2px;
+}
+.ai-tools .icon,.ai-result .icon {
+  height: 15px;
+  width: 15px;
+}
+.ai-draft-btn {
+  border-color: #b5bdcb;
+  background: white;
+  color: #5133a6;
+}
+.ai-result {
+  padding: 16px;
+  border: 1px solid #ddd0f0;
+  border-radius: 10px;
+  background: #faf7ff;
+  margin: 13px 0;
+}
+.ai-citations {
+  margin-top: 12px;
+  white-space: normal;
+  font-size: 1rem;
+  color: #72627e;
+}
+.ai-citations summary {
+  cursor: pointer;
+  color: var(--purple);
+  padding: 4px 0;
+}
+.ai-citations>div {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ai-citations p {
+  white-space: pre-wrap;
+  margin: 5px 0;
+}
+.ai-result .notice {
+  margin-top: 10px;
+}
+.inbox-item.needs-reply {
+  border-left-color: #ad6510;
+  background: #fff8eb;
+}
+.inbox-item.needs-reply strong,.inbox-item.needs-reply h3,.inbox-item.needs-reply p {
+  font-weight: 700;
+  color: #28364a;
+}
+.inbox-item.selected {
+  background: #eee8fc;
+  border-left: 4px solid #6544c5;
+}
+.inbox-item p,.inbox-item .small,.message-header,.message-header strong {
+  color: #475569;
+}
+.inbox-item .flex.between {
+  flex-wrap: wrap;
+}
+.message {
+  max-width: 88%;
+}
+.message.customer {
+  margin-right: auto;
+}
+.message.customer .bubble {
+  background: #edf2f7;
+  border: 1px solid #b5c0d0;
+  color: #1e293b;
+}
+.message.reply {
+  margin-left: auto;
+  max-width: 88%;
+}
+.message.reply .bubble {
+  background: #e8dffc;
+  border: 1px solid #ad96db;
+  color: #30204e;
+}
+.message.note {
+  margin-inline: 4%;
+  max-width: 92%;
+}
+.message.note .bubble {
+  background: #fff0c7;
+  border: 1px dashed #9a630c;
+  color: #684107;
+}
+.composer-tabs {
+  gap: 8px;
+}
+.composer-tabs label {
+  color: #334155;
+}
+.composer-tabs label:has(input[value=note]:checked) {
+  color: #684107;
+  background: #fff0c7;
+  border-color: #9a630c;
+}
+.composer:has(input[value=note]:checked) {
+  background: #fffaf0;
+  border-top: 3px solid #bd801e;
+}
+.composer textarea {
+  border: 1px solid #9aa5b4;
+}
+.composer-bottom>.btn.primary {
+  background: #5835b3;
+  font-weight: 700;
+}
+.composer-tip {
+  display: block;
+}
+.composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+.composer-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #c3cad6;
+  border-radius: 10px;
+  background: #fff;
+}
+.composer-mode label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+.composer-mode label .icon {
+  width: 16px;
+  height: 16px;
+}
+.composer-mode input {
+  margin: 0;
+}
+.composer:has(input[value=note]:checked) {
+  background: #fff6db;
+  border-top: 4px solid #c7811a;
+}
+.composer:has(input[value=note]:checked) textarea {
+  background: #fffbeb;
+  border: 2px solid #d99a2b;
+}
+.composer:has(input[value=note]:checked) textarea::placeholder {
+  color: #7a5310;
+}
+.composer-send .send-note {
+  display: none;
+}
+.composer:has(input[value=note]:checked) .composer-send .send-reply {
+  display: none;
+}
+.composer:has(input[value=note]:checked) .composer-send .send-note {
+  display: inline;
+}
+.composer:has(input[value=note]:checked) .composer-send {
+  background: #8a4b06;
+  border-color: #8a4b06;
+}
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #4b3a8c;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tool-btn:hover:not(:disabled) {
+  background: #f0ebfb;
+  border-color: #d8cdf3;
+}
+.tool-btn:disabled {
+  color: #7b8190;
+  cursor: not-allowed;
+}
+.tool-btn .icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.tool-btn:focus-visible,input[type=file].attach-input:focus-visible+label {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+}
+input[type=file].attach-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.file-list:empty {
+  display: none;
+}
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 2px 2px 10px;
+  border: 1px solid #c9bfe6;
+  border-radius: 999px;
+  background: #f6f3fd;
+  color: #3b2d6e;
+}
+.file-pill .icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.file-pill .file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-pill button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #5b4a8a;
+  cursor: pointer;
+}
+.file-pill button:hover {
+  background: #e8dffc;
+}
+.composer.drag-over {
+  outline: 3px dashed #7959ba;
+  outline-offset: -6px;
+  background: #f6f2ff;
+}
+.inbox-detail .composer-compact textarea {
+  min-height: 56px;
+  height: 64px;
+  max-height: 180px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.inbox-ai-status {
+  gap: 6px;
+}
+.inbox-item {
+  padding: 14px 16px;
+}
+.inbox-top,.inbox-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.inbox-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.inbox-status .badge {
+  padding: 2px 8px;
+}
+.channel-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.channel-dot .icon {
+  width: 16px;
+  height: 16px;
+}
+.channel-dot.channel-web {
+  color: #542f94;
+  background: #eee4ff;
+}
+.channel-dot.channel-line {
+  color: #095e35;
+  background: #d5f4e1;
+}
+.channel-dot.channel-email {
+  color: #164a91;
+  background: #dbeafe;
+}
+.channel-dot.channel-manual {
+  color: #435063;
+  background: #e9edf2;
+}
+.priority-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.priority-dot.urgent {
+  background: #c51c31;
+}
+.priority-dot.high {
+  background: #a66a0c;
+}
+.inbox-item h3 {
+  margin: 8px 0 2px;
+}
+.inbox-item .inbox-preview {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.inbox-meta {
+  flex-shrink: 0;
+  color: #4b5563;
+  white-space: nowrap;
+}
+.inbox-item.needs-reply .inbox-name,.inbox-item.needs-reply h3 {
+  font-weight: 800;
+  color: #1e293b;
+}
+.inbox-item.needs-reply .inbox-preview {
+  color: #1e293b;
+  font-weight: 600;
+}
+.conv-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+}
+.conv-who {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.conv-who h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.conv-contact {
+  margin: 2px 0 6px;
+  color: #4b5563;
+  overflow-wrap: anywhere;
+}
+.conv-contact strong {
+  color: #26354a;
+}
+.conv-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.conv-case {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.message.customer .bubble {
+  background: #f1f3f6;
+  border: 1px solid #d5dbe4;
+  color: #1e293b;
+  border-radius: 4px 14px 14px 14px;
+}
+.message.reply .bubble {
+  background: #5835b3;
+  border: 1px solid #5835b3;
+  color: #fff;
+  border-radius: 14px 4px 14px 14px;
+}
+.message.reply .file-chip {
+  background: #ffffff1f;
+  border-color: #ffffffa0;
+  color: #fff;
+}
+/* Full-height workspace: list and conversation scroll on their own, composer always in view. */
+@media (min-width:1001px) and (min-height:560px) {
+  body:has(.inbox-layout) {
+    overflow: hidden;
+  }
+  .app-main:has(.inbox-layout) {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  .content:has(.inbox-layout) {
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 20px;
+  }
+  .content:has(.inbox-layout)>.page-heading {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+  }
+  .inbox-layout {
+    min-height: 0;
+    flex: 1;
+    grid-template-columns: 320px minmax(0,1fr);
+  }
+  .inbox-list {
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+  }
+  .inbox-detail {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .inbox-detail>.card-header {
+    padding: 12px 16px;
+    flex-shrink: 0;
+  }
+  .inbox-detail>.thread {
+    height: auto;
+    min-height: 180px;
+    max-height: none;
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+  }
+  .inbox-detail>.composer {
+    padding: 10px 16px;
+    flex-shrink: 0;
+  }
+  .inbox-detail .composer textarea {
+    min-height: 60px;
+    height: 70px;
+  }
+  .inbox-detail .composer .composer-tip {
+    display: none;
+  }
+  .inbox-detail .composer .ai-tools {
+    margin: 4px 0;
+  }
+  .inbox-detail .composer [data-ai-panel]:not(:empty) {
+    max-height: 170px;
+    overflow: auto;
+  }
+}
+@media (max-width:760px) {
+  .composer-mode {
+    width: 100%;
+  }
+  .composer-mode label {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+  }
+  .composer-mode label .icon {
+    display: none;
+  }
+  .tool-btn>span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .tool-btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .composer-bottom>.composer-actions {
+    width: auto;
+    flex: 1;
+  }
+  .conv-actions {
+    align-items: flex-start !important;
+  }
+  .conv-case {
+    justify-content: flex-start !important;
+  }
+  .inbox-layout {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+  .inbox-list {
+    max-height: 260px;
+  }
+  .inbox-detail .thread {
+    height: 380px;
+  }
+  .inbox-detail .card-header {
+    flex-wrap: wrap;
+  }
+  .composer-bottom>div {
+    width: 100%;
+  }
+  .composer-tabs label {
+    flex: 1;
+    min-width: 150px;
+  }
+  .message,.message.reply {
+    max-width: 100%;
+  }
+  .message .avatar {
+    display: none;
+  }
+}
+@media (min-width:1001px) and (min-height:560px) and (max-width:1180px) {
+  .inbox-layout {
+    grid-template-columns: 270px minmax(0,1fr);
+  }
+}
+/* List tools: search and the waiting / open / all switch stay on top while the list scrolls. */
+.inbox-heading {
+  margin-bottom: 16px;
+}
+.inbox-tools {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.inbox-tools .input-wrap input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+}
+/* The tab strip uses the shared filter pill, only tightened for the narrow list column. */
+.inbox-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.inbox-tabs .filter-pill {
+  gap: 5px;
+  padding: 4px 9px;
+}
+.inbox-tabs .tag-count {
+  min-width: 1.4em;
+  padding: 0 5px;
+}
+.inbox-tabs .filter-pill[data-value=waiting] .tag-count {
+  background: #fde3b0;
+  color: #7a4507;
+}
+.inbox-tabs .filter-pill[aria-pressed=true] .tag-count {
+  background: #fff;
+}
+/* List items: one "waiting for reply" signal (bold text, dot, time colour); purple only marks the open conversation. */
+.inbox-item.needs-reply {
+  background: #fff;
+  border-left-color: transparent;
+}
+.inbox-item.needs-reply:hover {
+  background: #f8f5fd;
+}
+.inbox-item.selected,.inbox-item.selected.needs-reply {
+  background: #eee8fc;
+  border-left: 4px solid #6544c5;
+}
+.inbox-time {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #64748b;
+  white-space: nowrap;
+}
+.inbox-item.needs-reply .inbox-time {
+  color: #9a4a06;
+  font-weight: 700;
+}
+.inbox-case {
+  flex-shrink: 0;
+  color: #475569;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.inbox-bottom .badge {
+  flex-shrink: 0;
+  padding: 0 8px;
+}
+/* Conversation header: one row. Who and what on the left, the two decisions (case, close) on the right. */
+.inbox-detail>.conv-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.conv-back {
+  display: none;
+  flex-shrink: 0;
+}
+.conv-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.conv-title h2 {
+  display: -webkit-box;
+  margin: 0;
+  font-size: 1.125rem;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+/* When the conversation pane is narrow the actions move under the title instead of squeezing it. */
+.inbox-detail {
+  container-type: inline-size;
+}
+@container (max-width:600px) {
+  .inbox-detail>.conv-header {
+    flex-wrap: wrap;
+  }
+  .inbox-detail .conv-actions {
+    width: 100%;
+  }
+}
+.conv-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 2px 0 0;
+  color: #475569;
+}
+.conv-meta strong {
+  color: #1e293b;
+}
+.conv-meta .badge {
+  padding: 1px 8px;
+}
+.conv-meta .inbox-ai-status {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.conv-meta .inbox-ai-status:empty {
+  display: none;
+}
+.inbox-detail .conv-actions {
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+/* Thread: readable line length, time next to the name, a divider per day. */
+.message,.message.reply {
+  max-width: min(88%,46rem);
+}
+.message.note {
+  max-width: min(92%,46rem);
+}
+.message-header {
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.message-header time {
+  color: #64748b;
+}
+.message.reply .message-header {
+  justify-content: flex-end;
+}
+.message.reply .message-footer {
+  text-align: right;
+}
+.message-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef1f6;
+  color: #475569;
+  font-weight: 600;
+}
+.message-tag .icon {
+  width: 14px;
+  height: 14px;
+}
+.note-tag {
+  background: #ffe9b3;
+  color: #6b4204;
+}
+.thread-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 18px;
+  color: #64748b;
+  font-weight: 600;
+}
+.thread-day::before,.thread-day::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+/* Composer: segmented mode switch (no radio circles), inline note hint, tools collapse to icons when narrow. */
+.composer {
+  container-type: inline-size;
+}
+.composer-head {
+  justify-content: flex-start;
+}
+.composer-head>[data-ai-controls] {
+  margin-left: auto;
+}
+.composer-mode label {
+  position: relative;
+}
+.composer-mode input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.composer-mode label:has(input:focus-visible) {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+}
+.composer-mode label:has(input:disabled) {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.note-hint {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #6b4204;
+  font-weight: 700;
+}
+.note-hint .icon {
+  width: 16px;
+  height: 16px;
+}
+.composer:has(input[value=note]:checked) .note-hint {
+  display: inline-flex;
+}
+.composer textarea {
+  overflow-y: auto;
+}
+/* Formatting sits in the row that is already there, so the text box keeps its full height.
+   The buttons are kept tight, and on a very narrow pane they step aside (the shortcuts still work). */
+.composer-format {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.composer-format .tool {
+  min-width: 30px;
+  height: 34px;
+  padding: 0 5px;
+}
+.composer-actions>.tool-divider {
+  margin: 0 4px;
+}
+@container (max-width:640px) {
+  .composer-format,.composer-actions>.tool-divider {
+    display: none;
+  }
+}
+@container (max-width:1000px) {
+  .composer-mode label .icon {
+    display: none;
+  }
+  .tool-btn {
+    padding: 6px;
+  }
+  .tool-btn>span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .tool-btn {
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+/* Tablets and phones: one pane at a time. The list first, then the conversation on its own with a back button
+   and the composer pinned to the bottom of the screen. */
+@media (max-width:1000px) {
+  .inbox-layout {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .inbox-list {
+    max-height: none;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .inbox-layout.show-detail .inbox-list,.inbox-layout:not(.show-detail) .inbox-detail {
+    display: none;
+  }
+  .content:has(.inbox-layout.show-detail)>.page-heading {
+    display: none;
+  }
+  .inbox-tools {
+    position: static;
+  }
+  .inbox-detail>.thread {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+  .inbox-detail>.composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    box-shadow: 0 -6px 16px #0f172a14;
+  }
+  .inbox-detail .composer-tip {
+    display: none;
+  }
+  .conv-back {
+    display: inline-grid;
+  }
+}
+@media (min-width:761px) and (max-width:1000px) {
+  /* Tablets keep who/what and the back button in view while reading; on phones it scrolls away to leave room for messages. */
+  .inbox-detail>.conv-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fff;
+  }
+}
+@media (max-width:760px) {
+  .message,.message.reply,.message.note {
+    max-width: 100%;
+  }
+}
+/* More room for the conversation: the breadcrumb already names the page, the header is 1-2 lines,
+   and the composer is the text box plus a single row (mode, tools, send). */
+@media (min-width:1001px) and (min-height:560px) {
+  .content:has(.inbox-layout)>.page-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .inbox-detail>.composer {
+    padding: 10px 16px 12px;
+  }
+  .inbox-detail .composer textarea {
+    min-height: 56px;
+    height: 64px;
+    margin: 0 0 8px;
+  }
+}
+.inbox-detail>.conv-header {
+  padding: 10px 16px;
+}
+.conv-title h2 {
+  -webkit-line-clamp: 1;
+}
+.conv-meta {
+  flex-wrap: nowrap;
+  min-width: 0;
+  white-space: nowrap;
+}
+.conv-meta>* {
+  flex-shrink: 0;
+}
+/* The text gives way first (with an ellipsis) so the channel badge and the buttons never end up on top of each other. */
+.conv-meta strong,.conv-meta .conv-email {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Before the name has to be cut, the email steps aside (it is on the customer card and in the case anyway)
+   and the channel keeps its icon only - the same icon the list already shows. */
+@container (max-width:1000px) {
+  .conv-meta .conv-email {
+    display: none;
+  }
+  .conv-meta .badge>span {
+    display: none;
+  }
+}
+.inbox-detail .conv-actions .inbox-ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.inbox-detail .conv-actions .inbox-ai-status:empty {
+  display: none;
+}
+/* The case number belongs with who and what this conversation is, not with the decisions on the right. */
+.conv-meta .conv-case-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--purple);
+  font-weight: 650;
+  text-decoration: none;
+}
+.conv-meta .conv-case-link:hover {
+  text-decoration: underline;
+}
+.conv-meta .conv-case-link:focus-visible {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.conv-case-link .badge {
+  padding: 0 8px;
+}
+.ai-handoff {
+  color: #5133a6;
+}
+.ai-handoff .icon {
+  width: 16px;
+  height: 16px;
+}
+@container (max-width:780px) {
+  .inbox-detail>.conv-header {
+    flex-wrap: wrap;
+  }
+  .inbox-detail .conv-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .conv-title h2 {
+    -webkit-line-clamp: 2;
+  }
+  .conv-meta {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+}
+.composer-head:has(>[data-ai-controls]:empty) {
+  display: none;
+}
+.composer-bottom {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.composer-bottom>.composer-mode {
+  flex-shrink: 0;
+}
+.composer-bottom>.composer-send {
+  margin-left: auto;
+}
+@container (max-width:1180px) {
+  .composer:has(input[value=note]:checked) .note-hint {
+    display: none;
+  }
+}

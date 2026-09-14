@@ -37,7 +37,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     await page.locator('[name="email"]').fill('browser-test@example.com');
     await page.locator('[name="password"]').fill('Browser-test-123!');
     await page.getByRole('button',{name:'สร้างพื้นที่ทำงาน'}).click();
-    await page.getByRole('heading',{name:'สวัสดี, พี่แนน 👋'}).waitFor();
+    await page.getByRole('heading',{name:'สวัสดี พี่แนน 👋'}).waitFor();
     assert.equal(await page.locator('.stat-card').count(),4);
     assert.equal(await page.locator('tbody tr').count(),5);
     fs.mkdirSync(path.join(root,'test-results'),{recursive:true});
@@ -94,7 +94,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     assert.equal(await signup.evaluate(()=>fetch('/api/bootstrap').then(r=>r.json()).then(b=>b.user)),null);
     await signup.screenshot({path:path.join(root,'test-results','verify-email-mobile.png'),fullPage:true});
     await signup.getByRole('button',{name:'ยืนยันอีเมลและสร้างองค์กร'}).click();
-    await signup.getByRole('heading',{name:'สวัสดี, ผู้ดูแลใหม่ 👋'}).waitFor();
+    await signup.getByRole('heading',{name:'สวัสดี ผู้ดูแลใหม่ 👋'}).waitFor();
     const signupBoot=await signup.evaluate(()=>fetch('/api/bootstrap').then(r=>r.json()));
     assert.equal(signupBoot.user.platform_admin,false);
     assert.equal(signupBoot.memberships.length,1);
@@ -116,7 +116,8 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     await page.goto(base+'/#tickets');
     await page.getByRole('button',{name:'เปิดเคสใหม่',exact:true}).click();
     await page.locator('#new-subject').fill('ทดสอบงานบริการจากหน้าจอ');
-    await page.locator('#new-contact').selectOption({index:1});
+    await page.locator('#new-contact').click();
+    await page.locator('#new-contact-list [role="option"]').first().click();
     await page.locator('#new-body').fill('รายละเอียดสำหรับทีม');
     await page.getByRole('button',{name:'เปิดเคส',exact:true}).click();
     await page.getByRole('heading',{name:'ทดสอบงานบริการจากหน้าจอ',exact:true}).waitFor();
@@ -160,7 +161,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     await page.getByRole('button',{name:'บันทึกการเปลี่ยนแปลง'}).click();
     await page.locator('#case-status').waitFor();
     await customer.reload();
-    await customer.locator('#portal-status').filter({hasText:'แก้ไขแล้ว'}).waitFor();
+    await customer.locator('#portal-state-label').filter({hasText:'เรียบร้อย'}).waitFor();
     await customer.screenshot({path:path.join(root,'test-results','customer-portal.png'),fullPage:true});
 
     // Create and publish a knowledge article; verify it is visible publicly.
@@ -173,7 +174,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     await page.getByRole('heading',{name:'คู่มือทดสอบเผยแพร่'}).waitFor();
     await customer.goto(base+'/support/bookdose');
     await customer.getByRole('button',{name:'คู่มือทดสอบเผยแพร่'}).click();
-    await customer.getByText('ขั้นตอนที่หนึ่ง: ติดต่อทีม Bookdose',{exact:true}).waitFor();
+    await customer.locator('#modal-content').getByText('ขั้นตอนที่หนึ่ง: ติดต่อทีม Bookdose',{exact:true}).waitFor();
 
     // UI download uses a protected endpoint and produces a CSV.
     await page.goto(base+'/#reports');
@@ -185,7 +186,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || '/opt/homebrew/lib/n
     // Narrow screen navigation and no page-level horizontal overflow.
     await page.setViewportSize({width:390,height:844});
     await page.goto(base+'/#dashboard');
-    await page.getByRole('heading',{name:'สวัสดี, พี่แนน 👋'}).waitFor();
+    await page.getByRole('heading',{name:'สวัสดี พี่แนน 👋'}).waitFor();
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await page.screenshot({path:path.join(root,'test-results','dashboard-mobile.png'),fullPage:true});
     await page.getByRole('button',{name:'เปิดเมนู',exact:true}).click();

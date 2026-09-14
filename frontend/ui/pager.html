@@ -1,0 +1,10 @@
+<div class="table-footer pager">
+  <span role="status">แสดง {{from}}-{{to}} จาก {{total}} {{unit}}</span>
+  <div class="pager-controls">
+    <label>ต่อหน้า <select data-page-size="{{name}}" aria-label="จำนวนต่อหน้า">{{{sizeOptions}}}</select></label>
+    {{#manyPages}}<button type="button" class="btn sm pager-step" data-action="go-page" data-name="{{name}}" data-page="{{prev}}" aria-label="หน้าก่อนหน้า" {{^hasPrev}}disabled{{/hasPrev}}>‹</button>
+    <div class="pager-numbers">{{{numbers}}}</div>
+    <button type="button" class="btn sm pager-step" data-action="go-page" data-name="{{name}}" data-page="{{next}}" aria-label="หน้าถัดไป" {{^hasNext}}disabled{{/hasNext}}>›</button>
+    <label class="pager-jump">ไปหน้า <input type="number" min="1" max="{{pages}}" value="{{page}}" data-page-jump="{{name}}" aria-label="ไปที่หน้าที่ระบุ"> / {{pages}}</label>{{/manyPages}}
+  </div>
+</div>

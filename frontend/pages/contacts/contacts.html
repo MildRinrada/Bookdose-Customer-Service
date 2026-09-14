@@ -1,0 +1,12 @@
+<div class="page-heading">
+  <div><h1>ข้อมูลลูกค้า</h1><p>รู้จักลูกค้าของคุณ พร้อมประวัติการดูแลในองค์กร</p></div>
+  <div class="flex"><button class="btn primary" data-action="new-contact">{{icon:plus}}เพิ่มลูกค้า</button></div>
+</div>
+<section class="card">
+  <div class="filters contact-filters">
+    {{{search}}}
+    {{{companyFilter}}}
+    <div class="contact-tags" role="group" aria-label="ตัวกรองด่วน">{{{tags}}}</div>
+  </div>
+  <div id="contacts-table">{{{table}}}</div>
+</section>

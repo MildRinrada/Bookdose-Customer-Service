@@ -1,0 +1,52 @@
+<main class="auth-page">
+  <section class="auth-story">
+    {{{brand}}}
+    <div>
+      <div class="story-label">A LITTLE CARE. A BETTER CONNECTION.</div>
+      <h1>ทุกคำถามมีความหมาย<br>ทุกการดูแลอยู่ที่เดียว</h1>
+      <p class="story-copy">พื้นที่ทำงานของทีมบริการลูกค้า ที่ช่วยให้คุณรับฟัง<br>ติดตาม และส่งต่อความใส่ใจได้ในทุกวัน</p>
+      <div class="story-preview">
+        <div class="flex">
+          {{{teamAvatar}}}
+          <div><strong class="small">ทีมที่พร้อมดูแลลูกค้าของคุณ</strong><div class="tiny muted">หนึ่งพื้นที่ทำงาน · ทุกบทสนทนา</div></div>
+          <span class="badge resolved">{{icon:check}}</span>
+        </div>
+        <div class="preview-line"></div>
+        <div class="preview-line short"></div>
+      </div>
+    </div>
+    <div class="story-footer">Bookdose Customer Service · Made for meaningful support.</div>
+  </section>
+  <section class="auth-form-wrap">
+    <form class="auth-form" data-form="{{kind}}">
+      <div class="eyebrow">{{#creating}}LET’S GET STARTED{{/creating}}{{^creating}}WELCOME BACK{{/creating}}</div>
+      <h2>{{#register}}สมัครองค์กรใหม่{{/register}}{{#setup}}สร้างพื้นที่ดูแลลูกค้าของคุณ{{/setup}}{{#login}}ยินดีต้อนรับกลับมาครับ{{/login}}</h2>
+      <p>{{#register}}สร้างบัญชีผู้ดูแลและพื้นที่บริการลูกค้าสำหรับองค์กรของคุณ{{/register}}{{#setup}}ตั้งค่าผู้ดูแลและองค์กรแรก ใช้เวลาเพียงนิดเดียว{{/setup}}{{#login}}เข้าสู่ระบบเพื่อเริ่มต้นวันดี ๆ ของทีมบริการลูกค้า{{/login}}</p>
+      {{{nameField}}}{{{emailField}}}
+      <div class="field">
+        <label for="auth-password">รหัสผ่าน{{#creating}} (อย่างน้อย 10 ตัวอักษร){{/creating}}</label>
+        {{#creating}}<input id="auth-password" name="password" type="password" required minlength="10" maxlength="200" autocomplete="new-password" placeholder="สร้างรหัสผ่านของคุณ">{{/creating}}
+        {{^creating}}<input id="auth-password" name="password" type="password" required maxlength="200" autocomplete="current-password" placeholder="รหัสผ่านของคุณ">{{/creating}}
+      </div>
+      {{{confirmField}}}
+      {{#creating}}
+        {{{organizationField}}}
+        <div class="field">
+          <label for="auth-slug">รหัสองค์กรในลิงก์หน้าช่วยเหลือ</label>
+          <input id="auth-slug" name="slug" required maxlength="60" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{slugValue}}" placeholder="เช่น my-company" autocapitalize="none" spellcheck="false" aria-describedby="slug-help">
+          <small id="slug-help" class="muted">ใช้ a-z, 0-9 และขีดกลาง เช่น /support/my-company</small>
+        </div>
+      {{/creating}}
+      {{{setupTokenField}}}
+      {{#setup}}<label class="check"><input name="demo" type="checkbox" checked>เพิ่มเคสตัวอย่าง 5 เคสและคู่มือ เพื่อทดลองใช้งาน</label>{{/setup}}
+      <button class="btn primary" type="submit">{{#register}}สมัครและส่งอีเมลยืนยัน{{/register}}{{#setup}}สร้างพื้นที่ทำงาน{{/setup}}{{#login}}เข้าสู่ระบบ{{/login}} {{icon:arrow}}</button>
+      <div class="auth-foot">{{icon:lock}} {{#register}}ยืนยันอีเมลก่อนเข้าใช้งาน คุณจะเป็นผู้ดูแลเฉพาะองค์กรที่สร้าง{{/register}}{{#setup}}คุณจะเป็นผู้ดูแลแพลตฟอร์มและผู้ดูแลองค์กรแรก{{/setup}}{{#login}}ข้อมูลแต่ละองค์กรแยกพื้นที่จัดเก็บอย่างอิสระ{{/login}}</div>
+      {{^setup}}
+        <button class="btn subtle" type="button" data-action="forgot-password">ลืมรหัสผ่าน?</button>
+        <p class="small"><a href="#resend-email">ยังไม่ได้รับอีเมลยืนยัน? ขอลิงก์ใหม่</a></p>
+        <p class="small">{{#register}}มีบัญชีแล้ว? <a href="#login">เข้าสู่ระบบ</a>{{/register}}{{#login}}องค์กรของคุณยังไม่มีบัญชี? <a href="#register">สมัครองค์กรใหม่</a>{{/login}}</p>
+        {{#register}}<p class="tiny muted">หากเข้าร่วมองค์กรที่มีอยู่แล้ว ให้ติดต่อผู้ดูแลองค์กรเพื่อเพิ่มสมาชิก</p>{{/register}}
+      {{/setup}}
+    </form>
+  </section>
+</main>

@@ -1,0 +1,35 @@
+<tr>
+  <td class="contact-main">
+    <div class="contact-person">
+      {{{avatar}}}
+      <div class="contact-id">
+        <div class="contact-name"><strong title="{{name}}">{{name}}</strong>{{#duplicate}}{{#canEdit}}<button type="button" class="badge pending_customer dup-badge" data-action="merge-contact" data-id="{{id}}" aria-label="รวมข้อมูลซ้ำของ {{name}}" title="มีลูกค้ารายอื่นใช้อีเมลเดียวกัน · กดเพื่อรวมเป็นรายชื่อเดียว">อีเมลซ้ำ</button>{{/canEdit}}{{^canEdit}}<span class="badge pending_customer" title="มีลูกค้ารายอื่นใช้อีเมลเดียวกัน">อีเมลซ้ำ</span>{{/canEdit}}{{/duplicate}}</div>
+        {{#company}}<div class="contact-org muted" title="{{company}}">{{company}}</div>{{/company}}
+        {{^company}}<div class="contact-org muted">ไม่ระบุองค์กร</div>{{/company}}
+      </div>
+    </div>
+  </td>
+  <td class="contact-reach">
+    {{#email}}<div class="contact-line">{{icon:mail}}<a href="mailto:{{email}}" aria-label="ส่งอีเมลถึง {{email}}" title="ส่งอีเมลถึง {{email}}">{{email}}</a></div>{{/email}}
+    {{#phone}}<div class="contact-line">{{icon:phone}}<a href="tel:{{phoneHref}}" aria-label="โทรหา {{phone}}" title="โทรหา {{phone}}">{{phone}}</a></div>{{/phone}}
+    {{^email}}{{^phone}}<span class="muted">ยังไม่มีช่องทางติดต่อ</span>{{/phone}}{{/email}}
+  </td>
+  <td class="contact-cases">
+    <div class="case-cell">
+      {{#ticketCount}}<button type="button" class="case-count" data-action="contact-history" data-id="{{id}}" aria-label="ดูประวัติเคสของ {{name}} ({{ticketCount}} เคส)" title="ดูประวัติเคสของ {{name}}">{{ticketCount}} เคส</button>{{/ticketCount}}
+      {{^ticketCount}}<span class="muted">ยังไม่มีเคส</span>{{/ticketCount}}
+      {{#late}}<a class="badge suspended badge-link" href="#tickets?contact={{id}}&amp;filter=overdue" title="เปิดเคสเกิน SLA ของลูกค้ารายนี้">⚠ {{late}} เกิน SLA</a>{{/late}}
+      {{^late}}{{#open}}<a class="badge pending_customer badge-link" href="#tickets?contact={{id}}&amp;filter=active" title="เปิดเคสค้างของลูกค้ารายนี้">{{open}} เคสค้าง</a>{{/open}}{{/late}}
+    </div>
+  </td>
+  <td class="contact-last">
+    {{#last}}<span title="อัปเดตเคสล่าสุด {{lastFull}}">{{last}}</span>{{/last}}
+    {{^last}}<span class="muted" title="เพิ่มเข้าระบบเมื่อ {{created}}">-</span>{{/last}}
+  </td>
+  <td class="contact-actions">
+    <div class="row-actions" role="group" aria-label="จัดการ {{name}}">
+      <button type="button" class="btn sm" data-action="new-ticket-for" data-id="{{id}}" aria-label="สร้างเคสใหม่ให้ {{name}}" title="สร้างเคสใหม่">{{icon:plus}}<span>เคสใหม่</span></button>
+      {{#canEdit}}<button type="button" class="btn sm" data-action="edit-contact" data-id="{{id}}" aria-label="แก้ไข {{name}}" title="แก้ไขข้อมูลลูกค้า">{{icon:edit}}</button><button type="button" class="btn sm danger-tool" data-action="delete-contact" data-id="{{id}}" aria-label="ลบ {{name}}" title="ลบข้อมูลลูกค้า">{{icon:close}}</button>{{/canEdit}}
+    </div>
+  </td>
+</tr>

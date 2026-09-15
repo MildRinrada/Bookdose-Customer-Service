@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS escalations (
 );
 CREATE TABLE IF NOT EXISTS csat_surveys (
     id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL, conversation_id TEXT NOT NULL, message_id TEXT,
-    rating INTEGER CHECK(rating BETWEEN 1 AND 5), sent_at TEXT NOT NULL, answered_at TEXT
+    rating INTEGER CHECK(rating BETWEEN 1 AND 5), sent_at TEXT NOT NULL, answered_at TEXT, comment TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS mentions (
     id TEXT PRIMARY KEY, message_id TEXT NOT NULL, conversation_id TEXT NOT NULL, user_id TEXT NOT NULL,

@@ -1,7 +1,0 @@
-<figure class="message-media" data-media-id="{{id}}" data-name="{{name}}" data-public="{{public}}" data-mime="{{mime}}" data-media-state="loading">
-  <div class="media-placeholder" role="status">กำลังโหลด{{#image}}ภาพ{{/image}}{{#video}}วิดีโอ{{/video}}…</div>
-  {{#image}}<button type="button" class="media-image-button" data-action="view-image" aria-label="ขยายภาพ {{name}}" title="คลิกเพื่อขยายภาพ"><img alt="{{name}}" decoding="async"></button>{{/image}}
-  {{#video}}<video controls playsinline preload="metadata" aria-label="วิดีโอ {{name}}"></video>{{/video}}
-  <div class="media-error" role="status"><span>แสดงไฟล์นี้ไม่ได้</span><button type="button" class="btn sm" data-action="retry-media">ลองอีกครั้ง</button></div>
-  <figcaption><span class="media-filename" title="{{name}}">{{name}}</span><button type="button" class="icon-btn" data-action="download-file" data-id="{{id}}" data-name="{{name}}" data-public="{{public}}" aria-label="ดาวน์โหลด {{name}}" title="ดาวน์โหลด · {{size}} KB">{{icon:download}}</button></figcaption>
-</figure>

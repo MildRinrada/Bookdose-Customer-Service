@@ -9,6 +9,7 @@ import re
 import threading
 import uuid
 
+from backend.extensions import monitor
 from backend.database import audit, db as D
 from backend.exceptions.errors import ChannelError, CHANNEL_ERRORS
 from backend.extensions import channel_transport as T
@@ -669,6 +670,7 @@ class Worker:
             try:
                 with D.control() as cd:
                     ids = tenants.active_tenant_ids(cd)
+                monitor.heartbeat('email' if mail else 'channels')
                 for tid in ids:
                     if self.stop.is_set():
                         return
@@ -681,5 +683,6 @@ class Worker:
                             facebook.process_outbox(tid)
                     except Exception as error:
                         print(f'Channel worker: {type(error).__name__}; retrying scan',flush=True)
+                        monitor.error('email' if mail else 'channels',type(error).__name__)
             except Exception as error:
                 print(f'Channel worker: {type(error).__name__}; retrying scan',flush=True)

@@ -27,7 +27,7 @@ def make_backup(tenant_id=None):
                 # Use attachment references from the snapshot so later new uploads are not mixed in.
                 if path.name!='control.sqlite3':
                     with closing(sqlite3.connect(target)) as snapshot:
-                        keys = [r[0] for r in snapshot.execute('SELECT storage_key FROM attachments')]
+                        keys = [r[0] for r in snapshot.execute('SELECT storage_key FROM attachments UNION SELECT storage_key FROM contract_files')]
                     for key in keys:
                         file = D.DATA/'files'/path.stem/key
                         if not file.is_file():
@@ -55,3 +55,7 @@ def restore_backup(archive_path):
         db.execute('DELETE FROM sessions')
         if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name='pending_registrations'"):
             db.execute('DELETE FROM pending_registrations')
+        # Customers sign in again too, and links sent before the backup no longer work.
+        for table in ('customer_sessions','customer_signups','customer_resets'):
+            if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name=?",(table,)):
+                db.execute(f'DELETE FROM {table}')

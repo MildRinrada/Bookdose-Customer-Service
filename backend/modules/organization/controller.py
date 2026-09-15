@@ -14,6 +14,12 @@ def update_settings(req):
 
 
 @require_role('admin')
+def save_customer_categories(req):
+    service.save_customer_categories(req.db,req.ctx,req.body)
+    return req.send(200,{'ok':True})
+
+
+@require_role('admin')
 def create_team(req):
     return req.send(201,{'id':service.create_team(req.db,req.ctx,req.body)})
 

@@ -1,7 +1,6 @@
 from backend.modules.auth import controller
 
 ROUTES = [
-    ('GET',  '/register/?',           controller.register_page,       'page'),
     ('POST', '/api/register',         controller.register,            'public'),
     ('POST', '/api/register/resend',  controller.resend_registration, 'public'),
     ('POST', '/api/register/verify',  controller.verify_registration, 'public'),

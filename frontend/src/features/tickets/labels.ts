@@ -1,0 +1,69 @@
+import { isDone, overdue } from '@/lib/format';
+import { escalationReasons } from '@/lib/labels';
+import type { TicketEscalation } from '@/features/automation/types';
+import type { TicketRow } from './types';
+
+/* The case list's words and rules: quick scopes, the filters that live in the address, row spacing and how late a
+   case is. */
+
+export const ticketScopes: Record<string, string> = {
+  all: 'ทุกเคส',
+  active: 'กำลังดูแล',
+  mine: 'งานของฉัน',
+  overdue: '⚠ เกิน SLA',
+  resolved_today: 'แก้ไขสำเร็จวันนี้',
+};
+
+export const densityLabels: Record<string, string> = { comfortable: 'อ่านสบาย', compact: 'กระชับ' };
+
+/** The list's filters as they appear in the address: /tickets?q=&status=&priority=&contact=&filter=<scope>. */
+export type TicketFilter = { q?: string; status?: string; priority?: string; contact?: string; filter?: string };
+
+export const FILTER_KEYS = ['q', 'status', 'priority', 'contact', 'filter'] as const;
+
+export function inScope(t: TicketRow, scope: string | undefined, me: string): boolean {
+  return (
+    !scope ||
+    scope === 'all' ||
+    (scope === 'active' && !isDone(t)) ||
+    (scope === 'mine' && !isDone(t) && t.assignee_id === me) ||
+    (scope === 'overdue' && overdue(t)) ||
+    (scope === 'resolved_today' && isDone(t) && new Date(t.resolved_at ?? '').toDateString() === new Date().toDateString())
+  );
+}
+
+/** Search, customer, status and priority; the scope (all / mine / overdue …) is applied on top of them. */
+export function matchesTicketFilters(t: TicketRow, f: TicketFilter): boolean {
+  const q = (f.q || '').toLowerCase();
+  return (
+    (!q || [t.subject, t.contact_name, t.company, `BD-${t.number}`, t.category].some((v) => String(v).toLowerCase().includes(q))) &&
+    (!f.contact || t.contact_id === f.contact) &&
+    (!f.status || t.status === f.status) &&
+    (!f.priority || t.priority === f.priority)
+  );
+}
+
+/** The address of the list with these filters (empty ones left out). */
+export function ticketsHref(f: TicketFilter): string {
+  const query = FILTER_KEYS.filter((key) => f[key])
+    .map((key) => `${key}=${encodeURIComponent(f[key] as string)}`)
+    .join('&');
+  return '/tickets' + (query ? `?${query}` : '');
+}
+
+/** How long a case has been past its SLA ('' when it isn't), e.g. '2 ชม.'. */
+export function lateBy(t: TicketRow): string {
+  if (!overdue(t)) return '';
+  const due = [!t.first_response_at && t.first_response_due_at, t.resolution_due_at]
+    .filter((d): d is string => Boolean(d) && new Date(d as string) < new Date())
+    .map((d) => new Date(d).getTime());
+  const min = Math.max(1, Math.floor((Date.now() - Math.min(...due)) / 60000));
+  return min < 60 ? `${min} นาที` : min < 1440 ? `${Math.floor(min / 60)} ชม.` : `${Math.floor(min / 1440)} วัน`;
+}
+
+/** The escalation line in the case heading: the reason and who was told (or got the case). */
+export function escalationText(e: TicketEscalation | null | undefined, memberName: (id: string | null | undefined) => string): string {
+  if (!e) return '';
+  const who = e.to_user_id ? ` · ${e.reason === 'unclaimed' ? 'ย้ายให้' : 'แจ้ง'} ${memberName(e.to_user_id)}` : '';
+  return `${escalationReasons[e.reason] || 'ยกระดับแล้ว'}${who}`;
+}

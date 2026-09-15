@@ -46,7 +46,7 @@ def main():
     channel_worker.start()
     automation_worker = AutomationWorker()
     automation_worker.start()
-    print(f'\n  Bookdose Customer Service\n  Open http://localhost:{args.port}\n  Data: {D.DATA}\n  Press Ctrl+C to stop.\n',flush=True)
+    print(f'\n  Bookdose Customer Service API on http://{args.host}:{args.port}\n  The pages are the web app: cd frontend && npm run dev, then open http://localhost:3000\n  Data: {D.DATA}\n  Press Ctrl+C to stop.\n',flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

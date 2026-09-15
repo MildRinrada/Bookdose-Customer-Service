@@ -2,6 +2,7 @@
 and storing messages (used by staff, the support page and LINE / Email / Facebook)."""
 import json
 
+from backend.modules.customers import repository as customer_repository
 from backend.database import audit, db as D
 from backend.middleware.access import visible_team, get_scoped
 from backend.modules.ai import service as ai
@@ -9,6 +10,7 @@ from backend.modules.automation import service as automation
 from backend.modules.channels import facebook, service as channels
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository, schema
+from backend.modules.customers import service as customers
 from backend.modules.tickets import repository as tickets, schema as ticket_schema, service as ticket_service
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -29,6 +31,7 @@ def conversation_detail(db, conv):
     conv.pop('portal_token',None)
     conv['ai'] = ai.conversation_state(db,conv['id'])
     conv['line'] = repository.line_thread(db,conv['id'])
+    conv['category'] = customer_repository.category_of(db,conv['id'])
     return {'conversation':conv,'messages':message_list(db,conv['id']),
             'contact':contacts.find(db,conv['contact_id']),
             'ticket':tickets.for_conversation(db,conv['id'])}
@@ -56,7 +59,7 @@ def post_staff_message(db, ctx, conv, body, cd=None):
 def store_staff_message(db, ctx, conv, kind, body, cd=None):
     """A reply or internal note inside the caller's transaction (also used by macros). LINE / Email / Facebook
     replies are queued for delivery, a human reply stops the bot, and a note records its @mentions."""
-    require(kind=='note' or conv['channel'] in ('web',)+EXTERNAL,'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าช่วยเหลือเพื่อสนทนากับลูกค้า')
+    require(kind=='note' or conv['channel'] in ('web',)+EXTERNAL,'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าลูกค้าเพื่อสนทนากับลูกค้า')
     external = kind=='reply' and conv['channel'] in EXTERNAL
     provider = facebook if conv['channel']=='facebook' else channels
     if external:
@@ -105,7 +108,8 @@ def link_ticket(db, ctx, conv, body):
         tickets.link_conversation(db,tid,conv['id'])
     else:
         priority = ticket_schema.priority(body)
-        tid = ticket_service.open_ticket(db,conv['contact_id'],conv['team_id'],conv['subject'],priority,conversation_id=conv['id'])
+        category = customer_repository.category_of(db,conv['id']) or 'ทั่วไป'
+        tid = ticket_service.open_ticket(db,conv['contact_id'],conv['team_id'],conv['subject'],priority,category=category,conversation_id=conv['id'])
     audit.record(db,ctx['name'],'conversation.linked',tid,conv['id'])
     db.commit()
     return tid
@@ -153,9 +157,13 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
         repository.save_attachment_file(tenant_id,file_id,content)
         repository.insert_attachment(db,file_id,mid,name,mime,len(content),file_id)
     repository.touch(db,conversation_id)
+    channel = repository.find(db,conversation_id)['channel']
     # LINE / Email / Facebook replies count as the first response only once the provider accepts them.
-    if kind=='reply' and repository.find(db,conversation_id)['channel'] not in EXTERNAL:
+    if kind=='reply' and channel not in EXTERNAL:
         tickets.record_first_response(db,conversation_id)
+    # A support-page customer with an account hears about the reply by email (unless they read it on the page first).
+    if kind=='reply' and channel=='web':
+        customers.notify_reply(db,conversation_id)
     if kind=='customer':
         if not uploads and automation.take_rating(db,conversation_id,text):
             return mid

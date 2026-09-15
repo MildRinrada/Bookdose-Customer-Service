@@ -71,13 +71,18 @@ def find_in_team(db, table, entity_id, team_id=None):
 
 def init():
     """Create the data folders and control tables, and bring every tenant database up to date."""
-    from backend.database import schema
+    from backend.database import schema, seed
     DATA.mkdir(parents=True, exist_ok=True, mode=0o700)
     (DATA / 'tenants').mkdir(exist_ok=True, mode=0o700)
     (DATA / 'files').mkdir(exist_ok=True, mode=0o700)
     with control() as db:
         schema.create_control_tables(db)
+        seed.seed_global_faq(db)
+        seed.seed_contract_templates(db)
         tenant_ids = [row[0] for row in db.execute('SELECT id FROM tenants')]
+    from backend.modules.customers import migrate
     for tenant_id in tenant_ids:
         with tenant(tenant_id) as td:
             schema.upgrade_tenant(td)
+            with control() as db:
+                migrate.legacy_accounts(db, td, tenant_id)

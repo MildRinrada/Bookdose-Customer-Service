@@ -33,6 +33,11 @@ class AITests(unittest.TestCase):
     tearDown = base.IntegrationTests.tearDown
     ok = base.IntegrationTests.ok
     create_member = base.IntegrationTests.create_member
+    enable_registration_mail = base.IntegrationTests.enable_registration_mail
+    customer_mail = base.IntegrationTests.customer_mail
+    mail_link = base.IntegrationTests.mail_link
+    customer = base.IntegrationTests.customer
+    CUSTOMER_PASSWORD = base.IntegrationTests.CUSTOMER_PASSWORD
 
     def enable(self,client=None,**extra):
         return self.ok(client or self.admin,'/api/ai/settings',{'api_key':FAKE_KEY,'drafts_enabled':True,'chatbot_enabled':True,**extra},'PATCH')
@@ -43,10 +48,7 @@ class AITests(unittest.TestCase):
             'visibility':visibility})['id']
 
     def visitor(self,slug='alpha',body='ดาวน์โหลดรายงานการอ่านอย่างไร'):
-        client=base.Client(self.base)
-        result=self.ok(client,f'/api/public/{slug}/conversations',{'name':'ลูกค้าทดสอบ','email':'customer@example.com','subject':'ดาวน์โหลดรายงานการอ่าน','body':body})
-        client.portal=result['token']
-        return client,result['conversation_id']
+        return base.IntegrationTests.visitor(self,slug,'customer@example.com','ดาวน์โหลดรายงานการอ่าน',body)
 
     def run_job(self,tenant=None,provider=fake_provider):
         with patch.object(OpenAI,'call_provider',side_effect=provider) as mock:
@@ -196,8 +198,13 @@ class AITests(unittest.TestCase):
 
     def test_limits_are_atomic_and_handoff_has_no_model_cost(self):
         self.enable(daily_limit=1);self.article()
+        # The customers sign up first; only the two questions arrive at the same moment.
+        customers=[self.customer(email=f'limit{n}@example.com') for n in range(2)]
+        def ask(client):
+            client.conversation=self.ok(client,'/api/public/alpha/conversations',{'subject':'ดาวน์โหลดรายงานการอ่าน','body':'ดาวน์โหลดรายงานการอ่านอย่างไร'})['id']
+            return client,client.conversation
         with ThreadPoolExecutor(max_workers=2) as pool:
-            visitors=list(pool.map(lambda _:self.visitor(),range(2)))
+            visitors=list(pool.map(ask,customers))
         with D.tenant(self.org) as db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM ai_jobs').fetchone()[0],1)
         self.assertEqual(sum(self.ok(v,'/api/public/alpha/session')['ai']['mode']=='human' for v,_ in visitors),1)

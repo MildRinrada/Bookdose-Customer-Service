@@ -1,8 +1,0 @@
-<article class="message {{kind}}" data-message-id="{{id}}">
-  {{{avatar}}}
-  <div class="grow">
-    <div class="message-header"><strong>{{author}}</strong>{{#isNote}}<span class="message-tag note-tag">{{icon:lock}}บันทึกภายใน</span>{{/isNote}}{{#isAI}}<span class="message-tag">{{icon:sparkle}}AI Chatbot</span>{{/isAI}}{{#isSurvey}}<span class="message-tag survey-tag">{{icon:star}}แบบประเมินความพึงพอใจ</span>{{/isSurvey}}<time datetime="{{iso}}" title="{{fullTime}}">{{time}}</time></div>
-    <div class="bubble{{#rich}} rich{{/rich}}">{{#rich}}{{{bodyHTML}}}{{/rich}}{{^rich}}{{body}}{{/rich}}{{#files}}<div class="message-files">{{{files}}}</div>{{/files}}</div>
-    {{{citations}}}{{{delivery}}}
-  </div>
-</article>

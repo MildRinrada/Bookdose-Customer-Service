@@ -1,4 +1,0 @@
-{{#supported}}
-  {{#bot}}<span class="badge new ai-state" title="AI กำลังตอบลูกค้าในบทสนทนานี้">{{icon:sparkle}}{{#pending}}AI กำลังเตรียมคำตอบ{{/pending}}{{^pending}}AI ดูแลอยู่{{/pending}}</span><button type="button" class="btn sm" data-action="ai-mode" data-id="{{id}}" data-mode="human" title="ให้เจ้าหน้าที่ตอบเอง และหยุด AI ในบทสนทนานี้">รับช่วงดูแล</button>{{/bot}}
-  {{#canHandToBot}}<button type="button" class="btn sm ai-handoff" data-action="ai-mode" data-id="{{id}}" data-mode="bot" aria-label="ให้ AI ดูแลข้อความถัดไป" title="ตอนนี้เจ้าหน้าที่ดูแลอยู่ · ให้ AI ตอบข้อความถัดไปของลูกค้า">{{icon:sparkle}}ให้ AI ดูแล</button>{{/canHandToBot}}
-{{/supported}}

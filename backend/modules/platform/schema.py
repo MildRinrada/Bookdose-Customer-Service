@@ -3,7 +3,7 @@ import re
 from urllib.parse import urlsplit
 
 from backend.exceptions.errors import APIError
-from backend.modules.platform.model import TENANT_STATUSES
+from backend.modules.platform.model import GLOBAL_AUDIENCES, TENANT_STATUSES
 from backend.utils.validation import require, field, email_field, slug_field, new_password
 
 
@@ -29,6 +29,13 @@ def tenant_status(body):
 
 def suspension_confirmed(body, org):
     require(body.get('confirmation') in ('CONFIRM',org['name']),'กรุณาพิมพ์ CONFIRM หรือชื่อองค์กรเพื่อยืนยันการระงับ')
+
+
+def global_article(body):
+    """(title, category, body, audience) of a global FAQ article."""
+    audience = body.get('audience')
+    require(audience in GLOBAL_AUDIENCES,'กรุณาเลือกผู้อ่านบทความ')
+    return field(body,'title',200),field(body,'category',80),field(body,'body',50000),audience
 
 
 def support_reason(body):

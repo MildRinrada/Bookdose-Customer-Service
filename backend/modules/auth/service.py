@@ -64,6 +64,7 @@ def bootstrap_data(db, session):
         setup_required=repository.count_users(db)==0,
         setup_token_required=bool(settings.setup_token()) or settings.on_render(),
         registration_available=platform.registration_ready(db),
+        home=tenants.home_organization(db),
         avatar=repository.avatar_of(db,session['user_id']) if session else '',
         memberships=memberships.user_memberships(db,session['user_id']) if session else [])
 

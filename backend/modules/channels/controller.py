@@ -1,6 +1,5 @@
 """HTTP handlers for LINE / Email / Facebook settings, OAuth, delivery retries, the LINE and Facebook webhooks
 and temporary file links."""
-from config import settings
 from backend.exceptions.errors import APIError
 from backend.middleware.auth import require_role
 from backend.middleware.rate_limit import limited
@@ -8,11 +7,6 @@ from backend.modules.channels import facebook, service
 from backend.utils.validation import require
 
 MAX_WEBHOOK_BYTES = 2*1024*1024
-
-
-def oauth_callback_page(req):
-    """The provider sends the admin back here; the page finishes the connection with the browser's session."""
-    return req.send(200,(settings.PUBLIC_DIR/'oauth-callback.html').read_bytes(),'text/html; charset=utf-8')
 
 
 def download_file_link(req, tenant_id, token):

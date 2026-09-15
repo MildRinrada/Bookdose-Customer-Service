@@ -30,10 +30,15 @@ def select_workspace(req):
     return ctx
 
 
-def portal_visitor(req):
-    """The support-page conversation identified by the visitor's X-Portal-Token."""
-    from backend.modules.portal.service import conversation_for_token
-    return conversation_for_token(req.db,req.headers.get('X-Portal-Token',''))
+def customer_session(req):
+    """The signed-in customer (session cookie, control database). A changing request must also carry the session's
+    X-Customer-CSRF token."""
+    from backend.modules.customers.service import read_session
+    session = read_session(req.cd,req.headers.get('Cookie',''))
+    require(session,'กรุณาเข้าสู่ระบบบัญชีลูกค้า',401)
+    if req.command!='GET':
+        require(secrets.compare_digest(req.headers.get('X-Customer-CSRF',''),session['csrf']),'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
+    return session
 
 
 def require_role(*roles, message='เฉพาะผู้ดูแลองค์กร'):

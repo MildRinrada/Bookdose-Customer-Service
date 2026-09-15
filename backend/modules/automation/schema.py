@@ -94,6 +94,13 @@ def rating(body):
     return value
 
 
+def survey_comment(body):
+    """What the customer adds in words to their stars (optional)."""
+    value = body.get('comment','')
+    require(isinstance(value,str) and len(value)<=1000,'ความคิดเห็นยาวได้ไม่เกิน 1,000 ตัวอักษร')
+    return value.strip()
+
+
 def rating_from_text(text):
     """A customer's answer to the survey typed as a message ("5", "๕", "4 ดาว", "⭐⭐⭐"), or None for anything else."""
     value = str(text or '').strip().translate(THAI_DIGITS)

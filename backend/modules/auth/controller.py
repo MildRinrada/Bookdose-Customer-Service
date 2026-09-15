@@ -11,34 +11,30 @@ def cookie(req):
     return req.headers.get('Cookie','')
 
 
-def register_page(req):
-    return req.send(302,{},headers={'Location':'/#register'})
-
-
 def register(req):
-    limited(('register',req.client_address[0]),5,900)
+    limited(('register',req.ip),5,900)
     service.request_registration(cookie(req),req.body,resend=False)
     return req.send(202,{'ok':True,'verification_required':True})
 
 
 def resend_registration(req):
-    limited(('register',req.client_address[0]),5,900)
+    limited(('register',req.ip),5,900)
     service.request_registration(cookie(req),req.body,resend=True)
     return req.send(202,{'ok':True,'verification_required':True})
 
 
 def verify_registration(req):
-    limited(('verify',req.client_address[0]),20,900)
+    limited(('verify',req.ip),20,900)
     return req.send(201,{'ok':True},headers=session_cookie(req,service.verify_registration(cookie(req),req.body)))
 
 
 def set_up(req):
-    limited(('login',req.client_address[0]),15,900)
+    limited(('login',req.ip),15,900)
     return req.send(200,{'ok':True},headers=session_cookie(req,service.set_up_platform(cookie(req),req.body)))
 
 
 def log_in(req):
-    limited(('login',req.client_address[0]),15,900)
+    limited(('login',req.ip),15,900)
     return req.send(200,{'ok':True},headers=session_cookie(req,service.log_in(cookie(req),req.body)))
 
 

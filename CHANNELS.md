@@ -1,6 +1,6 @@
-# เชื่อม LINE Official Account และ Email จริง
+# เชื่อม LINE Official Account, Email และ Facebook Messenger จริง
 
-เข้า **ตั้งค่าองค์กร** (`/#settings`) ด้วยสิทธิ์ผู้ดูแลองค์กร จะมีส่วน **LINE · เชื่อมบัญชีจริง** และ **Email · เชื่อมบัญชีจริง** แต่ละองค์กรมีข้อมูลเชื่อมต่อและคิวของตัวเอง ระบบไม่อนุญาตให้นำ LINE OA หรืออีเมลเดียวกันไปผูกหลายองค์กร และไม่เปลี่ยนบัญชีต้นทางของช่องทางที่ผูกแล้ว
+เข้า **ตั้งค่าองค์กร** (`/#settings`) แท็บ **LINE / Email / Facebook** ด้วยสิทธิ์ผู้ดูแลองค์กร จะมีส่วน **LINE · เชื่อมบัญชีจริง**, **Email · เชื่อมบัญชีจริง** และ **Facebook Messenger · เชื่อมเพจจริง** แต่ละองค์กรมีข้อมูลเชื่อมต่อและคิวของตัวเอง ระบบไม่อนุญาตให้นำ LINE OA อีเมล หรือเพจเดียวกันไปผูกหลายองค์กร และไม่เปลี่ยนบัญชีต้นทางของช่องทางที่ผูกแล้ว
 
 ## LINE OA
 
@@ -36,6 +36,20 @@ SMTP รับข้อความแล้วไม่ได้รับปร
 
 อ้างอิง transport: [Python smtplib](https://docs.python.org/3/library/smtplib.html), [Python imaplib](https://docs.python.org/3/library/imaplib.html)
 
+## Facebook Messenger
+
+1. สร้างแอปใน [Meta for Developers](https://developers.facebook.com/) เพิ่มสินค้า **Messenger** แล้วเชื่อมเพจ Facebook ขององค์กร สร้าง **Page Access Token** ที่มีสิทธิ์ `pages_messaging` และคัดลอก **App Secret** จาก App settings → Basic
+2. ใน Bookdose เปิดส่วน **Facebook Messenger · เชื่อมเพจจริง** เลือกทีมรับเรื่องใหม่ แล้วกด **บันทึก Facebook** โดยยังไม่ติ๊กเปิดใช้ ระบบจะสร้าง **Callback URL** และ **Verify Token**
+3. ใน Messenger → Webhooks ของแอป ใส่ Callback URL และ Verify Token ซึ่งต้องเป็น HTTPS สาธารณะ เช่น `https://support.example.com/api/webhooks/facebook/<route-id>` กด Verify and Save แล้ว Subscribe เหตุการณ์ **messages** ของเพจ
+4. กลับมาใส่ Page Access Token และ App Secret ติ๊ก **เปิดรับและส่ง Facebook Messenger** แล้วบันทึก ระบบตรวจ token กับ Graph API ก่อนเปิดใช้ และผูกเพจกับองค์กรนี้ เพจหนึ่งผูกได้องค์กรเดียว และเปลี่ยนเป็นเพจอื่นในช่องทางเดิมไม่ได้
+5. ลูกค้าทักเพจแล้วเรื่องจะเข้า **กล่องข้อความ** พร้อมป้าย **Facebook** ตอบในช่องข้อความตามปกติ แล้วตรวจสถานะการส่งใต้ข้อความ
+
+ระบบตรวจลายเซ็น `X-Hub-Signature-256` จาก raw request ด้วย App Secret ก่อนอ่าน JSON รับเฉพาะเหตุการณ์ของเพจที่ผูกไว้ ข้ามข้อความ echo ของเพจเอง และกันข้อความซ้ำด้วยรหัสข้อความ (mid) รับข้อความตัวอักษร ถ้าลูกค้าส่งไฟล์แนบ ระบบแสดงข้อความให้ตรวจจากกล่องข้อความของเพจ ชื่อลูกค้าแสดงท้าย PSID โดยไม่เรียกข้อมูลโปรไฟล์เพิ่ม
+
+การตอบใช้ Send API (`messaging_type: RESPONSE`) ส่งได้เฉพาะข้อความ ไม่เกิน 2,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้าตามนโยบาย Messenger หลังจากนั้น Facebook จะปฏิเสธ และแสดงเป็นส่งไม่สำเร็จ Send API ไม่มี retry key หากเครือข่ายขาดระหว่างส่ง ระบบแสดง **ไม่ทราบผลการส่ง** และไม่ส่งซ้ำอัตโนมัติ ข้อผิดพลาดชั่วคราว (5xx/429) ลองใหม่สูงสุด 3 ครั้ง Chatbot ยังไม่ตอบบน Messenger ส่วนแบบประเมิน CSAT และ Macro ส่งผ่าน Messenger ได้เหมือนข้อความของเจ้าหน้าที่
+
+อ้างอิง: [Messenger Platform Webhooks](https://developers.facebook.com/docs/messenger-platform/webhooks), [Send API](https://developers.facebook.com/docs/messenger-platform/reference/send-api/)
+
 ## สถานะการส่ง การดูแล และ AI
 
 - **รอส่ง / กำลังส่ง:** บันทึกข้อความพร้อม outbox ใน transaction เดียวกัน Worker ทำงานเมื่อเปิดโปรแกรม
@@ -45,7 +59,7 @@ SMTP รับข้อความแล้วไม่ได้รับปร
 
 ก่อนส่ง Worker ตรวจสิทธิ์เจ้าหน้าที่ ทีม สถานะองค์กร และการตั้งค่าปัจจุบัน การแก้การตั้งค่าจะยกเลิกงานที่ยังรอส่งให้ตรวจใหม่ งานที่เริ่มส่งออกแล้วไม่สามารถดึงกลับได้ การเปลี่ยนทีมรับเรื่องใหม่ไม่ย้ายบทสนทนาเก่า
 
-คีย์ LINE และรหัสผ่าน Email เก็บเป็นไฟล์ฝั่งเซิร์ฟเวอร์ permission 0600 ภายใต้ `data/secrets/<tenant-id>.line.json` และ `<tenant-id>.email.json` ไม่ส่งกลับ API ไม่เขียนลง log และไม่รวม Git/ZIP สำรอง ผู้ที่เข้าถึงไฟล์เซิร์ฟเวอร์ยังอ่านได้ หลัง restore ต้องกรอกข้อมูลลับและตรวจเปิดช่องทางอีกครั้ง งานรอส่งเก่าจะถูกยกเลิกเมื่อบันทึกตั้งค่าใหม่
+คีย์ LINE รหัสผ่าน Email และ token ของ Facebook เก็บเป็นไฟล์ฝั่งเซิร์ฟเวอร์ permission 0600 ภายใต้ `data/secrets/<tenant-id>.line.json`, `<tenant-id>.email.json` และ `<tenant-id>.facebook.json` ไม่ส่งกลับ API ไม่เขียนลง log และไม่รวม Git/ZIP สำรอง ผู้ที่เข้าถึงไฟล์เซิร์ฟเวอร์ยังอ่านได้ หลัง restore ต้องกรอกข้อมูลลับและตรวจเปิดช่องทางอีกครั้ง งานรอส่งเก่าจะถูกยกเลิกเมื่อบันทึกตั้งค่าใหม่
 
 **AI ช่วยร่างคำตอบและ Chatbot ใช้กับ LINE และ Email ได้** เปิด Chatbot แยกในแต่ละช่องทางตามขั้นตอนด้านล่าง ร่างสำหรับเจ้าหน้าที่ยังต้องตรวจและกดส่งเอง
 
@@ -59,7 +73,7 @@ SMTP รับข้อความแล้วไม่ได้รับปร
 ### Google
 
 1. สร้าง OAuth consent screen และ OAuth Client ID ชนิด **Web application** ใน Google Cloud ขององค์กร กำหนดกลุ่มผู้ใช้ Internal/External และ test users ให้ตรงการใช้งาน
-2. เพิ่ม Authorized redirect URI ให้ตรงกับ URL โปรแกรมและพอร์ต เช่น **http://localhost:8787/oauth/email/callback** สำหรับเครื่องนี้ หรือ **https://support.example.com/oauth/email/callback** สำหรับโฮสต์จริง
+2. เพิ่ม Authorized redirect URI ให้ตรงกับ URL หน้าเว็บ (แอป Next.js) และพอร์ต เช่น **http://localhost:3000/oauth/email/callback** สำหรับเครื่องนี้ หรือ **https://support.example.com/oauth/email/callback** สำหรับโฮสต์จริง
 3. โปรแกรมขอ scope **https://mail.google.com/** สำหรับ IMAP/SMTP ซึ่งเป็นสิทธิ์เข้าถึงกล่องจดหมายแบบเต็ม การเผยแพร่แอปภายนอกอาจต้องผ่านกระบวนการตรวจสอบของ Google ตาม scope และรูปแบบการใช้งาน แอป Testing อาจมีข้อจำกัดผู้ใช้และอายุ token ให้ตั้งค่ากับผู้ให้บริการก่อนใช้งานจริง
 4. นำ Client ID และ Client Secret ไปใส่ในส่วน Email ของ Bookdose เลือก **Google Workspace / Gmail OAuth** ระบบกำหนด Gmail IMAP/SMTP ให้ ไม่ส่ง token ไปเซิร์ฟเวอร์ที่กรอกเอง
 
@@ -101,7 +115,7 @@ Client Secret, Access Token, Refresh Token และ PKCE verifier อยู่�
 ## Chatbot อัตโนมัติบน LINE/Email
 
 1. บันทึก OpenAI API Key และตั้งโมเดล/เพดานคำขอในส่วน AI เขียนบทความที่เลือก **เผยแพร่ให้ลูกค้า**
-2. ในส่วน LINE หรือ Email ติ๊ก **เปิด Chatbot ตอบอัตโนมัติ** แล้วบันทึก แต่ละช่องทางเปิดแยกกัน ไม่จำเป็นต้องเปิด Chatbot บน Web Support ด้วย
+2. ในส่วน LINE หรือ Email ติ๊ก **เปิด Chatbot ตอบอัตโนมัติ** แล้วบันทึก แต่ละช่องทางเปิดแยกกัน ไม่จำเป็นต้องเปิด Chatbot ในแชทบนเว็บด้วย
 3. บอตเริ่มกับบทสนทนาใหม่หลังเปิดใช้ เรื่องเดิมกด **ให้ AI ดูแลข้อความถัดไป** ใน Inbox เป็นรายเรื่อง
 4. กลุ่ม LINE ต้องเปิด **ให้ AI ตอบในกลุ่มเมื่อเรียก /bookdose หรือเมนชัน** เพิ่ม และลูกค้าต้องพิมพ์เช่น **/bookdose ดาวน์โหลดรายงานอย่างไร** หรือเมนชัน OA บอตจะใช้เฉพาะข้อความที่เรียกครั้งนั้นและบทความสาธารณะ ไม่ส่งบทสนทนาทั่วไปของสมาชิกไปให้โมเดล
 5. ข้อความตอบขึ้นต้น **[Bookdose AI]** และแนบแหล่งอ้างอิงสาธารณะ หากข้อมูลไม่พอ ขอเจ้าหน้าที่ ส่งไฟล์ ขอคืนเงิน/ยกเลิก หรือ AI ใช้งานไม่ได้ จะเปิด/เชื่อมเคสและส่งต่อเจ้าหน้าที่

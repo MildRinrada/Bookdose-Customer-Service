@@ -29,16 +29,17 @@ HOST = os.environ.get('BOOKDOSE_HOST', '127.0.0.1')
 PORT = int(os.environ.get('BOOKDOSE_PORT', '8787'))
 SECURE_COOKIES = os.environ.get('BOOKDOSE_SECURE_COOKIES', '').lower() in ('1', 'true', 'yes')
 
-# Folders served to the browser.
-PUBLIC_DIR = ROOT/'public'
-CSS_DIR = ROOT/'css'
-FRONTEND_DIR = ROOT/'frontend'
-
 
 # Read on every call (not at import) so a changed environment takes effect without a restart of the importer.
 def setup_token():
     """Secret required to create the platform owner on first run; empty means not required (local use)."""
     return os.environ.get('BOOKDOSE_SETUP_TOKEN', '')
+
+
+def proxy_secret():
+    """Shared with the Next.js web app (frontend/), which forwards /api/* here. Empty means only a web app on this
+    machine is believed about the browser's host and address; set it when the web app runs on another host."""
+    return os.environ.get('BOOKDOSE_PROXY_SECRET', '')
 
 
 def on_render():

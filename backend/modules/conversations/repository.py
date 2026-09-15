@@ -29,10 +29,6 @@ def find(db, conversation_id):
     return one(db,'SELECT * FROM conversations WHERE id=?',(conversation_id,))
 
 
-def find_by_portal_token(db, token_hash):
-    return one(db,'SELECT * FROM conversations WHERE portal_token=?',(token_hash,))
-
-
 def for_ticket(db, ticket_id):
     return rows(db,'SELECT c.* FROM conversations c JOIN ticket_conversations tc ON tc.conversation_id=c.id WHERE tc.ticket_id=?',(ticket_id,))
 

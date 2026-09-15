@@ -62,11 +62,13 @@ def profile_form(body):
     return name,avatar
 
 
-def bootstrap(session, setup_required, setup_token_required, registration_available, avatar, memberships):
-    """What the browser needs before showing any screen; the user fields are empty when signed out."""
+def bootstrap(session, setup_required, setup_token_required, registration_available, avatar, memberships, home=None):
+    """What the browser needs before showing any screen; the user fields are empty when signed out.
+    home ({'slug','name'} of the platform's own organization) is where customers sign up and sign in on the main page."""
     return {'setup_required':setup_required,
             'setup_token_required':setup_token_required,
             'registration_available':registration_available,
+            'home':{'slug':home['slug'],'name':home['name']} if home else None,
             'user':{'id':session['user_id'],'name':session['name'],'email':session['email'],'platform_admin':bool(session['platform_admin'])} if session else None,
             'avatar':avatar,
             'csrf':session['csrf'] if session else None,'tenant_id':session['tenant_id'] if session else None,

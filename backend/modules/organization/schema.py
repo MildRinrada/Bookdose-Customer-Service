@@ -4,6 +4,23 @@ from backend.modules.organization.model import ROLES
 from backend.utils.validation import require, field, email_field, new_password
 
 
+def customer_categories(body, team_ids):
+    """[{'name','team_id'}] customers choose from when starting a chat; team_id '' leaves the chat with the first team."""
+    items = body.get('categories')
+    require(isinstance(items,list) and 1<=len(items)<=12,'ตั้งหมวดเรื่องได้ 1-12 หมวด')
+    found,names = [],set()
+    for item in items:
+        require(isinstance(item,dict),'ข้อมูลหมวดเรื่องไม่ถูกต้อง')
+        name,team = item.get('name',''),item.get('team_id','') or ''
+        require(isinstance(name,str) and 1<=len(name.strip())<=60,'ชื่อหมวดเรื่องต้องมี 1-60 ตัวอักษร')
+        name = name.strip()
+        require(name not in names,f'มีหมวด “{name}” ซ้ำกัน')
+        require(team=='' or team in team_ids,'ไม่พบทีมที่เลือกให้หมวดเรื่อง')
+        names.add(name)
+        found.append({'name':name,'team_id':team})
+    return found
+
+
 def settings_form(body):
     """[(setting key, value)] for the SLA hours and the support-page texts."""
     values = []

@@ -146,8 +146,8 @@ def latest_survey(db, column, value):
     return one(db,f'SELECT * FROM csat_surveys WHERE {column}=? ORDER BY sent_at DESC,rowid DESC LIMIT 1',(value,))
 
 
-def answer_survey(db, survey_id, rating):
-    db.execute('UPDATE csat_surveys SET rating=?,answered_at=? WHERE id=? AND answered_at IS NULL',(rating,now(),survey_id))
+def answer_survey(db, survey_id, rating, comment=''):
+    db.execute('UPDATE csat_surveys SET rating=?,comment=?,answered_at=? WHERE id=? AND answered_at IS NULL',(rating,comment,now(),survey_id))
 
 
 def rating_counts(db, since):

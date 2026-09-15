@@ -1,13 +1,46 @@
+# Two services: the web app (Next.js, frontend/) is public; the API (Python, app.py) is private and keeps the disk.
+# The web app forwards /api/* to the API. Both share BOOKDOSE_PROXY_SECRET, so the API believes the browser's host
+# and address only from the web app.
+envVarGroups:
+  - name: bookdose-proxy
+    envVars:
+      - key: BOOKDOSE_PROXY_SECRET
+        generateValue: true
+
 services:
   - type: web
     name: bookdose-customer-service
+    runtime: node
+    region: singapore
+    plan: 0.5c-512mb
+    branch: main
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/bootstrap
+    autoDeployTrigger: "off"
+    numInstances: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Render's load balancer sets X-Forwarded-For: sign-in limits then count per visitor.
+      - key: BOOKDOSE_TRUST_FORWARDED_FOR
+        value: "1"
+      - key: BOOKDOSE_API_URL
+        fromService:
+          type: pserv
+          name: bookdose-api
+          property: hostport
+      - fromGroup: bookdose-proxy
+
+  - type: pserv
+    name: bookdose-api
     runtime: python
     region: singapore
     plan: 0.5c-512mb
     branch: main
-    buildCommand: python -m compileall -q .
+    buildCommand: python -m compileall -q backend config app.py
     startCommand: python app.py --host 0.0.0.0 --port $PORT --secure-cookies
-    healthCheckPath: /api/bootstrap
     autoDeployTrigger: "off"
     numInstances: 1
     envVars:
@@ -17,6 +50,7 @@ services:
         value: "1"
       - key: BOOKDOSE_SETUP_TOKEN
         generateValue: true
+      - fromGroup: bookdose-proxy
     disk:
       name: bookdose-data
       mountPath: /var/data

@@ -36,10 +36,12 @@ class Client:
         self.opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
         self.csrf=''
         self.tenant=''
-        self.portal=''
+        # Support page: the conversation a customer request is about, and the customer session's CSRF token.
+        self.conversation=''
+        self.customer_csrf=''
 
     def call(self,path,body=None,method=None,headers=None):
-        hs={'X-CSRF-Token':self.csrf,'X-Tenant-ID':self.tenant,'X-Portal-Token':self.portal}
+        hs={'X-CSRF-Token':self.csrf,'X-Tenant-ID':self.tenant,'X-Conversation-ID':self.conversation,'X-Customer-CSRF':self.customer_csrf}
         if body is not None:
             hs['Content-Type']='application/json'
         hs.update(headers or {})
@@ -107,11 +109,39 @@ class IntegrationTests(unittest.TestCase):
         self.assertIn(status,(200,201),data)
         return data
 
-    def visitor(self,slug='alpha',email='visitor@example.com'):
+    CUSTOMER_PASSWORD='Customer-pass-123'
+
+    def customer_mail(self):
+        """The platform mailbox that sends support-page account emails (mocked: nothing leaves the machine)."""
+        if not getattr(self,'mailer',None):
+            self.enable_registration_mail()
+        return self.mailer
+
+    def mail_link(self,kind,index=-1):
+        """The token of a verify= / reset= link in a sent email."""
+        return re.search(kind+r'=([A-Za-z0-9_-]{43})',self.mailer.call_args_list[index].args[3].get_content())[1]
+
+    def customer(self,slug='alpha',email='visitor@example.com',name='ลูกค้าทดสอบ'):
+        """A customer who signed up from the organization's link, confirmed the email and is signed in (signs in
+        again when the email already has an account in this test)."""
+        self.customer_mail()
+        rate_limit.RATES.clear()
         client=Client(self.base)
-        result=self.ok(client,f'/api/public/{slug}/conversations',{'name':'ลูกค้าทดสอบ','email':email,'subject':'ต้องการความช่วยเหลือ','body':'เปิดหนังสือไม่ได้'})
-        client.portal=result['token']
-        return client,result['conversation_id']
+        known=self.__dict__.setdefault('customers',set())
+        if email in known:
+            self.ok(client,'/api/customer/login',{'email':email,'password':self.CUSTOMER_PASSWORD})
+        else:
+            self.assertEqual(client.call('/api/customer/register',{'name':name,'email':email,'password':self.CUSTOMER_PASSWORD,'consent':True,'org':slug})[0],202)
+            self.ok(client,'/api/customer/verify',{'token':self.mail_link('verify'),'password':self.CUSTOMER_PASSWORD})
+            known.add(email)
+        client.customer_csrf=self.ok(client,'/api/customer/account')['csrf']
+        return client
+
+    def visitor(self,slug='alpha',email='visitor@example.com',subject='ต้องการความช่วยเหลือ',body='เปิดหนังสือไม่ได้'):
+        """A signed-in customer with a new support-page conversation; (client, conversation id)."""
+        client=self.customer(slug,email)
+        client.conversation=self.ok(client,f'/api/public/{slug}/conversations',{'subject':subject,'body':body})['id']
+        return client,client.conversation
 
     def registration(self,**overrides):
         return {'name':'ผู้ดูแลองค์กรใหม่','email':'new@example.com','password':'New-password-123!',
@@ -132,7 +162,6 @@ class IntegrationTests(unittest.TestCase):
     def test_register_creates_isolated_organization_without_platform_privileges(self):
         self.enable_registration_mail()
         client=Client(self.base)
-        self.assertEqual(client.call('/register')[0],200)
         payload=self.registration(platform_admin=True,role='platform_admin',tenant_id=self.org,demo=True)
         self.assertEqual(client.call('/api/register',payload)[0],202)
         self.assertIsNone(client.boot()['user'])
@@ -397,6 +426,7 @@ class IntegrationTests(unittest.TestCase):
             self.assertIn(f'tenants/{second}.sqlite3',archive.namelist())
             self.assertNotIn(f'tenants/{self.org}.sqlite3',archive.namelist())
             self.assertFalse(any(name.startswith('files/') for name in archive.namelist()))
+        # One customer account works with every organization, but another organization holds none of its conversations.
         self.assertEqual(visitor.call('/api/public/beta/session')[0],404)
         self.admin.switch(self.org)
         self.assertEqual(self.ok(self.admin,'/api/tickets/'+original['id'])['ticket']['subject'],original['subject'])
@@ -470,21 +500,30 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.admin.call('/api/setup',{})[0],409)
         self.assertEqual(self.admin.call('/api/teams',{'name':'Good'})[0],201)
 
-    def test_public_tokens_isolate_customers_with_same_email(self):
-        first,c1=self.visitor(email='same@example.com')
-        second,c2=self.visitor(email='same@example.com')
-        self.assertNotEqual(c1,c2)
-        one=self.ok(self.admin,'/api/conversations/'+c1)
-        two=self.ok(self.admin,'/api/conversations/'+c2)
-        self.assertNotEqual(one['contact']['id'],two['contact']['id'])
+    def test_customers_only_reach_their_own_conversations(self):
+        first,c1=self.visitor(email='first@example.com')
+        second,c2=self.visitor(email='second@example.com')
+        self.assertNotEqual(self.ok(self.admin,'/api/conversations/'+c1)['contact']['id'],self.ok(self.admin,'/api/conversations/'+c2)['contact']['id'])
         self.ok(first,'/api/public/alpha/messages',{'body':'CUSTOMER ONE ONLY'})
+        second.conversation=c1
+        for path,body in (('/api/public/alpha/session',None),('/api/public/alpha/messages',{'body':'x'}),('/api/public/alpha/csat',{'rating':5})):
+            self.assertEqual(second.call(path,body)[0],404,path)
+        second.conversation=c2
         self.assertNotIn('CUSTOMER ONE ONLY',json.dumps(self.ok(second,'/api/public/alpha/session')))
-        fake=Client(self.base);fake.portal='z'*43
-        self.assertEqual(fake.call('/api/public/alpha/session')[0],404)
+        self.assertEqual([c['id'] for c in self.ok(second,'/api/customer/overview')['conversations']],[c2])
+        # Signed out nothing is answered, and a change needs the session's CSRF token.
+        anonymous=Client(self.base);anonymous.conversation=c1
+        self.assertEqual(anonymous.call('/api/public/alpha/session')[0],401)
+        self.assertEqual(anonymous.call('/api/public/alpha/conversations',{'subject':'x','body':'y'})[0],401)
+        self.assertEqual(first.call('/api/public/alpha/messages',{'body':'x'},headers={'X-Customer-CSRF':''})[0],403)
+        # A second customer writing with the same email as an existing account only makes the owner get an email.
+        again=Client(self.base)
+        self.assertEqual(again.call('/api/customer/register',{'name':'คนอื่น','email':'first@example.com','password':'Another-pass-123','consent':True})[0],202)
+        self.assertNotIn('verify=',self.mailer.call_args.args[3].get_content())
 
     def test_duplicate_contacts_merge_on_staff_request(self):
-        first,c1=self.visitor(email='same@example.com')
-        second,c2=self.visitor(email='same@example.com')
+        first,c1=self.visitor(email='first@example.com')
+        second,c2=self.visitor(email='second@example.com')
         keep=self.ok(self.admin,'/api/conversations/'+c1)['contact']['id']
         drop=self.ok(self.admin,'/api/conversations/'+c2)['contact']['id']
         self.ok(self.admin,'/api/contacts/'+drop,{'first_name':'ลูกค้าทดสอบ','email':'same@example.com','phone':'081-234-5678','notes':'duplicate note'},'PATCH')
@@ -500,7 +539,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.ok(self.admin,'/api/tickets/'+ticket)['contact']['id'],keep)
         self.assertEqual(self.ok(self.admin,'/api/conversations/'+c2)['contact']['id'],keep)
         self.assertEqual(self.ok(self.admin,'/api/audit')['events'][0]['action'],'contact.merged')
-        # Each visitor's link still shows only their own conversation.
+        # Each conversation still shows only its own messages.
         self.ok(first,'/api/public/alpha/messages',{'body':'FIRST VISITOR ONLY'})
         self.assertNotIn('FIRST VISITOR ONLY',json.dumps(self.ok(second,'/api/public/alpha/session')))
 
@@ -576,6 +615,9 @@ class IntegrationTests(unittest.TestCase):
 
     def test_knowledge_visibility_and_agent_permissions(self):
         public=Client(self.base)
+        # Only the organization's own articles here; the platform's global ones are tested in test_platform_console.
+        with D.control() as cd:
+            cd.execute('DELETE FROM global_articles')
         self.assertEqual(self.ok(public,'/api/public/alpha')['articles'],[])
         article=self.ok(self.admin,'/api/articles',{'title':'คู่มือ','category':'ทดสอบ','body':'Internal instructions','visibility':'internal'})['id']
         self.assertEqual(self.ok(public,'/api/public/alpha')['articles'],[])
@@ -679,13 +721,12 @@ class IntegrationTests(unittest.TestCase):
         again=subprocess.run([sys.executable,app.__file__,'--restore',str(archive)],env=env,capture_output=True)
         self.assertNotEqual(again.returncode,0)
 
-    def test_templates_bundle_serves_every_html_template(self):
-        status,bundle=Client(self.base).call('/templates.json')
-        self.assertEqual(status,200)
-        self.assertIn('pages/dashboard/dashboard',bundle)
-        self.assertIn('ui/modal',bundle)
-        self.assertTrue(all(name.split('/')[0] in ('pages','ui','shell','modules') for name in bundle))
-        self.assertIn('{{',bundle['ui/option'])
+    def test_only_the_api_is_served(self):
+        # The pages are the Next.js app's (frontend/); this server answers /api/* and nothing else.
+        for path in ('/','/login','/templates.json','/register','/oauth/email/callback','/frontend/core.js'):
+            status,body=Client(self.base).call(path)
+            self.assertEqual(status,404,path)
+            self.assertIn('error',body)
 
     def test_review_contact_names_and_public_validation(self):
         contact=self.ok(self.admin,'/api/contacts',{'first_name':'สมชาย','last_name':"O’Connor-Smith",'email':'person@example.com','phone':'+66 (81) 234-5678'})['id']
@@ -695,12 +736,12 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(c['last_name'],'O’Connor-Smith')
         for data in ({'name':'<script>alert(1)</script>'},{'name':'Valid','email':'a@<script>.com'},{'name':'Valid','phone':'javascript:alert(1)'}):
             self.assertEqual(self.admin.call('/api/contacts',data)[0],400)
-        visitor=Client(self.base)
-        data={'name':'<img src=x onerror=alert(1)>','email':'person@example.com','subject':'help','body':'hello'}
-        self.assertEqual(visitor.call('/api/public/alpha/conversations',data)[0],400)
-        data['name']='สมศรี ใจดี';data['body']='<script>window.bad=true</script>'
-        self.assertEqual(visitor.call('/api/public/alpha/conversations',data)[0],201)
+        self.customer_mail()
+        data={'name':'<img src=x onerror=alert(1)>','email':'person@example.com','password':self.CUSTOMER_PASSWORD,'consent':True}
+        self.assertEqual(Client(self.base).call('/api/customer/register',data)[0],400)
+        customer,_=self.visitor(email='person@example.com',body='<script>window.bad=true</script>')
         # Plain text messages are retained; rendering escapes the HTML on both staff and portal views.
+        self.assertEqual(self.ok(customer,'/api/public/alpha/session')['messages'][0]['body'],'<script>window.bad=true</script>')
 
     def test_review_profile_is_self_only_and_rejects_unsafe_images(self):
         self.assertEqual(Client(self.base).call('/api/account/profile',{'name':'Test'})[0],401)

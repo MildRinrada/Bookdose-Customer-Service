@@ -8,4 +8,13 @@ ROUTES = [
     ('POST',  '/api/platform/tenants',        controller.create_tenant,              'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}',  controller.set_tenant_status,          'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/support-access', controller.grant_support_access, 'platform'),
+    ('GET',   '/api/platform/system',         controller.system,                     'platform'),
+    ('GET',   '/api/platform/admins',         controller.platform_team,              'platform'),
+    ('POST',  '/api/platform/admins',         controller.add_platform_admin,         'platform'),
+    ('DELETE',f'/api/platform/admins/{ID}',   controller.remove_platform_admin,      'platform'),
+    ('GET',   '/api/platform/faq',            controller.global_faq,                 'platform'),
+    ('POST',  '/api/platform/faq',            controller.create_global_article,      'platform'),
+    ('PATCH', f'/api/platform/faq/{ID}',      controller.update_global_article,      'platform'),
+    ('DELETE',f'/api/platform/faq/{ID}',      controller.delete_global_article,      'platform'),
+    ('GET',   '/api/guides',                  controller.guides,                     'account'),
 ]

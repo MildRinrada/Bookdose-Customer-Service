@@ -8,6 +8,7 @@ import sqlite3
 import threading
 import time
 
+from backend.extensions import monitor
 from backend.database import audit, db as D
 from backend.exceptions.errors import APIError, ChannelError
 from backend.middleware.access import get_scoped, visible_team
@@ -16,6 +17,7 @@ from backend.modules.automation import repository, schema
 from backend.modules.channels import repository as channel_repository
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations
+from backend.modules.customers import service as customers
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets
@@ -326,6 +328,8 @@ def send_survey(db, ctx, ticket):
     conversations.touch(db,conv['id'])
     if conv['channel']!='web':
         _enqueue_external(db,ctx,conv,message_id)
+    else:
+        customers.notify_reply(db,conv['id'])
     repository.insert_survey(db,uid(),ticket['id'],conv['id'],message_id)
     audit.record(db,SYSTEM_ACTOR,'csat.sent',ticket['id'])
     return message_id
@@ -346,12 +350,12 @@ def take_rating(db, conversation_id, text):
 
 
 def rate_from_portal(db, conv, body):
-    """The support page's star buttons."""
-    value = schema.rating(body)
+    """The customer's stars on the customer page, with an optional comment."""
+    value,comment = schema.rating(body),schema.survey_comment(body)
     D.begin(db)
     survey = repository.pending_survey(db,conv['id'],after(days=-SURVEY_DAYS))
     require(survey,'แบบประเมินนี้ปิดแล้ว หรือให้คะแนนไปแล้ว',409)
-    repository.answer_survey(db,survey['id'],value)
+    repository.answer_survey(db,survey['id'],value,comment)
     audit.record(db,'ลูกค้า','csat.rated',survey['ticket_id'],str(value))
     db.commit()
 
@@ -361,7 +365,8 @@ def portal_survey(db, conversation_id):
     survey = repository.latest_survey(db,'conversation_id',conversation_id)
     if not survey:
         return None
-    return {'pending':survey['answered_at'] is None and survey['sent_at']>=after(days=-SURVEY_DAYS),'rating':survey['rating']}
+    return {'pending':survey['answered_at'] is None and survey['sent_at']>=after(days=-SURVEY_DAYS),'rating':survey['rating'],
+            'comment':survey['comment']}
 
 
 def survey_message_ids(db, conversation_id):
@@ -473,7 +478,8 @@ def touch_activity(db, ctx):
 
 
 class Worker:
-    """Background thread: every 30 seconds, escalate due cases in each active organization."""
+    """Background thread: every 30 seconds, in each active organization, escalate due cases and email support-page
+    customers about replies they have not read yet."""
     INTERVAL = 30
 
     def __init__(self):
@@ -488,6 +494,7 @@ class Worker:
             try:
                 with D.control() as cd:
                     ids = tenants.active_tenant_ids(cd)
+                monitor.heartbeat('automation')
                 for tenant_id in ids:
                     if self.stop.is_set():
                         return
@@ -496,5 +503,11 @@ class Worker:
                             escalate_due(cd,db,tenant_id)
                     except Exception as error:
                         print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)
+                        monitor.error('automation',type(error).__name__)
+                    try:
+                        customers.send_notices(tenant_id)
+                    except Exception as error:
+                        print(f'Customer notices: {type(error).__name__}; retrying next round',flush=True)
+                        monitor.error('automation','notices: '+type(error).__name__)
             except Exception as error:
                 print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)

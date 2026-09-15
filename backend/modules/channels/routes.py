@@ -3,7 +3,6 @@ from backend.modules.channels.email_oauth import CALLBACK
 from backend.utils.routing import ID
 
 ROUTES = [
-    ('GET',   CALLBACK,                                           controller.oauth_callback_page,  'page'),
     ('GET',   r'/api/channel-files/([a-f0-9]{32})/([A-Za-z0-9_-]{43})', controller.download_file_link, 'page'),
     ('GET',   f'/api/webhooks/facebook/{ID}',                     controller.verify_facebook_webhook, 'page'),
     ('POST',  f'/api/webhooks/line/{ID}',                         controller.receive_line_webhook, 'webhook'),

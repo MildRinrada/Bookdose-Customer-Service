@@ -1,0 +1,97 @@
+# Bookdose Frontend (Next.js)
+
+หน้าจอของ Bookdose Customer Service เขียนด้วย **Next.js 16 (App Router) + React 19 + TypeScript** ข้อมูลทั้งหมดมาจาก API ของ Python (`python app.py`) เบราว์เซอร์คุยกับแอปนี้เพียงที่เดียว ส่วน `/api/*` แอปส่งต่อให้ Python เอง cookie, CSRF และ `X-Tenant-ID` จึงยังเป็น same-origin เหมือนเดิม
+
+```text
+เบราว์เซอร์ ──► Next.js (frontend/, :3000) ──/api/*──► Python (app.py, :8787)
+                 หน้าจอ + CSP nonce              routes → controller → service → repository → SQLite
+```
+
+## เปิดใช้งานระหว่างพัฒนา
+
+```sh
+python app.py                 # API ที่ http://127.0.0.1:8787 (ตอบเฉพาะ /api/*)
+cd frontend
+npm install
+npm run dev                   # เปิด http://localhost:3000
+```
+
+คำสั่งอื่น: `npm run typecheck`, `npm run lint`, `npm run build && npm start` (production)
+
+ตัวแปรแวดล้อม (ดู `.env.example`, ทุกตัวไม่บังคับเมื่อใช้งานบนเครื่องเดียวกัน)
+
+| ตัวแปร | ความหมาย |
+|---|---|
+| `BOOKDOSE_API_URL` | ที่อยู่ของ Python API (ค่าเริ่มต้น `http://127.0.0.1:8787`) |
+| `BOOKDOSE_PROXY_SECRET` | ตั้งค่าเดียวกันทั้งสองฝั่งเมื่อแอปนี้อยู่คนละเครื่องกับ Python หรือเปิดสู่สาธารณะ ถ้าไม่ตั้ง Python จะเชื่อคำขอที่ส่งต่อมาจากเครื่องเดียวกันเท่านั้น |
+| `BOOKDOSE_TRUST_FORWARDED_FOR` | `1` เมื่อมี load balancer / reverse proxy ที่ใส่ `X-Forwarded-For` ด้านหน้า (เช่น Render) เพื่อให้การจำกัดความถี่คำขอนับแยกตามผู้ใช้ |
+
+## สถาปัตยกรรม: ชั้นเดียวกับ backend
+
+Backend แบ่งเป็น `routes → controller → service → repository` ต่อ feature ใน `backend/modules/<feature>/` ฝั่งหน้าจอแบ่งตาม feature ชื่อเดียวกัน และแยกหน้าที่เป็นชั้นเช่นกัน
+
+| ชั้น (web) | ไฟล์ | หน้าที่ | คู่กับ backend |
+|---|---|---|---|
+| Route | `src/app/**/page.tsx`, `layout.tsx` | URL ของหน้าจอ อ่าน params แล้วเรียก screen ของ feature (ไม่มี logic) | `routes.py` |
+| Screen | `src/features/<feature>/*Screen.tsx` | ประกอบหน้าจอหนึ่งหน้า: อ่านข้อมูล จัดการ state ของหน้า และเรียก action | `controller.py` |
+| Component | `src/features/<feature>/components/` | ชิ้นส่วนแสดงผลของ feature | – |
+| API | `src/features/<feature>/api.ts` | ฟังก์ชันเรียก endpoint ของ feature นั้น (path ตรงกับ `routes.py`) | `routes.py` + `schema.py` |
+| Types | `src/features/<feature>/types.ts` | รูปข้อมูลที่ API ส่งกลับ (ชื่อฟิลด์ snake_case ตาม server) | `schema.py` |
+| Shared | `src/lib/`, `src/components/` | client, session, format, labels, UI กลาง, กรอบหน้าจอ | `utils/`, `middleware/` |
+
+```text
+src/
+  proxy.ts               ก่อนทุกคำขอ: CSP nonce ต่อหน้า และ header ให้ Python เชื่อ host/IP ที่ส่งต่อ
+  app/                   URL ทั้งหมด (ดูตารางด้านล่าง)
+    (auth)/              เข้าสู่ระบบ สมัคร ตั้งค่าครั้งแรก ยืนยันอีเมล
+    (staff)/             หน้าของทีมและคอนโซลแพลตฟอร์ม: layout ตรวจเซสชันและวางกรอบ StaffShell
+    customer/(portal)/   หน้าของลูกค้าที่เข้าสู่ระบบแล้ว: layout วางกรอบ CustomerShell
+    customer/(link)/     หน้าลูกค้าจากลิงก์อีเมล (ยืนยันอีเมล ตั้งรหัสผ่านใหม่) ไม่ต้องเข้าสู่ระบบ
+    page.tsx             หน้าแรก: แปลงลิงก์ #hash แบบเดิมเป็น path ใหม่ แล้วพาไปหน้าที่ถูกต้อง
+  features/<feature>/    หนึ่งโฟลเดอร์ต่อ feature (tickets, inbox, contracts, customer, …)
+  components/
+    Icon.tsx             ไอคอนทั้งหมดของแอป
+    ui/                  Form, fields (TextField, NumberField …), Combobox, FileInput, PhotoPicker, Pager, Dialogs, Toast,
+                         display (EmptyState, StatCard, ChartColumn, CustomerNone …), filters,
+                         actions (useRunAction, useCopyText), pickers (TeamOptions, MemberPicker)
+    shell/               StaffShell, CustomerShell, AccountDialog, TextSize
+  lib/
+    api/client.ts        api(path, body?, method?), download() และ fetchBlob(): ใส่ CSRF / X-Tenant-ID / X-Customer-CSRF ให้เอง
+    query.ts             useApi(path) อ่านข้อมูล และ useInvalidate() ให้หน้าจอโหลดใหม่หลังแก้ไข
+    session.ts           เซสชันฝั่งทีม: useBoot, useWork, useStaffTickets, useStaffAlerts, useSwitchTenant
+    customer-session.ts  เซสชันฝั่งลูกค้า: useCustomer, useCustomerOrgs, useCustomerOverview
+    routes.ts            URL ของทุกหน้าจอ เมนู และตัวแปลงลิงก์แบบเดิม
+    format.ts, labels.ts วันที่ ตัวเลข เงิน และคำภาษาไทยของค่าจาก API
+    ui-state.ts          useUiState: ตัวกรองและตัวเลือกบนหน้าจอที่คงอยู่ระหว่างเปลี่ยนหน้า
+    files.ts             กติกาไฟล์แนบ (ชนิด ขนาด จำนวน) เหมือนฝั่ง server
+  styles/                CSS ชุดเดิมทั้งหมด (โหลดตามลำดับใน app/layout.tsx)
+```
+
+### กติกาที่ทุก feature ใช้
+
+1. **อ่านข้อมูล** ด้วย `useApi<T>(path)` เท่านั้น (key ของ cache คือ path) หน้าจอที่ต้องอัปเดตเองใช้ `{ refetchInterval }`
+2. **แก้ไขข้อมูล** เรียกฟังก์ชันใน `features/<feature>/api.ts` แล้ว `await refresh('/api/tickets')` จาก `useInvalidate()` ห้ามเรียก `fetch` ตรง
+3. **ฟอร์ม** ใช้ `<Form onSubmit>` + `TextField` / `TextArea` / `SelectField` / `Combobox` / `FileInput` ข้อผิดพลาดที่ throw จะแสดงเป็น `.error-message` บนฟอร์มเอง ปุ่ม submit ถูกปิดระหว่างส่ง
+4. **กล่องโต้ตอบ** ใช้ `useDialogs()` (`openModal`, `openSheet`, `confirm`, `confirmDelete`) และข้อความสั้นด้วย `useToast()` ไม่ใช้ `alert` / `confirm` / `prompt` ของเบราว์เซอร์
+5. **หน้าตา** ใช้ class ที่มีใน `src/styles` และ markup แบบเดียวกับหน้าจออื่นของแอป ห้ามใช้ `style={...}` เพราะ CSP ของ production ไม่อนุญาต inline style ให้ใช้ class, `<progress>`, หรือ `data-*`
+6. **HTML จากผู้ใช้** ห้าม `dangerouslySetInnerHTML` ยกเว้นผลของตัวแปลง Markdown กลาง (escape ทุกอย่างก่อน แล้วสร้างเฉพาะ tag ที่อนุญาต)
+7. **คำบนหน้าจอเป็นภาษาไทย** ชื่อฟิลด์ตาม API (snake_case) คอมเมนต์ในโค้ดเป็นภาษาอังกฤษ คอมเมนต์ที่อ้าง `old-frontend/…` หมายถึงหน้าจอรุ่นก่อน Next.js (JavaScript + HTML template) ที่ถูกนำออกแล้ว ดูได้ในประวัติ git
+8. **สิทธิ์ตามบทบาท** กำหนดใน `lib/routes.ts` (`roles`) กรอบหน้าจอพาคนที่ไม่มีสิทธิ์กลับหน้าภาพรวมเอง ส่วนปุ่มที่เฉพาะบางบทบาทให้ซ่อนด้วย `useWork().role` server ยังตรวจสิทธิ์ทุกคำขอเหมือนเดิม
+
+### URL ของหน้าจอ
+
+| กลุ่ม | URL |
+|---|---|
+| ทั่วไป | `/login` (`?tab=signup`, `?org=`, `?next=`), `/register`, `/verify-email?token=`, `/check-email`, `/resend-email`, `/oauth/email/callback` |
+| ทีม | `/dashboard`, `/inbox[/id]`, `/tickets[/id]`, `/contacts`, `/knowledge[/id]`, `/reports`, `/contracts[/id]`, `/guides[/id]`, `/automation`, `/audit`, `/trash`, `/settings`, `/notifications` |
+| คอนโซลแพลตฟอร์ม | `/platform/system`, `/platform/organizations`, `/platform/faq`, `/platform/contract-templates`, `/platform/team` |
+| ลูกค้า | `/customer/chats[/new \| /<org>/<id>]`, `/customer/cases[/<org>/<id>]`, `/customer/documents[/<org>/<id>]`, `/customer/billing[/<org>/<id>]`, `/customer/faq[/<id>]`, `/customer/alerts`, `/customer/account` |
+| ลูกค้าจากลิงก์อีเมล | `/customer/verify?token=`, `/customer/reset?token=`, `/customer/forgot` |
+
+ลิงก์แบบเดิมที่ส่งไปทางอีเมลแล้ว (`/#tickets/…`, `/#documents/<org>/<id>`, `/#verify=…`) ยังใช้ได้ หน้าแรกแปลงเป็น URL ใหม่ให้ (`lib/routes.ts` → `legacyPath`)
+
+## ความปลอดภัย
+
+- **CSP ต่อคำขอ:** `src/proxy.ts` สร้าง nonce ใหม่ทุกหน้า script ที่ไม่มี nonce ของ Next จะไม่ทำงาน (production ไม่อนุญาต inline style)
+- **Python ยังตรวจ Host / Origin / CSRF ทุกคำขอ:** คำขอที่มาผ่านแอปนี้ Python ใช้ `X-Forwarded-Host` แทน Host เฉพาะเมื่อมาจากเครื่องเดียวกัน หรือมี `BOOKDOSE_PROXY_SECRET` ตรงกัน (`backend/middleware/security.py`)
+- **Cookie:** เป็น HttpOnly และ SameSite=Strict ทั้งเซสชันทีมและลูกค้า หน้าจออ่าน cookie ไม่ได้ ใช้ CSRF token จาก `/api/bootstrap` และ `/api/customer/account` แทน

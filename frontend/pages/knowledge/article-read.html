@@ -1,9 +1,0 @@
-<div class="article-meta"><span class="badge">{{icon:book}} {{category}}</span><span class="badge">{{visibilityLabel}}</span><span class="muted">{{icon:clock}} อัปเดต {{updated}}</span></div>
-<div class="article-content">{{{content}}}</div>
-<div class="form-actions wrap">
-  <button class="btn" data-action="article-copy">คัดลอกเนื้อหา</button>
-  <button class="btn" data-action="article-link">คัดลอกลิงก์</button>
-  {{#canInsert}}<button class="btn primary" data-action="article-insert">แทรกในช่องร่างข้อความ</button>{{/canInsert}}
-  {{#canEdit}}<button class="btn" data-action="edit-article" data-id="{{id}}">{{icon:edit}}แก้ไขบทความ</button>
-  <button class="btn danger" data-action="delete-article" data-id="{{id}}">{{icon:close}}ลบบทความ</button>{{/canEdit}}
-</div>

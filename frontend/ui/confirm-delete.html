@@ -1,9 +1,0 @@
-<form data-form="confirm-delete">
-  <p class="notice danger-notice">{{warning}}</p>
-  <ul class="delete-effects">{{{effects}}}</ul>
-  {{#word}}<div class="field"><label for="confirm-text">พิมพ์ <strong>{{word}}</strong> เพื่อยืนยันว่าต้องการลบ</label><input id="confirm-text" name="confirmation" autocomplete="off" spellcheck="false" placeholder="{{word}}" required></div>{{/word}}
-  <div class="form-actions">
-    <button type="button" class="btn" data-action="close-modal">ยกเลิก</button>
-    <button type="submit" class="btn danger">{{icon:close}}{{confirmLabel}}</button>
-  </div>
-</form>

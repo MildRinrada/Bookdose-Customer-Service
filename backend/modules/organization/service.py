@@ -1,4 +1,5 @@
 """Organization administration: workspace overview, SLA and support-page settings, teams, members, audit log and backup."""
+import json
 from backend.database import audit
 from backend.database.backup import make_backup
 from backend.exceptions.errors import APIError
@@ -6,6 +7,7 @@ from backend.middleware.access import validate_team
 from backend.modules.ai import service as ai
 from backend.modules.auth import repository as users
 from backend.modules.automation import service as automation
+from backend.modules.customers import service as customers
 from backend.modules.channels import service as channels
 from backend.modules.organization import repository, schema
 from backend.modules.tickets import repository as tickets
@@ -24,6 +26,8 @@ def workspace_overview(cd, db, ctx):
             'settings':repository.settings(db),
             'channels':channels.workspace_summary(db),
             'macros':automation.macro_list(db),
+            # Without the platform's email, customer sign-ups work but are not verified and get no email.
+            'customer_email':customers.email_ready(cd),
             'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id'])}}
 
 
@@ -31,6 +35,13 @@ def update_settings(db, ctx, body):
     for key,value in schema.settings_form(body):
         repository.update_setting(db,key,value)
     audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'])
+    db.commit()
+
+
+def save_customer_categories(db, ctx, body):
+    items = schema.customer_categories(body,{t['id'] for t in repository.teams(db)})
+    repository.update_setting(db,'customer_categories',json.dumps(items,ensure_ascii=False))
+    audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],'หมวดเรื่องของลูกค้า')
     db.commit()
 
 

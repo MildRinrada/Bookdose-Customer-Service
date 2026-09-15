@@ -8,6 +8,7 @@ import re
 import threading
 import unicodedata
 
+from backend.extensions import monitor
 from backend.database import audit, db as D
 from backend.exceptions.errors import AIError
 from backend.extensions import openai_client
@@ -23,7 +24,7 @@ from backend.utils.dates import after, today
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
 
-HANDOFF_MESSAGE = 'ส่งเรื่องให้เจ้าหน้าที่แล้วค่ะ ทีมงานจะตอบกลับในหน้าติดตามนี้ คุณส่งรายละเอียดเพิ่มเติมไว้ได้เลย'
+HANDOFF_MESSAGE = 'ส่งเรื่องให้เจ้าหน้าที่แล้วค่ะ ทีมงานจะตอบกลับในแชทนี้ คุณส่งรายละเอียดเพิ่มเติมไว้ได้เลย'
 CHANNEL_HANDOFF_MESSAGE = 'ส่งเรื่องให้เจ้าหน้าที่แล้วค่ะ ทีมงานจะตอบกลับผ่านช่องทางนี้'
 NO_KNOWLEDGE_SUMMARY = 'ไม่พบความรู้ที่เกี่ยวข้องเพียงพอ กรุณาตรวจสอบและตอบลูกค้าโดยเจ้าหน้าที่'
 JOB_TIMEOUT_SECONDS = 120
@@ -368,6 +369,7 @@ class Worker:
         while not self.stop.wait(1):
             with D.control() as cd:
                 ids = tenants.active_tenant_ids(cd)
+            monitor.heartbeat('ai')
             for tenant_id in ids:
                 if self.stop.is_set():
                     return
@@ -375,3 +377,4 @@ class Worker:
                     process_one(tenant_id)
                 except Exception as error:
                     print(f'AI worker: {type(error).__name__}; retrying queue scan',flush=True)
+                    monitor.error('ai',type(error).__name__)

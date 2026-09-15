@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import test_app as base
-from test_app import Client, D
+from test_app import D
 from backend.extensions import channel_transport as T
 from backend.modules.automation import service as A
 from backend.modules.channels import facebook as F, service as C
@@ -23,6 +23,11 @@ class AutomationTests(unittest.TestCase):
     ok = base.IntegrationTests.ok
     visitor = base.IntegrationTests.visitor
     create_member = base.IntegrationTests.create_member
+    enable_registration_mail = base.IntegrationTests.enable_registration_mail
+    customer_mail = base.IntegrationTests.customer_mail
+    mail_link = base.IntegrationTests.mail_link
+    customer = base.IntegrationTests.customer
+    CUSTOMER_PASSWORD = base.IntegrationTests.CUSTOMER_PASSWORD
 
     def new_team(self, name='ทีมบัญชี'):
         return self.ok(self.admin,'/api/teams',{'name':name})['id']
@@ -40,19 +45,17 @@ class AutomationTests(unittest.TestCase):
                                                           'set_priority':'high','set_team_id':accounting})['id']
         _,plain = self.visitor()
         self.assertIsNone(self.ticket_of(plain))
-        client = Client(self.base)
-        result = self.ok(client,'/api/public/alpha/conversations',{'name':'ลูกค้าบัญชี','email':'pay@example.com',
-                                                                   'subject':'สอบถาม','body':'ชำระเงินแล้วแต่ยังใช้งานไม่ได้'})
-        ticket = self.ticket_of(result['conversation_id'])
+        _,paid = self.visitor(email='pay@example.com',subject='สอบถาม',body='ชำระเงินแล้วแต่ยังใช้งานไม่ได้')
+        ticket = self.ticket_of(paid)
         self.assertEqual((ticket['priority'],ticket['team_id']),('high',accounting))
-        self.assertEqual(self.ok(self.admin,f"/api/conversations/{result['conversation_id']}")['conversation']['team_id'],accounting)
+        self.assertEqual(self.ok(self.admin,f'/api/conversations/{paid}')['conversation']['team_id'],accounting)
         events = self.ok(self.admin,f"/api/tickets/{ticket['id']}")['events']
         self.assertIn('automation.rule_applied',[e['action'] for e in events])
         # A disabled rule does nothing; a rule for another channel does not match the web.
         self.ok(self.admin,f'/api/automation/rules/{rule}',{'name':'ปิดไว้','enabled':False,'channel':'web','keywords':'ชำระเงิน','set_priority':'high'},'PATCH')
         self.ok(self.admin,'/api/automation/rules',{'name':'LINE เท่านั้น','channel':'line','keywords':'ชำระเงิน','set_priority':'urgent'})
-        again = self.ok(client,'/api/public/alpha/conversations',{'name':'ลูกค้าบัญชี','email':'pay@example.com','subject':'ชำระเงิน','body':'ชำระเงินอีกครั้ง'})
-        self.assertIsNone(self.ticket_of(again['conversation_id']))
+        _,again = self.visitor(email='pay@example.com',subject='ชำระเงิน',body='ชำระเงินอีกครั้ง')
+        self.assertIsNone(self.ticket_of(again))
 
     def test_rule_applies_to_cases_staff_open_and_keeps_owner_in_team(self):
         accounting = self.new_team()

@@ -1,0 +1,774 @@
+/* The customer's side of the app. It uses the team's frame (side menu, top bar, cards, the inbox layout), so this
+   file holds only what a customer has and the team does not: states in customer words, case timelines, articles,
+   account settings and the one-task pages opened from emails. */
+
+/* The customer menu starts right under the logo. */
+.customer-sidebar .sidebar-top {
+  margin-bottom: 18px;
+}
+.customer-bell {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+.profile-menu-panel a.menu-item {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Where something stands, in the customer's words. */
+.customer-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: #eef1f7;
+  color: #334155;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.customer-state.tone-received {
+  background: #f1eefb;
+  color: #4b2f99;
+}
+.customer-state.tone-working {
+  background: #e6f0fc;
+  color: #1f4f8f;
+}
+.customer-state.tone-waiting {
+  background: #fdf0d5;
+  color: #7a4507;
+}
+.customer-state.tone-done {
+  background: #e3f4ea;
+  color: #1a6340;
+}
+.customer-state-hint {
+  color: var(--muted);
+}
+
+/* แชทของฉัน */
+.customer-chat-tools {
+  display: grid;
+  gap: 10px;
+}
+.customer-list-new {
+  justify-content: center;
+}
+.customer-chat-item .inbox-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.customer-chat-item .inbox-time {
+  margin-left: auto;
+}
+.customer-ai-status {
+  margin: 0;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+}
+/* The customer's own words on the right, the team's on the left, the way every chat reads. */
+#customer-thread .message.customer {
+  flex-direction: row-reverse;
+  margin-left: auto;
+  margin-right: 0;
+}
+#customer-thread .message.customer .bubble {
+  background: #5835b3;
+  border-color: #5835b3;
+  color: #fff;
+  border-radius: 14px 4px 14px 14px;
+}
+#customer-thread .message.reply {
+  flex-direction: row;
+  margin-left: 0;
+  margin-right: auto;
+}
+#customer-thread .message.reply .bubble {
+  background: #f1f3f6;
+  border-color: #d5dbe4;
+  color: #1e293b;
+  border-radius: 4px 14px 14px 14px;
+}
+#customer-thread .message.reply .file-chip {
+  background: #fff;
+  border-color: #e8dff2;
+  color: #77608d;
+}
+.customer-new-chat .field {
+  margin-bottom: 15px;
+}
+.customer-new-chat .notice {
+  margin-bottom: 16px;
+}
+/* The file chooser is a button in Thai, not the browser's English "Choose Files". */
+.file-field-title {
+  display: block;
+  margin-bottom: 8px;
+  color: #334155;
+  font-weight: 600;
+}
+.customer-attach {
+  display: inline-flex;
+  cursor: pointer;
+}
+input[type=file].attach-input:focus-visible+.customer-attach {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+}
+.customer-none {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 26px 16px;
+  text-align: center;
+}
+
+/* เคสของฉัน */
+.customer-stats {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  margin-bottom: 22px;
+}
+.customer-cases .card-header {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.customer-case-table {
+  width: 100%;
+}
+.customer-case-table td {
+  vertical-align: middle;
+}
+.customer-case-title {
+  display: block;
+  max-width: 34rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--ink);
+}
+.customer-case-title:hover {
+  color: var(--purple);
+  text-decoration: underline;
+}
+.customer-case-id {
+  display: block;
+  color: var(--muted);
+}
+.customer-due,.customer-updated {
+  color: #475569;
+  white-space: nowrap;
+}
+.customer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding: 22px 26px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+.customer-banner h1 {
+  font-size: 1.5rem;
+  margin: 4px 0 6px;
+}
+.customer-banner p {
+  margin: 0;
+  color: #475569;
+}
+.customer-banner .btn {
+  margin-top: 14px;
+}
+.customer-banner-ref {
+  font-weight: 600;
+  color: #5b3ea8;
+}
+.customer-banner.tone-received {
+  background: #f6f3fe;
+  border-color: #cdbdf3;
+}
+.customer-banner.tone-working {
+  background: #eef5fd;
+  border-color: #b3cdf0;
+}
+.customer-banner.tone-waiting {
+  background: #fdf6e7;
+  border-color: #eccf94;
+}
+.customer-banner.tone-done {
+  background: #eef8f2;
+  border-color: #a8d7bd;
+}
+.customer-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.customer-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+.customer-progress-step+.customer-progress-step::before {
+  content: "";
+  width: 22px;
+  height: 2px;
+  background: #cbd5e1;
+}
+.customer-progress-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  font-weight: 700;
+}
+.customer-progress-dot .icon {
+  width: 16px;
+  height: 16px;
+}
+.customer-progress-step.done .customer-progress-dot,
+.customer-progress-step.current .customer-progress-dot {
+  border-color: #5835b3;
+  background: #5835b3;
+  color: #fff;
+}
+.customer-progress-step.current .customer-progress-label {
+  color: #3d2580;
+  font-weight: 650;
+}
+.customer-case-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.4fr) minmax(0,1fr);
+  align-items: start;
+  gap: 22px;
+}
+.customer-case-side {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.customer-timeline {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.customer-timeline-item {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding-bottom: 22px;
+}
+.customer-timeline-item:last-child {
+  padding-bottom: 0;
+}
+.customer-timeline-item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: 2px;
+  width: 2px;
+  background: #dfe3ea;
+}
+.customer-timeline-dot {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px dashed #b8c0cc;
+  background: #fff;
+}
+.customer-timeline-item.done .customer-timeline-dot {
+  border: 2px solid var(--purple);
+  background: var(--purple);
+  color: #fff;
+}
+.customer-timeline-dot .icon {
+  width: 15px;
+  height: 15px;
+}
+.customer-timeline-text {
+  display: grid;
+  gap: 2px;
+  padding-top: 2px;
+}
+.customer-timeline-text span {
+  color: var(--muted);
+}
+.customer-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.customer-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.customer-facts div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.customer-facts dt {
+  color: var(--muted);
+}
+.customer-facts dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.customer-link-list {
+  display: flex;
+  flex-direction: column;
+}
+.customer-link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  border-top: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+.customer-link-row:hover {
+  background: #faf8ff;
+}
+.customer-link-row:hover strong {
+  color: var(--purple);
+  text-decoration: underline;
+}
+.customer-link-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #f1eefb;
+  color: #5b3ea8;
+}
+.customer-link-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+/* คำถามที่พบบ่อย */
+.customer-answers .filter-pills {
+  margin: 14px 0 4px;
+}
+.customer-article-count {
+  margin: 14px 0 4px;
+}
+.customer-article-list {
+  display: flex;
+  flex-direction: column;
+}
+.customer-article {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.customer-article+.customer-article {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.customer-article:hover {
+  border-color: #b9a6ea;
+  border-radius: 12px;
+  background: #faf8ff;
+}
+.customer-article:hover+.customer-article {
+  border-top-color: transparent;
+}
+.customer-article-icon,.customer-ask-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #f1eefb;
+  color: #5b3ea8;
+}
+.customer-article-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.customer-article-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.customer-article-text strong {
+  color: #1e293b;
+}
+.customer-article-excerpt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.customer-article-category {
+  flex-shrink: 0;
+  padding: 1px 9px;
+  border-radius: 20px;
+  background: #eef1f7;
+  color: #475569;
+}
+.customer-article-go {
+  flex-shrink: 0;
+  color: #8b7bb8;
+}
+.customer-ask {
+  margin-top: 22px;
+}
+.customer-ask .card-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.customer-ask p {
+  margin: 2px 0 0;
+}
+.customer-article-page {
+  max-width: 860px;
+}
+.customer-article-page h1 {
+  font-size: 1.75rem;
+  margin: 12px 0 18px;
+}
+.customer-article-page+.customer-ask {
+  max-width: 860px;
+}
+
+/* การแจ้งเตือน */
+.customer-alerts {
+  display: grid;
+  gap: 18px;
+}
+.note-done .note-icon {
+  background: #e3f4ea;
+  color: #1a6340;
+}
+.note-plan .note-icon {
+  background: #e6f0fc;
+  color: #1f4f8f;
+}
+
+/* ตั้งค่าบัญชี */
+.customer-settings {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  align-items: start;
+  gap: 22px;
+}
+.customer-settings .field {
+  margin-bottom: 15px;
+}
+.customer-email {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+.customer-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 0;
+}
+.customer-consent .icon {
+  flex-shrink: 0;
+  color: #1a6340;
+}
+.customer-privacy {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fafbfc;
+}
+.customer-privacy summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+}
+.customer-privacy p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+/* One task on its own page, opened from an email: confirm, reset, ask for a reset link. */
+.customer-link-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+.customer-link-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.customer-link-org {
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  color: #4b5563;
+}
+.customer-center {
+  text-align: center;
+}
+.customer-center .card-body {
+  padding: 30px 28px;
+}
+.customer-center h1 {
+  font-size: 1.5rem;
+  margin: 12px 0 8px;
+}
+.customer-center p {
+  color: #475569;
+}
+.customer-center .field {
+  margin-bottom: 15px;
+  text-align: left;
+}
+.customer-center-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1eefb;
+  color: #5835b3;
+}
+.customer-center-icon .icon {
+  width: 26px;
+  height: 26px;
+}
+.customer-submit {
+  width: 100%;
+  justify-content: center;
+  padding-block: 13px;
+}
+.customer-link-foot {
+  margin-top: 18px;
+  text-align: center;
+}
+.customer-link-foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width:1100px) {
+  .customer-settings,.customer-case-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width:760px) {
+  .customer-stats {
+    grid-template-columns: 1fr;
+  }
+  .customer-new-button span,.customer-new-button {
+    padding-inline: 12px;
+  }
+  .customer-banner {
+    padding: 18px;
+  }
+  .customer-banner h1 {
+    font-size: 1.3rem;
+  }
+  /* On a phone the steps keep their dots and drop the words, so they still fit on one line. */
+  .customer-progress-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+  }
+  .customer-progress-step.current .customer-progress-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+  }
+  .customer-article-excerpt {
+    white-space: normal;
+  }
+  .customer-case-table .customer-updated,.customer-case-table th:last-child {
+    display: none;
+  }
+}
+/* The text-size control goes after the organization name on the one-task pages. */
+main .customer-link-head>.text-size-controls {
+  order: 2;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* One account, many organizations: every chat, case and article says whose it is. */
+.customer-org-badge {
+  display: inline-flex;
+  max-width: 14rem;
+  overflow: hidden;
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: #eef1f7;
+  color: #273142;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.customer-chat-item .inbox-top .customer-org-badge {
+  max-width: 60%;
+}
+.customer-chat-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.customer-category-tag {
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: #475569;
+}
+.customer-chat .conv-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.customer-org-filter {
+  width: 100%;
+}
+.customer-cases-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.customer-cases-tools .customer-org-filter {
+  width: auto;
+  min-width: 12rem;
+}
+.customer-org-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.customer-org-pick select {
+  flex: 1;
+  min-width: 14rem;
+}
+.customer-org-intro {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 15px;
+  padding: 12px 14px;
+  border: 1px solid #e4dcf7;
+  border-radius: 12px;
+  background: #f8f6fe;
+}
+.customer-org-intro p {
+  margin: 0;
+}
+.customer-promise,.customer-ai-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.customer-promise {
+  color: #1a6340;
+  font-weight: 600;
+}
+.customer-promise .icon,.customer-ai-note .icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.customer-survey textarea {
+  width: 100%;
+  margin: 6px 0 8px;
+}
+.star-btn.on {
+  color: #f5a524;
+}
+.star-btn:focus-within {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.customer-survey-comment {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  color: #475569;
+}
+.customer-org-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.customer-org-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.customer-org-list .grow {
+  display: grid;
+  min-width: 0;
+}
+.customer-join-inline {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.customer-join-inline .field {
+  flex: 1;
+  min-width: 12rem;
+  margin-bottom: 0;
+}
+.conv-category {
+  margin-left: 6px;
+}
+/* On wide screens the chat panel has a fixed height: a long new-chat form scrolls inside it. */
+.inbox-detail>.customer-new-chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}

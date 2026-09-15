@@ -85,10 +85,22 @@ src/
 | ทั่วไป | `/login` (`?tab=signup`, `?org=`, `?next=`), `/register`, `/verify-email?token=`, `/check-email`, `/resend-email`, `/oauth/email/callback` |
 | ทีม | `/dashboard`, `/inbox[/id]`, `/tickets[/id]`, `/contacts`, `/knowledge[/id]`, `/reports`, `/contracts[/id]`, `/guides[/id]`, `/automation`, `/audit`, `/trash`, `/settings`, `/notifications` |
 | คอนโซลแพลตฟอร์ม | `/platform/system`, `/platform/organizations`, `/platform/faq`, `/platform/contract-templates`, `/platform/team` |
-| ลูกค้า | `/customer/chats[/new \| /<org>/<id>]`, `/customer/cases[/<org>/<id>]`, `/customer/documents[/<org>/<id>]`, `/customer/billing[/<org>/<id>]`, `/customer/faq[/<id>]`, `/customer/alerts`, `/customer/account` |
+| ลูกค้า | `/customer` (= `/customer/dashboard` ภาพรวมโครงการ), `/customer/chats[/new \| /<org>/<id>]`, `/customer/cases[/<org>/<id>]`, `/customer/documents[/<org>/<id>]` (`?tab=milestones \| drive \| billing …`), `/customer/approvals`, `/customer/billing[/<org>/<id>]`, `/customer/faq[/<id>]`, `/customer/alerts`, `/customer/team`, `/customer/account` |
 | ลูกค้าจากลิงก์อีเมล | `/customer/verify?token=`, `/customer/reset?token=`, `/customer/forgot` |
 
 ลิงก์แบบเดิมที่ส่งไปทางอีเมลแล้ว (`/#tickets/…`, `/#documents/<org>/<id>`, `/#verify=…`) ยังใช้ได้ หน้าแรกแปลงเป็น URL ใหม่ให้ (`lib/routes.ts` → `legacyPath`)
+
+### หน้าลูกค้า: ทีม ขั้นตอนอนุมัติ คลังเอกสาร ภาพรวม และการแจ้งเตือน
+
+| feature (โฟลเดอร์) | หน้าจอ | backend |
+|---|---|---|
+| ทีมของลูกค้า (`features/team/`) | `TeamScreen` (`/customer/team`): เชิญสมาชิกด้วยอีเมลพร้อมบทบาท (ผู้ดูแลร่วม / ผู้ตรวจรับ-อนุมัติ / ฝ่ายการเงิน / ฝ่ายเอกสาร-IT) และโครงการที่เห็น คำเชิญถึงฉัน ทีมที่ฉันอยู่ และขั้นตอนอนุมัติเริ่มต้น (`components/FlowEditor.tsx`) · `ApprovalsScreen` (`/customer/approvals`): งานที่รอฉันตรวจหรืออนุมัติขั้นสุดท้าย | `client_team/` |
+| ขั้นตอนอนุมัติ (`features/contracts/components/ApprovalSteps.tsx`) | ขั้นตอนตรวจบนงานส่งมอบในแท็บงวดงาน และบนหน้าเอกสารที่รอลงนาม ปุ่ม ผ่านการตรวจ / ส่งกลับแก้ไข เมื่อถึงขั้นของฉัน ฝั่งทีมงานเห็นแบบอ่านอย่างเดียว (“ลูกค้ากำลังตรวจ 1/2”) | `client_team/approvals.py` |
+| คลังเอกสาร (`features/drive/`) | แท็บ **คลังเอกสาร** ของโครงการ (`?tab=drive`) ทั้งสองฝั่ง ผ่าน `ProjectDrive.tsx` + `ProjectLinks.drive` โฟลเดอร์ ไฟล์หลายเวอร์ชัน อัปโหลดทีละไฟล์ (ไม่เกิน 5 MB, กติกาใน `features/drive/files.ts`) และโฟลเดอร์อ่านอย่างเดียวจากเอกสารสัญญา งานส่งมอบ และสลิป | `drive/` |
+| ภาพรวมโครงการ (`features/dashboard/CustomerDashboardScreen.tsx`) | งบประมาณ/การชำระเงิน ความคืบหน้าเทียบแผน และ SLA ต่อองค์กร (`GET /api/customer/dashboard`) `BudgetLine` แสดงสรุปงบบนหน้าใบแจ้งหนี้ด้วย | `customers/dashboard.py`, `contracts/health.py` |
+| การแจ้งเตือน (`features/customer/AlertsScreen.tsx`, `components/NotifySettings.tsx`) | ทุกรายการมีปุ่มทำต่อ (`action_label`) รับคำเชิญและขอต่อ MA ได้ในหน้า ตั้งค่าบัญชีมีตารางเหตุการณ์ × อีเมล/LINE และเชื่อม LINE ด้วยรหัส 6 หลักต่อองค์กร | `customers/notify.py`, `customers/line.py` |
+
+สิทธิ์ของสมาชิกทีมมาจาก server (`access: {role, can}` ในเอกสาร และ `can` ในแต่ละแถวของ overview) หน้าจอซ่อนปุ่มตาม `can` ผ่าน `useProject().can(capability)` ส่วน server ตรวจทุกคำขอเอง (`client_team/access.py`)
 
 ## ความปลอดภัย
 

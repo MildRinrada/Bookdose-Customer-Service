@@ -5,6 +5,7 @@ Customers use the main page of the app; ?org=<code> on it connects the organizat
 Emails go out through the platform's verification mailbox (คอนโซลระบบกลาง → จัดการองค์กร → อีเมลยืนยัน). Once it is
 set up a sign-up must confirm its email first; before that, sign-up still works and the account is marked as not
 verified. No SMTP call runs inside a database transaction, and an uncertain delivery is reported rather than repeated."""
+import datetime as dt
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 import json
@@ -20,7 +21,7 @@ from backend.modules.customers.model import CONSENT_VERSION, DEFAULT_CATEGORIES
 from backend.modules.knowledge import repository as knowledge
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants, service as platform
-from backend.utils.dates import after, now
+from backend.utils.dates import after, now, today
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import require
 
@@ -344,6 +345,44 @@ def set_notifications(cd, session, body):
     cd.commit()
 
 
+def notification_settings(cd, session):
+    """What the customer is told and where: every event with email / LINE on or off, whether email can reach them,
+    and the organizations they are connected with whose LINE can send notices (or that they are linked with)."""
+    from backend.modules.customers import notify
+    from backend.modules.customers.model import NOTIFY_EVENTS
+    account = repository.find(cd,session['account_id'])
+    found,_ = _connected(cd,session)
+    joined = set(repository.org_ids(cd,account['id']))
+    lines = []
+    for org in found:
+        if org['id'] not in joined:
+            continue
+        with D.tenant(org['id']) as db:
+            row,link = notify.line_channel(db,org['id']),repository.line_link(db,account['id'])
+        if row or link:
+            lines.append({'org_slug':org['slug'],'org_name':org['name'],'available':bool(row),'linked':bool(link),
+                          'linked_at':link['linked_at'] if link else None,'oa_name':(row['config'].get('display_name') or '') if row else ''})
+    return {'events':[{'key':key,'label':label,'email':notify.wants(account,key,'email'),'line':notify.wants(account,key,'line')}
+                      for key,label,_ in NOTIFY_EVENTS],
+            'email':{'ready':email_ready(cd),'verified':bool(account['email_verified']),'address':account['email']},'line':lines}
+
+
+def save_notification_settings(cd, session, body):
+    """Merge the choices sent ({events: {event: {email, line}}}) into the account's; a chat reply by email is the
+    old notify_email switch, so both settings pages agree."""
+    from backend.modules.customers import notify
+    from backend.modules.customers.model import NOTIFY_EVENTS
+    chosen = schema.notify_prefs_form(body,[key for key,_,_ in NOTIFY_EVENTS])
+    account = repository.find(cd,session['account_id'])
+    prefs = notify.prefs_of(account)
+    for event,channels in chosen.items():
+        if event=='reply' and 'email' in channels:
+            repository.set_notify_email(cd,account['id'],channels.pop('email'))
+        prefs[event] = {**(prefs.get(event) if isinstance(prefs.get(event),dict) else {}),**channels}
+    repository.set_notify_prefs(cd,account['id'],json.dumps(prefs))
+    cd.commit()
+
+
 # Everything the customer has, across the organizations they are connected with
 def _conversations(db, session):
     from backend.modules.automation.service import SURVEY_DAYS
@@ -351,12 +390,30 @@ def _conversations(db, session):
 
 
 WARRANTY_NOTICE_DAYS = 30
+DUE_NOTICE_DAYS = 7
+# The button of each alert (what the customer does next); an approval says which step it is.
+ACTION_LABELS = {'reply':'อ่านและตอบกลับ','survey':'ให้คะแนน','waiting':'ส่งข้อมูลเพิ่ม','done':'ดูเคส','followup':'ดูเคส',
+                 'contract':'ตรวจและลงนาม','contract_done':'ดูเอกสาร','delivery':'ตรวจรับงาน','invoice':'ดูใบแจ้งหนี้',
+                 'invoice_due':'ชำระเงิน','invoice_overdue':'ชำระเงิน','receipt':'ดาวน์โหลดใบเสร็จ','warranty':'ขอต่อสัญญา MA',
+                 'invite':'รับคำเชิญ'}
 
 
-def _alerts(conversations_list, cases, contracts=(), invoices=(), deliveries=()):
-    """Newest first. 'action' marks what waits for the customer (counted on the bell); the rest is news. Worked out
-    from the conversations and cases as they are now, so they clear themselves once the customer has read the reply,
-    answered the survey, or the team moved the case on."""
+def _approval_label(item):
+    if not item['final']:
+        return 'ตรวจและอนุมัติ'
+    return 'อนุมัติรับงาน' if item['target']=='delivery' else 'ลงนาม'
+
+
+def _alerts(conversations_list, cases, contracts=(), invoices=(), approvals=(), invitations=()):
+    """Newest first. 'action' marks what waits for the customer (counted on the bell); the rest is news; every alert
+    has the words of its button (action_label). Worked out from how things are now, so they clear themselves once the
+    customer has read the reply, answered the survey, or the team moved the case on.
+    Contract alerts only reach people who can act on them. Signing a contract and inspecting a delivery come from
+    what waits for this account (approvals = client_team.approvals.waiting_for): without reviewers (steps 0) the
+    decider sees the plain 'contract' / 'delivery' alert as before; with reviewers it is an 'approval' for the
+    reviewer whose turn it is, then for the deciders once every step approved (nobody else meanwhile). The MA renewal
+    needs decide, the finished document documents, invoices billing (the caller passes only those). An unpaid
+    invoice is 'invoice_overdue' past its due date, 'invoice_due' within 7 days of it, else 'invoice'."""
     found = []
     for c in conversations_list:
         base = {'conversation_id':c['id'],'subject':c['subject'],'org_slug':c['org_slug'],'org_name':c['org_name'],'at':c['updated_at']}
@@ -374,36 +431,54 @@ def _alerts(conversations_list, cases, contracts=(), invoices=(), deliveries=())
         if t['next_followup_at'] and t['status'] not in ('resolved','closed'):
             found.append({**base,'kind':'followup','action':False,'at':t['next_followup_at']})
     for c in contracts:
+        can = set(c.get('can') or ('documents','decide'))
         base = {'contract_id':c['id'],'reference':c['reference'],'subject':c['title'],'org_slug':c['org_slug'],'org_name':c['org_name']}
-        if c['status']=='review':
-            found.append({**base,'kind':'contract','action':True,'at':c['updated_at']})
-        elif c['status']=='completed' and (c['completed_at'] or '')>=recent:
+        if c['status']=='completed' and 'documents' in can and (c['completed_at'] or '')>=recent:
             found.append({**base,'kind':'contract_done','action':False,'at':c['completed_at']})
         cover = c.get('coverage') or {}
-        if (not c['renews_id'] and cover.get('state')=='active' and cover['days_left']<=WARRANTY_NOTICE_DAYS
+        if (not c['renews_id'] and 'decide' in can and cover.get('state')=='active' and cover['days_left']<=WARRANTY_NOTICE_DAYS
                 and not c['ma_requested_at']):
             found.append({**base,'kind':'warranty','action':True,'days_left':cover['days_left'],'at':cover['end']+'T00:00:00+00:00'})
-    for d in deliveries:
-        found.append({'contract_id':d['contract_id'],'reference':d['reference'],'subject':d['title'],'org_slug':d['org_slug'],
-                      'org_name':d['org_name'],'kind':'delivery','action':True,'at':d['submitted_at']})
+    for a in approvals:
+        base = {'contract_id':a['contract_id'],'reference':a['reference'],'subject':a['milestone_title'] or a['title'],
+                'org_slug':a['org_slug'],'org_name':a['org_name'],'milestone_id':a['milestone_id'],'action':True,'at':a['at']}
+        if not a['steps']:
+            found.append({**base,'kind':'contract' if a['target']=='contract' else 'delivery'})
+        else:
+            found.append({**base,'kind':'approval','target':a['target'],'step':a['step'],'steps':a['steps'],'final':a['final'],
+                          'action_label':_approval_label(a)})
+    day = dt.date.fromisoformat(today())
     for i in invoices:
         base = {'invoice_id':i['id'],'contract_id':i['contract_id'],'reference':i['reference'],'subject':i['milestone_title'],
                 'total':i['total'],'org_slug':i['org_slug'],'org_name':i['org_name']}
         if i['status']=='unpaid':
-            found.append({**base,'kind':'invoice','action':True,'due_date':i['due_date'],'at':i['issued_at']})
+            left = (dt.date.fromisoformat(i['due_date'][:10])-day).days if i['due_date'] else None
+            kind = 'invoice' if left is None or left>DUE_NOTICE_DAYS else 'invoice_overdue' if left<0 else 'invoice_due'
+            found.append({**base,'kind':kind,'action':True,'due_date':i['due_date'],'days_left':left,'seq':i.get('seq'),'at':i['issued_at']})
         elif i['status']=='paid' and (i['paid_at'] or '')>=recent:
             found.append({**base,'kind':'receipt','action':False,'at':i['paid_at']})
+    for i in invitations:
+        found.append({'invite_id':i['id'],'subject':f"คุณ{i['owner_name']} เชิญคุณเป็น{i['role_label']}",'owner_name':i['owner_name'],
+                      'role_label':i['role_label'],'org_slug':i['org_slug'],'org_name':i['org_name'],'kind':'invite','action':True,
+                      'at':i['invited_at']})
+    for a in found:
+        if 'action_label' not in a:
+            a['action_label'] = ACTION_LABELS[a['kind']]
     found.sort(key=lambda a:a['at'],reverse=True)
     return sorted(found,key=lambda a:not a['action'])
 
 
 def overview(cd, session):
     """The customer's conversations and cases in every organization they are connected with (each marked with its
-    organization), and what the side menu counts and the notifications page lists."""
+    organization), and what the side menu counts and the notifications page lists. Contracts are the ones the account
+    owns or reaches through a client team, each with the owner and the viewer's role and capabilities (can); invoices
+    only of contracts with billing, deliveries only of contracts with decide; invitations wait for the account's email;
+    approval steps waiting for this account (client_team.approvals) come as alerts."""
     found,_ = _connected(cd,session)
     joined = set(repository.org_ids(cd,session['account_id']))
+    from backend.modules.client_team import access, approvals, service as team
     from backend.modules.contracts import project, repository as contracts, schema as contract_schema
-    conversation_rows,case_rows,contract_rows,invoice_rows,delivery_rows = [],[],[],[],[]
+    conversation_rows,case_rows,contract_rows,invoice_rows,delivery_rows,approval_rows = [],[],[],[],[],[]
     for org in found:
         if org['id'] not in joined:
             continue
@@ -411,19 +486,30 @@ def overview(cd, session):
         with D.tenant(org['id']) as db:
             conversation_rows += [{**c,**label} for c in _conversations(db,session)]
             case_rows += [{**schema.case_row(t),**label} for t in repository.cases_of(db,session['account_id'])]
-            contract_rows += [{**c,'reference':contract_schema.reference(c),**label}
-                              for c in project.summaries(db,contracts.of_account(db,session['account_id']))]
+            # Contracts the account owns or reaches through a client team; invoices need billing, deliveries decide.
+            reach = access.accessible(db,session['account_id'])
+            with_can = lambda need:[cid for cid,a in reach.items() if need in a['can']]
+            contract_rows += [{**{k:v for k,v in c.items() if k not in ('account_id','customer_name')},'reference':contract_schema.reference(c),
+                               'owner_id':c['account_id'],'owner_name':c['customer_name'],'role':reach[c['id']]['role'],
+                               'role_label':access.ROLE_LABELS[reach[c['id']]['role']],'can':access.can_list(reach[c['id']]['can']),**label}
+                              for c in project.summaries(db,contracts.sent_with_ids(db,list(reach)))]
+            billed = contracts.invoices_of_contracts(db,with_can('billing'))
+            seqs = repository.milestone_seqs(db,[i['milestone_id'] for i in billed])
             invoice_rows += [{**i,'reference':project.invoice_ref(i['number']),'receipt_reference':project.receipt_ref(i['receipt_number']),
-                              'contract_reference':contract_schema.reference({'kind':i['kind'],'number':i['contract_number']}),**label}
-                             for i in contracts.invoices_of_account(db,session['account_id'])]
-            delivery_rows += [{**d,'reference':contract_schema.reference(d),**label} for d in contracts.deliveries_waiting_for(db,session['account_id'])]
+                              'contract_reference':contract_schema.reference({'kind':i['kind'],'number':i['contract_number']}),
+                              'seq':seqs.get(i['milestone_id']),**label} for i in billed]
+            delivery_rows += [{**d,'reference':contract_schema.reference(d),**label} for d in contracts.deliveries_waiting_in(db,with_can('decide'))]
+            named = {c['id']:c for c in contract_rows if c['org_slug']==org['slug']}
+            approval_rows += [{**a,'reference':named[a['contract_id']]['reference'],'title':named[a['contract_id']]['title'],**label}
+                              for a in approvals.waiting_for(db,session['account_id']) if a['contract_id'] in named]
     conversation_rows.sort(key=lambda c:c['updated_at'],reverse=True)
     case_rows.sort(key=lambda t:t['updated_at'],reverse=True)
     contract_rows.sort(key=lambda c:c['updated_at'],reverse=True)
     invoice_rows.sort(key=lambda i:i['issued_at'],reverse=True)
-    alerts = _alerts(conversation_rows,case_rows,contract_rows,invoice_rows,delivery_rows)
+    invitations = team.invitations(cd,session)
+    alerts = _alerts(conversation_rows,case_rows,contract_rows,invoice_rows,approval_rows,invitations)
     return {'conversations':conversation_rows,'cases':case_rows,'contracts':contract_rows,'invoices':invoice_rows,
-            'deliveries':delivery_rows,'alerts':alerts,'alert_count':sum(a['action'] for a in alerts)}
+            'deliveries':delivery_rows,'alerts':alerts,'alert_count':sum(a['action'] for a in alerts),'invitations':invitations}
 
 
 def faq(cd, session):
@@ -489,31 +575,42 @@ def case_detail(db, session, case_id):
                             repository.case_followups(db,ticket['id']),repository.case_rating(db,ticket['id']))
 
 
-# Email notices of new replies
+# Notices of new replies (email, and LINE when linked)
 def notify_reply(db, conversation_id):
     """A team (or the survey) wrote in a web conversation of an account holder who wants reply emails and whose
-    email is proven: queue one email notice. Called inside the transaction that stored the message."""
+    email is proven, or who wants replies on this organization's LINE and is linked with it: queue one notice.
+    Called inside the transaction that stored the message."""
+    from backend.modules.customers import notify
     conv = conversations.find(db,conversation_id)
     if not conv or conv['channel']!='web' or repository.pending_notification(db,conversation_id):
         return
     owners = repository.owners_of_contact(db,conv['contact_id'])
     if not owners:
         return
+    tenant_id = None
     with D.control() as cd:
         for account_id in owners:
             account = repository.find(cd,account_id)
             if account and account['email_verified'] and account['notify_email']:
                 repository.insert_notification(db,uid(),account_id,conversation_id)
                 return
+            if account and repository.line_link(db,account_id):
+                from backend.modules.channels import repository as channel_repository
+                tenant_id = tenant_id or channel_repository.tenant_id_of(db)
+                if notify.line_wanted(db,tenant_id,account,'reply'):
+                    repository.insert_notification(db,uid(),account_id,conversation_id)
+                    return
 
 
 def send_notices(tenant_id):
-    """Email the customers whose conversations got a reply they have not read on the page within a couple of minutes.
-    The email names the conversation and links to it; it never contains the messages. Returns how many were sent."""
-    due = []
+    """Tell the customers whose conversations got a reply they have not read on the page within a couple of minutes:
+    by email (the platform mailbox) and, when they want it, on the organization's LINE (queued in the notification
+    outbox). The notice names the conversation and links to it; it never contains the messages. Returns how many
+    were emailed or queued for LINE."""
+    from backend.modules.customers import notify
+    due,lines = [],0
     with D.control() as cd:
-        if not email_ready(cd):
-            return 0
+        mail = email_ready(cd)
         cfg,secret,org = platform.registration_config(cd),platform.registration_secret(),tenants.tenant_summary(cd,tenant_id)
         with D.tenant(tenant_id) as db:
             D.begin(db)
@@ -521,8 +618,13 @@ def send_notices(tenant_id):
                 account = repository.find(cd,notice['account_id'])
                 if notice['seen_at'] and notice['seen_at']>=notice['created_at']:
                     repository.finish_notification(db,notice['id'],'seen')
-                elif not account or not account['notify_email']:
-                    repository.finish_notification(db,notice['id'],'off')
+                    continue
+                by_line = notify.line_wanted(db,tenant_id,account,'reply')
+                if by_line and notify.queue_line(cd,db,tenant_id,account['id'],f"{org['name']} ตอบกลับเรื่อง “{notice['subject']}” แล้ว",
+                                                 f"/customer/chats/{org['slug']}/{notice['conversation_id']}",f"reply:{notice['id']}"):
+                    lines += 1
+                if not account or not mail or not account['notify_email']:
+                    repository.finish_notification(db,notice['id'],'line' if by_line else 'off')
                 else:
                     repository.claim_notification(db,notice['id'])
                     due.append({**notice,'email':account['email'],'name':account['name']})
@@ -539,4 +641,4 @@ def send_notices(tenant_id):
                 repository.finish_notification(db,notice['id'],error)
             else:
                 repository.fail_notification(db,notice['id'],error)
-    return len(due)
+    return len(due)+lines

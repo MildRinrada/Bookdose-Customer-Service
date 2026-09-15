@@ -31,10 +31,12 @@ from backend.modules.ai import routes as ai_routes
 from backend.modules.auth import routes as auth_routes
 from backend.modules.automation import routes as automation_routes, service as automation
 from backend.modules.channels import routes as channel_routes
+from backend.modules.client_team import routes as client_team_routes
 from backend.modules.contacts import routes as contact_routes
 from backend.modules.contracts import routes as contract_routes
 from backend.modules.customers import routes as customer_routes
 from backend.modules.conversations import routes as conversation_routes
+from backend.modules.drive import routes as drive_routes
 from backend.modules.knowledge import routes as knowledge_routes
 from backend.modules.organization import routes as organization_routes
 from backend.modules.platform import routes as platform_routes
@@ -48,7 +50,7 @@ from backend.utils.validation import require
 ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *organization_routes.ROUTES,
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
-          *contract_routes.ROUTES]
+          *contract_routes.ROUTES, *client_team_routes.ROUTES, *drive_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 
 

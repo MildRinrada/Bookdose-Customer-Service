@@ -70,6 +70,18 @@ def notifications_form(body):
     return value
 
 
+def notify_prefs_form(body, events):
+    """{event: {'email': bool, 'line': bool}} from {events: {...}}: known events only, either channel may be left out."""
+    chosen = body.get('events')
+    require(isinstance(chosen,dict) and chosen,'ข้อมูลการแจ้งเตือนไม่ถูกต้อง')
+    found = {}
+    for event,channels in chosen.items():
+        require(event in events and isinstance(channels,dict) and channels,'ข้อมูลการแจ้งเตือนไม่ถูกต้อง')
+        require(all(k in ('email','line') and isinstance(v,bool) for k,v in channels.items()),'ข้อมูลการแจ้งเตือนไม่ถูกต้อง')
+        found[event] = dict(channels)
+    return found
+
+
 def password_change_form(body):
     """(current password, new password hash)"""
     return existing_password(body,'current_password'),new_password(body)

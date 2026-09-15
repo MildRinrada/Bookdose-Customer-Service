@@ -1,0 +1,151 @@
+/* The customer's notifications: actionable alerts and notification settings (features/customer). */
+
+/* การแจ้งเตือน: each row is a link to where it is done, plus its button. */
+.note-item.note-actionable {
+  align-items: center;
+}
+.note-link {
+  color: inherit;
+  text-decoration: none;
+}
+.note-link:focus-visible {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.note-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.note-actions .btn {
+  padding: 5px 12px;
+  font-size: .86rem;
+  white-space: nowrap;
+}
+.note-actions .btn .icon {
+  width: 15px;
+  height: 15px;
+}
+@media (max-width: 640px) {
+  .note-item.note-actionable {
+    flex-wrap: wrap;
+  }
+  .note-item.note-actionable .note-side {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-left: 46px;
+  }
+}
+
+/* ตั้งค่าบัญชี → การแจ้งเตือน: events × channels, then LINE per organization. */
+.customer-settings .notify-card {
+  grid-column: 1 / -1;
+}
+.notify-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+.notify-table th,
+.notify-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: normal;
+}
+.notify-table thead th {
+  color: var(--muted);
+  font-size: .86rem;
+}
+.notify-table .notify-check {
+  width: 84px;
+  text-align: center;
+}
+.notify-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+.line-links h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+.line-org-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.line-org {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fafbfc;
+}
+.line-org-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.line-org-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.line-org-body {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+.line-org-body p {
+  margin: 0;
+}
+.line-code-box {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px dashed #b4a0f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.line-code {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: .3em;
+  font-variant-numeric: tabular-nums;
+  color: #3f2a86;
+}
+.line-expiry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.line-expiry .icon {
+  width: 16px;
+  height: 16px;
+}
+.line-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+}

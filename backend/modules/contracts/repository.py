@@ -90,6 +90,47 @@ def deliveries_waiting_for(db, account_id):
         FROM contract_milestones m JOIN contracts c ON c.id=m.contract_id WHERE c.account_id=? AND m.status='submitted' ''',(account_id,))
 
 
+def _marks(ids):
+    return ','.join('?'*len(ids))
+
+
+def sent_with_ids(db, contract_ids):
+    """These contracts, when sent at least once (the ones a customer reaches as owner or through a client team)."""
+    if not contract_ids:
+        return []
+    return rows(db,f'''SELECT c.id,c.number,c.kind,c.title,c.status,c.version,c.updated_at,c.completed_at,c.renews_id,
+        c.delivered_at,c.coverage_start,c.coverage_end,c.ma_requested_at,c.account_id,c.customer_name
+        FROM contracts c WHERE c.id IN ({_marks(contract_ids)}) AND c.version!='' ORDER BY c.updated_at DESC''',tuple(contract_ids))
+
+
+def invoices_of_contracts(db, contract_ids):
+    if not contract_ids:
+        return []
+    return rows(db,f'''SELECT i.id,i.contract_id,i.milestone_id,i.number,i.total,i.status,i.issued_at,i.due_date,i.paid_at,i.receipt_number,
+        c.number AS contract_number,c.kind,c.title,m.title AS milestone_title
+        FROM contract_invoices i JOIN contracts c ON c.id=i.contract_id JOIN contract_milestones m ON m.id=i.milestone_id
+        WHERE c.id IN ({_marks(contract_ids)}) AND i.status!='void' ORDER BY i.issued_at DESC''',tuple(contract_ids))
+
+
+def deliveries_waiting_in(db, contract_ids):
+    """Deliveries of these contracts that nobody has inspected yet."""
+    if not contract_ids:
+        return []
+    return rows(db,f'''SELECT m.id AS milestone_id,m.title,m.submitted_at,c.id AS contract_id,c.number,c.kind,c.title AS contract_title
+        FROM contract_milestones m JOIN contracts c ON c.id=m.contract_id WHERE c.id IN ({_marks(contract_ids)}) AND m.status='submitted' ''',
+                tuple(contract_ids))
+
+
+def member_chat(db, contract_id, account_id):
+    """The conversation id of a client team member's own chat about the document, or None."""
+    row = one(db,'SELECT conversation_id FROM contract_chats WHERE contract_id=? AND account_id=?',(contract_id,account_id))
+    return row['conversation_id'] if row else None
+
+
+def set_member_chat(db, contract_id, account_id, conversation_id):
+    db.execute('INSERT OR REPLACE INTO contract_chats VALUES(?,?,?)',(contract_id,account_id,conversation_id))
+
+
 def find_by_hash(db, document_hash):
     return one(db,"SELECT * FROM contracts WHERE document_hash=? AND status='completed'",(document_hash,))
 

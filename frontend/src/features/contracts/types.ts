@@ -9,6 +9,20 @@ export type MilestoneStatus =
 export type InvoiceStatus = "unpaid" | "submitted" | "paid" | "void";
 export type Party = "org" | "customer" | "system";
 
+/** What a person of the customer side may do on a contract (backend client_team/access.py). */
+export type Capability =
+  "documents" | "billing" | "review" | "decide" | "issues" | "team";
+/** 'owner' is the account the contract was sent to; the others are members of the owner's team. */
+export type ClientRole = "owner" | "manager" | "approver" | "finance" | "technical";
+
+/** The viewer's role on a contract (customer view only). */
+export type ContractAccess = {
+  role: ClientRole;
+  role_label: string;
+  can: Capability[];
+  owner_name: string;
+};
+
 export type Coverage = {
   state: "none" | "waiting" | "active" | "expired";
   start: string | null;
@@ -193,8 +207,10 @@ export type Project = {
   progress: number;
   milestones: ProjectMilestone[];
   deliveries: Delivery[];
+  /** Empty for a customer-side viewer without billing. */
   invoices: ProjectInvoice[];
-  totals: { contract: string; billed: string; paid: string };
+  /** null for a customer-side viewer without billing. */
+  totals: { contract: string; billed: string; paid: string } | null;
   issues: ProjectIssue[];
   coverage: Coverage;
   warranty_days: number;
@@ -203,8 +219,40 @@ export type Project = {
   ma_requested_at: string | null;
   renewals: Renewal[];
   renews: RelatedContract | null;
-  buyer: Buyer;
+  /** null for a customer-side viewer without billing. */
+  buyer: Buyer | null;
 };
+
+/** One step of a customer-side review (backend client_team/approvals.py). */
+export type ApprovalStep = {
+  step: number;
+  account_id: string;
+  name: string;
+  decision: "approved" | "returned" | null;
+  remark: string;
+  decided_at: string | null;
+};
+
+/** A review of a contract version or a delivery round: reviewers in order, then the final decision. */
+export type ApprovalRun = {
+  steps: ApprovalStep[];
+  /** The step that waits (1-based); null once every step approved. */
+  current: number | null;
+  /** The viewer is the reviewer of the step that waits. */
+  my_turn: boolean;
+  /** The viewer may do the final action (accept / sign) once the review is ready. */
+  can_decide: boolean;
+  /** Every step approved: the final action is open. */
+  ready: boolean;
+};
+
+/** The reviews still waiting on a contract (no entry: no reviewers, the decision alone). */
+export type ContractApproval = {
+  contract: ApprovalRun | null;
+  deliveries: Record<string, ApprovalRun>;
+};
+
+export type ReviewDecision = "approved" | "returned";
 
 /** GET /api/contracts/<id> (staff) and GET /api/public/<org>/contracts/<id> (customer). */
 export type ContractDetail = {
@@ -216,6 +264,10 @@ export type ContractDetail = {
   project: Project | null;
   renews: RelatedContract | null;
   events: ContractEvent[];
+  /** The viewer's role and capabilities (customer view only; contract.conversation_id is then the viewer's own chat). */
+  access?: ContractAccess;
+  /** The customer side's reviews still waiting (the team's side sees them read-only). */
+  approval?: ContractApproval;
 };
 
 export type Seller = {

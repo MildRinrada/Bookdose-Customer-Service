@@ -1,0 +1,266 @@
+/* The customer's team and approvals screens (features/team), and the approval-flow pieces shown on documents and
+   project milestones for both sides (.approval-*, .flow-*). */
+
+/* A review's steps */
+.approval-steps {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.approval-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.approval-step .grow {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.approval-step-dot {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #71667c;
+  font-size: .8125rem;
+  font-weight: 700;
+}
+.approval-step-dot .icon {
+  width: 15px;
+  height: 15px;
+}
+.approval-step[data-state="done"] .approval-step-dot {
+  border-color: #bfe5cf;
+  background: #eaf7ef;
+  color: #23784a;
+}
+.approval-step[data-state="current"] .approval-step-dot {
+  border-color: var(--purple);
+  background: var(--purple);
+  color: #fff;
+}
+.approval-step[data-state="returned"] .approval-step-dot {
+  border-color: #f1d3a8;
+  background: #fff4e5;
+  color: #b45309;
+}
+.approval-step[data-state="waiting"] {
+  opacity: .75;
+}
+.approval-remark {
+  margin: 4px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--line);
+  color: #5f5670;
+  font-size: .9375rem;
+  white-space: pre-wrap;
+}
+.approval-box .approval-steps {
+  margin: 6px 0 2px;
+}
+.approval-card .card-body {
+  display: grid;
+  gap: 12px;
+}
+.approval-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.approval-help p {
+  margin: 0;
+  flex: 1 1 22rem;
+}
+
+/* Flow editor */
+.flow-editor {
+  display: grid;
+  gap: 10px;
+}
+.flow-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.flow-step .grow {
+  display: grid;
+  min-width: 0;
+}
+.flow-step .icon-btn:disabled {
+  opacity: .35;
+  cursor: default;
+}
+.flow-up {
+  transform: rotate(180deg);
+}
+.flow-add select {
+  max-width: 26rem;
+}
+.flow-empty {
+  margin: 0;
+}
+.flow-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 20px;
+}
+.flow-kind {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.flow-kind h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.flow-kind > p {
+  margin: 0;
+}
+
+/* Team screen */
+.team-page {
+  display: grid;
+  gap: 20px;
+}
+.team-org {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.team-invites {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.team-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #ebe3f6;
+  border-radius: 12px;
+  background: #faf7ff;
+}
+.team-invite .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 12rem;
+}
+.team-member {
+  display: grid;
+  gap: 2px;
+}
+.team-scope {
+  color: #5f5670;
+  font-size: .9375rem;
+}
+.team-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Invite / member form */
+.role-choices {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+.role-choices legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.role-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.role-choice:has(input:checked) {
+  border-color: var(--purple);
+  background: #faf7ff;
+}
+.role-choice input {
+  margin-top: 4px;
+  accent-color: var(--purple);
+}
+.role-choice .grow {
+  display: grid;
+  gap: 2px;
+}
+.role-can {
+  margin: 2px 0 0;
+  padding-left: 18px;
+  color: #6c6776;
+  font-size: .875rem;
+}
+.scope-projects {
+  display: grid;
+  gap: 6px;
+  max-height: 14rem;
+  margin: 6px 0 0 26px;
+  overflow-y: auto;
+}
+
+/* Approvals screen */
+.approval-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.approval-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+.approval-item .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 14rem;
+}
+.approval-item-title {
+  font-weight: 600;
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .team-actions {
+    justify-content: flex-start;
+  }
+  .scope-projects {
+    margin-left: 0;
+  }
+}

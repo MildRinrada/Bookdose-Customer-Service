@@ -18,7 +18,8 @@ export function DocumentsScreen({ show: requested = '' }: { show?: string }) {
   const router = useRouter();
   const [orgFilter] = useOrgFilter();
   const show = ['', 'open', 'waiting', 'done'].includes(requested) ? requested : '';
-  const list = overview.contracts.filter((x) => !orgFilter || x.org_slug === orgFilter);
+  // Contracts shared through a team where the role cannot open documents (finance) are only in the billing screen.
+  const list = overview.contracts.filter((x) => x.can.includes('documents') && (!orgFilter || x.org_slug === orgFilter));
   const count = (key: string) => list.filter((x) => documentInGroup(x, key)).length;
   const shown = list.filter((x) => documentInGroup(x, show));
 
@@ -77,6 +78,7 @@ export function DocumentsScreen({ show: requested = '' }: { show?: string }) {
                         </Link>
                         <span className="customer-case-id">
                           {contractKindLabels[x.kind]} {x.reference}
+                          {x.role !== 'owner' && ` · ของ ${x.owner_name} · ${x.role_label}`}
                         </span>
                       </td>
                       <td>

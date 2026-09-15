@@ -11,7 +11,13 @@ notices are emailed to it.
 
 Each organization's database keeps what the account is there: its own contact (customer_members), every contact whose
 web conversations the account may read (customer_contacts), what the customer has read, the reply notices waiting
-to be emailed, and the category the customer chose for a conversation. Staff of one organization never see another's."""
+to be emailed, and the category the customer chose for a conversation. Staff of one organization never see another's.
+
+Notifications: customer_accounts.notify_prefs = {event: {email: bool, line: bool}} (only what the customer changed;
+NOTIFY_EVENTS gives the defaults). LINE belongs to the organization's official account, so the link between an account
+and a LINE user is per organization (customer_line_links), made by sending a 6-digit code (customer_line_codes, stored
+hashed, 10 minutes) to the organization's LINE; customer_line_guesses counts wrong codes per LINE user. Every notice
+to send waits in customer_alert_outbox (dedup_key makes a reminder go out once) until the automation worker sends it."""
 
 CONSENT_VERSION = '2026-09'
 
@@ -24,7 +30,7 @@ CREATE TABLE IF NOT EXISTS customer_accounts (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, phone TEXT NOT NULL DEFAULT '',
     password TEXT NOT NULL, consent_version TEXT NOT NULL, consent_at TEXT NOT NULL, verified_at TEXT NOT NULL,
     created_at TEXT NOT NULL, last_login_at TEXT, email_verified INTEGER NOT NULL DEFAULT 1,
-    notify_email INTEGER NOT NULL DEFAULT 1
+    notify_email INTEGER NOT NULL DEFAULT 1, notify_prefs TEXT NOT NULL DEFAULT '{}'
 );
 CREATE TABLE IF NOT EXISTS customer_signups (
     token_hash TEXT PRIMARY KEY, email TEXT NOT NULL, name TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '',
@@ -60,6 +66,35 @@ CREATE TABLE IF NOT EXISTS customer_notifications (
 CREATE TABLE IF NOT EXISTS conversation_categories (
     conversation_id TEXT PRIMARY KEY, category TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS customer_line_links (
+    account_id TEXT PRIMARY KEY, line_user_id TEXT NOT NULL UNIQUE, linked_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS customer_line_codes (
+    code_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, expires_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS customer_line_guesses (
+    line_user_id TEXT PRIMARY KEY, failures INTEGER NOT NULL DEFAULT 0, since TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS customer_alert_outbox (
+    id TEXT PRIMARY KEY, account_id TEXT NOT NULL, channel TEXT NOT NULL CHECK(channel IN ('email','line')),
+    subject TEXT NOT NULL, text TEXT NOT NULL, link TEXT NOT NULL DEFAULT '', dedup_key TEXT UNIQUE,
+    created_at TEXT NOT NULL, next_at TEXT NOT NULL, sent_at TEXT, attempts INTEGER NOT NULL DEFAULT 0, error TEXT NOT NULL DEFAULT ''
+);
 CREATE INDEX IF NOT EXISTS customer_contacts_contact ON customer_contacts(contact_id);
 CREATE INDEX IF NOT EXISTS customer_notifications_pending ON customer_notifications(sent_at,created_at);
+CREATE INDEX IF NOT EXISTS customer_line_codes_account ON customer_line_codes(account_id);
+CREATE INDEX IF NOT EXISTS customer_alert_outbox_due ON customer_alert_outbox(sent_at,next_at);
 '''
+
+# Columns added to the control tables after the first release (customers.migrate.control_columns adds them).
+ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFAULT '{}'"}}
+
+# What a customer can be told about, in the order the settings table lists them: (key, label, emailed by default).
+# LINE is on for every event once the account is linked with the organization's LINE. 'reply' by email is the old
+# notify_email switch; 'drive' (every new file) is off by email until the customer turns it on.
+NOTIFY_EVENTS = (('contract_review','เอกสารรอตรวจและลงนาม',True),('contract_done','เอกสารลงนามครบแล้ว',True),
+                 ('approval','งานรอคุณตรวจหรืออนุมัติ',True),('delivery','งานส่งมอบรอตรวจรับ',True),
+                 ('invoice','ใบแจ้งหนี้ใหม่',True),('invoice_due','เตือนครบกำหนดชำระ',True),('receipt','ยืนยันรับชำระ/ใบเสร็จ',True),
+                 ('warranty','การรับประกัน/MA ใกล้หมด',True),('drive','ไฟล์ใหม่ในคลังเอกสาร',False),
+                 ('team','คำเชิญและการเปลี่ยนบทบาทในทีม',True),('reply','ทีมงานตอบกลับในแชท',True))

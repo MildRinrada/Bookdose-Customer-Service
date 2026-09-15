@@ -16,6 +16,10 @@ import {
   CONTRACTS_PREFIX,
   reviseContract,
 } from "./api";
+import {
+  ApprovalSteps,
+  approvalHeadline,
+} from "./components/ApprovalSteps";
 import { ContractDocument } from "./components/ContractDocument";
 import { ContractEditor } from "./components/ContractEditor";
 import { ContractSignBox } from "./components/ContractSignBox";
@@ -115,6 +119,8 @@ function ContractDetailView({ data }: { data: ContractDetail }) {
   const admin = work.role === "admin";
   const version = d?.version || c.version || "";
   const links = orgProjectLinks(c.id);
+  // The customer side's reviewers of the version under review (read-only here).
+  const review = c.status === "review" ? (data.approval?.contract ?? null) : null;
 
   const actions: ReactNode[] = [];
   if (!editable && ["review", "changes", "awaiting_org"].includes(c.status))
@@ -212,6 +218,19 @@ function ContractDetailView({ data }: { data: ContractDetail }) {
           )}
         </div>
         <aside className="contract-side no-print">
+          {review && (
+            <section className="card approval-card">
+              <div className="card-header">
+                <div>
+                  <h2>ขั้นตอนอนุมัติของลูกค้า</h2>
+                  <p>{approvalHeadline(review, "org")}</p>
+                </div>
+              </div>
+              <div className="card-body">
+                <ApprovalSteps run={review} finalLabel="ลูกค้าลงนาม" />
+              </div>
+            </section>
+          )}
           <section className="card">
             <div className="card-header">
               <h2>เวอร์ชัน</h2>

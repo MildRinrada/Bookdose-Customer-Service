@@ -16,6 +16,7 @@ import json
 from decimal import ROUND_HALF_UP, Decimal
 
 from backend.database import audit, db as D
+from backend.modules.client_team import approvals
 from backend.modules.contracts import repository, schema, service
 from backend.modules.organization import repository as organization
 from backend.utils import promptpay, qrcode, thaibaht
@@ -209,7 +210,8 @@ def _tell_invoice(cd, org, contract, invoice_id, db):
     invoice = repository.find_invoice_by_id(db,invoice_id)
     service._notify_customer(cd,org,contract,f"ใบแจ้งหนี้ {invoice_ref(invoice['number'])} จาก {org['name']}",
                              f"ยอดชำระ {schema.money(invoice['total']):,.2f} บาท ครบกำหนด {invoice['due_date']}\n"
-                             'ดูช่องทางชำระเงิน QR พร้อมเพย์ และแนบสลิปได้ที่:')
+                             'ดูช่องทางชำระเงิน QR พร้อมเพย์ และแนบสลิปได้ที่:',
+                             'invoice','billing',f"/customer/billing/{org['slug']}/{invoice['id']}")
 
 
 def invoice_view(db, contract, invoice):
@@ -250,7 +252,8 @@ def set_progress(db, ctx, contract_id, milestone_id, body):
 
 
 def deliver(cd, db, ctx, org, contract_id, milestone_id, body, ip):
-    """Send a milestone's work for the customer to inspect (a new round after a rejection)."""
+    """Send a milestone's work for the customer to inspect (a new round after a rejection). The customer side's
+    delivery approval flow in force is fixed for this round (client_team/approvals.py)."""
     contract = _staff_contract(db,ctx,contract_id)
     milestone = _milestone(db,contract,milestone_id)
     require(milestone['kind']=='delivery' and milestone['status'] in ('pending','in_progress','revision'),'งวดนี้ส่งมอบไม่ได้ในตอนนี้',409)
@@ -263,10 +266,15 @@ def deliver(cd, db, ctx, org, contract_id, milestone_id, body, ip):
                                hashlib.sha256(content).hexdigest(),ctx['name'],delivery_id)
     repository.update_milestone(db,milestone['id'],status='submitted',progress=100,submitted_at=now(),started_at=milestone['started_at'] or now())
     repository.add_event(db,contract['id'],contract['version'],'org',ctx['name'],'delivered',f"{milestone['title']} · รอบที่ {number}",ip)
+    reviewers = approvals.start(cd,db,contract,'delivery',delivery_id,milestone['id'])
     db.commit()
-    service._notify_customer(cd,org,contract,f"งาน “{milestone['title']}” พร้อมให้ตรวจรับ",
-                             f"{org['name']} ส่งมอบงาน “{milestone['title']}” (รอบที่ {number}) ให้คุณตรวจรับ\n"
-                             'ตรวจงานแล้วกดอนุมัติรับงาน หรือส่งกลับแก้ไขพร้อมหมายเหตุได้ที่:')
+    # Only people who can act: with reviewers, the first one now (the deciders once every step approved), else the deciders.
+    if reviewers:
+        approvals.tell_turn(cd,db,org,contract,'delivery',delivery_id)
+    else:
+        service._notify_customer(cd,org,contract,f"งาน “{milestone['title']}” พร้อมให้ตรวจรับ",
+                                 f"{org['name']} ส่งมอบงาน “{milestone['title']}” (รอบที่ {number}) ให้คุณตรวจรับ\n"
+                                 'ตรวจงานแล้วกดอนุมัติรับงาน หรือส่งกลับแก้ไขพร้อมหมายเหตุได้ที่:','delivery','decide')
     return delivery_id
 
 
@@ -305,7 +313,8 @@ def confirm_payment(cd, db, ctx, org, contract_id, invoice_id, ip):
     audit.record(db,ctx['name'],'invoice.paid',invoice['id'],receipt_ref(receipt))
     db.commit()
     service._notify_customer(cd,org,contract,f"ได้รับชำระเงินแล้ว · ใบเสร็จ {receipt_ref(receipt)}",
-                             f"{org['name']} ยืนยันการชำระ {invoice_ref(invoice['number'])} แล้ว ดาวน์โหลดใบเสร็จได้ที่:")
+                             f"{org['name']} ยืนยันการชำระ {invoice_ref(invoice['number'])} แล้ว ดาวน์โหลดใบเสร็จได้ที่:",
+                             'receipt','billing',f"/customer/billing/{org['slug']}/{invoice['id']}?view=receipt")
     return receipt_ref(receipt)
 
 
@@ -331,19 +340,23 @@ def void_invoice(db, ctx, contract_id, invoice_id, body, ip):
 
 
 # The customer
-def _customer_contract(db, session, contract_id):
-    contract = service._owned(db,session,contract_id)
+def _customer_contract(db, session, contract_id, need='documents'):
+    """A completed contract the customer side may act on with the capability `need` (see service._owned)."""
+    contract = service._owned(db,session,contract_id,need)
     _completed(contract)
     return contract
 
 
 def accept(db, org, session, contract_id, milestone_id, body, ip):
-    """อนุมัติรับงาน: the milestone is done, billed when it has an amount, and the warranty starts with the last one."""
-    contract = _customer_contract(db,session,contract_id)
+    """อนุมัติรับงาน (decide), once every reviewer of the round's approval flow approved it: the milestone is done,
+    billed when it has an amount, and the warranty starts with the last one."""
+    contract = _customer_contract(db,session,contract_id,'decide')
     milestone = _milestone(db,contract,milestone_id)
     require(milestone['status']=='submitted','งวดนี้ไม่มีงานรอตรวจรับ',409)
     note = schema.remark(body,False)
     delivery = repository.pending_delivery(db,milestone['id'])
+    if delivery:
+        approvals.require_ready(db,'delivery',delivery['id'])
     D.begin(db)
     if delivery:
         repository.decide_delivery(db,delivery['id'],'accepted',note,session['name'])
@@ -361,13 +374,20 @@ def accept(db, org, session, contract_id, milestone_id, body, ip):
 
 
 def reject(cd, db, org, session, contract_id, milestone_id, body, ip):
-    """ส่งกลับแก้ไข: the remark is kept with the round and written in the document's chat for the team."""
-    contract = _customer_contract(db,session,contract_id)
+    """ส่งกลับแก้ไข (decide): the remark is kept with the round and written in the document's chat for the team."""
+    contract = _customer_contract(db,session,contract_id,'decide')
     milestone = _milestone(db,contract,milestone_id)
     require(milestone['status']=='submitted','งวดนี้ไม่มีงานรอตรวจรับ',409)
     text = schema.remark(body,True)
-    delivery = repository.pending_delivery(db,milestone['id'])
     D.begin(db)
+    return send_back(cd,db,org,session,contract,milestone,text,ip)
+
+
+def send_back(cd, db, org, session, contract, milestone, text, ip):
+    """The pending round goes back to the team (inside the caller's transaction, committed here; also a reviewer's
+    'ส่งกลับแก้ไข', see client_team/approvals.py): the round is rejected with the remark, the milestone is in
+    revision, and the remark is written in the person's document chat; returns that conversation id."""
+    delivery = repository.pending_delivery(db,milestone['id'])
     if delivery:
         repository.decide_delivery(db,delivery['id'],'rejected',text,session['name'])
     repository.update_milestone(db,milestone['id'],status='revision',progress=90)
@@ -377,7 +397,7 @@ def reject(cd, db, org, session, contract_id, milestone_id, body, ip):
 
 
 def customer_invoice(db, session, contract_id, invoice_id):
-    contract = service._owned(db,session,contract_id)
+    contract = service._owned(db,session,contract_id,'billing')
     invoice = _invoice(db,contract,invoice_id)
     require(invoice['status']!='void','ไม่พบใบแจ้งหนี้',404)
     return invoice_view(db,contract,invoice)
@@ -390,7 +410,7 @@ def customer_invoice_by_id(db, session, invoice_id):
 
 
 def upload_slip(db, session, tenant_id, contract_id, invoice_id, body, ip):
-    contract = service._owned(db,session,contract_id)
+    contract = service._owned(db,session,contract_id,'billing')
     invoice = _invoice(db,contract,invoice_id)
     require(invoice['status'] in ('unpaid','submitted'),'ใบแจ้งหนี้นี้ไม่ได้รอชำระ',409)
     name,mime,content = schema.uploads(body,1)[0]
@@ -404,7 +424,7 @@ def upload_slip(db, session, tenant_id, contract_id, invoice_id, body, ip):
 
 def save_buyer(db, session, contract_id, body):
     """The name, address and tax ID the customer wants on receipts (receipts already issued keep theirs)."""
-    contract = service._owned(db,session,contract_id)
+    contract = service._owned(db,session,contract_id,'billing')
     repository.set_fields(db,contract['id'],billing=json.dumps(schema.buyer(body),ensure_ascii=False))
     db.commit()
 
@@ -414,7 +434,7 @@ def open_issue(cd, db, org, session, contract_id, body, ip):
     from backend.modules.conversations import repository as conversations
     from backend.modules.customers import service as customers
     from backend.modules.tickets import service as tickets
-    contract = _customer_contract(db,session,contract_id)
+    contract = _customer_contract(db,session,contract_id,'issues')
     milestones = {m['id']:m for m in repository.milestones(db,contract['id'])}
     kind,milestone_id,subject,text = schema.issue(body,set(milestones))
     where = f" · {milestones[milestone_id]['title']}" if milestone_id else ''
@@ -432,8 +452,8 @@ def open_issue(cd, db, org, session, contract_id, body, ip):
 
 
 def request_renewal(cd, db, org, session, contract_id, body, ip):
-    """ขอต่อสัญญา MA: noted on the project and written in its chat; the team then sends an MA contract to sign."""
-    contract = _customer_contract(db,session,contract_id)
+    """ขอต่อสัญญา MA (decide): noted on the project and written in its chat; the team then sends an MA contract to sign."""
+    contract = _customer_contract(db,session,contract_id,'decide')
     project = repository.find(db,contract['renews_id']) if contract['renews_id'] else contract
     require(project['delivered_at'],'ขอต่อสัญญา MA ได้หลังส่งมอบงานครบทุกงวด',409)
     require(not project['ma_requested_at'],'ส่งคำขอต่อ MA แล้ว ทีมงานกำลังเตรียมสัญญา',409)

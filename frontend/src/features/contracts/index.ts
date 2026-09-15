@@ -2,6 +2,11 @@
    side, the invoice page, the template form (platform console), the billing settings panel (settings) and the
    labels. The customer feature builds its screens on these with customerProjectLinks() and its own handlers. */
 
+export {
+  ApprovalSteps,
+  approvalHeadline,
+  ReviewButtons,
+} from "./components/ApprovalSteps";
 export { ContractDocument } from "./components/ContractDocument";
 export { ContractSignBox } from "./components/ContractSignBox";
 export {

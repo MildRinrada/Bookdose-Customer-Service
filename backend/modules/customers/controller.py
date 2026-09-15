@@ -2,7 +2,7 @@
 signed-in customer on 'customer-account' routes. What a customer does inside one organization (chats, cases) is in
 backend/modules/portal (/api/public/<organization code>/...)."""
 from backend.middleware.rate_limit import limited
-from backend.modules.customers import service
+from backend.modules.customers import dashboard as project_dashboard, line, service
 
 
 def _cookie(req, token, max_age):
@@ -81,6 +81,32 @@ def update_notifications(req):
     return req.send(200,{'ok':True})
 
 
+def notification_settings(req):
+    return req.send(200,service.notification_settings(req.cd,req.customer))
+
+
+def save_notification_settings(req):
+    service.save_notification_settings(req.cd,req.customer,req.body)
+    return req.send(200,service.notification_settings(req.cd,req.customer))
+
+
+# LINE of one organization (/api/public/<code>/line: req.org, req.db)
+def line_status(req):
+    return req.send(200,line.status(req.db,req.org,req.customer))
+
+
+def line_code(req):
+    # A code is a guessable secret while it lives: few per account and address.
+    _limit(req,'customer-line',10)
+    limited(('customer-line',req.customer['account_id']),5,900)
+    return req.send(201,line.new_code(req.db,req.org,req.customer))
+
+
+def line_unlink(req):
+    line.unlink(req.db,req.customer)
+    return req.send(200,{'ok':True})
+
+
 def my_organizations(req):
     return req.send(200,{'organizations':service.organizations(req.cd,req.customer)})
 
@@ -92,6 +118,10 @@ def join_organization(req):
 
 def overview(req):
     return req.send(200,service.overview(req.cd,req.customer))
+
+
+def dashboard(req):
+    return req.send(200,project_dashboard.build(req.cd,req.customer))
 
 
 def faq(req):

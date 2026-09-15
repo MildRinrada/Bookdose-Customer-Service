@@ -4,3 +4,6 @@
 export const OVERVIEW_PREFIX = '/api/automation/overview';
 
 export const overviewPath = () => `${OVERVIEW_PREFIX}?tz=${new Date().getTimezoneOffset()}`;
+
+/** The customer's project overview (customers/dashboard.py build): budget, project health and service levels. */
+export const CUSTOMER_DASHBOARD_PATH = '/api/customer/dashboard';

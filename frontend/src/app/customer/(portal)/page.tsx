@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// /customer on its own opens the chats, like the old #chats default.
+// /customer on its own opens the project overview (the customer's landing page).
 export default function Page() {
-  redirect('/customer/chats');
+  redirect('/customer/dashboard');
 }

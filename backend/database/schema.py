@@ -6,10 +6,12 @@ from backend.modules.ai import model as ai
 from backend.modules.auth import model as auth
 from backend.modules.automation import model as automation
 from backend.modules.channels import model as channels
+from backend.modules.client_team import model as client_team
 from backend.modules.contacts import model as contacts
 from backend.modules.contracts import model as contracts
 from backend.modules.customers import model as customers
 from backend.modules.conversations import model as conversations
+from backend.modules.drive import model as drive
 from backend.modules.knowledge import model as knowledge
 from backend.modules.organization import model as organization
 from backend.modules.platform import model as platform
@@ -17,14 +19,16 @@ from backend.modules.tickets import model as tickets
 from backend.modules.trash import model as trash
 
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
-                  customers.CONTROL_TABLES, contracts.CONTROL_TABLES, audit.TABLE)
+                  customers.CONTROL_TABLES, contracts.CONTROL_TABLES, client_team.CONTROL_TABLES, audit.TABLE)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
 
 def create_control_tables(db):
+    from backend.modules.customers import migrate as customer_migrate
     for script in CONTROL_TABLES:
         db.executescript(script)
+    customer_migrate.control_columns(db)
 
 
 def create_tenant_tables(db):
@@ -44,6 +48,8 @@ def upgrade_tenant(db):
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',automation.DEFAULT_SETTINGS)
     db.executescript(customers.TENANT_TABLES)
     db.executescript(contracts.TENANT_TABLES)
+    db.executescript(client_team.TENANT_TABLES)
+    db.executescript(drive.TENANT_TABLES)
     db.execute('INSERT OR IGNORE INTO settings VALUES(?,?)',('customer_categories',json.dumps(customers.DEFAULT_CATEGORIES,ensure_ascii=False)))
     if 'comment' not in {row[1] for row in db.execute('PRAGMA table_info(csat_surveys)')}:
         db.execute("ALTER TABLE csat_surveys ADD COLUMN comment TEXT NOT NULL DEFAULT ''")

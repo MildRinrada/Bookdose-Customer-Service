@@ -20,6 +20,8 @@ export type ProjectLinks = {
   file: (fileId: string) => string;
   /** API address of the document (signing calls append /otp and /sign). */
   base: string;
+  /** API address of the project's drive (folders, files, versions). */
+  drive: string;
 };
 
 const withTab = (base: string, tab?: string) =>
@@ -36,6 +38,7 @@ export function orgProjectLinks(contractId: string): ProjectLinks {
     issue: (ticketId) => `/tickets/${ticketId}`,
     file: (fileId) => `/api/contracts/${contractId}/files/${fileId}`,
     base: `/api/contracts/${contractId}`,
+    drive: `/api/contracts/${contractId}/drive`,
   };
 }
 
@@ -54,5 +57,6 @@ export function customerProjectLinks(
     file: (fileId) =>
       `/api/public/${slug}/contracts/${contractId}/files/${fileId}`,
     base: `/api/public/${slug}/contracts/${contractId}`,
+    drive: `/api/public/${slug}/contracts/${contractId}/drive`,
   };
 }

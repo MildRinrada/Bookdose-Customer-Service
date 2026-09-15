@@ -1,19 +1,120 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ErrorState, PageLoading } from '@/components/ui/display';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { FormActions, SelectField, TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { customerContractApi, ProjectReasonForm, type ProjectHandlers, type SignedContract } from '@/features/contracts';
-import type { Buyer, Project } from '@/features/contracts/types';
+import type { Buyer, Project, ReviewDecision } from '@/features/contracts/types';
+import { APPROVALS_PATH, projectFlowPath, saveProjectFlow } from '@/features/team/api';
+import { FlowEditor } from '@/features/team/components/FlowEditor';
+import { flowKindHints, flowKindLabels } from '@/features/team/labels';
+import type { FlowKind, ProjectFlowView } from '@/features/team/types';
 import { baht } from '@/lib/format';
-import { useInvalidate } from '@/lib/query';
+import { useApi, useInvalidate } from '@/lib/query';
 import { OVERVIEW_PATH } from '../api';
 
 /* The customer's forms on a contract and its project (pages/contracts/customer-document-ask.html, buyer-form.html,
-   project-issue-form.html) and the handlers the shared <ProjectPage> calls (the old project-customer.js). */
+   project-issue-form.html), a reviewer's decision and the owner's approval flows of one project, and the handlers
+   the shared <ProjectPage> calls (the old project-customer.js). */
+
+/** ผ่านการตรวจ (remark optional) / ส่งกลับแก้ไข (remark required) on the viewer's step of an approval flow. */
+export function ReviewForm({
+  decision,
+  what,
+  onSend,
+}: {
+  decision: ReviewDecision;
+  /** What is reviewed, e.g. งาน “ออกแบบระบบ”. */
+  what: string;
+  onSend: (remark: string) => Promise<unknown>;
+}) {
+  const back = decision === 'returned';
+  return (
+    <ProjectReasonForm
+      name="remark"
+      required={back}
+      max={2000}
+      label={back ? `สิ่งที่ต้องแก้ใน${what}` : `หมายเหตุการตรวจ${what} (ถ้ามี)`}
+      hint={
+        back
+          ? 'ส่งกลับแก้ไขจะจบการตรวจรอบนี้ หมายเหตุไปถึงทีมงานในแชทของคุณ ทีมงานแก้แล้วส่งให้ตรวจใหม่ตั้งแต่ขั้นแรก'
+          : 'ผู้ตรวจขั้นถัดไป (หรือผู้มีสิทธิ์อนุมัติเมื่อครบทุกขั้น) จะได้รับแจ้ง ทั้งสองฝ่ายเห็นผลการตรวจในความเคลื่อนไหว'
+      }
+      submitLabel={back ? 'ส่งกลับแก้ไข' : 'ผ่านการตรวจ'}
+      onSubmit={onSend}
+    />
+  );
+}
+
+type FlowChoice = { use_default: boolean; steps: string[] };
+const FLOW_KINDS: FlowKind[] = ['delivery', 'contract'];
+
+/** The owner's approval flows of one project: the defaults from ทีมของฉัน, or its own list per kind. */
+export function ProjectFlowForm({ slug, contractId }: { slug: string; contractId: string }) {
+  const path = projectFlowPath(slug, contractId);
+  const q = useApi<ProjectFlowView>(path);
+  if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
+  if (!q.data) return <PageLoading />;
+  return <ProjectFlowFields key={q.dataUpdatedAt} slug={slug} contractId={contractId} data={q.data} />;
+}
+
+function ProjectFlowFields({ slug, contractId, data }: { slug: string; contractId: string; data: ProjectFlowView }) {
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const [flows, setFlows] = useState<Record<FlowKind, FlowChoice>>({ delivery: data.delivery, contract: data.contract });
+  const names = (ids: string[]) =>
+    ids.map((id) => data.reviewers.find((r) => r.account_id === id)?.name).filter(Boolean).join(' → ') || 'ไม่มีผู้ตรวจ';
+  const set = (kind: FlowKind, next: Partial<FlowChoice>) => setFlows((f) => ({ ...f, [kind]: { ...f[kind], ...next } }));
+  return (
+    <Form
+      onSubmit={async () => {
+        for (const kind of FLOW_KINDS) await saveProjectFlow(slug, contractId, { kind, ...flows[kind] });
+        closeModal(true);
+        toast('บันทึกขั้นตอนอนุมัติของโครงการแล้ว ใช้กับงานที่ส่งมาหลังจากนี้');
+        await refresh(projectFlowPath(slug, contractId));
+      }}
+    >
+      <p className="muted">ขั้นตอนที่กำลังตรวจอยู่ไม่เปลี่ยน การตั้งค่านี้ใช้กับงานส่งมอบรอบถัดไปและเอกสารเวอร์ชันถัดไป (รวมสัญญา MA ของโครงการ)</p>
+      <div className="flow-kinds">
+        {FLOW_KINDS.map((kind) => (
+          <fieldset key={kind} className="flow-kind">
+            <legend>
+              <strong>{flowKindLabels[kind]}</strong>
+            </legend>
+            <p className="tiny muted">{flowKindHints[kind]}</p>
+            <label className="check">
+              <input type="radio" name={`${kind}-mode`} checked={flows[kind].use_default} onChange={() => set(kind, { use_default: true })} />
+              <span>ใช้ขั้นตอนเริ่มต้นจากทีมของฉัน ({names(data.default[kind])})</span>
+            </label>
+            <label className="check">
+              <input
+                type="radio"
+                name={`${kind}-mode`}
+                checked={!flows[kind].use_default}
+                onChange={() => set(kind, { use_default: false, steps: flows[kind].use_default ? data.default[kind] : flows[kind].steps })}
+              />
+              <span>กำหนดเฉพาะโครงการนี้</span>
+            </label>
+            {!flows[kind].use_default && (
+              <FlowEditor
+                label={flowKindLabels[kind]}
+                reviewers={data.reviewers}
+                value={flows[kind].steps}
+                onChange={(steps) => set(kind, { steps })}
+              />
+            )}
+          </fieldset>
+        ))}
+      </div>
+      <FormActions label="บันทึกขั้นตอนอนุมัติ" onCancel={() => closeModal()} />
+    </Form>
+  );
+}
 
 type ContractApi = ReturnType<typeof customerContractApi>;
 
@@ -115,8 +216,9 @@ function IssueForm({ project, onSave }: { project: Project; onSave: (issue: Issu
   );
 }
 
-/** The customer's handlers for <ProjectPage>: accept or send back a delivery, the buyer's details, a problem or
-    change request, and asking for an MA contract. Every write refreshes the project and the overview. */
+/** The customer's handlers for <ProjectPage>: accept or send back a delivery, a reviewer's decision, the owner's
+    approval flows of the project, the buyer's details, a problem or change request, and asking for an MA contract.
+    Every write refreshes the project, the overview and what waits for approval. */
 export function useCustomerProjectHandlers(slug: string, data: SignedContract): ProjectHandlers {
   const { openModal, closeModal, confirm } = useDialogs();
   const toast = useToast();
@@ -125,8 +227,23 @@ export function useCustomerProjectHandlers(slug: string, data: SignedContract): 
   const contractId = data.contract.id;
   return useMemo<ProjectHandlers>(() => {
     const docApi: ContractApi = customerContractApi(slug, contractId);
-    const reload = () => refresh(docApi.path, OVERVIEW_PATH);
+    const reload = () => refresh(docApi.path, OVERVIEW_PATH, APPROVALS_PATH);
     return {
+      review: (m, decision) =>
+        openModal(
+          decision === 'approved' ? 'ผ่านการตรวจ' : 'ส่งกลับแก้ไข',
+          <ReviewForm
+            decision={decision}
+            what={`งาน “${m.title}”`}
+            onSend={async (remark) => {
+              await docApi.reviewDelivery(m.id, decision, remark);
+              closeModal(true);
+              toast(decision === 'approved' ? 'บันทึกผลการตรวจแล้ว ผู้ตรวจขั้นถัดไปได้รับแจ้ง' : 'ส่งกลับแก้ไขแล้ว ทีมงานได้รับหมายเหตุในแชท');
+              await reload();
+            }}
+          />,
+        ),
+      editFlow: () => openModal('ขั้นตอนอนุมัติของโครงการนี้', <ProjectFlowForm slug={slug} contractId={contractId} />, { wide: true }),
       accept: (m) =>
         confirm({
           title: 'อนุมัติรับงาน',
@@ -160,6 +277,8 @@ export function useCustomerProjectHandlers(slug: string, data: SignedContract): 
           />,
         ),
       editBuyer: () =>
+        // Without billing the server sends no buyer (and the billing tab is hidden).
+        data.project.buyer &&
         openModal(
           'ข้อมูลใบเสร็จ/ใบกำกับภาษี',
           <BuyerForm

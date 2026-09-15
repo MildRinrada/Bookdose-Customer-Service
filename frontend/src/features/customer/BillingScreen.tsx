@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/ui/display';
 import { FilterPill } from '@/components/ui/filters';
 import { invoiceStatusLabels, invoiceStatusTones } from '@/features/contracts';
+import { BudgetLine } from '@/features/dashboard/components/BudgetLine';
 import { baht, date } from '@/lib/format';
 import { OrgFilter } from './components/common';
 import { useOrgFilter, useOverview } from './hooks';
@@ -31,6 +32,7 @@ export function BillingScreen({ show: requested = '' }: { show?: string }) {
           <p>ทุกโครงการ ทุกองค์กร · ค้างชำระ {outstanding}</p>
         </div>
       </div>
+      <BudgetLine org={orgFilter} />
       <section className="card customer-cases">
         <div className="card-header">
           <div>

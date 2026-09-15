@@ -1,6 +1,7 @@
 import { api } from '@/lib/api/client';
 import type { Upload } from '@/lib/files';
 import type { CustomerOrg } from '@/lib/types';
+import type { LineCode, NotificationSettings } from './types';
 
 /* Endpoints of backend/modules/customers (/api/customer/...) and portal (/api/public/<org>/...) used by the signed-in
    customer. Contracts and invoices use customerContractApi() from the contracts feature. */
@@ -33,3 +34,13 @@ export const saveProfile = (body: { name: string; phone: string }) => api<{ ok: 
 export const changePassword = (body: { current_password: string; password: string }) => api<{ ok: true }>('/api/customer/password', body);
 
 export const saveNotifications = (email: boolean) => api<{ ok: true }>('/api/customer/notifications', { email });
+
+/** Which events go to email / LINE; the answer is the settings as saved. */
+export const NOTIFY_SETTINGS_PATH = '/api/customer/notification-settings';
+export const saveNotifySettings = (events: Record<string, { email?: boolean; line?: boolean }>) =>
+  api<NotificationSettings>(NOTIFY_SETTINGS_PATH, { events });
+
+/** Linking the account with one organization's LINE (a 6-digit code sent there in a 1:1 chat). */
+export const linePath = (slug: string) => `/api/public/${slug}/line`;
+export const requestLineCode = (slug: string) => api<LineCode>(linePath(slug), {});
+export const unlinkLine = (slug: string) => api<{ ok: true }>(linePath(slug), undefined, 'DELETE');

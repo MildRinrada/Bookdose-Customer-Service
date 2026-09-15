@@ -12,8 +12,9 @@ import { useCustomer, useCustomerAccount, useCustomerLogout, useCustomerOrgs } f
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { useBoot } from '@/lib/session';
-import { ACCOUNT_PATH, changePassword, publicInfoPath, saveNotifications, saveProfile } from './api';
+import { ACCOUNT_PATH, changePassword, publicInfoPath, saveProfile } from './api';
 import { JoinOrgInline } from './components/JoinOrg';
+import { NotifySettingsCard } from './components/NotifySettings';
 import { useOrgs } from './hooks';
 
 /* ตั้งค่าบัญชี: the details teams use to reach the customer, the organizations they can contact, the password,
@@ -144,35 +145,7 @@ export function AccountScreen() {
             </button>
           </Form>
         </section>
-        <section className="card">
-          <div className="card-header">
-            <div>
-              <h2>การแจ้งเตือน</h2>
-              <p>การแจ้งเตือนในหน้าเว็บ (กระดิ่ง) แสดงเสมอ เลือกได้ว่าจะรับทางอีเมลด้วยหรือไม่</p>
-            </div>
-          </div>
-          <Form
-            key={String(me.notify_email)}
-            className="card-body"
-            data-form="customer-notifications"
-            onSubmit={async (_values, form) => {
-              const box = form.elements.namedItem('email') as HTMLInputElement | null;
-              await saveNotifications(Boolean(box?.checked));
-              toast('บันทึกการแจ้งเตือนแล้ว');
-              await refresh(ACCOUNT_PATH);
-            }}
-          >
-            <label className="check">
-              <input type="checkbox" name="email" defaultChecked={me.notify_email} />
-              <span>ส่งอีเมลแจ้งเมื่อทีมงานตอบกลับในแชท (อีเมลไม่มีเนื้อหาข้อความ มีแค่ลิงก์ให้เข้ามาอ่าน)</span>
-            </label>
-            {!me.email_verified && <p className="tiny muted">ต้องยืนยันอีเมลก่อนจึงจะได้รับอีเมลแจ้งเตือน</p>}
-            <button className="btn" type="submit">
-              <Icon name="check" />
-              บันทึกการแจ้งเตือน
-            </button>
-          </Form>
-        </section>
+        <NotifySettingsCard />
         <section className="card">
           <div className="card-header">
             <div>

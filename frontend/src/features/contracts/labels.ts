@@ -60,6 +60,10 @@ export const contractEventLabels: Record<string, string> = {
   issue_opened: "ลูกค้าแจ้งปัญหา/ขอเปลี่ยนแปลง",
   ma_requested: "ลูกค้าขอต่อสัญญา MA",
   renewed: "ต่อสัญญา MA แล้ว",
+  reviewed: "ผ่านการตรวจตามขั้นตอนอนุมัติ",
+  review_returned: "ส่งกลับจากขั้นตอนอนุมัติ",
+  drive_uploaded: "อัปโหลดไฟล์ในคลังเอกสาร",
+  drive_deleted: "ลบไฟล์ในคลังเอกสาร",
 };
 
 export const signatureVerifiedLabels: Record<string, string> = {
@@ -131,6 +135,7 @@ export const roundTones: Record<string, Tone> = {
 export const projectTabLabels = {
   board: "ภาพรวมโครงการ",
   milestones: "งวดงานและตรวจรับ",
+  drive: "คลังเอกสาร",
   billing: "ใบแจ้งหนี้/ใบเสร็จ",
   issues: "แจ้งปัญหา/ขอเปลี่ยนแปลง",
   warranty: "รับประกันและ MA",

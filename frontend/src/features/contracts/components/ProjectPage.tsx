@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Icon } from "@/components/Icon";
+import { EmptyState } from "@/components/ui/display";
 import { RequiredStar, useFieldValidation } from "@/components/ui/fields";
 import { Form } from "@/components/ui/Form";
 import { MarkdownBlocks } from "@/features/rich/Markdown";
@@ -30,12 +31,22 @@ import {
 } from "../labels";
 import type { ProjectLinks, ProjectSide } from "../links";
 import type {
+  Capability,
+  ContractApproval,
   ContractDetail,
   Delivery,
   Project,
   ProjectMilestone,
+  ReviewDecision,
 } from "../types";
+import {
+  ApprovalSteps,
+  approvalHeadline,
+  ReviewButtons,
+} from "./ApprovalSteps";
 import { ContractDocument } from "./ContractDocument";
+import { ProjectContext, useProject } from "./ProjectContext";
+import { ProjectDrive } from "./ProjectDrive";
 import {
   ContractEventRows,
   ContractFileItem,
@@ -69,6 +80,10 @@ export type ProjectHandlers = {
   accept?: (m: ProjectMilestone) => void;
   /** ส่งกลับแก้ไข */
   reject?: (m: ProjectMilestone) => void;
+  /** ผ่านการตรวจ / ส่งกลับแก้ไข on the viewer's step of the round's approval flow. */
+  review?: (m: ProjectMilestone, decision: ReviewDecision) => void;
+  /** The owner's approval flows for this project (milestones tab). */
+  editFlow?: () => void;
   /** แก้ไข the buyer's details for receipts (billing tab). */
   editBuyer?: () => void;
   /** แจ้งปัญหา / ขอเปลี่ยนแปลง (issues tab). */
@@ -77,22 +92,9 @@ export type ProjectHandlers = {
   requestMA?: () => void;
 };
 
-type ProjectContextValue = {
-  links: ProjectLinks;
-  handlers: ProjectHandlers;
-  side: ProjectSide;
-};
-
-const ProjectContext = createContext<ProjectContextValue | null>(null);
-
-function useProject(): ProjectContextValue {
-  const value = useContext(ProjectContext);
-  if (!value)
-    throw new Error("Project components are drawn inside <ProjectPage>");
-  return value;
-}
-
 export type SignedContract = ContractDetail & { project: Project };
+
+const NO_APPROVAL: ContractApproval = { contract: null, deliveries: {} };
 
 /** One signed project page, for either side: banner, tabs, and the tab being read. */
 export function ProjectPage({
@@ -120,17 +122,28 @@ export function ProjectPage({
   const c = data.contract;
   const project = data.project;
   const status = projectStatus(project);
-  const current: ProjectTab = isProjectTab(tab) ? tab : "board";
+  // The team may do everything; a customer-side viewer what their role on the contract allows.
+  const can = (capability: Capability) =>
+    links.side === "org" ||
+    !data.access ||
+    data.access.can.includes(capability);
+  const allowed = (key: ProjectTab) => key !== "billing" || can("billing");
+  const approval = data.approval ?? NO_APPROVAL;
+  const current: ProjectTab =
+    isProjectTab(tab) && allowed(tab) ? tab : "board";
   const content = {
     board: () => <ProjectBoard project={project} />,
     milestones: () => <ProjectMilestones project={project} />,
+    drive: () => <ProjectDrive />,
     billing: () => <ProjectBilling project={project} />,
     issues: () => <ProjectIssues project={project} />,
     warranty: () => <ProjectWarranty project={project} />,
     document: () => <ProjectDocument data={data} org={org} />,
   }[current]();
   return (
-    <ProjectContext.Provider value={{ links, handlers, side: links.side }}>
+    <ProjectContext.Provider
+      value={{ links, handlers, side: links.side, can, approval }}
+    >
       <Link href={back} className="back-link no-print">
         <Icon name="back" />
         {backLabel}
@@ -173,7 +186,12 @@ export function ProjectPage({
           <JourneySteps contract={c} project={project} />
         </div>
       </section>
-      <ProjectTabs current={current} project={project} links={links} />
+      <ProjectTabs
+        current={current}
+        project={project}
+        links={links}
+        allowed={allowed}
+      />
       <div className="project-content">{content}</div>
     </ProjectContext.Provider>
   );
@@ -225,10 +243,13 @@ function ProjectTabs({
   current,
   project,
   links,
+  allowed,
 }: {
   current: ProjectTab;
   project: Project;
   links: ProjectLinks;
+  /** Tabs the viewer may open (billing needs the billing capability). */
+  allowed: (tab: ProjectTab) => boolean;
 }) {
   const counts: Partial<Record<ProjectTab, number>> = {
     milestones: project.milestones.filter(
@@ -241,8 +262,9 @@ function ProjectTabs({
   };
   return (
     <nav className="project-tabs no-print" aria-label="ส่วนของโครงการ">
-      {(Object.entries(projectTabLabels) as Array<[ProjectTab, string]>).map(
-        ([key, label]) => (
+      {(Object.entries(projectTabLabels) as Array<[ProjectTab, string]>)
+        .filter(([key]) => allowed(key))
+        .map(([key, label]) => (
           <Link
             key={key}
             href={links.project(key)}
@@ -251,29 +273,36 @@ function ProjectTabs({
             {label}
             {counts[key] ? <span className="count">{counts[key]}</span> : null}
           </Link>
-        ),
-      )}
+        ))}
     </nav>
   );
 }
 
-// What waits, and for whom, as links into the tabs.
+// What waits, and for whom, as links into the tabs (on the customer's side, only what the viewer may act on).
 function projectTodo(
   project: Project,
   side: ProjectSide,
+  can: (capability: Capability) => boolean,
+  approval: ContractApproval,
 ): Array<[ProjectTab, string]> {
   const items: Array<[ProjectTab, string]> = [];
   const n = (test: (m: ProjectMilestone) => boolean) =>
     project.milestones.filter(test).length;
   const unpaid = project.invoices.filter((i) => i.status === "unpaid").length;
   if (side === "customer") {
-    if (n((m) => m.status === "submitted"))
-      items.push([
-        "milestones",
-        `มีงาน ${n((m) => m.status === "submitted")} งวดรอคุณตรวจรับ`,
-      ]);
+    // A round under review waits for its reviewer first; the decision is open once every step approved.
+    const run = (m: ProjectMilestone) => approval.deliveries[m.id];
+    const reviews = n((m) => m.status === "submitted" && Boolean(run(m)?.my_turn));
+    const decisions = n(
+      (m) => m.status === "submitted" && (!run(m) || run(m).ready),
+    );
+    if (reviews)
+      items.push(["milestones", `มีงาน ${reviews} งวดถึงขั้นที่คุณต้องตรวจ`]);
+    if (can("decide") && decisions)
+      items.push(["milestones", `มีงาน ${decisions} งวดรอคุณตรวจรับ`]);
     if (unpaid) items.push(["billing", `ใบแจ้งหนี้รอชำระ ${unpaid} ใบ`]);
     if (
+      can("decide") &&
       project.coverage.state === "active" &&
       (project.coverage.days_left ?? 0) <= 30 &&
       !project.ma_requested_at &&
@@ -314,12 +343,13 @@ function projectTodo(
 }
 
 export function ProjectBoard({ project }: { project: Project }) {
-  const { links, side } = useProject();
+  const { links, side, can, approval } = useProject();
   const ms = project.milestones;
   const next = ms.find((m) => m.status !== "done");
   const cover = coverageSummary(project);
   const deliveries = ms.filter((m) => m.kind === "delivery");
-  const todo = projectTodo(project, side);
+  const todo = projectTodo(project, side, can, approval);
+  const totals = project.totals;
   return (
     <div className="project-board">
       <section className="card project-stats">
@@ -350,14 +380,16 @@ export function ProjectBoard({ project }: { project: Project }) {
               : "ครบทุกงวดแล้ว"}
           </span>
         </div>
-        <div className="project-stat">
-          <span className="muted">ชำระแล้ว</span>
-          <strong>{baht(project.totals.paid)}</strong>
-          <span className="tiny muted">
-            ออกใบแจ้งหนี้แล้ว {baht(project.totals.billed)} · มูลค่าตามสัญญา{" "}
-            {baht(project.totals.contract)} (ก่อน VAT)
-          </span>
-        </div>
+        {totals && (
+          <div className="project-stat">
+            <span className="muted">ชำระแล้ว</span>
+            <strong>{baht(totals.paid)}</strong>
+            <span className="tiny muted">
+              ออกใบแจ้งหนี้แล้ว {baht(totals.billed)} · มูลค่าตามสัญญา{" "}
+              {baht(totals.contract)} (ก่อน VAT)
+            </span>
+          </div>
+        )}
         <div className="project-stat">
           <span className="muted">การรับประกัน</span>
           <strong className={`tone-text-${cover.tone}`}>{cover.title}</strong>
@@ -486,9 +518,10 @@ function ProjectMilestoneCard({
   project: Project;
   m: ProjectMilestone;
 }) {
-  const { links, handlers, side } = useProject();
+  const { links, handlers, side, can, approval } = useProject();
   const state = milestoneState(project, m);
   const staff = side === "org";
+  const run = m.status === "submitted" ? approval.deliveries[m.id] : undefined;
   const invoice = milestoneInvoice(project, m);
   const working =
     m.kind === "delivery" &&
@@ -528,35 +561,78 @@ function ProjectMilestoneCard({
             <span>{progress}%</span>
           </div>
         )}
-        {!staff && m.status === "submitted" && (
-          <div className="notice project-inspect">
-            <strong>งานงวดนี้รอคุณตรวจรับ</strong>
+        {!staff && m.status === "submitted" && run && !run.ready && (
+          <div className="notice project-inspect approval-box">
+            <strong>{approvalHeadline(run, "customer")}</strong>
             <span>
-              ดูรายละเอียด ไฟล์ และลิงก์ในรอบล่าสุดด้านล่าง
-              แล้วเลือกอนุมัติรับงาน หรือส่งกลับแก้ไข
+              {run.my_turn
+                ? "ดูรายละเอียด ไฟล์ และลิงก์ในรอบล่าสุดด้านล่าง แล้วเลือกผ่านการตรวจ หรือส่งกลับแก้ไขพร้อมหมายเหตุ"
+                : "งานงวดนี้อยู่ระหว่างตรวจตามขั้นตอนอนุมัติ อนุมัติรับงานได้เมื่อผู้ตรวจทุกขั้นผ่าน"}
             </span>
-            <div className="contract-actions">
-              <button
-                type="button"
-                className="btn primary sm"
-                onClick={() => handlers.accept?.(m)}
-              >
-                <Icon name="check" />
-                อนุมัติรับงาน
-              </button>
-              <button
-                type="button"
-                className="btn sm"
-                onClick={() => handlers.reject?.(m)}
-              >
-                <Icon name="edit" />
-                ส่งกลับแก้ไข
-              </button>
-            </div>
+            <ApprovalSteps run={run} finalLabel="อนุมัติรับงาน" />
+            {run.my_turn && (
+              <ReviewButtons onReview={(d) => handlers.review?.(m, d)} />
+            )}
+            {!run.my_turn && can("decide") && (
+              <div className="contract-actions">
+                <button
+                  type="button"
+                  className="btn sm subtle"
+                  onClick={() => handlers.reject?.(m)}
+                >
+                  <Icon name="edit" />
+                  ส่งกลับแก้ไขเลย
+                </button>
+              </div>
+            )}
           </div>
         )}
-        {staff && m.status === "submitted" && (
+        {!staff &&
+          m.status === "submitted" &&
+          (!run || run.ready) &&
+          !can("decide") && (
+            <p className="notice">งานงวดนี้รอผู้มีสิทธิ์อนุมัติตรวจรับ</p>
+          )}
+        {!staff &&
+          m.status === "submitted" &&
+          (!run || run.ready) &&
+          can("decide") && (
+            <div className="notice project-inspect">
+              <strong>งานงวดนี้รอคุณตรวจรับ</strong>
+              <span>
+                {run
+                  ? `${approvalHeadline(run, "customer")} เลือกอนุมัติรับงาน หรือส่งกลับแก้ไข`
+                  : "ดูรายละเอียด ไฟล์ และลิงก์ในรอบล่าสุดด้านล่าง แล้วเลือกอนุมัติรับงาน หรือส่งกลับแก้ไข"}
+              </span>
+              {run && <ApprovalSteps run={run} finalLabel="อนุมัติรับงาน" />}
+              <div className="contract-actions">
+                <button
+                  type="button"
+                  className="btn primary sm"
+                  onClick={() => handlers.accept?.(m)}
+                >
+                  <Icon name="check" />
+                  อนุมัติรับงาน
+                </button>
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => handlers.reject?.(m)}
+                >
+                  <Icon name="edit" />
+                  ส่งกลับแก้ไข
+                </button>
+              </div>
+            </div>
+          )}
+        {staff && m.status === "submitted" && !run && (
           <p className="notice">ส่งมอบแล้ว รอลูกค้าตรวจรับ</p>
+        )}
+        {staff && run && (
+          <div className="notice project-inspect approval-box">
+            <strong>ส่งมอบแล้ว · {approvalHeadline(run, "org")}</strong>
+            <ApprovalSteps run={run} finalLabel="ลูกค้าอนุมัติรับงาน" />
+          </div>
         )}
         {revision && (
           <p className="project-remark">
@@ -680,15 +756,28 @@ function ProgressForm({
 }
 
 export function ProjectMilestones({ project }: { project: Project }) {
-  const { side } = useProject();
+  const { side, can, handlers } = useProject();
   return (
     <div className="project-milestones">
       {side === "customer" && (
-        <p className="muted project-help">
-          งวดส่งมอบ: ทีมงานส่งงานให้ตรวจ แล้วคุณเลือกอนุมัติรับงาน
-          หรือส่งกลับแก้ไขพร้อมหมายเหตุ
-          งวดที่มียอดเงินจะออกใบแจ้งหนี้เมื่ออนุมัติ
-        </p>
+        <div className="project-help approval-help">
+          <p className="muted">
+            งวดส่งมอบ: ทีมงานส่งงานให้ตรวจ ผู้ตรวจตามขั้นตอนอนุมัติ (ถ้ามี)
+            ตรวจตามลำดับ แล้วผู้มีสิทธิ์อนุมัติเลือกอนุมัติรับงาน
+            หรือส่งกลับแก้ไขพร้อมหมายเหตุ
+            งวดที่มียอดเงินจะออกใบแจ้งหนี้เมื่ออนุมัติ
+          </p>
+          {can("team") && handlers.editFlow && (
+            <button
+              type="button"
+              className="btn sm subtle"
+              onClick={() => handlers.editFlow?.()}
+            >
+              <Icon name="listOrdered" />
+              ขั้นตอนอนุมัติของโครงการนี้
+            </button>
+          )}
+        </div>
       )}
       {project.milestones.length ? (
         project.milestones.map((m) => (
@@ -708,6 +797,18 @@ export function ProjectMilestones({ project }: { project: Project }) {
 export function ProjectBilling({ project }: { project: Project }) {
   const { links, handlers, side } = useProject();
   const b = project.buyer;
+  const totals = project.totals;
+  // A customer-side viewer without billing gets neither (the tab is hidden for them too).
+  if (!b || !totals)
+    return (
+      <section className="card">
+        <EmptyState
+          title="ไม่มีสิทธิ์ดูใบแจ้งหนี้"
+          description="บทบาทของคุณในโครงการนี้ไม่รวมใบแจ้งหนี้และการชำระเงิน"
+          icon="receipt"
+        />
+      </section>
+    );
   return (
     <div className="project-billing">
       <section className="card">
@@ -717,7 +818,7 @@ export function ProjectBilling({ project }: { project: Project }) {
             <p>
               ออกเมื่อตรวจรับงวดที่มียอดเงิน
               หรือเมื่อทีมออกใบแจ้งหนี้งวดชำระเงิน · ชำระแล้ว{" "}
-              {baht(project.totals.paid)} จาก {baht(project.totals.billed)}
+              {baht(totals.paid)} จาก {baht(totals.billed)}
             </p>
           </div>
           {side === "org" && (
@@ -818,7 +919,7 @@ export function ProjectBilling({ project }: { project: Project }) {
 }
 
 export function ProjectIssues({ project }: { project: Project }) {
-  const { links, handlers, side } = useProject();
+  const { links, handlers, side, can } = useProject();
   const customer = side === "customer";
   return (
     <section className="card">
@@ -830,7 +931,7 @@ export function ProjectIssues({ project }: { project: Project }) {
             {customer ? " และคุยต่อได้ในแชทของเคส" : ""}
           </p>
         </div>
-        {customer && (
+        {customer && can("issues") && (
           <button
             type="button"
             className="btn sm primary"
@@ -911,7 +1012,7 @@ export function ProjectIssues({ project }: { project: Project }) {
 }
 
 export function ProjectWarranty({ project }: { project: Project }) {
-  const { links, handlers, side } = useProject();
+  const { links, handlers, side, can } = useProject();
   const c = project.coverage;
   const summary = coverageSummary(project);
   const customer = side === "customer";
@@ -979,6 +1080,7 @@ export function ProjectWarranty({ project }: { project: Project }) {
             </p>
           </div>
           {customer &&
+            can("decide") &&
             Boolean(project.delivered_at) &&
             !project.ma_requested_at &&
             !isMA && (

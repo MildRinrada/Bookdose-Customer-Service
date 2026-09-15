@@ -1,0 +1,226 @@
+/* The project drive tab (features/contracts/components/ProjectDrive.tsx, features/drive): the folder list beside the
+   open folder's files, the version history under a file, the upload progress, and the files chosen for upload. */
+
+.drive {
+  display: grid;
+  gap: 22px;
+}
+.drive-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.drive-progress {
+  display: grid;
+  gap: 8px;
+  padding: 0 20px 18px;
+  font-size: .875rem;
+}
+.drive-layout {
+  display: grid;
+  grid-template-columns: minmax(12rem,16rem) minmax(0,1fr);
+  align-items: start;
+  gap: 22px;
+}
+
+/* Folders */
+.drive-folders {
+  display: grid;
+  gap: 4px;
+  padding: 14px 10px;
+}
+.drive-folders h3 {
+  margin: 8px 10px 2px;
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.drive-folders h3:first-child {
+  margin-top: 0;
+}
+.drive-folders ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drive-folders-hint {
+  margin: 0 10px 6px;
+}
+.drive-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.drive-folder .icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.drive-folder .grow {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drive-folder:hover {
+  background: var(--surface-hover);
+}
+.drive-folder[aria-current=true] {
+  background: var(--surface-hover);
+  font-weight: 600;
+}
+.drive-folder[aria-current=true] .icon {
+  color: var(--ink);
+}
+.drive-count {
+  flex: none;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .75rem;
+  text-align: center;
+}
+
+/* The open folder */
+.drive-main {
+  min-width: 0;
+  transition: box-shadow .15s, border-color .15s;
+}
+.drive-main[data-dragging=true] {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--info-soft);
+}
+.drive-drop-hint {
+  margin: 0;
+  padding: 10px 20px 16px;
+}
+.drive-table td {
+  vertical-align: middle;
+}
+.drive-name {
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+}
+.drive-size,.drive-date {
+  white-space: nowrap;
+}
+.drive-party {
+  display: block;
+}
+.drive-actions {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+.drive-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.drive-version .icon {
+  width: 14px;
+  height: 14px;
+  transition: transform .15s;
+}
+.drive-version[aria-expanded=true] .icon {
+  transform: rotate(180deg);
+}
+.drive-version:hover {
+  background: var(--surface-hover);
+}
+.drive-group th {
+  padding-top: 14px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  text-align: left;
+}
+.drive-history td {
+  padding-top: 0;
+  background: var(--surface-hover);
+}
+.drive-history ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 0 4px;
+  list-style: none;
+}
+.drive-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.drive-note {
+  flex-basis: 100%;
+  padding-left: 22px;
+  font-size: .875rem;
+  overflow-wrap: anywhere;
+}
+
+/* Files chosen in the upload dialog */
+.drive-chosen {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: .875rem;
+}
+.drive-chosen li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.drive-chosen .grow {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drive-tag {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--info-soft);
+  color: var(--link);
+  font-size: .75rem;
+  font-weight: 600;
+}
+.drive-tag.danger {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+@media (max-width: 860px) {
+  .drive-layout {
+    grid-template-columns: 1fr;
+  }
+}

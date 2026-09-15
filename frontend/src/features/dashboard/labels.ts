@@ -2,7 +2,43 @@ import type { TicketRow } from '@/features/tickets/types';
 import { formatDuration, isDone, plainText, relative, shortAgo } from '@/lib/format';
 import { escalationReasons } from '@/lib/labels';
 import type { StaffAlerts } from '@/lib/types';
-import type { AgentActivity, Heatmap } from './types';
+import type { AgentActivity, HealthState, Heatmap } from './types';
+
+// The customer's project overview (CustomerDashboardScreen)
+export const healthStateLabels: Record<HealthState, string> = {
+  on_track: 'ตรงตามแผน',
+  delayed: 'ล่าช้า',
+  ahead: 'เสร็จก่อนกำหนด',
+  done: 'เสร็จแล้ว',
+  not_started: 'ยังไม่เริ่ม',
+};
+/** customer-state tone-* classes (pages/customer.css; 'late' is in pages/dashboard-customer.css). */
+export const healthStateTones: Record<HealthState, string> = {
+  on_track: 'working',
+  delayed: 'late',
+  ahead: 'done',
+  done: 'done',
+  not_started: 'received',
+};
+/** Late ones first, as the server sorts them. */
+export const healthStates: HealthState[] = ['delayed', 'on_track', 'not_started', 'ahead', 'done'];
+
+/** "อีก 5 วัน", "วันนี้", "เกิน 3 วัน" for a payment's due date. */
+export function dueText(daysLeft: number): string {
+  if (daysLeft > 0) return `อีก ${daysLeft} วัน`;
+  return daysLeft === 0 ? 'ครบกำหนดวันนี้' : `เกินกำหนด ${-daysLeft} วัน`;
+}
+
+/** 0-100 of a money figure against another, for a <progress> bar. */
+export function share(part: string | number, whole: string | number): number {
+  const total = Number(whole);
+  return total > 0 ? Math.min(100, Math.round((100 * Number(part)) / total)) : 0;
+}
+
+/** "ก.ย. 69" for a 'YYYY-MM' month. */
+export function monthText(month: string): string {
+  return new Intl.DateTimeFormat('th-TH', { month: 'short', year: '2-digit' }).format(new Date(`${month}-01T00:00:00`));
+}
 
 /* The overview's rules: what needs action now, what is addressed to the member, who is online and the busy hours. */
 

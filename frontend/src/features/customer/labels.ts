@@ -67,6 +67,15 @@ type AlertKindView = { icon: string; tone: string; title: (a: CustomerAlert) => 
 const chatHref = (a: CustomerAlert) => `/customer/chats/${a.org_slug}/${a.conversation_id}`;
 const caseHref = (a: CustomerAlert) => `/customer/cases/${a.org_slug}/${a.case_id}`;
 const documentHref = (a: CustomerAlert, tab = '') => `/customer/documents/${a.org_slug}/${a.contract_id}${tab ? `?tab=${tab}` : ''}`;
+const invoiceHref = (a: CustomerAlert) => `/customer/billing/${a.org_slug}/${a.invoice_id}`;
+
+/** "ครบกำหนดวันนี้" / "ครบกำหนดใน 3 วัน (…)" / "เกินกำหนด 2 วัน (…)" of an unpaid invoice. */
+export function dueText(a: Pick<CustomerAlert, 'due_date' | 'days_left'>): string {
+  const left = a.days_left ?? null;
+  if (left === null) return `ครบกำหนด ${date(a.due_date)}`;
+  if (left === 0) return 'ครบกำหนดชำระวันนี้';
+  return left > 0 ? `ครบกำหนดใน ${left} วัน (${date(a.due_date)})` : `เกินกำหนด ${-left} วัน (${date(a.due_date)})`;
+}
 
 /** การแจ้งเตือน: the icon, tone, words and link of each kind of alert. */
 export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
@@ -95,12 +104,43 @@ export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
     detail: (a) => a.subject,
     href: (a) => documentHref(a, 'milestones'),
   },
+  approval: {
+    icon: 'checkCircle',
+    tone: 'waiting',
+    title: (a) =>
+      a.final
+        ? `${a.reference} ผ่านการตรวจครบ ${a.steps} ขั้นแล้ว รอคุณ${a.target === 'delivery' ? 'อนุมัติรับงาน' : 'ลงนาม'}`
+        : `ถึงขั้นตอนของคุณ: ตรวจ${a.target === 'delivery' ? 'งาน' : 'เอกสาร'} ${a.reference} (ขั้นที่ ${a.step}/${a.steps})`,
+    detail: (a) => `${a.subject} · ${a.org_name}`,
+    href: (a) => documentHref(a, a.target === 'delivery' ? 'milestones' : ''),
+  },
   invoice: {
     icon: 'receipt',
     tone: 'waiting',
     title: (a) => `ใบแจ้งหนี้ ${a.reference} รอชำระ ${baht(a.total)}`,
     detail: (a) => `${a.subject} · ครบกำหนด ${date(a.due_date)}`,
-    href: (a) => `/customer/billing/${a.org_slug}/${a.invoice_id}`,
+    href: invoiceHref,
+  },
+  invoice_due: {
+    icon: 'receipt',
+    tone: 'waiting',
+    title: (a) => `ถึงกำหนดชำระงวดที่ ${a.seq ?? '-'} · ${a.reference} ${baht(a.total)}`,
+    detail: (a) => `${a.subject} · ${dueText(a)}`,
+    href: invoiceHref,
+  },
+  invoice_overdue: {
+    icon: 'receipt',
+    tone: 'late',
+    title: (a) => `เลยกำหนดชำระ ${a.reference} ${baht(a.total)}`,
+    detail: (a) => `${a.subject} · ${dueText(a)}`,
+    href: invoiceHref,
+  },
+  invite: {
+    icon: 'users',
+    tone: 'new',
+    title: (a) => `${a.subject} กับ ${a.org_name}`,
+    detail: () => 'รับคำเชิญแล้วจะเห็นเอกสารและโครงการตามบทบาทที่ได้รับ',
+    href: () => '/customer/team',
   },
   receipt: {
     icon: 'checkCircle',

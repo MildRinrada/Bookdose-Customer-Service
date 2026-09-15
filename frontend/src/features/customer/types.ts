@@ -1,5 +1,5 @@
 import type { AiState } from '@/features/ai/types';
-import type { ContractKind, ContractStatus, Coverage, InvoiceStatus } from '@/features/contracts/types';
+import type { Capability, ClientRole, ContractKind, ContractStatus, Coverage, InvoiceStatus } from '@/features/contracts/types';
 import type { Message } from '@/features/inbox/types';
 
 /* Shapes of the customer's API answers (backend/modules/customers and portal), snake_case as the server sends them. */
@@ -43,8 +43,14 @@ export type CaseFields = {
 
 export type CustomerCase = CaseFields & OrgLabel;
 
-/** A row of overview.contracts: a contract or TOR sent to the customer at least once. */
+/** A row of overview.contracts: a contract or TOR sent to the customer at least once, or to an owner whose team the
+    customer is in (then role is the member's role and can what it allows). */
 export type CustomerContract = OrgLabel & {
+  owner_id: string;
+  owner_name: string;
+  role: ClientRole;
+  role_label: string;
+  can: Capability[];
   id: string;
   number: number;
   kind: ContractKind;
@@ -105,37 +111,89 @@ export type AlertKind =
   | 'contract'
   | 'contract_done'
   | 'delivery'
+  | 'approval'
   | 'invoice'
+  | 'invoice_due'
+  | 'invoice_overdue'
   | 'receipt'
-  | 'warranty';
+  | 'warranty'
+  | 'invite';
 
-/** A row of overview.alerts; which ids are set depends on the kind. */
+/** A row of overview.alerts; which ids are set depends on the kind. Contract alerts only reach people who can act on
+    them (signing and deliveries: decide or their approval step, invoices: billing, the MA renewal: decide). */
 export type CustomerAlert = OrgLabel & {
   kind: AlertKind;
   /** Waits for the customer (counted on the bell). */
   action: boolean;
+  /** The words of the alert's button (what the customer does next). */
+  action_label: string;
   at: string;
   subject: string;
   conversation_id?: string;
   case_id?: string;
   number?: number;
   contract_id?: string;
+  milestone_id?: string | null;
   reference?: string;
   invoice_id?: string;
   total?: string;
   due_date?: string;
-  days_left?: number;
+  /** Days until the due date (negative: overdue) or until the warranty ends. */
+  days_left?: number | null;
+  /** งวดที่ N of an invoice's milestone. */
+  seq?: number | null;
+  /** approval: which review and which step of it waits for this account; final = every step approved, the decision waits. */
+  target?: 'delivery' | 'contract';
+  step?: number;
+  steps?: number;
+  final?: boolean;
+  /** invite: the team row to accept (POST /api/public/<org>/team/<id>/accept). */
+  invite_id?: string;
+  owner_name?: string;
+  role_label?: string;
+};
+
+/** A notification event with the channels it goes to (GET /api/customer/notification-settings). */
+export type NotifyEvent = { key: string; label: string; email: boolean; line: boolean };
+
+/** An organization whose LINE can send notices, or that the account is linked with. */
+export type LineOrg = OrgLabel & { available: boolean; linked: boolean; linked_at: string | null; oa_name: string };
+
+/** GET /api/customer/notification-settings */
+export type NotificationSettings = {
+  events: NotifyEvent[];
+  email: { ready: boolean; verified: boolean; address: string };
+  line: LineOrg[];
+};
+
+/** GET /api/public/<org>/line */
+export type LineStatus = { available: boolean; linked: boolean; linked_at: string | null; oa_name: string; code_expires_at: string | null };
+
+/** POST /api/public/<org>/line: a 6-digit code to send to the organization's LINE (10 minutes). */
+export type LineCode = { code: string; expires_at: string; oa_name: string };
+
+/** A row of overview.invitations: someone invited the customer's email into their team with an organization. */
+export type CustomerInvitation = OrgLabel & {
+  id: string;
+  owner_name: string;
+  role: ClientRole;
+  role_label: string;
+  invited_at: string;
 };
 
 /** GET /api/customer/overview */
 export type OverviewData = {
   conversations: CustomerChat[];
   cases: CustomerCase[];
+  /** Contracts the customer owns or reaches through a client team. */
   contracts: CustomerContract[];
+  /** Only of contracts where the customer has billing. */
   invoices: CustomerInvoice[];
+  /** Only of contracts where the customer may decide. */
   deliveries: CustomerDelivery[];
   alerts: CustomerAlert[];
   alert_count: number;
+  invitations: CustomerInvitation[];
 };
 
 /** The satisfaction survey of a chat: one to answer, or the rating already given. */

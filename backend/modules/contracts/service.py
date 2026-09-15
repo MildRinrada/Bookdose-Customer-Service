@@ -15,6 +15,7 @@ import secrets
 
 from backend.database import audit, db as D
 from backend.exceptions.errors import APIError, ChannelError
+from backend.modules.client_team import access, approvals
 from backend.modules.contracts import docimport, repository, schema
 from backend.modules.conversations import repository as conversations
 from backend.modules.customers import repository as customer_accounts
@@ -45,11 +46,16 @@ def _get(db, contract_id):
     return contract
 
 
-def _owned(db, session, contract_id):
-    """A contract sent to the signed-in customer; 404 for anyone else's or one not sent yet."""
-    contract = repository.find(db,schema.an_id(contract_id,'ไม่พบเอกสารนี้ในบัญชีของคุณ'))
-    require(contract and contract['account_id']==session['account_id'] and contract['version'],'ไม่พบเอกสารนี้ในบัญชีของคุณ',404)
-    return contract
+def _access(db, session, contract_id, need='documents'):
+    """(contract, access) of a sent contract the signed-in customer may act on with the capability `need`: their own,
+    or their owner's through the client team (client_team/access.py). 404 for anyone else's or one not sent yet; 403
+    naming what the role cannot do. need=None: any access is enough (the caller checks later)."""
+    return access.require(db,session,contract_id,need)
+
+
+def _owned(db, session, contract_id, need='documents'):
+    """The contract of _access, for callers that only need the contract."""
+    return _access(db,session,contract_id,need)[0]
 
 
 def _next_version(db, contract_id):
@@ -105,7 +111,9 @@ def seal(db, contract, number, organization):
 
 CUSTOMER_EVENTS = ('sent','viewed','change_requested','revised','signed','countersigned','completed','cancelled','started','delivered',
                    'accepted','rejected','invoiced','slip_uploaded','slip_rejected','paid','invoice_void','coverage_started',
-                   'issue_opened','ma_requested','renewed')
+                   'issue_opened','ma_requested','renewed','reviewed','review_returned','drive_uploaded','drive_deleted')
+# Events about money: the customer side sees them only with billing.
+BILLING_EVENTS = ('invoiced','slip_uploaded','slip_rejected','paid','invoice_void')
 
 
 def _view(db, contract, number, staff):
@@ -129,7 +137,41 @@ def _view(db, contract, number, staff):
             'renews':({'id':contract['renews_id'],'reference':schema.reference(parent),'title':parent['title']}
                       if contract['renews_id'] and (parent:=repository.find(db,contract['renews_id'])) else None),
             'events':events if staff else [{k:e[k] for k in ('version','party','actor','action','detail','created_at')} for e in events
-                                           if e['action'] in CUSTOMER_EVENTS]}
+                                           if e['action'] in CUSTOMER_EVENTS],
+            # The customer side's reviews still waiting (read-only here; _customer_view adds the viewer's turn).
+            'approval':approvals.view(db,contract)}
+
+
+def _chat_id(db, contract, account_id):
+    """The document chat of one person of the customer side: the owner's is contracts.conversation_id, a team
+    member's their own (contract_chats), so members never read each other's or the owner's messages."""
+    if contract['account_id']==account_id:
+        return contract['conversation_id']
+    return repository.member_chat(db,contract['id'],account_id)
+
+
+def _customer_view(db, contract, found, account_id):
+    """What one person of the customer side sees of the latest sent version: _view with their own document chat and
+    what their role lets them do (access). Without billing: no invoices, totals, buyer details or payment events.
+    A team member sees the owner's email and another member's signing email masked (the team page shows member emails
+    to the owner only). The contract itself, payment schedule included, is a document: every role that reads documents
+    sees its milestones and amounts (an approver reviews them before signing), so hiding totals is a convenience, not
+    a secret."""
+    view = _view(db,contract,contract['version'],False)
+    view['contract']['conversation_id'] = _chat_id(db,contract,account_id)
+    if found['role']!='owner':
+        view['contract']['customer_email'] = _mask(contract['customer_email'])
+        for shown,s in zip(view['signatures'],repository.signatures(db,contract['id'],contract['version'])):
+            if s['party']=='customer' and s['signer_id']!=account_id:
+                shown['signer_email'] = _mask(s['signer_email'])
+    view['access'] = {'role':found['role'],'role_label':access.ROLE_LABELS[found['role']],'can':access.can_list(found['can']),
+                      'owner_name':contract['customer_name']}
+    view['approval'] = approvals.view(db,contract,account_id,found['can'])
+    if 'billing' not in found['can']:
+        if view['project']:
+            view['project'].update(invoices=[],totals=None,buyer=None)
+        view['events'] = [e for e in view['events'] if e['action'] not in BILLING_EVENTS]
+    return view
 
 
 def _email_ready(cd):
@@ -142,18 +184,11 @@ def _send(cd, recipient, subject, text):
     customers._send(platform.registration_config(cd),platform.registration_secret(),recipient,subject,text)
 
 
-def _notify_customer(cd, org, contract, subject, text):
-    """Tell the customer by email (when email works and they want it); the page shows it either way."""
-    if not _email_ready(cd):
-        return
-    account = customer_accounts.find(cd,contract['account_id'])
-    if not account or not account['email_verified'] or not account['notify_email']:
-        return
-    base = platform.registration_config(cd)['public_base_url']
-    try:
-        _send(cd,account['email'],subject,f"สวัสดีคุณ{account['name']}\n\n{text}\n{base}/#documents/{org['slug']}/{contract['id']}\n")
-    except ChannelError:
-        pass
+def _notify_customer(cd, org, contract, subject, text, event='', need='documents', path=None):
+    """Tell the customer side (the owner and the team members whose role has `need`) by email when email works and
+    they want it; the page shows it either way. See customers/notify.py (event keys, the link `path`)."""
+    from backend.modules.customers import notify
+    notify.contract_event(cd,org,contract,event,subject,text,need,path)
 
 
 # Templates
@@ -275,20 +310,28 @@ def save(db, ctx, contract_id, body):
 
 
 def send(cd, db, ctx, org, contract_id, ip):
-    """Send the draft version to the customer; from now on it never changes."""
+    """Send the draft version to the customer; from now on it never changes. The customer side's contract approval
+    flow in force is fixed for this version (client_team/approvals.py)."""
     _staff(ctx)
     contract = _get(db,contract_id)
     draft = repository.draft_version(db,contract['id'])
     require(contract['status'] in ('draft','changes') and draft,'ไม่มีฉบับร่างที่รอส่ง',409)
     require(draft['body'].strip(),'กรุณาเขียนเนื้อหาเอกสารก่อนส่ง')
+    sent = {**contract,'status':'review','version':draft['version']}
     D.begin(db)
     repository.mark_sent(db,draft['id'])
     repository.set_fields(db,contract['id'],status='review',version=draft['version'])
     repository.add_event(db,contract['id'],draft['version'],'org',ctx['name'],'sent','',ip)
+    reviewers = approvals.start(cd,db,sent,'contract',approvals.contract_target(sent))
     audit.record(db,ctx['name'],'contract.sent',contract['id'],draft['version'])
     db.commit()
-    _notify_customer(cd,org,contract,f"มีเอกสาร {schema.reference(contract)} รอคุณตรวจและลงนาม",
-                     f"{org['name']} ส่ง{schema.KIND_LABELS[contract['kind']]} “{contract['title']}” เวอร์ชัน {draft['version']} ให้คุณตรวจ\nเปิดอ่าน สอบถาม หรือลงนามได้ที่:")
+    # Only people who can act: with reviewers, the first one now (the signers once every step approved), else the signers.
+    if reviewers:
+        approvals.tell_turn(cd,db,org,sent,'contract',approvals.contract_target(sent))
+    else:
+        _notify_customer(cd,org,contract,f"มีเอกสาร {schema.reference(contract)} รอคุณตรวจและลงนาม",
+                         f"{org['name']} ส่ง{schema.KIND_LABELS[contract['kind']]} “{contract['title']}” เวอร์ชัน {draft['version']} ให้คุณตรวจ\nเปิดอ่าน สอบถาม หรือลงนามได้ที่:",
+                         'contract_review','decide')
 
 
 def revise(db, ctx, contract_id, body, ip):
@@ -428,7 +471,7 @@ def org_sign(cd, db, ctx, org, contract_id, body, ip, agent):
     audit.record(db,ctx['name'],'contract.completed',contract['id'],document_hash)
     db.commit()
     _notify_customer(cd,org,contract,f"เอกสาร {schema.reference(contract)} ลงนามครบแล้ว",
-                     f"“{contract['title']}” ลงนามครบทั้งสองฝ่ายแล้ว ดาวน์โหลดฉบับสมบูรณ์ได้ที่:")
+                     f"“{contract['title']}” ลงนามครบทั้งสองฝ่ายแล้ว ดาวน์โหลดฉบับสมบูรณ์ได้ที่:",'contract_done')
     return document_hash
 
 
@@ -439,24 +482,34 @@ def tenants_password(cd, user_id):
 
 # The customer's side
 def customer_view(db, session, contract_id, ip):
-    """The latest version sent to the customer. Opening it is recorded (at most once every half hour)."""
-    contract = _owned(db,session,contract_id)
+    """The latest version sent to the customer, as the viewer's role may see it (_customer_view). Opening it is
+    recorded (at most once every half hour)."""
+    contract,found = _access(db,session,contract_id,'documents')
     last = repository.last_event(db,contract['id'],contract['version'],'customer','viewed')
     if not last or last<=after(minutes=-VIEW_GAP_MINUTES):
         repository.add_event(db,contract['id'],contract['version'],'customer',session['name'],'viewed','',ip)
         db.commit()
-    return _view(db,contract,contract['version'],False)
+    return _customer_view(db,contract,found,session['account_id'])
+
+
+def _signable(db, session, contract_id):
+    """A contract version the signed-in person may sign now: decide, under review, and every reviewer of the approval
+    flow approved it (409 naming who still has to review)."""
+    contract = _owned(db,session,contract_id,'decide')
+    require(contract['status']=='review','เอกสารนี้ยังไม่พร้อมให้ลงนาม',409)
+    approvals.require_ready(db,'contract',approvals.contract_target(contract))
+    return contract
 
 
 def customer_otp(cd, db, session, contract_id):
-    contract = _owned(db,session,contract_id)
-    require(contract['status']=='review','เอกสารนี้ยังไม่พร้อมให้ลงนาม',409)
+    contract = _signable(db,session,contract_id)
     return _otp(cd,db,contract,'customer',session['account_id'],session['email'])
 
 
 def customer_sign(cd, db, session, contract_id, body, ip, agent):
-    contract = _owned(db,session,contract_id)
-    require(contract['status']=='review','เอกสารนี้ยังไม่พร้อมให้ลงนาม',409)
+    """The customer side signs: the owner, or a team member who may decide (the signature names that member's account),
+    once the approval flow's reviewers approved the version."""
+    contract = _signable(db,session,contract_id)
     name,method,mark,secret = schema.signature(body)
     account = customer_accounts.find(cd,session['account_id'])
     D.begin(db)
@@ -468,16 +521,21 @@ def customer_sign(cd, db, session, contract_id, body, ip, agent):
 
 
 def _chat(cd, db, org, session, contract, text):
-    """Write in the chat linked to the document (made on first use); returns its conversation id."""
+    """Write in the person's own chat linked to the document (made on first use: the owner's is kept on the contract,
+    a team member's in contract_chats); returns its conversation id."""
     from backend.modules.customers import service as customers
     from backend.modules.portal import service as portal
-    conv = customer_accounts.owned_conversation(db,session['account_id'],contract['conversation_id']) if contract['conversation_id'] else None
+    current = _chat_id(db,contract,session['account_id'])
+    conv = customer_accounts.owned_conversation(db,session['account_id'],current) if current else None
     if conv:
         portal.post_customer_message(db,org['id'],conv,session,{'body':text})
         return conv['id']
     subject = f"สอบถามเอกสาร {schema.reference(contract)}: {contract['title']}"[:300]
     conv_id = customers.open_conversation(cd,db,org,session,{'subject':subject,'body':text})
-    repository.set_fields(db,contract['id'],conversation_id=conv_id)
+    if contract['account_id']==session['account_id']:
+        repository.set_fields(db,contract['id'],conversation_id=conv_id)
+    else:
+        repository.set_member_chat(db,contract['id'],session['account_id'],conv_id)
     db.commit()
     return conv_id
 
@@ -490,9 +548,14 @@ def ask(cd, db, org, session, contract_id, body):
 
 def request_changes(cd, db, org, session, contract_id, body, ip):
     """ขอแก้ไขเงื่อนไข: the note goes to the team in the document's chat, and the document waits for a new version."""
-    contract = _owned(db,session,contract_id)
+    contract = _owned(db,session,contract_id,'decide')
     require(contract['status']=='review','ขอแก้ไขได้ระหว่างรอตรวจและลงนามเท่านั้น',409)
-    reason = schema.note(body)
+    return ask_changes(cd,db,org,session,contract,schema.note(body),ip)
+
+
+def ask_changes(cd, db, org, session, contract, reason, ip):
+    """The version under review goes back to the team with the reason (also a reviewer's 'ส่งกลับแก้ไข', see
+    client_team/approvals.py); commits, and returns the conversation id of the person's document chat."""
     repository.set_fields(db,contract['id'],status='changes')
     repository.add_event(db,contract['id'],contract['version'],'customer',session['name'],'change_requested',reason,ip)
     db.commit()
@@ -500,11 +563,14 @@ def request_changes(cd, db, org, session, contract_id, body, ip):
 
 
 def customer_file(db, session, tenant_id, contract_id, file_id):
-    """A file of a version sent to the customer, or a file of the project (a delivery's work, a payment slip)."""
-    contract = _owned(db,session,contract_id)
+    """A file of a version sent to the customer, or a file of the project (a delivery's work, a payment slip). A slip
+    (its ref_id is an invoice) needs billing, every other file documents."""
+    contract,reach = _access(db,session,contract_id,None)
     found = repository.find_file(db,contract['id'],schema.an_id(file_id,'ไม่พบไฟล์'))
     sent = {v['version'] for v in repository.versions(db,contract['id']) if v['sent_at']}
     require(found and (found['milestone_id'] or found['version'] in sent),'ไม่พบไฟล์',404)
+    slip = bool(found['ref_id'] and repository.find_invoice(db,contract['id'],found['ref_id']))
+    access.check(reach,'billing' if slip else 'documents')
     return _content(tenant_id,found)
 
 

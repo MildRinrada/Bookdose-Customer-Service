@@ -17,7 +17,7 @@ from backend.modules.automation import repository, schema
 from backend.modules.channels import repository as channel_repository
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations
-from backend.modules.customers import service as customers
+from backend.modules.customers import notify as customer_notify, service as customers
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets
@@ -478,8 +478,8 @@ def touch_activity(db, ctx):
 
 
 class Worker:
-    """Background thread: every 30 seconds, in each active organization, escalate due cases and email support-page
-    customers about replies they have not read yet."""
+    """Background thread: every 30 seconds, in each active organization, escalate due cases, email support-page
+    customers about replies they have not read yet, and send the customer notices (reminders once a day)."""
     INTERVAL = 30
 
     def __init__(self):
@@ -509,5 +509,11 @@ class Worker:
                     except Exception as error:
                         print(f'Customer notices: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation','notices: '+type(error).__name__)
+                    try:
+                        # Reminders once a day, and the customer notices (email / LINE) waiting to go out.
+                        customer_notify.run(tenant_id)
+                    except Exception as error:
+                        print(f'Customer alerts: {type(error).__name__}; retrying next round',flush=True)
+                        monitor.error('automation','alerts: '+type(error).__name__)
             except Exception as error:
                 print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)

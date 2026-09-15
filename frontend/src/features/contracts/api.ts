@@ -1,6 +1,11 @@
 import { api } from "@/lib/api/client";
 import type { Upload } from "@/lib/files";
-import type { ContractKind, DocumentMilestone, OtpResult } from "./types";
+import type {
+  ContractKind,
+  DocumentMilestone,
+  OtpResult,
+  ReviewDecision,
+} from "./types";
 
 /* Endpoints of backend/modules/contracts/routes.py used by the team's side, and the signing calls both sides share.
    Reads go through useApi(<path>); after a write refresh CONTRACTS_PREFIX (list, detail and invoices). */
@@ -167,6 +172,22 @@ export function customerContractApi(slug: string, contractId: string) {
       api<{ conversation_id: string }>(`${path}/ask`, { body }),
     requestChanges: (note: string) =>
       api<{ conversation_id: string }>(`${path}/changes`, { note }),
+    /** A reviewer's decision on the version under review (returned: the conversation id of the remark). */
+    reviewContract: (decision: ReviewDecision, remark: string) =>
+      api<{ conversation_id: string | null }>(`${path}/review`, {
+        decision,
+        remark,
+      }),
+    /** A reviewer's decision on a milestone's pending delivery round. */
+    reviewDelivery: (
+      milestoneId: string,
+      decision: ReviewDecision,
+      remark: string,
+    ) =>
+      api<{ conversation_id: string | null }>(
+        `${path}/milestones/${milestoneId}/review`,
+        { decision, remark },
+      ),
   };
 }
 

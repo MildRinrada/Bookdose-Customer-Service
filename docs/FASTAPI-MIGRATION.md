@@ -1,7 +1,8 @@
 # แผนย้ายเซิร์ฟเวอร์ไปใช้ FastAPI
 
 สถานะ: **ระยะที่ 1 เสร็จแล้ว** (16 กันยายน 2026) · เซิร์ฟเวอร์หลักคือ FastAPI บน uvicorn ·
-`http.server` เดิมยังเปิดได้ด้วย `BOOKDOSE_SERVER=legacy` · ระยะที่ 2 และ 3 ยังไม่เริ่ม
+`http.server` เดิมยังเปิดได้ด้วย `BOOKDOSE_SERVER=legacy` · **ระยะที่ 2a (Realtime ผ่าน WebSocket) ฝั่ง backend เสร็จแล้ว** ·
+ส่วนที่เหลือของระยะที่ 2 และระยะที่ 3 ยังไม่เริ่ม
 
 ---
 
@@ -100,12 +101,84 @@ JSON ผิด/เป็น array/ไม่ใช่ UTF-8 (400), ขนาด�
 | เวลาที่ตอบ | ตอบก่อน commit ฐานข้อมูล | ตอบหลัง commit (ถ้า commit ล้มเหลวหลัง `send()` ลูกค้ายังได้คำตอบแรก เหมือนเดิม) |
 | คำขอพร้อมกัน | thread ไม่จำกัด | 100 thread (`REQUEST_THREADS`) เกินนั้นรอคิว |
 
-### ระยะที่ 2 — ค่อย ๆ เปลี่ยนเป็น router ของ FastAPI จริง ทีละโมดูล ⬜
+### ระยะที่ 2a — Realtime ผ่าน WebSocket ✅ ฝั่ง backend เสร็จแล้ว (สัญญาใน `docs/REALTIME-DESIGN.md`)
+
+หลักการ: **socket ส่งแค่ "มีอะไรเปลี่ยน" ส่วนข้อมูลยังมาจาก REST API เดิม** สิทธิ์ทั้งหมดยังตรวจที่ REST เหตุการณ์ไม่มีข้อความแชท
+ชื่อไฟล์แนบ บันทึกภายใน อีเมล หรือเบอร์โทร ยกเว้นกำลังพิมพ์ (ชื่อที่ลูกค้าเห็นอยู่แล้ว) และอ่านแล้ว (เวลา)
+
+```text
+service (request thread / worker thread) ──► realtime/events.py ──► db.after_commit(...) ── commit ──► hub.send()
+                                                                     rollback / ไม่ commit = ไม่ส่ง       │ loop.call_soon_threadsafe
+uvicorn event loop ◄───────────────────────────────────────────────────────────────────────────────────────┘
+   └─► socket ที่มีสิทธิ์ (ทีมงานตามทีม, บัญชีลูกค้าเจ้าของ, ผู้เยี่ยมชมเจ้าของ) ──► หน้าเว็บ invalidate แล้วดึง API ใหม่
+```
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `backend/realtime/hub.py` | ศูนย์กลางใน process: รายการ socket, `send()` จาก thread ใดก็ได้ส่งเข้า event loop ด้วย `call_soon_threadsafe` · ไม่ import อะไรของ asyncio ตอนโหลด เซิร์ฟเวอร์เดิมจึงเรียกได้และไม่มีผล (ไม่มี loop) |
+| `backend/realtime/events.py` | ที่ service เรียก: หาผู้รับภายใน transaction แล้วฝากเหตุการณ์ไว้กับ connection ส่งหลัง commit เท่านั้น · ไม่ทำอะไรเลยเมื่อไม่มี socket เปิดอยู่ |
+| `backend/realtime/socket.py` | 3 endpoint, handshake, ตรวจเซสชันซ้ำทุก 60 วินาที, ขีดจำกัด, ping, รับเฟรม typing |
+| `backend/database/db.py` | `Connection` (factory ของ `sqlite3.connect`): `after_commit(key, callback)` ทำงานหลัง `commit()` สำเร็จ ตามลำดับ ซ้ำ key เดียวกันส่งครั้งเดียว `rollback()` หรือปิดโดยไม่ commit = ทิ้ง |
+| `backend/asgi.py` | lifespan ผูก event loop กับ hub, เพิ่ม route WebSocket, `uvicorn_config()` เปิด `ws='websockets-sansio'`, `ws_max_size` 16 KB, ไม่บีบอัด, protocol ping 20 วินาที, ยัง 1 worker |
+
+**Endpoint** (ผ่าน Next.js :3000 ที่ origin เดียวกัน)
+
+| path | ใคร | คุกกี้ |
+|---|---|---|
+| `/api/realtime/staff` | ทีมงานในองค์กรที่เซสชันเลือกอยู่ (`sessions.tenant_id`) | `bookdose_session` |
+| `/api/realtime/customer` | ลูกค้าที่เข้าสู่ระบบ ทุกองค์กรที่เชื่อมไว้ | `bookdose_account` |
+| `/api/public/<org>/guest/realtime` | ผู้เยี่ยมชมขององค์กรนั้น (องค์กรต้องเปิดแชทผู้เยี่ยมชม) | `g_<org>` |
+
+- รับการเชื่อมต่อก่อนแล้วจึงตรวจ (ปิดด้วยรหัสได้): Host เหมือน HTTP และ **ต้องมี `Origin` ตรงกับ host ของเราเอง** (ผ่าน Next.js ใช้ `X-Forwarded-Host`) ไม่ผ่าน → **4403** ·
+  ไม่มี/เซสชันไม่ถูกต้อง → **4401** · ไม่พบองค์กรหรือปิดแชทผู้เยี่ยมชม → 4403 · ผ่านแล้วส่ง `{"type":"hello","poll_ms":60000}`
+- ตรวจซ้ำทุก 60 วินาที: ออกจากระบบ, อุปกรณ์ถูกออกจากระบบ, สมาชิกถูกปิด, สลับองค์กรในเซสชัน, องค์กรถูกระงับ → 4401 (ผู้เยี่ยมชม: ลืมเบราว์เซอร์/ย้ายเข้าบัญชี → 4401, ปิดแชทผู้เยี่ยมชม → 4403)
+- ขีดจำกัด: 5 socket ต่อเซสชัน (ผู้เยี่ยมชม: ต่อเบราว์เซอร์) เกิน → 4429 · เฟรมไม่เกิน 2 KB และ 20 เฟรมต่อ 10 วินาที เกิน → 4429 ·
+  ส่ง `{"type":"ping"}` ทุก 25 วินาที · ไม่มีเฟรมจาก client 70 วินาที → ปิด **4408** · คิวส่งของ socket ล้น (256) → ปิด 1013
+- เฟรมจาก client: `{"type":"pong"}` และ `{"type":"typing","conversation_id"}` ส่งต่อเฉพาะเมื่อผู้ส่งตอบในบทสนทนานั้นได้
+  (ทีมงาน: เห็นบทสนทนาตามทีมและช่องทาง web/LINE/Email/Facebook · ลูกค้า/ผู้เยี่ยมชม: เป็นเจ้าของ) ไม่เกิน 1 ครั้งต่อ 2.5 วินาทีต่อบทสนทนาต่อ socket
+  ส่งไปอีกฝั่งเท่านั้น (ทีมงาน → เจ้าของบทสนทนา web, ลูกค้า → ทีมงานที่เห็นบทสนทนา) `ttl_ms` 6000
+
+**จุดที่ส่งเหตุการณ์** (หลัง commit ทั้งหมด)
+
+| ที่ | ทีมงาน | ลูกค้า/ผู้เยี่ยมชมเจ้าของ |
+|---|---|---|
+| `conversations.service.store_message` (ทุกช่องทาง: ทีมงาน, หน้าลูกค้า, ผู้เยี่ยมชม, LINE/Email/Facebook ใน worker, macro) | conversation, conversations, ticket/tickets ถ้าเชื่อมเคส | conversation, conversations, ticket, alerts — **ไม่ส่งถ้าเป็นบันทึกภายใน** |
+| `ai.service.system_message` (คำตอบ AI, ข้อความระบบ), `ai.handoff`, งาน AI เสร็จ (`process_one`) | conversation | เฉพาะ chatbot (ร่างคำตอบเป็นของทีมงาน) |
+| เปลี่ยนสถานะบทสนทนา, `set_ai_mode`, `request_ai_draft` (ลูกค้ารู้เฉพาะเมื่อ bot หยุด), เชื่อมเคส | conversation (+list) | ✓ |
+| `tickets.service.open_ticket` (รวมกฎ routing), `update_ticket`, `delete_ticket`, กู้คืนเคสจากถังขยะ | ticket, tickets, conversations (ทีมเดิมและทีมใหม่) | เฉพาะเมื่อสถานะเปลี่ยน / เปิด / ลบ / กู้คืน (priority, ทีม, ผู้รับผิดชอบเป็นของทีมงาน) |
+| `automation`: escalation (ทีมงานเท่านั้น), สถานะจาก macro, นัดติดตาม, ส่งและรับแบบประเมิน CSAT | ✓ | ยกเว้น escalation |
+| `channels.finish` / `facebook.finish` / ส่งซ้ำ (สถานะการส่ง), LINE กลุ่มเปลี่ยนสมาชิก | conversation | ไม่ส่ง |
+| `customers.service.mark_seen`, `guest.service.mark_seen` (เปิดบทสนทนา) | `read` by customer เมื่ออ่านคำตอบทีมที่ยังไม่อ่าน | — |
+| `conversations.service.mark_read` (ทีมงานเปิดบทสนทนา web หลังข้อความลูกค้าล่าสุด) | — | `read` by staff |
+
+**ข้อมูลที่เพิ่ม (additive):** ตาราง `conversation_staff_reads(conversation_id, user_id, read_at)` ในฐานข้อมูลองค์กร ·
+`GET /api/conversations/<id>` เพิ่ม `customer_read_at` · `GET /api/public/<org>/session` และ `/guest/session` เพิ่ม `staff_read_at`
+(ให้หน้าเว็บแสดง "อ่านแล้ว" ได้ทั้งตอนเปิดหน้าใหม่และบนเซิร์ฟเวอร์เดิมที่ไม่มี WebSocket)
+
+**แพ็กเกจ:** `websockets==16.1.1` (uvicorn ใช้ implementation `websockets-sansio`; ชุดทดสอบใช้ sync client ของแพ็กเกจเดียวกัน)
+
+**ข้อจำกัด:** hub อยู่ในหน่วยความจำของ process เดียว — ถ้ารันหลาย worker หรือหลายเครื่อง ต้องมี broker (เช่น Redis pub/sub)
+ระหว่าง process และย้าย session/rate limit ออกนอก process (ระยะที่ 3) · เซิร์ฟเวอร์เดิม (`legacy`) ไม่มี WebSocket (คำขอ upgrade ได้คำตอบ HTTP ธรรมดา เช่น 404/401 JSON) หน้าเว็บใช้การดึงเป็นระยะ
+
+**ผลทดสอบ** (`tests/test_realtime.py` 15 รายการ: handshake ทั้ง 3 แบบ, Origin ผิด 4403, ไม่มีคุกกี้ 4401, เซสชันถูกยกเลิก,
+ลูกค้าได้ยินคำตอบแต่ไม่ได้ยินบันทึกภายใน, ลูกค้า/องค์กร/ทีมอื่นไม่ได้ยิน, ผู้เยี่ยมชมได้ยินเฉพาะของตัวเอง, สิทธิ์และความถี่ของ typing,
+อ่านแล้วทั้งสองทาง, ส่งหลัง commit เท่านั้น, LINE จาก worker thread, ขนาด/จำนวนเฟรม, จำนวน socket, idle; 12 รายการข้ามบน `legacy`)
+
+| ชุด | FastAPI (ค่าเริ่มต้น) | http.server (`BOOKDOSE_SERVER=legacy`) |
+|---|---|---|
+| `python -m unittest discover -s tests` (183 รายการ) | ผ่าน 180 · ไม่ผ่าน 3 รายการสิทธิ์ไฟล์บน Windows (`438 != 384`) | ผ่าน 168 · ข้าม 12 · ไม่ผ่าน 3 รายการเดียวกัน |
+
+**ยังไม่ส่งเหตุการณ์ (ยังเห็นผ่านการดึงเป็นระยะ 60 วินาที):** รวมรายชื่อลูกค้า (contact merge) และการย้ายแชทผู้เยี่ยมชมเข้าบัญชี,
+การ @mention / กระดิ่งแจ้งเตือนของทีมงาน (สัญญาไม่มี scope นี้), สถานะ `sending` ระหว่างส่ง, การตั้งค่าองค์กร/ทีม
+
+**ส่งต่อผ่าน Next.js:** งานของฝั่ง frontend (`frontend/`) — proxy ต้องส่งต่อคำขอ upgrade ไป :8787 พร้อม `X-Forwarded-Host`
+(host ที่เบราว์เซอร์ใช้) เพื่อให้ Origin ตรง และ `X-Bookdose-Proxy` เมื่อตั้ง `BOOKDOSE_PROXY_SECRET`
+
+### ระยะที่ 2 (ส่วนที่เหลือ) — ค่อย ๆ เปลี่ยนเป็น router ของ FastAPI จริง ทีละโมดูล ⬜
 - ย้ายทีละโมดูลจาก `ROUTES` ไปเป็น `APIRouter` โดย route ที่ยังไม่ย้ายยังผ่าน `dispatch()` (catch-all อยู่ท้ายสุด)
 - ใช้ `Depends` แทนระดับสิทธิ์ (workspace, customer, guest ฯลฯ) โดยคงลำดับการตรวจและข้อความเดิม
 - ใช้ pydantic แทนการตรวจข้อมูลเข้าที่เขียนเองใน `schema.py` ต้องแปลง 422 ให้เป็น 400 `{error}` ภาษาไทย
-- **Realtime ผ่าน WebSocket** (ข้อความและสถานะในแชท/กล่องข้อความ, สถานะกำลังพิมพ์) ตอนนี้ปิด WebSocket ไว้ (`ws='none'`)
-  ต้องเปิดใน `uvicorn_config()`, ตรวจ Host/Origin และคุกกี้แบบเดียวกับ HTTP และให้ Next.js ส่งต่อ WebSocket ได้
+- ~~Realtime ผ่าน WebSocket~~ ✅ ระยะที่ 2a (ด้านบน) · ที่เหลือ: ทดสอบผ่าน Next.js production build จริง และส่งเหตุการณ์ในจุดที่ยังไม่ส่ง
 - เอกสาร API อัตโนมัติ (`/docs`) **ปิดใน production** หรือเปิดเฉพาะผู้ดูแลแพลตฟอร์ม
 - ลบ `backend/server.py` และ `BOOKDOSE_SERVER=legacy` หลังใช้งานจริงผ่านไป 1 รอบโดยไม่ต้องย้อนกลับ
 

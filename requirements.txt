@@ -7,3 +7,6 @@ uvicorn==0.53.0
 starlette==1.6.0
 anyio==4.15.1
 h11==0.16.0
+# WebSocket for uvicorn (realtime chat hints, backend/realtime; uvicorn's 'websockets-sansio' implementation). The
+# tests use its sync client too.
+websockets==16.1.1

@@ -11,6 +11,7 @@ from backend.modules.conversations import repository as conversations, service a
 from backend.modules.organization import repository as organization
 from backend.modules.tickets import repository, schema
 from backend.modules.trash import service as trash
+from backend.realtime import events as realtime
 from backend.utils.dates import iso, now, utc_now
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -32,6 +33,10 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
         if response:
             repository.set_first_response(db,ticket_id,response)
     automation.apply_rules(db,ticket_id)
+    # A new case: staff lists, and the customer's cases; its conversation now shows the case (and may have moved team).
+    realtime.ticket(db,ticket_id,public=True,teams=(team_id,),conversations_listed=True)
+    if conversation_id:
+        realtime.conversation(db,conversation_id,teams=(team_id,))
     return ticket_id
 
 
@@ -85,6 +90,11 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     repository.update(db,ticket['id'],status,priority,team_id,assignee,resolved_at)
     conversations.set_team_for_ticket(db,ticket['id'],team_id)
     automation.after_status_change(db,ctx,ticket,status)
+    # Priority, team and assignee are for staff; the customer hears only about a new status. The team that had the
+    # case until now hears about it moving away.
+    realtime.ticket(db,ticket['id'],public=status!=ticket['status'],teams=(ticket['team_id'],),conversations_listed=True)
+    for conv in conversations.for_ticket(db,ticket['id']):
+        realtime.conversation(db,conv['id'],public=status!=ticket['status'],teams=(ticket['team_id'],))
     changes = {key:{'before':ticket[key],'after':value} for key,value in [('status',status),('priority',priority),('team_id',team_id),('assignee_id',assignee)] if ticket[key]!=value}
     audit.record(db,ctx['name'],'ticket.updated',ticket['id'],json.dumps(changes,ensure_ascii=False))
     db.commit()
@@ -108,6 +118,7 @@ def delete_ticket(db, ctx, ticket_id):
     trash.capture(db,ctx,'ticket',ticket['id'],f"BD-{ticket['number']} · {ticket['subject']}",
                   {'tickets':[ticket],'ticket_conversations':repository.conversation_links(db,ticket['id'])},
                   detail=customer.get('name',''))
+    realtime.ticket(db,ticket['id'],public=True,conversations_listed=True)
     repository.delete(db,ticket['id'])
     audit.record(db,ctx['name'],'ticket.deleted',ticket['id'],f"BD-{ticket['number']} · {ticket['subject']}")
     db.commit()

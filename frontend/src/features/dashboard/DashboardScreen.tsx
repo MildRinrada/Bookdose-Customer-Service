@@ -11,6 +11,7 @@ import { TicketTable } from '@/features/tickets/components/TicketTable';
 import type { TicketRow } from '@/features/tickets/types';
 import { date, isDone, overdue } from '@/lib/format';
 import { useApi } from '@/lib/query';
+import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useStaffAlerts, useStaffTickets, useStaffUser, useWork } from '@/lib/session';
 import { overviewPath } from './api';
 import { ManagerView } from './components/ManagerView';
@@ -20,7 +21,8 @@ import type { Overview } from './types';
 
 /* Overview: greeting, stat cards, recent cases, "ถึงคุณ" (mentions, follow-ups, escalations), "Action Needed",
    the new-cases chart and, for admins and team leads, the manager view. The overview's own data
-   (/api/automation/overview) refreshes every 30 seconds while the screen is visible and no dialog is open; it also
+   (/api/automation/overview) refreshes every 30 seconds (every minute while live updates are connected, which refresh it on changes)
+   while the screen is visible and no dialog is open; it also
    keeps the bell's alerts current. Markup: pages/dashboard/dashboard. */
 
 const REFRESH_MS = 30000;
@@ -31,7 +33,8 @@ type Tab = 'all' | 'mine' | 'new';
 export function DashboardScreen() {
   const [path] = useState(overviewPath);
   const modalOpen = useModalOpen();
-  const overview = useApi<Overview>(path, { refetchInterval: modalOpen ? false : REFRESH_MS });
+  const interval = useRealtimeInterval(modalOpen ? false : REFRESH_MS);
+  const overview = useApi<Overview>(path, { refetchInterval: interval });
   const client = useQueryClient();
 
   // The overview carries the member's alerts too: the bell counts from the freshest copy.

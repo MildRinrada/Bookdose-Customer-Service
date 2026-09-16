@@ -9,6 +9,8 @@ def organization_view(org, welcome, ai_enabled, articles, response_hours='', ema
             'categories':list(categories)}
 
 
-def conversation_view(conv, messages, ticket, ai_state, survey=None):
+def conversation_view(conv, messages, ticket, ai_state, survey=None, staff_read_at=None):
+    """staff_read_at: when the team last opened the conversation after the customer wrote (read receipt)."""
     return {'conversation':{'id':conv['id'],'subject':conv['subject'],'status':conv['status']},'messages':messages,
-            'ticket':{'id':ticket['id'],'number':ticket['number'],'status':ticket['status']} if ticket else None,'ai':ai_state,'survey':survey}
+            'ticket':{'id':ticket['id'],'number':ticket['number'],'status':ticket['status']} if ticket else None,'ai':ai_state,'survey':survey,
+            'staff_read_at':staff_read_at}

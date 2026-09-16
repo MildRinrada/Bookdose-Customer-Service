@@ -544,6 +544,8 @@ def open_conversation(cd, db, org, session, body):
 
 
 def mark_seen(db, session, conversation_id):
+    from backend.realtime import events as realtime
+    realtime.customer_read(db,conversation_id,account_id=session['account_id'])
     repository.mark_seen(db,session['account_id'],conversation_id)
 
 

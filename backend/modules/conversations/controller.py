@@ -9,6 +9,7 @@ def list_conversations(req):
 
 def show_conversation(req, conversation_id):
     conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    service.mark_read(req.db,req.ctx,conv)
     return req.send(200,service.conversation_detail(req.db,conv))
 
 

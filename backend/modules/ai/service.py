@@ -20,6 +20,7 @@ from backend.modules.conversations import repository as conversations
 from backend.modules.organization import repository as memberships
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets, service as ticket_service
+from backend.realtime import events as realtime
 from backend.utils.dates import after, today
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
@@ -77,6 +78,7 @@ def system_message(db, conversation_id, body, source='system', citations=None, j
     conversations.touch(db,conversation_id)
     if conversations.find(db,conversation_id)['channel'] in ('line','email'):
         channels.queue_ai(db,mid,job,signature,notice=source!='ai')
+    realtime.conversation(db,conversation_id)
     # AI and system notices deliberately do not satisfy the human first-response SLA.
     return mid
 
@@ -93,6 +95,7 @@ def handoff(db, conversation_id, reason='customer'):
     if previous['mode']=='bot' or not previous['reason']:
         system_message(db,conversation_id,HANDOFF_MESSAGE if conv['channel']=='web' else CHANNEL_HANDOFF_MESSAGE)
         audit.record(db,'Bookdose AI','ai.handoff',conversation_id,reason)
+    realtime.conversation(db,conversation_id)
     return tid
 
 
@@ -297,6 +300,9 @@ def process_one(tenant_id):
             return True
         if job['mode']=='draft' and not error:
             result['_context_hash'] = signature
+        if job['conversation_id']:
+            # A finished draft is for staff; a chatbot job also changes what the customer sees (pending answer).
+            realtime.conversation(db,job['conversation_id'],public=job['mode']=='bot',listed=False)
         repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
         if job['mode']=='bot':
             if error or result.get('needs_human'):

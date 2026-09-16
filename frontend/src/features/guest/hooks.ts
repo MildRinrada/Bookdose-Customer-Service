@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { api, setConversation, setGuestCredentials, type ApiError } from '@/lib/api/client';
 import { CHAT_POLL_MS } from '@/features/customer/hooks';
+import { useRealtimeInterval } from '@/lib/realtime-provider';
 import type { PortalSession } from '@/features/customer/types';
 import { guestPath, guestSessionKey, guestSessionPath } from './api';
 import type { GuestOverview } from './types';
@@ -13,9 +14,11 @@ import type { GuestOverview } from './types';
    over the csrf the changing requests need; the open chat is read like the signed-in customer's (X-Conversation-ID). */
 
 /** This browser's visitor, conversations and follow options, polled every `poll` ms (the list's unread marks and,
-    in the website widget, the unread badge). */
+    in the website widget, the unread badge). While live updates are connected, events refresh it and polling is a
+    slow safety net. */
 export function useGuestOverview(slug: string, poll: number | false = 30000) {
   const key = guestPath(slug);
+  const interval = useRealtimeInterval(poll);
   return useQuery<GuestOverview, ApiError>({
     queryKey: [key],
     queryFn: async () => {
@@ -23,17 +26,18 @@ export function useGuestOverview(slug: string, poll: number | false = 30000) {
       setGuestCredentials(data.guest?.csrf ?? null);
       return data;
     },
-    refetchInterval: poll,
+    refetchInterval: interval,
     refetchIntervalInBackground: false,
   });
 }
 
-/** The open guest chat, polled every 10 s. Reading it reads the team's replies, so the list's mark drops at once.
+/** The open guest chat, polled every 10 s (every minute while live updates are connected). Reading it reads the team's replies, so the list's mark drops at once.
     A chat that is no longer this visitor's (404, or the cookie is gone: 401) calls `onGone`. */
 export function useGuestSession(slug: string, id: string | null, onGone: (message: string) => void) {
   const client = useQueryClient();
   const toast = useToast();
   const key = id ? guestSessionKey(slug, id) : null;
+  const poll = useRealtimeInterval(CHAT_POLL_MS);
 
   useEffect(() => {
     setConversation(id);
@@ -47,7 +51,7 @@ export function useGuestSession(slug: string, id: string | null, onGone: (messag
       return api<PortalSession>(guestSessionPath(slug));
     },
     enabled: key !== null,
-    refetchInterval: (q) => (q.state.error && q.state.data ? false : CHAT_POLL_MS),
+    refetchInterval: (q) => (q.state.error && q.state.data ? false : poll),
     refetchIntervalInBackground: false,
   });
 

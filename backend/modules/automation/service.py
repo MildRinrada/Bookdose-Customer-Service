@@ -21,6 +21,7 @@ from backend.modules.customers import notify as customer_notify, service as cust
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets
+from backend.realtime import events as realtime
 from backend.utils.dates import after, iso, now, utc_now
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -193,11 +194,13 @@ def escalate_due(cd, db, tenant_id):
             tickets.update(db,t['id'],t['status'],t['priority'],t['team_id'],lead['id'],t['resolved_at'])
             load[lead['id']] = load.get(lead['id'],0)+1
         repository.insert_escalation(db,t['id'],'unclaimed',None,lead['id'] if lead else None)
+        realtime.ticket(db,t['id'])
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
                      f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที · {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
     for t in at_risk:
         lead = team_lead(members,load,t['team_id'])
         repository.insert_escalation(db,t['id'],'sla_risk',t['assignee_id'],lead['id'] if lead else None)
+        realtime.ticket(db,t['id'])
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
                      f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA · {'แจ้ง '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
     db.commit()
@@ -239,6 +242,7 @@ def set_ticket_status(db, ctx, ticket, status):
     tickets.update(db,ticket['id'],status,ticket['priority'],ticket['team_id'],ticket['assignee_id'],resolved_at)
     audit.record(db,ctx['name'],'ticket.updated',ticket['id'],json.dumps({'status':{'before':ticket['status'],'after':status}},ensure_ascii=False))
     after_status_change(db,ctx,ticket,status)
+    realtime.ticket(db,ticket['id'],public=True)
 
 
 def run_macro(cd, db, ctx, macro_id, body):
@@ -272,6 +276,7 @@ def run_macro(cd, db, ctx, macro_id, body):
             if macro['followup_hours']:
                 repository.insert_followup(db,uid(),ticket['id'],after(hours=macro['followup_hours']),
                                            f"ติดตามผลจาก Macro “{macro['name']}”",ctx['id'],ctx['name'])
+                realtime.ticket(db,ticket['id'],public=True)
                 done.append('followup')
         else:
             skipped.append('ticket')
@@ -287,6 +292,7 @@ def add_followup(db, ctx, ticket_id, body):
     followup_id = uid()
     repository.insert_followup(db,followup_id,ticket['id'],after(hours=hours),note or 'ติดตามผลกับลูกค้า',ctx['id'],ctx['name'])
     audit.record(db,ctx['name'],'followup.created',ticket['id'],note)
+    realtime.ticket(db,ticket['id'],public=True)
     db.commit()
     return followup_id
 
@@ -297,6 +303,7 @@ def finish_followup(db, ctx, followup_id):
     get_scoped(db,'tickets',followup['ticket_id'],ctx)
     repository.finish_followup(db,followup_id)
     audit.record(db,ctx['name'],'followup.done',followup['ticket_id'])
+    realtime.ticket(db,followup['ticket_id'],public=True)
     db.commit()
 
 
@@ -332,6 +339,7 @@ def send_survey(db, ctx, ticket):
         customers.notify_reply(db,conv['id'])
     repository.insert_survey(db,uid(),ticket['id'],conv['id'],message_id)
     audit.record(db,SYSTEM_ACTOR,'csat.sent',ticket['id'])
+    realtime.conversation(db,conv['id'])
     return message_id
 
 
@@ -346,6 +354,7 @@ def take_rating(db, conversation_id, text):
         return False
     repository.answer_survey(db,survey['id'],value)
     audit.record(db,'ลูกค้า','csat.rated',survey['ticket_id'],str(value))
+    realtime.conversation(db,conversation_id)
     return True
 
 
@@ -357,6 +366,7 @@ def rate_from_portal(db, conv, body):
     require(survey,'แบบประเมินนี้ปิดแล้ว หรือให้คะแนนไปแล้ว',409)
     repository.answer_survey(db,survey['id'],value,comment)
     audit.record(db,'ลูกค้า','csat.rated',survey['ticket_id'],str(value))
+    realtime.conversation(db,conv['id'])
     db.commit()
 
 

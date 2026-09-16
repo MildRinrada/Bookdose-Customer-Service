@@ -28,6 +28,8 @@ cd frontend && npm install && npm run dev   # หน้าเว็บที่ 
 
 **เซิร์ฟเวอร์ API:** `python3 app.py` เปิด FastAPI บน uvicorn แบบ worker เดียว (การจำกัดคำขอ, SQLite และงานเบื้องหลังอยู่ใน process เดียวกัน อย่ารันหลาย worker) ตัวเลือกเดิมใช้ได้ทั้งหมด (`--host`, `--port`, `--secure-cookies`, `--backup`, `--restore`) uvicorn ไม่เชื่อ `X-Forwarded-For` เอง ที่อยู่ของผู้ใช้มาจากหน้าเว็บ Next.js ตามเดิม (`backend/middleware/security.py`) และ log ไม่พิมพ์ path หรือ query string
 
+**Realtime (WebSocket):** บน FastAPI หน้าเว็บต่อ WebSocket ที่ `/api/realtime/staff` (ทีมงาน), `/api/realtime/customer` (ลูกค้าที่เข้าสู่ระบบ) และ `/api/public/<รหัสองค์กร>/guest/realtime` (ผู้เยี่ยมชม) ผ่าน Next.js ที่พอร์ต 3000 ช่องนี้ส่งแค่ "มีอะไรเปลี่ยน" (หน้าเว็บดึงข้อมูลใหม่ผ่าน API เดิม) สถานะกำลังพิมพ์ และอ่านแล้ว ใช้แพ็กเกจ `websockets` จาก `requirements.txt` ตรวจ Host/Origin และคุกกี้แบบเดียวกับ HTTP ต้องรัน worker เดียว (ศูนย์กลางข้อความอยู่ในหน่วยความจำ ถ้ารันหลาย worker ต้องมี broker เช่น Redis) เซิร์ฟเวอร์เดิม (`legacy`) ไม่มี WebSocket หน้าเว็บจะดึงข้อมูลเป็นระยะแบบเดิม รายละเอียดใน [docs/REALTIME-DESIGN.md](docs/REALTIME-DESIGN.md) และโค้ดใน `backend/realtime/`
+
 **ย้อนกลับไปใช้เซิร์ฟเวอร์เดิม (`http.server`):** ตั้ง `BOOKDOSE_SERVER=legacy` ก่อนรัน เช่น `BOOKDOSE_SERVER=legacy python3 app.py` (Windows: `set BOOKDOSE_SERVER=legacy` แล้ว `py -3 app.py`) ทั้งสองแบบใช้ route, การตรวจสิทธิ์ และข้อความ error ชุดเดียวกัน (`backend/http/dispatch.py`) ชุดทดสอบเลือกเซิร์ฟเวอร์ด้วยตัวแปรเดียวกัน: `python -m unittest discover -s tests` ทดสอบบน FastAPI และ `BOOKDOSE_SERVER=legacy python -m unittest discover -s tests` ทดสอบบนเซิร์ฟเวอร์เดิม
 
 เปิดหน้าต่าง Terminal ค้างไว้ระหว่างใช้งาน ปิดโปรแกรมด้วย `Ctrl+C` ข้อมูลจะยังอยู่เมื่อเปิดใหม่ ถ้าพอร์ต 8787 ถูกใช้อยู่ ให้ใช้ `python3 app.py --port 8788` แล้วตั้ง `BOOKDOSE_API_URL=http://127.0.0.1:8788` ให้หน้าเว็บ (ดู `frontend/.env.example`) ถ้าพอร์ต 3000 ถูกใช้อยู่ ให้ตั้ง `PORT=3001` ก่อน `npm run dev` / `npm start`
@@ -293,6 +295,8 @@ backend/
   http/                    dispatch.py: ตาราง route และลำดับ middleware ตามระดับการเข้าถึง ใช้ร่วมกันทั้งสองเซิร์ฟเวอร์
                            แล้วเรียก controller; adapter.py: object `req` ของคำขอจาก ASGI
   workers.py               เริ่ม/หยุดงานเบื้องหลัง (AI, ช่องทาง, อีเมล, automation) ครั้งเดียวต่อ process
+  realtime/                WebSocket (FastAPI เท่านั้น): hub.py ศูนย์กลางใน process, events.py service เรียกเมื่อข้อมูลเปลี่ยน
+                           (ส่งหลัง commit), socket.py endpoint ทีมงาน/ลูกค้า/ผู้เยี่ยมชม
   modules/
     auth/                  เข้าสู่ระบบ ตั้งค่าครั้งแรก สมัครองค์กรพร้อมยืนยันอีเมล เซสชัน บัญชีผู้ใช้
     platform/              ผู้ดูแลแพลตฟอร์ม: สร้าง/ระงับองค์กร และอีเมลที่ใช้ส่งลิงก์ยืนยันการสมัคร

@@ -106,6 +106,8 @@ export type PortalSession = {
   ticket: { id: string; number: number; status: string } | null;
   ai: AiState | null;
   survey: PortalSurvey | null;
+  /** When the team last opened the chat after the customer wrote, for "อ่านแล้ว". */
+  staff_read_at?: string | null;
 };
 
 /** GET /api/public/<org>/cases/<id> */

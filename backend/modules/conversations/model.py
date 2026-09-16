@@ -23,3 +23,11 @@ CREATE TABLE attachments (
 CREATE INDEX messages_conversation ON messages(conversation_id,created_at);
 CREATE INDEX conversations_team ON conversations(team_id,updated_at);
 '''
+
+# Added later (schema.upgrade_tenant): when a staff member last opened a web conversation after the customer wrote, for
+# the customer's read receipt ("อ่านแล้ว").
+READS_TABLE = '''
+CREATE TABLE IF NOT EXISTS conversation_staff_reads (
+    conversation_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, read_at TEXT NOT NULL
+)
+'''

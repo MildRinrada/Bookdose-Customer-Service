@@ -62,3 +62,5 @@ def upgrade_tenant(db):
     # Guest web chat (customers chatting without an account): its tables and the switches of the chat and widget.
     db.executescript(guest.TENANT_TABLES)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',guest.DEFAULT_SETTINGS)
+    # Read receipts in web chat: when staff last read a conversation after the customer's message.
+    db.execute(conversations.READS_TABLE)

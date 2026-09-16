@@ -11,6 +11,7 @@ import { MessageThread, ThreadFilter } from '@/features/inbox/components/Message
 import { useMarkMentionsSeen, useModalOpen } from '@/features/inbox/hooks';
 import { date, overdue } from '@/lib/format';
 import { useApi } from '@/lib/query';
+import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useMemberName, useWork } from '@/lib/session';
 import { ticketPath } from './api';
 import { TicketSidebar } from './components/TicketSidebar';
@@ -18,9 +19,9 @@ import { escalationText } from './labels';
 import type { TicketConversation, TicketDetail } from './types';
 
 /* One case (the old ticketDetail): heading with status, SLA and escalation; each conversation with its thread and
-   composer; the case history; the side column. The case is read again every 12 seconds (not while a dialog is open)
-   without touching drafts, the side form or the reader's place in a thread. Markup: pages/tickets/ticket-detail,
-   ticket-conversation. */
+   composer; the case history; the side column. The case is read again every 12 seconds (every minute while live
+   updates are connected; not while a dialog is open) without touching drafts, the side form or the reader's place in
+   a thread. Markup: pages/tickets/ticket-detail, ticket-conversation. */
 
 const POLL_MS = 12000;
 
@@ -29,7 +30,8 @@ export function TicketDetailScreen({ id }: { id: string }) {
   const modalOpen = useModalOpen();
   // A failed refresh stops polling until the screen is opened again (the old poll cleared its timer), and says why once.
   const [failedAt, setFailedAt] = useState(0);
-  const detail = useApi<TicketDetail>(ticketPath(id), { refetchInterval: modalOpen || failedAt ? false : POLL_MS });
+  const interval = useRealtimeInterval(modalOpen || failedAt ? false : POLL_MS);
+  const detail = useApi<TicketDetail>(ticketPath(id), { refetchInterval: interval });
   useMarkMentionsSeen(detail.data?.conversations.map((c) => c.id) ?? []);
 
   const { error, data, errorUpdatedAt } = detail;
@@ -113,7 +115,7 @@ function TicketConversationCard({ conv, contactName }: { conv: TicketConversatio
         </Link>
       </div>
       <ThreadFilter messages={conv.messages} notesOnly={notesOnly} onChange={setNotesOnly} />
-      <MessageThread messages={conv.messages} threadId={conv.id} notesOnly={notesOnly} />
+      <MessageThread messages={conv.messages} threadId={conv.id} notesOnly={notesOnly} readAt={conv.customer_read_at} />
       <Composer conversationId={conv.id} channel={conv.channel} manual={conv.channel === 'manual'} conversation={conv} />
     </section>
   );

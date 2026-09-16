@@ -17,6 +17,7 @@ from backend.modules.conversations import repository as conversations
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets
+from backend.realtime import events as realtime
 from backend.utils.dates import after, now
 from backend.utils.files import write_private_file
 from backend.utils.security import uid
@@ -222,6 +223,7 @@ def retry(db, ctx, job):
     row = check_reply(db,ctx['tenant_id'],conv,{'body':message['body']})
     repository.requeue_outbox(db,job['id'],ctx['id'],row['generation'])
     conversations.set_delivery(db,job['message_id'],'queued')
+    realtime.delivery(db,job['message_id'])
     audit.record(db,ctx['name'],'channel.retry_requested',message['conversation_id'])
 
 
@@ -231,6 +233,7 @@ def finish(db, job, status, error='', provider_id=None):
     # A staff reply counts as the first response once Facebook accepts it.
     if status=='accepted' and not conversations.ai_meta(db,job['message_id']):
         tickets.record_first_response_for_message(db,job['message_id'])
+    realtime.delivery(db,job['message_id'])
 
 
 def process_outbox(tenant_id):

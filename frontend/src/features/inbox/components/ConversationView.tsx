@@ -110,7 +110,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         <div className="notice">Facebook Messenger: ตอบได้เฉพาะข้อความ ไม่เกิน 2,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
       )}
       <ThreadFilter messages={messages} notesOnly={notesOnly} onChange={setNotesOnly} />
-      <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} />
+      <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} />
       <Composer conversationId={c.id} channel={c.channel} manual={c.channel === 'manual'} compact conversation={c} />
     </>
   );

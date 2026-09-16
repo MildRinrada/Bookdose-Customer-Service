@@ -18,6 +18,7 @@ import { setEmbedded, setGuestCredentials } from '@/lib/api/client';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
+import { RealtimeProvider } from '@/lib/realtime-provider';
 import { guestBase, guestPath, guestPortalSlug, widgetPath } from './api';
 import { FollowCard } from './components/FollowCard';
 import { GuestClaimBanners } from './components/GuestClaimBanners';
@@ -52,11 +53,21 @@ function writeFold(slug: string, value: 'open' | 'closed') {
   }
 }
 
-export function GuestChatScreen({ slug, initialId = '', embed = false }: Props) {
+export function GuestChatScreen(props: Props) {
   // Before the first request: every call from the iframe says so.
-  useState(() => setEmbedded(embed));
+  useState(() => setEmbedded(Boolean(props.embed)));
   useEffect(() => () => setEmbedded(false), []);
+  // Live updates once this browser is a guest of the organization (the cookie exists): new replies, the widget's
+  // unread badge, typing and read marks. Reads the same cached overview as the page, without polling it itself.
+  const guest = useGuestOverview(props.slug, false).data?.guest;
+  return (
+    <RealtimeProvider kind="guest" org={props.slug} enabled={Boolean(guest)} identity={guest?.csrf ?? ''}>
+      <GuestChatPage {...props} />
+    </RealtimeProvider>
+  );
+}
 
+function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
   const overview = useGuestOverview(slug);
   const info = useApi<PublicOrgInfo>(`/api/public/${slug}`);
   const widget = useApi<WidgetInfo>(embed ? widgetPath(slug) : null);
@@ -447,6 +458,7 @@ function GuestChatView({
         id="customer-thread"
         publicView
         publicSlug={portal}
+        readAt={data.staff_read_at}
         afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${JSON.stringify(guest)}`}
         after={
           <>

@@ -81,6 +81,29 @@ def latest_message_id(db, conversation_id, kind=None):
     return row['id'] if row else None
 
 
+def last_message_at(db, conversation_id, kind):
+    """When the latest message of this kind was written, or None."""
+    return db.execute('SELECT MAX(created_at) FROM messages WHERE conversation_id=? AND kind=?',(conversation_id,kind)).fetchone()[0]
+
+
+# Read receipts (web chat)
+def staff_read_at(db, conversation_id):
+    row = one(db,'SELECT read_at FROM conversation_staff_reads WHERE conversation_id=?',(conversation_id,))
+    return row['read_at'] if row else None
+
+
+def set_staff_read(db, conversation_id, user_id, read_at):
+    db.execute('''INSERT INTO conversation_staff_reads VALUES(?,?,?) ON CONFLICT(conversation_id)
+                  DO UPDATE SET user_id=excluded.user_id,read_at=excluded.read_at''',(conversation_id,user_id,read_at))
+
+
+def customer_read_at(db, conversation_id, contact_id):
+    """When the conversation's customer (an account owning its contact, or the guest who started it) last opened it."""
+    return db.execute('''SELECT MAX(seen_at) FROM (
+        SELECT seen_at FROM customer_seen WHERE conversation_id=? AND account_id IN (SELECT account_id FROM customer_contacts WHERE contact_id=?)
+        UNION ALL SELECT seen_at FROM guest_seen WHERE conversation_id=?)''',(conversation_id,contact_id,conversation_id)).fetchone()[0]
+
+
 def set_message_created_at(db, message_id, created_at):
     db.execute('UPDATE messages SET created_at=? WHERE id=?',(created_at,message_id))
 

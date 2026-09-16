@@ -81,7 +81,7 @@ def conversation_view(db, conv, viewer):
     _mark_seen(db,viewer,conv['id'])
     return schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
                                     tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
-                                    automation.portal_survey(db,conv['id']))
+                                    automation.portal_survey(db,conv['id']),conversations.staff_read_at(db,conv['id']))
 
 
 def hand_off_to_staff(db, conv):

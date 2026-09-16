@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { isDone } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
+import { RealtimeProvider } from '@/lib/realtime-provider';
 import { isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AccountDialog } from './AccountDialog';
@@ -128,7 +129,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
     );
 
   return (
-    <>
+    // Live updates of the selected organization (inbox, cases, overview, bell); a new organization connects anew.
+    <RealtimeProvider kind="staff" org={work?.tenant.slug} enabled={Boolean(work)} identity={`${user.id}|${work?.tenant.id ?? ''}`}>
       <div className={`mobile-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
       <aside className={`sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-top">
@@ -280,6 +282,6 @@ export function StaffShell({ children }: { children: ReactNode }) {
           {content}
         </main>
       </div>
-    </>
+    </RealtimeProvider>
   );
 }

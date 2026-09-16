@@ -22,6 +22,7 @@ from backend.modules.conversations import repository as conversations, service a
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets, service as ticket_service
+from backend.realtime import events as realtime
 from backend.utils.dates import after, now, utc_now
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
@@ -243,6 +244,7 @@ def ingest_line(db, tenant_id, row, event, attachment, store_message):
             repository.save_line_membership(db,link['conversation_id'],kind,source_id,int(event_type!='leave'),occurred)
             repository.set_link_event_time(db,link['conversation_id'],occurred)
             ai.stop_bot(db,link['conversation_id'],'group_membership_changed')
+            realtime.conversation(db,link['conversation_id'],public=False,listed=False)
             if event_type=='leave':
                 for job in repository.queued_for_conversation(db,link['conversation_id']):
                     finish(db,job,'failed','changed')
@@ -481,6 +483,7 @@ def retry_message(db, ctx, mid):
     row = setting(db,job['kind'])
     repository.requeue_outbox(db,job['id'],ctx['id'],row['generation'])
     conversations.set_delivery(db,mid,'queued')
+    realtime.delivery(db,mid)
     audit.record(db,ctx['name'],'channel.retry_requested',message['conversation_id'])
 
 
@@ -526,6 +529,7 @@ def finish(db, job, status, error='', provider_id=None):
     # A staff reply on LINE / Email counts as the first response once the provider accepts it.
     if status=='accepted' and not conversations.ai_meta(db,job['message_id']):
         tickets.record_first_response_for_message(db,job['message_id'])
+    realtime.delivery(db,job['message_id'])
 
 
 def process_outbox(tenant_id):

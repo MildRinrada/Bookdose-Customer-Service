@@ -92,4 +92,6 @@ export type ConversationDetail = {
   messages: Message[];
   contact: ConversationContact;
   ticket: ConversationTicket | null;
+  /** Web chats: when the customer (account or guest) last opened the conversation, for "อ่านแล้ว". */
+  customer_read_at?: string | null;
 };

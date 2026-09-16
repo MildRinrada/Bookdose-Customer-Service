@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { ApiError } from '@/lib/api/client';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
+import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
 import { ConversationView } from './components/ConversationView';
@@ -17,7 +18,8 @@ import type { ConversationDetail, ConversationSummary } from './types';
 
 /* The inbox (the old pages/inbox/inbox.js): every channel in one filterable list, and the open conversation beside
    it. Wide screens open the first conversation of the current tab; narrow screens show the list first. The list and
-   the open conversation refresh every 12 seconds without touching the draft or the reader's place in the thread.
+   the open conversation refresh every 12 seconds (every minute while live updates are connected) without touching the
+   draft or the reader's place in the thread.
    Markup: pages/inbox/inbox. */
 
 const inboxFilters: Record<string, string> = { waiting: 'รอตอบ', open: 'เปิดอยู่', all: 'ทั้งหมด' };
@@ -43,7 +45,7 @@ export function InboxScreen({ id }: { id?: string }) {
   const modalOpen = useModalOpen();
   // A failed refresh stops polling until the screen is opened again (the old poll cleared its timer).
   const [pollFailed, setPollFailed] = useState(false);
-  const interval = modalOpen || pollFailed ? false : POLL_MS;
+  const interval = useRealtimeInterval(modalOpen || pollFailed ? false : POLL_MS);
   const list = useApi<{ conversations: ConversationSummary[] }>('/api/conversations', { refetchInterval: interval });
   const [filter, setFilter] = useUiState('inbox:filter', 'open');
   const [query, setQuery] = useUiState('inbox:query', '');

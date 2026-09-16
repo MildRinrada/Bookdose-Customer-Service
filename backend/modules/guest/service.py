@@ -217,6 +217,8 @@ def current_conversation(db, guest, conversation_id):
 
 
 def mark_seen(db, guest, conversation_id):
+    from backend.realtime import events as realtime
+    realtime.customer_read(db,conversation_id,visitor_id=guest['visitor']['id'])
     repository.mark_seen(db,guest['visitor']['id'],conversation_id)
 
 

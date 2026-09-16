@@ -12,6 +12,8 @@ from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository, schema
 from backend.modules.customers import service as customers
 from backend.modules.tickets import repository as tickets, schema as ticket_schema, service as ticket_service
+from backend.realtime import events as realtime
+from backend.utils.dates import now
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -44,7 +46,24 @@ def conversation_detail(db, conv):
         contact['guest'] = conv['guest']
     return {'conversation':conv,'messages':message_list(db,conv['id']),
             'contact':contact,
-            'ticket':tickets.for_conversation(db,conv['id'])}
+            'ticket':tickets.for_conversation(db,conv['id']),
+            # Read receipt: when the customer (account or guest) last opened this web conversation.
+            'customer_read_at':repository.customer_read_at(db,conv['id'],conv['contact_id']) if conv['channel']=='web' else None}
+
+
+def mark_read(db, ctx, conv):
+    """A staff member opened the conversation: when the customer wrote after the team last read it, record the read
+    (inside the request's transaction) and tell the customer's pages."""
+    if conv['channel']!='web':
+        return
+    latest = repository.last_message_at(db,conv['id'],'customer')
+    read_at = repository.staff_read_at(db,conv['id'])
+    # One-second timestamps: a read in the same second as the message is written again on the next open.
+    if not latest or (read_at and read_at>latest):
+        return
+    moment = now()
+    repository.set_staff_read(db,conv['id'],ctx['id'],moment)
+    realtime.staff_read(db,conv,moment)
 
 
 def set_conversation_status(db, ctx, conv, body):
@@ -53,6 +72,7 @@ def set_conversation_status(db, ctx, conv, body):
     if status=='closed':
         ai.stop_bot(db,conv['id'])
     audit.record(db,ctx['name'],'conversation.'+status,conv['id'])
+    realtime.conversation(db,conv['id'])
     db.commit()
 
 
@@ -88,7 +108,10 @@ def store_staff_message(db, ctx, conv, kind, body, cd=None):
 def request_ai_draft(db, ctx, conv):
     D.begin(db)
     job_id = ai.enqueue(db,ctx['tenant_id'],'draft',conv['id'],ctx['id'])
+    bot = ai.conversation_state(db,conv['id'])['mode']=='bot'
     ai.stop_bot(db,conv['id'])
+    # The draft is for staff; the customer only sees the chatbot stop, when it was answering.
+    realtime.conversation(db,conv['id'],public=bot,listed=False)
     db.commit()
     return job_id
 
@@ -103,6 +126,7 @@ def set_ai_mode(db, ctx, conv, body):
         require(ai.bot_enabled(db,conv['id']) and ai.has_key(ctx['tenant_id']),'กรุณาเปิด Chatbot สำหรับช่องทางนี้และตั้งค่า API Key ก่อน')
         ai.resume_bot(db,conv['id'])
         audit.record(db,ctx['name'],'ai.resumed',conv['id'])
+    realtime.conversation(db,conv['id'],listed=False)
     db.commit()
 
 
@@ -121,6 +145,8 @@ def link_ticket(db, ctx, conv, body):
         category = customer_repository.category_of(db,conv['id']) or 'ทั่วไป'
         tid = ticket_service.open_ticket(db,conv['contact_id'],conv['team_id'],conv['subject'],priority,category=category,conversation_id=conv['id'])
     audit.record(db,ctx['name'],'conversation.linked',tid,conv['id'])
+    realtime.conversation(db,conv['id'])
+    realtime.ticket(db,tid,public=True)
     db.commit()
     return tid
 
@@ -174,6 +200,9 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
     # A support-page customer with an account hears about the reply by email (unless they read it on the page first).
     if kind=='reply' and channel=='web':
         customers.notify_reply(db,conversation_id)
+    # Every channel stores here (staff, the customer's page, guests, LINE / Email / Facebook workers): the pages that
+    # may see the conversation hear about it once this transaction commits; an internal note reaches staff only.
+    realtime.conversation(db,conversation_id,public=kind!='note')
     if kind=='customer':
         if not uploads and automation.take_rating(db,conversation_id,text):
             return mid

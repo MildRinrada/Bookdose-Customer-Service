@@ -26,7 +26,8 @@ export type Ticket = TicketSummary & {
 };
 
 /** A conversation of the case, with its messages (tickets.service.ticket_detail). */
-export type TicketConversation = Conversation & { messages: Message[] };
+/** customer_read_at: web chats, when the customer last opened it ("อ่านแล้ว"), if the server includes it. */
+export type TicketConversation = Conversation & { messages: Message[]; customer_read_at?: string | null };
 
 /** GET /api/tickets/<id> */
 export type TicketDetail = {

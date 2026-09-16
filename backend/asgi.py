@@ -5,9 +5,14 @@ backend.http.dispatch.dispatch(), which runs the same middleware, controllers, e
 before. FastAPI's own answers never reach a client: no /docs or /openapi.json, and its 404/405/422/500 pages are
 replaced by {error: message} with the security headers.
 
+Phase 2a: realtime hints over WebSocket (backend/realtime, docs/REALTIME-DESIGN.md): /api/realtime/staff,
+/api/realtime/customer and /api/public/<org>/guest/realtime. The lifespan attaches the event loop to the in-process
+hub, so services and background workers can publish from their threads.
+
 Start it with `python app.py` (see app.py for the options), which runs uvicorn with one worker, no proxy headers and
 no access log of its own. `uvicorn backend.asgi:app` also works; then the host, port and secure-cookie setting come
 from BOOKDOSE_HOST, BOOKDOSE_PORT and BOOKDOSE_SECURE_COOKIES, and must match the uvicorn options."""
+import asyncio
 from contextlib import asynccontextmanager
 import json
 import os
@@ -25,6 +30,8 @@ from backend.database import db as D
 from backend.http.adapter import RequestAdapter
 from backend.http.dispatch import METHODS, SERVER_ERROR, UNSUPPORTED_METHOD, dispatch, log_request
 from backend.middleware.security import SECURITY_HEADERS
+from backend.realtime import socket as realtime_socket
+from backend.realtime.hub import hub
 from backend.utils.dates import now
 from backend.workers import start_workers, stop_workers
 
@@ -71,11 +78,14 @@ def create_app(server=None, workers=True, log_requests=True, init_database=False
                 os.umask(0o077)
             D.init()
         app.state.limiter = anyio.CapacityLimiter(REQUEST_THREADS)
+        loop = asyncio.get_running_loop()
+        hub.attach(loop)
         running = start_workers() if workers else None
         try:
             yield
         finally:
             stop_workers(running)
+            hub.detach(loop)
 
     app = FastAPI(title='Bookdose Customer Service',docs_url=None,redoc_url=None,openapi_url=None,lifespan=lifespan)
     app.state.server = server
@@ -98,6 +108,8 @@ def create_app(server=None, workers=True, log_requests=True, init_database=False
         return RawResponse(status,raw_headers,body)
 
     app.add_api_route('/{target:path}',answer,methods=ROUTE_METHODS,include_in_schema=False)
+    # WebSocket routes only match WebSocket handshakes; plain HTTP to these paths still reaches dispatch() (404).
+    realtime_socket.add_routes(app,server)
 
     # FastAPI's own error pages, should anything reach them, answer in the application's format instead.
     async def http_error(request, error):
@@ -122,13 +134,17 @@ def create_app(server=None, workers=True, log_requests=True, init_database=False
 
 
 def uvicorn_config(app, host, port, **overrides):
-    """uvicorn settings for this application: one worker, the client address from the socket only (the web app's
-    forwarded address is judged by middleware/security.py), no access log (it would print query strings), no
-    Server header."""
+    """uvicorn settings for this application: one worker (the realtime hub and rate limits live in this process), the
+    client address from the socket only (the web app's forwarded address is judged by middleware/security.py), no
+    access log (it would print query strings), no Server header. WebSocket through the pinned `websockets` package
+    (sans-I/O implementation), frames above 16 KB refused by uvicorn (the application allows 2 KB), no compression
+    (events are tiny), protocol pings every 20 s."""
     import uvicorn
     options = dict(host=host,port=port,workers=1,lifespan='on',proxy_headers=False,forwarded_allow_ips='',
                    access_log=False,server_header=False,date_header=True,timeout_keep_alive=5,
-                   timeout_graceful_shutdown=10,h11_max_incomplete_event_size=64*1024,http='h11',ws='none')
+                   timeout_graceful_shutdown=10,h11_max_incomplete_event_size=64*1024,http='h11',
+                   ws='websockets-sansio',ws_max_size=16*1024,ws_per_message_deflate=False,ws_ping_interval=20.0,
+                   ws_ping_timeout=20.0)
     options.update(overrides)
     return uvicorn.Config(app,**options)
 

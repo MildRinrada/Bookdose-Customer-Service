@@ -15,6 +15,7 @@ import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills'
 import { RichTextField, RichToolbar, useRichEditor } from '@/features/rich/RichEditor';
 import { readFiles } from '@/lib/files';
 import { useInvalidate } from '@/lib/query';
+import { useTypingNotifier } from '@/lib/realtime-provider';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
@@ -26,7 +27,8 @@ import { MentionMenu } from './MentionMenu';
 /* The reply composer (the old composer()): for the team, reply or internal note, formatting, attachments (also by
    dropping files on it), a canned reply, the knowledge search, macros, @mentions and the AI draft; for a customer
    (publicView) a plain text box and attachments. Unsent team text is kept per conversation while moving around the
-   app. Markup: pages/inbox/composer, file-pill. */
+   app. Markup: pages/inbox/composer, file-pill. While live updates are connected, typing a reply the customer will see
+   tells them "กำลังพิมพ์…" (never while writing an internal note). */
 
 const ACCEPT = '.png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt';
 
@@ -164,6 +166,12 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       }),
     [id, setDrafts],
   );
+  const notifyTyping = useTypingNotifier(id);
+  const onText = (value: string) => {
+    keepDraft(value);
+    // Only a reply in a web chat reaches the customer's screen; an internal note never says anything to them.
+    if (kind === 'reply' && !manual && channel === 'web') notifyTyping(value);
+  };
 
   // Text put into the composer by a tool (an article) appears in the editor and is kept as the draft.
   const insert = async (text: string) => {
@@ -302,7 +310,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
         sourcePlaceholder={kindChanged && kind === 'note' ? 'บันทึกภายใน… ลูกค้าจะไม่เห็นข้อความนี้' : basePlaceholder}
         className="composer-input"
         keyShortcuts="Control+Enter Meta+Enter"
-        onChange={keepDraft}
+        onChange={onText}
       />
       <FilePills files={pills.files} onRemove={pills.remove} />
       <div className="composer-bottom">
@@ -379,6 +387,7 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
   const pills = useFilePills();
   const drop = useDrop(pills.add);
   const area = useRef<HTMLTextAreaElement>(null);
+  const notifyTyping = useTypingNotifier(id);
   const placeholder = 'พิมพ์ข้อความของคุณที่นี่…';
   return (
     <Form
@@ -411,7 +420,10 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
         maxLength={channel === 'line' ? 5000 : 20000}
         aria-keyshortcuts="Control+Enter Meta+Enter"
         placeholder={placeholder}
-        onInput={(event) => autoGrow(event.currentTarget)}
+        onInput={(event) => {
+          autoGrow(event.currentTarget);
+          notifyTyping(event.currentTarget.value);
+        }}
         onKeyDown={(event) => {
           // Ctrl/⌘+Enter sends.
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {

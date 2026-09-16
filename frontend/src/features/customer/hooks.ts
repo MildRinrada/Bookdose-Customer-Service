@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { api, setConversation, type ApiError } from '@/lib/api/client';
 import { useCustomerOrgs, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
+import { useRealtimeInterval } from '@/lib/realtime-provider';
 import type { CustomerOrg } from '@/lib/types';
 import { useUiState } from '@/lib/ui-state';
 import { OVERVIEW_PATH, sessionKey, sessionPath } from './api';
@@ -32,7 +33,8 @@ export function useOrgFilter() {
   return useUiState('customer:orgFilter', '');
 }
 
-/** The open chat: GET /api/public/<org>/session with X-Conversation-ID, polled every 10 s while the page is visible.
+/** The open chat: GET /api/public/<org>/session with X-Conversation-ID, polled every 10 s while the page is visible
+    (every minute while live updates are connected).
     Reading it counts as reading the team's reply: the menu count and the bell drop at once. A refresh that fails says
     why and stops polling until another chat is opened; a chat that is not the customer's (404) goes back to the list. */
 export function useChatSession(slug: string | undefined, id: string | undefined) {
@@ -40,6 +42,7 @@ export function useChatSession(slug: string | undefined, id: string | undefined)
   const router = useRouter();
   const toast = useToast();
   const key = slug && id ? sessionKey(slug, id) : null;
+  const poll = useRealtimeInterval(CHAT_POLL_MS);
 
   // The composer, the hand-off and the survey act on the chat named by X-Conversation-ID; clear it when leaving.
   useEffect(() => {
@@ -57,7 +60,7 @@ export function useChatSession(slug: string | undefined, id: string | undefined)
     },
     enabled: key !== null,
     // A refresh that failed stops the polling; opening the chat again (or sending) asks anew and resumes it.
-    refetchInterval: (q) => (q.state.error && q.state.data ? false : CHAT_POLL_MS),
+    refetchInterval: (q) => (q.state.error && q.state.data ? false : poll),
     refetchIntervalInBackground: false,
   });
 

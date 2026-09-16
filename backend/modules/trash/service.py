@@ -60,6 +60,9 @@ def restore(db, ctx, item_id):
                            tuple(row[name] for name in columns))
     repository.delete(db,item_id)
     audit.record(db,ctx['name'],f"{item['kind']}.restored",item['entity'],item['title'])
+    if item['kind']=='ticket':
+        from backend.realtime import events as realtime
+        realtime.ticket(db,item['entity'],public=True,conversations_listed=True)
     db.commit()
     return item
 

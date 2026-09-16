@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { useCustomer, useCustomerLogout, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
+import { RealtimeProvider } from '@/lib/realtime-provider';
 import { customerAccountPages, customerPageOf, customerServicePages, type CustomerPage } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
@@ -50,7 +51,8 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   const photo = <Avatar name={me.name} index={2} />;
 
   return (
-    <>
+    // Live updates of the customer's chats, cases and alerts in every organization.
+    <RealtimeProvider kind="customer" identity={me.email}>
       <div className={`mobile-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
       <aside className={`sidebar customer-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-top">
@@ -134,6 +136,6 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-    </>
+    </RealtimeProvider>
   );
 }

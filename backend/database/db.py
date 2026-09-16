@@ -8,10 +8,47 @@ from config import settings
 DATA = settings.DATA_DIR
 
 
+class Connection(sqlite3.Connection):
+    """A connection that can run work once its changes are committed (realtime hints, backend/realtime): callbacks
+    registered with after_commit() run right after the next successful commit(), in the order registered, and are
+    dropped by rollback() or when the connection closes without committing."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._after_commit = {}
+
+    def after_commit(self, key, callback):
+        """Run callback after the next commit; a second callback with the same key is ignored (one per change)."""
+        self._after_commit.setdefault(key, callback)
+
+    def commit(self):
+        super().commit()
+        callbacks = list(self._after_commit.values())
+        self._after_commit.clear()
+        for callback in callbacks:
+            try:
+                callback()
+            except Exception as error:
+                # The change itself is saved; a failing follow-up must not turn it into an error.
+                print(f'After commit: {type(error).__name__}', flush=True)
+
+    def rollback(self):
+        self._after_commit.clear()
+        super().rollback()
+
+
+def after_commit(db, key, callback):
+    """callback() once db's current changes are committed (at once for a connection without the hook)."""
+    if isinstance(db, Connection):
+        db.after_commit(key, callback)
+    else:
+        callback()
+
+
 @contextlib.contextmanager
 def connect(path):
     """Commit when the block succeeds, roll back when it raises."""
-    db = sqlite3.connect(path, timeout=15)
+    db = sqlite3.connect(path, timeout=15, factory=Connection)
     db.row_factory = sqlite3.Row
     db.execute('PRAGMA foreign_keys=ON')
     db.execute('PRAGMA journal_mode=WAL')

@@ -122,6 +122,7 @@ export function ChatView({
         id="customer-thread"
         publicView
         publicSlug={slug}
+        readAt={data.staff_read_at}
         afterKey={JSON.stringify(data.survey)}
         after={
           survey && (

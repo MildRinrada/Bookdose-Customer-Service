@@ -10,8 +10,11 @@ import { ErrorState, InitialLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
+import { widgetPath } from '@/features/guest/api';
+import type { WidgetInfo } from '@/features/guest/types';
 import { ApiError } from '@/lib/api/client';
 import { useCustomerAccount } from '@/lib/customer-session';
+import { useApi } from '@/lib/query';
 import { useBoot } from '@/lib/session';
 import type { Boot } from '@/lib/types';
 import {
@@ -178,6 +181,9 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
   const signupOrganization = info?.organization ?? boot.home;
   const verifyEmail = Boolean(info?.email_verification);
   const supportName = signupOrganization?.name ?? '';
+  // The support page's organization may let customers chat without an account (GET /api/public/<org>/widget).
+  const guestSlug = login && !setup ? (signupOrganization?.slug ?? '') : '';
+  const guestChat = useApi<WidgetInfo>(guestSlug ? widgetPath(guestSlug) : null);
 
   const switchTab = (value: AuthTab) => {
     focusAfterSwitch.current = true;
@@ -291,6 +297,15 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                 สมัครสมาชิก
               </button>
             </div>
+          )}
+          {login && !secondStep && guestChat.data?.guest_chat && (
+            <p className="guest-entry">
+              <span>ไม่อยากสมัครสมาชิก? คุยกับทีมงาน {supportName} ได้เลย</span>
+              <Link className="btn" href={`/chat/${guestSlug}`}>
+                <Icon name="chat" />
+                แชทโดยไม่ต้องเข้าสู่ระบบ
+              </Link>
+            </p>
           )}
           {secondStep ? (
             <TwoFactorStep methods={secondStep} onDone={() => finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว')} />

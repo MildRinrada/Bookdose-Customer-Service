@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from unittest.mock import patch
 import urllib.error
@@ -77,6 +78,55 @@ class QuietHandler(app.Handler):
         pass
 
 
+class AsgiTestServer:
+    """The FastAPI application on uvicorn in a thread, shaped like ThreadingHTTPServer for the tests: server_port,
+    secure_cookies (read by requests while it runs), shutdown() and server_close(). No background workers, no log."""
+    def __init__(self):
+        import uvicorn
+        from backend.asgi import ServerInfo, create_app, uvicorn_config
+        self.info=ServerInfo('127.0.0.1',0)
+        application=create_app(self.info,workers=False,log_requests=False)
+        self.uvicorn=uvicorn.Server(uvicorn_config(application,'127.0.0.1',0,log_config=None,log_level='warning',timeout_graceful_shutdown=5))
+        self.thread=threading.Thread(target=self.uvicorn.run,daemon=True)
+        self.thread.start()
+        deadline=time.monotonic()+20
+        while not self.uvicorn.started:
+            if not self.thread.is_alive() or time.monotonic()>deadline:
+                raise RuntimeError('uvicorn did not start')
+            time.sleep(0.01)
+        self.server_port=self.uvicorn.servers[0].sockets[0].getsockname()[1]
+        self.info.server_address=('127.0.0.1',self.server_port)
+
+    @property
+    def secure_cookies(self):
+        return self.info.secure_cookies
+
+    @secure_cookies.setter
+    def secure_cookies(self,value):
+        self.info.secure_cookies=value
+
+    def shutdown(self):
+        self.uvicorn.should_exit=True
+        self.thread.join(20)
+
+    def server_close(self):
+        pass
+
+
+def start_server():
+    """(server, thread) on a free local port: FastAPI on uvicorn, or the old http.server when BOOKDOSE_SERVER=legacy
+    (the same switch as app.py)."""
+    if app.settings.SERVER=='legacy':
+        server=app.ThreadingHTTPServer(('127.0.0.1',0),QuietHandler)
+        server.daemon_threads=True
+        server.secure_cookies=False
+        thread=threading.Thread(target=server.serve_forever,daemon=True)
+        thread.start()
+        return server,thread
+    server=AsgiTestServer()
+    return server,server.thread
+
+
 class IntegrationTests(unittest.TestCase):
     def setUp(self):
         self.temporary=tempfile.TemporaryDirectory(prefix='bookdose-test-')
@@ -84,11 +134,7 @@ class IntegrationTests(unittest.TestCase):
         D.DATA=Path(self.temporary.name)/'data'
         D.init()
         rate_limit.RATES.clear()
-        self.server=app.ThreadingHTTPServer(('127.0.0.1',0),QuietHandler)
-        self.server.daemon_threads=True
-        self.server.secure_cookies=False
-        self.thread=threading.Thread(target=self.server.serve_forever,daemon=True)
-        self.thread.start()
+        self.server,self.thread=start_server()
         self.base=f'http://127.0.0.1:{self.server.server_port}'
         self.admin=Client(self.base)
         self.assertEqual(self.admin.call('/api/setup',{'name':'เจ้าของระบบ','email':'admin@example.com','password':'Test-password-123!','organization':'องค์กร A','slug':'alpha','demo':True})[0],200)

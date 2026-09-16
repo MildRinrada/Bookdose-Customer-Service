@@ -22,8 +22,13 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
-          { key: 'X-Frame-Options', value: 'DENY' },
         ],
+      },
+      {
+        // Every path except /chat/<org>/embed, the chat widget's iframe: its CSP frame-ancestors (src/proxy.ts) names
+        // the organization's websites, and X-Frame-Options has no way to say that.
+        source: '/:path((?!chat/[^/]+/embed/?$).*)',
+        headers: [{ key: 'X-Frame-Options', value: 'DENY' }],
       },
     ];
   },

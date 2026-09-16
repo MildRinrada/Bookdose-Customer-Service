@@ -3,11 +3,23 @@ import { NextResponse, type NextRequest } from 'next/server';
 /* Runs before every request.
    - /api/*: forwarded to the Python server by the rewrite in next.config.ts. Here it gets the headers the Python
      server needs to believe the browser's host and address (see backend/middleware/security.py).
-   - Pages: a fresh nonce per response, so the Content-Security-Policy allows Next's own scripts and nothing else. */
+   - Pages: a fresh nonce per response, so the Content-Security-Policy allows Next's own scripts and nothing else.
+     No page may be framed ('none'), except /chat/<org>/embed: its frame-ancestors are the organization's allowed
+     websites for the chat widget (GET /api/public/<org>/widget, remembered for a minute), or 'none' when the widget
+     is off. next.config.ts leaves X-Frame-Options off that one path for the same reason. */
 
 const DEV = process.env.NODE_ENV === 'development';
+const RAW_API_URL = process.env.BOOKDOSE_API_URL ?? 'http://127.0.0.1:8787';
+const API_URL = (/^https?:\/\//.test(RAW_API_URL) ? RAW_API_URL : `http://${RAW_API_URL}`).replace(/\/$/, '');
 
-export function proxy(request: NextRequest) {
+const EMBED_PAGE = /^\/chat\/([a-z0-9]+(?:-[a-z0-9]+)*)\/embed\/?$/;
+// What may go into the policy: scheme://host[:port] and nothing else (no spaces, quotes or semicolons).
+const ORIGIN = /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?$/;
+const ANCESTORS_TTL_MS = 60_000;
+const ANCESTORS_FAILED_TTL_MS = 10_000;
+const ancestorsCache = new Map<string, { value: string; until: number }>();
+
+export async function proxy(request: NextRequest) {
   return request.nextUrl.pathname.startsWith('/api/') ? toApi(request) : page(request);
 }
 
@@ -26,7 +38,35 @@ function toApi(request: NextRequest) {
   return NextResponse.next({ request: { headers } });
 }
 
-function page(request: NextRequest) {
+/** The websites allowed to frame the organization's embedded chat, as a frame-ancestors source list. */
+async function frameAncestors(slug: string, request: NextRequest): Promise<string> {
+  const now = Date.now();
+  const cached = ancestorsCache.get(slug);
+  if (cached && cached.until > now) return cached.value;
+  let value = "'none'";
+  let ttl = ANCESTORS_TTL_MS;
+  try {
+    const headers: Record<string, string> = { accept: 'application/json', 'x-forwarded-host': request.headers.get('host') ?? request.nextUrl.host };
+    const secret = process.env.BOOKDOSE_PROXY_SECRET;
+    if (secret) headers['x-bookdose-proxy'] = secret;
+    const response = await fetch(`${API_URL}/api/public/${slug}/widget`, { headers, cache: 'no-store', signal: AbortSignal.timeout(3000) });
+    if (response.ok) {
+      const widget = (await response.json()) as { enabled?: boolean; guest_chat?: boolean; origins?: unknown };
+      const origins = Array.isArray(widget.origins) ? widget.origins.filter((o): o is string => typeof o === 'string' && ORIGIN.test(o)) : [];
+      if (widget.enabled && widget.guest_chat !== false && origins.length) value = origins.join(' ');
+    } else if (response.status >= 500 || response.status === 429) ttl = ANCESTORS_FAILED_TTL_MS;
+  } catch {
+    // The API did not answer: refuse framing for now and ask again soon.
+    ttl = ANCESTORS_FAILED_TTL_MS;
+  }
+  if (ancestorsCache.size > 500) ancestorsCache.clear();
+  ancestorsCache.set(slug, { value, until: now + ttl });
+  return value;
+}
+
+async function page(request: NextRequest) {
+  const embed = EMBED_PAGE.exec(request.nextUrl.pathname);
+  const ancestors = embed ? await frameAncestors(embed[1], request) : "'none'";
   const nonce = btoa(crypto.randomUUID());
   const policy = [
     "default-src 'self'",
@@ -37,7 +77,7 @@ function page(request: NextRequest) {
     "media-src 'self' blob:",
     `connect-src 'self'${DEV ? ' ws: wss:' : ''}`,
     "object-src 'none'",
-    "frame-ancestors 'none'",
+    `frame-ancestors ${ancestors}`,
     "base-uri 'none'",
     "form-action 'self'",
   ].join('; ');
@@ -51,5 +91,6 @@ function page(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [{ source: '/((?!_next/static|_next/image|favicon.svg|icon.svg).*)' }],
+  // widget.js is a plain script other websites load: no page policy on it.
+  matcher: [{ source: '/((?!_next/static|_next/image|favicon.svg|icon.svg|widget.js).*)' }],
 };

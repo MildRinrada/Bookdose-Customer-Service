@@ -515,5 +515,13 @@ class Worker:
                     except Exception as error:
                         print(f'Customer alerts: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation','alerts: '+type(error).__name__)
+                    try:
+                        # Guest web chat: reply notices on the guests' proven channels, then old browsers and links.
+                        from backend.modules.guest import service as guest
+                        guest.send_notices(tenant_id)
+                        guest.cleanup(tenant_id)
+                    except Exception as error:
+                        print(f'Guest notices: {type(error).__name__}; retrying next round',flush=True)
+                        monitor.error('automation','guest: '+type(error).__name__)
             except Exception as error:
                 print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)

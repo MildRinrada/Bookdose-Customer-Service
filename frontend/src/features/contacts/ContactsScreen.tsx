@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useOpenNewTicket } from '@/features/tickets/components/NewTicket';
 import type { TicketRow } from '@/features/tickets/types';
 import { AUDIT_PATH } from '@/features/audit/api';
+import { GuestBadge } from '@/features/inbox/components/GuestBadge';
 import { TRASH_PATH } from '@/features/trash/api';
 import { date, relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
@@ -265,6 +266,7 @@ function ContactRow({
           <div className="contact-id">
             <div className="contact-name">
               <strong title={c.name}>{c.name}</strong>
+              <GuestBadge guest={c.guest} />
               {duplicate &&
                 (canEdit ? (
                   <button

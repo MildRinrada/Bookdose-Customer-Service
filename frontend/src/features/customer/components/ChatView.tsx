@@ -16,8 +16,9 @@ import type { PortalSession, PortalSurvey } from '../types';
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
    person serving it, the messages, the satisfaction survey once the case is closed, and the reply box. */
 
-/** After a case is closed the customer is asked how it went: stars, and a few words if they like. */
-function CustomerSurvey({ survey, slug, org }: { survey: PortalSurvey; slug: string; org: string }) {
+/** After a case is closed the customer is asked how it went: stars, and a few words if they like. `slug` is the
+    portal the answer goes to (a guest chat passes "<org>/guest"). */
+export function CustomerSurvey({ survey, slug, org }: { survey: PortalSurvey; slug: string; org: string }) {
   const [rating, setRating] = useState(0);
   const toast = useToast();
   const refresh = useInvalidate();

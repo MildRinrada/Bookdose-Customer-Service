@@ -3,6 +3,10 @@ cd /d "%~dp0"
 echo Bookdose Customer Service
 where py >nul 2>nul || (echo Please install Python 3.10 or newer, then open this file again. & pause & exit /b 1)
 where npm >nul 2>nul || (echo Please install Node.js 20 or newer from https://nodejs.org, then open this file again. & pause & exit /b 1)
+py -3 -c "import fastapi, uvicorn" >nul 2>nul || (
+  echo Installing the API server packages ^(first run only^)...
+  py -3 -m pip install -r requirements.txt || (echo Could not install the Python packages. & pause & exit /b 1)
+)
 if not exist "frontend\node_modules" (
   echo Installing the web app ^(first run only^)...
   pushd frontend & call npm install & popd

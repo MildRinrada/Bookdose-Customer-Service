@@ -13,6 +13,7 @@ import { useWork } from '@/lib/session';
 import { CONVERSATION_PREFIXES, openTicketFromConversation, setConversationStatus } from '../api';
 import type { ConversationDetail } from '../types';
 import { Composer } from './Composer';
+import { GuestBadge } from './GuestBadge';
 import { MessageThread, ThreadFilter } from './MessageThread';
 
 /* The open conversation beside the inbox list: who and where from, its case, AI state, open/close, the thread and
@@ -46,6 +47,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
               </span>
             )}
             <ChannelBadge kind={c.channel} />
+            <GuestBadge guest={c.guest ?? contact.guest} detail />
             {c.category && (
               <span className="badge conv-category" title="หมวดที่ลูกค้าเลือก">
                 {c.category}

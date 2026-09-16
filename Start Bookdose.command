@@ -9,6 +9,10 @@ need() {
 }
 need python3 "Please install Python 3.10 or newer, then open this file again."
 need npm "Please install Node.js 20 or newer (https://nodejs.org), then open this file again."
+if ! python3 -c "import fastapi, uvicorn" >/dev/null 2>&1; then
+  echo "Installing the API server packages (first run only)..."
+  python3 -m pip install -r requirements.txt || { echo "Could not install the Python packages."; read -r -p "Press Enter to close..."; exit 1; }
+fi
 if [ ! -d frontend/node_modules ]; then
   echo "Installing the web app (first run only)..."
   (cd frontend && npm install) || exit 1

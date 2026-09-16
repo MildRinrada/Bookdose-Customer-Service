@@ -1,5 +1,5 @@
 """Route tables. Each module's routes.py lists (HTTP method, URL pattern, controller, access);
-backend/server.py decides which middleware each access level goes through."""
+backend/http/dispatch.py decides which middleware each access level goes through."""
 import re
 
 ID = r'([a-f0-9]{32})'

@@ -7,6 +7,7 @@ import { ChannelSettingsPanel, FacebookSettingsPanel } from '@/features/channels
 import { roleLabels } from '@/lib/labels';
 import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
+import { GuestChatPanel } from './components/GuestChatPanel';
 import { JoinLinksPanel } from './components/JoinLinksPanel';
 import { OverviewPanel } from './components/OverviewPanel';
 import { TeamsPanel } from './components/TeamsPanel';
@@ -87,6 +88,9 @@ export function SettingsScreen({ tab }: { tab?: string }) {
           </section>
           <section id="settings-invites" role="tabpanel" aria-label="ลิงก์และ QR สำหรับลูกค้า" hidden={current !== 'invites'}>
             <JoinLinksPanel />
+          </section>
+          <section id="settings-webchat" role="tabpanel" aria-label="แชทบนเว็บไซต์" hidden={current !== 'webchat'}>
+            <GuestChatPanel />
           </section>
           <section id="settings-connections" role="tabpanel" aria-label="LINE / Email / Facebook" hidden={current !== 'connections'}>
             <ChannelSettingsPanel />

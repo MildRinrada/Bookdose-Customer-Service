@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { OrgFilter } from '@/features/customer/components/common';
 import { useOrgFilter } from '@/features/customer/hooks';
+import { GuestClaimBanners } from '@/features/guest/components/GuestClaimBanners';
 import { useApi } from '@/lib/query';
 import { CUSTOMER_DASHBOARD_PATH } from './api';
 import { SlaCards } from './components/CustomerSla';
@@ -18,15 +19,19 @@ export function CustomerDashboardScreen() {
   const [orgFilter] = useOrgFilter();
 
   const heading = (
-    <div className="page-heading">
-      <div>
-        <h1>ภาพรวม</h1>
-        <p>ระดับการให้บริการของทุกองค์กรที่คุณติดต่อ จากเคสของคุณ</p>
+    <>
+      <div className="page-heading">
+        <div>
+          <h1>ภาพรวม</h1>
+          <p>ระดับการให้บริการของทุกองค์กรที่คุณติดต่อ จากเคสของคุณ</p>
+        </div>
+        <div className="customer-cases-tools">
+          <OrgFilter id="customer-dashboard-org" />
+        </div>
       </div>
-      <div className="customer-cases-tools">
-        <OrgFilter id="customer-dashboard-org" />
-      </div>
-    </div>
+      {/* Chats this browser had before signing in, offered right after signing in. */}
+      <GuestClaimBanners />
+    </>
   );
 
   if (query.isPending)

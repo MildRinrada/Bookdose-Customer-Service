@@ -19,7 +19,14 @@ def challenge_cookie(req, token):
 
 
 def _signed_in(req, token, status=200):
+    signed_in(req,token)
     return req.send(status,{'ok':True,'signed_in':True},headers=session_cookie(req,token,service.SESSION_SECONDS))
+
+
+def signed_in(req, token):
+    """Every new customer session: guests of guest web chat with the account's verified email move into it."""
+    from backend.modules.guest import service as guest
+    guest.after_sign_in(req.cd,token)
 
 
 def _finish(req, result, status=200):

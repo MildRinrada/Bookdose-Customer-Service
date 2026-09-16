@@ -117,6 +117,11 @@ def _ensure_member(db, account):
     return contact_id
 
 
+def ensure_member(db, account):
+    """The account's own contact in this organization (see _ensure_member); used when guest chats move into it."""
+    return _ensure_member(db,account)
+
+
 def _join(cd, account_id, org):
     """Connect the account with an organization (safe to repeat)."""
     repository.join_org(cd,account_id,org['id'])
@@ -502,23 +507,36 @@ def _team_for(db, category):
     return organization.first_team_id(db)
 
 
-def open_conversation(cd, db, org, session, body):
-    """Start a chat with this organization as the signed-in customer (connecting it if this is the first contact);
-    the category chosen decides the team. Returns the conversation id."""
+def request_form(db, body):
+    """(subject, category) of a new chat with this organization."""
+    return schema.new_request(body,[c['name'] for c in categories(db)])
+
+
+def new_web_conversation(db, org, contact_id, author_name, subject, category, body):
+    """A web chat of this contact with its first message, inside the caller's transaction (the signed-in customer's
+    page and guest web chat both start chats here): the category chosen decides the team, and the chatbot or the
+    routing rules take the first message. Returns the conversation id."""
     from backend.modules.ai import service as ai
     from backend.modules.conversations.service import store_message
-    subject,category = schema.new_request(body,[c['name'] for c in categories(db)])
-    account = repository.find(cd,session['account_id'])
-    D.begin(db)
-    contact_id = _ensure_member(db,account)
     conv_id = uid()
     conversations.insert(db,conv_id,contact_id,subject,'web',_team_for(db,category))
     if category:
         repository.set_category(db,conv_id,category)
-    store_message(db,org['id'],conv_id,None,account['name'],'customer',body)
+    store_message(db,org['id'],conv_id,None,author_name,'customer',body)
     ai.on_customer_message(db,org['id'],conv_id,body.get('body',''),is_new=True)
+    audit.record(db,author_name,'conversation.created',conv_id)
+    return conv_id
+
+
+def open_conversation(cd, db, org, session, body):
+    """Start a chat with this organization as the signed-in customer (connecting it if this is the first contact).
+    Returns the conversation id."""
+    subject,category = request_form(db,body)
+    account = repository.find(cd,session['account_id'])
+    D.begin(db)
+    contact_id = _ensure_member(db,account)
+    conv_id = new_web_conversation(db,org,contact_id,account['name'],subject,category,body)
     repository.mark_seen(db,account['id'],conv_id)
-    audit.record(db,account['name'],'conversation.created',conv_id)
     db.commit()
     repository.join_org(cd,account['id'],org['id'])
     cd.commit()
@@ -540,9 +558,13 @@ def case_detail(db, session, case_id):
 def notify_reply(db, conversation_id):
     """A team (or the survey) wrote in a web conversation of an account holder who wants reply emails and whose
     email is proven, or who wants replies on this organization's LINE and is linked with it: queue one notice.
-    Called inside the transaction that stored the message."""
+    Called inside the transaction that stored the message. A guest's chat is told on the guest's proven channels
+    (guest.service.notify_reply)."""
     from backend.modules.customers import notify
+    from backend.modules.guest import service as guest
     conv = conversations.find(db,conversation_id)
+    if conv and conv['channel']=='web':
+        guest.notify_reply(db,conversation_id)
     if not conv or conv['channel']!='web' or repository.pending_notification(db,conversation_id):
         return
     owners = repository.owners_of_contact(db,conv['contact_id'])

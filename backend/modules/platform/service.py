@@ -189,6 +189,21 @@ def delete_global_article(cd, session, article_id):
     cd.commit()
 
 
+# SMS (follow links of guest web chat): which provider sends them (backend/extensions/sms.py)
+def sms_settings(cd):
+    from backend.extensions import sms
+    return sms.config(cd)
+
+
+def save_sms_settings(cd, session, body):
+    from backend.modules.guest.schema import sms_form
+    provider = sms_form(body)
+    repository.save_setting(cd,'sms',json.dumps({'provider':provider}))
+    audit.record(cd,session['user_id'],'sms.settings_updated','platform',provider)
+    cd.commit()
+    return sms_settings(cd)
+
+
 # Registration email
 def registration_secret():
     return repository.read_registration_secret()

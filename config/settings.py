@@ -28,6 +28,10 @@ DATA_DIR = Path(os.environ.get('BOOKDOSE_DATA', ROOT/'data')).resolve()
 HOST = os.environ.get('BOOKDOSE_HOST', '127.0.0.1')
 PORT = int(os.environ.get('BOOKDOSE_PORT', '8787'))
 SECURE_COOKIES = os.environ.get('BOOKDOSE_SECURE_COOKIES', '').lower() in ('1', 'true', 'yes')
+# Which web server app.py runs: 'fastapi' (FastAPI on uvicorn, the default) or 'legacy' (the old http.server, kept
+# for one release as a rollback). Both answer through the same routes, checks and messages.
+SERVER = os.environ.get('BOOKDOSE_SERVER', 'fastapi').strip().lower() or 'fastapi'
+SERVERS = ('fastapi', 'legacy')
 
 
 # Read on every call (not at import) so a changed environment takes effect without a restart of the importer.

@@ -1,0 +1,685 @@
+/* Chatting without an account: /chat/<org> (features/guest/GuestChatScreen.tsx), its embedded copy for websites
+   (/chat/<org>/embed with public/widget.js), the follow card, the claim banners on the customer side, the
+   "ผู้เยี่ยมชม" badge in the team's inbox and ตั้งค่าองค์กร → แชทบนเว็บไซต์. The chat itself is the customer chat's
+   markup (conv-header, #customer-thread, composer), so only the frame and the new pieces are here. */
+
+/* The page */
+.guest-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 18px 20px 28px;
+}
+.guest-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.guest-head-org {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.guest-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.customer-link-org:empty {
+  display: none;
+}
+.guest-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  text-align: center;
+}
+.guest-foot .icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+}
+.guest-closed {
+  padding: 24px 16px;
+}
+
+/* The chat card: the list of the visitor's chats (when there are several) beside the open chat */
+.guest-chat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: min(780px, calc(100dvh - 180px));
+  min-height: 520px;
+}
+.guest-chat.has-list {
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+.guest-list {
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+}
+.guest-list-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.guest-list .inbox-item {
+  width: auto;
+  font: inherit;
+}
+.guest-list .inbox-top {
+  flex-wrap: wrap;
+}
+.guest-list .inbox-item h3 {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.guest-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.guest-detail>.conv-header {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: 10px 12px 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.guest-detail .conv-meta {
+  flex-wrap: wrap;
+  white-space: normal;
+  gap: 4px 8px;
+}
+.guest-detail .conv-title h2 {
+  -webkit-line-clamp: 2;
+}
+.guest-state-hint {
+  flex-shrink: 1;
+}
+.guest-back {
+  display: inline-grid;
+  flex-shrink: 0;
+}
+.guest-list-back {
+  display: none;
+}
+.guest-detail>.customer-ai-status {
+  flex-shrink: 0;
+}
+.guest-detail>.thread {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  padding: 16px;
+}
+.guest-detail>.composer {
+  flex-shrink: 0;
+  padding: 10px 16px 12px;
+}
+.guest-detail .composer textarea {
+  min-height: 56px;
+  height: 64px;
+  margin: 0 0 8px;
+}
+.guest-detail .composer-tip {
+  display: none;
+}
+.guest-menu {
+  flex-shrink: 0;
+}
+.guest-menu-panel {
+  min-width: 15rem;
+}
+
+/* Starting a chat */
+.guest-detail>.guest-start {
+  padding: 18px 20px 20px;
+}
+.guest-intro {
+  margin-bottom: 16px;
+}
+.guest-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+.guest-start-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+.guest-start .customer-attach {
+  align-self: flex-start;
+}
+.guest-public {
+  margin: 2px 0 10px;
+  color: #334155;
+}
+.guest-send {
+  min-width: 10rem;
+  justify-content: center;
+}
+/* The honeypot: off the screen, out of the tab order and hidden from screen readers. */
+.guest-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* "ติดตามแชทนี้": in the thread after the newest message, like the survey */
+#customer-thread>.guest-follow {
+  max-width: min(44rem, 100%);
+  margin: 12px 0 0 44px;
+}
+.guest-follow {
+  border: 1px solid #d9d2ee;
+  border-radius: 12px;
+  background: #faf8ff;
+}
+.guest-follow-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+.guest-follow-head:hover {
+  background: #f3effd;
+}
+.guest-follow-head>.icon {
+  flex-shrink: 0;
+  transition: rotate .15s ease;
+}
+.guest-follow.open .guest-follow-head>.icon {
+  rotate: 180deg;
+}
+.guest-follow-head-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #ece5fb;
+  color: #5133a6;
+}
+.guest-follow-head-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.guest-follow-body {
+  padding: 0 14px 14px;
+}
+.guest-follow-options {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guest-follow-option {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #e7e1f5;
+}
+.guest-follow-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #eef1f7;
+  color: #475569;
+}
+.guest-follow-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+.guest-follow-option.done .guest-follow-icon {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.guest-follow-text {
+  display: grid;
+  flex: 1;
+  justify-items: start;
+  gap: 4px;
+  min-width: 0;
+}
+.guest-follow-status {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.guest-follow-option.done .guest-follow-status {
+  color: #1a6340;
+}
+.guest-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 2px;
+}
+.guest-inline input {
+  flex: 1;
+  min-width: min(12rem, 100%);
+}
+.guest-inline .error-message {
+  flex-basis: 100%;
+  margin: 0;
+}
+.guest-line {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+.guest-follow-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid #e7e1f5;
+}
+.guest-follow-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e7e1f5;
+}
+.btn.guest-forget {
+  color: var(--red);
+}
+@media (prefers-reduced-motion: reduce) {
+  .guest-follow-head>.icon {
+    transition: none;
+  }
+}
+
+/* A signed-in customer: chats from before signing in */
+.guest-claims {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.guest-page>.guest-claims {
+  margin-bottom: 0;
+}
+.guest-claim {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+.guest-claim-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #ece5fb;
+  color: #5133a6;
+}
+.guest-claim-text {
+  flex: 1;
+  min-width: min(14rem, 100%);
+  color: #334155;
+}
+
+/* The sign-in page's way in without an account */
+.guest-entry {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8faf7;
+}
+.guest-entry span {
+  flex: 1;
+  min-width: min(12rem, 100%);
+  color: #475569;
+}
+
+/* One column: phones, and always inside a website's iframe */
+@media (max-width: 760px) {
+  .guest-page {
+    gap: 10px;
+    padding: 10px 12px 18px;
+  }
+  .guest-head .brand-text {
+    display: none;
+  }
+  .guest-chat,
+  .guest-chat.has-list {
+    grid-template-columns: minmax(0, 1fr);
+    height: calc(100dvh - 110px);
+    min-height: 440px;
+  }
+  .guest-chat.has-list:not(.show-list) .guest-list,
+  .guest-chat.show-list .guest-detail {
+    display: none;
+  }
+  .guest-chat .guest-list {
+    border-right: 0;
+  }
+  .guest-list-back {
+    display: inline-grid;
+  }
+  /* The state's longer explanation gives its room to the messages. */
+  .guest-state-hint {
+    display: none;
+  }
+  .guest-start-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .guest-send {
+    width: 100%;
+  }
+  #customer-thread>.guest-follow {
+    margin-left: 0;
+  }
+  .guest-detail>.guest-start {
+    padding: 14px;
+  }
+}
+/* The iframe is exactly one screen: only the messages scroll. */
+body:has(.guest-embed) {
+  overflow: hidden;
+}
+.guest-embed {
+  overflow: hidden;
+  max-width: none;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+}
+.guest-embed .guest-chat,
+.guest-embed .guest-chat.has-list {
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.guest-embed .guest-chat.has-list:not(.show-list) .guest-list,
+.guest-embed .guest-chat.show-list .guest-detail {
+  display: none;
+}
+.guest-embed .guest-list {
+  border-right: 0;
+}
+.guest-embed .guest-list-back {
+  display: inline-grid;
+}
+.guest-embed .guest-state-hint {
+  display: none;
+}
+.guest-embed .guest-start-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+.guest-embed #customer-thread>.guest-follow,
+.guest-embed #customer-thread>#customer-survey {
+  margin-left: 0;
+}
+.guest-embed .guest-detail>.thread {
+  padding: 12px;
+}
+.guest-embed .guest-detail>.guest-start {
+  padding: 14px;
+}
+.guest-embed .guest-closed {
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+
+/* The widget's colour inside its iframe (a preset, set on <main data-theme>) */
+.guest-embed[data-theme=purple] {
+  --accent: #5835b3;
+  --accent-hover: #472a93;
+}
+.guest-embed[data-theme=blue] {
+  --accent: #1f5f8b;
+  --accent-hover: #184c70;
+}
+.guest-embed[data-theme=green] {
+  --accent: #2f7556;
+  --accent-hover: #255f45;
+}
+.guest-embed[data-theme=orange] {
+  --accent: #b4540a;
+  --accent-hover: #934408;
+}
+.guest-embed[data-theme=charcoal] {
+  --accent: #26292d;
+  --accent-hover: #3a4246;
+}
+.guest-embed[data-theme] {
+  --purple: var(--accent);
+}
+.guest-embed[data-theme] #customer-thread .message.customer .bubble {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Staff side: a visitor without an account */
+.guest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1eefb;
+  color: #4b2f99;
+  white-space: nowrap;
+}
+.guest-badge .icon {
+  width: 13px;
+  height: 13px;
+}
+.guest-reach {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 6px 0 0;
+  color: #475569;
+}
+
+/* ตั้งค่าองค์กร → แชทบนเว็บไซต์ */
+.guest-settings .check {
+  color: #334155;
+}
+.guest-origins {
+  display: grid;
+  gap: 8px;
+}
+.guest-origin-box {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 46px;
+  padding: 6px 8px;
+  border: 1px solid var(--control-line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: text;
+}
+.guest-origin-box:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.guest-origin-box input {
+  flex: 1;
+  min-width: min(14rem, 100%);
+  border: 0;
+  padding: 6px 4px;
+  box-shadow: none;
+  background: transparent;
+}
+.guest-origin-box input:focus-visible {
+  outline: none;
+}
+.guest-origin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 4px 3px 10px;
+  border: 1px solid #cfd8e3;
+  border-radius: 999px;
+  background: var(--info-soft);
+  color: var(--link);
+  overflow-wrap: anywhere;
+}
+.guest-origin-chip button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+}
+.guest-origin-chip button:hover {
+  background: #d6e4ee;
+}
+.guest-origin-chip .icon {
+  width: 14px;
+  height: 14px;
+}
+.guest-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.guest-choices legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: #334155;
+  font-weight: 600;
+}
+.guest-choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.guest-choice:has(input:checked) {
+  border-color: var(--link);
+  background: var(--info-soft);
+  color: var(--link);
+  font-weight: 600;
+}
+.guest-choice:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.guest-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.theme-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #0000002e;
+}
+.theme-swatch[data-theme=purple] { background: #5835b3; }
+.theme-swatch[data-theme=blue] { background: #1f5f8b; }
+.theme-swatch[data-theme=green] { background: #2f7556; }
+.theme-swatch[data-theme=orange] { background: #b4540a; }
+.theme-swatch[data-theme=charcoal] { background: #26292d; }
+.guest-snippet {
+  display: grid;
+  gap: 8px;
+}
+.guest-snippet pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f6f7f4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.guest-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 760px) {
+  .guest-settings .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Platform console → ภาพรวมระบบ: the SMS sender */
+.sms-settings {
+  align-items: flex-end;
+}
+.sms-settings .field {
+  flex: 1;
+  min-width: min(16rem, 100%);
+  margin-bottom: 0;
+}
+.guest-reach-text {
+  color: var(--muted);
+}

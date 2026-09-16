@@ -6,6 +6,7 @@ import { AuditList } from '@/features/audit';
 import { date, number, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { SYSTEM_PATH } from './api';
+import { SmsSettingsCard } from './components/SmsSettingsCard';
 import { apiAreaLabels, bytesText, durationText, logSourceLabels, workerLabels, workerStatus } from './labels';
 import type { SystemOverview } from './types';
 
@@ -253,6 +254,7 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           </div>
         </section>
       </div>
+      <SmsSettingsCard />
     </>
   );
 }

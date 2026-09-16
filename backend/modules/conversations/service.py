@@ -24,7 +24,11 @@ def visible_conversation(db, ctx, conversation_id):
 
 
 def list_conversations(db, ctx):
-    return repository.list_with_previews(db,visible_team(ctx))
+    """Each row carries guest: {follow: [...]} when a guest of guest web chat started it (else null)."""
+    from backend.modules.guest import service as guest
+    found = repository.list_with_previews(db,visible_team(ctx))
+    reach = guest.reach(db,[c['contact_id'] for c in found])
+    return [{**c,'guest':reach.get(c['contact_id'])} for c in found]
 
 
 def conversation_detail(db, conv):
@@ -32,8 +36,14 @@ def conversation_detail(db, conv):
     conv['ai'] = ai.conversation_state(db,conv['id'])
     conv['line'] = repository.line_thread(db,conv['id'])
     conv['category'] = customer_repository.category_of(db,conv['id'])
+    # A guest of guest web chat: the inbox shows a badge and how the team's reply can reach them.
+    from backend.modules.guest import service as guest
+    conv['guest'] = guest.reach(db,[conv['contact_id']]).get(conv['contact_id'])
+    contact = contacts.find(db,conv['contact_id'])
+    if contact:
+        contact['guest'] = conv['guest']
     return {'conversation':conv,'messages':message_list(db,conv['id']),
-            'contact':contacts.find(db,conv['contact_id']),
+            'contact':contact,
             'ticket':tickets.for_conversation(db,conv['id'])}
 
 

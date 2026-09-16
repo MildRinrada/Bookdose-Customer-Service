@@ -2,6 +2,7 @@
 
 import type { AiCitation, AiState } from '@/features/ai/types';
 import type { ChannelDeliveryState } from '@/features/channels/types';
+import type { GuestReach } from '@/features/guest/types';
 import type { MessageFile } from '@/lib/types';
 
 export type Channel = 'web' | 'line' | 'email' | 'facebook' | 'manual';
@@ -27,6 +28,8 @@ export type ConversationSummary = {
   last_kind: MessageKind | null;
   /** The newest message the customer can see (no notes). */
   last_public_kind: MessageKind | null;
+  /** Set when the customer chatted on the web without an account: how they can be reached again. */
+  guest?: GuestReach | null;
 };
 
 export type MessageKind = 'customer' | 'reply' | 'note';
@@ -63,6 +66,8 @@ export type Conversation = {
   /** LINE only: a one-to-one chat ('user') or a group / room. */
   line: { source_type: string; active: number | boolean } | null;
   category: string | null;
+  /** A web chat without an account (see ConversationSummary.guest). */
+  guest?: GuestReach | null;
 };
 
 export type ConversationContact = {
@@ -71,6 +76,7 @@ export type ConversationContact = {
   email: string | null;
   phone?: string | null;
   company?: string | null;
+  guest?: GuestReach | null;
 } & Record<string, unknown>;
 
 export type ConversationTicket = {

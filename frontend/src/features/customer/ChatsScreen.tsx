@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { customerUnread } from '@/components/shell/CustomerShell';
 import { CustomerNone, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { SearchInput } from '@/components/ui/filters';
+import { GuestClaimBanners } from '@/features/guest/components/GuestClaimBanners';
 import { useSinglePane } from '@/features/inbox';
 import { plainText, relative } from '@/lib/format';
 import { useUiState } from '@/lib/ui-state';
@@ -99,6 +100,7 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
           <p>คุยกับทุกองค์กรที่คุณติดต่อ และติดตามทุกเรื่องที่เคยส่งไว้ในที่เดียว</p>
         </div>
       </div>
+      <GuestClaimBanners />
       <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}`}>
         <div className="inbox-list" ref={listRef}>
           <div className="inbox-tools customer-chat-tools">

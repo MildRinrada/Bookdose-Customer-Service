@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FollowupsPanel, MacroButtons, SurveySummary } from '@/features/automation';
 import type { TicketAutomation } from '@/features/automation/types';
 import { AUDIT_PATH } from '@/features/audit/api';
+import { GuestBadge } from '@/features/inbox/components/GuestBadge';
 import { TRASH_PATH } from '@/features/trash/api';
 import { date, overdue } from '@/lib/format';
 import { priorityLabels, statusLabels } from '@/lib/labels';
@@ -54,6 +55,11 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
           <Avatar name={c.name} index={2} />
           <strong>{c.name}</strong>
         </div>
+        {c.guest && (
+          <p className="guest-reach">
+            <GuestBadge guest={c.guest} detail />
+          </p>
+        )}
         {c.email && (
           <div className="info-pair">
             <strong>อีเมลที่ลูกค้าระบุ</strong>

@@ -6,7 +6,7 @@ from backend.modules.portal import service
 
 
 def _current(req):
-    return customers.current_conversation(req.db,req.customer,req.headers.get('X-Conversation-ID',''))
+    return service.owned_conversation(req.db,req.customer,req.headers.get('X-Conversation-ID',''))
 
 
 def organization_info(req):
@@ -18,7 +18,7 @@ def open_conversation(req):
 
 
 def case_detail(req, case_id):
-    return req.send(200,customers.case_detail(req.db,req.customer,case_id))
+    return req.send(200,service.case_detail(req.db,req.customer,case_id))
 
 
 def conversation(req):

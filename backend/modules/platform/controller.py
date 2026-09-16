@@ -10,6 +10,14 @@ def save_registration_settings(req):
     return req.send(200,service.save_registration_settings(req.cd,req.session,req.body))
 
 
+def sms_settings(req):
+    return req.send(200,service.sms_settings(req.cd))
+
+
+def save_sms_settings(req):
+    return req.send(200,service.save_sms_settings(req.cd,req.session,req.body))
+
+
 def list_tenants(req):
     return req.send(200,service.list_tenants(req.cd))
 

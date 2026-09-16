@@ -3,6 +3,7 @@ import { Icon } from '@/components/Icon';
 import { plainText, shortAgo } from '@/lib/format';
 import { channelIcons, channelNames, priorityLabels } from '@/lib/labels';
 import { needsReply } from '../hooks';
+import { GuestBadge } from './GuestBadge';
 import type { ConversationSummary } from '../types';
 
 /* One conversation in the inbox list: channel, customer, the waiting dot and time; the subject; then the last
@@ -24,6 +25,7 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
           <span className="sr-only">{channelName}</span>
         </span>
         <strong className="inbox-name">{c.contact_name}</strong>
+        <GuestBadge guest={c.guest} />
         {waiting && (
           <span className="unread-dot" title="รอตอบกลับ">
             <span className="sr-only">รอตอบกลับ</span>

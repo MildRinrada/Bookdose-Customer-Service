@@ -1,5 +1,6 @@
 /* Calls to the Python server. Every request carries the staff session's CSRF token and the selected organization
-   (X-Tenant-ID); on the customer side, the customer session's CSRF token and the conversation being read.
+   (X-Tenant-ID); on the customer side, the customer session's CSRF token and the conversation being read; for a
+   visitor without an account, the guest cookie's CSRF token (X-Guest-CSRF) and, inside an iframe, X-Embed.
    The providers keep these up to date (setStaffCredentials / setCustomerCredentials / setConversation); feature
    code only calls api() and download().
 
@@ -17,11 +18,20 @@ export class ApiError extends Error {
 
 export type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
-const credentials: { csrf: string | null; tenantId: string | null; customerCsrf: string | null; conversation: string | null } = {
+const credentials: {
+  csrf: string | null;
+  tenantId: string | null;
+  customerCsrf: string | null;
+  conversation: string | null;
+  guestCsrf: string | null;
+  embed: boolean;
+} = {
   csrf: null,
   tenantId: null,
   customerCsrf: null,
   conversation: null,
+  guestCsrf: null,
+  embed: false,
 };
 
 export function setStaffCredentials(csrf: string | null | undefined, tenantId: string | null | undefined) {
@@ -38,12 +48,25 @@ export function setConversation(id: string | null | undefined) {
   credentials.conversation = id ?? null;
 }
 
+/** A visitor chatting without an account (/chat/<org>): the csrf of this browser's guest cookie (GET …/guest). */
+export function setGuestCredentials(csrf: string | null | undefined) {
+  credentials.guestCsrf = csrf ?? null;
+}
+
+/** The chat runs inside another website's iframe (/chat/<org>/embed): the server then sends the cookie form a
+    third-party frame can keep. */
+export function setEmbedded(embedded: boolean) {
+  credentials.embed = embedded;
+}
+
 function headers(hasBody: boolean): Record<string, string> {
   const result: Record<string, string> = {};
   if (credentials.csrf) result['X-CSRF-Token'] = credentials.csrf;
   if (credentials.tenantId) result['X-Tenant-ID'] = credentials.tenantId;
   if (credentials.customerCsrf) result['X-Customer-CSRF'] = credentials.customerCsrf;
   if (credentials.conversation) result['X-Conversation-ID'] = credentials.conversation;
+  if (credentials.guestCsrf) result['X-Guest-CSRF'] = credentials.guestCsrf;
+  if (credentials.embed) result['X-Embed'] = '1';
   if (hasBody) result['Content-Type'] = 'application/json';
   return result;
 }

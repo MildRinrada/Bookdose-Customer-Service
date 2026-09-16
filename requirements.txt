@@ -1,1 +1,9 @@
-# No third-party packages: Bookdose runs on the Python 3.10+ standard library only.
+# The API server: FastAPI on uvicorn (backend/asgi.py). Everything else in Bookdose uses the Python 3.10+ standard
+# library. Install with: python -m pip install -r requirements.txt
+fastapi==0.141.1
+uvicorn==0.53.0
+# Used directly by backend/asgi.py and backend/http/adapter.py (installed by the two above; pinned so an upgrade is
+# a deliberate change).
+starlette==1.6.0
+anyio==4.15.1
+h11==0.16.0

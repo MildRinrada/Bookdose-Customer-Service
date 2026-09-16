@@ -4,15 +4,13 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-import threading
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-import app
 from backend.database import db as D
 from backend.middleware import rate_limit
-from test_app import Client, QuietHandler
+from test_app import Client, start_server
 
 LOGIN = {'email':'admin@example.com','password':'Test-password-123!'}
 
@@ -24,10 +22,7 @@ class WebProxyTests(unittest.TestCase):
         D.DATA=Path(self.temporary.name)/'data'
         D.init()
         rate_limit.RATES.clear()
-        self.server=app.ThreadingHTTPServer(('127.0.0.1',0),QuietHandler)
-        self.server.daemon_threads=True
-        self.server.secure_cookies=False
-        threading.Thread(target=self.server.serve_forever,daemon=True).start()
+        self.server,self.thread=start_server()
         self.base=f'http://127.0.0.1:{self.server.server_port}'
         self.assertEqual(Client(self.base).call('/api/setup',{'name':'เจ้าของระบบ','email':'admin@example.com','password':'Test-password-123!',
                                                                'organization':'องค์กร A','slug':'alpha','demo':False})[0],200)
@@ -35,6 +30,7 @@ class WebProxyTests(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.thread.join()
         D.DATA=self.original_data
         self.temporary.cleanup()
 

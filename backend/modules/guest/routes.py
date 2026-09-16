@@ -1,0 +1,31 @@
+"""Guest web chat. /api/public/<org>/guest/...: 'guest-open' routes need no cookie (req.guest is set when the browser
+holds a known one), 'guest' routes need the guest cookie g_<org> and, when changing something, X-Guest-CSRF; both
+need the organization's guest chat switched on (backend/http/dispatch.py checks). /api/public/<org>/widget is public.
+/api/settings/guest-chat is the organization admin's; /api/customer/guest-claims the signed-in customer's."""
+from backend.modules.guest import controller
+from backend.utils.routing import ID
+
+GUEST = '/api/public/[a-z0-9-]+/guest'
+
+ROUTES = [
+    ('GET',    GUEST,                         controller.overview,            'guest-open'),
+    ('POST',   GUEST+'/conversations',        controller.start,               'guest-open'),
+    ('POST',   GUEST+'/resume',               controller.resume,              'guest-open'),
+    ('GET',    GUEST+'/session',              controller.conversation,        'guest'),
+    ('POST',   GUEST+'/messages',             controller.post_message,        'guest'),
+    ('POST',   GUEST+'/handoff',              controller.hand_off,            'guest'),
+    ('POST',   GUEST+'/csat',                 controller.rate,                'guest'),
+    ('GET',    GUEST+f'/attachments/{ID}',    controller.download_attachment, 'guest'),
+    ('GET',    GUEST+f'/cases/{ID}',          controller.case_detail,         'guest'),
+    ('POST',   GUEST+'/name',                 controller.rename,              'guest'),
+    ('POST',   GUEST+'/remember',             controller.remember,            'guest'),
+    ('POST',   GUEST+'/link',                 controller.send_link,           'guest'),
+    ('POST',   GUEST+'/line-code',            controller.line_code,           'guest'),
+    ('DELETE', GUEST+'/line',                 controller.line_unlink,         'guest'),
+    ('POST',   GUEST+'/forget',               controller.forget,              'guest'),
+    ('GET',    '/api/public/[a-z0-9-]+/widget', controller.widget,            'portal'),
+    ('GET',    '/api/settings/guest-chat',    controller.settings,            'workspace'),
+    ('POST',   '/api/settings/guest-chat',    controller.save_settings,       'workspace'),
+    ('GET',    '/api/customer/guest-claims',  controller.claims,              'customer-account'),
+    ('POST',   '/api/customer/guest-claims',  controller.claim,               'customer-account'),
+]

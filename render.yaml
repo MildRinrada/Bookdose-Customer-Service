@@ -39,7 +39,9 @@ services:
     region: singapore
     plan: 0.5c-512mb
     branch: main
-    buildCommand: python -m compileall -q backend config app.py
+    buildCommand: python -m pip install -r requirements.txt && python -m compileall -q backend config app.py
+    # FastAPI on uvicorn, one worker (rate limits, SQLite and the background workers live in this one process).
+    # Rollback to the old http.server: add BOOKDOSE_SERVER=legacy below and redeploy.
     startCommand: python app.py --host 0.0.0.0 --port $PORT --secure-cookies
     autoDeployTrigger: "off"
     numInstances: 1

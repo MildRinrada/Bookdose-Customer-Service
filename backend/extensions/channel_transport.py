@@ -52,7 +52,10 @@ def verify_line(secret):
     try:
         data=json.loads(raw)
         if not re.fullmatch(r'U[a-fA-F0-9]{32}',data.get('userId','')):raise ValueError()
-        return {'identity':data['userId'],'display_name':str(data.get('displayName','LINE'))[:100]}
+        info={'identity':data['userId'],'display_name':str(data.get('displayName','LINE'))[:100]}
+        # The @id people add as a friend (guest web chat shows an "add friend" link with it).
+        if isinstance(data.get('basicId'),str) and re.fullmatch(r'@[A-Za-z0-9._-]{1,40}',data['basicId']):info['basic_id']=data['basicId']
+        return info
     except (ValueError,TypeError,AttributeError):raise ChannelError('credentials') from None
 
 

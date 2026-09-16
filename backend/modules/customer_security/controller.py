@@ -5,7 +5,7 @@ from http import cookies
 
 from backend.middleware.rate_limit import limited
 from backend.modules.customer_security import schema, service
-from backend.modules.customers.controller import session_cookie
+from backend.modules.customers.controller import session_cookie, signed_in
 from backend.modules.customers.service import SESSION_SECONDS
 
 
@@ -26,6 +26,7 @@ def verify_login(req):
     runs out in five minutes anyway."""
     limited(('customer-2fa',req.ip),20,900)
     result = service.finish_challenge(req.cd,challenge_token(req),req.body,service.client_info(req))
+    signed_in(req,result['session'])
     return req.send(200,{'ok':True,'signed_in':True},headers=session_cookie(req,result['session'],SESSION_SECONDS))
 
 
@@ -85,7 +86,9 @@ def passkey_login_options(req):
 
 def passkey_login(req):
     limited(('customer-passkey-login',req.ip),15,900)
-    return req.send(200,{'ok':True,'signed_in':True},headers=session_cookie(req,service.passkey_login(req),SESSION_SECONDS))
+    session = service.passkey_login(req)
+    signed_in(req,session)
+    return req.send(200,{'ok':True,'signed_in':True},headers=session_cookie(req,session,SESSION_SECONDS))
 
 
 # Signed-in devices and the account's history

@@ -42,9 +42,43 @@ def portal_info(cd, db, org):
                                     customers.email_ready(cd),contact_channels(db),[c['name'] for c in customers.categories(db)])
 
 
-def conversation_view(db, conv, customer):
-    """Opening the conversation counts as reading the team's replies (no email notice for them)."""
-    customers.mark_seen(db,customer,conv['id'])
+# The customer's own conversations. The viewer is the signed-in customer's session, or a guest of guest web chat
+# ({'visitor', 'device'}, backend/modules/guest): the same pages and rules, with ownership checked against each.
+def _is_guest(viewer):
+    return bool(viewer.get('visitor'))
+
+
+def owned_conversation(db, viewer, conversation_id):
+    """A conversation of this viewer; 404 for anyone else's."""
+    from backend.modules.guest import service as guest
+    if _is_guest(viewer):
+        return guest.current_conversation(db,viewer,conversation_id)
+    return customers.current_conversation(db,viewer,conversation_id)
+
+
+def _mark_seen(db, viewer, conversation_id):
+    from backend.modules.guest import service as guest
+    if _is_guest(viewer):
+        guest.mark_seen(db,viewer,conversation_id)
+    else:
+        customers.mark_seen(db,viewer,conversation_id)
+
+
+def _author(viewer):
+    from backend.modules.guest import schema as guest_schema
+    return guest_schema.display_name(viewer['visitor']) if _is_guest(viewer) else viewer['name']
+
+
+def case_detail(db, viewer, case_id):
+    from backend.modules.guest import service as guest
+    if _is_guest(viewer):
+        return guest.case_detail(db,viewer,case_id)
+    return customers.case_detail(db,viewer,case_id)
+
+
+def conversation_view(db, conv, viewer):
+    """Opening the conversation counts as reading the team's replies (no notice for them)."""
+    _mark_seen(db,viewer,conv['id'])
     return schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
                                     tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
                                     automation.portal_survey(db,conv['id']))
@@ -56,11 +90,11 @@ def hand_off_to_staff(db, conv):
     db.commit()
 
 
-def post_customer_message(db, tenant_id, conv, customer, body):
+def post_customer_message(db, tenant_id, conv, viewer, body):
     D.begin(db)
-    mid = conversation_service.store_message(db,tenant_id,conv['id'],None,customer['name'],'customer',body)
+    mid = conversation_service.store_message(db,tenant_id,conv['id'],None,_author(viewer),'customer',body)
     ai.on_customer_message(db,tenant_id,conv['id'],body.get('body',''))
-    customers.mark_seen(db,customer,conv['id'])
+    _mark_seen(db,viewer,conv['id'])
     db.commit()
     return mid
 
@@ -70,11 +104,11 @@ def rate_service(db, conv, body):
     automation.rate_from_portal(db,conv,body)
 
 
-def public_attachment(db, tenant_id, customer, file_id):
-    """(name, mime, bytes) of a file on a customer-visible message in one of the customer's own conversations."""
+def public_attachment(db, tenant_id, viewer, file_id):
+    """(name, mime, bytes) of a file on a customer-visible message in one of the viewer's own conversations."""
     record = conversations.attachment_with_conversation(db,file_id)
     require(record,'ไม่พบไฟล์',404)
-    customers.current_conversation(db,customer,record['conversation_id'])
+    owned_conversation(db,viewer,record['conversation_id'])
     file = conversations.public_attachment(db,file_id,record['conversation_id'])
     require(file,'ไม่พบไฟล์',404)
     return conversation_service.attachment_content(tenant_id,file)

@@ -7,7 +7,7 @@ from backend.modules.portal import controller
 from backend.utils.routing import ID
 
 # Every URL here; anything else under /api/public/ is answered "not found".
-PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line)(?:/[a-z0-9-]+){0,6})?')
+PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget)(?:/[a-z0-9-]+){0,6})?')
 PORTAL = '/api/public/[a-z0-9-]+'
 
 ROUTES = [

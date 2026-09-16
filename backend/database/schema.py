@@ -10,6 +10,7 @@ from backend.modules.channels import model as channels
 from backend.modules.contacts import model as contacts
 from backend.modules.customer_security import model as customer_security
 from backend.modules.customers import model as customers
+from backend.modules.guest import model as guest
 from backend.modules.conversations import model as conversations
 from backend.modules.knowledge import model as knowledge
 from backend.modules.org_links import model as org_links
@@ -19,7 +20,7 @@ from backend.modules.tickets import model as tickets
 from backend.modules.trash import model as trash
 
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
-                  customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, audit.TABLE)
+                  customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
@@ -58,3 +59,6 @@ def upgrade_tenant(db):
         db.execute("UPDATE settings SET value=? WHERE key='customer_categories'",(json.dumps(kept,ensure_ascii=False),))
     if 'comment' not in {row[1] for row in db.execute('PRAGMA table_info(csat_surveys)')}:
         db.execute("ALTER TABLE csat_surveys ADD COLUMN comment TEXT NOT NULL DEFAULT ''")
+    # Guest web chat (customers chatting without an account): its tables and the switches of the chat and widget.
+    db.executescript(guest.TENANT_TABLES)
+    db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',guest.DEFAULT_SETTINGS)

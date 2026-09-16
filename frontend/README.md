@@ -47,6 +47,7 @@ src/
     (staff)/             หน้าของทีมและคอนโซลแพลตฟอร์ม: layout ตรวจเซสชันและวางกรอบ StaffShell
     customer/(portal)/   หน้าของลูกค้าที่เข้าสู่ระบบแล้ว: layout วางกรอบ CustomerShell
     customer/(link)/     หน้าลูกค้าจากลิงก์อีเมล (ยืนยันอีเมล ตั้งรหัสผ่านใหม่) ไม่ต้องเข้าสู่ระบบ
+    chat/[org]/          แชทโดยไม่ต้องเข้าสู่ระบบ (+ resume/ ลิงก์ติดตามแชท, embed/ แชทในกรอบเว็บไซต์ขององค์กร)
     page.tsx             หน้าแรก: แปลงลิงก์ #hash แบบเดิมเป็น path ใหม่ แล้วพาไปหน้าที่ถูกต้อง
   features/<feature>/    หนึ่งโฟลเดอร์ต่อ feature (tickets, inbox, customer, org-links, …)
     customer/settings/   แท็บของ ตั้งค่าบัญชี: Profile / Security / Organizations / Notifications และ tabs.ts
@@ -88,6 +89,7 @@ src/
 | คอนโซลแพลตฟอร์ม | `/platform/system`, `/platform/organizations`, `/platform/faq`, `/platform/team` |
 | ลูกค้า | `/customer` (= `/customer/dashboard` ภาพรวมระดับการให้บริการ), `/customer/chats[/new \| /<org>/<id>]`, `/customer/cases[/<org>/<id>]`, `/customer/faq[/<id>]`, `/customer/alerts`, `/customer/account` (`?tab=profile \| security \| organizations \| notifications`) |
 | ลูกค้าจากลิงก์อีเมล | `/customer/verify?token=`, `/customer/reset?token=`, `/customer/forgot` |
+| ผู้เยี่ยมชม (ไม่ต้องเข้าสู่ระบบ) | `/chat/<org>` (`?c=<id>`), `/chat/<org>/resume#t=<token>`, `/chat/<org>/embed` (หน้าเดียวที่เว็บอื่นใส่ในกรอบได้), `/widget.js` |
 
 ลิงก์แบบเดิมที่ส่งไปทางอีเมลแล้ว (`/#tickets/…`, `/#verify=…`) ยังใช้ได้ หน้าแรกแปลงเป็น URL ใหม่ให้ (`lib/routes.ts` → `legacyPath`)
 
@@ -99,9 +101,13 @@ src/
 | ลิงก์และ QR ขององค์กร (`features/org-links/`) | ตั้งค่าองค์กร → **ลิงก์และ QR สำหรับลูกค้า** (`features/settings/components/JoinLinksPanel.tsx`): ลิงก์ถาวร `…/?org=<รหัส>` และลิงก์เชิญพร้อม QR กำหนดอายุ/จำนวนคน และยกเลิกได้ · `/join/<token>` หน้าที่ QR เปิด (เข้าสู่ระบบแล้วกดเข้าร่วม) · ตั้งค่าบัญชี → **องค์กรที่ติดต่อได้** (`features/customer/settings/OrganizationsSettings.tsx`): รายการองค์กรจาก `GET /api/customer/organizations` และการเพิ่มองค์กรด้วยรหัส ลิงก์ หรือสแกน QR (`BarcodeDetector`) | `org_links/` |
 | การแจ้งเตือน (`features/customer/AlertsScreen.tsx`, `components/NotifySettings.tsx`) | แชทที่ทีมงานตอบ แบบประเมินความพึงพอใจ เคสที่รอข้อมูล เคสที่เสร็จ และนัดติดตาม ทุกรายการมีปุ่มไปยังหน้าที่ทำต่อ (`action_label`) ตั้งค่าบัญชีมีตารางเหตุการณ์ × อีเมล/LINE และเชื่อม LINE ด้วยรหัส 6 หลักต่อองค์กร | `customers/notify.py`, `customers/line.py` |
 
+| แชทบนเว็บไซต์ (`features/guest/`) | `/chat/<org>`: เริ่มแชทโดยไม่มีบัญชี (ข้อความ ไฟล์ ชื่อ "เครื่องสาธารณะ" honeypot และเวลาเริ่มกรอก) แล้วคุยต่อด้วย `MessageThread` / `Composer` / แบบประเมินในแชท ชุดเดียวกับแชทของลูกค้า (ส่ง `publicSlug="<org>/guest"` จึงเรียก `/api/public/<org>/guest/…`) · การ์ด **ติดตามแชทนี้**: จำในเบราว์เซอร์ ลิงก์ทางอีเมล / SMS รหัส LINE สมัครสมาชิก และลืมแชท · `public/widget.js`: ปุ่มแชทบนเว็บองค์กร เปิด iframe `/chat/<org>/embed` คุยกันด้วย `postMessage` `{type:'bd-chat'}` เฉพาะ origin ที่อนุญาต · ตั้งค่าองค์กร → **แชทบนเว็บไซต์** (`features/settings/components/GuestChatPanel.tsx`) · ป้าย **ผู้เยี่ยมชม** ในกล่องข้อความ (`features/inbox/components/GuestBadge.tsx`) · แบนเนอร์ย้ายแชทเข้าบัญชี (`GuestClaimBanners`) · คอนโซลระบบ → SMS (`features/platform/components/SmsSettingsCard.tsx`) | `docs/GUEST-CHAT-DESIGN.md` |
+
 ## ความปลอดภัย
 
 - **CSP ต่อคำขอ:** `src/proxy.ts` สร้าง nonce ใหม่ทุกหน้า script ที่ไม่มี nonce ของ Next จะไม่ทำงาน (production ไม่อนุญาต inline style)
+- **การใส่ในกรอบ (iframe):** ทุกหน้า `frame-ancestors 'none'` และ `X-Frame-Options: DENY` ยกเว้น `/chat/<org>/embed` ที่ `proxy.ts` ตั้ง `frame-ancestors` เป็นเว็บไซต์ที่องค์กรอนุญาต (อ่านจาก `GET /api/public/<org>/widget` จำไว้ 60 วินาที หรือ `'none'` เมื่อปิด) และ `next.config.ts` ไม่ใส่ `X-Frame-Options` ให้ path นี้
+- **ผู้เยี่ยมชม:** cookie `g_<org>` เป็น HttpOnly หน้าจออ่าน csrf จาก `GET /api/public/<org>/guest` แล้วส่งเป็น `X-Guest-CSRF` (`setGuestCredentials`) ในกรอบเว็บไซต์ส่ง `X-Embed: 1` เพิ่ม (`setEmbedded`) โทเค็นลิงก์ติดตามอยู่หลัง `#` ไม่เคยถึง server log
 - **Python ยังตรวจ Host / Origin / CSRF ทุกคำขอ:** คำขอที่มาผ่านแอปนี้ Python ใช้ `X-Forwarded-Host` แทน Host เฉพาะเมื่อมาจากเครื่องเดียวกัน หรือมี `BOOKDOSE_PROXY_SECRET` ตรงกัน (`backend/middleware/security.py`)
 - **Cookie:** เป็น HttpOnly และ SameSite=Strict ทั้งเซสชันทีมและลูกค้า หน้าจออ่าน cookie ไม่ได้ ใช้ CSRF token จาก `/api/bootstrap` และ `/api/customer/account` แทน
 - **ความปลอดภัยบัญชีลูกค้า** (`features/customer/settings/SecuritySettings.tsx` + `features/auth/`, backend `customer_security/`): การยืนยันสองขั้นตอนด้วยแอป (TOTP) พร้อมรหัสสำรอง 10 รหัส, Passkey (WebAuthn ผ่าน `features/auth/passkeys.ts`), รายการอุปกรณ์ที่เข้าสู่ระบบ และประวัติการใช้งานบัญชี การเปิดการยืนยันสองขั้นตอนและการเพิ่ม/ลบ Passkey ต้องกรอกรหัสผ่านของบัญชีก่อนเสมอ และการตั้งรหัสผ่านใหม่จากลิงก์อีเมลจะลบ Passkey ทั้งหมดทิ้ง เมื่อบัญชีเปิดการยืนยันสองขั้นตอน `/api/customer/login` (และลิงก์ตั้งรหัสผ่านใหม่) จะตอบ `{two_factor: true}` แล้วให้กรอกรหัสที่ `/api/customer/login/verify` ก่อน จึงจะได้เซสชัน

@@ -4,6 +4,7 @@ from backend.middleware.access import visible_team
 from backend.modules.contacts import repository, schema
 from backend.modules.conversations import repository as conversations
 from backend.modules.customers import repository as customer_accounts
+from backend.modules.guest import repository as guests
 from backend.modules.tickets import repository as tickets
 from backend.modules.trash import service as trash
 from backend.utils.security import uid
@@ -15,7 +16,11 @@ def contact_visible(db, contact_id, ctx):
 
 
 def list_contacts(db, ctx):
-    return repository.list_visible(db,ctx['id'],visible_team(ctx))
+    """Each contact carries guest: {follow: [...]} when it is a guest of guest web chat (else null)."""
+    from backend.modules.guest import service as guest
+    found = repository.list_visible(db,ctx['id'],visible_team(ctx))
+    reach = guest.reach(db,[c['id'] for c in found])
+    return [{**c,'guest':reach.get(c['id'])} for c in found]
 
 
 def create_contact(db, ctx, body):
@@ -56,6 +61,7 @@ def merge_contacts(db, ctx, target_id, body):
         tickets.move_contact(db,source['id'],target_id)
         conversations.move_contact(db,source['id'],target_id)
         customer_accounts.move_contact(db,source['id'],target_id)
+        guests.move_contact(db,source['id'],target_id)
         repository.delete(db,source['id'])
     audit.record(db,ctx['name'],'contact.merged',target_id,', '.join(s['name'] for s in sources))
     db.commit()
@@ -77,5 +83,7 @@ def delete_contact(db, ctx, contact_id):
                   {'contacts':[contact],'contact_names':repository.names_of(db,contact_id)},
                   detail=contact['email'] or contact['phone'] or contact['company'])
     repository.delete(db,contact_id)
+    from backend.modules.guest import service as guest
+    guest.forget_contact(db,contact_id)
     audit.record(db,ctx['name'],'contact.deleted',contact_id,contact['name'])
     db.commit()

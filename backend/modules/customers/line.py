@@ -10,7 +10,10 @@ checked again until the hour is over, and every wrong code sent to the organizat
 codes (20 and they stop working; the account page then says so). A wrong code is never answered differently from any
 other message: it is stored as a normal message, so trying reveals nothing. A live code is never left where the
 team's inbox would keep it: sent by someone over the limit, or read out in a LINE group, it is dropped and stops
-working."""
+working.
+
+A guest of guest web chat (backend/modules/guest) links LINE the same way with a code of its own (guest_line_codes):
+the same lifetime and the same limits, and every wrong code counts against the live codes of both."""
 import re
 import secrets
 
@@ -41,15 +44,39 @@ def status(db, org, session):
             'code_expires_at':pending['expires_at'] if pending and row else None}
 
 
+def unused_code(db):
+    """A random 6-digit code that no live code of an account or a guest has (almost always the first try)."""
+    for _ in range(10):
+        code = f'{secrets.randbelow(10**6):06d}'
+        if not _live_code(db,token_hash(code))[0]:
+            break
+    return code
+
+
+def _live_code(db, code_hash):
+    """('account', row) or ('guest', row) of a live code, else (None, None)."""
+    from backend.modules.guest import repository as guests
+    code = repository.live_line_code(db,code_hash)
+    if code:
+        return 'account',code
+    code = guests.live_line_code(db,code_hash)
+    return ('guest',code) if code else (None,None)
+
+
+def _drop_code(db, owner, code):
+    from backend.modules.guest import repository as guests
+    if owner=='account':
+        repository.delete_line_codes(db,code['account_id'])
+    else:
+        guests.delete_line_codes(db,code['visitor_id'])
+
+
 def new_code(db, org, session):
     """A new 6-digit code for this account (the earlier one stops working): {code, expires_at, oa_name}."""
     row = notify.line_channel(db,org['id'])
     require(row,NOT_AVAILABLE,409)
     D.begin(db)
-    for _ in range(10):
-        code = f'{secrets.randbelow(10**6):06d}'
-        if not repository.live_line_code(db,token_hash(code)):
-            break
+    code = unused_code(db)
     expires_at = after(minutes=CODE_MINUTES)
     repository.replace_line_code(db,token_hash(code),session['account_id'],expires_at)
     db.commit()
@@ -65,9 +92,11 @@ def unlink(db, session):
 
 
 def _wrong_code(db, sender, window):
+    from backend.modules.guest import repository as guests
     repository.record_line_guess(db,sender,window)
-    repository.count_wrong_code(db,now())
-    repository.drop_worn_codes(db,MAX_CODE_ATTEMPTS)
+    for table in (repository,guests):
+        table.count_wrong_code(db,now())
+        table.drop_worn_codes(db,MAX_CODE_ATTEMPTS)
 
 
 def take_code(db, tenant_id, line_user_id, text):
@@ -79,16 +108,20 @@ def take_code(db, tenant_id, line_user_id, text):
         return False
     window = after(hours=-1)
     guesses = repository.line_guesses(db,line_user_id)
-    code = repository.live_line_code(db,token_hash(value))
+    owner,code = _live_code(db,token_hash(value))
     if guesses and guesses['since']>window and guesses['failures']>=MAX_GUESSES:
         # Not checked for this sender, but a live code must never sit in the team's inbox where anyone could reuse
         # it: it stops working (the page offers a new one) and the message is dropped. One hit per guess, so no help.
         if code:
-            repository.delete_line_codes(db,code['account_id'])
+            _drop_code(db,owner,code)
         return bool(code)
     if not code or code['attempts']>=MAX_CODE_ATTEMPTS:
         _wrong_code(db,line_user_id,window)
         return False
+    if owner=='guest':
+        from backend.modules.guest import service as guests
+        guests.link_line(db,code['visitor_id'],line_user_id)
+        return True
     repository.set_line_link(db,code['account_id'],line_user_id)
     repository.delete_line_codes(db,code['account_id'])
     audit.record(db,'LINE','customer.line_linked',code['account_id'])
@@ -106,9 +139,9 @@ def drop_group_code(db, group_id, text):
     value = text.strip()
     if not CODE.fullmatch(value):
         return False
-    code = repository.live_line_code(db,token_hash(value))
+    owner,code = _live_code(db,token_hash(value))
     if code:
-        repository.delete_line_codes(db,code['account_id'])
+        _drop_code(db,owner,code)
         return True
     window,sender = after(hours=-1),'group:'+group_id
     guesses = repository.line_guesses(db,sender)

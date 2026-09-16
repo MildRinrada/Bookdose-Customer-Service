@@ -1,3 +1,5 @@
+import type { GuestReach } from '@/features/guest/types';
+
 /* Shapes of the customer (contact) API (backend/modules/contacts). Field names are the server's. */
 
 /** A row of GET /api/contacts (contacts + contact_names), also the contact of GET /api/tickets/<id>. */
@@ -14,6 +16,8 @@ export type Contact = {
   /** The split name; older contacts have only `name`. */
   first_name?: string | null;
   last_name?: string | null;
+  /** The contact came from a web chat without an account: how they can be reached again. */
+  guest?: GuestReach | null;
 } & Record<string, unknown>;
 
 export type ContactsPage = { contacts: Contact[] };

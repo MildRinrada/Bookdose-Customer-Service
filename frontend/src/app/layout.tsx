@@ -27,6 +27,7 @@ import '@/styles/pages/account-settings.css';
 import '@/styles/pages/security.css';
 import '@/styles/pages/org-links.css';
 import '@/styles/pages/automation.css';
+import '@/styles/pages/guest-chat.css';
 import '@/styles/text-size.css';
 import '@/styles/theme.css';
 

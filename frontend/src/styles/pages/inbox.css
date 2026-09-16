@@ -813,8 +813,9 @@ input[type=file].attach-input {
 }
 /* Full-height workspace: list and conversation scroll on their own, composer always in view. */
 @media (min-width:1001px) and (min-height:560px) {
-  body:has(.inbox-layout) {
-    overflow: hidden;
+  /* clip, not hidden: nothing (a focused field, a scrollIntoView) can scroll the locked page out of place. */
+  body:has(.inbox-layout),.inbox-layout {
+    overflow: clip;
   }
   .app-main:has(.inbox-layout) {
     height: 100dvh;
@@ -1402,4 +1403,53 @@ input[type=file].attach-input {
   .composer:has(input[value=note]:checked) .note-hint {
     display: none;
   }
+}
+
+/* Reading comfort: a bubble is as wide as its text, up to about 60 characters a line, and the sender's name sits
+   beside their picture (on the right for messages drawn from the right), with the message under it. */
+.message,.message.customer,.message.reply {
+  width: fit-content;
+  max-width: min(44rem,82%);
+}
+.message.note {
+  width: auto;
+  max-width: min(48rem,92%);
+}
+.message>.grow {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.message .bubble {
+  max-width: 100%;
+}
+.message-header {
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
+}
+.message.reply>.grow {
+  align-items: flex-end;
+}
+.message.reply .message-header {
+  flex-direction: row-reverse;
+}
+#customer-thread .message.customer>.grow {
+  align-items: flex-end;
+}
+#customer-thread .message.customer .message-header {
+  flex-direction: row-reverse;
+}
+#customer-thread .message.reply>.grow {
+  align-items: flex-start;
+}
+#customer-thread .message.reply .message-header {
+  flex-direction: row;
+}
+/* The satisfaction survey sits in the thread after the newest message, as wide as a message bubble. */
+#customer-thread>#customer-survey {
+  max-width: min(44rem,100%);
+  margin: 4px 0 0 44px;
 }

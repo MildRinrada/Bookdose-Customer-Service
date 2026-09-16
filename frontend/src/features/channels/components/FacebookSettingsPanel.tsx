@@ -65,7 +65,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
             <TeamOptions />
           </SelectField>
           <label className="check">
-            <input name="enabled" type="checkbox" defaultChecked={c.enabled} />
+            <input name="enabled" type="checkbox" className="switch" defaultChecked={c.enabled} />
             เปิดรับและส่ง Facebook Messenger
           </label>
           <label className="check">

@@ -64,6 +64,14 @@ a {
 a:hover {
   text-decoration: underline;
 }
+/* A whole row, card or button that happens to be a link is not an inline link: it marks itself with its own hover
+   (background, border, colour) and never with an underline — the inbox and chat lists, the alerts, the menu, the
+   buttons and the file chips. */
+a.inbox-item:hover,a.customer-chat-item:hover,a.note-item:hover,a.customer-link-row:hover,a.article-card:hover,
+a.nav-item:hover,a.menu-item:hover,a.btn:hover,a.icon-btn:hover,a.tool-btn:hover,a.file-chip:hover,
+a.stat-card:hover,a.guide-card:hover,a.customer-org-row:hover {
+  text-decoration: none;
+}
 h1,h2,h3,p {
   margin-top: 0;
 }

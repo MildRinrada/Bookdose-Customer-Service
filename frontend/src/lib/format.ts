@@ -1,4 +1,4 @@
-/* Formatting shared by every screen: dates in Thai, amounts, durations and the plain text of a formatted message. */
+/* Formatting shared by every screen: dates in Thai, numbers, durations and the plain text of a formatted message. */
 
 type DateInput = string | number | Date | null | undefined;
 
@@ -12,14 +12,6 @@ export function date(value: DateInput, withTime = false): string {
     month: 'short',
     ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
   }).format(toDate(value));
-}
-
-/** Invoices, receipts and the warranty carry the year, in the Thai calendar as Thai documents do. */
-export function longDate(value: string | null | undefined): string {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }).format(
-    new Date(value.length === 10 ? `${value}T00:00:00` : value),
-  );
 }
 
 const minutesAgo = (value: Exclude<DateInput, null | undefined>) => Math.max(0, Math.floor((Date.now() - toDate(value).getTime()) / 60000));
@@ -74,11 +66,6 @@ export function formatDuration(minutes: number | null | undefined): string {
 /** 1,234 */
 export function number(value: number | string | null | undefined): string {
   return Number(value ?? 0).toLocaleString('th-TH');
-}
-
-/** "107,000.00 บาท" */
-export function baht(value: number | string | null | undefined): string {
-  return `${Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
 }
 
 /** ★★★☆☆ */

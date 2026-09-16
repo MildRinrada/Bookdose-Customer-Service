@@ -12,6 +12,10 @@ export type PublicOrgInfo = {
   categories?: string[];
 } & Record<string, unknown>;
 
+/** POST /api/customer/login and /api/customer/reset: signed in, or stopped at the second step (customer_security).
+    `methods` says what may finish it: 'totp' (the authenticator app) and 'recovery' (one of the printed codes). */
+export type CustomerLoginResult = { ok: true; signed_in?: boolean; two_factor?: boolean; methods?: string[] };
+
 /** POST /api/customer/register: 201 and signed in when email is not set up, else 202 and a link is on its way. */
 export type CustomerSignupResult = { ok: true; signed_in?: boolean; verification_required?: boolean };
 

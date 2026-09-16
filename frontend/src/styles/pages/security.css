@@ -1,0 +1,182 @@
+/* ตั้งค่าบัญชี → ความปลอดภัย (features/customer/settings/SecuritySettings.tsx) and the customer login's second step
+   (features/auth/components/TwoFactorStep.tsx). Cards, lists and the two-column QR block reuse the app's tokens. */
+
+.security-card .card-header {
+  align-items: center;
+}
+.security-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.security-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.security-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.security-list li .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.security-list li strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.security-list li .muted {
+  font-size: 0.85em;
+  word-break: break-word;
+}
+.security-list-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-alt, rgba(0, 0, 0, 0.05));
+  color: var(--accent);
+}
+.security-list-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Setting up the authenticator app */
+.totp-steps {
+  margin: 0 0 16px;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+}
+.totp-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.totp-qr {
+  width: 200px;
+  height: 200px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 8px;
+}
+.totp-secret {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.totp-secret code {
+  font-size: 1.05em;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-alt, rgba(0, 0, 0, 0.05));
+}
+
+/* The ten recovery codes, shown once */
+.recovery-codes {
+  border: 1px solid var(--warning, #c58a00);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.recovery-codes h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+.recovery-codes ul {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.recovery-codes code {
+  display: block;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: var(--radius);
+  background: var(--surface-alt, rgba(0, 0, 0, 0.05));
+  letter-spacing: 0.06em;
+}
+
+/* The account's history */
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.activity-table th,
+.activity-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.activity-table td {
+  font-size: 0.92em;
+}
+
+/* The second step of a sign-in, and the passkey button beside the password form */
+.auth-form.two-factor .eyebrow {
+  margin-bottom: 6px;
+}
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.btn.passkey-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media print {
+  .settings-nav,
+  .page-heading,
+  .security-actions,
+  .security-card:not(:has(.recovery-codes)) {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .security-list li {
+    flex-wrap: wrap;
+  }
+  .totp-qr {
+    width: 160px;
+    height: 160px;
+  }
+}

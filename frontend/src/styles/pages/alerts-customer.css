@@ -23,6 +23,7 @@
 .note-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 6px;
 }
@@ -72,7 +73,8 @@
   width: 84px;
   text-align: center;
 }
-.notify-table input[type="checkbox"] {
+/* A switch keeps its own size (components.css); only a plain tick box is sized here. */
+.notify-table input[type="checkbox"]:not(.switch) {
   width: 18px;
   height: 18px;
   cursor: pointer;

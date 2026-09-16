@@ -1,10 +1,10 @@
-import { baht, date } from '@/lib/format';
+import { date } from '@/lib/format';
 import { caseState, customerStates, type CustomerState } from '@/lib/labels';
 import type { CustomerOrg } from '@/lib/types';
-import type { CaseFields, CustomerAlert, CustomerChat, CustomerContract, PortalSession } from './types';
+import type { CaseFields, CustomerAlert, CustomerChat, PortalSession } from './types';
 
-/* The customer's words for what the team is doing. The case states themselves live in lib/labels (caseState), since
-   the contracts' project issues use them too; they are re-exported here for the customer screens. */
+/* The customer's words for what the team is doing. The case states themselves live in lib/labels (caseState); they
+   are re-exported here for the customer screens. */
 
 export { caseState, customerStates, type CustomerState, type CustomerTone } from '@/lib/labels';
 
@@ -48,34 +48,10 @@ export function caseDueText(t: CaseFields): string {
   return `กำหนดเสร็จภายใน ${date(t.resolution_due_at, true)}`;
 }
 
-/** The documents' groups: waiting (for the customer to sign), open (not finished), done (signed by both). */
-export function documentInGroup(c: Pick<CustomerContract, 'status'>, key: string): boolean {
-  return !key || (key === 'waiting' ? c.status === 'review' : key === 'done' ? c.status === 'completed' : c.status !== 'completed' && c.status !== 'cancelled');
-}
-
-export const documentGroups: Array<[string, string]> = [
-  ['', 'ทั้งหมด'],
-  ['waiting', 'รอฉันตรวจและลงนาม'],
-  ['open', 'ยังไม่เสร็จ'],
-  ['done', 'ลงนามครบแล้ว'],
-];
-
-export const billingGroups: Record<string, string> = { '': 'ทั้งหมด', unpaid: 'รอชำระ', submitted: 'รอตรวจสลิป', paid: 'ชำระแล้ว' };
-
 type AlertKindView = { icon: string; tone: string; title: (a: CustomerAlert) => string; detail: (a: CustomerAlert) => string; href: (a: CustomerAlert) => string };
 
 const chatHref = (a: CustomerAlert) => `/customer/chats/${a.org_slug}/${a.conversation_id}`;
 const caseHref = (a: CustomerAlert) => `/customer/cases/${a.org_slug}/${a.case_id}`;
-const documentHref = (a: CustomerAlert, tab = '') => `/customer/documents/${a.org_slug}/${a.contract_id}${tab ? `?tab=${tab}` : ''}`;
-const invoiceHref = (a: CustomerAlert) => `/customer/billing/${a.org_slug}/${a.invoice_id}`;
-
-/** "ครบกำหนดวันนี้" / "ครบกำหนดใน 3 วัน (…)" / "เกินกำหนด 2 วัน (…)" of an unpaid invoice. */
-export function dueText(a: Pick<CustomerAlert, 'due_date' | 'days_left'>): string {
-  const left = a.days_left ?? null;
-  if (left === null) return `ครบกำหนด ${date(a.due_date)}`;
-  if (left === 0) return 'ครบกำหนดชำระวันนี้';
-  return left > 0 ? `ครบกำหนดใน ${left} วัน (${date(a.due_date)})` : `เกินกำหนด ${-left} วัน (${date(a.due_date)})`;
-}
 
 /** การแจ้งเตือน: the icon, tone, words and link of each kind of alert. */
 export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
@@ -88,73 +64,6 @@ export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
     title: (a) => `เคส BD-${a.number} ของ ${a.org_name} ดำเนินการเรียบร้อยแล้ว`,
     detail: (a) => a.subject,
     href: caseHref,
-  },
-  contract: {
-    icon: 'file',
-    tone: 'waiting',
-    title: (a) => `${a.org_name} ส่ง ${a.reference} ให้คุณตรวจและลงนาม`,
-    detail: (a) => a.subject,
-    href: (a) => documentHref(a),
-  },
-  contract_done: { icon: 'checkCircle', tone: 'done', title: (a) => `${a.reference} ลงนามครบแล้ว`, detail: (a) => a.subject, href: (a) => documentHref(a) },
-  delivery: {
-    icon: 'send',
-    tone: 'waiting',
-    title: (a) => `${a.org_name} ส่งมอบงานให้คุณตรวจรับ · ${a.reference}`,
-    detail: (a) => a.subject,
-    href: (a) => documentHref(a, 'milestones'),
-  },
-  approval: {
-    icon: 'checkCircle',
-    tone: 'waiting',
-    title: (a) =>
-      a.final
-        ? `${a.reference} ผ่านการตรวจครบ ${a.steps} ขั้นแล้ว รอคุณ${a.target === 'delivery' ? 'อนุมัติรับงาน' : 'ลงนาม'}`
-        : `ถึงขั้นตอนของคุณ: ตรวจ${a.target === 'delivery' ? 'งาน' : 'เอกสาร'} ${a.reference} (ขั้นที่ ${a.step}/${a.steps})`,
-    detail: (a) => `${a.subject} · ${a.org_name}`,
-    href: (a) => documentHref(a, a.target === 'delivery' ? 'milestones' : ''),
-  },
-  invoice: {
-    icon: 'receipt',
-    tone: 'waiting',
-    title: (a) => `ใบแจ้งหนี้ ${a.reference} รอชำระ ${baht(a.total)}`,
-    detail: (a) => `${a.subject} · ครบกำหนด ${date(a.due_date)}`,
-    href: invoiceHref,
-  },
-  invoice_due: {
-    icon: 'receipt',
-    tone: 'waiting',
-    title: (a) => `ถึงกำหนดชำระงวดที่ ${a.seq ?? '-'} · ${a.reference} ${baht(a.total)}`,
-    detail: (a) => `${a.subject} · ${dueText(a)}`,
-    href: invoiceHref,
-  },
-  invoice_overdue: {
-    icon: 'receipt',
-    tone: 'late',
-    title: (a) => `เลยกำหนดชำระ ${a.reference} ${baht(a.total)}`,
-    detail: (a) => `${a.subject} · ${dueText(a)}`,
-    href: invoiceHref,
-  },
-  invite: {
-    icon: 'users',
-    tone: 'new',
-    title: (a) => `${a.subject} กับ ${a.org_name}`,
-    detail: () => 'รับคำเชิญแล้วจะเห็นเอกสารและโครงการตามบทบาทที่ได้รับ',
-    href: () => '/customer/team',
-  },
-  receipt: {
-    icon: 'checkCircle',
-    tone: 'done',
-    title: (a) => `${a.org_name} ยืนยันรับชำระ ${a.reference} แล้ว`,
-    detail: (a) => `ดาวน์โหลดใบเสร็จได้ · ${a.subject}`,
-    href: (a) => `/customer/billing/${a.org_slug}/${a.invoice_id}?view=receipt`,
-  },
-  warranty: {
-    icon: 'shield',
-    tone: 'waiting',
-    title: (a) => `การรับประกัน ${a.reference} จะหมดใน ${a.days_left} วัน`,
-    detail: (a) => `${a.subject} · ขอต่อสัญญา MA ได้`,
-    href: (a) => documentHref(a, 'warranty'),
   },
   followup: {
     icon: 'calendar',

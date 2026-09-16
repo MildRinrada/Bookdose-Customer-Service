@@ -19,8 +19,19 @@ export function SinglePage({ children }: { children: ReactNode }) {
   );
 }
 
-/** A customer's one-task page from an email link (pages/customer/customer-link-page.html). */
-export function CustomerLinkPage({ organization, loginHref, children }: { organization: string; loginHref: string; children: ReactNode }) {
+/** A customer's one-task page from an email link or a QR (pages/customer/customer-link-page.html). The foot goes to
+    the sign-in page, unless the caller knows the reader is already signed in (backHref/backLabel). */
+export function CustomerLinkPage({
+  organization,
+  loginHref,
+  backLabel = 'กลับไปหน้าเข้าสู่ระบบ',
+  children,
+}: {
+  organization: string;
+  loginHref: string;
+  backLabel?: string;
+  children: ReactNode;
+}) {
   return (
     <main className="customer-link-page">
       <header className="customer-link-head">
@@ -32,7 +43,7 @@ export function CustomerLinkPage({ organization, loginHref, children }: { organi
       <p className="customer-link-foot">
         <Link href={loginHref}>
           <Icon name="back" />
-          กลับไปหน้าเข้าสู่ระบบ
+          {backLabel}
         </Link>
       </p>
     </main>

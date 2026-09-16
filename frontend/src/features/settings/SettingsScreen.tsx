@@ -4,16 +4,16 @@ import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { AiSettingsPanel } from '@/features/ai';
 import { ChannelSettingsPanel, FacebookSettingsPanel } from '@/features/channels';
-import { BillingSettingsPanel } from '@/features/contracts';
 import { roleLabels } from '@/lib/labels';
 import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
+import { JoinLinksPanel } from './components/JoinLinksPanel';
 import { OverviewPanel } from './components/OverviewPanel';
 import { TeamsPanel } from './components/TeamsPanel';
 import { isSettingsTab, settingsTabs, type SettingsTab } from './labels';
 
 /* Organization settings, in sections a person can point at: the organization and how it promises to serve, the
-   people who do the work, the channels customers write from, the AI assistant and billing. Every panel is in the
+   people who do the work, the links customers join with, the channels customers write from and the AI assistant. Every panel is in the
    page (the others hidden), like before, so each loads its own data when the screen opens.
    Markup: old-frontend/pages/settings/settings.html, settings-tab.html. */
 
@@ -85,15 +85,15 @@ export function SettingsScreen({ tab }: { tab?: string }) {
           <section id="settings-teams" role="tabpanel" aria-label="ทีมและสมาชิก" hidden={current !== 'teams'}>
             <TeamsPanel />
           </section>
+          <section id="settings-invites" role="tabpanel" aria-label="ลิงก์และ QR สำหรับลูกค้า" hidden={current !== 'invites'}>
+            <JoinLinksPanel />
+          </section>
           <section id="settings-connections" role="tabpanel" aria-label="LINE / Email / Facebook" hidden={current !== 'connections'}>
             <ChannelSettingsPanel />
             <FacebookSettingsPanel />
           </section>
           <section id="settings-ai" role="tabpanel" aria-label="AI Assistant" hidden={current !== 'ai'}>
             <AiSettingsPanel />
-          </section>
-          <section id="settings-billing" role="tabpanel" aria-label="การรับชำระเงินและภาษี" hidden={current !== 'billing'}>
-            <BillingSettingsPanel />
           </section>
         </div>
       </div>

@@ -204,10 +204,10 @@ export function NotifySettingsCard() {
                     <tr key={e.key}>
                       <th scope="row">{e.label}</th>
                       <td className="notify-check">
-                        <input type="checkbox" name={`${e.key}:email`} defaultChecked={e.email} aria-label={`${e.label} ทางอีเมล`} />
+                        <input type="checkbox" className="switch" name={`${e.key}:email`} defaultChecked={e.email} aria-label={`${e.label} ทางอีเมล`} />
                       </td>
                       <td className="notify-check">
-                        <input type="checkbox" name={`${e.key}:line`} defaultChecked={e.line} aria-label={`${e.label} ทาง LINE`} />
+                        <input type="checkbox" className="switch" name={`${e.key}:line`} defaultChecked={e.line} aria-label={`${e.label} ทาง LINE`} />
                       </td>
                     </tr>
                   ))}

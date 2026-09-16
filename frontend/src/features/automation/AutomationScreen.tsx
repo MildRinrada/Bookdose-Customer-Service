@@ -159,7 +159,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
               ) : (
                 <EmptyState
                   title="ยังไม่มีกฎ"
-                  description="ตัวอย่าง: ถ้ามาจาก Facebook และมีคำว่า “ชำระเงิน” ให้ความเร่งด่วนสูงและส่งให้ทีมบัญชีทันที"
+                  description="ตัวอย่าง: ถ้ามาจาก Facebook และมีคำว่า “ระบบล่ม” ให้ความเร่งด่วนสูงและส่งให้ทีมเทคนิคทันที"
                   icon="bolt"
                 />
               )}
@@ -275,7 +275,7 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
       </div>
       <div className="card-body stack">
         <label className="check">
-          <input type="checkbox" name="escalation_enabled" defaultChecked={s.escalation_enabled} />
+          <input type="checkbox" className="switch" name="escalation_enabled" defaultChecked={s.escalation_enabled} />
           เปิดการยกระดับอัตโนมัติ
         </label>
         <TextField
@@ -301,7 +301,7 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
       </div>
       <div className="card-body stack">
         <label className="check">
-          <input type="checkbox" name="csat_enabled" defaultChecked={s.csat_enabled} />
+          <input type="checkbox" className="switch" name="csat_enabled" defaultChecked={s.csat_enabled} />
           ส่งแบบประเมินให้ลูกค้าอัตโนมัติ
         </label>
         <TextArea id="csat-message" label="ข้อความแบบประเมิน" name="csat_message" max={1000} rows={4} defaultValue={s.csat_message} />

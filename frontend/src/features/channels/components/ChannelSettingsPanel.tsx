@@ -106,11 +106,11 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
               <ChannelField kind={k} name="access_token" label="Channel Access Token" type="password" />
               <ChannelField kind={k} name="public_base_url" label="โดเมน HTTPS สำหรับส่งไฟล์" type="url" value={v.public_base_url || ''} />
               <label className="check">
-                <input name="groups_enabled" type="checkbox" defaultChecked={Boolean(v.groups_enabled)} />
+                <input name="groups_enabled" type="checkbox" className="switch" defaultChecked={Boolean(v.groups_enabled)} />
                 รับและตอบในกลุ่ม LINE
               </label>
               <label className="check">
-                <input name="group_chatbot_enabled" type="checkbox" defaultChecked={Boolean(v.group_chatbot_enabled)} />
+                <input name="group_chatbot_enabled" type="checkbox" className="switch" defaultChecked={Boolean(v.group_chatbot_enabled)} />
                 ให้ AI ตอบในกลุ่มเมื่อเรียก /bookdose หรือเมนชัน
               </label>
             </>
@@ -137,11 +137,11 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
             <TeamOptions />
           </SelectField>
           <label className="check">
-            <input name="enabled" type="checkbox" defaultChecked={c.enabled} />
+            <input name="enabled" type="checkbox" className="switch" defaultChecked={c.enabled} />
             เปิดรับและส่ง {name}
           </label>
           <label className="check">
-            <input name="chatbot_enabled" type="checkbox" defaultChecked={Boolean(v.chatbot_enabled)} />
+            <input name="chatbot_enabled" type="checkbox" className="switch" defaultChecked={Boolean(v.chatbot_enabled)} />
             เปิด Chatbot ตอบอัตโนมัติบน {name}
           </label>
           <label className="check">

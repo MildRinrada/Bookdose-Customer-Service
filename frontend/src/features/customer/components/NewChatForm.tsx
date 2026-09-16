@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { useDialogs } from '@/components/ui/Dialogs';
-import { RequiredStar, SelectField, TextArea, TextField, useFieldValidation } from '@/components/ui/fields';
+import { RequiredStar, SelectField, TextArea, TextField } from '@/components/ui/fields';
 import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
@@ -16,7 +15,7 @@ import type { CustomerOrg } from '@/lib/types';
 import { openChat, OVERVIEW_PATH } from '../api';
 import { useOrgFilter, useOrgs } from '../hooks';
 import { replyPromise } from '../labels';
-import { JoinOrgForm } from './JoinOrg';
+import { OrgPicker } from './OrgPicker';
 
 /* A new chat starts with who it is for: the platform itself (problems with the system) or one of the organizations
    the customer deals with (their services and their own cases). The welcome, the reply promise and the categories
@@ -50,24 +49,13 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
   const initial = orgs.find((o) => o.slug === preselect) ?? orgs.find((o) => o.slug === orgFilter) ?? orgs[0];
   const [slug, setSlug] = useState(initial?.slug ?? '');
   const org = orgs.find((o) => o.slug === slug);
-  const home = orgs.find((o) => o.home);
-  const others = orgs.filter((o) => !o.home);
-  const pills = useFilePills();
-  const orgCheck = useFieldValidation();
-  const { openModal } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();
   const router = useRouter();
 
-  const option = (o: CustomerOrg) => (
-    <option key={o.slug} value={o.slug}>
-      {o.name}
-    </option>
-  );
-
   return (
     <>
-      <div className="card-header conv-header">
+      <div className="card-header conv-header new-chat-header">
         {hasChats && (
           <Link className="icon-btn conv-back" href="/customer/chats" aria-label="กลับไปที่รายการแชท">
             <Icon name="back" />
@@ -100,17 +88,7 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
             ติดต่อองค์กร
             <RequiredStar />
           </label>
-          <div className="customer-org-pick">
-            <select id="request-org" name="org" required value={slug} onChange={(e) => setSlug(e.target.value)} {...orgCheck.bind}>
-              {home && <optgroup label={`ติดต่อ ${home.name} โดยตรง · ปัญหาระบบ แพลตฟอร์มค้าง แจ้ง Bug`}>{option(home)}</optgroup>}
-              {others.length > 0 && <optgroup label="องค์กรคู่ค้า · สอบถามบริการ สินค้า หรือเคสขององค์กรนั้น">{others.map(option)}</optgroup>}
-            </select>
-            <button type="button" className="btn subtle" onClick={() => openModal('เพิ่มองค์กรที่ติดต่อได้', <JoinOrgForm />)}>
-              <Icon name="plus" />
-              เพิ่มองค์กรด้วยรหัส
-            </button>
-            {orgCheck.errorNode}
-          </div>
+          <OrgPicker id="request-org" orgs={orgs} value={slug} onChange={setSlug} />
           <small className="muted">
             ตัวระบบค้าง หน้าเว็บผิดปกติ หรือพบ Bug ติดต่อผู้ให้บริการระบบได้เสมอ · เรื่องบริการ สินค้า หรือเคสขององค์กรใด ให้เลือกองค์กรนั้น
           </small>
@@ -136,37 +114,46 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
           rows={6}
           placeholder="เกิดอะไรขึ้น ทำอะไรอยู่ตอนนั้น และเห็นข้อความอะไรบ้าง ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด"
         />
-        <div className="field">
-          <span className="file-field-title">แนบไฟล์ (ไม่บังคับ)</span>
-          <input
-            ref={pills.inputRef}
-            id="request-files"
-            className="attach-input"
-            name="files"
-            type="file"
-            multiple
-            accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt"
-            aria-label="แนบไฟล์"
-            aria-describedby="request-files-help"
-            data-file-ready="1"
-            onChange={pills.onChange}
-          />
-          <label className="btn subtle customer-attach" htmlFor="request-files">
-            <Icon name="paperclip" />
-            เลือกไฟล์จากเครื่อง
-          </label>
-          <p className="tiny muted" id="request-files-help">
-            แนบภาพหรือวิดีโออธิบายปัญหาได้ · สูงสุด 3 ไฟล์ รวม 5 MB · PNG, JPG, GIF, WebP, MP4, WebM, PDF และ TXT
-          </p>
-          <FilePills files={pills.files} onRemove={pills.remove} />
-          <FileProblem problem={pills.problem} />
-        </div>
-        <p className="tiny muted">เพื่อความปลอดภัย กรุณาอย่าส่งรหัสผ่านหรือข้อมูลบัตรชำระเงินในแชท</p>
+        <AttachmentsField />
+        <p className="tiny muted">เพื่อความปลอดภัย กรุณาอย่าส่งรหัสผ่านหรือข้อมูลส่วนตัวที่สำคัญในแชท</p>
         <button className="btn primary" type="submit">
           <Icon name="send" />
           ส่งถึงทีมงาน
         </button>
       </Form>
     </>
+  );
+}
+
+/** The attachments field: it owns the file input, its ref and the pills. The form reads the files from the input
+    itself when it is sent (filesOf), so nothing above needs them. */
+function AttachmentsField() {
+  const { inputRef, files, problem, onChange, remove } = useFilePills();
+  return (
+    <div className="field">
+      <span className="file-field-title">แนบไฟล์ (ไม่บังคับ)</span>
+      <input
+        ref={inputRef}
+        id="request-files"
+        className="attach-input"
+        name="files"
+        type="file"
+        multiple
+        accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt"
+        aria-label="แนบไฟล์"
+        aria-describedby="request-files-help"
+        data-file-ready="1"
+        onChange={onChange}
+      />
+      <label className="btn subtle customer-attach" htmlFor="request-files">
+        <Icon name="paperclip" />
+        เลือกไฟล์จากเครื่อง
+      </label>
+      <p className="tiny muted" id="request-files-help">
+        แนบภาพหรือวิดีโออธิบายปัญหาได้ · สูงสุด 3 ไฟล์ รวม 5 MB · PNG, JPG, GIF, WebP, MP4, WebM, PDF และ TXT
+      </p>
+      <FilePills files={files} onRemove={remove} />
+      <FileProblem problem={problem} />
+    </div>
   );
 }

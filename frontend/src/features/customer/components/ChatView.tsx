@@ -114,10 +114,22 @@ export function ChatView({
       <div className="notice customer-ai-status" id="customer-ai-status">
         <AiPortalStatus ai={data.ai} slug={slug} />
       </div>
-      <MessageThread messages={data.messages} threadId={id} id="customer-thread" publicView publicSlug={slug} />
-      <div id="customer-survey" data-key={JSON.stringify(data.survey)}>
-        {survey && <CustomerSurvey survey={survey} slug={slug} org={orgName} />}
-      </div>
+      {/* The survey is part of the conversation: it follows the newest message and scrolls with the messages. */}
+      <MessageThread
+        messages={data.messages}
+        threadId={id}
+        id="customer-thread"
+        publicView
+        publicSlug={slug}
+        afterKey={JSON.stringify(data.survey)}
+        after={
+          survey && (
+            <div id="customer-survey">
+              <CustomerSurvey survey={survey} slug={slug} org={orgName} />
+            </div>
+          )
+        }
+      />
       <Composer key={id} conversationId={id} publicView publicSlug={slug} />
     </>
   );

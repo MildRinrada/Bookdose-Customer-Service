@@ -14,8 +14,8 @@ function OnTime({ label, average, pct }: { label: string; average: string; pct: 
       {pct == null ? (
         <span className="muted">ยังไม่มีข้อมูล</span>
       ) : (
-        <span className="project-mini">
-          <progress className="project-meter sm" max={100} value={pct} aria-label={`ตรงเวลา ${pct}%`}>
+        <span className="cdash-ontime">
+          <progress className="cdash-bar" max={100} value={pct} aria-label={`ตรงเวลา ${pct}%`}>
             {pct}%
           </progress>
           ตรงเวลา {pct}%

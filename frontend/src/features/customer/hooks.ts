@@ -26,7 +26,7 @@ export function useOrgs(): CustomerOrg[] {
   return useCustomerOrgs().data?.organizations ?? [];
 }
 
-/** Which organization's chats, cases, documents and invoices to show: '' for every one. Shared by those screens,
+/** Which organization's chats, cases and service levels to show: '' for every one. Shared by those screens,
     like the old state.customer.orgFilter. */
 export function useOrgFilter() {
   return useUiState('customer:orgFilter', '');

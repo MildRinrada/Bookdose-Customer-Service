@@ -1,128 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { useRunAction } from '@/components/ui/actions';
-import { useDialogs } from '@/components/ui/Dialogs';
 import { EmptyState } from '@/components/ui/display';
-import { useToast } from '@/components/ui/Toast';
-import { customerContractApi } from '@/features/contracts';
-import { acceptInvite, declineInvite, teamPath } from '@/features/team/api';
 import { date, relative } from '@/lib/format';
-import { useInvalidate } from '@/lib/query';
-import { OVERVIEW_PATH } from './api';
 import { useOverview } from './hooks';
 import { alertKinds } from './labels';
 import type { CustomerAlert } from './types';
 
-/* การแจ้งเตือน: what waits for the customer first (counted on the bell), then the latest news of their cases
-   (pages/customer/customer-alerts.html). Every alert has its button: most open the page where it is done; an
-   invitation is accepted and an MA renewal asked for right here. Markup: pages/alerts-customer.css. */
-
-/** The alert's button: accept an invitation or ask for the MA renewal in place, otherwise a link to where it is done. */
-function AlertAction({ alert: a, href }: { alert: CustomerAlert; href: string }) {
-  const [busy, setBusy] = useState(false);
-  const run = useRunAction();
-  const refresh = useInvalidate();
-  const toast = useToast();
-  const { confirm } = useDialogs();
-  const act = (action: () => Promise<unknown>) =>
-    run(async () => {
-      setBusy(true);
-      try {
-        await action();
-      } finally {
-        setBusy(false);
-      }
-    });
-
-  if (a.kind === 'invite' && a.invite_id) {
-    const id = a.invite_id;
-    return (
-      <span className="note-actions">
-        <button
-          className="btn primary"
-          type="button"
-          disabled={busy}
-          onClick={() =>
-            act(async () => {
-              await acceptInvite(a.org_slug, id);
-              toast(`เข้าร่วมทีมกับ ${a.org_name} แล้ว เอกสารที่ได้รับสิทธิ์อยู่ในเมนูสัญญาและโครงการ`);
-              await refresh(OVERVIEW_PATH, teamPath(a.org_slug));
-            })
-          }
-        >
-          <Icon name="check" />
-          {a.action_label}
-        </button>
-        <button
-          className="btn"
-          type="button"
-          disabled={busy}
-          onClick={() =>
-            confirm({
-              title: 'ปฏิเสธคำเชิญ',
-              message: `ไม่เข้าร่วมทีมของคุณ${a.owner_name ?? ''} กับ ${a.org_name} เจ้าของทีมเชิญใหม่ได้ภายหลัง`,
-              confirmLabel: 'ปฏิเสธคำเชิญ',
-              cancelLabel: 'ยังไม่ตัดสินใจ',
-              tone: 'danger',
-              run: async () => {
-                await declineInvite(a.org_slug, id);
-                toast('ปฏิเสธคำเชิญแล้ว');
-                await refresh(OVERVIEW_PATH, teamPath(a.org_slug));
-              },
-            })
-          }
-        >
-          ปฏิเสธ
-        </button>
-      </span>
-    );
-  }
-
-  if (a.kind === 'warranty' && a.contract_id) {
-    const docApi = customerContractApi(a.org_slug, a.contract_id);
-    return (
-      <span className="note-actions">
-        <button
-          className="btn primary"
-          type="button"
-          disabled={busy}
-          onClick={() =>
-            confirm({
-              title: 'ขอต่อสัญญา MA',
-              message: `ส่งคำขอต่อสัญญาบำรุงรักษา (MA) ของ ${a.reference} “${a.subject}” ถึง ${a.org_name} คำขอจะไปที่แชทของโครงการ แล้วทีมงานจะส่งสัญญา MA ให้ตรวจและลงนาม`,
-              confirmLabel: 'ส่งคำขอต่อ MA',
-              cancelLabel: 'ยังไม่ขอ',
-              run: async () => {
-                await docApi.requestRenewal('');
-                toast('ส่งคำขอต่อ MA แล้ว ทีมงานจะติดต่อกลับในแชทของโครงการ');
-                await refresh(OVERVIEW_PATH, docApi.path);
-              },
-            })
-          }
-        >
-          <Icon name="shield" />
-          {a.action_label}
-        </button>
-      </span>
-    );
-  }
-
-  return (
-    <span className="note-actions">
-      <Link className={a.action ? 'btn primary' : 'btn'} href={href}>
-        {a.action_label}
-      </Link>
-    </span>
-  );
-}
+/* การแจ้งเตือน: what waits for the customer first (counted on the bell), then the latest news of their chats and
+   cases (pages/customer/customer-alerts.html). Every alert has its button, a link to where it is done.
+   Markup: pages/alerts-customer.css. */
 
 function AlertItem({ alert: a }: { alert: CustomerAlert }) {
   const kind = alertKinds[a.kind];
   if (!kind) return null;
-  const ago = a.kind === 'followup' ? date(a.at, true) : a.kind === 'warranty' ? `หมด ${date(a.at)}` : relative(a.at);
+  const ago = a.kind === 'followup' ? date(a.at, true) : relative(a.at);
   const href = kind.href(a);
   return (
     <div className={`note-item note-actionable note-${kind.tone}`} data-kind={a.kind}>
@@ -137,14 +30,20 @@ function AlertItem({ alert: a }: { alert: CustomerAlert }) {
         <time className="note-time" dateTime={a.at} title={date(a.at, true)}>
           {ago}
         </time>
-        {a.action_label && <AlertAction alert={a} href={href} />}
+        {a.action_label && (
+          <span className="note-actions">
+            <Link className={a.action ? 'btn primary' : 'btn'} href={href}>
+              {a.action_label}
+            </Link>
+          </span>
+        )}
       </span>
     </div>
   );
 }
 
 function alertKey(a: CustomerAlert) {
-  return `${a.kind}:${a.conversation_id ?? a.case_id ?? a.invoice_id ?? a.invite_id ?? a.contract_id}:${a.milestone_id ?? ''}`;
+  return `${a.kind}:${a.conversation_id ?? a.case_id}`;
 }
 
 function AlertGroup({ label, icon, list }: { label: string; icon: string; list: CustomerAlert[] }) {

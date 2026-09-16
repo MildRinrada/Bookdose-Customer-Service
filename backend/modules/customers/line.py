@@ -1,13 +1,16 @@
 """Linking a customer account with the LINE of one organization (the official account belongs to the organization, so
-a link is made per organization). The customer asks for a 6-digit code on their account page and sends it to the
-organization's LINE in a 1:1 chat; the webhook (channels.service.ingest_line) sees a live code, links that LINE user
-and keeps the message out of the conversations. A LINE confirmation goes out through the notification outbox.
+a link is made per organization) for the notices the customer wants there. The customer asks for a 6-digit code on
+their account page and sends it to the organization's LINE in a 1:1 chat; the webhook (channels.service.ingest_line)
+sees a live code, links that LINE user and keeps the message out of the conversations. A LINE confirmation goes out
+through the notification outbox.
 
 A code lasts 10 minutes, is stored hashed, and a new one replaces the account's earlier one. Guessing is limited two
-ways: a LINE user who sent 5 wrong codes within an hour is not checked again until the hour is over, and every wrong
-code sent to the organization's LINE counts against all live codes (20 and they stop working; the account page then
-says so). A wrong code is never answered differently from any other message: it is stored as a normal message, so
-trying reveals nothing. A live code is never stored: from a sender over the limit it is dropped and stops working."""
+ways: a sender (a LINE user, or a group counted under 'group:<id>') who sent 5 wrong codes within an hour is not
+checked again until the hour is over, and every wrong code sent to the organization's LINE counts against all live
+codes (20 and they stop working; the account page then says so). A wrong code is never answered differently from any
+other message: it is stored as a normal message, so trying reveals nothing. A live code is never left where the
+team's inbox would keep it: sent by someone over the limit, or read out in a LINE group, it is dropped and stops
+working."""
 import re
 import secrets
 
@@ -19,7 +22,7 @@ from backend.utils.validation import require
 
 CODE = re.compile(r'[0-9]{6}')
 CODE_MINUTES = 10
-MAX_GUESSES = 5               # wrong codes per LINE user per hour
+MAX_GUESSES = 5               # wrong codes per LINE user (or group) per hour
 MAX_CODE_ATTEMPTS = 20        # wrong codes sent to the organization's LINE while a code lives
 NOT_AVAILABLE = 'องค์กรนี้ยังไม่ได้เปิดการแจ้งเตือนทาง LINE'
 
@@ -61,6 +64,12 @@ def unlink(db, session):
     db.commit()
 
 
+def _wrong_code(db, sender, window):
+    repository.record_line_guess(db,sender,window)
+    repository.count_wrong_code(db,now())
+    repository.drop_worn_codes(db,MAX_CODE_ATTEMPTS)
+
+
 def take_code(db, tenant_id, line_user_id, text):
     """A text message from a 1:1 LINE user (inside the webhook event's transaction): True when it was a live code and
     the LINE user is now linked with that account (the caller keeps the message out of the conversations), else
@@ -78,9 +87,7 @@ def take_code(db, tenant_id, line_user_id, text):
             repository.delete_line_codes(db,code['account_id'])
         return bool(code)
     if not code or code['attempts']>=MAX_CODE_ATTEMPTS:
-        repository.record_line_guess(db,line_user_id,window)
-        repository.count_wrong_code(db,now())
-        repository.drop_worn_codes(db,MAX_CODE_ATTEMPTS)
+        _wrong_code(db,line_user_id,window)
         return False
     repository.set_line_link(db,code['account_id'],line_user_id)
     repository.delete_line_codes(db,code['account_id'])
@@ -89,3 +96,22 @@ def take_code(db, tenant_id, line_user_id, text):
         notify.queue_line(cd,db,tenant_id,code['account_id'],'เชื่อม LINE กับบัญชีลูกค้าเรียบร้อยแล้ว จากนี้การแจ้งเตือนจะส่งมาที่แชทนี้ ตั้งค่าได้ที่',
                           '/customer/account')
     return True
+
+
+def drop_group_code(db, group_id, text):
+    """A text message inside a LINE group the organization's LINE is in (inside the webhook event's transaction): a
+    code read out there is seen by everyone in the group and would stay in the team's inbox, so a live one stops
+    working and the message is dropped (True). Nothing is ever linked from a group; wrong codes are counted per group
+    ('group:<id>') like a user's."""
+    value = text.strip()
+    if not CODE.fullmatch(value):
+        return False
+    code = repository.live_line_code(db,token_hash(value))
+    if code:
+        repository.delete_line_codes(db,code['account_id'])
+        return True
+    window,sender = after(hours=-1),'group:'+group_id
+    guesses = repository.line_guesses(db,sender)
+    if not guesses or guesses['since']<=window or guesses['failures']<MAX_GUESSES:
+        _wrong_code(db,sender,window)
+    return False

@@ -47,7 +47,7 @@ export function FaqScreen() {
       </div>
       <section className="card customer-answers">
         <div className="card-body">
-          <SearchInput id="customer-faq-search" label="ค้นหาคำตอบ" placeholder="ค้นหาคำตอบ เช่น ลืมรหัสผ่าน การชำระเงิน" value={search} onChange={setSearch} />
+          <SearchInput id="customer-faq-search" label="ค้นหาคำตอบ" placeholder="ค้นหาคำตอบ เช่น ลืมรหัสผ่าน เปลี่ยนอีเมล" value={search} onChange={setSearch} />
           {orgs.length > 1 && (
             <div className="filter-pills" role="group" aria-label="องค์กร">
               {[['', 'ทุกองค์กร'] as [string, string], ...orgs].map(([value, label]) => (

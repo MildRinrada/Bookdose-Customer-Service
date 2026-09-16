@@ -21,7 +21,6 @@ export const workspacePages: StaffPage[] = [
   { key: 'contacts', href: '/contacts', label: 'ข้อมูลลูกค้า', icon: 'users' },
   { key: 'knowledge', href: '/knowledge', label: 'คลังความรู้', icon: 'book' },
   { key: 'reports', href: '/reports', label: 'รายงาน', icon: 'chart' },
-  { key: 'contracts', href: '/contracts', label: 'สัญญา / TOR', icon: 'file', roles: ['admin', 'manager'] },
   { key: 'guides', href: '/guides', label: 'คู่มือจาก Bookdose', icon: 'list' },
 ];
 
@@ -40,7 +39,6 @@ export const platformPages: StaffPage[] = [
   { key: 'system', href: '/platform/system', label: 'ภาพรวมระบบ', icon: 'chart' },
   { key: 'platform', href: '/platform/organizations', label: 'จัดการองค์กร', icon: 'globe' },
   { key: 'global-faq', href: '/platform/faq', label: 'FAQ กลาง', icon: 'book' },
-  { key: 'contract-templates', href: '/platform/contract-templates', label: 'Template สัญญากลาง', icon: 'file' },
   { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield' },
 ];
 
@@ -59,17 +57,13 @@ export type CustomerPage = { key: string; href: string; label: string; icon: str
 
 /** The customer's screens, in menu order: services first, then the account. */
 export const customerServicePages: CustomerPage[] = [
-  { key: 'dashboard', href: '/customer/dashboard', label: 'ภาพรวมโครงการ', icon: 'chart' },
+  { key: 'dashboard', href: '/customer/dashboard', label: 'ภาพรวม', icon: 'chart' },
   { key: 'chats', href: '/customer/chats', label: 'แชทของฉัน', icon: 'chat' },
   { key: 'cases', href: '/customer/cases', label: 'เคสของฉัน', icon: 'ticket' },
-  { key: 'documents', href: '/customer/documents', label: 'สัญญาและโครงการ', icon: 'file' },
-  { key: 'approvals', href: '/customer/approvals', label: 'งานรออนุมัติ', icon: 'check' },
-  { key: 'billing', href: '/customer/billing', label: 'ใบแจ้งหนี้/ใบเสร็จ', icon: 'receipt' },
   { key: 'faq', href: '/customer/faq', label: 'คำถามที่พบบ่อย', icon: 'book' },
 ];
 
 export const customerAccountPages: CustomerPage[] = [
-  { key: 'team', href: '/customer/team', label: 'ทีมของฉัน', icon: 'users' },
   { key: 'alerts', href: '/customer/alerts', label: 'การแจ้งเตือน', icon: 'bell' },
   { key: 'account', href: '/customer/account', label: 'ตั้งค่าบัญชี', icon: 'settings' },
 ];
@@ -99,11 +93,9 @@ const legacyStaff: Record<string, string> = {
   trash: '/trash',
   notifications: '/notifications',
   guides: '/guides',
-  contracts: '/contracts',
   system: '/platform/system',
   platform: '/platform/organizations',
   'global-faq': '/platform/faq',
-  'contract-templates': '/platform/contract-templates',
   'platform-team': '/platform/team',
   'verify-email': '/verify-email',
   'check-email': '/check-email',
@@ -113,7 +105,7 @@ const legacyStaff: Record<string, string> = {
   forgot: '/customer/forgot',
 };
 
-const legacyCustomer = new Set(['dashboard', 'chats', 'cases', 'documents', 'approvals', 'billing', 'faq', 'team', 'alerts', 'account']);
+const legacyCustomer = new Set(['dashboard', 'chats', 'cases', 'faq', 'alerts', 'account']);
 
 /** The path for an address of the old frontend: "#tickets/<id>", "#chats/<org>/<id>", "#verify-email?token=…",
     "#verify=<token>", "#signup" … `search` is the page's own query (?org=…), kept on the new address.

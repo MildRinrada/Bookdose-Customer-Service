@@ -55,6 +55,29 @@
 .customer-list-new {
   justify-content: center;
 }
+/* The customer's chat list reads more calmly than the team's inbox: each chat is its own card with air around it,
+   and the preview line is lighter than the subject so the eye lands on the subject first. */
+.customer-chats .inbox-item {
+  margin: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--line);
+  border-radius: 12px;
+}
+.customer-chats .inbox-item.selected {
+  border-left: 3px solid var(--purple);
+  padding-left: 16px;
+}
+.customer-chats .inbox-item h3 {
+  margin: 7px 0 4px;
+  font-weight: 600;
+}
+.customer-chats .inbox-preview {
+  font-size: .92rem;
+  line-height: 1.5;
+  color: #71697d;
+}
 .customer-chat-item .inbox-top {
   display: flex;
   align-items: center;
@@ -694,6 +717,95 @@ main .customer-link-head>.text-size-controls {
   flex: 1;
   min-width: 14rem;
 }
+/* Picking who the chat is for, the way an email client picks a recipient: the choice is a chip, and the list below
+   the box searches the organizations the customer can contact (see components/OrgPicker.tsx). */
+.org-picker .combo-control {
+  min-height: 52px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px 10px;
+}
+/* The box always keeps room to type, next to the chip. */
+.org-picker-input {
+  flex: 1;
+  min-width: 11rem;
+}
+.org-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 6px 5px 5px;
+  border: 1px solid #d5cbf0;
+  border-radius: 999px;
+  background: #f5f1fe;
+  color: #3b2b66;
+  font-weight: 600;
+}
+.org-chip .avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+}
+.org-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.org-chip-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ece5fb;
+  color: #5133a6;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.org-chip-remove {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #6b5b8f;
+  cursor: pointer;
+}
+.org-chip-remove:hover {
+  background: #e5dbfa;
+  color: #3b2b66;
+}
+.org-chip-remove .icon {
+  width: 15px;
+  height: 15px;
+}
+.org-picker-list li[role=option] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  text-align: left;
+  gap: 10px;
+}
+.org-picker-list .avatar,.org-picker-list .org-add-icon {
+  flex: none;
+}
+.org-picker-list li[role=option] span {
+  display: grid;
+  min-width: 0;
+}
+.org-picker-list small {
+  color: var(--muted);
+}
+.org-add-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ece5fb;
+  color: #5133a6;
+}
 .customer-org-intro {
   display: grid;
   gap: 6px;
@@ -722,6 +834,10 @@ main .customer-link-head>.text-size-controls {
 .customer-survey textarea {
   width: 100%;
   margin: 6px 0 8px;
+}
+/* The hidden radio stays inside its star, so choosing a star never scrolls the page to find it. */
+.star-btn {
+  position: relative;
 }
 .star-btn.on {
   color: #f5a524;
@@ -767,7 +883,26 @@ main .customer-link-head>.text-size-controls {
   margin-left: 6px;
 }
 /* On wide screens the chat panel has a fixed height: a long new-chat form scrolls inside it. */
+.inbox-detail>/* Starting a chat is the one thing on this side of the screen: its title leads, and the form itself is a card that
+   lifts off the page. */
+.new-chat-header .conv-title h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  -webkit-line-clamp: 2;
+}
+.new-chat-header .conv-meta {
+  margin-top: 4px;
+  color: var(--muted);
+}
 .inbox-detail>.customer-new-chat {
+  margin: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 28px #1e293b14;
+}
+.customer-new-chat {
   flex: 1;
   min-height: 0;
   overflow-y: auto;

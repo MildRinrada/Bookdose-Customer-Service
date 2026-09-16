@@ -9,7 +9,7 @@ import { resetUiState } from './ui-state';
 import type { CustomerAccount, CustomerOrg, SignedInCustomer } from './types';
 
 /* The customer side's session: one account for every organization. The customer layout loads the account, the
-   organizations the customer can contact and the overview (chats, cases, contracts, invoices, alerts) before a
+   organizations the customer can contact and the overview (chats, cases, alerts) before a
    screen opens. */
 
 export function useCustomerAccount() {
@@ -40,9 +40,6 @@ export function useCustomerOrgs() {
 export type CustomerOverview = {
   conversations: Array<{ id: string; last_kind?: string | null; seen_at?: string | null; updated_at: string } & Record<string, unknown>>;
   cases: Array<{ id: string; status: string } & Record<string, unknown>>;
-  contracts?: Array<{ id: string; status: string } & Record<string, unknown>>;
-  deliveries?: Array<Record<string, unknown>>;
-  invoices?: Array<{ id: string; status: string } & Record<string, unknown>>;
   alerts: Array<{ kind: string; action?: boolean } & Record<string, unknown>>;
   alert_count: number;
 } & Record<string, unknown>;

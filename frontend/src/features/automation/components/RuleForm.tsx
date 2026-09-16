@@ -43,7 +43,7 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
         await refresh(AUTOMATION_PATH);
       }}
     >
-      <TextField label="ชื่อกฎ" name="name" max={100} defaultValue={rule?.name || ''} placeholder="เช่น ชำระเงินจาก Facebook → ทีมบัญชี" />
+      <TextField label="ชื่อกฎ" name="name" max={100} defaultValue={rule?.name || ''} placeholder="เช่น แจ้งระบบล่มจาก Facebook → ทีมเทคนิค" />
       <fieldset className="auto-fieldset">
         <legend>ถ้าเรื่องใหม่…</legend>
         <div className="form-grid">
@@ -64,7 +64,7 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
               name="keywords"
               maxLength={2000}
               rows={2}
-              placeholder="เช่น ชำระเงิน, โอนเงิน, ใบเสร็จ"
+              placeholder="เช่น ระบบล่ม, เข้าไม่ได้, error"
               defaultValue={(rule?.keywords || '').split('\n').filter(Boolean).join(', ')}
             />
             <span className="tiny muted">คั่นด้วยจุลภาค ตรงคำใดคำหนึ่งก็ทำงาน · เว้นว่างเพื่อใช้กับทุกเรื่องจากช่องทางนี้</span>
@@ -117,7 +117,7 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
         </div>
       </fieldset>
       <label className="check">
-        <input type="checkbox" name="enabled" defaultChecked={rule ? Boolean(rule.enabled) : true} />
+        <input type="checkbox" className="switch" name="enabled" defaultChecked={rule ? Boolean(rule.enabled) : true} />
         เปิดใช้งานกฎนี้
       </label>
       <FormActions label={rule ? 'บันทึกกฎ' : 'เพิ่มกฎ'} onCancel={() => closeModal()} />

@@ -74,7 +74,7 @@ export function MemberForm({ member }: { member?: Member }) {
         </div>
         {existing && (
           <label className="check span-2">
-            <input name="active" type="checkbox" defaultChecked={Boolean(member?.active)} />
+            <input name="active" type="checkbox" className="switch" defaultChecked={Boolean(member?.active)} />
             อนุญาตให้เข้าใช้งานองค์กร
           </label>
         )}

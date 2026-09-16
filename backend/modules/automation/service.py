@@ -510,8 +510,8 @@ class Worker:
                         print(f'Customer notices: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation','notices: '+type(error).__name__)
                     try:
-                        # Reminders once a day, and the customer notices (email / LINE) waiting to go out.
-                        customer_notify.run(tenant_id)
+                        # The customer notices waiting to go out on LINE.
+                        customer_notify.send(tenant_id)
                     except Exception as error:
                         print(f'Customer alerts: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation','alerts: '+type(error).__name__)

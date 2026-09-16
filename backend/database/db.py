@@ -78,7 +78,6 @@ def init():
     with control() as db:
         schema.create_control_tables(db)
         seed.seed_global_faq(db)
-        seed.seed_contract_templates(db)
         tenant_ids = [row[0] for row in db.execute('SELECT id FROM tenants')]
     from backend.modules.customers import migrate
     for tenant_id in tenant_ids:

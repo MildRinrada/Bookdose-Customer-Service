@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
-import { ProgressSteps } from '@/features/contracts';
 import { date, relative, starsText } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { casePath } from './api';
+import { ProgressSteps } from './components/common';
 import { useOrgs, useOverview } from './hooks';
 import { caseState, chatState } from './labels';
 import type { CaseDetail } from './types';

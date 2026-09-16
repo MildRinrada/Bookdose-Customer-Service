@@ -1,0 +1,66 @@
+import { api } from '@/lib/api/client';
+import type { PasskeyAnswer, PasskeyCreateOptions } from '@/features/auth/passkeys';
+
+/* Endpoints and shapes of ตั้งค่าบัญชี → ความปลอดภัย (backend/modules/customer_security). Kept beside its own
+   screen rather than in features/customer/api.ts, so each section of the account settings stays self-contained.
+   Field names are the server's. */
+
+export const SECURITY_PATH = '/api/customer/security';
+export const PASSKEYS_PATH = `${SECURITY_PATH}/passkeys`;
+export const SESSIONS_PATH = `${SECURITY_PATH}/sessions`;
+export const activityPath = (page: number) => `${SECURITY_PATH}/activity?page=${page}`;
+
+/** GET /api/customer/security */
+export type SecurityState = {
+  two_factor: { enabled: boolean; pending: boolean; confirmed_at: string | null };
+  recovery: { left: number; total: number };
+  passkeys: Passkey[];
+};
+
+export type Passkey = { id: string; name: string; created_at: string; last_used_at: string | null; alg: number };
+
+/** POST .../totp/setup: the secret to type by hand, its otpauth link and the QR as a data: URL. */
+export type TotpSetup = { secret: string; otpauth_uri: string; qr: string };
+
+export type RecoveryCodes = { ok: true; recovery_codes: string[] };
+
+/** GET .../sessions: one row per browser signed in to this account. */
+export type CustomerSession = {
+  id: string;
+  device: string;
+  user_agent: string;
+  ip: string;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  current: boolean;
+};
+
+/** GET .../activity: the account's own history merged with what it signed and approved in each organization. */
+export type ActivityItem = {
+  at: string;
+  action: string;
+  label: string;
+  detail: string;
+  ip: string;
+  device: string;
+  org_name: string;
+};
+
+export type ActivityPage = { items: ActivityItem[]; page: number; has_more: boolean; total: number };
+
+/** Turning the second step on, and adding a passkey, cost the account's password: both add a way into the account. */
+export const startTotp = (password: string) => api<TotpSetup>(`${SECURITY_PATH}/totp/setup`, { password });
+export const confirmTotp = (code: string) => api<RecoveryCodes>(`${SECURITY_PATH}/totp/confirm`, { code });
+export const disableTotp = (body: { password: string; code?: string; recovery_code?: string }) =>
+  api<{ ok: true }>(`${SECURITY_PATH}/totp/disable`, body);
+export const newRecoveryCodes = (password: string) => api<RecoveryCodes>(`${SECURITY_PATH}/recovery-codes`, { password });
+
+export const passkeyOptions = (password: string) => api<PasskeyCreateOptions>(`${PASSKEYS_PATH}/options`, { password });
+export const addPasskey = (name: string, credential: PasskeyAnswer) => api<{ passkeys: Passkey[] }>(PASSKEYS_PATH, { name, credential });
+export const renamePasskey = (id: string, name: string) => api<{ passkeys: Passkey[] }>(`${PASSKEYS_PATH}/${id}`, { name });
+export const removePasskey = (id: string, password: string) => api<{ passkeys: Passkey[] }>(`${PASSKEYS_PATH}/${id}/remove`, { password });
+
+export const revokeSession = (id: string) => api<{ sessions: CustomerSession[] }>(`${SESSIONS_PATH}/${id}`, undefined, 'DELETE');
+export const signOutEverywhere = (keepCurrent: boolean) =>
+  api<{ ok: true; kept_current: boolean }>(`${SESSIONS_PATH}/sign-out-all`, { keep_current: keepCurrent });

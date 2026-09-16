@@ -55,7 +55,7 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
         >
           <div className="form-grid">
             <label className="check span-2">
-              <input type="checkbox" name="enabled" defaultChecked={cfg.enabled} />
+              <input type="checkbox" className="switch" name="enabled" defaultChecked={cfg.enabled} />
               เปิดรับสมัครองค์กรพร้อมยืนยันอีเมล
             </label>
             <TextField

@@ -87,15 +87,33 @@ def delete_resets(cd, account_id):
     cd.execute('DELETE FROM customer_resets WHERE account_id=? OR expires_at<=?',(account_id,now()))
 
 
-# Sessions (control)
-def insert_session(cd, token_hash, account_id, csrf, expires_at):
-    cd.execute('INSERT INTO customer_sessions VALUES(?,?,?,?,?)',(token_hash,account_id,csrf,expires_at,now()))
+# Sessions (control). id is the plain name a session is listed and signed out by; the token itself never leaves
+# the browser's cookie and only its hash is stored.
+def insert_session(cd, token_hash, account_id, csrf, expires_at, session_id, user_agent='', ip=''):
+    cd.execute('''INSERT INTO customer_sessions(token_hash,account_id,csrf,expires_at,created_at,id,user_agent,ip,last_seen_at)
+                  VALUES(?,?,?,?,?,?,?,?,?)''',(token_hash,account_id,csrf,expires_at,now(),session_id,user_agent,ip,now()))
 
 
 def find_session(cd, token_hash):
-    return one(cd,'''SELECT s.token_hash,s.csrf,s.account_id,a.name,a.email,a.phone,a.email_verified,a.notify_email,a.notify_prefs,
-                   a.consent_version,a.consent_at,a.created_at FROM customer_sessions s
+    return one(cd,'''SELECT s.token_hash,s.csrf,s.account_id,s.id AS session_id,s.last_seen_at,a.name,a.email,a.phone,
+                   a.email_verified,a.notify_email,a.notify_prefs,a.consent_version,a.consent_at,a.created_at
+                   FROM customer_sessions s
                    JOIN customer_accounts a ON a.id=s.account_id WHERE s.token_hash=? AND s.expires_at>?''',(token_hash,now()))
+
+
+def touch_session(cd, token_hash):
+    cd.execute('UPDATE customer_sessions SET last_seen_at=? WHERE token_hash=?',(now(),token_hash))
+
+
+def sessions_of(cd, account_id):
+    """The account's live sessions, newest first (never the token hash: the list is shown to the customer)."""
+    cd.execute("UPDATE customer_sessions SET id=lower(hex(randomblob(16))) WHERE id=''")
+    return rows(cd,'''SELECT id,account_id,user_agent,ip,created_at,last_seen_at,expires_at,token_hash FROM customer_sessions
+                      WHERE account_id=? AND expires_at>? ORDER BY created_at DESC''',(account_id,now()))
+
+
+def delete_session_by_id(cd, account_id, session_id):
+    return cd.execute('DELETE FROM customer_sessions WHERE account_id=? AND id=?',(account_id,session_id)).rowcount
 
 
 def delete_session(cd, token_hash):
@@ -270,7 +288,8 @@ def delete_line_link(db, account_id):
 def replace_line_code(db, code_hash, account_id, expires_at):
     """The account's new code; its earlier ones stop working."""
     db.execute('DELETE FROM customer_line_codes WHERE account_id=? OR expires_at<=?',(account_id,now()))
-    db.execute('INSERT INTO customer_line_codes(code_hash,account_id,expires_at,created_at) VALUES(?,?,?,?)',(code_hash,account_id,expires_at,now()))
+    db.execute('INSERT INTO customer_line_codes(code_hash,account_id,expires_at,created_at) VALUES(?,?,?,?)',
+               (code_hash,account_id,expires_at,now()))
 
 
 def live_line_code(db, code_hash):
@@ -286,7 +305,7 @@ def delete_line_codes(db, account_id):
 
 
 def count_wrong_code(db, since):
-    """A wrong code was sent to the LINE account: every live code has one attempt less."""
+    """A wrong code was sent to the LINE account (in a 1:1 chat, or in a group): every live code has one attempt less."""
     db.execute('UPDATE customer_line_codes SET attempts=attempts+1 WHERE expires_at>?',(since,))
 
 
@@ -307,18 +326,13 @@ def record_line_guess(db, line_user_id, window_start):
 
 # Notices waiting to be sent (tenant)
 def insert_alert(db, alert_id, account_id, channel, subject, text, link, dedup_key=None):
-    """Queue one notice; returns False when one with the same dedup_key exists already (a reminder sent before)."""
+    """Queue one notice; returns False when one with the same dedup_key exists already (told before)."""
     return db.execute('''INSERT OR IGNORE INTO customer_alert_outbox(id,account_id,channel,subject,text,link,dedup_key,created_at,next_at)
                          VALUES(?,?,?,?,?,?,?,?,?)''',(alert_id,account_id,channel,subject,text,link,dedup_key,now(),now())).rowcount==1
 
 
-def due_alerts(db, ids=None, limit=20):
-    """Unsent notices whose time has come (with ids: only those)."""
-    if ids is not None:
-        if not ids:
-            return []
-        return rows(db,f"SELECT * FROM customer_alert_outbox WHERE sent_at IS NULL AND next_at<=? AND id IN ({','.join('?'*len(ids))})",
-                    (now(),*ids))
+def due_alerts(db, limit=20):
+    """Unsent notices whose time has come."""
     return rows(db,'SELECT * FROM customer_alert_outbox WHERE sent_at IS NULL AND next_at<=? ORDER BY created_at,rowid LIMIT ?',(now(),limit))
 
 
@@ -333,35 +347,3 @@ def finish_alert(db, alert_id, error=''):
 
 def retry_alert(db, alert_id, error, next_at):
     db.execute('UPDATE customer_alert_outbox SET error=?,next_at=? WHERE id=?',(error,next_at,alert_id))
-
-
-def stored_setting(db, key):
-    """A value of the organization's settings table, or None when it was never written."""
-    row = db.execute('SELECT value FROM settings WHERE key=?',(key,)).fetchone()
-    return row[0] if row else None
-
-
-def store_setting(db, key, value):
-    db.execute('INSERT OR REPLACE INTO settings VALUES(?,?)',(key,value))
-
-
-# What reminders are about (tenant)
-def unpaid_invoices(db):
-    """Invoices waiting for money (a slip waiting to be checked is not reminded), with their contract."""
-    return rows(db,'''SELECT i.id,i.contract_id,i.number,i.due_date,i.issued_at,m.seq,m.title AS milestone_title,c.account_id,c.renews_id,
-        c.number AS contract_number,c.kind,c.title FROM contract_invoices i JOIN contracts c ON c.id=i.contract_id
-        JOIN contract_milestones m ON m.id=i.milestone_id WHERE i.status='unpaid' AND i.due_date!='' ''')
-
-
-def covered_projects(db):
-    """Completed projects (not MA contracts) whose warranty has started, and the MA contracts that continue them."""
-    return rows(db,'''SELECT id,number,kind,title,status,account_id,renews_id,version,delivered_at,coverage_start,coverage_end,ma_requested_at
-        FROM contracts WHERE status='completed' AND (coverage_end IS NOT NULL OR renews_id IS NOT NULL)''')
-
-
-def milestone_seqs(db, milestone_ids):
-    """{milestone id: its number in the contract (งวดที่ N)}"""
-    if not milestone_ids:
-        return {}
-    return {r[0]:r[1] for r in db.execute(f"SELECT id,seq FROM contract_milestones WHERE id IN ({','.join('?'*len(milestone_ids))})",
-                                          tuple(milestone_ids))}

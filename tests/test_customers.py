@@ -173,22 +173,22 @@ class CustomerAccountTests(unittest.TestCase):
         self.assertEqual([o['slug'] for o in self.ok(client,'/api/customer/organizations')['organizations']],['alpha','beta'])
 
     def test_categories_send_new_chats_to_a_team(self):
-        team = self.ok(self.admin,'/api/teams',{'name':'ทีมบัญชี'})['id']
+        team = self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']
         agent,_ = self.create_member()
-        categories = [{'name':'ชำระเงิน','team_id':team},{'name':'ทั่วไป','team_id':''}]
+        categories = [{'name':'แจ้งปัญหา','team_id':team},{'name':'ทั่วไป','team_id':''}]
         self.assertEqual(agent.call('/api/settings/categories',{'categories':categories})[0],403)
         for bad in ([],[{'name':'','team_id':''}],[{'name':'ซ้ำ','team_id':''},{'name':'ซ้ำ','team_id':''}],[{'name':'x','team_id':'0'*32}]):
             self.assertEqual(self.admin.call('/api/settings/categories',{'categories':bad})[0],400,bad)
         self.ok(self.admin,'/api/settings/categories',{'categories':categories})
-        self.assertEqual(self.ok(Client(self.base),'/api/public/alpha')['categories'],['ชำระเงิน','ทั่วไป'])
+        self.assertEqual(self.ok(Client(self.base),'/api/public/alpha')['categories'],['แจ้งปัญหา','ทั่วไป'])
         customer = self.customer()
         self.assertEqual(customer.call('/api/public/alpha/conversations',{'subject':'x','body':'y','category':'ไม่มีหมวดนี้'})[0],400)
-        conv = self.ok(customer,'/api/public/alpha/conversations',{'subject':'โอนเงินแล้ว','body':'แนบสลิป','category':'ชำระเงิน'})['id']
+        conv = self.ok(customer,'/api/public/alpha/conversations',{'subject':'เข้าระบบไม่ได้','body':'แนบภาพหน้าจอ','category':'แจ้งปัญหา'})['id']
         detail = self.ok(self.admin,f'/api/conversations/{conv}')
-        self.assertEqual((detail['conversation']['team_id'],detail['conversation']['category']),(team,'ชำระเงิน'))
-        self.assertEqual(self.ok(customer,'/api/customer/overview')['conversations'][0]['category'],'ชำระเงิน')
+        self.assertEqual((detail['conversation']['team_id'],detail['conversation']['category']),(team,'แจ้งปัญหา'))
+        self.assertEqual(self.ok(customer,'/api/customer/overview')['conversations'][0]['category'],'แจ้งปัญหา')
         case = self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})['id']
-        self.assertEqual(self.ok(self.admin,f'/api/tickets/{case}')['ticket']['category'],'ชำระเงิน')
+        self.assertEqual(self.ok(self.admin,f'/api/tickets/{case}')['ticket']['category'],'แจ้งปัญหา')
 
     def test_earlier_support_page_conversations_join_the_confirmed_account(self):
         from backend.modules.contacts import repository as contacts

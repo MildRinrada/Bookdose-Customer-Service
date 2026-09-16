@@ -1,0 +1,13 @@
+/* ตั้งค่าบัญชี of the customer (features/customer/AccountScreen.tsx and settings/): the section menu reuses
+   .settings-nav of pages/settings.css; each section is a column of cards. */
+.account-frame .settings-nav-item {
+  color: inherit;
+  text-decoration: none;
+}
+.account-section {
+  display: grid;
+  gap: 22px;
+}
+.account-section .field {
+  margin-bottom: 15px;
+}

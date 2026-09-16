@@ -16,7 +16,8 @@ def download_file_link(req, tenant_id, token):
 def _raw_body(req):
     """Webhook signatures cover the exact bytes sent, so the body is read here instead of as JSON."""
     length = req.headers.get('Content-Length','')
-    require(length.isdigit() and 0<int(length)<=MAX_WEBHOOK_BYTES,'ขนาด Webhook ไม่ถูกต้อง',413)
+    # ASCII digits only: isdigit() is also true of ², which int() then refuses (a 500 instead of this answer).
+    require(length.isascii() and length.isdigit() and 0<int(length)<=MAX_WEBHOOK_BYTES,'ขนาด Webhook ไม่ถูกต้อง',413)
     raw = req.rfile.read(int(length))
     require(len(raw)==int(length),'Webhook ไม่ครบ',400)
     return raw

@@ -1,104 +1,12 @@
-/* The customer's project overview (features/dashboard/CustomerDashboardScreen.tsx) and the budget line above the
-   customer's invoices (components/BudgetLine.tsx). Built on the shared stat cards, cards, tables, customer-state
-   badges and project-meter bars; only what the overview adds is here. */
+/* The customer's overview (features/dashboard/CustomerDashboardScreen.tsx): service levels per organization. Built
+   on the shared cards; only what the overview adds is here. */
 
 .page-heading:has(#customer-dashboard-org) {
   flex-wrap: wrap;
   gap: 12px;
 }
 
-/* Five totals; money is wider than the counts the stat cards were made for. */
-.cdash-stats {
-  grid-template-columns: repeat(5,minmax(0,1fr));
-  margin-bottom: 22px;
-}
-.cdash-stats .stat-value {
-  font-size: 1.3rem;
-  overflow-wrap: anywhere;
-}
-.cdash-money {
-  display: block;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.cdash-late {
-  display: block;
-  color: var(--red);
-  font-size: .875rem;
-  font-weight: 600;
-}
-.cdash-good {
-  display: block;
-  color: var(--green);
-  font-size: .875rem;
-  font-weight: 600;
-}
-.customer-state.tone-late {
-  background: var(--red-soft);
-  color: #9b2c22;
-}
-
-/* Budget table next to the payments due */
-.cdash-grid {
-  display: grid;
-  grid-template-columns: minmax(0,2fr) minmax(0,1fr);
-  gap: 22px;
-  align-items: start;
-  margin-bottom: 22px;
-}
-.cdash-table td {
-  vertical-align: top;
-}
-.cdash-table .project-mini {
-  margin-top: 6px;
-}
-.cdash-upcoming {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.cdash-upcoming li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-}
-.cdash-upcoming li.is-late {
-  border-color: #e3b5ae;
-  background: #fffaf8;
-}
-.cdash-upcoming .grow {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-.cdash-upcoming-due {
-  display: grid;
-  justify-items: end;
-  text-align: right;
-}
-
-/* Paid per month */
-.cdash-monthly {
-  margin-bottom: 22px;
-}
-.cdash-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  height: 130px;
-}
-.cdash-chart .chart-col small {
-  color: var(--muted);
-  font-size: .75rem;
-  white-space: nowrap;
-}
-
-/* Project health */
+/* Service levels per organization */
 .cdash-section {
   margin-bottom: 22px;
 }
@@ -112,67 +20,6 @@
 .cdash-section-head p {
   margin: 3px 0 0;
 }
-.cdash-health-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin: 0 0 16px;
-  padding: 0;
-  list-style: none;
-}
-.cdash-health-summary li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.cdash-health {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.cdash-health > li {
-  display: grid;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-}
-.cdash-health-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.cdash-health-head .grow {
-  min-width: 0;
-}
-.cdash-meters {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 8px 24px;
-}
-.cdash-meter {
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0,1fr) 3rem;
-  align-items: center;
-  gap: 10px;
-}
-.cdash-meter strong {
-  text-align: right;
-}
-.project-meter.cdash-planned::-webkit-progress-value {
-  background: #9aa6b2;
-}
-.project-meter.cdash-planned::-moz-progress-bar {
-  background: #9aa6b2;
-}
-.cdash-health-notes {
-  display: grid;
-  gap: 2px;
-}
-
-/* Service levels per organization */
 .cdash-sla {
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(18rem,1fr));
@@ -210,50 +57,33 @@
   margin-top: 14px;
 }
 
-/* The budget line on the invoices page */
-.cdash-line {
-  display: flex;
-  flex-wrap: wrap;
+/* On-time share: a thin bar next to its percentage */
+.cdash-ontime {
+  display: inline-flex;
   align-items: center;
-  gap: 6px 18px;
-  margin: -6px 0 18px;
-  padding: 12px 16px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
+  gap: 8px;
+  min-width: 8rem;
+  white-space: nowrap;
 }
-.cdash-line .cdash-late {
-  display: inline;
+.cdash-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border: 0;
+  border-radius: 99px;
+  background: #e7e2f7;
+  overflow: hidden;
 }
-.cdash-line a {
-  margin-left: auto;
-  font-weight: 600;
+.cdash-bar::-webkit-progress-bar {
+  border-radius: 99px;
+  background: #e7e2f7;
 }
-
-@media (max-width:1180px) {
-  .cdash-stats {
-    grid-template-columns: repeat(3,minmax(0,1fr));
-  }
-  .cdash-grid {
-    grid-template-columns: 1fr;
-  }
+.cdash-bar::-webkit-progress-value {
+  border-radius: 99px;
+  background: var(--purple);
 }
-@media (max-width:760px) {
-  .cdash-stats {
-    grid-template-columns: 1fr 1fr;
-  }
-  .cdash-meters {
-    grid-template-columns: 1fr;
-  }
-  .cdash-chart .chart-col small {
-    display: none;
-  }
-  .cdash-line a {
-    margin-left: 0;
-  }
-}
-@media (max-width:480px) {
-  .cdash-stats {
-    grid-template-columns: 1fr;
-  }
+.cdash-bar::-moz-progress-bar {
+  border-radius: 99px;
+  background: var(--purple);
 }

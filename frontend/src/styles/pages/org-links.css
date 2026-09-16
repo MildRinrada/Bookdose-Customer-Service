@@ -1,0 +1,145 @@
+/* Organization join links and QR codes (features/settings/components/JoinLinksPanel.tsx), /join/[token]
+   (features/org-links/JoinScreen.tsx), and ตั้งค่าบัญชี → องค์กรที่ติดต่อได้
+   (features/customer/settings/OrganizationsSettings.tsx). */
+
+/* ตั้งค่าองค์กร → ลิงก์และ QR สำหรับลูกค้า */
+.org-link-share {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.org-link-share .grow {
+  display: grid;
+  gap: 10px;
+  flex: 1;
+  min-width: 15rem;
+}
+.org-qr {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+}
+.org-qr img {
+  width: 180px;
+  height: 180px;
+  image-rendering: pixelated;
+}
+.org-qr figcaption {
+  color: var(--muted);
+  font-size: .8125rem;
+}
+.org-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.org-qr-large {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.org-qr-large img {
+  width: min(320px, 70vw);
+  height: auto;
+  image-rendering: pixelated;
+}
+.org-link-form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.org-link-form .field {
+  flex: 1;
+  min-width: 11rem;
+  margin-bottom: 0;
+}
+.join-links td {
+  vertical-align: top;
+}
+.join-links td strong,
+.join-links td .muted {
+  display: block;
+}
+.join-link-url {
+  overflow-wrap: anywhere;
+}
+.join-link-qr {
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+.join-link-qr img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+}
+.join-link-gone {
+  opacity: .65;
+}
+.join-link-actions {
+  white-space: nowrap;
+}
+
+/* /join/<token> */
+.join-page h1 {
+  overflow-wrap: anywhere;
+}
+
+/* ตั้งค่าบัญชี → องค์กรที่ติดต่อได้ */
+.org-role-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.org-role {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfaff;
+}
+.org-role-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.org-role-head .grow {
+  display: grid;
+  min-width: 0;
+}
+.org-join-form {
+  display: grid;
+  gap: 12px;
+}
+.org-join-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.qr-scan {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+.qr-scan-view {
+  width: min(360px, 70vw);
+  max-height: 60vh;
+  border-radius: 12px;
+  background: #000;
+}

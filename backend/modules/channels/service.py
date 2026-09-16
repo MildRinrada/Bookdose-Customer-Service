@@ -248,10 +248,13 @@ def ingest_line(db, tenant_id, row, event, attachment, store_message):
                     finish(db,job,'failed','changed')
             audit.record(db,'LINE','line.'+event_type,link['conversation_id'])
         raise ChannelError('ignored')
-    # A customer linking their account for notifications: a live code is not a conversation message.
-    if kind=='user' and message.get('type')=='text' and isinstance(message.get('text'),str):
+    # A customer linking their account for notifications (1:1), or a code read out in a group: a live code is not a
+    # conversation message.
+    if message.get('type')=='text' and isinstance(message.get('text'),str) and kind in ('user','group'):
         from backend.modules.customers import line as customer_line
-        if customer_line.take_code(db,tenant_id,source_id,message['text']):
+        taken = (customer_line.take_code(db,tenant_id,source_id,message['text']) if kind=='user'
+                 else customer_line.drop_group_code(db,source_id,message['text']))
+        if taken:
             return None
     thread = repository.find_line_thread(db,link['conversation_id']) if link else None
     if thread and not thread['active']:

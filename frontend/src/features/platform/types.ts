@@ -1,7 +1,6 @@
 import type { AuditEvent } from '@/features/audit/types';
-import type { ContractTemplate } from '@/features/contracts/types';
 
-/* Answers of backend/modules/platform (and the platform half of contracts), field names as the server sends them. */
+/* Answers of backend/modules/platform, field names as the server sends them. */
 
 /** A row of GET /api/platform/tenants. */
 export type Tenant = {
@@ -76,21 +75,3 @@ export type GlobalFaqPage = { articles: GlobalArticle[] };
 export type GlobalFaqFilters = { q?: string; audience?: string };
 
 export type GlobalArticleInput = { title: string; category: string; body: string; audience: string };
-
-/** GET /api/platform/contract-templates */
-export type PlatformTemplates = { templates: ContractTemplate[]; placeholders: string[] };
-
-/** POST /api/platform/contracts/verify */
-export type VerifyResult =
-  | { found: false }
-  | {
-      found: true;
-      valid: boolean;
-      organization: string;
-      reference: string;
-      title: string;
-      version: number | string;
-      completed_at: string | null;
-      customer_name: string;
-      signatures: Array<{ party: string; signer_name: string; verified_by: string; signed_at: string; ip: string }>;
-    };

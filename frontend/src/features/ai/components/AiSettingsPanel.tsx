@@ -107,11 +107,11 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
             hint="ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์ และรองรับ Structured Outputs"
           />
           <label className="check">
-            <input type="checkbox" name="drafts_enabled" defaultChecked={a.drafts_enabled} />
+            <input type="checkbox" className="switch" name="drafts_enabled" defaultChecked={a.drafts_enabled} />
             เปิด AI ช่วยร่างคำตอบให้เจ้าหน้าที่
           </label>
           <label className="check">
-            <input type="checkbox" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />
+            <input type="checkbox" className="switch" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />
             เปิด Chatbot ตอบลูกค้าในแชทบนเว็บ
           </label>
           <NumberField id="ai-daily" label="เพดานคำขอ AI ต่อวัน / องค์กร (UTC)" name="daily_limit" min={1} max={10000} defaultValue={a.daily_limit} />

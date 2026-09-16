@@ -5,7 +5,6 @@ Customers use the main page of the app; ?org=<code> on it connects the organizat
 Emails go out through the platform's verification mailbox (คอนโซลระบบกลาง → จัดการองค์กร → อีเมลยืนยัน). Once it is
 set up a sign-up must confirm its email first; before that, sign-up still works and the account is marked as not
 verified. No SMTP call runs inside a database transaction, and an uncertain delivery is reported rather than repeated."""
-import datetime as dt
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 import json
@@ -21,7 +20,7 @@ from backend.modules.customers.model import CONSENT_VERSION, DEFAULT_CATEGORIES
 from backend.modules.knowledge import repository as knowledge
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants, service as platform
-from backend.utils.dates import after, now, today
+from backend.utils.dates import after, now
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import require
 
@@ -161,7 +160,7 @@ def join_by_code(cd, session, body):
 
 
 # Sign-up and email confirmation
-def register(cd, body):
+def register(cd, body, client=None):
     """With the platform mailbox set up: record the attempt and email its link, and return None. The answer is the
     same whether or not the email has an account (the owner of an existing account is told by email instead), so the
     form cannot be used to find out who is a customer.
@@ -169,7 +168,7 @@ def register(cd, body):
     form = schema.signup_form(body)
     org = _signup_org(cd,body)
     if not email_ready(cd):
-        return _register_unverified(cd,form,org)
+        return _register_unverified(cd,form,org,client)
     D.begin(cd)
     repository.purge_signups(cd)
     if repository.find_by_email(cd,form['email']):
@@ -185,14 +184,14 @@ def register(cd, body):
     return None
 
 
-def _register_unverified(cd, form, org):
+def _register_unverified(cd, form, org, client=None):
     """No way to send email yet: the account works at once. Its email is not proven, so conversations sent earlier
     with that email are not attached, and a second sign-up with the same email is refused."""
     D.begin(cd)
     require(not repository.find_by_email(cd,form['email']),'อีเมลนี้มีบัญชีแล้ว กรุณาเข้าสู่ระบบ',409)
     account_id = uid()
     repository.insert_account(cd,account_id,{**form,'consent_version':CONSENT_VERSION,'consent_at':now()},email_verified=False)
-    session = _new_session(cd,account_id)
+    session = _new_session(cd,account_id,client)
     cd.commit()
     if org:
         _join(cd,account_id,org)
@@ -217,7 +216,7 @@ def resend(cd, body):
     _deliver(cd,name,task)
 
 
-def verify(cd, body):
+def verify(cd, body, client=None):
     """Open the link and give the password of that sign-up: the account is created, connected with the organization
     it signed up with, and signed in. Returns the session token for the cookie."""
     token,password = schema.verify_form(body)
@@ -229,7 +228,7 @@ def verify(cd, body):
     account_id = uid()
     repository.insert_account(cd,account_id,signup)
     repository.delete_signups(cd,signup['email'])
-    session = _new_session(cd,account_id)
+    session = _new_session(cd,account_id,client)
     cd.commit()
     org = tenants.find_active(cd,signup['tenant_id']) if signup['tenant_id'] else tenants.home_organization(cd)
     if org:
@@ -238,34 +237,67 @@ def verify(cd, body):
 
 
 # Sign-in, sign-out and passwords
-def _new_session(cd, account_id):
+def _new_session(cd, account_id, client=None):
+    """A new session cookie for this device; the device and address are kept so the customer can see and sign out
+    each one (customer_security)."""
     token = secrets.token_urlsafe(32)
     repository.delete_expired_sessions(cd)
-    repository.insert_session(cd,token_hash(token),account_id,secrets.token_urlsafe(24),after(seconds=SESSION_SECONDS))
+    repository.insert_session(cd,token_hash(token),account_id,secrets.token_urlsafe(24),after(seconds=SESSION_SECONDS),
+                             uid(),(client or {}).get('user_agent',''),(client or {}).get('ip',''))
     return token
 
 
-def log_in(cd, body):
+def start_session(cd, account_id, client=None):
+    """Sign this device in (the second step of a sign-in and the passkey sign-in finish here); the caller commits."""
+    repository.touch_login(cd,account_id)
+    return _new_session(cd,account_id,client)
+
+
+def _signed_in(cd, account, client, action):
+    """A proven password: {'session'} - or {'challenge','methods'} when the account asks for a second step, which
+    /api/customer/login/verify finishes. Nothing is signed in until that step passes."""
+    from backend.modules.customer_security import service as security
+    challenge = security.start_challenge(cd,account)
+    if challenge:
+        cd.commit()
+        return challenge
+    repository.touch_login(cd,account['id'])
+    session = _new_session(cd,account['id'],client)
+    security.record(cd,account['id'],action,client=client)
+    cd.commit()
+    return {'session':session}
+
+
+def log_in(cd, body, client=None):
+    """The answer is the session token, or a two-factor challenge. A wrong password is written to the activity log
+    of an account that exists; an unknown email records nothing, so the log cannot be filled by guessing."""
+    from backend.modules.customer_security import service as security
     email,password = schema.login_form(body)
     account = repository.find_by_email(cd,email)
-    require(password_ok(password,account['password'] if account else DUMMY_PASSWORD_HASH) and account,
-            'อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ยืนยันอีเมล',401)
-    repository.touch_login(cd,account['id'])
-    session = _new_session(cd,account['id'])
-    cd.commit()
-    return session
+    correct = password_ok(password,account['password'] if account else DUMMY_PASSWORD_HASH)
+    if account and not correct:
+        security.record(cd,account['id'],'login_failed',client=client)
+        cd.commit()
+    require(correct and account,'อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ยืนยันอีเมล',401)
+    return _signed_in(cd,account,client,'login')
 
 
 def read_session(cd, cookie_header):
-    """The signed-in customer from the session cookie, or None."""
+    """The signed-in customer from the session cookie, or None. When the device was last seen more than a few
+    minutes ago the time is written again, so the customer's list of signed-in devices stays useful."""
     from http import cookies
+    from backend.modules.customer_security.model import SEEN_SECONDS
     jar = cookies.SimpleCookie()
     try:
         jar.load(cookie_header)
     except cookies.CookieError:
         return None
     token = jar.get(SESSION_COOKIE)
-    return repository.find_session(cd,token_hash(token.value)) if token and token.value else None
+    session = repository.find_session(cd,token_hash(token.value)) if token and token.value else None
+    if session and (session['last_seen_at'] or '')<after(seconds=-SEEN_SECONDS):
+        repository.touch_session(cd,session['token_hash'])
+        cd.commit()
+    return session
 
 
 def log_out(cd, session):
@@ -290,9 +322,12 @@ def forgot(cd, body):
     _deliver(cd,'',task)
 
 
-def reset_password(cd, body):
-    """Set a new password from a reset link; every other session of the account is signed out. Opening the emailed
-    link also proves the email of an account created before email was set up."""
+def reset_password(cd, body, client=None):
+    """Set a new password from a reset link; every session of the account is signed out and every passkey is
+    removed, so the reset really is a clean slate - a key left behind on a borrowed screen would otherwise outlive
+    it. Opening the emailed link also proves the email of an account created before email was set up. An account
+    with two-factor sign-in ends in the challenge, not a session: the link alone never gets past the second step."""
+    from backend.modules.customer_security import service as security
     token,password = schema.reset_form(body)
     D.begin(cd)
     reset = repository.find_reset(cd,token_hash(token))
@@ -301,9 +336,9 @@ def reset_password(cd, body):
     repository.mark_email_verified(cd,reset['account_id'])
     repository.delete_sessions(cd,reset['account_id'])
     repository.delete_resets(cd,reset['account_id'])
-    session = _new_session(cd,reset['account_id'])
-    cd.commit()
-    return session
+    security.forget_passkeys(cd,reset['account_id'],client)
+    security.record(cd,reset['account_id'],'password_reset',client=client)
+    return _signed_in(cd,repository.find(cd,reset['account_id']),client,'login')
 
 
 def change_password(cd, session, body):
@@ -389,31 +424,14 @@ def _conversations(db, session):
     return [{**c,'survey_pending':bool(c['survey_pending'])} for c in repository.conversations_of(db,session['account_id'],after(days=-SURVEY_DAYS))]
 
 
-WARRANTY_NOTICE_DAYS = 30
-DUE_NOTICE_DAYS = 7
-# The button of each alert (what the customer does next); an approval says which step it is.
-ACTION_LABELS = {'reply':'อ่านและตอบกลับ','survey':'ให้คะแนน','waiting':'ส่งข้อมูลเพิ่ม','done':'ดูเคส','followup':'ดูเคส',
-                 'contract':'ตรวจและลงนาม','contract_done':'ดูเอกสาร','delivery':'ตรวจรับงาน','invoice':'ดูใบแจ้งหนี้',
-                 'invoice_due':'ชำระเงิน','invoice_overdue':'ชำระเงิน','receipt':'ดาวน์โหลดใบเสร็จ','warranty':'ขอต่อสัญญา MA',
-                 'invite':'รับคำเชิญ'}
+# The button of each alert (what the customer does next).
+ACTION_LABELS = {'reply':'อ่านและตอบกลับ','survey':'ให้คะแนน','waiting':'ส่งข้อมูลเพิ่ม','done':'ดูเคส','followup':'ดูเคส'}
 
 
-def _approval_label(item):
-    if not item['final']:
-        return 'ตรวจและอนุมัติ'
-    return 'อนุมัติรับงาน' if item['target']=='delivery' else 'ลงนาม'
-
-
-def _alerts(conversations_list, cases, contracts=(), invoices=(), approvals=(), invitations=()):
+def _alerts(conversations_list, cases):
     """Newest first. 'action' marks what waits for the customer (counted on the bell); the rest is news; every alert
     has the words of its button (action_label). Worked out from how things are now, so they clear themselves once the
-    customer has read the reply, answered the survey, or the team moved the case on.
-    Contract alerts only reach people who can act on them. Signing a contract and inspecting a delivery come from
-    what waits for this account (approvals = client_team.approvals.waiting_for): without reviewers (steps 0) the
-    decider sees the plain 'contract' / 'delivery' alert as before; with reviewers it is an 'approval' for the
-    reviewer whose turn it is, then for the deciders once every step approved (nobody else meanwhile). The MA renewal
-    needs decide, the finished document documents, invoices billing (the caller passes only those). An unpaid
-    invoice is 'invoice_overdue' past its due date, 'invoice_due' within 7 days of it, else 'invoice'."""
+    customer has read the reply, answered the survey, or the team moved the case on."""
     found = []
     for c in conversations_list:
         base = {'conversation_id':c['id'],'subject':c['subject'],'org_slug':c['org_slug'],'org_name':c['org_name'],'at':c['updated_at']}
@@ -430,55 +448,18 @@ def _alerts(conversations_list, cases, contracts=(), invoices=(), approvals=(), 
             found.append({**base,'kind':'done','action':False,'at':t['resolved_at'] or t['updated_at']})
         if t['next_followup_at'] and t['status'] not in ('resolved','closed'):
             found.append({**base,'kind':'followup','action':False,'at':t['next_followup_at']})
-    for c in contracts:
-        can = set(c.get('can') or ('documents','decide'))
-        base = {'contract_id':c['id'],'reference':c['reference'],'subject':c['title'],'org_slug':c['org_slug'],'org_name':c['org_name']}
-        if c['status']=='completed' and 'documents' in can and (c['completed_at'] or '')>=recent:
-            found.append({**base,'kind':'contract_done','action':False,'at':c['completed_at']})
-        cover = c.get('coverage') or {}
-        if (not c['renews_id'] and 'decide' in can and cover.get('state')=='active' and cover['days_left']<=WARRANTY_NOTICE_DAYS
-                and not c['ma_requested_at']):
-            found.append({**base,'kind':'warranty','action':True,'days_left':cover['days_left'],'at':cover['end']+'T00:00:00+00:00'})
-    for a in approvals:
-        base = {'contract_id':a['contract_id'],'reference':a['reference'],'subject':a['milestone_title'] or a['title'],
-                'org_slug':a['org_slug'],'org_name':a['org_name'],'milestone_id':a['milestone_id'],'action':True,'at':a['at']}
-        if not a['steps']:
-            found.append({**base,'kind':'contract' if a['target']=='contract' else 'delivery'})
-        else:
-            found.append({**base,'kind':'approval','target':a['target'],'step':a['step'],'steps':a['steps'],'final':a['final'],
-                          'action_label':_approval_label(a)})
-    day = dt.date.fromisoformat(today())
-    for i in invoices:
-        base = {'invoice_id':i['id'],'contract_id':i['contract_id'],'reference':i['reference'],'subject':i['milestone_title'],
-                'total':i['total'],'org_slug':i['org_slug'],'org_name':i['org_name']}
-        if i['status']=='unpaid':
-            left = (dt.date.fromisoformat(i['due_date'][:10])-day).days if i['due_date'] else None
-            kind = 'invoice' if left is None or left>DUE_NOTICE_DAYS else 'invoice_overdue' if left<0 else 'invoice_due'
-            found.append({**base,'kind':kind,'action':True,'due_date':i['due_date'],'days_left':left,'seq':i.get('seq'),'at':i['issued_at']})
-        elif i['status']=='paid' and (i['paid_at'] or '')>=recent:
-            found.append({**base,'kind':'receipt','action':False,'at':i['paid_at']})
-    for i in invitations:
-        found.append({'invite_id':i['id'],'subject':f"คุณ{i['owner_name']} เชิญคุณเป็น{i['role_label']}",'owner_name':i['owner_name'],
-                      'role_label':i['role_label'],'org_slug':i['org_slug'],'org_name':i['org_name'],'kind':'invite','action':True,
-                      'at':i['invited_at']})
     for a in found:
-        if 'action_label' not in a:
-            a['action_label'] = ACTION_LABELS[a['kind']]
+        a['action_label'] = ACTION_LABELS[a['kind']]
     found.sort(key=lambda a:a['at'],reverse=True)
     return sorted(found,key=lambda a:not a['action'])
 
 
 def overview(cd, session):
     """The customer's conversations and cases in every organization they are connected with (each marked with its
-    organization), and what the side menu counts and the notifications page lists. Contracts are the ones the account
-    owns or reaches through a client team, each with the owner and the viewer's role and capabilities (can); invoices
-    only of contracts with billing, deliveries only of contracts with decide; invitations wait for the account's email;
-    approval steps waiting for this account (client_team.approvals) come as alerts."""
+    organization), and what the side menu counts and the notifications page lists."""
     found,_ = _connected(cd,session)
     joined = set(repository.org_ids(cd,session['account_id']))
-    from backend.modules.client_team import access, approvals, service as team
-    from backend.modules.contracts import project, repository as contracts, schema as contract_schema
-    conversation_rows,case_rows,contract_rows,invoice_rows,delivery_rows,approval_rows = [],[],[],[],[],[]
+    conversation_rows,case_rows = [],[]
     for org in found:
         if org['id'] not in joined:
             continue
@@ -486,30 +467,10 @@ def overview(cd, session):
         with D.tenant(org['id']) as db:
             conversation_rows += [{**c,**label} for c in _conversations(db,session)]
             case_rows += [{**schema.case_row(t),**label} for t in repository.cases_of(db,session['account_id'])]
-            # Contracts the account owns or reaches through a client team; invoices need billing, deliveries decide.
-            reach = access.accessible(db,session['account_id'])
-            with_can = lambda need:[cid for cid,a in reach.items() if need in a['can']]
-            contract_rows += [{**{k:v for k,v in c.items() if k not in ('account_id','customer_name')},'reference':contract_schema.reference(c),
-                               'owner_id':c['account_id'],'owner_name':c['customer_name'],'role':reach[c['id']]['role'],
-                               'role_label':access.ROLE_LABELS[reach[c['id']]['role']],'can':access.can_list(reach[c['id']]['can']),**label}
-                              for c in project.summaries(db,contracts.sent_with_ids(db,list(reach)))]
-            billed = contracts.invoices_of_contracts(db,with_can('billing'))
-            seqs = repository.milestone_seqs(db,[i['milestone_id'] for i in billed])
-            invoice_rows += [{**i,'reference':project.invoice_ref(i['number']),'receipt_reference':project.receipt_ref(i['receipt_number']),
-                              'contract_reference':contract_schema.reference({'kind':i['kind'],'number':i['contract_number']}),
-                              'seq':seqs.get(i['milestone_id']),**label} for i in billed]
-            delivery_rows += [{**d,'reference':contract_schema.reference(d),**label} for d in contracts.deliveries_waiting_in(db,with_can('decide'))]
-            named = {c['id']:c for c in contract_rows if c['org_slug']==org['slug']}
-            approval_rows += [{**a,'reference':named[a['contract_id']]['reference'],'title':named[a['contract_id']]['title'],**label}
-                              for a in approvals.waiting_for(db,session['account_id']) if a['contract_id'] in named]
     conversation_rows.sort(key=lambda c:c['updated_at'],reverse=True)
     case_rows.sort(key=lambda t:t['updated_at'],reverse=True)
-    contract_rows.sort(key=lambda c:c['updated_at'],reverse=True)
-    invoice_rows.sort(key=lambda i:i['issued_at'],reverse=True)
-    invitations = team.invitations(cd,session)
-    alerts = _alerts(conversation_rows,case_rows,contract_rows,invoice_rows,approval_rows,invitations)
-    return {'conversations':conversation_rows,'cases':case_rows,'contracts':contract_rows,'invoices':invoice_rows,
-            'deliveries':delivery_rows,'alerts':alerts,'alert_count':sum(a['action'] for a in alerts),'invitations':invitations}
+    alerts = _alerts(conversation_rows,case_rows)
+    return {'conversations':conversation_rows,'cases':case_rows,'alerts':alerts,'alert_count':sum(a['action'] for a in alerts)}
 
 
 def faq(cd, session):

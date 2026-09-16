@@ -16,14 +16,15 @@ to be emailed, and the category the customer chose for a conversation. Staff of 
 Notifications: customer_accounts.notify_prefs = {event: {email: bool, line: bool}} (only what the customer changed;
 NOTIFY_EVENTS gives the defaults). LINE belongs to the organization's official account, so the link between an account
 and a LINE user is per organization (customer_line_links), made by sending a 6-digit code (customer_line_codes, stored
-hashed, 10 minutes) to the organization's LINE; customer_line_guesses counts wrong codes per LINE user. Every notice
-to send waits in customer_alert_outbox (dedup_key makes a reminder go out once) until the automation worker sends it."""
+hashed, 10 minutes) to the organization's LINE; customer_line_guesses counts wrong codes per LINE user (and per
+LINE group, key 'group:<id>', where a code read out is dropped). Every LINE notice to send waits in
+customer_alert_outbox until the automation worker sends it."""
 
 CONSENT_VERSION = '2026-09'
 
 # What a customer can choose when starting a chat, until the organization sets its own (ตั้งค่าองค์กร).
 DEFAULT_CATEGORIES = [{'name':'สอบถามบริการ','team_id':''},{'name':'แจ้งปัญหาการใช้งาน','team_id':''},
-                      {'name':'สอบถามเรื่องการชำระเงิน','team_id':''}]
+                      {'name':'ข้อเสนอแนะและร้องเรียน','team_id':''}]
 
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS customer_accounts (
@@ -41,7 +42,9 @@ CREATE TABLE IF NOT EXISTS customer_resets (
     token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS customer_sessions (
-    token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, csrf TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT NOT NULL
+    token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, csrf TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT NOT NULL,
+    id TEXT NOT NULL DEFAULT '', user_agent TEXT NOT NULL DEFAULT '', ip TEXT NOT NULL DEFAULT '',
+    last_seen_at TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS customer_orgs (
     account_id TEXT NOT NULL, tenant_id TEXT NOT NULL, joined_at TEXT NOT NULL, PRIMARY KEY(account_id,tenant_id)
@@ -87,14 +90,13 @@ CREATE INDEX IF NOT EXISTS customer_line_codes_account ON customer_line_codes(ac
 CREATE INDEX IF NOT EXISTS customer_alert_outbox_due ON customer_alert_outbox(sent_at,next_at);
 '''
 
-# Columns added to the control tables after the first release (customers.migrate.control_columns adds them).
-ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFAULT '{}'"}}
+# Columns added to the control tables after the first release (customers.migrate.control_columns adds them). A
+# session gained the name it is listed and signed out by (id, a plain identifier, never the token), the device it
+# was opened from and when it was last used (customer_security shows them under ตั้งค่าบัญชี → ความปลอดภัย).
+ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFAULT '{}'"},
+                         'customer_sessions':{'id':"TEXT NOT NULL DEFAULT ''",'user_agent':"TEXT NOT NULL DEFAULT ''",
+                                              'ip':"TEXT NOT NULL DEFAULT ''",'last_seen_at':"TEXT NOT NULL DEFAULT ''"}}
 
 # What a customer can be told about, in the order the settings table lists them: (key, label, emailed by default).
-# LINE is on for every event once the account is linked with the organization's LINE. 'reply' by email is the old
-# notify_email switch; 'drive' (every new file) is off by email until the customer turns it on.
-NOTIFY_EVENTS = (('contract_review','เอกสารรอตรวจและลงนาม',True),('contract_done','เอกสารลงนามครบแล้ว',True),
-                 ('approval','งานรอคุณตรวจหรืออนุมัติ',True),('delivery','งานส่งมอบรอตรวจรับ',True),
-                 ('invoice','ใบแจ้งหนี้ใหม่',True),('invoice_due','เตือนครบกำหนดชำระ',True),('receipt','ยืนยันรับชำระ/ใบเสร็จ',True),
-                 ('warranty','การรับประกัน/MA ใกล้หมด',True),('drive','ไฟล์ใหม่ในคลังเอกสาร',False),
-                 ('team','คำเชิญและการเปลี่ยนบทบาทในทีม',True),('reply','ทีมงานตอบกลับในแชท',True))
+# LINE is on once the account is linked with the organization's LINE. 'reply' by email is the notify_email switch.
+NOTIFY_EVENTS = (('reply','ทีมงานตอบกลับในแชท',True),)

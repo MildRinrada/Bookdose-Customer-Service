@@ -11,6 +11,7 @@ import { useCustomerAccount } from '@/lib/customer-session';
 import { useBoot } from '@/lib/session';
 import { customerForgot, customerReset, customerVerify } from './api';
 import { CustomerLinkPage } from './components/Frames';
+import { TwoFactorStep } from './components/TwoFactorStep';
 import { customerDestination, useFinishCustomerSignIn, useSignupOrg } from './hooks';
 import { withOrg } from './params';
 
@@ -101,15 +102,27 @@ function VerifyForm({ token, org, signupOrg }: { token: string; org: string; sig
   );
 }
 
-/** pages/customer/customer-reset.html */
+/** pages/customer/customer-reset.html. On an account with two-factor sign-in the link ends in the second step:
+    the new password is saved, but the code from the authenticator app still decides who gets in. */
 function ResetForm({ token, signupOrg }: { token: string; signupOrg: string }) {
   const finish = useFinishCustomerSignIn();
+  const [secondStep, setSecondStep] = useState<string[] | null>(null);
+  if (secondStep)
+    return (
+      <div className="card-body">
+        <TwoFactorStep methods={secondStep} onDone={() => finish(customerDestination('', signupOrg), 'ตั้งรหัสผ่านใหม่แล้ว')} />
+      </div>
+    );
   return (
     <Form
       className="card-body"
       onSubmit={async (values) => {
         if (values.password !== values.password_confirm) throw new Error('รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน');
-        await customerReset(token, values.password);
+        const result = await customerReset(token, values.password);
+        if (result.two_factor) {
+          setSecondStep(result.methods ?? ['totp']);
+          return;
+        }
         finish(customerDestination('', signupOrg), 'ตั้งรหัสผ่านใหม่แล้ว');
       }}
     >

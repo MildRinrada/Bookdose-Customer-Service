@@ -68,12 +68,6 @@ export const eventLabels: Record<string, string> = {
   'faq.deleted': 'ลบ FAQ กลาง',
   'platform.admin_added': 'เพิ่มผู้ดูแลระบบกลาง',
   'platform.admin_removed': 'ถอดสิทธิ์ผู้ดูแลระบบกลาง',
-  'contract.created': 'สร้างสัญญา/TOR',
-  'contract.sent': 'ส่งสัญญา/TOR ให้ลูกค้าตรวจ',
-  'contract.completed': 'สัญญา/TOR ลงนามครบ',
-  'contract.cancelled': 'ยกเลิกสัญญา/TOR',
-  'contract_template.saved': 'บันทึกแม่แบบสัญญา',
-  'contract_template.deleted': 'ลบแม่แบบสัญญา',
   'customer.joined': 'ลูกค้าเริ่มติดต่อองค์กร',
   'automation.rule_applied': 'กฎรับเรื่องอัตโนมัติทำงาน',
   'automation.rule_saved': 'บันทึกกฎรับเรื่อง',
@@ -92,7 +86,7 @@ export const eventLabels: Record<string, string> = {
 };
 
 /* The customer's words for a case (staff words are not customer words): what each state means for the person
-   waiting (the old customer.js). Used by the customer screens and by project issues seen by the customer. */
+   waiting (the old customer.js). Used by the customer screens. */
 
 export type CustomerTone = 'received' | 'working' | 'waiting' | 'done';
 

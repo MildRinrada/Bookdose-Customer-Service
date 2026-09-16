@@ -1,6 +1,7 @@
 import { api } from '@/lib/api/client';
 import type { Boot } from '@/lib/types';
-import type { CustomerSignupResult, RegistrationConfig, RegistrationSettingsInput } from './types';
+import type { PasskeyAnswer, PasskeyRequestOptions } from './passkeys';
+import type { CustomerLoginResult, CustomerSignupResult, RegistrationConfig, RegistrationSettingsInput } from './types';
 
 /* Endpoints of backend/modules/auth (staff sign-in, setup, organization sign-up), backend/modules/customers (the
    customer account's public actions) and the platform's registration email settings. */
@@ -36,7 +37,14 @@ export const bootstrap = () => api<Boot>('/api/bootstrap');
 export const completeEmailOAuth = (state: string | null, code: string | null) =>
   api('/api/channels/email/oauth/complete', { state, code });
 
-export const customerLogin = (email: string, password: string) => api('/api/customer/login', { email, password });
+export const customerLogin = (email: string, password: string) => api<CustomerLoginResult>('/api/customer/login', { email, password });
+
+/** The second step of a sign-in: the code from the authenticator app, or one of the recovery codes. */
+export const customerLoginVerify = (body: { code?: string; recovery_code?: string }) => api('/api/customer/login/verify', body);
+
+/** Signing in with a passkey: no account is named, the passkey itself says who it is. */
+export const passkeyLoginOptions = () => api<PasskeyRequestOptions>('/api/customer/passkey/options', {});
+export const passkeyLogin = (credential: PasskeyAnswer) => api('/api/customer/passkey/login', { credential });
 
 export const customerRegister = (body: { name: string; email: string; password: string; phone: string; consent: boolean; org?: string }) =>
   api<CustomerSignupResult>('/api/customer/register', body);
@@ -47,7 +55,7 @@ export const customerVerify = (token: string, password: string) => api('/api/cus
 
 export const customerForgot = (email: string) => api('/api/customer/forgot', { email });
 
-export const customerReset = (token: string, password: string) => api('/api/customer/reset', { token, password });
+export const customerReset = (token: string, password: string) => api<CustomerLoginResult>('/api/customer/reset', { token, password });
 
 export const saveRegistrationSettings = (body: RegistrationSettingsInput) =>
   api<RegistrationConfig>('/api/platform/registration', body);

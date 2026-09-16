@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Icon } from '@/components/Icon';
 import { customerUnread } from '@/components/shell/CustomerShell';
 import { CustomerNone, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -19,6 +19,10 @@ import type { CustomerChat } from './types';
 
 /* แชทของฉัน: the list on the left, the open chat (or a new one) on the right. Wide screens open the newest chat
    beside the list, the way the team's inbox does (pages/customer/customer-chats.html). */
+
+/* Opening a chat changes the address, which builds this screen again: without this the list would start at the top
+   and then jump to the open chat. Kept in memory like the other screen choices (lib/ui-state): a reload starts fresh. */
+let listScroll = 0;
 
 export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slug?: string; id?: string; newChat?: boolean; preselect?: string }) {
   const overview = useOverview();
@@ -48,6 +52,19 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
   useEffect(() => {
     if (fallback) router.replace(`/customer/chats/${fallback.org_slug}/${fallback.id}`);
   }, [fallback, router]);
+
+  // Put the list back where it was before the address changed, then (below) reveal the open chat if it is out of view.
+  const listRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = listScroll;
+    const remember = () => {
+      listScroll = list.scrollTop;
+    };
+    list.addEventListener('scroll', remember, { passive: true });
+    return () => list.removeEventListener('scroll', remember);
+  }, []);
 
   useEffect(() => {
     document.querySelector('.inbox-item.selected')?.scrollIntoView({ block: 'nearest' });
@@ -83,7 +100,7 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
         </div>
       </div>
       <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}`}>
-        <div className="inbox-list">
+        <div className="inbox-list" ref={listRef}>
           <div className="inbox-tools customer-chat-tools">
             <SearchInput id="customer-chat-search" label="ค้นหาแชท" placeholder="ค้นหาแชทของฉัน" value={query} onChange={setQuery} />
             <OrgFilter id="customer-org-filter" />

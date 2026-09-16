@@ -4,7 +4,7 @@ import type { CustomerOrg } from '@/lib/types';
 import type { LineCode, NotificationSettings } from './types';
 
 /* Endpoints of backend/modules/customers (/api/customer/...) and portal (/api/public/<org>/...) used by the signed-in
-   customer. Contracts and invoices use customerContractApi() from the contracts feature. */
+   customer. */
 
 export const ACCOUNT_PATH = '/api/customer/account';
 export const ORGS_PATH = '/api/customer/organizations';

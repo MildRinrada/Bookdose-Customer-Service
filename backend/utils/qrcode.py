@@ -1,4 +1,4 @@
-"""QR codes (ISO/IEC 18004) for short text such as a PromptPay payment: byte mode, error correction level M,
+"""QR codes (ISO/IEC 18004) for short text such as a join link: byte mode, error correction level M,
 versions 1-10 (up to 213 bytes). matrix() returns the modules (True = dark); data_url() draws them as an SVG image."""
 import base64
 from html import escape

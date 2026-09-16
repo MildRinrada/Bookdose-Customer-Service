@@ -55,3 +55,24 @@ export function NewChatLink() {
     </Link>
   );
 }
+
+/** The steps of a case (ส่งเรื่องแล้ว → ทีมงานดูแล → เรียบร้อย): the ones before `step` are done. */
+export function ProgressSteps({ steps, step }: { steps: string[]; step: number }) {
+  return (
+    <ol className="customer-progress">
+      {steps.map((label, i) => {
+        const n = i + 1;
+        const done = n < step;
+        const current = n === step;
+        return (
+          <li key={n} className={`customer-progress-step${done ? ' done' : ''}${current ? ' current' : ''}`} aria-current={current ? 'step' : undefined}>
+            <span className="customer-progress-dot" aria-hidden="true">
+              {done ? <Icon name="check" /> : n}
+            </span>
+            <span className="customer-progress-label">{label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}

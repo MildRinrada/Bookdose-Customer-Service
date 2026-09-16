@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState } from '@/components/ui/display';
 import { FilterPill } from '@/components/ui/filters';
@@ -105,15 +105,21 @@ export function MessageThread({
   publicView = false,
   publicSlug,
   notesOnly = false,
+  after,
+  afterKey = '',
 }: MessagesProps & {
   /** data-thread: the conversation's id. */
   threadId: string;
   /** An element id, e.g. "customer-thread". */
   id?: string;
   notesOnly?: boolean;
+  /** Shown after the newest message and scrolled with the messages (the customer's satisfaction survey). */
+  after?: ReactNode;
+  /** Changes when `after` changes, so a pinned thread stays at the end. */
+  afterKey?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  useThreadPin(ref, messages.length);
+  useThreadPin(ref, `${messages.length}|${afterKey}`);
   // Switching between all messages and notes only starts reading from the newest again.
   useEffect(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
@@ -121,6 +127,7 @@ export function MessageThread({
   return (
     <div ref={ref} className={`thread${notesOnly ? ' notes-only' : ''}`} id={id} data-thread={threadId}>
       <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} />
+      {after}
     </div>
   );
 }

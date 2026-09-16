@@ -29,7 +29,7 @@ class AutomationTests(unittest.TestCase):
     customer = base.IntegrationTests.customer
     CUSTOMER_PASSWORD = base.IntegrationTests.CUSTOMER_PASSWORD
 
-    def new_team(self, name='ทีมบัญชี'):
+    def new_team(self, name='ทีมเทคนิค'):
         return self.ok(self.admin,'/api/teams',{'name':name})['id']
 
     def ticket_of(self, conversation):
@@ -41,28 +41,28 @@ class AutomationTests(unittest.TestCase):
     # Routing rules
     def test_rule_opens_routes_and_prioritises_matching_conversation(self):
         accounting = self.new_team()
-        rule = self.ok(self.admin,'/api/automation/rules',{'name':'ชำระเงินจากเว็บ','channel':'web','keywords':'ชำระเงิน, โอนเงิน',
+        rule = self.ok(self.admin,'/api/automation/rules',{'name':'ระบบล่มจากเว็บ','channel':'web','keywords':'ระบบล่ม, เข้าไม่ได้',
                                                           'set_priority':'high','set_team_id':accounting})['id']
         _,plain = self.visitor()
         self.assertIsNone(self.ticket_of(plain))
-        _,paid = self.visitor(email='pay@example.com',subject='สอบถาม',body='ชำระเงินแล้วแต่ยังใช้งานไม่ได้')
+        _,paid = self.visitor(email='down@example.com',subject='สอบถาม',body='ระบบล่มตั้งแต่เช้า ยังใช้งานไม่ได้')
         ticket = self.ticket_of(paid)
         self.assertEqual((ticket['priority'],ticket['team_id']),('high',accounting))
         self.assertEqual(self.ok(self.admin,f'/api/conversations/{paid}')['conversation']['team_id'],accounting)
         events = self.ok(self.admin,f"/api/tickets/{ticket['id']}")['events']
         self.assertIn('automation.rule_applied',[e['action'] for e in events])
         # A disabled rule does nothing; a rule for another channel does not match the web.
-        self.ok(self.admin,f'/api/automation/rules/{rule}',{'name':'ปิดไว้','enabled':False,'channel':'web','keywords':'ชำระเงิน','set_priority':'high'},'PATCH')
-        self.ok(self.admin,'/api/automation/rules',{'name':'LINE เท่านั้น','channel':'line','keywords':'ชำระเงิน','set_priority':'urgent'})
-        _,again = self.visitor(email='pay@example.com',subject='ชำระเงิน',body='ชำระเงินอีกครั้ง')
+        self.ok(self.admin,f'/api/automation/rules/{rule}',{'name':'ปิดไว้','enabled':False,'channel':'web','keywords':'ระบบล่ม','set_priority':'high'},'PATCH')
+        self.ok(self.admin,'/api/automation/rules',{'name':'LINE เท่านั้น','channel':'line','keywords':'ระบบล่ม','set_priority':'urgent'})
+        _,again = self.visitor(email='down@example.com',subject='ระบบล่ม',body='ระบบล่มอีกครั้ง')
         self.assertIsNone(self.ticket_of(again))
 
     def test_rule_applies_to_cases_staff_open_and_keeps_owner_in_team(self):
         accounting = self.new_team()
         _,outsider = self.create_member(email='outside@example.com')
-        self.ok(self.admin,'/api/automation/rules',{'name':'ด่วนคืนเงิน','channel':'manual','keywords':'คืนเงิน','set_priority':'urgent','set_team_id':accounting})
+        self.ok(self.admin,'/api/automation/rules',{'name':'ด่วนข้อมูลหาย','channel':'manual','keywords':'ข้อมูลหาย','set_priority':'urgent','set_team_id':accounting})
         contact = self.ok(self.admin,'/api/contacts')['contacts'][0]['id']
-        tid = self.ok(self.admin,'/api/tickets',{'subject':'ขอคืนเงิน','contact_id':contact,'team_id':self.team,'assignee_id':outsider})['id']
+        tid = self.ok(self.admin,'/api/tickets',{'subject':'ข้อมูลหาย','contact_id':contact,'team_id':self.team,'assignee_id':outsider})['id']
         ticket = self.ok(self.admin,f'/api/tickets/{tid}')['ticket']
         # The owner belonged to the old team, so the case moves without them.
         self.assertEqual((ticket['priority'],ticket['team_id'],ticket['assignee_id']),('urgent',accounting,None))
@@ -229,11 +229,11 @@ class FacebookTests(unittest.TestCase):
         signature = 'sha256='+hmac.new(secret,json.dumps(payload).encode(),hashlib.sha256).hexdigest()
         return self.admin.call('/api/webhooks/facebook/'+route,payload,headers={'X-Hub-Signature-256':signature,'X-CSRF-Token':''})
 
-    def event(self, mid='m-1', text='ชำระเงินแล้วค่ะ', **extra):
+    def event(self, mid='m-1', text='ระบบล่มค่ะ', **extra):
         return {'sender':{'id':PSID},'recipient':{'id':PAGE},'timestamp':1,'message':{'mid':mid,'text':text,**extra}}
 
     def test_verify_receive_route_reply_and_deduplicate(self):
-        self.ok(self.admin,'/api/automation/rules',{'name':'ชำระเงินจากเฟซบุ๊ก','channel':'facebook','keywords':'ชำระเงิน','set_priority':'high'})
+        self.ok(self.admin,'/api/automation/rules',{'name':'ระบบล่มจากเฟซบุ๊ก','channel':'facebook','keywords':'ระบบล่ม','set_priority':'high'})
         cfg = self.configure()
         route,token = cfg['route_id'],cfg['config']['verify_token']
         self.assertEqual((cfg['config']['page_id'],cfg['credentials_configured']),(PAGE,True))

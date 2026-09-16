@@ -27,7 +27,7 @@ def make_backup(tenant_id=None):
                 # Use attachment references from the snapshot so later new uploads are not mixed in.
                 if path.name!='control.sqlite3':
                     with closing(sqlite3.connect(target)) as snapshot:
-                        keys = [r[0] for r in snapshot.execute('SELECT storage_key FROM attachments UNION SELECT storage_key FROM contract_files')]
+                        keys = [r[0] for r in snapshot.execute('SELECT storage_key FROM attachments')]
                     for key in keys:
                         file = D.DATA/'files'/path.stem/key
                         if not file.is_file():

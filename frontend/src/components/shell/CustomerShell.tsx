@@ -12,9 +12,9 @@ import { useBoot } from '@/lib/session';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
 import { TextSizeMenu } from './TextSize';
 
-/* The customer's frame: the team's side menu and top bar, with the customer's own menu (chats, cases, contracts and
-   projects, invoices, frequently asked questions; notifications and account settings). Every chat and case inside
-   says which organization it is with. */
+/* The customer's frame: the team's side menu and top bar, with the customer's own menu (overview, chats, cases,
+   frequently asked questions; notifications and account settings). Every chat and case inside says which
+   organization it is with. */
 
 /** The team replied after the customer last opened the chat. */
 export function customerUnread(c: { last_kind?: string | null; seen_at?: string | null; updated_at: string }): boolean {
@@ -25,8 +25,6 @@ function menuCounts(d: CustomerOverview): Record<string, number> {
   return {
     chats: d.conversations.filter(customerUnread).length,
     cases: d.cases.filter((t) => !['resolved', 'closed'].includes(t.status)).length,
-    documents: (d.contracts ?? []).filter((x) => x.status === 'review').length + (d.deliveries ?? []).length,
-    billing: (d.invoices ?? []).filter((x) => x.status === 'unpaid').length,
     alerts: d.alert_count,
   };
 }
@@ -91,10 +89,13 @@ export function CustomerShell({ children }: { children: ReactNode }) {
             <b aria-current="page">{page?.label ?? 'แชทของฉัน'}</b>
           </div>
           <div className="top-actions">
-            <Link className="btn primary customer-new-button" href="/customer/chats/new">
-              <Icon name="plus" />
-              เริ่มแชทใหม่
-            </Link>
+            {/* The top bar's primary action is what to do next; on the new-chat page itself it only repeats the form. */}
+            {pathname !== '/customer/chats/new' && (
+              <Link className="btn primary customer-new-button" href="/customer/chats/new">
+                <Icon name="plus" />
+                เริ่มแชทใหม่
+              </Link>
+            )}
             <Link className="icon-btn bell customer-bell" href="/customer/alerts" aria-label="การแจ้งเตือน" title="การแจ้งเตือน">
               <Icon name="bell" />
               {counts.alerts > 0 && <span className="bell-count">{counts.alerts}</span>}

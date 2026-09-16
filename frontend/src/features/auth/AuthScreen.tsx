@@ -14,12 +14,23 @@ import { ApiError } from '@/lib/api/client';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { useBoot } from '@/lib/session';
 import type { Boot } from '@/lib/types';
-import { customerLogin, customerRegister, customerResend, registerOrganization, setUp, staffLogin } from './api';
+import {
+  customerLogin,
+  customerRegister,
+  customerResend,
+  passkeyLogin,
+  passkeyLoginOptions,
+  registerOrganization,
+  setUp,
+  staffLogin,
+} from './api';
 import { AuthStory } from './components/AuthStory';
 import { ForgotPasswordHelp } from './components/ForgotPasswordHelp';
 import { SinglePage } from './components/Frames';
 import { PrivacyNotice } from './components/PrivacyNotice';
 import { SlugField } from './components/SlugField';
+import { TwoFactorStep } from './components/TwoFactorStep';
+import { requestPasskey, usePasskeysAvailable } from './passkeys';
 import {
   customerDestination,
   rememberRegistrationEmail,
@@ -147,6 +158,11 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
   }
   const [sentTo, setSentTo] = useState('');
   const [resending, setResending] = useState(false);
+  // The password was right and the account asks for a second step (customer_security); the waiting sign-in is a
+  // short HttpOnly cookie, so the page only remembers what may finish it.
+  const [secondStep, setSecondStep] = useState<string[] | null>(null);
+  const [passkeyError, setPasskeyError] = useState('');
+  const passkeys = usePasskeysAvailable();
 
   useEffect(() => {
     if (!focusAfterSwitch.current) return;
@@ -181,7 +197,11 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
         await staffLogin(values.email, values.password);
       } catch (error) {
         if (!(error instanceof ApiError) || error.status !== 401 || !boot.home) throw error;
-        await customerLogin(values.email, values.password);
+        const result = await customerLogin(values.email, values.password);
+        if (result.two_factor) {
+          setSecondStep(result.methods ?? ['totp']);
+          return;
+        }
         finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว');
         return;
       }
@@ -243,6 +263,16 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
     }
   };
 
+  const signInWithPasskey = async () => {
+    setPasskeyError('');
+    try {
+      await passkeyLogin(await requestPasskey(await passkeyLoginOptions()));
+      finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบด้วย Passkey แล้ว');
+    } catch (error) {
+      setPasskeyError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
   const openForgot = () =>
     openModal('ลืมรหัสผ่าน', <ForgotPasswordHelp customerReset={verifyEmail} forgotHref={withOrg('/customer/forgot', org)} />);
 
@@ -252,7 +282,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
       <section className="auth-form-wrap">
         <div className="auth-card" ref={card}>
           <TextSizeControls />
-          {login && (
+          {login && !secondStep && (
             <div className="auth-tabs" role="tablist" aria-label="เข้าสู่ระบบหรือสมัครสมาชิก">
               <button type="button" role="tab" aria-selected={!signUp} onClick={() => switchTab('login')}>
                 เข้าสู่ระบบ
@@ -262,7 +292,9 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
               </button>
             </div>
           )}
-          {signUp ? (
+          {secondStep ? (
+            <TwoFactorStep methods={secondStep} onDone={() => finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว')} />
+          ) : signUp ? (
             <div className="auth-form" role="tabpanel">
               {sentTo ? (
                 <>
@@ -373,6 +405,20 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                     ? 'คุณจะเป็นผู้ดูแลแพลตฟอร์มและผู้ดูแลองค์กรแรก'
                     : 'ข้อมูลแต่ละองค์กรแยกพื้นที่จัดเก็บอย่างอิสระ'}
               </div>
+              {login && passkeys && (
+                <>
+                  <div className="auth-or">หรือ</div>
+                  <button className="btn passkey-btn" type="button" onClick={() => void signInWithPasskey()}>
+                    <Icon name="shield" />
+                    เข้าสู่ระบบด้วย Passkey
+                  </button>
+                  {passkeyError && (
+                    <div className="error-message" role="alert">
+                      {passkeyError}
+                    </div>
+                  )}
+                </>
+              )}
               {!setup && (
                 <>
                   <button className="btn subtle" type="button" onClick={openForgot}>

@@ -48,7 +48,8 @@ src/
     customer/(portal)/   หน้าของลูกค้าที่เข้าสู่ระบบแล้ว: layout วางกรอบ CustomerShell
     customer/(link)/     หน้าลูกค้าจากลิงก์อีเมล (ยืนยันอีเมล ตั้งรหัสผ่านใหม่) ไม่ต้องเข้าสู่ระบบ
     page.tsx             หน้าแรก: แปลงลิงก์ #hash แบบเดิมเป็น path ใหม่ แล้วพาไปหน้าที่ถูกต้อง
-  features/<feature>/    หนึ่งโฟลเดอร์ต่อ feature (tickets, inbox, contracts, customer, …)
+  features/<feature>/    หนึ่งโฟลเดอร์ต่อ feature (tickets, inbox, customer, org-links, …)
+    customer/settings/   แท็บของ ตั้งค่าบัญชี: Profile / Security / Organizations / Notifications และ tabs.ts
   components/
     Icon.tsx             ไอคอนทั้งหมดของแอป
     ui/                  Form, fields (TextField, NumberField …), Combobox, FileInput, PhotoPicker, Pager, Dialogs, Toast,
@@ -61,7 +62,7 @@ src/
     session.ts           เซสชันฝั่งทีม: useBoot, useWork, useStaffTickets, useStaffAlerts, useSwitchTenant
     customer-session.ts  เซสชันฝั่งลูกค้า: useCustomer, useCustomerOrgs, useCustomerOverview
     routes.ts            URL ของทุกหน้าจอ เมนู และตัวแปลงลิงก์แบบเดิม
-    format.ts, labels.ts วันที่ ตัวเลข เงิน และคำภาษาไทยของค่าจาก API
+    format.ts, labels.ts วันที่ ตัวเลข และคำภาษาไทยของค่าจาก API
     ui-state.ts          useUiState: ตัวกรองและตัวเลือกบนหน้าจอที่คงอยู่ระหว่างเปลี่ยนหน้า
     files.ts             กติกาไฟล์แนบ (ชนิด ขนาด จำนวน) เหมือนฝั่ง server
   styles/                CSS ชุดเดิมทั้งหมด (โหลดตามลำดับใน app/layout.tsx)
@@ -82,28 +83,25 @@ src/
 
 | กลุ่ม | URL |
 |---|---|
-| ทั่วไป | `/login` (`?tab=signup`, `?org=`, `?next=`), `/register`, `/verify-email?token=`, `/check-email`, `/resend-email`, `/oauth/email/callback` |
-| ทีม | `/dashboard`, `/inbox[/id]`, `/tickets[/id]`, `/contacts`, `/knowledge[/id]`, `/reports`, `/contracts[/id]`, `/guides[/id]`, `/automation`, `/audit`, `/trash`, `/settings`, `/notifications` |
-| คอนโซลแพลตฟอร์ม | `/platform/system`, `/platform/organizations`, `/platform/faq`, `/platform/contract-templates`, `/platform/team` |
-| ลูกค้า | `/customer` (= `/customer/dashboard` ภาพรวมโครงการ), `/customer/chats[/new \| /<org>/<id>]`, `/customer/cases[/<org>/<id>]`, `/customer/documents[/<org>/<id>]` (`?tab=milestones \| drive \| billing …`), `/customer/approvals`, `/customer/billing[/<org>/<id>]`, `/customer/faq[/<id>]`, `/customer/alerts`, `/customer/team`, `/customer/account` |
+| ทั่วไป | `/login` (`?tab=signup`, `?org=`, `?next=`), `/register`, `/verify-email?token=`, `/check-email`, `/resend-email`, `/oauth/email/callback`, `/join/<token>` (ลิงก์/QR เข้าร่วมองค์กร) |
+| ทีม | `/dashboard`, `/inbox[/id]`, `/tickets[/id]`, `/contacts`, `/knowledge[/id]`, `/reports`, `/guides[/id]`, `/automation`, `/audit`, `/trash`, `/settings`, `/notifications` |
+| คอนโซลแพลตฟอร์ม | `/platform/system`, `/platform/organizations`, `/platform/faq`, `/platform/team` |
+| ลูกค้า | `/customer` (= `/customer/dashboard` ภาพรวมระดับการให้บริการ), `/customer/chats[/new \| /<org>/<id>]`, `/customer/cases[/<org>/<id>]`, `/customer/faq[/<id>]`, `/customer/alerts`, `/customer/account` (`?tab=profile \| security \| organizations \| notifications`) |
 | ลูกค้าจากลิงก์อีเมล | `/customer/verify?token=`, `/customer/reset?token=`, `/customer/forgot` |
 
-ลิงก์แบบเดิมที่ส่งไปทางอีเมลแล้ว (`/#tickets/…`, `/#documents/<org>/<id>`, `/#verify=…`) ยังใช้ได้ หน้าแรกแปลงเป็น URL ใหม่ให้ (`lib/routes.ts` → `legacyPath`)
+ลิงก์แบบเดิมที่ส่งไปทางอีเมลแล้ว (`/#tickets/…`, `/#verify=…`) ยังใช้ได้ หน้าแรกแปลงเป็น URL ใหม่ให้ (`lib/routes.ts` → `legacyPath`)
 
-### หน้าลูกค้า: ทีม ขั้นตอนอนุมัติ คลังเอกสาร ภาพรวม และการแจ้งเตือน
+### หน้าลูกค้า: ภาพรวม องค์กรที่ติดต่อ และการแจ้งเตือน
 
 | feature (โฟลเดอร์) | หน้าจอ | backend |
 |---|---|---|
-| ทีมของลูกค้า (`features/team/`) | `TeamScreen` (`/customer/team`): เชิญสมาชิกด้วยอีเมลพร้อมบทบาท (ผู้ดูแลร่วม / ผู้ตรวจรับ-อนุมัติ / ฝ่ายการเงิน / ฝ่ายเอกสาร-IT) และโครงการที่เห็น คำเชิญถึงฉัน ทีมที่ฉันอยู่ และขั้นตอนอนุมัติเริ่มต้น (`components/FlowEditor.tsx`) · `ApprovalsScreen` (`/customer/approvals`): งานที่รอฉันตรวจหรืออนุมัติขั้นสุดท้าย | `client_team/` |
-| ขั้นตอนอนุมัติ (`features/contracts/components/ApprovalSteps.tsx`) | ขั้นตอนตรวจบนงานส่งมอบในแท็บงวดงาน และบนหน้าเอกสารที่รอลงนาม ปุ่ม ผ่านการตรวจ / ส่งกลับแก้ไข เมื่อถึงขั้นของฉัน ฝั่งทีมงานเห็นแบบอ่านอย่างเดียว (“ลูกค้ากำลังตรวจ 1/2”) | `client_team/approvals.py` |
-| คลังเอกสาร (`features/drive/`) | แท็บ **คลังเอกสาร** ของโครงการ (`?tab=drive`) ทั้งสองฝั่ง ผ่าน `ProjectDrive.tsx` + `ProjectLinks.drive` โฟลเดอร์ ไฟล์หลายเวอร์ชัน อัปโหลดทีละไฟล์ (ไม่เกิน 5 MB, กติกาใน `features/drive/files.ts`) และโฟลเดอร์อ่านอย่างเดียวจากเอกสารสัญญา งานส่งมอบ และสลิป | `drive/` |
-| ภาพรวมโครงการ (`features/dashboard/CustomerDashboardScreen.tsx`) | งบประมาณ/การชำระเงิน ความคืบหน้าเทียบแผน และ SLA ต่อองค์กร (`GET /api/customer/dashboard`) `BudgetLine` แสดงสรุปงบบนหน้าใบแจ้งหนี้ด้วย | `customers/dashboard.py`, `contracts/health.py` |
-| การแจ้งเตือน (`features/customer/AlertsScreen.tsx`, `components/NotifySettings.tsx`) | ทุกรายการมีปุ่มทำต่อ (`action_label`) รับคำเชิญและขอต่อ MA ได้ในหน้า ตั้งค่าบัญชีมีตารางเหตุการณ์ × อีเมล/LINE และเชื่อม LINE ด้วยรหัส 6 หลักต่อองค์กร | `customers/notify.py`, `customers/line.py` |
-
-สิทธิ์ของสมาชิกทีมมาจาก server (`access: {role, can}` ในเอกสาร และ `can` ในแต่ละแถวของ overview) หน้าจอซ่อนปุ่มตาม `can` ผ่าน `useProject().can(capability)` ส่วน server ตรวจทุกคำขอเอง (`client_team/access.py`)
+| ภาพรวม (`features/dashboard/CustomerDashboardScreen.tsx`) | ระดับการให้บริการของแต่ละองค์กรจากเคสของลูกค้า: เวลาตอบกลับครั้งแรกและเวลาแก้ไขเฉลี่ย สัดส่วนที่ตรงเวลา และคะแนนความพึงพอใจ (`GET /api/customer/dashboard` → `sla.orgs`) กรองตามองค์กรด้วยตัวกรองเดียวกับหน้าอื่น | `customers/dashboard.py` |
+| ลิงก์และ QR ขององค์กร (`features/org-links/`) | ตั้งค่าองค์กร → **ลิงก์และ QR สำหรับลูกค้า** (`features/settings/components/JoinLinksPanel.tsx`): ลิงก์ถาวร `…/?org=<รหัส>` และลิงก์เชิญพร้อม QR กำหนดอายุ/จำนวนคน และยกเลิกได้ · `/join/<token>` หน้าที่ QR เปิด (เข้าสู่ระบบแล้วกดเข้าร่วม) · ตั้งค่าบัญชี → **องค์กรที่ติดต่อได้** (`features/customer/settings/OrganizationsSettings.tsx`): รายการองค์กรจาก `GET /api/customer/organizations` และการเพิ่มองค์กรด้วยรหัส ลิงก์ หรือสแกน QR (`BarcodeDetector`) | `org_links/` |
+| การแจ้งเตือน (`features/customer/AlertsScreen.tsx`, `components/NotifySettings.tsx`) | แชทที่ทีมงานตอบ แบบประเมินความพึงพอใจ เคสที่รอข้อมูล เคสที่เสร็จ และนัดติดตาม ทุกรายการมีปุ่มไปยังหน้าที่ทำต่อ (`action_label`) ตั้งค่าบัญชีมีตารางเหตุการณ์ × อีเมล/LINE และเชื่อม LINE ด้วยรหัส 6 หลักต่อองค์กร | `customers/notify.py`, `customers/line.py` |
 
 ## ความปลอดภัย
 
 - **CSP ต่อคำขอ:** `src/proxy.ts` สร้าง nonce ใหม่ทุกหน้า script ที่ไม่มี nonce ของ Next จะไม่ทำงาน (production ไม่อนุญาต inline style)
 - **Python ยังตรวจ Host / Origin / CSRF ทุกคำขอ:** คำขอที่มาผ่านแอปนี้ Python ใช้ `X-Forwarded-Host` แทน Host เฉพาะเมื่อมาจากเครื่องเดียวกัน หรือมี `BOOKDOSE_PROXY_SECRET` ตรงกัน (`backend/middleware/security.py`)
 - **Cookie:** เป็น HttpOnly และ SameSite=Strict ทั้งเซสชันทีมและลูกค้า หน้าจออ่าน cookie ไม่ได้ ใช้ CSRF token จาก `/api/bootstrap` และ `/api/customer/account` แทน
+- **ความปลอดภัยบัญชีลูกค้า** (`features/customer/settings/SecuritySettings.tsx` + `features/auth/`, backend `customer_security/`): การยืนยันสองขั้นตอนด้วยแอป (TOTP) พร้อมรหัสสำรอง 10 รหัส, Passkey (WebAuthn ผ่าน `features/auth/passkeys.ts`), รายการอุปกรณ์ที่เข้าสู่ระบบ และประวัติการใช้งานบัญชี การเปิดการยืนยันสองขั้นตอนและการเพิ่ม/ลบ Passkey ต้องกรอกรหัสผ่านของบัญชีก่อนเสมอ และการตั้งรหัสผ่านใหม่จากลิงก์อีเมลจะลบ Passkey ทั้งหมดทิ้ง เมื่อบัญชีเปิดการยืนยันสองขั้นตอน `/api/customer/login` (และลิงก์ตั้งรหัสผ่านใหม่) จะตอบ `{two_factor: true}` แล้วให้กรอกรหัสที่ `/api/customer/login/verify` ก่อน จึงจะได้เซสชัน

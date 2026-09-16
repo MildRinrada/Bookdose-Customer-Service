@@ -30,10 +30,10 @@ export function staffDestination(next: string): string {
   return next && !next.startsWith('/customer') ? next : '/dashboard';
 }
 
-/** Where a customer goes after signing in: the customer screen they came from, else their chats; ?org=<code>
-    travels along so the customer side connects that organization. */
+/** Where a customer goes after signing in: the customer screen they came from (or the /join/<token> link that sent
+    them here), else their chats; ?org=<code> travels along so the customer side connects that organization. */
 export function customerDestination(next: string, org: string): string {
-  return withOrg(next.startsWith('/customer/') ? next : '/customer/chats', org);
+  return withOrg(next.startsWith('/customer/') || next.startsWith('/join/') ? next : '/customer/chats', org);
 }
 
 /** After signing in, setting up or confirming a staff sign-up: drop what was cached while signed out, then go on. */

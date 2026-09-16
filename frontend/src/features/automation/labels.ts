@@ -42,7 +42,7 @@ export function hoursLabel(value: number | string): string {
   return h >= 24 && h % 24 === 0 ? `${h / 24} วัน` : `${h} ชั่วโมง`;
 }
 
-/** "มาจาก Facebook Messenger และมีคำว่า “ชำระเงิน” หรือ “โอนเงิน”" */
+/** "มาจาก Facebook Messenger และมีคำว่า “เข้าสู่ระบบไม่ได้” หรือ “ระบบล่ม”" */
 export function ruleCondition(rule: Pick<AutomationRule, 'channel' | 'keywords'>): string {
   const words = rule.keywords ? rule.keywords.split('\n') : [];
   return [

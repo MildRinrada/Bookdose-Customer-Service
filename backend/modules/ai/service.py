@@ -97,7 +97,7 @@ def handoff(db, conversation_id, reason='customer'):
 
 
 def requests_human(text):
-    return bool(re.search(r'คุยกับ(?:คน|เจ้าหน้าที่|พนักงาน)|ติดต่อเจ้าหน้าที่|ขอ(?:คน|เจ้าหน้าที่)|human\s*(?:agent|please)|talk to (?:a )?(?:person|human)|refund|คืนเงิน|ยกเลิกสัญญา',text,re.I))
+    return bool(re.search(r'คุยกับ(?:คน|เจ้าหน้าที่|พนักงาน)|ติดต่อเจ้าหน้าที่|ขอ(?:คน|เจ้าหน้าที่)|human\s*(?:agent|please)|talk to (?:a )?(?:person|human)',text,re.I))
 
 
 def bot_enabled(db, conversation_id):

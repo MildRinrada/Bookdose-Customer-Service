@@ -1,7 +1,7 @@
 import { api } from '@/lib/api/client';
-import type { GlobalArticleInput, VerifyResult } from './types';
+import type { GlobalArticleInput } from './types';
 
-/* Endpoints of backend/modules/platform/routes.py (and the platform routes of contracts). Every platform read lives
+/* Endpoints of backend/modules/platform/routes.py. Every platform read lives
    under /api/platform, so refreshing PLATFORM_PREFIX after a write also redraws the histories shown on the
    overview and the organizations page. */
 
@@ -27,7 +27,3 @@ export const saveGlobalArticle = (id: string | undefined, body: GlobalArticleInp
   api<{ id?: string; ok?: true }>(id ? `${GLOBAL_FAQ_PATH}/${id}` : GLOBAL_FAQ_PATH, body, id ? 'PATCH' : 'POST');
 
 export const deleteGlobalArticle = (id: string) => api<{ ok: true }>(`${GLOBAL_FAQ_PATH}/${id}`, undefined, 'DELETE');
-
-export const deletePlatformTemplate = (id: string) => api<{ ok: true }>(`/api/platform/contract-templates/${id}`, undefined, 'DELETE');
-
-export const verifyContractHash = (hash: string) => api<VerifyResult>('/api/platform/contracts/verify', { hash });

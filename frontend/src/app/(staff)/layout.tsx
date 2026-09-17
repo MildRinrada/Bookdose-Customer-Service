@@ -22,7 +22,8 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
     if (signedOut) router.replace(signInAddress(pathname + window.location.search, expiryReason('staff') ?? expired ?? null));
   }, [signedOut, pathname, router, expired]);
 
-  if (boot.error) return <ErrorState title="เปิดพื้นที่ทำงานไม่สำเร็จ" error={boot.error} onRetry={() => void boot.refetch()} />;
+  // Only a first load that failed replaces the frame; a refresh that fails later keeps the screen and is asked again.
+  if (boot.error && !boot.data) return <ErrorState title="เปิดพื้นที่ทำงานไม่สำเร็จ" error={boot.error} onRetry={() => void boot.refetch()} />;
   if (!boot.data?.user) return <InitialLoading />;
   return <StaffShell>{children}</StaffShell>;
 }

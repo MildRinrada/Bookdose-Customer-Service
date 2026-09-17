@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { api, setConversation, type ApiError } from '@/lib/api/client';
 import { useCustomerOrgs, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
@@ -36,7 +36,9 @@ export function useOrgFilter() {
 /** The open chat: GET /api/public/<org>/session with X-Conversation-ID, polled every 10 s while the page is visible
     (every minute while live updates are connected).
     Reading it counts as reading the team's reply: the menu count and the bell drop at once. A refresh that fails says
-    why and stops polling until another chat is opened; a chat that is not the customer's (404) goes back to the list. */
+    why once and keeps the chat on the screen; polling goes on, so the chat catches up by itself (a refresh that stopped
+    for good left the thread frozen until the page was reloaded). A chat that is not the customer's (404) goes back to
+    the list. */
 export function useChatSession(slug: string | undefined, id: string | undefined) {
   const client = useQueryClient();
   const router = useRouter();
@@ -59,12 +61,13 @@ export function useChatSession(slug: string | undefined, id: string | undefined)
       return api<PortalSession>(sessionPath(slug as string));
     },
     enabled: key !== null,
-    // A refresh that failed stops the polling; opening the chat again (or sending) asks anew and resumes it.
-    refetchInterval: (q) => (q.state.error && q.state.data ? false : poll),
+    refetchInterval: poll,
     refetchIntervalInBackground: false,
   });
 
   const { data, error, dataUpdatedAt, errorUpdatedAt } = query;
+  // The answer whose failing refresh was already reported: one message for a run of failures, not one per poll.
+  const reported = useRef(-1);
 
   useEffect(() => {
     if (!data || !id) return;
@@ -83,8 +86,9 @@ export function useChatSession(slug: string | undefined, id: string | undefined)
   useEffect(() => {
     if (!error || !key) return;
     if (data) {
-      // A refresh failed (polling stops, see refetchInterval): say why. 401 is handled by the session.
-      if (error.status !== 401) toast(error.message, true);
+      // A refresh failed: say why, once until the chat loads again. 401 is handled by the session.
+      if (error.status !== 401 && reported.current !== dataUpdatedAt) toast(error.message, true);
+      reported.current = dataUpdatedAt;
     } else if (error.status === 404) {
       toast(error.message, true);
       router.replace('/customer/chats');

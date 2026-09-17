@@ -1,10 +1,14 @@
 """The Next.js web app (frontend/) forwards /api/* to the Python server. The forwarded host and client address are believed
 only from the web app: from this machine while no proxy secret is set, otherwise with the secret."""
+import json
 import os
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
+import urllib.error
+import urllib.request
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -70,6 +74,26 @@ class WebProxyTests(unittest.TestCase):
         for index in range(15):
             self.login({'X-Bookdose-Client-IP':'198.51.100.7'},wrong(index))
         self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'198.51.100.7'}),200)
+
+    def test_too_many_reads_say_when_to_ask_again(self):
+        # A customer switching chats quickly behind the web app: the reads of this address are used up. The answer
+        # says when a read is allowed again (the page asks again then instead of freezing the chat).
+        moment = time.monotonic()
+        rate_limit.RATES[('public-read','127.0.0.1')].extend([moment-50]+[moment]*179)
+        request = urllib.request.Request(self.base+'/api/public/alpha',headers={'X-Forwarded-Host':'localhost:3000'})
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(request,timeout=20)
+        with caught.exception as answer:
+            data = json.loads(answer.read())
+            self.assertEqual(answer.status,429)
+            self.assertTrue(1<=data['retry_after']<=11,data)
+            self.assertEqual(answer.headers['Retry-After'],str(data['retry_after']))
+
+    def test_keep_alive_outlasts_the_web_app_proxy(self):
+        # Node's HTTP agent in Next.js drops an idle connection after 5 s; the server must not close it first, or a
+        # request sent on it at that moment fails (ECONNRESET, answered 500 by the web app).
+        from backend.asgi import create_app, uvicorn_config
+        self.assertGreater(uvicorn_config(create_app(workers=False),'127.0.0.1',0).timeout_keep_alive,5)
 
 
 if __name__=='__main__':

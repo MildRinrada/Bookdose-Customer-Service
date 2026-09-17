@@ -16,8 +16,12 @@ export function createQueryClient() {
       queries: {
         staleTime: 2000,
         refetchOnWindowFocus: false,
-        // A 4xx answer (not found, no permission, signed out) will not change by asking again.
-        retry: (count, error) => !(error instanceof ApiError && error.status >= 400 && error.status < 500) && count < 1,
+        // A 4xx answer (not found, no permission, signed out) will not change by asking again. "Too many requests"
+        // (switching chats quickly) will: ask again once the server says it may, keeping what the screen shows.
+        retry: (count, error) =>
+          error instanceof ApiError && error.status === 429 ? count < 3 : !(error instanceof ApiError && error.status >= 400 && error.status < 500) && count < 1,
+        retryDelay: (count, error) =>
+          error instanceof ApiError && error.status === 429 ? Math.min(Math.max(error.retryAfter ?? 5, 1), 60) * 1000 : Math.min(1000 * 2 ** count, 30000),
       },
     },
     queryCache: new QueryCache({

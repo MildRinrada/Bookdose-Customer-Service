@@ -9,7 +9,7 @@ import { ChannelDelivery } from '@/features/channels/components/ChannelDelivery'
 import { MarkdownBlocks } from '@/features/rich/Markdown';
 import { looksLikeMarkdown } from '@/features/rich/markdown-core';
 import { MessageFiles } from '@/features/rich/media';
-import { useThreadPin } from '@/features/rich/thread';
+import { scrollThreadToEnd, useThreadPin } from '@/features/rich/thread';
 import { clockTime, date, dayLabel } from '@/lib/format';
 import { useReadAt, useRealtime, useTyping } from '@/lib/realtime-provider';
 import type { Message } from '../types';
@@ -144,10 +144,10 @@ export function MessageThread({
   const readTimes = [liveReadAt, knownReadAt].filter((at): at is string => Boolean(at)).map((at) => Date.parse(at));
   const read = Boolean(lastPublic && readTimes.some((at) => at >= Date.parse(lastPublic.created_at)));
   const receipt: Receipt | null = lastPublic?.kind === own && (connected || read) ? { id: lastPublic.id, read } : null;
-  useThreadPin(ref, `${messages.length}|${afterKey}|${typing ?? ''}|${receipt?.read ?? ''}`);
+  useThreadPin(ref, threadId, `${messages.length}|${afterKey}|${typing ?? ''}|${receipt?.read ?? ''}`);
   // Switching between all messages and notes only starts reading from the newest again.
   useEffect(() => {
-    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+    if (ref.current) scrollThreadToEnd(ref.current);
   }, [notesOnly]);
   return (
     <div ref={ref} className={`thread${notesOnly ? ' notes-only' : ''}`} id={id} data-thread={threadId}>

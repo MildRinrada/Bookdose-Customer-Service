@@ -37,6 +37,10 @@ from backend.workers import start_workers, stop_workers
 
 # Requests answered at the same time (each holds a worker thread while its controller runs).
 REQUEST_THREADS = 100
+# An idle keep-alive connection stays open longer than the web app's proxy keeps it (Node's HTTP agent: 5 s). With
+# equal times the server could close a connection just as the proxy sent the next request on it: ECONNRESET, and
+# that request answered 500 by Next.js.
+KEEP_ALIVE_SECONDS = 20
 # Every method the catch-all route accepts; the ones outside METHODS are answered 501 like the old server.
 ROUTE_METHODS = [*METHODS,'PUT','HEAD','OPTIONS']
 
@@ -136,12 +140,13 @@ def create_app(server=None, workers=True, log_requests=True, init_database=False
 def uvicorn_config(app, host, port, **overrides):
     """uvicorn settings for this application: one worker (the realtime hub and rate limits live in this process), the
     client address from the socket only (the web app's forwarded address is judged by middleware/security.py), no
-    access log (it would print query strings), no Server header. WebSocket through the pinned `websockets` package
+    access log (it would print query strings), no Server header, idle keep-alive connections kept longer than the web
+    app's proxy keeps them (KEEP_ALIVE_SECONDS). WebSocket through the pinned `websockets` package
     (sans-I/O implementation), frames above 16 KB refused by uvicorn (the application allows 2 KB), no compression
     (events are tiny), protocol pings every 20 s."""
     import uvicorn
     options = dict(host=host,port=port,workers=1,lifespan='on',proxy_headers=False,forwarded_allow_ips='',
-                   access_log=False,server_header=False,date_header=True,timeout_keep_alive=5,
+                   access_log=False,server_header=False,date_header=True,timeout_keep_alive=KEEP_ALIVE_SECONDS,
                    timeout_graceful_shutdown=10,h11_max_incomplete_event_size=64*1024,http='h11',
                    ws='websockets-sansio',ws_max_size=16*1024,ws_per_message_deflate=False,ws_ping_interval=20.0,
                    ws_ping_timeout=20.0)

@@ -6,6 +6,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
 import { download, fetchBlob } from '@/lib/api/client';
 import type { MessageFile } from '@/lib/types';
+import { pinThread } from './thread';
 
 /* Files in a message (ported from old-frontend/ui/media.js). Private attachments are fetched through the same
    authenticated API as downloads and shown from blob: URLs that stay local to the page; no tenant or visitor
@@ -28,7 +29,7 @@ function useDownload(path: string, name: string) {
 // Newest messages are at the bottom: a picture that finishes loading keeps a pinned thread at the end.
 function pinAfterMedia(node: HTMLElement | null) {
   const thread = node?.closest<HTMLElement>('[data-thread]');
-  if (thread && thread.dataset.pinned !== 'no') thread.scrollTop = thread.scrollHeight;
+  if (thread && thread.dataset.pinned !== 'no') pinThread(thread);
 }
 
 /** One attachment of a message. `publicSlug`: the organization's slug when a customer is reading. */

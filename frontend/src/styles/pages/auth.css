@@ -32,6 +32,7 @@
   right: -200px;
   box-shadow: 0 0 0 55px #ffffff20,0 0 0 110px #ffffff15;
   pointer-events: none;
+  display: none;
 }
 .auth-story h1 {
   font-size: 2.75rem;
@@ -51,23 +52,82 @@
   color: #706380;
   margin-bottom: 22px;
 }
-.story-preview {
-  background: #ffffffc4;
-  padding: 23px;
-  border-radius: 14px;
-  border: 1px solid white;
-  max-width: 390px;
-  margin: 28px 0;
+/* Photo slideshow: every photo fills the panel and fades in and out on one shared 28 s cycle (4 photos, 7 s each,
+   2 s cross-fade) with a very slow zoom. The first starts already visible. A dark gradient keeps the text readable. */
+.auth-story > * {
+  position: relative;
+  z-index: 1;
 }
-.preview-line {
-  height: 6px;
-  background: #e9e1f3;
-  border-radius: 3px;
-  margin-top: 9px;
-  max-width: 240px;
+.auth-story > .story-photos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #1f2328;
 }
-.preview-line.short {
-  max-width: 150px;
+.story-photos::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #0b0d1073 0%, #0b0d1040 38%, #0b0d10b3 100%);
+}
+.story-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: story-photo 28s ease-in-out infinite both;
+}
+.story-photo:nth-child(1) { animation-delay: -2s; }
+.story-photo:nth-child(2) { animation-delay: 5s; }
+.story-photo:nth-child(3) { animation-delay: 12s; }
+.story-photo:nth-child(4) { animation-delay: 19s; }
+@keyframes story-photo {
+  0% { opacity: 0; transform: scale(1.06); }
+  7.2% { opacity: 1; }
+  25% { opacity: 1; }
+  32.2% { opacity: 0; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+.auth-story .brand {
+  align-self: flex-start;
+  padding: 8px 14px 8px 10px;
+  background: #ffffffeb;
+  border-radius: 12px;
+}
+.story-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 26px;
+}
+.story-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #ffffff59;
+  animation: story-dot 28s ease-in-out infinite both;
+}
+.story-dots span:nth-child(1) { animation-delay: -2s; }
+.story-dots span:nth-child(2) { animation-delay: 5s; }
+.story-dots span:nth-child(3) { animation-delay: 12s; }
+.story-dots span:nth-child(4) { animation-delay: 19s; }
+@keyframes story-dot {
+  0%, 32.2%, 100% { width: 8px; background: #ffffff59; }
+  7.2%, 25% { width: 24px; background: #fff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-photo,
+  .story-dots span {
+    animation: none;
+  }
+  .story-photo:first-child {
+    opacity: 1;
+  }
+  .story-dots {
+    display: none;
+  }
 }
 .story-footer {
   font-size: 1rem;
@@ -146,7 +206,7 @@
     font-size: 1rem;
     margin: 0;
   }
-  .story-preview,.story-footer,.story-label {
+  .story-dots,.story-footer,.story-label {
     display: none;
   }
   .auth-form-wrap {

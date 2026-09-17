@@ -13,6 +13,7 @@ import { useMacroMenu } from '@/features/automation';
 import { ArticleRead, useArticleActions, type Article } from '@/features/knowledge';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextField, RichToolbar, useRichEditor } from '@/features/rich/RichEditor';
+import { followThread } from '@/features/rich/thread';
 import { readFiles } from '@/lib/files';
 import { useInvalidate } from '@/lib/query';
 import { useTypingNotifier } from '@/lib/realtime-provider';
@@ -263,6 +264,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
         const attachments = await readFiles(filesOf(form));
         const sent = (values.kind as 'reply' | 'note') || 'reply';
         await postMessage(id, { kind: sent, body: values.body ?? '', attachments });
+        followThread(form);
         editor.setValue('');
         setDrafts((all) => {
           const rest = { ...all };
@@ -271,6 +273,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
         });
         pills.clear();
         await refresh(...CONVERSATION_PREFIXES);
+        followThread(form);
         await onSent?.();
         toast(
           sent === 'note'
@@ -400,12 +403,14 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
         if (!publicSlug) throw new Error('กรุณาเปิดแชทก่อน');
         const attachments = await readFiles(filesOf(form));
         await postPortalMessage(publicSlug, { body: values.body ?? '', attachments });
+        followThread(form);
         if (area.current) {
           area.current.value = '';
           area.current.style.height = '';
         }
         pills.clear();
         await refresh(`/api/public/${publicSlug}`, '/api/customer/overview');
+        followThread(form);
         await onSent?.();
         toast('ส่งข้อความแล้ว');
       }}

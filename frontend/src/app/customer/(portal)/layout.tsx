@@ -16,6 +16,8 @@ import { expiryReason, signInAddress } from '@/lib/session-expiry';
    (?next=, and ?expired= when the session ran out). The screens that work without an account (confirming the email, a new password) are in
    src/app/customer/(link)/. */
 
+const OVERVIEW_FRESH_MS = 10000;
+
 export default function CustomerLayout({ children }: { children: ReactNode }) {
   const account = useCustomerAccount();
   const boot = useBoot();
@@ -60,17 +62,26 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
       });
   }, [ready, known, pathname, router, refresh, toast]);
 
-  // Every screen shows the overview as it is when it opens (the old router asked for it on each screen).
+  // Every screen shows the overview as it is when it opens (the old router asked for it on each screen). An answer
+  // from the last few seconds is as good: switching chats quickly must not ask for it on every click (all of a
+  // customer's reads share one request limit), and live updates refresh it whenever something changes.
   const firstPath = useRef(pathname);
-  const { refetch: refetchOverview } = overview;
+  const { refetch: refetchOverview, dataUpdatedAt: overviewAt } = overview;
+  const overviewAtRef = useRef(overviewAt);
+  useEffect(() => {
+    overviewAtRef.current = overviewAt;
+  });
   useEffect(() => {
     if (firstPath.current === pathname) return;
     firstPath.current = pathname;
+    if (Date.now() - overviewAtRef.current < OVERVIEW_FRESH_MS) return;
     void refetchOverview();
   }, [pathname, refetchOverview]);
 
+  // Only a first load that failed replaces the frame. A refresh that fails later (too many requests, a network blip)
+  // keeps the screens as they are, with their live updates, and is asked again.
   const error = account.error ?? boot.error ?? orgs.error ?? overview.error;
-  if (error)
+  if (error && !ready)
     return (
       <ErrorState
         error={error}

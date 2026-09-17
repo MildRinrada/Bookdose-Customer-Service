@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { api, setConversation, setGuestCredentials, type ApiError } from '@/lib/api/client';
 import { CHAT_POLL_MS } from '@/features/customer/hooks';
@@ -32,6 +32,7 @@ export function useGuestOverview(slug: string, poll: number | false = 30000) {
 }
 
 /** The open guest chat, polled every 10 s (every minute while live updates are connected). Reading it reads the team's replies, so the list's mark drops at once.
+    A refresh that fails says why once and polling goes on, so the chat catches up by itself.
     A chat that is no longer this visitor's (404, or the cookie is gone: 401) calls `onGone`. */
 export function useGuestSession(slug: string, id: string | null, onGone: (message: string) => void) {
   const client = useQueryClient();
@@ -51,11 +52,13 @@ export function useGuestSession(slug: string, id: string | null, onGone: (messag
       return api<PortalSession>(guestSessionPath(slug));
     },
     enabled: key !== null,
-    refetchInterval: (q) => (q.state.error && q.state.data ? false : poll),
+    refetchInterval: poll,
     refetchIntervalInBackground: false,
   });
 
   const { data, dataUpdatedAt, error, errorUpdatedAt } = query;
+  // The answer whose failing refresh was already reported: one message for a run of failures, not one per poll.
+  const reported = useRef(-1);
 
   useEffect(() => {
     if (!data || !id) return;
@@ -67,7 +70,10 @@ export function useGuestSession(slug: string, id: string | null, onGone: (messag
   useEffect(() => {
     if (!error || !key) return;
     if (error.status === 404 || error.status === 401) onGone(error.message);
-    else if (data) toast(error.message, true);
+    else if (data) {
+      if (reported.current !== dataUpdatedAt) toast(error.message, true);
+      reported.current = dataUpdatedAt;
+    }
     // Only a new failure is reported.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errorUpdatedAt]);

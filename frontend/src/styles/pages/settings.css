@@ -224,7 +224,8 @@
 [role=tabpanel]>.card,[role=tabpanel] form>.card {
   margin-bottom: 20px;
 }
-[role=tabpanel] .btn.primary {
+/* Not the sign-in form, whose tabs share the role: its submit stays the solid theme button. */
+[role=tabpanel]:not(.auth-form) .btn.primary {
   background: #f2edf9;
   color: #4b2c89;
   border-color: #a997cf;

@@ -12,9 +12,10 @@ class APIError(Exception):
 
 class RateLimited(APIError):
     """429 from an in-memory request limit (middleware/rate_limit.py); `action` names the limit (recorded as a
-    security event by the dispatcher)."""
-    def __init__(self, action, message):
-        super().__init__(429, message)
+    security event by the dispatcher). retry_after: seconds until a call is allowed again."""
+    def __init__(self, action, message, retry_after=None):
+        extra,headers = ({'retry_after':retry_after},{'Retry-After':str(retry_after)}) if retry_after else (None,None)
+        super().__init__(429, message, extra, headers)
         self.action = action
 
 

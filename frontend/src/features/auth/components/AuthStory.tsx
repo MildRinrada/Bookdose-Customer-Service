@@ -1,14 +1,22 @@
-import { Icon } from '@/components/Icon';
 import { Brand } from '@/components/shell/chrome';
-import { Avatar } from '@/components/ui/display';
 
-/* The left half of the sign-in page (pages/auth/auth.html, .auth-story). */
+/* The left half of the sign-in page (.auth-story): full-bleed photos (public/login/, see CREDITS.txt) that cross-fade
+   slowly behind the message, animated by CSS alone (pages/auth.css, .story-photos). With reduced motion only the
+   first photo shows. The photos are decorative. */
+
+const PHOTOS = ['/login/slide-1.jpg', '/login/slide-2.jpg', '/login/slide-3.jpg', '/login/slide-4.jpg'];
 
 export function AuthStory() {
   return (
     <section className="auth-story">
+      <div className="story-photos" aria-hidden="true">
+        {PHOTOS.map((src, index) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={src} className="story-photo" src={src} alt="" decoding="async" loading={index === 0 ? 'eager' : 'lazy'} />
+        ))}
+      </div>
       <Brand />
-      <div>
+      <div className="story-message">
         <div className="story-label">A LITTLE CARE. A BETTER CONNECTION.</div>
         <h1>
           ทุกคำถามมีความหมาย
@@ -20,19 +28,10 @@ export function AuthStory() {
           <br />
           ติดตาม และส่งต่อความใส่ใจได้ในทุกวัน
         </p>
-        <div className="story-preview">
-          <div className="flex">
-            <Avatar name="ทีม" index={1} />
-            <div>
-              <strong className="small">ทีมที่พร้อมดูแลลูกค้าของคุณ</strong>
-              <div className="tiny muted">หนึ่งพื้นที่ทำงาน · ทุกบทสนทนา</div>
-            </div>
-            <span className="badge resolved">
-              <Icon name="check" />
-            </span>
-          </div>
-          <div className="preview-line" />
-          <div className="preview-line short" />
+        <div className="story-dots" aria-hidden="true">
+          {PHOTOS.map((src) => (
+            <span key={src} />
+          ))}
         </div>
       </div>
       <div className="story-footer">Bookdose Customer Service · Made for meaningful support.</div>

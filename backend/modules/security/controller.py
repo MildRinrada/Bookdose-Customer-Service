@@ -48,3 +48,23 @@ def settings(req):
 
 def save_settings(req):
     return req.send(200,service.save_settings(req))
+
+
+def honeytokens(req):
+    return req.send(200,service.list_honeytokens(req.cd))
+
+
+def create_honeytoken(req):
+    return req.send(201,service.create_honeytoken(req))
+
+
+def update_honeytoken(req, token_id):
+    return req.send(200,service.update_honeytoken(req,token_id))
+
+
+def delete_honeytoken(req, token_id):
+    return req.send(200,service.delete_honeytoken(req,token_id))
+
+
+def test_honeytoken(req, token_id):
+    return req.send(200,service.test_honeytoken(req,token_id))

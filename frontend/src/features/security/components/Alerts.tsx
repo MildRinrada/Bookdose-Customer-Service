@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { date, number, relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { acknowledgeAlert, OPEN_ALERTS_PATH, SECURITY_PREFIX } from '../api';
-import { alertRuleLabel, eventKindLabel, severityLabels } from '../labels';
+import { alertRuleLabel, eventKindLabel, honeytokenKindLabel, honeytokenWhereLabels, severityLabels } from '../labels';
 import type { SecurityAlert } from '../types';
 
 /* The open alerts, at the top of the page: one row per rule (and IP) coloured by severity, with "รับทราบ". Nothing
@@ -27,6 +27,17 @@ function detailText(detail: SecurityAlert['detail']): string {
   if (typeof detail.threshold === 'number' && typeof detail.window_minutes === 'number') {
     const kind = typeof detail.kind === 'string' ? `${eventKindLabel(detail.kind)} · ` : '';
     return `${kind}เกณฑ์ ${number(detail.threshold)} ครั้งภายใน ${number(detail.window_minutes)} นาที`;
+  }
+  // A honeytoken: {token_id, kind, label, where}
+  if (typeof detail.token_id === 'string' && typeof detail.label === 'string') {
+    const where = typeof detail.where === 'string' ? detail.where : '';
+    return [
+      `กับดัก “${detail.label}”`,
+      typeof detail.kind === 'string' ? honeytokenKindLabel(detail.kind) : '',
+      where ? `พบที่ ${honeytokenWhereLabels[where] ?? where}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
   }
   return Object.entries(detail)
     .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`)

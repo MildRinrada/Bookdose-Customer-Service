@@ -48,6 +48,10 @@ def start(req):
     # A valid cookie sent without its CSRF token must not end up replaced by a new guest (its chats would be lost).
     refuse_stale_guest(req)
     limited(('guest-start',req.ip),START_PER_IP_HOUR,3600)
+    from backend.modules.security import traps
+    if traps.form_trapped(req.body):
+        # The hidden field was filled: recorded here; the form check refuses it with the usual message.
+        traps.record_form(client_info(req),'guest_chat',tenant_id=req.org['id'],actor='guest')
     answer,token,remember = service.start(req.db,req.org,req.guest,req.body,client_info(req))
     return req.send(201,answer,headers=_set(req,token,remember) if token else None)
 

@@ -328,9 +328,9 @@ dialog.idle-dialog {
   color: var(--red);
 }
 
-/* Six numbers: three to a row */
+/* Eight numbers: four to a row */
 .stats-grid.security-stats {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 22px;
 }
 
@@ -647,16 +647,226 @@ p.card-body.muted .icon {
   color: var(--green);
 }
 
+/* ---------------------------------------------------------------------------------------------------------------
+   "กับดัก": honeytokens, trap events and honeypot settings (features/security/components/Honeytokens.tsx,
+   TrapEvents.tsx, HoneypotSettingsCard.tsx) */
+.security-part-head {
+  margin: 34px 0 16px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.security-part-head h2 {
+  font-size: 1.25rem;
+  margin: 0 0 4px;
+}
+.security-part-head p {
+  margin: 0;
+  color: var(--muted);
+}
+.trap-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.trap-kind-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+.trap-kind-icon .icon,
+.trap-kind-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.trap-table td {
+  vertical-align: middle;
+}
+.trap-name > * {
+  display: block;
+}
+.trap-name > * + * {
+  margin-top: 2px;
+}
+.trap-row-hit td:first-child {
+  box-shadow: inset 3px 0 var(--red);
+}
+.trap-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.trap-empty p {
+  margin: 0;
+}
+
+/* Create dialog */
+.trap-kinds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+.trap-kinds legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #334155;
+}
+.trap-kind-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #c7ccdc;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.trap-kind-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+.trap-kind-option:has(input:focus-visible) {
+  outline: 3px solid #b4a0f0;
+  outline-offset: 2px;
+}
+.trap-kind-option input {
+  width: auto;
+  min-height: 0;
+  margin-top: 8px;
+  accent-color: var(--accent);
+}
+.trap-kind-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.notice.trap-plant,
+.notice.trap-once {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.notice.trap-plant .icon,
+.notice.trap-once .icon {
+  flex: none;
+  margin-top: 3px;
+}
+.trap-secret-row {
+  display: flex;
+  gap: 8px;
+}
+.trap-secret-row input {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.02em;
+}
+.trap-secret-row .btn {
+  flex: none;
+}
+
+/* Settings */
+.trap-switches {
+  display: grid;
+  gap: 12px;
+}
+.trap-switches .check {
+  align-items: flex-start;
+}
+.trap-switches .check .switch {
+  margin-top: 2px;
+}
+.trap-switches .check > span {
+  display: grid;
+  gap: 2px;
+  color: var(--ink);
+}
+.trap-switches .check .tiny {
+  font-weight: 400;
+}
+.trap-block-grid .security-fieldset {
+  align-content: start;
+}
+.trap-paths {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.trap-paths li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trap-paths input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 12px;
+}
+.trap-paths select {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 9px 30px 9px 12px;
+}
+.trap-builtins {
+  margin-top: 12px;
+}
+.trap-builtins summary {
+  cursor: pointer;
+  color: var(--link);
+  font-weight: 600;
+}
+.trap-builtins p {
+  margin: 6px 0 0;
+}
+.security-settings-grid.trap-block-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.trap-event-filters {
+  justify-content: space-between;
+}
+.trap-event-filters .filter-pills {
+  margin: 0;
+}
+
 @media (max-width: 1100px) {
+  .stats-grid.security-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .security-settings-grid.trap-block-grid,
   .security-grid,
   .security-grid.wide-first,
   .security-settings-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 950px) {
-  .stats-grid.security-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 640px) {
+  #security-honeytokens .card-header {
+    flex-wrap: wrap;
+  }
+  .trap-kinds,
+  .security-settings-grid.trap-block-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trap-secret-row {
+    flex-wrap: wrap;
+  }
+  .trap-secret-row .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .trap-paths li {
+    flex-wrap: wrap;
+  }
+  .trap-paths input {
+    flex: 1 1 100%;
   }
 }
 @media (max-width: 640px) {

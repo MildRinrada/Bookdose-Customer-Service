@@ -506,8 +506,10 @@ class SecurityRoundTests(unittest.TestCase):
         # security_settings_changed
         self.ok(self.admin,f'{SEC}/settings',{'alerts':{'locks_1h':20}})
         found = {e['kind']:e for e in self.ok(self.admin,f'{SEC}/events?limit=200')['events']}
-        self.assertEqual(set(found),set(model.EVENT_KINDS))
-        for kind,severity in model.EVENT_KINDS.items():
+        # The honeypot / honeytoken kinds have their own tests (test_honeypot.py).
+        round_kinds = {k:v for k,v in model.EVENT_KINDS.items() if k not in model.TRAP_EVENT_KINDS}
+        self.assertEqual(set(found),set(round_kinds))
+        for kind,severity in round_kinds.items():
             self.assertTrue(any(e['severity']==severity for e in self.events_of(kind)),kind)
         csrf = self.events_of('csrf_rejected')
         self.assertEqual({e['actor'] for e in csrf},{'staff','customer','guest'})
@@ -546,7 +548,8 @@ class SecurityRoundTests(unittest.TestCase):
         self.assertEqual(overview['cards']['origin_csrf_rejected'],self.total('csrf_rejected')+self.total('origin_rejected'))
         self.assertEqual(overview['cards']['cross_tenant_denied'],1)
         self.assertEqual(overview['cards']['locked_now'],0)
-        self.assertEqual(set(overview['cards']),{'failed_logins','locked_now','rate_limited','origin_csrf_rejected','cross_tenant_denied','open_alerts'})
+        self.assertEqual(set(overview['cards']),{'failed_logins','locked_now','rate_limited','origin_csrf_rejected','cross_tenant_denied','open_alerts',
+                                                    'honeypot_hits','honeytoken_triggers'})
         blocked_ip = next(i for i in overview['top_ips'] if i['ip']=='203.0.113.9')
         self.assertTrue(blocked_ip['blocked'])
         self.assertIn({'subject':'nobody@example.com','actor':'staff','failures':5},overview['top_subjects'])

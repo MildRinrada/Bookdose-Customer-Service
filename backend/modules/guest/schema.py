@@ -13,12 +13,12 @@ LINK_GONE = 'ลิงก์หมดอายุ ขอลิงก์ใหม
 
 
 def start_form(body):
-    """(name, remember) of a new chat, after the spam checks: the hidden 'website' field must stay empty and the form
+    """(name, remember) of a new chat, after the spam checks: the hidden 'website' field (or 'company_website') must stay empty and the form
     must have been open at least 2 seconds (started_ms: when it was shown, in milliseconds since 1970). A clock
     clearly ahead of the server's cannot be judged and passes."""
-    website = body.get('website','')
+    hidden = (body.get('website',''),body.get('company_website',''))
     started = body.get('started_ms')
-    require(website in ('',None) and type(started) in (int,float),SPAM)
+    require(all(value in ('',None) for value in hidden) and type(started) in (int,float),SPAM)
     elapsed = time.time()*1000-started
     require(elapsed>=MIN_FORM_MS or elapsed<-60000,SPAM)
     remember = body.get('remember',True)

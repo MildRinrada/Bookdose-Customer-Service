@@ -6,6 +6,7 @@ import { TextArea, TextField } from '@/components/ui/fields';
 import { filesOf } from '@/components/ui/FileInput';
 import { FilterPill } from '@/components/ui/filters';
 import { Form } from '@/components/ui/Form';
+import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { setGuestCredentials } from '@/lib/api/client';
@@ -15,8 +16,8 @@ import { startGuestChat } from '../api';
 import type { GuestOverview } from '../types';
 
 /* Starting a chat without an account: who the team is (welcome, reply promise, the AI note), the topic chips, the
-   message with files, an optional name and the "public computer" choice. A hidden honeypot and the time the form
-   appeared keep simple bots out (the server refuses a filled honeypot or a form sent within 2 seconds). */
+   message with files, an optional name and the "public computer" choice. The hidden box (HoneypotField) and the time the
+   form appeared keep simple bots out (the server refuses a filled honeypot or a form sent within 2 seconds). */
 
 function Intro({ info, orgName }: { info: PublicOrgInfo | undefined; orgName: string }) {
   const promise = replyPromise({ response_hours: Number(info?.response_hours) || undefined });
@@ -69,7 +70,7 @@ export function GuestStartForm({
           name: values.name ?? '',
           // A visitor this browser already remembers keeps its own choice (changed in "ติดตามแชทนี้").
           remember: known ? known.remember : !publicComputer,
-          website: values.website ?? '',
+          website: honeypotValue(values),
           started_ms: shownAt,
           attachments,
         });
@@ -143,11 +144,7 @@ export function GuestStartForm({
         <FilePills files={files} onRemove={remove} />
         <FileProblem problem={problem} />
       </div>
-      {/* People never see or reach this box; a bot that fills every field gives itself away. */}
-      <div className="guest-honeypot" aria-hidden="true">
-        <label htmlFor="guest-website">เว็บไซต์</label>
-        <input id="guest-website" name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
-      </div>
+      <HoneypotField />
       {!known && (
         <label className="check guest-public">
           <input type="checkbox" name="public_computer" />

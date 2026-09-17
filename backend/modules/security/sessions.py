@@ -27,6 +27,9 @@ def settings(cd):
         stored = saved.get(group) if isinstance(saved,dict) else None
         if not isinstance(stored,dict):
             continue
+        if group=='honeypot':
+            _merge_honeypot(values,stored)
+            continue
         for name,value in values.items():
             if isinstance(value,dict):
                 inner = stored.get(name)
@@ -37,6 +40,24 @@ def settings(cd):
             elif type(stored.get(name)) is int:
                 values[name] = stored[name]
     return merged
+
+
+def _merge_honeypot(values, stored):
+    """The saved honeypot settings over the defaults, value by value (a value of the wrong type keeps its default)."""
+    for name in ('paths_enabled','forms_enabled'):
+        if type(stored.get(name)) is bool:
+            values[name] = stored[name]
+    paths = stored.get('custom_api_paths')
+    if isinstance(paths,list):
+        values['custom_api_paths'] = [{'path':p['path'],'match':p['match']} for p in paths
+                                      if isinstance(p,dict) and isinstance(p.get('path'),str) and p.get('match') in ('exact','prefix')]
+    for group in ('block_on_path_hits','block_on_honeytoken'):
+        inner = stored.get(group)
+        if not isinstance(inner,dict):
+            continue
+        for field,default in values[group].items():
+            if type(inner.get(field)) is type(default) and (field!='duration' or inner[field] in model.BLOCK_DURATIONS):
+                values[group][field] = inner[field]
 
 
 def save(cd, values):

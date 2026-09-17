@@ -171,8 +171,13 @@ def register(cd, body, client=None):
     same whether or not the email has an account (the owner of an existing account is told by email instead), so the
     form cannot be used to find out who is a customer.
     Without it: the account is created and signed in at once, marked as not verified; returns the session token."""
+    from backend.modules.security import traps
     form = schema.signup_form(body)
     org = _signup_org(cd,body)
+    if traps.form_trapped(body):
+        # The hidden form field was filled: nothing is created or sent; the answer is the usual "link sent".
+        traps.record_form(client,'customer_register',form['email'])
+        return None
     if not email_ready(cd):
         return _register_unverified(cd,form,org,client)
     D.begin(cd)
@@ -293,9 +298,12 @@ def log_in(cd, body, client=None):
     of an account that exists; an unknown email records nothing there, so the log cannot be filled by guessing. Wrong
     passwords count towards the lock of the typed email (security.lockout) either way; while it is locked every
     attempt is answered 429 before the password is looked at."""
-    from backend.modules.security import lockout
+    from backend.modules.security import lockout, traps
     email,password = schema.login_form(body)
     key = lockout.key_for('customer',email)
+    if traps.form_trapped(body):
+        traps.record_form(client,'customer_sign_in',email)
+        lockout.refuse_trapped(key,WRONG_LOGIN,password)
     lockout.check(key,client)
     account = repository.find_by_email(cd,email)
     correct = password_ok(password,account['password'] if account else DUMMY_PASSWORD_HASH)
@@ -370,7 +378,11 @@ def forgot(cd, body, client=None):
     """Email a reset link when the email has an account; the answer is the same either way."""
     require(email_ready(cd),'ยังส่งอีเมลไม่ได้ กรุณาติดต่อองค์กรผ่านช่องทางอื่น',503)
     email = schema.email_only(body)
-    from backend.modules.security import events
+    from backend.modules.security import events, traps
+    if traps.form_trapped(body):
+        # The hidden form field was filled: no link is sent; the answer is the usual one.
+        traps.record_form(client,'customer_forgot',email)
+        return
     events.record('password_reset_requested',actor='customer',subject=email,ip=(client or {}).get('ip',''),
                   user_agent=(client or {}).get('user_agent',''))
     D.begin(cd)

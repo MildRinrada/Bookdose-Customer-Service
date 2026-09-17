@@ -21,7 +21,7 @@ def cookie(req):
 
 def register(req):
     limited(('register',req.ip),5,900)
-    service.request_registration(cookie(req),req.body,resend=False)
+    service.request_registration(cookie(req),req.body,resend=False,client=client(req))
     return req.send(202,{'ok':True,'verification_required':True})
 
 

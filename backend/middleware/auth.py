@@ -16,6 +16,10 @@ def signed_in_session(req, optional=False):
     from backend.modules.security import sessions
     session,reason = load_session(req.cd,req.headers.get('Cookie',''),client(req))
     req.session_expired = reason
+    if session and session['platform_admin']:
+        # A platform admin's address is never blocked by a trap (security/traps.py).
+        from backend.modules.security import traps
+        traps.note_admin(getattr(req,'ip',''),session['token'])
     if not optional:
         if reason:
             raise sessions.expired_error(reason)

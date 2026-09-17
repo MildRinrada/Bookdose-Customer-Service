@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { ErrorState, InitialLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { useBoot } from '@/lib/session';
 import { customerForgot, customerReset, customerVerify } from './api';
@@ -170,7 +171,7 @@ function ForgotForm({ mailReady }: { mailReady: boolean }) {
     <Form
       className="card-body"
       onSubmit={async (values) => {
-        await customerForgot(values.email);
+        await customerForgot(values.email, { website: honeypotValue(values) });
         setSent(values.email);
       }}
     >
@@ -180,6 +181,7 @@ function ForgotForm({ mailReady }: { mailReady: boolean }) {
       <h1>ลืมรหัสผ่าน</h1>
       <p>กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ให้</p>
       <TextField label="อีเมลที่ใช้สมัคร" name="email" type="email" max={254} autoFocus />
+      <HoneypotField />
       <button className="btn primary customer-submit" type="submit">
         <Icon name="send" />
         ส่งลิงก์ตั้งรหัสผ่านใหม่

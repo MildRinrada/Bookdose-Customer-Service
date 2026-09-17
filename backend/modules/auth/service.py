@@ -183,8 +183,12 @@ def log_in(cookie_header, body, client=None):
     """A password sign-in. Wrong passwords count towards the lock of the typed email (security.lockout), whether or
     not it has an account; while it is locked every attempt is answered 429 before the password is looked at."""
     from backend.modules.security import lockout
+    from backend.modules.security import traps
     email,password = schema.login_form(body)
     key = lockout.key_for('staff',email)
+    if traps.form_trapped(body):
+        traps.record_form(client,'staff_sign_in',email)
+        lockout.refuse_trapped(key,'อีเมลหรือรหัสผ่านไม่ถูกต้อง',password)
     lockout.check(key,client)
     with SETUP_LOCK, D.control() as db:
         user = repository.find_user_by_email(db,email)
@@ -211,9 +215,13 @@ def sign_in(cd, cookie_header, body, client=None):
     accounts of that email are the ones told about a new lock. A customer's second step then counts as on
     POST /api/customer/login (customer_security.finish_challenge)."""
     from backend.modules.customers import repository as accounts, service as customers
-    from backend.modules.security import lockout
+    from backend.modules.security import lockout, traps
     email,password = schema.login_form(body)
     key = lockout.key_for('signin',email)
+    if traps.form_trapped(body):
+        # The hidden field of the sign-in page was filled: a bot. Refused like a wrong password, never counted.
+        traps.record_form(client,'sign_in',email)
+        lockout.refuse_trapped(key,customers.WRONG_LOGIN,password,hashes=2)
     lockout.check(key,client)
     user = repository.find_user_by_email(cd,email)
     account = accounts.find_by_email(cd,email)
@@ -249,16 +257,26 @@ def _replace_session(db, cookie_header, user_id):
 
 
 # Self-registration
-def request_registration(cookie_header, body, resend):
-    """Record a sign-up (or a resend) and email the verification link."""
+def request_registration(cookie_header, body, resend, client=None):
+    """Record a sign-up (or a resend) and email the verification link. A sign-up whose hidden form field was filled
+    (security.traps) gets the same checks and the same answer, and nothing is recorded or sent."""
+    from backend.modules.security import traps
+    trapped = None
     with SETUP_LOCK, D.control() as db:
         D.begin(db)
         _require_registration_open(db,cookie_header)
-        if resend:
+        if not resend and traps.form_trapped(body):
+            trapped = schema.registration_form(body)['email']
+            require(platform.registration_ready(db), 'ยังไม่เปิดรับสมัคร กรุณาให้ผู้ดูแลแพลตฟอร์มตั้งค่าอีเมลยืนยันก่อน',503)
+            task = None
+        elif resend:
             task = _prepare_verification(db,email=schema.registration_email(body))
         else:
             task = _prepare_verification(db,applicant=schema.registration_form(body))
         db.commit()
+    if trapped:
+        # Recorded once the write transaction is over (the event has its own connection).
+        traps.record_form(client,'staff_register',trapped)
     # SMTP may take seconds; release both the write transaction and setup lock first.
     _send_verification(task)
 

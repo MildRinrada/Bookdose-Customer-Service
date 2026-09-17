@@ -9,6 +9,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, InitialLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { useToast } from '@/components/ui/Toast';
 import { widgetPath } from '@/features/guest/api';
 import type { WidgetInfo } from '@/features/guest/types';
@@ -201,7 +202,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
       // email together and says which one signed in.
       let result;
       try {
-        result = await signIn(values.email, values.password);
+        result = await signIn(values.email, values.password, { website: honeypotValue(values) });
       } catch (error) {
         if (lock.catchLock(error)) return;
         throw error;
@@ -226,6 +227,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
         password_confirm: values.password_confirm,
         organization: values.organization,
         slug: values.slug,
+        website: honeypotValue(values),
       });
       rememberRegistrationEmail(values.email);
       router.push('/check-email');
@@ -251,6 +253,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
       phone: values.phone || '',
       consent: (form.elements.namedItem('consent') as HTMLInputElement).checked,
       ...(signupOrg ? { org: signupOrg } : {}),
+      website: honeypotValue(values),
     });
     // Without email set up the account is ready at once.
     if (result.signed_in) {
@@ -343,6 +346,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   <TextField label="อีเมล" name="email" type="email" placeholder="name@example.com" max={254} />
                   <TextField label="ตั้งรหัสผ่าน (อย่างน้อย 10 ตัวอักษร)" name="password" type="password" max={200} />
                   <TextField label="เบอร์โทรศัพท์ (ไม่บังคับ)" name="phone" type="tel" max={20} required={false} placeholder="เช่น 081-234-5678" />
+                  <HoneypotField />
                   <details className="auth-privacy">
                     <summary>ประกาศความเป็นส่วนตัว (อ่านก่อนสมัคร)</summary>
                     <PrivacyNotice organization={supportName} />
@@ -412,6 +416,8 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   <SlugField defaultValue={setup ? 'bookdose' : ''} />
                 </>
               )}
+              {/* Sign-in and organization sign-up are open to anyone; the first-time setup is not. */}
+              {!setup && <HoneypotField />}
               {setup && boot.setup_token_required && (
                 <TextField label="รหัสตั้งค่าระบบจากผู้ดูแลโฮสต์" name="setup_token" type="password" max={200} />
               )}

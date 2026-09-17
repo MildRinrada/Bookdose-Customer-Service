@@ -25,6 +25,12 @@ const toChoices = (labels: Record<string, string>) => Object.entries(labels).map
 export function EventsLog() {
   const [filters, setFilters] = useUiState<SecurityEventFilters>('security:events', {});
   const [cursors, setCursors] = useState<string[]>(['']);
+  // Filters set from elsewhere on the page (the trap events card) start from the newest page too.
+  const [seenFilters, setSeenFilters] = useState(filters);
+  if (seenFilters !== filters) {
+    setSeenFilters(filters);
+    setCursors(['']);
+  }
   const tenants = useApi<TenantsPage>(TENANTS_PATH);
   const last = useApi<SecurityEventsPage>(eventsPath(filters, cursors[cursors.length - 1]));
   const first = useApi<SecurityEventsPage>(eventsPath(filters));
@@ -194,7 +200,7 @@ function detailValue(value: unknown): string {
 }
 
 /** The drawer behind a row: every field, the detail the server kept, and the IP's actions. */
-function EventDetail({ event: e, onFilterIp }: { event: SecurityEvent; onFilterIp: (ip: string) => void }) {
+export function EventDetail({ event: e, onFilterIp }: { event: SecurityEvent; onFilterIp: (ip: string) => void }) {
   const { openModal, closeModal } = useDialogs();
   const detail: Array<[string, unknown]> =
     e.detail && typeof e.detail === 'object' ? Object.entries(e.detail) : e.detail ? [['detail', e.detail]] : [];

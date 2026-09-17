@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
+import { FILE_LINK_PATH, isDecoyPagePath, TRAP_API_PATH } from '@/lib/traps';
 
 /* Runs before every request.
    - /api/*: forwarded to the Python server by the rewrite in next.config.ts. Here it gets the headers the Python
@@ -8,7 +9,11 @@ import { NextResponse, type NextRequest } from 'next/server';
      websites for the chat widget (GET /api/public/<org>/widget, remembered for a minute), or 'none' when the widget
      is off. next.config.ts leaves X-Frame-Options off that one path for the same reason. connect-src names this
      host's ws:/wss: as well, for the live updates socket (src/lib/realtime.ts); older browsers do not count a
-     WebSocket to the same host as 'self'. */
+     WebSocket to the same host as 'self'.
+   - Traps (docs/HONEYPOT-DESIGN.md, src/lib/traps.ts): a decoy page path and a /files/<token> link are answered
+     exactly as they would be anyway (the 404 page / the "file moved" page, same headers); the visit is reported to
+     the API in the background (POST /api/trap) with the same trusted address API requests carry, never an address
+     the browser claims. */
 
 const DEV = process.env.NODE_ENV === 'development';
 const RAW_API_URL = process.env.BOOKDOSE_API_URL ?? 'http://127.0.0.1:8787';
@@ -23,15 +28,22 @@ const ANCESTORS_TTL_MS = 60_000;
 const ANCESTORS_FAILED_TTL_MS = 10_000;
 const ancestorsCache = new Map<string, { value: string; until: number }>();
 
-export async function proxy(request: NextRequest) {
-  return request.nextUrl.pathname.startsWith('/api/') ? toApi(request) : page(request);
+// Marks the web app's own trap report; a browser's request never carries it past this proxy.
+const TRAP_HEADER = 'x-bookdose-trap';
+
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (request.nextUrl.pathname.startsWith('/api/')) return toApi(request);
+  const response = await page(request);
+  if (trapVisit(request)) event.waitUntil(reportTrap(request));
+  return response;
 }
 
-function toApi(request: NextRequest) {
-  const headers = new Headers(request.headers);
-  // Only this app may speak for the browser; whatever the browser itself sent under these names is dropped.
+/** Set what lets the Python server believe this app about the browser: the proxy secret (when configured) and the
+    address the load balancer in front vouches for. Whatever the browser sent under these names is dropped. */
+function vouch(headers: Headers, request: NextRequest) {
   headers.delete('x-bookdose-proxy');
   headers.delete('x-bookdose-client-ip');
+  headers.delete(TRAP_HEADER);
   const secret = process.env.BOOKDOSE_PROXY_SECRET;
   if (secret) headers.set('x-bookdose-proxy', secret);
   if (process.env.BOOKDOSE_TRUST_FORWARDED_FOR === '1') {
@@ -39,7 +51,48 @@ function toApi(request: NextRequest) {
     const address = request.headers.get('x-forwarded-for')?.split(',').pop()?.trim();
     if (address) headers.set('x-bookdose-client-ip', address);
   }
+}
+
+function toApi(request: NextRequest) {
+  const headers = new Headers(request.headers);
+  // Only this app may speak for the browser.
+  vouch(headers, request);
   return NextResponse.next({ request: { headers } });
+}
+
+/** A page request that touches a trap: a decoy path, or a document request for a shared-file link. */
+function trapVisit(request: NextRequest): boolean {
+  const path = request.nextUrl.pathname;
+  if (isDecoyPagePath(path)) return true;
+  // Opening the link counts once; the RSC data request of a client-side navigation or prefetch does not count again.
+  return (
+    FILE_LINK_PATH.test(path) &&
+    !request.nextUrl.searchParams.has('_rsc') &&
+    !request.headers.has('rsc') &&
+    !request.headers.has('next-router-prefetch')
+  );
+}
+
+/** POST /api/trap {path, method, user_agent} straight to the Python server, after the answer has gone. Failures are
+    swallowed: the visitor's answer never depends on it. */
+async function reportTrap(request: NextRequest) {
+  const headers = new Headers({
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-forwarded-host': request.headers.get('host') ?? request.nextUrl.host,
+  });
+  vouch(headers, request);
+  headers.set(TRAP_HEADER, '1');
+  const body = JSON.stringify({
+    path: request.nextUrl.pathname.slice(0, 500),
+    method: request.method.slice(0, 16),
+    user_agent: (request.headers.get('user-agent') ?? '').slice(0, 300),
+  });
+  try {
+    await fetch(`${API_URL}${TRAP_API_PATH}`, { method: 'POST', headers, body, cache: 'no-store', signal: AbortSignal.timeout(5000) });
+  } catch {
+    // The API did not answer; the hit is lost, the visitor sees nothing different.
+  }
 }
 
 /** The websites allowed to frame the organization's embedded chat, as a frame-ancestors source list. */

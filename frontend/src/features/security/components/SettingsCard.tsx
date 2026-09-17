@@ -28,8 +28,8 @@ export function SettingsCard() {
       {settings.error ? (
         <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />
       ) : settings.data ? (
-        // A fresh answer redraws the fields with the saved values.
-        <SettingsForm key={JSON.stringify(settings.data)} value={settings.data} />
+        // A fresh answer redraws the fields with the saved values (the honeypot part has its own card and form).
+        <SettingsForm key={JSON.stringify([settings.data.sessions, settings.data.alerts])} value={settings.data} />
       ) : (
         <PageLoading />
       )}

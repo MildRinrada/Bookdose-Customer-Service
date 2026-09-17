@@ -9,18 +9,22 @@ import { useUiState } from '@/lib/ui-state';
 import { overviewPath, SECURITY_PREFIX } from './api';
 import { AlertsBanner } from './components/Alerts';
 import { EventsLog } from './components/EventsLog';
+import { HoneypotSettingsCard } from './components/HoneypotSettingsCard';
+import { HoneytokensCard } from './components/Honeytokens';
 import { IpBlocksCard } from './components/IpBlocks';
 import { LocksCard } from './components/Locks';
 import { RevokeSessionsCard } from './components/RevokeSessionsCard';
 import { SecurityChart } from './components/SecurityChart';
 import { SettingsCard } from './components/SettingsCard';
 import { TopIpsCard, TopSubjectsCard } from './components/TopTables';
+import { TrapEventsCard } from './components/TrapEvents';
 import { cardLabels, rangeLabels } from './labels';
 import type { SecurityOverview, SecurityRange } from './types';
 
 /* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/SECURITY-DESIGN.md §3–4): open
    alerts, the numbers and chart of the chosen range, the IPs and accounts under attack, locked accounts, the events
-   log, the IP block list, ending an account's sessions, and the security settings. The overview, alerts and locks
+   log, the IP block list, ending an account's sessions, "กับดัก" (honeytokens, the newest trap events and the honeypot
+   settings; docs/HONEYPOT-DESIGN.md §5), and the security settings. The overview, alerts and locks
    refresh themselves every minute (plain GETs: they never count as the admin's activity). Markup: pages/security.css. */
 
 export function SecurityScreen() {
@@ -34,6 +38,10 @@ export function SecurityScreen() {
           <p>การเข้าสู่ระบบที่ผิดปกติ คำขอที่ถูกปฏิเสธ และการตั้งค่าเซสชันของทุกองค์กร</p>
         </div>
         <div className="flex security-heading-actions">
+          <a className="btn subtle" href="#security-traps">
+            <Icon name="shield" />
+            กับดัก
+          </a>
           <div className="filter-pills security-range" role="group" aria-label="ช่วงเวลา">
             {(Object.keys(rangeLabels) as SecurityRange[]).map((value) => (
               <FilterPill key={value} value={value} label={rangeLabels[value]} pressed={range === value} onClick={() => setRange(value)} />
@@ -53,6 +61,7 @@ export function SecurityScreen() {
         <IpBlocksCard />
         <RevokeSessionsCard />
       </div>
+      <Traps />
       <SettingsCard />
     </div>
   );
@@ -117,6 +126,23 @@ function Overview({ range }: { range: SecurityRange }) {
           href={cards.open_alerts ? '#security-alerts' : '#security-settings'}
           urgent={cards.open_alerts > 0}
         />
+        <StatCard
+          label={cardLabels.honeytoken_triggers}
+          value={number(cards.honeytoken_triggers ?? 0)}
+          icon="bolt"
+          color={cards.honeytoken_triggers ? 'red' : 'green'}
+          foot={`ใน ${span} ล่าสุด`}
+          href="#security-trap-events"
+          urgent={Boolean(cards.honeytoken_triggers)}
+        />
+        <StatCard
+          label={cardLabels.honeypot_hits}
+          value={number(cards.honeypot_hits ?? 0)}
+          icon="search"
+          color={cards.honeypot_hits ? 'amber' : 'green'}
+          foot={`ใน ${span} ล่าสุด`}
+          href="#security-trap-events"
+        />
       </div>
       <section className="card security-card" aria-labelledby="security-chart-title">
         <div className="card-header">
@@ -135,5 +161,24 @@ function Overview({ range }: { range: SecurityRange }) {
         <TopSubjectsCard rows={top_subjects} />
       </div>
     </>
+  );
+}
+
+/** "กับดัก": honeytokens, the newest trap events and the honeypot settings. */
+function Traps() {
+  return (
+    <section className="security-section security-traps" id="security-traps" aria-labelledby="security-traps-title">
+      <div className="security-part-head">
+        <h2 id="security-traps-title">กับดัก</h2>
+        <p>จับผู้บุกรุก สแกนเนอร์ บอท และคนในที่แอบดูข้อมูล ตั้งแต่ครั้งแรกที่แตะสิ่งที่ผู้ใช้จริงไม่มีวันแตะ ผู้ใช้จริงมองไม่เห็นและไม่ได้รับผลกระทบ</p>
+      </div>
+      <HoneytokensCard />
+      <div className="security-section">
+        <TrapEventsCard />
+      </div>
+      <div className="security-section">
+        <HoneypotSettingsCard />
+      </div>
+    </section>
   );
 }

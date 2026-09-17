@@ -13,6 +13,10 @@ export type SecurityOverview = {
     origin_csrf_rejected: number;
     cross_tenant_denied: number;
     open_alerts: number;
+    /** Decoy path and hidden form field hits in the range (docs/HONEYPOT-DESIGN.md §4). */
+    honeypot_hits?: number;
+    /** Honeytoken triggers in the range. */
+    honeytoken_triggers?: number;
   };
   /** Hourly buckets for 24h, 6-hourly for 7d. */
   series: Array<{ at: string; failed_logins: number; rate_limited: number; rejected: number }>;
@@ -75,6 +79,8 @@ export type BlockDuration = '1h' | '24h' | '7d' | 'permanent';
 
 /** GET / POST /api/platform/security/settings */
 export type SecuritySettings = {
+  /** Honeypots (docs/HONEYPOT-DESIGN.md §3); a save that leaves it out keeps it as it is. */
+  honeypot?: HoneypotSettings;
   sessions: {
     staff: { idle_minutes: number; absolute_hours: number };
     platform: { idle_minutes: number; absolute_hours: number };
@@ -88,3 +94,36 @@ export type SecuritySettings = {
     webhook_failures_10m: number;
   };
 };
+
+/* Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md) */
+
+export type DecoyPathMatch = 'exact' | 'prefix';
+
+export type HoneypotSettings = {
+  paths_enabled: boolean;
+  forms_enabled: boolean;
+  custom_api_paths: Array<{ path: string; match: DecoyPathMatch }>;
+  block_on_path_hits: { enabled: boolean; hits: number; window_minutes: number; duration: BlockDuration };
+  block_on_honeytoken: { enabled: boolean; duration: BlockDuration };
+};
+
+export type HoneytokenKind = 'decoy_account' | 'api_key' | 'password' | 'link';
+
+/** A row of GET /api/platform/security/honeytokens. `preview`: the first characters of the secret, never all of it. */
+export type Honeytoken = {
+  id: string;
+  kind: HoneytokenKind | (string & {});
+  label: string;
+  placed_at_note: string | null;
+  decoy_email: string | null;
+  preview: string | null;
+  enabled: boolean;
+  created_at: string;
+  created_by: string | null;
+  trigger_count: number;
+  last_triggered_at: string | null;
+  last_ip: string | null;
+};
+
+/** 201 of POST /api/platform/security/honeytokens: the secret (key / password / full link / decoy email) is shown once. */
+export type HoneytokenCreated = { token: Honeytoken; secret: string };

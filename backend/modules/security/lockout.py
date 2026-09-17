@@ -74,6 +74,24 @@ def locked_error(seconds):
                     headers={'Retry-After':str(seconds)})
 
 
+def refuse_trapped(key, message, password, hashes=1):
+    """A sign-in whose hidden form field was filled (security.traps): answered like a wrong password - 429 while the
+    email is locked, else 401 after the same password work - but never counted towards the lock, so a bot cannot lock
+    real users out through the trap."""
+    from backend.utils.security import password_ok
+    with D.control() as cd:
+        left = max(remaining_seconds(repository.failure(cd,k)) for k in (key,*related_keys(key)))
+    if left:
+        raise locked_error(left)
+    for _ in range(hashes):
+        password_ok(password,DUMMY_PASSWORD_HASH)
+    raise APIError(401,message)
+
+
+# The shape of a real password hash, so a trapped sign-in takes as long as a wrong password.
+DUMMY_PASSWORD_HASH = 'pbkdf2_sha256$600000$'+'00'*16+'$'+'00'*32
+
+
 def check(key, client=None, actor=None, tenant_id=None):
     """Raise the 429 while the key, or one of its related keys (related_keys), is locked; retry_after is the longest
     wait. The refused attempt is recorded once as a failed sign-in (it is not counted towards the lock)."""

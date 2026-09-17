@@ -1,4 +1,4 @@
-import type { BlockDuration, SecurityRange, SecuritySettings } from './types';
+import type { BlockDuration, DecoyPathMatch, HoneytokenKind, SecurityRange, SecuritySettings } from './types';
 
 /* Every Thai word of the platform security page (docs/SECURITY-DESIGN.md §4): event kinds, levels, who, alert rules,
    durations, chart series and the settings with their bounds. */
@@ -23,6 +23,10 @@ export const eventKindLabels: Record<string, string> = {
   admin_unlock: 'ผู้ดูแลปลดล็อกบัญชี',
   admin_ip_block: 'ผู้ดูแลเปลี่ยนรายการบล็อก IP',
   security_settings_changed: 'เปลี่ยนการตั้งค่าความปลอดภัย',
+  honeypot_path: 'เปิดเส้นทางกับดัก',
+  honeypot_form: 'กรอกช่องซ่อนในฟอร์ม (บอท)',
+  honeytoken_triggered: 'มีการใช้กับดัก (Honeytoken)',
+  trap_ip_block: 'บล็อก IP อัตโนมัติจากกับดัก',
 };
 
 export const eventKindLabel = (kind: string) => eventKindLabels[kind] ?? kind;
@@ -46,6 +50,7 @@ export const alertRuleLabels: Record<string, string> = {
   locks: 'บัญชีถูกล็อกพร้อมกันจำนวนมาก',
   ip_rate_limited: 'IP เดียวถูกจำกัดคำขอจำนวนมาก',
   webhook_failures: 'ลายเซ็น Webhook ไม่ถูกต้องต่อเนื่อง',
+  honeytoken: 'มีการใช้กับดัก (Honeytoken)',
 };
 
 /** Rule ids may carry their window (e.g. ip_failed_logins_10m): matched by the longest known prefix. */
@@ -71,6 +76,8 @@ export const cardLabels = {
   origin_csrf_rejected: 'ปฏิเสธ Origin / CSRF',
   cross_tenant_denied: 'เข้าถึงข้ามองค์กร',
   open_alerts: 'การแจ้งเตือนที่เปิดอยู่',
+  honeypot_hits: 'บอทติดกับดัก',
+  honeytoken_triggers: 'กับดัก Honeytoken ทำงาน',
 } as const;
 
 export const detailKeyLabels: Record<string, string> = {
@@ -97,6 +104,18 @@ export const detailKeyLabels: Record<string, string> = {
   expires_at: 'หมดอายุ',
   count: 'จำนวน',
   rule: 'กฎ',
+  form: 'ฟอร์ม',
+  token_id: 'รหัสกับดัก',
+  kind: 'ชนิด',
+  label: 'ชื่อกับดัก',
+  where: 'พบที่',
+  test: 'ทดสอบ',
+  user_id: 'ผู้ใช้ที่เข้าสู่ระบบอยู่',
+  user_email: 'อีเมลผู้ใช้ที่เข้าสู่ระบบอยู่',
+  hits: 'จำนวนครั้ง',
+  window_minutes: 'ภายใน (นาที)',
+  check: 'การตรวจ',
+  trigger: 'สาเหตุ',
 };
 
 export type SessionActor = keyof SecuritySettings['sessions'];
@@ -125,3 +144,90 @@ export const alertSettingLabels: Record<keyof SecuritySettings['alerts'], { labe
   ip_rate_limited_10m: { label: 'ถูกจำกัดคำขอจาก IP เดียว', hint: 'ครั้งภายใน 10 นาที → เฝ้าระวัง' },
   webhook_failures_10m: { label: 'ลายเซ็น Webhook ไม่ถูกต้อง', hint: 'ครั้งภายใน 10 นาที → เฝ้าระวัง' },
 };
+
+/* Traps (docs/HONEYPOT-DESIGN.md) */
+
+/** The event kinds the traps record, in the order the trap events card lists its filters. */
+export const TRAP_EVENT_KINDS = ['honeytoken_triggered', 'honeypot_path', 'honeypot_form', 'trap_ip_block'] as const;
+
+/** Each honeytoken kind: its icon, Thai name, what sets it off, where to plant it and an example name. */
+export const honeytokenKinds: Record<HoneytokenKind, { icon: string; label: string; explain: string; plant: string; example: string }> = {
+  decoy_account: {
+    icon: 'users',
+    label: 'บัญชีล่อ',
+    explain: 'อีเมลที่ดูเหมือนบัญชีจริงแต่ไม่มีอยู่จริง ทำงานเมื่อมีคนพยายามเข้าสู่ระบบ ขอตั้งรหัสผ่านใหม่ หรือเชิญอีเมลนี้เข้าทีม',
+    plant: 'วางในไฟล์สำรองรายชื่อผู้ใช้ เอกสารส่งมอบระบบ หรือรายการบัญชีผู้ดูแลที่ไม่ควรหลุดออกไป',
+    example: 'เช่น บัญชีสำรองฝ่ายไอที',
+  },
+  api_key: {
+    icon: 'code',
+    label: 'คีย์ API ล่อ',
+    explain: 'คีย์ที่หน้าตาเหมือนคีย์ใช้งานจริง ทำงานเมื่อมีคำขอใดส่งคีย์นี้มา (header, cookie, query หรือ JSON)',
+    plant: 'วางในไฟล์ .env ตัวอย่าง โค้ดใน repository ส่วนตัว หรือ wiki ของทีมพัฒนา',
+    example: 'เช่น คีย์ API ใน .env.backup',
+  },
+  password: {
+    icon: 'lock',
+    label: 'รหัสผ่านล่อ',
+    explain: 'รหัสผ่านที่ทำงานเมื่อมีคนใช้เข้าสู่ระบบ ไม่ว่าจะกรอกอีเมลใด',
+    plant: 'วางในโน้ต "รหัสผ่านผู้ดูแลสำรอง" เอกสารภายใน หรือตัวจัดการรหัสผ่านที่ใช้ร่วมกัน',
+    example: 'เช่น รหัสผ่านผู้ดูแลสำรองในโน้ตทีม',
+  },
+  link: {
+    icon: 'link',
+    label: 'ลิงก์ไฟล์ล่อ',
+    explain: 'ลิงก์ที่ดูเหมือนไฟล์แชร์ ทำงานเมื่อมีคนเปิด (หน้าที่เปิดขึ้นบอกว่าไฟล์ถูกย้ายหรือหมดอายุ)',
+    plant: 'ตั้งชื่อให้น่าสนใจ แล้ววางในอีเมล โฟลเดอร์แชร์ หรือห้องแชทของทีม',
+    example: 'เช่น รหัสผ่านระบบสำรอง.pdf',
+  },
+};
+
+export const honeytokenKindLabel = (kind: string) => honeytokenKinds[kind as HoneytokenKind]?.label ?? kind;
+
+/** The forms that carry the hidden box (event detail `form`). */
+export const honeypotFormLabels: Record<string, string> = {
+  sign_in: 'หน้าเข้าสู่ระบบ',
+  staff_sign_in: 'เข้าสู่ระบบทีมงาน (API เดิม)',
+  customer_sign_in: 'เข้าสู่ระบบลูกค้า (API เดิม)',
+  staff_register: 'สมัครองค์กรใหม่',
+  customer_register: 'สมัครสมาชิกลูกค้า',
+  customer_forgot: 'ลูกค้าลืมรหัสผ่าน',
+  guest_chat: 'เริ่มแชทโดยไม่เข้าสู่ระบบ',
+};
+
+/** Where a honeytoken was seen (event detail `where`). */
+export const honeytokenWhereLabels: Record<string, string> = {
+  sign_in: 'การเข้าสู่ระบบ',
+  password_reset: 'การขอตั้งรหัสผ่านใหม่',
+  registration: 'การสมัครบัญชี',
+  invite: 'การเชิญ/เพิ่มสมาชิก',
+  authorization: 'header Authorization',
+  x_api_key: 'header X-API-Key',
+  cookie: 'cookie',
+  query: 'พารามิเตอร์ใน URL',
+  json_body: 'ข้อมูล JSON ที่ส่งมา',
+  link: 'การเปิดลิงก์',
+  test: 'ปุ่มทดสอบ',
+};
+
+export const decoyMatchLabels: Record<DecoyPathMatch, string> = { exact: 'ตรงทั้งเส้นทาง', prefix: 'ขึ้นต้นด้วย' };
+
+/** The API's built-in decoy paths (backend/modules/security/model.py DECOY_API_PATHS), shown so a custom one is not a
+    repeat. The page ones are in src/lib/traps.ts. */
+export const BUILT_IN_API_DECOYS = [
+  '/api/admin',
+  '/api/v1/users',
+  '/api/users/export',
+  '/api/debug',
+  '/api/internal/config',
+  '/api/graphql',
+  '/api/swagger.json',
+  '/api/.env',
+] as const;
+
+export const MAX_CUSTOM_DECOYS = 50;
+
+/** A custom decoy: under /api/, lower case letters, digits and . _ ~ - (the server checks overlaps with real routes). */
+export const CUSTOM_DECOY_PATH = /^\/api(?:\/[a-z0-9._~-]+)+$/;
+
+export const PATH_HIT_BOUNDS = { hits: { min: 1, max: 1000 }, window_minutes: { min: 1, max: 1440 } } as const;

@@ -63,8 +63,8 @@ def insert_event(cd, at, kind, severity, actor, subject, tenant_id, ip, user_age
 def events_since(cd, since, kinds=None):
     if kinds:
         marks = ','.join('?'*len(kinds))
-        return rows(cd,f'SELECT at,kind,ip,subject,actor,count FROM security_events WHERE at>=? AND kind IN ({marks})',(since,*kinds))
-    return rows(cd,'SELECT at,kind,ip,subject,actor,count FROM security_events WHERE at>=?',(since,))
+        return rows(cd,f'SELECT at,kind,severity,ip,subject,actor,count FROM security_events WHERE at>=? AND kind IN ({marks})',(since,*kinds))
+    return rows(cd,'SELECT at,kind,severity,ip,subject,actor,count FROM security_events WHERE at>=?',(since,))
 
 
 def count_since(cd, kind, since, per_ip):
@@ -165,3 +165,61 @@ def delete_staff_sessions(cd, user_id):
 
 def delete_customer_sessions(cd, account_id):
     return cd.execute('DELETE FROM customer_sessions WHERE account_id=?',(account_id,)).rowcount
+
+
+# Honeytokens
+def honeytokens(cd):
+    return rows(cd,'SELECT * FROM honeytokens ORDER BY created_at DESC,id')
+
+
+def enabled_honeytokens(cd):
+    return rows(cd,'SELECT id,kind,label,secret_hash,lookup_prefix,decoy_email FROM honeytokens WHERE enabled=1')
+
+
+def honeytoken(cd, token_id):
+    return one(cd,'SELECT * FROM honeytokens WHERE id=?',(token_id,))
+
+
+def count_honeytokens(cd):
+    return cd.execute('SELECT COUNT(*) FROM honeytokens').fetchone()[0]
+
+
+def decoy_email_taken(cd, email):
+    return bool(one(cd,'''SELECT 1 FROM honeytokens WHERE decoy_email=? UNION ALL SELECT 1 FROM users WHERE lower(email)=?
+                          UNION ALL SELECT 1 FROM customer_accounts WHERE lower(email)=? LIMIT 1''',(email,email,email)))
+
+
+def insert_honeytoken(cd, token):
+    cd.execute('''INSERT INTO honeytokens(id,kind,label,placed_at_note,secret_hash,lookup_prefix,decoy_email,created_by,created_at,enabled)
+                  VALUES(:id,:kind,:label,:placed_at_note,:secret_hash,:lookup_prefix,:decoy_email,:created_by,:created_at,1)''',token)
+
+
+def update_honeytoken(cd, token_id, changes):
+    names = ','.join(f'{name}=?' for name in changes)
+    cd.execute(f'UPDATE honeytokens SET {names} WHERE id=?',(*[int(v) if isinstance(v,bool) else v for v in changes.values()],token_id))
+
+
+def delete_honeytoken(cd, token_id):
+    return cd.execute('DELETE FROM honeytokens WHERE id=?',(token_id,)).rowcount
+
+
+def note_trigger(cd, token_id, ip):
+    cd.execute('UPDATE honeytokens SET trigger_count=trigger_count+1,last_triggered_at=?,last_ip=? WHERE id=?',(now(),ip,token_id))
+
+
+def open_honeytoken_alert(cd, token_id, ip):
+    return one(cd,'''SELECT * FROM security_alerts WHERE rule='honeytoken' AND ip=? AND acknowledged_at IS NULL
+                     AND json_extract(detail,'$.token_id')=? ORDER BY id DESC LIMIT 1''',(ip,token_id))
+
+
+def bump_alert(cd, alert_id):
+    cd.execute('UPDATE security_alerts SET last_seen_at=?,count=count+1 WHERE id=?',(now(),alert_id))
+
+
+# Honeypots
+def hits_since(cd, kind, ip, since):
+    return cd.execute('SELECT COALESCE(SUM(count),0) FROM security_events WHERE ip=? AND at>=? AND kind=?',(ip,since,kind)).fetchone()[0]
+
+
+def block(cd, ip):
+    return one(cd,'SELECT * FROM ip_blocks WHERE ip=?',(ip,))

@@ -50,7 +50,8 @@ from backend.modules.org_links import routes as org_link_routes
 from backend.modules.organization import routes as organization_routes
 from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
-from backend.modules.security import blocks, events as security_events, routes as security_routes
+from backend.modules.security import blocks, events as security_events, routes as security_routes, traps
+from backend.modules.security.model import TRAP_PATH
 from backend.modules.tickets import routes as ticket_routes
 from backend.modules.trash import routes as trash_routes
 from backend.utils.dates import now
@@ -102,7 +103,10 @@ class Exchange:
             raise APIError(400,'ข้อมูลไม่ถูกต้อง')
         require(0<length<=MAX_JSON_BYTES,'ขนาดข้อมูลมากเกินไป',413)
         try:
-            body = json.loads(self.rfile.read(length))
+            raw = self.rfile.read(length)
+            # Kept for the honeytoken search of the body (security/traps.py); not a copy.
+            self.raw_json = raw
+            body = json.loads(raw)
         except (ValueError,UnicodeDecodeError):
             raise APIError(400,'ข้อมูล JSON ไม่ถูกต้อง')
         require(isinstance(body,dict),'ข้อมูลต้องเป็น JSON object')
@@ -120,6 +124,8 @@ def dispatch(req):
     req.guest, req.guest_stale, req.response_headers = None, None, {}
     # For the platform console: which part of the API answered (None for pages and files), status and time.
     req.area, req.status_sent, path, started = None, 0, '', time.perf_counter()
+    # Honeypot / honeytoken hits noticed on the way (security/traps.py), written after the answer.
+    req.traps = None
     try:
         parsed = urlsplit(req.path)
         req.query = parse_qs(parsed.query)
@@ -128,6 +134,8 @@ def dispatch(req):
         # A blocked address is refused before anything else.
         req.ip = request_ip(req)
         blocks.refuse_blocked(req.ip,(req.headers.get('User-Agent') or '')[:300])
+        # Decoy paths and planted API keys are only noted: the request goes on and is answered as it would be anyway.
+        traps.inspect_request(req,path)
         check_host_and_origin(req)
         route_request(req,path)
     except (ConnectionError,TimeoutError):
@@ -144,6 +152,8 @@ def dispatch(req):
                                          detail={'area':req.area or '','action':error.action})
         req.send(answer[0],{'error':answer[1],**getattr(error,'extra',{})},headers=getattr(error,'headers',None) or None)
     finally:
+        if req.traps:
+            traps.report(req)
         if req.area and req.status_sent:
             tenant = (req.ctx or {}).get('tenant_id') or (req.org or {}).get('id')
             monitor.record(req.area,req.status_sent,(time.perf_counter()-started)*1000,tenant)
@@ -175,6 +185,11 @@ def route_request(req, path):
     req.area = 'customer' if path.startswith(('/api/public/','/api/customer/')) else 'platform' if path.startswith('/api/platform') else 'staff'
     # GET carries no body; POST and PATCH must be JSON; a DELETE may carry a JSON body (for example {ip}).
     req.body = req.json_body() if req.command in ('POST','PATCH') or (req.command=='DELETE' and _has_json_body(req)) else {}
+    if req.body:
+        traps.inspect_body(req,path)
+    # The web app's report of a trap page visit; from anyone else this path is just another unknown path.
+    if path==TRAP_PATH and traps.trusted_report(req):
+        return traps.handle_report(req)
     if path.startswith('/api/public/'):
         return route_portal(req,path)
     if path.startswith('/api/customer/'):

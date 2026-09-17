@@ -181,15 +181,6 @@
   min-width: 10rem;
   justify-content: center;
 }
-/* The honeypot: off the screen, out of the tab order and hidden from screen readers. */
-.guest-honeypot {
-  position: absolute;
-  left: -10000px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
-
 /* "ติดตามแชทนี้": in the thread after the newest message, like the survey */
 #customer-thread>.guest-follow {
   max-width: min(44rem, 100%);

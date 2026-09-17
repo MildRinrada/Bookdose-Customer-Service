@@ -1,0 +1,127 @@
+import type { BlockDuration, SecurityRange, SecuritySettings } from './types';
+
+/* Every Thai word of the platform security page (docs/SECURITY-DESIGN.md §4): event kinds, levels, who, alert rules,
+   durations, chart series and the settings with their bounds. */
+
+export const eventKindLabels: Record<string, string> = {
+  login_failed: 'เข้าสู่ระบบไม่สำเร็จ',
+  login_locked: 'บัญชีถูกล็อกชั่วคราว',
+  login_after_lock: 'เข้าสู่ระบบได้หลังถูกล็อก',
+  twofa_failed: 'รหัสยืนยันสองขั้นตอนไม่ถูกต้อง',
+  password_reset_requested: 'ขอตั้งรหัสผ่านใหม่',
+  password_reset_completed: 'ตั้งรหัสผ่านใหม่สำเร็จ',
+  session_expired: 'เซสชันหมดเวลา',
+  sessions_revoked: 'ยุติเซสชันของบัญชี',
+  rate_limited: 'ถูกจำกัดจำนวนคำขอ',
+  csrf_rejected: 'ปฏิเสธคำขอ (CSRF ไม่ถูกต้อง)',
+  origin_rejected: 'ปฏิเสธคำขอ (Host / Origin ไม่ถูกต้อง)',
+  cross_tenant_denied: 'พยายามเข้าถึงข้อมูลองค์กรอื่น',
+  support_access: 'ผู้ดูแลแพลตฟอร์มเข้าช่วยดูแลองค์กร',
+  webhook_signature_failed: 'ลายเซ็น Webhook ไม่ถูกต้อง',
+  guest_link_invalid: 'ลิงก์ติดตามแชทไม่ถูกต้อง',
+  ip_blocked_request: 'คำขอจาก IP ที่ถูกบล็อก',
+  admin_unlock: 'ผู้ดูแลปลดล็อกบัญชี',
+  admin_ip_block: 'ผู้ดูแลเปลี่ยนรายการบล็อก IP',
+  security_settings_changed: 'เปลี่ยนการตั้งค่าความปลอดภัย',
+};
+
+export const eventKindLabel = (kind: string) => eventKindLabels[kind] ?? kind;
+
+export const severityLabels: Record<string, string> = { info: 'ข้อมูล', warning: 'เฝ้าระวัง', critical: 'วิกฤต' };
+
+export const actorLabels: Record<string, string> = {
+  staff: 'ทีมงานองค์กร',
+  platform: 'ผู้ดูแลแพลตฟอร์ม',
+  customer: 'ลูกค้า',
+  guest: 'ผู้เยี่ยมชม',
+  anonymous: 'ไม่ระบุตัวตน',
+};
+
+/** Whose lock a row of the locked list is: the shared sign-in page ('signin:<email>') besides the event actors. */
+export const lockActorLabels: Record<string, string> = { ...actorLabels, signin: 'หน้าเข้าสู่ระบบ (ทุกประเภทบัญชี)' };
+
+export const alertRuleLabels: Record<string, string> = {
+  ip_failed_logins: 'เข้าสู่ระบบไม่สำเร็จจาก IP เดียวจำนวนมาก',
+  platform_failed_logins: 'เข้าสู่ระบบไม่สำเร็จทั้งระบบจำนวนมาก',
+  locks: 'บัญชีถูกล็อกพร้อมกันจำนวนมาก',
+  ip_rate_limited: 'IP เดียวถูกจำกัดคำขอจำนวนมาก',
+  webhook_failures: 'ลายเซ็น Webhook ไม่ถูกต้องต่อเนื่อง',
+};
+
+/** Rule ids may carry their window (e.g. ip_failed_logins_10m): matched by the longest known prefix. */
+export function alertRuleLabel(rule: string): string {
+  const key = Object.keys(alertRuleLabels)
+    .filter((name) => rule === name || rule.startsWith(`${name}_`))
+    .sort((a, b) => b.length - a.length)[0];
+  return key ? alertRuleLabels[key] : rule;
+}
+
+export const rangeLabels: Record<SecurityRange, string> = { '24h': '24 ชม.', '7d': '7 วัน' };
+
+export const durationLabels: Record<BlockDuration, string> = { '1h': '1 ชั่วโมง', '24h': '24 ชั่วโมง', '7d': '7 วัน', permanent: 'ถาวร' };
+
+export const seriesLabels = { failed_logins: 'เข้าสู่ระบบล้มเหลว', rate_limited: 'ถูกจำกัดคำขอ', rejected: 'ถูกปฏิเสธ' } as const;
+
+export type SeriesKey = keyof typeof seriesLabels;
+
+export const cardLabels = {
+  failed_logins: 'เข้าสู่ระบบไม่สำเร็จ',
+  locked_now: 'บัญชีที่ถูกล็อกอยู่',
+  rate_limited: 'ถูกจำกัดคำขอ',
+  origin_csrf_rejected: 'ปฏิเสธ Origin / CSRF',
+  cross_tenant_denied: 'เข้าถึงข้ามองค์กร',
+  open_alerts: 'การแจ้งเตือนที่เปิดอยู่',
+} as const;
+
+export const detailKeyLabels: Record<string, string> = {
+  reason: 'เหตุผล',
+  area: 'ส่วนของระบบ',
+  path: 'เส้นทาง',
+  method: 'วิธีเรียก',
+  origin: 'Origin',
+  host: 'Host',
+  channel: 'ช่องทาง',
+  level: 'ระดับการล็อก',
+  locked_until: 'ล็อกถึง',
+  minutes: 'นาที',
+  revoked: 'จำนวนเซสชันที่ยุติ',
+  duration: 'ระยะเวลา',
+  changes: 'การเปลี่ยนแปลง',
+  by: 'ดำเนินการโดย',
+  tenant: 'องค์กร',
+  key: 'คีย์การล็อก',
+  account: 'บัญชี',
+  account_actor: 'กลุ่มของบัญชี',
+  action: 'การดำเนินการ',
+  blocked_ip: 'IP',
+  expires_at: 'หมดอายุ',
+  count: 'จำนวน',
+  rule: 'กฎ',
+};
+
+export type SessionActor = keyof SecuritySettings['sessions'];
+
+export const sessionActorLabels: Record<SessionActor, string> = {
+  staff: 'ทีมงานองค์กร',
+  platform: 'ผู้ดูแลแพลตฟอร์ม',
+  customer: 'ลูกค้า',
+};
+
+/* Bounds (§2): idle 5 minutes – 30 days, absolute 1 hour – 90 days, idle not longer than absolute. Customers are set
+   in whole days, so their idle limit starts at one day. */
+export const SESSION_BOUNDS = {
+  idle_minutes: { min: 5, max: 30 * 24 * 60 },
+  absolute_hours: { min: 1, max: 90 * 24 },
+  idle_days: { min: 1, max: 30 },
+  absolute_days: { min: 1, max: 90 },
+} as const;
+
+export const ALERT_BOUNDS = { min: 1, max: 100000 } as const;
+
+export const alertSettingLabels: Record<keyof SecuritySettings['alerts'], { label: string; hint: string }> = {
+  ip_failed_logins_10m: { label: 'เข้าสู่ระบบไม่สำเร็จจาก IP เดียว', hint: 'ครั้งภายใน 10 นาที → เฝ้าระวัง' },
+  platform_failed_logins_10m: { label: 'เข้าสู่ระบบไม่สำเร็จทั้งระบบ', hint: 'ครั้งภายใน 10 นาที → วิกฤต' },
+  locks_1h: { label: 'บัญชีถูกล็อก', hint: 'บัญชีภายใน 1 ชั่วโมง → วิกฤต' },
+  ip_rate_limited_10m: { label: 'ถูกจำกัดคำขอจาก IP เดียว', hint: 'ครั้งภายใน 10 นาที → เฝ้าระวัง' },
+  webhook_failures_10m: { label: 'ลายเซ็น Webhook ไม่ถูกต้อง', hint: 'ครั้งภายใน 10 นาที → เฝ้าระวัง' },
+};

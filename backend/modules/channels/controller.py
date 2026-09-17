@@ -23,11 +23,19 @@ def _raw_body(req):
     return raw
 
 
+def _signature_failed(req, channel, route_id):
+    """A webhook whose signature does not match: recorded as a security event (never the body)."""
+    from backend.modules.security import events
+    events.from_request(req,'webhook_signature_failed',detail={'channel':channel,'route':route_id,
+                        'signed':bool(req.headers.get('X-Line-Signature' if channel=='line' else 'X-Hub-Signature-256'))})
+
+
 def receive_line_webhook(req, route_id):
     raw = _raw_body(req)
     try:
         service.accept_line_webhook(route_id,raw,req.headers.get('X-Line-Signature',''))
     except PermissionError:
+        _signature_failed(req,'line',route_id)
         raise APIError(403,'ลายเซ็น Webhook ไม่ถูกต้อง') from None
     return req.send(200,{'ok':True})
 
@@ -42,6 +50,7 @@ def receive_facebook_webhook(req, route_id):
     try:
         facebook.accept_webhook(route_id,raw,req.headers.get('X-Hub-Signature-256',''))
     except PermissionError:
+        _signature_failed(req,'facebook',route_id)
         raise APIError(403,'ลายเซ็น Webhook ไม่ถูกต้อง') from None
     return req.send(200,{'ok':True})
 

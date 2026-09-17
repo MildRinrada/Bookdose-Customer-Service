@@ -5,16 +5,39 @@ import secrets
 from backend.utils.validation import require
 
 
+def client(req):
+    return {'ip':getattr(req,'ip','') or '','user_agent':(req.headers.get('User-Agent') or '')[:300]}
+
+
 def signed_in_session(req, optional=False):
-    """The staff session from the cookie; 401 unless optional."""
-    from backend.modules.auth.service import read_session
-    return read_session(req.cd,req.headers.get('Cookie',''),optional)
+    """The staff session from the cookie; 401 unless optional ({reason: idle|absolute} when it has just run out; with
+    optional, req.session_expired holds that reason instead)."""
+    from backend.modules.auth.service import load_session
+    from backend.modules.security import sessions
+    session,reason = load_session(req.cd,req.headers.get('Cookie',''),client(req))
+    req.session_expired = reason
+    if not optional:
+        if reason:
+            raise sessions.expired_error(reason)
+        require(session,'กรุณาเข้าสู่ระบบ',401)
+    return session
+
+
+def _csrf_refused(req, actor, subject, header):
+    from backend.modules.security import events
+    events.from_request(req,'csrf_rejected',actor=actor,subject=subject,detail={'header':header,'missing':not req.headers.get(header)})
+    require(False,'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
 
 
 def check_csrf(req):
-    """Every change must carry the CSRF token of the session."""
+    """Every change must carry the CSRF token of the session. A change that does is real use of the session: its idle
+    time starts again (reading never does)."""
     if req.command!='GET':
-        require(secrets.compare_digest(req.headers.get('X-CSRF-Token',''),req.session['csrf']),'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
+        if not secrets.compare_digest(req.headers.get('X-CSRF-Token',''),req.session['csrf']):
+            from backend.modules.security import events
+            _csrf_refused(req,events.staff_actor(req.session),req.session['email'],'X-CSRF-Token')
+        from backend.modules.auth.service import touch_session
+        touch_session(req.cd,req.session)
 
 
 def require_platform_admin(req):
@@ -33,11 +56,16 @@ def select_workspace(req):
 def customer_session(req):
     """The signed-in customer (session cookie, control database). A changing request must also carry the session's
     X-Customer-CSRF token."""
-    from backend.modules.customers.service import read_session
-    session = read_session(req.cd,req.headers.get('Cookie',''))
+    from backend.modules.customers.service import load_session, touch_session
+    from backend.modules.security import sessions
+    session,reason = load_session(req.cd,req.headers.get('Cookie',''),client(req))
+    if reason:
+        raise sessions.expired_error(reason)
     require(session,'กรุณาเข้าสู่ระบบบัญชีลูกค้า',401)
     if req.command!='GET':
-        require(secrets.compare_digest(req.headers.get('X-Customer-CSRF',''),session['csrf']),'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
+        if not secrets.compare_digest(req.headers.get('X-Customer-CSRF',''),session['csrf']):
+            _csrf_refused(req,'customer',session['email'],'X-Customer-CSRF')
+        touch_session(req.cd,session)
     return session
 
 
@@ -59,6 +87,15 @@ def guest_session(req):
     if service.touch(req.db,found) and found['device']['remember']:
         req.response_headers.update(controller.cookie_header(req,req.org['slug'],token,True))
     return found
+
+
+def refuse_stale_guest(req):
+    """403 for a guest cookie sent on a change without its X-Guest-CSRF (recorded as 'csrf_rejected')."""
+    if req.guest_stale:
+        from backend.modules.security import events
+        events.from_request(req,'csrf_rejected',actor='guest',tenant_id=req.org['id'],
+                            detail={'header':'X-Guest-CSRF','missing':not req.headers.get('X-Guest-CSRF')})
+        require(False,'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
 
 
 def require_role(*roles, message='เฉพาะผู้ดูแลองค์กร'):

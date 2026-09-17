@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS customer_resets (
 CREATE TABLE IF NOT EXISTS customer_sessions (
     token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, csrf TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT NOT NULL,
     id TEXT NOT NULL DEFAULT '', user_agent TEXT NOT NULL DEFAULT '', ip TEXT NOT NULL DEFAULT '',
-    last_seen_at TEXT NOT NULL DEFAULT ''
+    last_seen_at TEXT NOT NULL DEFAULT '', last_active_at TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS customer_orgs (
     account_id TEXT NOT NULL, tenant_id TEXT NOT NULL, joined_at TEXT NOT NULL, PRIMARY KEY(account_id,tenant_id)

@@ -18,9 +18,9 @@ def challenge_cookie(req, token):
             +('; Secure' if req.server.secure_cookies else '')}
 
 
-def _signed_in(req, token, status=200):
+def _signed_in(req, token, status=200, extra=None):
     signed_in(req,token)
-    return req.send(status,{'ok':True,'signed_in':True},headers=session_cookie(req,token,service.SESSION_SECONDS))
+    return req.send(status,{'ok':True,'signed_in':True,**(extra or {})},headers=session_cookie(req,token,service.cookie_max_age(req.cd)))
 
 
 def signed_in(req, token):
@@ -29,13 +29,14 @@ def signed_in(req, token):
     guest.after_sign_in(req.cd,token)
 
 
-def _finish(req, result, status=200):
+def finish(req, result, status=200, extra=None):
     """A proven password: signed in, or 200 {two_factor, methods} and the challenge cookie when the account asks
-    for a second step (POST /api/customer/login/verify finishes it)."""
+    for a second step (POST /api/customer/login/verify finishes it). extra: more fields of the answer (the shared
+    sign-in page's kind)."""
     if result.get('challenge'):
-        return req.send(200,{'ok':True,'two_factor':True,'methods':result['methods']},
+        return req.send(200,{'ok':True,'two_factor':True,'methods':result['methods'],**(extra or {})},
                         headers=challenge_cookie(req,result['challenge']))
-    return _signed_in(req,result['session'],status)
+    return _signed_in(req,result['session'],status,extra)
 
 
 def _limit(req, action, count):
@@ -43,8 +44,19 @@ def _limit(req, action, count):
 
 
 def account(req):
-    """Who is signed in; {'signed_in': False} for a visitor (the page asks on every load)."""
-    return req.send(200,service.account_view(service.read_session(req.cd,req.headers.get('Cookie',''))))
+    """Who is signed in; {'signed_in': False} for a visitor (the page asks on every load). A session that has just run
+    out answers 401 {reason} once (it is deleted). Reading it is not activity."""
+    from backend.modules.security import sessions
+    session,reason = service.load_session(req.cd,req.headers.get('Cookie',''),security.client_info(req))
+    if reason:
+        raise sessions.expired_error(reason)
+    return req.send(200,service.account_view(req.cd,session))
+
+
+def activity(req):
+    """POST /api/customer/activity: the page is really being used (the session check already moved last_active_at,
+    as for every change)."""
+    return req.send(200,service.session_times(req.cd,req.customer))
 
 
 def register(req):
@@ -70,19 +82,19 @@ def verify(req):
 def log_in(req):
     """Signed in, or 200 {two_factor: true} when the account has two-factor sign-in on."""
     _limit(req,'customer-login',15)
-    return _finish(req,service.log_in(req.cd,req.body,security.client_info(req)))
+    return finish(req,service.log_in(req.cd,req.body,security.client_info(req)))
 
 
 def forgot(req):
     _limit(req,'customer-mail',5)
-    service.forgot(req.cd,req.body)
+    service.forgot(req.cd,req.body,security.client_info(req))
     return req.send(202,{'ok':True})
 
 
 def reset(req):
     """A reset link on an account with two-factor sign-in ends in the challenge, not a session."""
     _limit(req,'customer-verify',20)
-    return _finish(req,service.reset_password(req.cd,req.body,security.client_info(req)))
+    return finish(req,service.reset_password(req.cd,req.body,security.client_info(req)))
 
 
 def log_out(req):

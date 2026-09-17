@@ -8,6 +8,7 @@ import hmac
 import ipaddress
 
 from config import settings
+from backend.exceptions.errors import APIError
 from backend.utils.validation import require
 
 CONTENT_SECURITY_POLICY = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
@@ -41,8 +42,25 @@ def client_ip(req, proxied):
     return req.client_address[0]
 
 
+def request_ip(req):
+    """The trusted client address of a request (rate limits, IP blocks, security events)."""
+    return client_ip(req,from_web_app(req))
+
+
 def check_host_and_origin(req):
-    """Reject unexpected Host headers (DNS rebinding) and writes sent from another website; returns the client address."""
+    """Reject unexpected Host headers (DNS rebinding) and writes sent from another website; returns the client address.
+    Every refusal is recorded as an 'origin_rejected' security event."""
+    try:
+        return _check_host_and_origin(req)
+    except APIError as error:
+        from backend.modules.security import events
+        events.record('origin_rejected',ip=request_ip(req),user_agent=(req.headers.get('User-Agent') or '')[:300],
+                      detail={'check':'host' if error.status==400 or 'Host' in error.message else 'origin',
+                              'host':(req.headers.get('Host') or '')[:200],'origin':(req.headers.get('Origin') or '')[:200]})
+        raise
+
+
+def _check_host_and_origin(req):
     proxied = from_web_app(req)
     host = req.headers.get('X-Forwarded-Host' if proxied else 'Host','')
     require(host and not any(c in host for c in '/\\@'),'Host ไม่ถูกต้อง',400)

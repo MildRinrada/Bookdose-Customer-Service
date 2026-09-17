@@ -4,7 +4,7 @@
   /api/realtime/customer              a signed-in customer (every organization the account is connected with)
   /api/public/<org>/guest/realtime    a guest of guest web chat of that organization (cookie g_<org>)
 
-Handshake: the socket is accepted, then Host is checked like HTTP (middleware/security.py) and Origin must be this
+Handshake: the socket is accepted, then a blocked client address closes 4403, Host is checked like HTTP (middleware/security.py) and Origin must be this
 site's own origin, else close 4403; the cookie is the only credential, and no or an invalid session closes 4401
 (an organization without guest chat: 4403). The server then sends {"type":"hello","poll_ms":60000}.
 
@@ -30,7 +30,7 @@ from fastapi import WebSocket
 from backend.database import db as D
 from backend.exceptions.errors import APIError
 from backend.http.adapter import Headers
-from backend.middleware.security import check_host_and_origin, from_web_app
+from backend.middleware.security import check_host_and_origin, from_web_app, request_ip
 from backend.realtime import events
 from backend.realtime.hub import hub
 from backend.utils.dates import now
@@ -76,13 +76,22 @@ class Probe:
 
 
 def check_origin(probe):
-    """Host as for HTTP; Origin must be present and be this site (cross-site WebSocket hijacking)."""
+    """A blocked client address first (4403, recorded); then Host as for HTTP; Origin must be present and be this site
+    (cross-site WebSocket hijacking). Every refusal is recorded as a security event."""
+    from backend.modules.security import blocks, events
+    ip = request_ip(probe)
+    try:
+        blocks.refuse_blocked(ip,(probe.headers.get('User-Agent') or '')[:300])
+    except APIError:
+        raise Refused(CLOSE_FORBIDDEN) from None
     try:
         check_host_and_origin(probe)
     except APIError:
         raise Refused(CLOSE_FORBIDDEN) from None
     host = probe.headers.get('X-Forwarded-Host' if from_web_app(probe) else 'Host','')
     if probe.headers.get('Origin') not in ('http://'+host,'https://'+host):
+        events.record('origin_rejected',ip=ip,user_agent=(probe.headers.get('User-Agent') or '')[:300],
+                      detail={'check':'websocket_origin','host':host[:200],'origin':(probe.headers.get('Origin') or '')[:200]})
         raise Refused(CLOSE_FORBIDDEN)
 
 
@@ -134,8 +143,9 @@ class CustomerIdentity:
 
     def __init__(self, probe):
         from backend.modules.customers import service as customers
+        self.cookie = probe.headers.get('Cookie','')
         with D.control() as cd:
-            session = customers.read_session(cd,probe.headers.get('Cookie',''))
+            session = customers.read_session(cd,self.cookie)
         if not session:
             raise Refused(CLOSE_UNAUTHORIZED)
         self.token_hash,self.account_id,self.name = session['token_hash'],session['account_id'],session['name']
@@ -143,10 +153,11 @@ class CustomerIdentity:
         self._tenants = {}
 
     def recheck(self):
-        from backend.modules.customers import repository as accounts
+        from backend.modules.customers import service as customers
+        # Signed out, device signed out, or past its limits (the check itself is never activity).
         with D.control() as cd:
-            session = accounts.find_session(cd,self.token_hash)
-        if not session:
+            session = customers.read_session(cd,self.cookie)
+        if not session or session['token_hash']!=self.token_hash:
             return CLOSE_UNAUTHORIZED
         self.name = session['name']
         return None
@@ -335,7 +346,7 @@ async def serve(websocket, server, identify):
     await websocket.accept()
     try:
         probe = Probe(websocket.scope,server)
-        check_origin(probe)
+        await anyio.to_thread.run_sync(check_origin,probe)
         identity = await anyio.to_thread.run_sync(identify,probe)
     except Refused as refused:
         await websocket.close(refused.code)

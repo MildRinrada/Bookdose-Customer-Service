@@ -16,11 +16,13 @@ from backend.modules.knowledge import model as knowledge
 from backend.modules.org_links import model as org_links
 from backend.modules.organization import model as organization
 from backend.modules.platform import model as platform
+from backend.modules.security import model as security
 from backend.modules.tickets import model as tickets
 from backend.modules.trash import model as trash
 
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
-                  customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE)
+                  customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
+                  security.CONTROL_TABLES)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
@@ -30,6 +32,9 @@ def create_control_tables(db):
     for script in CONTROL_TABLES:
         db.executescript(script)
     customer_migrate.control_columns(db)
+    # Session limits (security round): when each staff / customer session was made and last really used.
+    from backend.modules.security import sessions
+    sessions.add_session_columns(db)
 
 
 def create_tenant_tables(db):

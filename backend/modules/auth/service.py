@@ -29,7 +29,15 @@ RESEND_COOLDOWN_SECONDS = 60
 
 
 # Sessions
-def read_session(db, cookie_header, optional=False):
+def session_actor(session):
+    """Which limits a staff session keeps: 'platform' for a platform admin's, else 'staff'."""
+    return 'platform' if session['platform_admin'] else 'staff'
+
+
+def load_session(db, cookie_header, client=None):
+    """(session or None, 'idle' / 'absolute' when the cookie named a session that has just run out). An expired session
+    is deleted and recorded; reading never counts as activity."""
+    from backend.modules.security import events, sessions
     jar = cookies.SimpleCookie()
     try:
         jar.load(cookie_header)
@@ -37,16 +45,59 @@ def read_session(db, cookie_header, optional=False):
         pass
     token = jar.get(SESSION_COOKIE)
     session = repository.find_session(db,token_hash(token.value) if token else '')
+    if not session:
+        return None,None
+    actor = session_actor(session)
+    reason = sessions.expired_reason(session['created_at'],session['last_active_at'],sessions.limits(db,actor),session['expires_at'])
+    if not reason:
+        return session,None
+    repository.delete_session(db,session['token'])
+    db.commit()
+    client = client or {}
+    events.record('session_expired',actor=actor,subject=session['email'],tenant_id=session['tenant_id'],
+                  ip=client.get('ip',''),user_agent=client.get('user_agent',''),detail={'reason':reason})
+    return None,reason
+
+
+def read_session(db, cookie_header, optional=False, client=None):
+    session,reason = load_session(db,cookie_header,client)
     if not optional:
+        if reason:
+            from backend.modules.security import sessions
+            raise sessions.expired_error(reason)
         require(session,'กรุณาเข้าสู่ระบบ',401)
     return session
 
 
+def session_times(db, session):
+    """{idle_expires_at, absolute_expires_at} of a signed-in staff session."""
+    from backend.modules.security import sessions
+    return sessions.expiry(session['created_at'],session['last_active_at'],sessions.limits(db,session_actor(session)),session['expires_at'])
+
+
+def touch_session(db, session):
+    """Real use (any change, or the page's activity signal): the idle time starts again. Saved at once, so the request
+    holds no write transaction on the control database afterwards."""
+    session['last_active_at'] = repository.touch_session(db,session['token'])
+    db.commit()
+
+
+def cookie_max_age(db):
+    """How long the browser keeps the cookie: the longest staff lifetime (the server ends the session itself)."""
+    from backend.modules.security import sessions
+    values = sessions.settings(db)
+    return max(sessions.seconds_of(values,'staff')[1],sessions.seconds_of(values,'platform')[1])
+
+
 def create_session(db, user_id):
-    """Store a 12-hour session on the user's first active organization and return the raw cookie token."""
+    """Store a session on the user's first active organization and return the raw cookie token. It lasts as long as
+    the security settings allow for the user (platform admins have shorter limits)."""
+    from backend.modules.security import sessions
     token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
     tenant_id = memberships.first_active_tenant(db,user_id)
-    expires = after(hours=SESSION_HOURS)
+    user = D.one(db,'SELECT platform_admin FROM users WHERE id=?',(user_id,))
+    _,absolute = sessions.limits(db,'platform' if user and user['platform_admin'] else 'staff')
+    expires = after(seconds=absolute)
     repository.delete_expired_sessions(db)
     repository.insert_session(db,token_hash(token),user_id,tenant_id,csrf,expires)
     return token
@@ -54,7 +105,13 @@ def create_session(db, user_id):
 
 def workspace_context(db, session):
     ctx = memberships.workspace_membership(db,session['user_id'],session['tenant_id'])
-    require(ctx,'ไม่มีสิทธิ์เข้าองค์กรนี้ หรือองค์กรถูกระงับ',403)
+    if not ctx:
+        from backend.modules.security import events
+        # A suspended organization is not a cross-organization attempt; a member removed from an active one is.
+        if session['tenant_id'] and D.one(db,"SELECT 1 FROM tenants WHERE id=? AND status='active'",(session['tenant_id'],)):
+            events.record('cross_tenant_denied',actor=events.staff_actor(session),subject=session['email'],
+                          tenant_id=session['tenant_id'],detail={'action':'workspace'})
+        require(False,'ไม่มีสิทธิ์เข้าองค์กรนี้ หรือองค์กรถูกระงับ',403)
     ctx.update(id=session['user_id'],name=session['name'],session_token=session['token'])
     return ctx
 
@@ -76,7 +133,11 @@ def end_session(db, session):
 
 def switch_tenant(db, session, body):
     tid = schema.tenant_choice(body)
-    require(memberships.can_enter_tenant(db,session['user_id'],tid),'ไม่มีสิทธิ์เข้าองค์กรนี้',403)
+    if not memberships.can_enter_tenant(db,session['user_id'],tid):
+        from backend.modules.security import events
+        events.record('cross_tenant_denied',actor=events.staff_actor(session),subject=session['email'],tenant_id=tid if len(tid)==32 else None,
+                      detail={'action':'switch_tenant'})
+        require(False,'ไม่มีสิทธิ์เข้าองค์กรนี้',403)
     repository.set_session_tenant(db,session['token'],tid)
     db.commit()
 
@@ -118,13 +179,63 @@ def set_up_platform(cookie_header, body):
         return _replace_session(db,cookie_header,user_id)
 
 
-def log_in(cookie_header, body):
+def log_in(cookie_header, body, client=None):
+    """A password sign-in. Wrong passwords count towards the lock of the typed email (security.lockout), whether or
+    not it has an account; while it is locked every attempt is answered 429 before the password is looked at."""
+    from backend.modules.security import lockout
+    email,password = schema.login_form(body)
+    key = lockout.key_for('staff',email)
+    lockout.check(key,client)
     with SETUP_LOCK, D.control() as db:
-        email,password = schema.login_form(body)
         user = repository.find_user_by_email(db,email)
         encoded = user['password'] if user else DUMMY_PASSWORD_HASH
-        require(password_ok(password,encoded) and user,'อีเมลหรือรหัสผ่านไม่ถูกต้อง',401)
-        return _replace_session(db,cookie_header,user['id'])
+        correct = password_ok(password,encoded) and user
+        token = _replace_session(db,cookie_header,user['id']) if correct else None
+    actor = 'platform' if user and user['platform_admin'] else 'staff'
+    if not correct:
+        lockout.fail(key,client,actor=actor,owner={'email':user['email'],'name':user['name']} if user else None)
+        require(False,'อีเมลหรือรหัสผ่านไม่ถูกต้อง',401)
+    lockout.succeed(key,client,actor=actor)
+    return token
+
+
+def sign_in(cd, cookie_header, body, client=None):
+    """POST /api/sign-in, the shared sign-in page: one request checks the staff account and the customer account of the
+    typed email. Returns ('staff', session token) or ('customer', {'session'} / {'challenge','methods'}); a staff
+    account whose password matches wins over a customer account with the same password.
+
+    The lock is 'signin:<email>' (a lock on the email's staff or customer key refuses it too, lockout.related_keys),
+    checked before any password. Both password hashes always run - a dummy one for a missing account - so the time
+    taken does not tell which kinds of account exist. Only when neither password matches is ONE failure counted and
+    ONE login_failed event recorded (actor of the account that exists, else 'anonymous'), and the owners of the
+    accounts of that email are the ones told about a new lock. A customer's second step then counts as on
+    POST /api/customer/login (customer_security.finish_challenge)."""
+    from backend.modules.customers import repository as accounts, service as customers
+    from backend.modules.security import lockout
+    email,password = schema.login_form(body)
+    key = lockout.key_for('signin',email)
+    lockout.check(key,client)
+    user = repository.find_user_by_email(cd,email)
+    account = accounts.find_by_email(cd,email)
+    staff_ok = password_ok(password,user['password'] if user else DUMMY_PASSWORD_HASH) and bool(user)
+    customer_ok = password_ok(password,account['password'] if account else customers.DUMMY_PASSWORD_HASH) and bool(account)
+    staff_actor = 'platform' if user and user['platform_admin'] else 'staff'
+    if staff_ok:
+        with SETUP_LOCK:
+            token = _replace_session(cd,cookie_header,user['id'])
+        lockout.succeed(key,client,actor=staff_actor)
+        return 'staff',token
+    if customer_ok:
+        result = customers.password_proven(cd,account,client)
+        if result.get('session'):
+            lockout.succeed(key,client,actor='customer')
+        return 'customer',result
+    if account:
+        customers.wrong_password(cd,account,client)
+    owners = ([{'email':user['email'],'name':user['name'],'actor':staff_actor}] if user else [])+\
+             ([{'email':account['email'],'name':account['name'],'actor':'customer'}] if account else [])
+    lockout.fail(key,client,actor=staff_actor if user else 'customer' if account else 'anonymous',owner=owners)
+    require(False,customers.WRONG_LOGIN,401)
 
 
 def _replace_session(db, cookie_header, user_id):

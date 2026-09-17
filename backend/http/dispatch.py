@@ -30,12 +30,12 @@ import time
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from backend.database import db as D
-from backend.exceptions.errors import APIError
+from backend.exceptions.errors import APIError, RateLimited
 from backend.exceptions.handlers import error_response
 from backend.extensions import monitor
 from backend.middleware import auth
 from backend.middleware.rate_limit import limited
-from backend.middleware.security import SECURITY_HEADERS, check_host_and_origin
+from backend.middleware.security import SECURITY_HEADERS, check_host_and_origin, request_ip
 from backend.modules.ai import routes as ai_routes
 from backend.modules.auth import routes as auth_routes
 from backend.modules.automation import routes as automation_routes, service as automation
@@ -50,6 +50,7 @@ from backend.modules.org_links import routes as org_link_routes
 from backend.modules.organization import routes as organization_routes
 from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
+from backend.modules.security import blocks, events as security_events, routes as security_routes
 from backend.modules.tickets import routes as ticket_routes
 from backend.modules.trash import routes as trash_routes
 from backend.utils.dates import now
@@ -59,7 +60,7 @@ from backend.utils.validation import require
 ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *organization_routes.ROUTES,
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
-          *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES]
+          *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')
@@ -124,7 +125,10 @@ def dispatch(req):
         req.query = parse_qs(parsed.query)
         path = unquote(parsed.path)
         # The browser's address: the socket's, or the one the Next.js web app forwarded (see middleware/security.py).
-        req.ip = check_host_and_origin(req)
+        # A blocked address is refused before anything else.
+        req.ip = request_ip(req)
+        blocks.refuse_blocked(req.ip,(req.headers.get('User-Agent') or '')[:300])
+        check_host_and_origin(req)
         route_request(req,path)
     except (ConnectionError,TimeoutError):
         # The client went away (includes ConnectionAbortedError on Windows); there is nobody to answer.
@@ -135,7 +139,10 @@ def dispatch(req):
             print(f'[{now()}] Server error: {type(error).__name__}',file=sys.stderr,flush=True)
             monitor.error('server',type(error).__name__,path)
             answer = (500,SERVER_ERROR)
-        req.send(answer[0],{'error':answer[1]})
+        if isinstance(error,RateLimited):
+            security_events.from_request(req,'rate_limited',tenant_id=(req.ctx or {}).get('tenant_id') or (req.org or {}).get('id'),
+                                         detail={'area':req.area or '','action':error.action})
+        req.send(answer[0],{'error':answer[1],**getattr(error,'extra',{})},headers=getattr(error,'headers',None) or None)
     finally:
         if req.area and req.status_sent:
             tenant = (req.ctx or {}).get('tenant_id') or (req.org or {}).get('id')
@@ -151,6 +158,12 @@ def run(req, path, access):
     return True
 
 
+def _has_json_body(req):
+    length = req.headers.get('Content-Length','0') or '0'
+    return (req.headers.get('Content-Type','').split(';')[0]=='application/json' and length.isascii() and length.isdigit()
+            and int(length)>0)
+
+
 def route_request(req, path):
     if run(req,path,'page'):
         return
@@ -160,8 +173,8 @@ def route_request(req, path):
     if run(req,path,'webhook'):
         return
     req.area = 'customer' if path.startswith(('/api/public/','/api/customer/')) else 'platform' if path.startswith('/api/platform') else 'staff'
-    # GET and DELETE carry no body; everything else must be JSON.
-    req.body = req.json_body() if req.command in ('POST','PATCH') else {}
+    # GET carries no body; POST and PATCH must be JSON; a DELETE may carry a JSON body (for example {ip}).
+    req.body = req.json_body() if req.command in ('POST','PATCH') or (req.command=='DELETE' and _has_json_body(req)) else {}
     if path.startswith('/api/public/'):
         return route_portal(req,path)
     if path.startswith('/api/customer/'):
@@ -215,7 +228,7 @@ def route_guest(req, path):
     req.guest = auth.guest_session(req)
     if run(req,path,'guest-open'):
         return
-    require(not req.guest_stale,'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
+    auth.refuse_stale_guest(req)
     require(req.guest,'ไม่พบแชทของคุณในเบราว์เซอร์นี้',401)
     if not run(req,path,'guest'):
         raise APIError(404,'ไม่พบรายการ')

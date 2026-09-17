@@ -3,10 +3,11 @@ from collections import defaultdict, deque
 import threading
 import time
 
-from backend.utils.validation import require
+from backend.exceptions.errors import RateLimited
 
 RATE_LOCK = threading.Lock()
 RATES = defaultdict(deque)
+MESSAGE = 'ทำรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่'
 
 
 def limited(key, count, period=60):
@@ -20,5 +21,7 @@ def limited(key, count, period=60):
         bucket = RATES[key]
         while bucket and current-bucket[0] > period:
             bucket.popleft()
-        require(len(bucket) < count, 'ทำรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่',429)
+        if len(bucket) >= count:
+            # The dispatcher records it as a 'rate_limited' security event (action = the first part of the key).
+            raise RateLimited(str(key[0]) if isinstance(key,tuple) and key else str(key), MESSAGE)
         bucket.append(current)

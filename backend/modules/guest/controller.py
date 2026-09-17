@@ -3,7 +3,8 @@
 holds a known cookie). The conversation a request is about comes in X-Conversation-ID, as on the signed-in pages.
 Also the widget settings (/api/public/<org>/widget, public; /api/settings/guest-chat, the organization's admin) and
 moving a browser's guest chats into the signed-in customer's account (/api/customer/guest-claims)."""
-from backend.middleware.auth import require_role
+from backend.exceptions.errors import APIError
+from backend.middleware.auth import refuse_stale_guest, require_role
 from backend.middleware.rate_limit import limited
 from backend.modules.customer_security.service import client_info
 from backend.modules.guest import schema, service
@@ -45,7 +46,7 @@ def overview(req):
 
 def start(req):
     # A valid cookie sent without its CSRF token must not end up replaced by a new guest (its chats would be lost).
-    require(not req.guest_stale,'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
+    refuse_stale_guest(req)
     limited(('guest-start',req.ip),START_PER_IP_HOUR,3600)
     answer,token,remember = service.start(req.db,req.org,req.guest,req.body,client_info(req))
     return req.send(201,answer,headers=_set(req,token,remember) if token else None)
@@ -53,7 +54,13 @@ def start(req):
 
 def resume(req):
     limited(('guest-resume',req.ip),30,900)
-    conversation_id,token = service.resume(req.cd,req.db,req.org,req.guest or req.guest_stale or None,req.body,client_info(req))
+    try:
+        conversation_id,token = service.resume(req.cd,req.db,req.org,req.guest or req.guest_stale or None,req.body,client_info(req))
+    except APIError as error:
+        if error.message==schema.LINK_GONE:
+            from backend.modules.security import events
+            events.from_request(req,'guest_link_invalid',actor='guest',tenant_id=req.org['id'],detail={'status':error.status})
+        raise
     return req.send(200,{'ok':True,'conversation_id':conversation_id},headers=_set(req,token,True))
 
 

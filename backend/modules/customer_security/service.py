@@ -208,14 +208,21 @@ def start_challenge(cd, account):
 
 
 def finish_challenge(cd, token, body, client=None):
-    """The second step: {'session'} when the code is right. Five wrong tries and the challenge is thrown away."""
+    """The second step: {'session'} when the code is right. Five wrong tries and the challenge is thrown away. A wrong
+    code or recovery code also counts towards the lock of the account's email ('customer:<email>', security.lockout),
+    and while that - or the email's sign-in page lock - is locked the step is answered 429 without looking at the code.
+    The same whether the password was proven on POST /api/customer/login or the shared POST /api/sign-in."""
     from backend.modules.customers import service as accounts
+    from backend.modules.security import lockout
     kind,_entered = schema.second_step(body)
     require(isinstance(token,str) and token,NO_SESSION,401)
-    D.begin(cd)
     row = repository.login_challenge(cd,token_hash(token))
     require(row,NO_SESSION,401)
     account = customers.find(cd,row['account_id'])
+    key = lockout.key_for('customer',account['email']) if account else None
+    if key:
+        lockout.check(key,client)
+    D.begin(cd)
     repository.count_login_attempt(cd,token_hash(token))
     if not account or not _second_step_ok(cd,account,body):
         if row['attempts']+1>=LOGIN_CHALLENGE_TRIES:
@@ -223,12 +230,18 @@ def finish_challenge(cd, token, body, client=None):
         if account:
             record(cd,account['id'],'login_failed',client=client)
         cd.commit()
+        if key:
+            lockout.fail(key,client,kind='twofa_failed',owner={'email':account['email'],'name':account['name']},
+                         detail={'method':kind})
         require(False,WRONG_STEP,403)
     # One challenge, one sign-in: the row goes before the session is made.
     require(repository.delete_login_challenge(cd,token_hash(token))==1,NO_SESSION,401)
     session = accounts.start_session(cd,account['id'],client)
     record(cd,account['id'],'login_2fa' if kind=='code' else 'login_recovery',client=client)
     cd.commit()
+    lockout.succeed(key,client)
+    # The password of this sign-in may have been proven on the shared sign-in page, whose count ends here too.
+    lockout.succeed(lockout.key_for('signin',account['email']),client,actor='customer')
     return {'session':session}
 
 
@@ -341,12 +354,19 @@ def passkey_login(req):
     require(isinstance(given,str) and 0<len(given)<=2048,webauthn.BAD)
     stored = repository.passkey_by_credential(req.cd,given.rstrip('='))
     require(stored,'ไม่พบ Passkey นี้ กรุณาเข้าสู่ระบบด้วยรหัสผ่าน',403)
+    from backend.modules.security import lockout
+    owner = customers.find(req.cd,stored['account_id'])
+    key = lockout.key_for('customer',owner['email']) if owner else None
+    if key:
+        lockout.check(key,client)
     try:
         count = webauthn.verify_assertion(credential,value,row['origin'],row['rp_id'],stored)
     except APIError:
         # Every refusal is written down: a copied credential, a wrong origin or a bad signature is worth seeing.
         record(req.cd,stored['account_id'],'passkey_refused',stored['name'],client)
         req.cd.commit()
+        if key:
+            lockout.fail(key,client,owner={'email':owner['email'],'name':owner['name']},detail={'method':'passkey'})
         raise
     from backend.modules.customers import service as accounts
     D.begin(req.cd)
@@ -354,12 +374,17 @@ def passkey_login(req):
     session = accounts.start_session(req.cd,stored['account_id'],client)
     record(req.cd,stored['account_id'],'login_passkey',stored['name'],client)
     req.cd.commit()
+    if key:
+        lockout.succeed(key,client)
     return session
 
 
 # Signed-in devices
 def sessions(cd, session):
-    found = customers.sessions_of(cd,session['account_id'])
+    from backend.modules.security import sessions as limits
+    seconds = limits.limits(cd,'customer')
+    found = [row for row in customers.sessions_of(cd,session['account_id'])
+             if not limits.expired_reason(row['created_at'],row['last_active_at'],seconds,row['expires_at'])]
     cd.commit()
     return {'sessions':[schema.session_view(row,session['token_hash']) for row in found]}
 

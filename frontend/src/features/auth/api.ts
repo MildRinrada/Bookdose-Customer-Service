@@ -1,13 +1,13 @@
 import { api } from '@/lib/api/client';
 import type { Boot } from '@/lib/types';
 import type { PasskeyAnswer, PasskeyRequestOptions } from './passkeys';
-import type { CustomerLoginResult, CustomerSignupResult, RegistrationConfig, RegistrationSettingsInput } from './types';
+import type { CustomerLoginResult, CustomerSignupResult, RegistrationConfig, RegistrationSettingsInput, SignInResult } from './types';
 
-/* Endpoints of backend/modules/auth (staff sign-in, setup, organization sign-up), backend/modules/customers (the
+/* Endpoints of backend/modules/auth (the shared sign-in, setup, organization sign-up), backend/modules/customers (the
    customer account's public actions) and the platform's registration email settings. */
 
-export const staffLogin = (email: string, password: string) => api('/api/login', { email, password });
-
+/** The sign-in page, staff and customers alike: one request checks both kinds of account of this email. */
+export const signIn = (email: string, password: string) => api<SignInResult>('/api/sign-in', { email, password });
 
 export const setUp = (body: {
   name: string;
@@ -36,8 +36,6 @@ export const bootstrap = () => api<Boot>('/api/bootstrap');
 
 export const completeEmailOAuth = (state: string | null, code: string | null) =>
   api('/api/channels/email/oauth/complete', { state, code });
-
-export const customerLogin = (email: string, password: string) => api<CustomerLoginResult>('/api/customer/login', { email, password });
 
 /** The second step of a sign-in: the code from the authenticator app, or one of the recovery codes. */
 export const customerLoginVerify = (body: { code?: string; recovery_code?: string }) => api('/api/customer/login/verify', body);

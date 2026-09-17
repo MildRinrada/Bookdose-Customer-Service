@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { api, setStaffCredentials, type ApiError } from './api/client';
 import { useApi } from './query';
+import { clearExpiry } from './session-expiry';
 import { resetUiState } from './ui-state';
 import type { Boot, Membership, StaffAlerts, TicketSummary, Workspace } from './types';
 
@@ -89,6 +90,7 @@ export function useSwitchTenant() {
 export function useStaffSignedIn() {
   const client = useQueryClient();
   return useCallback(() => {
+    clearExpiry('staff');
     resetUiState();
     client.clear();
   }, [client]);
@@ -102,6 +104,7 @@ export function useStaffLogout() {
     async (options: { stay?: boolean } = {}) => {
       await api('/api/logout', {});
       setStaffCredentials(null, null);
+      clearExpiry('staff');
       resetUiState();
       client.clear();
       if (!options.stay) router.replace('/login');

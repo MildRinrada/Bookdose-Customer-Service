@@ -40,6 +40,7 @@ export const platformPages: StaffPage[] = [
   { key: 'platform', href: '/platform/organizations', label: 'จัดการองค์กร', icon: 'globe' },
   { key: 'global-faq', href: '/platform/faq', label: 'FAQ กลาง', icon: 'book' },
   { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield' },
+  { key: 'platform-security', href: '/platform/security', label: 'ความปลอดภัย', icon: 'lock' },
 ];
 
 const staffPages = [...workspacePages, ...managePages, ...otherStaffPages, ...platformPages];
@@ -97,6 +98,7 @@ const legacyStaff: Record<string, string> = {
   platform: '/platform/organizations',
   'global-faq': '/platform/faq',
   'platform-team': '/platform/team',
+  'platform-security': '/platform/security',
   'verify-email': '/verify-email',
   'check-email': '/check-email',
   'resend-email': '/resend-email',

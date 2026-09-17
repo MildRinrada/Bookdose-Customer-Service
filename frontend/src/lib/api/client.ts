@@ -5,14 +5,25 @@
    code only calls api() and download().
 
    Same contract as before the move to Next.js: api(path) is a GET, api(path, body) a POST, api(path, body, method)
-   anything else. A failed call throws an ApiError with the server's Thai message and the HTTP status. */
+   anything else. A failed call throws an ApiError with the server's Thai message and the HTTP status.
+
+   Session limits (lib/session-expiry.ts): every answer's Date header keeps the server's clock, a successful change
+   (non-GET) counts as activity like it does on the server, and a 401 with `reason` says the session ran out. */
+
+import { noteExpired, noteRequestActivity, noteServerDate } from '../session-expiry';
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(message: string, status: number) {
+  /** 401: why the session ended ('idle' | 'absolute'), when it ran out rather than never existed. */
+  readonly reason?: string;
+  /** 429: seconds until trying again is allowed (`retry_after`, else the Retry-After header). */
+  readonly retryAfter?: number;
+  constructor(message: string, status: number, extra: { reason?: string; retryAfter?: number } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.reason = extra.reason;
+    this.retryAfter = extra.retryAfter;
   }
 }
 
@@ -73,10 +84,11 @@ function headers(hasBody: boolean): Record<string, string> {
 
 async function send(path: string, body?: unknown, method?: Method): Promise<Response> {
   const hasBody = body !== undefined;
+  const verb = method ?? (hasBody ? 'POST' : 'GET');
   let response: Response;
   try {
     response = await fetch(path, {
-      method: method ?? (hasBody ? 'POST' : 'GET'),
+      method: verb,
       headers: headers(hasBody),
       body: hasBody ? JSON.stringify(body) : undefined,
       credentials: 'same-origin',
@@ -85,15 +97,27 @@ async function send(path: string, body?: unknown, method?: Method): Promise<Resp
   } catch {
     throw new ApiError('ติดต่อโปรแกรมไม่ได้ กรุณาตรวจสอบว่าหน้าต่าง Bookdose ยังเปิดอยู่', 0);
   }
+  noteServerDate(response.headers.get('date'));
   if (!response.ok) {
     let message = 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+    let reason: string | undefined;
+    let retryAfter: number | undefined;
     try {
-      message = ((await response.json()) as { error?: string }).error || message;
+      const answer = (await response.json()) as { error?: string; reason?: unknown; retry_after?: unknown };
+      message = answer.error || message;
+      if (typeof answer.reason === 'string') reason = answer.reason;
+      if (typeof answer.retry_after === 'number' && Number.isFinite(answer.retry_after)) retryAfter = answer.retry_after;
     } catch {
       /* Not JSON: keep the general message. */
     }
-    throw new ApiError(message, response.status);
+    if (response.status === 429 && retryAfter === undefined) {
+      const header = Number(response.headers.get('retry-after'));
+      if (Number.isFinite(header) && header > 0) retryAfter = header;
+    }
+    if (response.status === 401 && (reason === 'idle' || reason === 'absolute')) noteExpired(reason);
+    throw new ApiError(message, response.status, { reason, retryAfter });
   }
+  if (verb !== 'GET') noteRequestActivity(path);
   return response;
 }
 

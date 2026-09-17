@@ -2,10 +2,20 @@
 
 
 class APIError(Exception):
-    """A request that cannot be served, with the HTTP status and the message shown to the user."""
-    def __init__(self, status, message):
+    """A request that cannot be served, with the HTTP status and the message shown to the user. extra: more fields of
+    the JSON answer next to 'error' (for example retry_after); headers: response headers (for example Retry-After)."""
+    def __init__(self, status, message, extra=None, headers=None):
         super().__init__(message)
         self.status, self.message = status, message
+        self.extra, self.headers = extra or {}, headers or {}
+
+
+class RateLimited(APIError):
+    """429 from an in-memory request limit (middleware/rate_limit.py); `action` names the limit (recorded as a
+    security event by the dispatcher)."""
+    def __init__(self, action, message):
+        super().__init__(429, message)
+        self.action = action
 
 
 AI_ERRORS = {

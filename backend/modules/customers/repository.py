@@ -90,25 +90,34 @@ def delete_resets(cd, account_id):
 # Sessions (control). id is the plain name a session is listed and signed out by; the token itself never leaves
 # the browser's cookie and only its hash is stored.
 def insert_session(cd, token_hash, account_id, csrf, expires_at, session_id, user_agent='', ip=''):
-    cd.execute('''INSERT INTO customer_sessions(token_hash,account_id,csrf,expires_at,created_at,id,user_agent,ip,last_seen_at)
-                  VALUES(?,?,?,?,?,?,?,?,?)''',(token_hash,account_id,csrf,expires_at,now(),session_id,user_agent,ip,now()))
+    cd.execute('''INSERT INTO customer_sessions(token_hash,account_id,csrf,expires_at,created_at,id,user_agent,ip,last_seen_at,last_active_at)
+                  VALUES(?,?,?,?,?,?,?,?,?,?)''',(token_hash,account_id,csrf,expires_at,now(),session_id,user_agent,ip,now(),now()))
 
 
 def find_session(cd, token_hash):
-    return one(cd,'''SELECT s.token_hash,s.csrf,s.account_id,s.id AS session_id,s.last_seen_at,a.name,a.email,a.phone,
+    """The session with its account, whatever its limits say (customers.service.load_session judges them)."""
+    return one(cd,'''SELECT s.token_hash,s.csrf,s.account_id,s.id AS session_id,s.last_seen_at,s.created_at AS session_created_at,
+                   s.last_active_at,s.expires_at,a.name,a.email,a.phone,
                    a.email_verified,a.notify_email,a.notify_prefs,a.consent_version,a.consent_at,a.created_at
                    FROM customer_sessions s
-                   JOIN customer_accounts a ON a.id=s.account_id WHERE s.token_hash=? AND s.expires_at>?''',(token_hash,now()))
+                   JOIN customer_accounts a ON a.id=s.account_id WHERE s.token_hash=?''',(token_hash,))
 
 
 def touch_session(cd, token_hash):
     cd.execute('UPDATE customer_sessions SET last_seen_at=? WHERE token_hash=?',(now(),token_hash))
 
 
+def touch_activity(cd, token_hash):
+    """The customer really used the session (a change, or the page's activity signal)."""
+    moment = now()
+    cd.execute('UPDATE customer_sessions SET last_active_at=?,last_seen_at=? WHERE token_hash=?',(moment,moment,token_hash))
+    return moment
+
+
 def sessions_of(cd, account_id):
     """The account's live sessions, newest first (never the token hash: the list is shown to the customer)."""
     cd.execute("UPDATE customer_sessions SET id=lower(hex(randomblob(16))) WHERE id=''")
-    return rows(cd,'''SELECT id,account_id,user_agent,ip,created_at,last_seen_at,expires_at,token_hash FROM customer_sessions
+    return rows(cd,'''SELECT id,account_id,user_agent,ip,created_at,last_seen_at,last_active_at,expires_at,token_hash FROM customer_sessions
                       WHERE account_id=? AND expires_at>? ORDER BY created_at DESC''',(account_id,now()))
 
 

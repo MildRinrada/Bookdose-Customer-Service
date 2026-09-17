@@ -1,24 +1,34 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { customerLoginVerify } from '../api';
+import { LockNotice, useSignInLock } from './SignInLock';
 
 /* The second step of a customer sign-in: the password was right, and the account asks for the code from its
    authenticator app (or one of the printed recovery codes). Nothing is signed in until this passes; the waiting
-   sign-in lives in a short cookie the page never sees. Markup: pages/security.css. */
+   sign-in lives in a short cookie the page never sees. Wrong codes count towards the account's sign-in lock: while
+   it lasts the step shows the countdown and waits. Markup: pages/security.css. */
 
 export function TwoFactorStep({ methods, onDone }: { methods: string[]; onDone: () => void }) {
   const [recovery, setRecovery] = useState(false);
   const canRecover = methods.includes('recovery');
+  const lock = useSignInLock();
   return (
     <Form
       className="auth-form two-factor"
       data-form="customer-2fa"
       onSubmit={async (values) => {
-        await customerLoginVerify(recovery ? { recovery_code: values.recovery_code } : { code: values.code });
+        if (lock.locked) return;
+        try {
+          await customerLoginVerify(recovery ? { recovery_code: values.recovery_code } : { code: values.code });
+        } catch (error) {
+          if (lock.catchLock(error)) return;
+          throw error;
+        }
         onDone();
       }}
     >
@@ -53,7 +63,19 @@ export function TwoFactorStep({ methods, onDone }: { methods: string[]; onDone: 
           />
         </>
       )}
-      <button className="btn primary" type="submit">
+      <LockNotice
+        lock={lock}
+        help={
+          <>
+            จำรหัสผ่านไม่ได้?{' '}
+            <Link className="btn subtle" href="/customer/forgot">
+              ลืมรหัสผ่าน
+            </Link>
+          </>
+        }
+      />
+      {/* Keyed by the lock: the form re-enables its buttons after submitting, which must not undo the lock. */}
+      <button key={lock.locked ? 'locked' : 'open'} className="btn primary" type="submit" disabled={lock.locked}>
         เข้าสู่ระบบ <Icon name="arrow" />
       </button>
       {canRecover && (

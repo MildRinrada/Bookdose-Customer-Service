@@ -13,6 +13,7 @@ ROUTES = [
     ('POST', '/api/customer/login',         controller.log_in,               'customer-public'),
     ('POST', '/api/customer/forgot',        controller.forgot,               'customer-public'),
     ('POST', '/api/customer/reset',         controller.reset,                'customer-public'),
+    ('POST', '/api/customer/activity',      controller.activity,             'customer-account'),
     ('POST', '/api/customer/logout',        controller.log_out,              'customer-account'),
     ('POST', '/api/customer/profile',       controller.update_profile,       'customer-account'),
     ('POST', '/api/customer/password',      controller.change_password,      'customer-account'),

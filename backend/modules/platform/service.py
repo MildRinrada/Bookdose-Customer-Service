@@ -10,6 +10,7 @@ from backend.extensions import monitor
 from backend.modules.auth import repository as users
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository, schema
+from backend.modules.security import events
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -77,12 +78,18 @@ def grant_support_access(cd, session, tenant_id, body):
     user_id = session['user_id']
     membership = organization.find_membership(cd,tenant_id,user_id)
     if membership:
+        if not membership['active']:
+            # The organization's admins took the access away: a refused support access.
+            cd.rollback()
+            events.record('cross_tenant_denied',actor='platform',subject=session['email'],tenant_id=tenant_id,
+                          detail={'action':'support_access','reason':'revoked_by_organization'})
         require(False,'คุณเป็นสมาชิกขององค์กรนี้อยู่แล้ว' if membership['active'] else 'ผู้ดูแลองค์กรปิดสิทธิ์ของคุณไว้ ต้องให้ผู้ดูแลองค์กรเปิดคืน',409)
     with D.tenant(tenant_id) as td:
         organization.insert_membership(cd,tenant_id,user_id,'manager',organization.first_team_id(td))
         audit.record(td,session['name'],'tenant.support_access',user_id,reason)
     audit.record(cd,user_id,'tenant.support_access',tenant_id,reason)
     cd.commit()
+    events.record('support_access',actor='platform',subject=session['email'],tenant_id=tenant_id,detail={'reason':reason[:300]})
 
 
 # System overview

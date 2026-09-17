@@ -11,6 +11,7 @@ import { RealtimeProvider } from '@/lib/realtime-provider';
 import { customerAccountPages, customerPageOf, customerServicePages, type CustomerPage } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
+import { SessionGuard } from './SessionGuard';
 import { TextSizeMenu } from './TextSize';
 
 /* The customer's frame: the team's side menu and top bar, with the customer's own menu (overview, chats, cases,
@@ -53,6 +54,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   return (
     // Live updates of the customer's chats, cases and alerts in every organization.
     <RealtimeProvider kind="customer" identity={me.email}>
+      <SessionGuard kind="customer" times={me} onLogout={() => logout()} />
       <div className={`mobile-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
       <aside className={`sidebar customer-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-top">

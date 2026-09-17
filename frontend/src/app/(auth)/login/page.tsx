@@ -9,6 +9,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       tab={param(search, 'tab') === 'signup' ? 'signup' : 'login'}
       org={orgParam(search)}
       next={safeNext(param(search, 'next'))}
+      expired={param(search, 'expired') === 'idle' ? 'idle' : param(search, 'expired') === 'absolute' ? 'absolute' : null}
     />
   );
 }

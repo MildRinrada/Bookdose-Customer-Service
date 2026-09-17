@@ -1,5 +1,6 @@
 """The background workers, whichever server runs: AI drafts (bookdose-ai), LINE / Email / Facebook delivery and
-polling (bookdose-channels, bookdose-email) and automation (SLA, reminders, notices, clean-up; bookdose-automation).
+polling (bookdose-channels, bookdose-email), automation (SLA, reminders, notices, clean-up; bookdose-automation) and
+security alerts and clean-up (bookdose-security).
 Started at most once per process; FastAPI starts them in its lifespan, the legacy server in app.py."""
 import threading
 
@@ -14,11 +15,12 @@ def start_workers():
     from backend.modules.automation.service import Worker as AutomationWorker
     from backend.modules.channels.service import Worker as ChannelWorker
     from backend.modules.conversations.service import store_message
+    from backend.modules.security.alerts import Worker as SecurityWorker
     with _lock:
         if _running:
             return None
         _running = True
-    workers = [AIWorker(),ChannelWorker(store_message),AutomationWorker()]
+    workers = [AIWorker(),ChannelWorker(store_message),AutomationWorker(),SecurityWorker()]
     for worker in workers:
         worker.start()
     return workers

@@ -10,9 +10,10 @@ import { useCustomerAccount, useCustomerOrgs, useCustomerOverview } from '@/lib/
 import { useInvalidate } from '@/lib/query';
 import { ORG_CODE } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
+import { expiryReason, signInAddress } from '@/lib/session-expiry';
 
 /* Every screen of a signed-in customer. Signed out, the customer goes to sign-in and comes back here afterwards
-   (?next=). The screens that work without an account (confirming the email, a new password) are in
+   (?next=, and ?expired= when the session ran out). The screens that work without an account (confirming the email, a new password) are in
    src/app/customer/(link)/. */
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
@@ -29,7 +30,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   const ready = Boolean(account.data?.signed_in && boot.data && orgs.data && overview.data);
 
   useEffect(() => {
-    if (signedOut) router.replace(`/login?next=${encodeURIComponent(pathname + window.location.search)}`);
+    if (signedOut) router.replace(signInAddress(pathname + window.location.search, expiryReason('customer')));
   }, [signedOut, pathname, router]);
 
   /* Signed in from an organization's link (?org=<code>): that organization joins the list (once), and the link

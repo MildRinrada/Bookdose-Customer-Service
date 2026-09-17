@@ -57,16 +57,18 @@ class WebProxyTests(unittest.TestCase):
 
     def test_sign_in_limits_count_per_forwarded_address(self):
         web = {'X-Forwarded-Host':'localhost:3000','Origin':'http://localhost:3000'}
-        wrong = {**LOGIN,'password':'Wrong-password-1'}
-        for _ in range(15):
-            self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'203.0.113.5'},wrong),401)
-        self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'203.0.113.5'},wrong),429)
+        # A different email each time, so the per-address limit is what answers (five wrong passwords for one email
+        # would lock that email first: security.lockout).
+        wrong = lambda index:{'email':f'guess{index}@example.com','password':'Wrong-password-1'}
+        for index in range(15):
+            self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'203.0.113.5'},wrong(index)),401)
+        self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'203.0.113.5'},wrong(15)),429)
         # Another visitor behind the same web app is not locked out, and neither is this machine.
         self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'203.0.113.6'}),200)
         self.assertEqual(self.login({}),200)
         # Sent straight to the Python server, the header is not believed.
-        for _ in range(15):
-            self.login({'X-Bookdose-Client-IP':'198.51.100.7'},wrong)
+        for index in range(15):
+            self.login({'X-Bookdose-Client-IP':'198.51.100.7'},wrong(index))
         self.assertEqual(self.login({**web,'X-Bookdose-Client-IP':'198.51.100.7'}),200)
 
 

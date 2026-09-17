@@ -33,7 +33,8 @@ NOTICE_DELAY_SECONDS = 120   # a reply the customer reads on the page within thi
 RECENT_DONE_DAYS = 7
 # Same shape as a real hash, so an unknown email takes as long to check as a known one.
 DUMMY_PASSWORD_HASH = 'pbkdf2_sha256$600000$'+'00'*16+'$'+'00'*32
-UNCERTAIN_MAIL = 'ยังยืนยันผลการส่งอีเมลไม่ได้ กรุณาตรวจกล่องจดหมายและสแปม หากไม่พบให้รอ 1 นาทีแล้วลองใหม่'
+WRONG_LOGIN = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ยืนยันอีเมล'
+UNCERTAIN_MAIL ='ยังยืนยันผลการส่งอีเมลไม่ได้ กรุณาตรวจกล่องจดหมายและสแปม หากไม่พบให้รอ 1 นาทีแล้วลองใหม่'
 
 
 def email_ready(cd):
@@ -245,9 +246,10 @@ def verify(cd, body, client=None):
 def _new_session(cd, account_id, client=None):
     """A new session cookie for this device; the device and address are kept so the customer can see and sign out
     each one (customer_security)."""
+    from backend.modules.security import sessions
     token = secrets.token_urlsafe(32)
     repository.delete_expired_sessions(cd)
-    repository.insert_session(cd,token_hash(token),account_id,secrets.token_urlsafe(24),after(seconds=SESSION_SECONDS),
+    repository.insert_session(cd,token_hash(token),account_id,secrets.token_urlsafe(24),after(seconds=sessions.limits(cd,'customer')[1]),
                              uid(),(client or {}).get('user_agent',''),(client or {}).get('ip',''))
     return token
 
@@ -273,36 +275,90 @@ def _signed_in(cd, account, client, action):
     return {'session':session}
 
 
-def log_in(cd, body, client=None):
-    """The answer is the session token, or a two-factor challenge. A wrong password is written to the activity log
-    of an account that exists; an unknown email records nothing, so the log cannot be filled by guessing."""
-    from backend.modules.customer_security import service as security
-    email,password = schema.login_form(body)
-    account = repository.find_by_email(cd,email)
-    correct = password_ok(password,account['password'] if account else DUMMY_PASSWORD_HASH)
-    if account and not correct:
-        security.record(cd,account['id'],'login_failed',client=client)
-        cd.commit()
-    require(correct and account,'อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ยืนยันอีเมล',401)
+def password_proven(cd, account, client=None):
+    """The account's password was right (POST /api/customer/login or the shared POST /api/sign-in): {'session'}, or
+    {'challenge','methods'} when the account asks for a second step. The caller clears the lock on a session."""
     return _signed_in(cd,account,client,'login')
 
 
-def read_session(cd, cookie_header):
-    """The signed-in customer from the session cookie, or None. When the device was last seen more than a few
-    minutes ago the time is written again, so the customer's list of signed-in devices stays useful."""
+def wrong_password(cd, account, client=None):
+    """A wrong password for an account that exists goes to its activity log (saved at once)."""
+    from backend.modules.customer_security import service as security
+    security.record(cd,account['id'],'login_failed',client=client)
+    cd.commit()
+
+
+def log_in(cd, body, client=None):
+    """The answer is the session token, or a two-factor challenge. A wrong password is written to the activity log
+    of an account that exists; an unknown email records nothing there, so the log cannot be filled by guessing. Wrong
+    passwords count towards the lock of the typed email (security.lockout) either way; while it is locked every
+    attempt is answered 429 before the password is looked at."""
+    from backend.modules.security import lockout
+    email,password = schema.login_form(body)
+    key = lockout.key_for('customer',email)
+    lockout.check(key,client)
+    account = repository.find_by_email(cd,email)
+    correct = password_ok(password,account['password'] if account else DUMMY_PASSWORD_HASH)
+    if account and not correct:
+        wrong_password(cd,account,client)
+    if not (correct and account):
+        lockout.fail(key,client,owner={'email':account['email'],'name':account['name']} if account else None)
+        require(False,WRONG_LOGIN,401)
+    result = password_proven(cd,account,client)
+    if result.get('session'):
+        lockout.succeed(key,client)
+    return result
+
+
+def load_session(cd, cookie_header, client=None):
+    """(session or None, 'idle' / 'absolute' when the cookie named a session that has just run out, which is then
+    deleted and recorded). When the device was last seen more than a few minutes ago the time is written again, so
+    the customer's list of signed-in devices stays useful; that is not activity (last_active_at stays)."""
     from http import cookies
     from backend.modules.customer_security.model import SEEN_SECONDS
+    from backend.modules.security import events, sessions
     jar = cookies.SimpleCookie()
     try:
         jar.load(cookie_header)
     except cookies.CookieError:
-        return None
+        return None,None
     token = jar.get(SESSION_COOKIE)
     session = repository.find_session(cd,token_hash(token.value)) if token and token.value else None
-    if session and (session['last_seen_at'] or '')<after(seconds=-SEEN_SECONDS):
+    if not session:
+        return None,None
+    reason = sessions.expired_reason(session['session_created_at'],session['last_active_at'],sessions.limits(cd,'customer'),session['expires_at'])
+    if reason:
+        repository.delete_session(cd,session['token_hash'])
+        cd.commit()
+        client = client or {}
+        events.record('session_expired',actor='customer',subject=session['email'],ip=client.get('ip',''),
+                      user_agent=client.get('user_agent',''),detail={'reason':reason})
+        return None,reason
+    if (session['last_seen_at'] or '')<after(seconds=-SEEN_SECONDS):
         repository.touch_session(cd,session['token_hash'])
         cd.commit()
-    return session
+    return session,None
+
+
+def read_session(cd, cookie_header):
+    """The signed-in customer from the session cookie, or None (also for a session that has just run out)."""
+    return load_session(cd,cookie_header)[0]
+
+
+def touch_session(cd, session):
+    """Real use: the idle time starts again. Saved at once."""
+    session['last_active_at'] = repository.touch_activity(cd,session['token_hash'])
+    cd.commit()
+
+
+def session_times(cd, session):
+    from backend.modules.security import sessions
+    return sessions.expiry(session['session_created_at'],session['last_active_at'],sessions.limits(cd,'customer'),session['expires_at'])
+
+
+def cookie_max_age(cd):
+    from backend.modules.security import sessions
+    return sessions.limits(cd,'customer')[1]
 
 
 def log_out(cd, session):
@@ -310,10 +366,13 @@ def log_out(cd, session):
     cd.commit()
 
 
-def forgot(cd, body):
+def forgot(cd, body, client=None):
     """Email a reset link when the email has an account; the answer is the same either way."""
     require(email_ready(cd),'ยังส่งอีเมลไม่ได้ กรุณาติดต่อองค์กรผ่านช่องทางอื่น',503)
     email = schema.email_only(body)
+    from backend.modules.security import events
+    events.record('password_reset_requested',actor='customer',subject=email,ip=(client or {}).get('ip',''),
+                  user_agent=(client or {}).get('user_agent',''))
     D.begin(cd)
     account = repository.find_by_email(cd,email)
     task = None
@@ -343,7 +402,14 @@ def reset_password(cd, body, client=None):
     repository.delete_resets(cd,reset['account_id'])
     security.forget_passkeys(cd,reset['account_id'],client)
     security.record(cd,reset['account_id'],'password_reset',client=client)
-    return _signed_in(cd,repository.find(cd,reset['account_id']),client,'login')
+    account = repository.find(cd,reset['account_id'])
+    result = _signed_in(cd,account,client,'login')
+    # The owner proved the mailbox: the locks of that email end here (the sign-in page's one too).
+    from backend.modules.security import events, lockout
+    unlocked = lockout.clear(lockout.key_for('customer',account['email']),related=True)
+    events.record('password_reset_completed',actor='customer',subject=account['email'],ip=(client or {}).get('ip',''),
+                  user_agent=(client or {}).get('user_agent',''),detail={'unlocked':unlocked})
+    return result
 
 
 def change_password(cd, session, body):
@@ -357,8 +423,11 @@ def change_password(cd, session, body):
     cd.commit()
 
 
-def account_view(session):
-    return schema.account_view(session)
+def account_view(cd, session):
+    view = schema.account_view(session)
+    if session:
+        view.update(session_times(cd,session))
+    return view
 
 
 def update_profile(cd, session, body):

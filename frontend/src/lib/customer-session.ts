@@ -3,8 +3,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import { api, setConversation, setCustomerCredentials, type ApiError } from './api/client';
+import { api, ApiError, setConversation, setCustomerCredentials } from './api/client';
 import { useApi } from './query';
+import { clearExpiry } from './session-expiry';
 import { resetUiState } from './ui-state';
 import type { CustomerAccount, CustomerOrg, SignedInCustomer } from './types';
 
@@ -16,7 +17,14 @@ export function useCustomerAccount() {
   return useQuery<CustomerAccount, ApiError>({
     queryKey: ['/api/customer/account'],
     queryFn: async () => {
-      const account = await api<CustomerAccount>('/api/customer/account');
+      let account: CustomerAccount;
+      try {
+        account = await api<CustomerAccount>('/api/customer/account');
+      } catch (error) {
+        // A session that has just run out answers 401 {reason} once (api() keeps the reason): signed out.
+        if (!(error instanceof ApiError) || error.status !== 401) throw error;
+        account = { signed_in: false };
+      }
       setCustomerCredentials(account.signed_in ? account.csrf : null);
       return account;
     },
@@ -54,6 +62,7 @@ export function useCustomerOverview<T extends CustomerOverview = CustomerOvervie
 export function useCustomerSignedIn() {
   const client = useQueryClient();
   return useCallback(() => {
+    clearExpiry('customer');
     resetUiState();
     client.clear();
   }, [client]);
@@ -66,6 +75,7 @@ export function useCustomerLogout() {
     await api('/api/customer/logout', {});
     setCustomerCredentials(null);
     setConversation(null);
+    clearExpiry('customer');
     resetUiState();
     client.clear();
     router.replace('/login');

@@ -17,6 +17,11 @@ export type Boot = {
   csrf: string | null;
   tenant_id: string | null;
   memberships: Membership[];
+  /** Session limits (docs/SECURITY-DESIGN.md §2), when the server sends them here too. */
+  idle_expires_at?: string | null;
+  absolute_expires_at?: string | null;
+  /** Signed out because the cookie's session has just run out. */
+  session_expired?: 'idle' | 'absolute';
 };
 
 export type Member = { id: string; name: string; email: string; role: Role; team_id: string | null; active: boolean | number };
@@ -108,6 +113,9 @@ export type CustomerAccount =
       consent_version: string;
       consent_at: string;
       created_at: string;
+      /** When the session ends without activity / at the latest (docs/SECURITY-DESIGN.md §2). */
+      idle_expires_at?: string | null;
+      absolute_expires_at?: string | null;
     };
 
 export type SignedInCustomer = Extract<CustomerAccount, { signed_in: true }>;

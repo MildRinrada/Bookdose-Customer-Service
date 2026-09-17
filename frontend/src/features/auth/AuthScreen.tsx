@@ -12,25 +12,17 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { widgetPath } from '@/features/guest/api';
 import type { WidgetInfo } from '@/features/guest/types';
-import { ApiError } from '@/lib/api/client';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { useApi } from '@/lib/query';
 import { useBoot } from '@/lib/session';
+import { expiryNotices, type ExpiryReason } from '@/lib/session-expiry';
 import type { Boot } from '@/lib/types';
-import {
-  customerLogin,
-  customerRegister,
-  customerResend,
-  passkeyLogin,
-  passkeyLoginOptions,
-  registerOrganization,
-  setUp,
-  staffLogin,
-} from './api';
+import { customerRegister, customerResend, passkeyLogin, passkeyLoginOptions, registerOrganization, setUp, signIn } from './api';
 import { AuthStory } from './components/AuthStory';
 import { ForgotPasswordHelp } from './components/ForgotPasswordHelp';
 import { SinglePage } from './components/Frames';
 import { PrivacyNotice } from './components/PrivacyNotice';
+import { LockNotice, useSignInLock } from './components/SignInLock';
 import { SlugField } from './components/SlugField';
 import { TwoFactorStep } from './components/TwoFactorStep';
 import { requestPasskey, usePasskeysAvailable } from './passkeys';
@@ -62,9 +54,11 @@ type Props = {
   org?: string;
   /** ?next=, a path inside the app to return to after signing in. */
   next?: string;
+  /** ?expired=: the session this person had ran out (docs/SECURITY-DESIGN.md §2). */
+  expired?: ExpiryReason | null;
 };
 
-export function AuthScreen({ page, tab = 'login', org = '', next = '' }: Props) {
+export function AuthScreen({ page, tab = 'login', org = '', next = '', expired = null }: Props) {
   const boot = useBoot();
   const account = useCustomerAccount();
   const router = useRouter();
@@ -108,6 +102,7 @@ export function AuthScreen({ page, tab = 'login', org = '', next = '' }: Props) 
       signupOrg={signup.signupOrg}
       info={signup.info}
       next={next}
+      expired={expired}
     />
   );
 }
@@ -140,10 +135,11 @@ type AuthPageProps = {
   signupOrg: string;
   info: PublicOrgInfo | null;
   next: string;
+  expired: ExpiryReason | null;
 };
 
 /** pages/auth/auth.html */
-function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, next }: AuthPageProps) {
+function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, next, expired }: AuthPageProps) {
   const router = useRouter();
   const toast = useToast();
   const { openModal } = useDialogs();
@@ -166,6 +162,8 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
   const [secondStep, setSecondStep] = useState<string[] | null>(null);
   const [passkeyError, setPasskeyError] = useState('');
   const passkeys = usePasskeysAvailable();
+  // Locked after too many wrong passwords: a countdown instead of the error, the button waits (SignInLock).
+  const lock = useSignInLock();
 
   useEffect(() => {
     if (!focusAfterSwitch.current) return;
@@ -198,20 +196,25 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
 
   const submitStaffForm = async (values: Record<string, string>, form: HTMLFormElement) => {
     if (kind === 'login') {
-      // One sign-in for everyone: an email that is not a staff account is tried as a customer account.
+      if (lock.locked) return;
+      // One sign-in for everyone (POST /api/sign-in): the server checks the staff and the customer account of this
+      // email together and says which one signed in.
+      let result;
       try {
-        await staffLogin(values.email, values.password);
+        result = await signIn(values.email, values.password);
       } catch (error) {
-        if (!(error instanceof ApiError) || error.status !== 401 || !boot.home) throw error;
-        const result = await customerLogin(values.email, values.password);
-        if (result.two_factor) {
-          setSecondStep(result.methods ?? ['totp']);
-          return;
-        }
-        finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว');
+        if (lock.catchLock(error)) return;
+        throw error;
+      }
+      if (result.kind === 'staff') {
+        finishStaff(staffDestination(next));
         return;
       }
-      finishStaff(staffDestination(next));
+      if (result.two_factor) {
+        setSecondStep(result.methods ?? ['totp']);
+        return;
+      }
+      finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว');
       return;
     }
     if (kind === 'register') {
@@ -271,10 +274,13 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
 
   const signInWithPasskey = async () => {
     setPasskeyError('');
+    if (lock.locked) return;
     try {
       await passkeyLogin(await requestPasskey(await passkeyLoginOptions()));
       finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบด้วย Passkey แล้ว');
     } catch (error) {
+      // Refused passkeys count towards the same lock: its countdown instead of the message.
+      if (lock.catchLock(error)) return;
       setPasskeyError(error instanceof Error ? error.message : String(error));
     }
   };
@@ -305,6 +311,12 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                 <Icon name="chat" />
                 แชทโดยไม่ต้องเข้าสู่ระบบ
               </Link>
+            </p>
+          )}
+          {login && !secondStep && !signUp && expired && (
+            <p className="notice warning session-ended" role="status">
+              <Icon name="clock" />
+              <span>{expiryNotices[expired]}</span>
             </p>
           )}
           {secondStep ? (
@@ -409,7 +421,30 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   เพิ่มเคสตัวอย่าง 5 เคสและคู่มือ เพื่อทดลองใช้งาน
                 </label>
               )}
-              <button className="btn primary" type="submit">
+              {login && (
+                <LockNotice
+                  lock={lock}
+                  help={
+                    // One page for both kinds of account, and the answer must not tell which one this email is.
+                    // Staff have no password reset: they wait, or ask the platform admin.
+                    <>
+                      {verifyEmail && (
+                        <>
+                          ลูกค้า:{' '}
+                          <Link className="btn subtle" href={withOrg('/customer/forgot', org)}>
+                            ลืมรหัสผ่าน
+                          </Link>
+                          <span aria-hidden="true">·</span>
+                        </>
+                      )}
+                      <span>{verifyEmail ? 'เจ้าหน้าที่: ' : ''}รอให้ครบเวลา หรือติดต่อผู้ดูแลแพลตฟอร์ม</span>
+                    </>
+                  }
+                />
+              )}
+              {/* A new key when the lock starts or ends: the form re-enables its buttons after submitting, which must
+                  not undo the lock's disabled state. */}
+              <button key={lock.locked ? 'locked' : 'open'} className="btn primary" type="submit" disabled={login && lock.locked}>
                 {register ? 'สมัครและส่งอีเมลยืนยัน' : setup ? 'สร้างพื้นที่ทำงาน' : 'เข้าสู่ระบบ'} <Icon name="arrow" />
               </button>
               <div className="auth-foot">
@@ -423,7 +458,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
               {login && passkeys && (
                 <>
                   <div className="auth-or">หรือ</div>
-                  <button className="btn passkey-btn" type="button" onClick={() => void signInWithPasskey()}>
+                  <button className="btn passkey-btn" type="button" disabled={lock.locked} onClick={() => void signInWithPasskey()}>
                     <Icon name="shield" />
                     เข้าสู่ระบบด้วย Passkey
                   </button>

@@ -46,12 +46,21 @@ def mark_email_verified(db, user_id):
 
 # Sessions (the token column stores a hash of the cookie value)
 def find_session(db, token_hash):
+    """The session row with its user, whatever its limits say (auth.service.load_session judges them)."""
     return one(db,'''SELECT s.*,u.name,u.email,u.platform_admin FROM sessions s
-               JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>?''',(token_hash,now()))
+               JOIN users u ON u.id=s.user_id WHERE s.token=?''',(token_hash,))
 
 
 def insert_session(db, token_hash, user_id, tenant_id, csrf, expires_at):
-    db.execute('INSERT INTO sessions VALUES(?,?,?,?,?)',(token_hash,user_id,tenant_id,csrf,expires_at))
+    db.execute('INSERT INTO sessions(token,user_id,tenant_id,csrf,expires_at,created_at,last_active_at) VALUES(?,?,?,?,?,?,?)',
+               (token_hash,user_id,tenant_id,csrf,expires_at,now(),now()))
+
+
+def touch_session(db, token_hash):
+    """The session was really used (a change, or the page's activity signal)."""
+    moment = now()
+    db.execute('UPDATE sessions SET last_active_at=? WHERE token=?',(moment,token_hash))
+    return moment
 
 
 def delete_expired_sessions(db):

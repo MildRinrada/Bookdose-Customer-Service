@@ -2,7 +2,7 @@ import { api } from '@/lib/api/client';
 import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, SmsSettings } from './types';
 
 /* Endpoints of the guest web chat (docs/GUEST-CHAT-DESIGN.md §3). The visitor's routes live under
-   /api/public/<org>/guest; the chat named by X-Conversation-ID (setConversation) is the one /session, /messages,
+   /api/public/<org>/guest; the chat named by X-Conversation-ID (the `conversation` option of api()) is the one /session, /messages,
    /handoff and /csat act on, exactly like the signed-in portal routes one level up. */
 
 export const guestBase = (slug: string) => `/api/public/${slug}/guest`;
@@ -10,6 +10,20 @@ export const guestBase = (slug: string) => `/api/public/${slug}/guest`;
 /** The `publicSlug` the shared chat pieces (MessageThread, Composer, AiPortalStatus, the survey) take: they build
     /api/public/<publicSlug>/messages, /attachments/<id>, /handoff and /csat, which for a guest are the guest routes. */
 export const guestPortalSlug = (slug: string) => `${slug}/guest`;
+
+/** GET: a case holding one of this browser's chats (status, progress, deadlines; 404 for any other case). */
+export const guestCasePath = (slug: string, id: string) => `${guestBase(slug)}/cases/${id}`;
+
+/** The organization's public page: its name, welcome and published articles (no sign-in, no guest cookie needed). */
+export const publicOrgPath = (slug: string) => `/api/public/${slug}`;
+
+/** The addresses of a guest's pages. */
+export const guestPages = {
+  chat: (slug: string, conversationId?: string) => `/chat/${slug}${conversationId ? `?c=${conversationId}` : ''}`,
+  faq: (slug: string) => `/chat/${slug}/faq`,
+  article: (slug: string, id: string) => `/chat/${slug}/faq/${id}`,
+  case: (slug: string, id: string) => `/chat/${slug}/cases/${id}`,
+};
 
 /** GET: this browser's visitor, its conversations and the ways to follow them. */
 export const guestPath = (slug: string) => guestBase(slug);

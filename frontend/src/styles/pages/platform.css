@@ -273,6 +273,32 @@
   background: #e3f4ea;
   color: #1a6340;
 }
+/* Where a global article stands: a draft and waiting changes are what the eye must not miss. */
+.badge.article-state-draft {
+  background: #fff4dc;
+  color: #7a4b00;
+}
+.badge.article-state-changed {
+  background: #fde8e2;
+  color: #9a3412;
+}
+.badge.article-state-published {
+  background: #e3f4ea;
+  color: #1a6340;
+}
+.article-state-note {
+  margin: 12px 0;
+}
+.article-live {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+.article-live summary {
+  cursor: pointer;
+  font-weight: 600;
+}
 
 /* Platform console: ทีมผู้ดูแลระบบ */
 .role-split {
@@ -327,4 +353,48 @@
     grid-template-columns: 1fr;
     gap: 2px;
   }
+}
+
+/* Suspending an organization: a quiet button in the row that still reads as the dangerous one. */
+.org-status-action {
+  white-space: nowrap;
+  text-align: right;
+}
+.btn.org-suspend {
+  color: #b42318;
+  border-color: #f1b8b0;
+}
+.btn.org-suspend:hover {
+  background: #fdecea;
+}
+
+/* Support access on the organizations page: a request waiting for the organization, and an access with an end. */
+.org-support-pending {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #7a4b00;
+}
+.org-support-until {
+  display: block;
+  margin-bottom: 4px;
+}
+.org-support-until .link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.system-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.system-notice .icon {
+  flex-shrink: 0;
+  margin-top: 2px;
 }

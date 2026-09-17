@@ -119,5 +119,5 @@ def seed_global_faq(cd):
     if platform.setting(cd,'global_faq_seeded'):
         return
     for title,category,audience,body in GLOBAL_ARTICLES:
-        platform.insert_global_article(cd,uid(),title,category,body,audience,'Bookdose')
+        platform.insert_global_article(cd,uid(),title,category,body,audience,'Bookdose',published=True)
     platform.save_setting(cd,'global_faq_seeded','1')

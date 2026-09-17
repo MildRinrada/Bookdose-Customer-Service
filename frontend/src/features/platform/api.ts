@@ -16,8 +16,16 @@ export type NewTenantBody = { name: string; slug: string; admin_name: string; em
 
 export const createTenant = (body: NewTenantBody) => api<{ id: string }>(TENANTS_PATH, body);
 
-export const requestSupportAccess = (tenantId: string, reason: string) =>
-  api<{ ok: true }>(`${TENANTS_PATH}/${tenantId}/support-access`, { reason });
+/** Suspend (with the typed confirmation: CONFIRM or the organization's name) or reopen an organization. */
+export const setTenantStatus = (tenantId: string, status: 'active' | 'suspended', confirmation = '') =>
+  api<{ ok: true }>(`${TENANTS_PATH}/${tenantId}`, status === 'suspended' ? { status, confirmation } : { status }, 'PATCH');
+
+/** Ask an organization to let this admin in for support; its admins approve (or not). */
+export const requestSupportAccess = (tenantId: string, reason: string, hours: number) =>
+  api<{ id: string; status: 'pending' }>(`${TENANTS_PATH}/${tenantId}/support-access`, { reason, hours });
+
+/** Withdraw a waiting request, or leave an access in force early. */
+export const withdrawSupportAccess = (id: string) => api<{ ok: true }>(`${PLATFORM_PREFIX}/support-access/${id}`, undefined, 'DELETE');
 
 export const addPlatformAdmin = (body: { email: string; admin_name?: string; password?: string }) => api<{ id: string }>(ADMINS_PATH, body);
 
@@ -27,3 +35,12 @@ export const saveGlobalArticle = (id: string | undefined, body: GlobalArticleInp
   api<{ id?: string; ok?: true }>(id ? `${GLOBAL_FAQ_PATH}/${id}` : GLOBAL_FAQ_PATH, body, id ? 'PATCH' : 'POST');
 
 export const deleteGlobalArticle = (id: string) => api<{ ok: true }>(`${GLOBAL_FAQ_PATH}/${id}`, undefined, 'DELETE');
+
+/** Readers see the latest words from now on (a draft, or the waiting changes). */
+export const publishGlobalArticle = (id: string) => api<{ ok: true }>(`${GLOBAL_FAQ_PATH}/${id}/publish`, {});
+
+/** Readers no longer see it; it is a draft again. */
+export const unpublishGlobalArticle = (id: string) => api<{ ok: true }>(`${GLOBAL_FAQ_PATH}/${id}/unpublish`, {});
+
+/** Throw away the waiting changes; the published words stay. */
+export const discardGlobalChanges = (id: string) => api<{ ok: true }>(`${GLOBAL_FAQ_PATH}/${id}/changes`, undefined, 'DELETE');

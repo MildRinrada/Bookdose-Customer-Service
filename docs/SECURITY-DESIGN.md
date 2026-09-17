@@ -100,6 +100,43 @@ settings bounds; events recorded for each hooked kind; flood aggregation; alert 
 WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admin gets 403); revoke sessions.
 
 ---------------------------------------------------------------------------------------------------------------------------
+## 3b. Round 2: data trust (support access, sealed secrets, staff 2FA, proven emails)
+
+### Support access with the organization's consent (`backend/modules/support_access`)
+- `POST /api/platform/tenants/{id}/support-access {reason, hours ∈ 1,4,8,24,72}` creates a **pending** request; nothing
+  can be read yet. The organization's admins get an email (platform mailbox) and a banner on every staff screen.
+- Admins (`role=admin`, permanent membership) decide at `GET /api/support-access`, `POST …/{id}/approve {hours ≤ asked, note}`,
+  `…/deny`, `…/end`. The platform admin can `DELETE /api/platform/support-access/{id}` (withdraw, or leave early).
+- Approval makes/reactivates the membership as manager with `memberships.expires_at`. **Every membership query ignores a
+  row past `expires_at`**, so access ends on the minute; the automation worker then marks it `expired`, sets `active=0`
+  and unassigns cases. Undecided requests lapse after 24 h. A permanent membership is never touched.
+- Audit: `tenant.support_requested|access|denied|ended|cancelled|expired` in both the platform and the organization log;
+  security event `support_access` on approval.
+
+### Sealed secrets (`backend/utils/secret_box.py`, dependency `cryptography`)
+- AES-256-GCM, format `bdsec1.<key id>.<base64url(nonce+ciphertext+tag)>`, associated data = the file name
+  (`<tenant>.line.json` …) or `customer_totp:<id>` / `staff_totp:<id>`, so a value moved elsewhere does not open.
+- Key: `BOOKDOSE_SECRET_KEY` (base64 32 bytes; `python -m backend.utils.secret_box new-key`), else `data/keys/secret.key`
+  (0600, outside `data/secrets`, never in backups). `BOOKDOSE_SECRET_KEY_OLD` (comma list) still opens old values, which
+  are re-sealed on read. Plain files and TOTP rows from before are sealed at start (`D.init`). A value that does not open
+  reads as "not configured" (logged) rather than crashing every request.
+
+### Staff two-factor sign-in and passkeys (`backend/modules/staff_security`)
+- Tables `staff_totp` (sealed), `staff_recovery_codes`, `staff_passkeys`, `staff_challenges`, `staff_login_challenges`.
+- `/api/sign-in` and `/api/login`: a right password on an account with TOTP answers `{two_factor, methods}` plus the
+  `bookdose_staff_2fa` cookie (5 min, 5 tries); `POST /api/login/verify {code|recovery_code}` gives the session. Wrong codes
+  count on `staff:<email>` (which also locks `signin:<email>`).
+- Settings at `/api/account/security` (state, totp setup/confirm/disable, recovery codes, passkeys options/add/rename/remove);
+  adding or removing a way in costs the password. Page: `/account/security` (link in จัดการบัญชี).
+- One passkey button on the sign-in page: `POST /api/sign-in/passkey/options` stores the challenge for both kinds,
+  `POST /api/sign-in/passkey` answers `{kind:'staff'|'customer'}` with that kind's session.
+- The platform overview warns a platform admin whose account has neither TOTP nor a passkey, and when the key is a file.
+- Lost phone and codes: `python -m backend.modules.staff_security reset <email>` on the server.
+
+### Emails only to proven addresses
+- Reply notices: re-checked at send time (`customer_accounts.email_verified`), not only when queued.
+- Lock notices: skipped for a customer account whose email was never proven. Guest emails already required proof.
+
 ## 4. Frontend
 - **Sign-in screens** (staff login, customer login, customer 2FA step): show the 429 lock message with a live countdown
   from `retry_after`, disable the submit button meanwhile, link to "ลืมรหัสผ่าน".

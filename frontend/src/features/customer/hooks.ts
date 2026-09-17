@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/Toast';
-import { api, setConversation, type ApiError } from '@/lib/api/client';
+import { api, type ApiError } from '@/lib/api/client';
 import { useCustomerOrgs, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import type { CustomerOrg } from '@/lib/types';
@@ -46,20 +46,10 @@ export function useChatSession(slug: string | undefined, id: string | undefined)
   const key = slug && id ? sessionKey(slug, id) : null;
   const poll = useRealtimeInterval(CHAT_POLL_MS);
 
-  // The composer, the hand-off and the survey act on the chat named by X-Conversation-ID; clear it when leaving.
-  useEffect(() => {
-    setConversation(id ?? null);
-    return () => setConversation(null);
-  }, [id]);
-
   const query = useQuery<PortalSession, ApiError>({
     queryKey: [key],
-    // Not useApi(): the chat is chosen by a header, so it is set right before every request (also a refresh
-    // started by another screen's invalidation).
-    queryFn: () => {
-      setConversation(id);
-      return api<PortalSession>(sessionPath(slug as string));
-    },
+    // Not useApi(): the chat is named by a header of this request (the path is the same for every chat).
+    queryFn: () => api<PortalSession>(sessionPath(slug as string), undefined, 'GET', { conversation: id }),
     enabled: key !== null,
     refetchInterval: poll,
     refetchIntervalInBackground: false,

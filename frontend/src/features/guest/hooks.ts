@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/Toast';
-import { api, setConversation, setGuestCredentials, type ApiError } from '@/lib/api/client';
+import { api, setGuestCredentials, type ApiError } from '@/lib/api/client';
 import { CHAT_POLL_MS } from '@/features/customer/hooks';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import type { PortalSession } from '@/features/customer/types';
@@ -40,17 +40,9 @@ export function useGuestSession(slug: string, id: string | null, onGone: (messag
   const key = id ? guestSessionKey(slug, id) : null;
   const poll = useRealtimeInterval(CHAT_POLL_MS);
 
-  useEffect(() => {
-    setConversation(id);
-    return () => setConversation(null);
-  }, [id]);
-
   const query = useQuery<PortalSession, ApiError>({
     queryKey: [key],
-    queryFn: () => {
-      setConversation(id);
-      return api<PortalSession>(guestSessionPath(slug));
-    },
+    queryFn: () => api<PortalSession>(guestSessionPath(slug), undefined, 'GET', { conversation: id ?? undefined }),
     enabled: key !== null,
     refetchInterval: poll,
     refetchIntervalInBackground: false,

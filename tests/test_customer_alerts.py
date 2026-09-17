@@ -3,6 +3,7 @@
 LINE, and the LINE outbox (sent after the commit, retried with the same retry key, closed once the link is gone).
 Email and LINE are mocked; nothing leaves the machine."""
 import unittest
+import uuid
 from unittest.mock import patch
 
 import test_app as base
@@ -219,8 +220,9 @@ class CustomerAlertTests(unittest.TestCase):
         self.line.side_effect = None
         # A notice whose LINE link went away meanwhile is closed unsent.
         with D.tenant(self.org) as db:
+            # A fresh id (deriving one from an existing id collided whenever that id already began with the same letter).
             db.execute("INSERT INTO customer_alert_outbox(id,account_id,channel,subject,text,link,created_at,next_at) "
-                       "SELECT 'f'||substr(id,2),account_id,'line','ทดสอบ','','',created_at,created_at FROM customer_alert_outbox LIMIT 1")
+                       "SELECT ?,account_id,'line','ทดสอบ','','',created_at,created_at FROM customer_alert_outbox LIMIT 1",(uuid.uuid4().hex,))
         self.ok(owner,f'{ORG}/line',None,'DELETE')
         self.line.reset_mock()
         notify.send(self.org)

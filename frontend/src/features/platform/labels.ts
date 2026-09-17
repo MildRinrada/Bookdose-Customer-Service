@@ -1,4 +1,4 @@
-import type { GlobalAudience, SystemWorker } from './types';
+import type { GlobalArticleState, GlobalAudience, SystemWorker } from './types';
 
 /* The platform console's own words (system.js and global-faq.js). */
 
@@ -37,6 +37,20 @@ export const audienceHints: Record<GlobalAudience, string> = {
 };
 
 export const audiences = Object.keys(audienceLabels) as GlobalAudience[];
+
+export const articleStateLabels: Record<GlobalArticleState, string> = {
+  draft: 'ร่าง',
+  published: 'เผยแพร่แล้ว',
+  changed: 'มีแก้ไขรอเผยแพร่',
+};
+
+export const articleStateHints: Record<GlobalArticleState, string> = {
+  draft: 'ยังไม่มีใครเห็นบทความนี้ ตรวจให้เรียบร้อยแล้วกด “เผยแพร่”',
+  published: 'ผู้อ่านเห็นบทความนี้อยู่ การแก้ไขครั้งต่อไปจะเก็บเป็นร่างจนกว่าจะเผยแพร่',
+  changed: 'ผู้อ่านยังเห็นฉบับเดิม การแก้ไขจะขึ้นให้ทุกองค์กรเห็นเมื่อกด “เผยแพร่การแก้ไข”',
+};
+
+export const articleStates = Object.keys(articleStateLabels) as GlobalArticleState[];
 
 /** "1.5 GB" */
 export function bytesText(value: number): string {

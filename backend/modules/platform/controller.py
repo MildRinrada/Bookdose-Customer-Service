@@ -19,7 +19,9 @@ def save_sms_settings(req):
 
 
 def list_tenants(req):
-    return req.send(200,service.list_tenants(req.cd))
+    """The organizations, the platform's history, and where each of this admin's support requests stands."""
+    from backend.modules.support_access import service as support
+    return req.send(200,{**service.list_tenants(req.cd),'support':support.my_requests(req.cd,req.session['user_id'])})
 
 
 def create_tenant(req):
@@ -29,11 +31,6 @@ def create_tenant(req):
 def set_tenant_status(req, tenant_id):
     service.set_tenant_status(req.cd,req.session,tenant_id,req.body)
     return req.send(200,{'ok':True})
-
-
-def grant_support_access(req, tenant_id):
-    service.grant_support_access(req.cd,req.session,tenant_id,req.body)
-    return req.send(201,{'ok':True})
 
 
 def platform_team(req):
@@ -50,7 +47,13 @@ def remove_platform_admin(req, user_id):
 
 
 def system(req):
-    return req.send(200,service.system_overview(req.cd))
+    """The overview, and two things only this admin can fix: where the secret key comes from, and whether their own
+    account has a second factor or a passkey."""
+    from backend.modules.staff_security import service as staff_security
+    from backend.utils import secret_box
+    return req.send(200,{**service.system_overview(req.cd),
+                         'security':{'secret_key':secret_box.key_source(),
+                                     'account_protected':staff_security.protected(req.cd,req.session['user_id'])}})
 
 
 # Global FAQ
@@ -64,6 +67,21 @@ def create_global_article(req):
 
 def update_global_article(req, article_id):
     service.save_global_article(req.cd,req.session,article_id,req.body)
+    return req.send(200,{'ok':True})
+
+
+def publish_global_article(req, article_id):
+    service.publish_global_article(req.cd,req.session,article_id)
+    return req.send(200,{'ok':True})
+
+
+def unpublish_global_article(req, article_id):
+    service.unpublish_global_article(req.cd,req.session,article_id)
+    return req.send(200,{'ok':True})
+
+
+def discard_global_changes(req, article_id):
+    service.discard_global_changes(req.cd,req.session,article_id)
     return req.send(200,{'ok':True})
 
 

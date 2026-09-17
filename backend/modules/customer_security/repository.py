@@ -1,19 +1,36 @@
-"""Queries of the customer account's security (control database only). Secrets are stored the way they are used:
-the TOTP secret as it must be (it is a shared secret), every code and token only as a SHA-256 hash."""
+"""Queries of the customer account's security (control database only). The TOTP secret must be readable (it is a
+shared secret), so it is sealed with the platform's secret key (utils/secret_box) and opened here as it is read; every
+code and token is stored only as a SHA-256 hash."""
 from backend.database.db import one, rows
+from backend.utils import secret_box
 from backend.utils.dates import now
+
+
+def _totp_context(account_id):
+    return f'customer_totp:{account_id}'
 
 
 # Two-factor sign-in (TOTP)
 def totp(cd, account_id):
-    return one(cd,'SELECT * FROM customer_totp WHERE account_id=?',(account_id,))
+    row = one(cd,'SELECT * FROM customer_totp WHERE account_id=?',(account_id,))
+    if row:
+        row['secret'] = secret_box.unseal_value(row['secret'],_totp_context(account_id))
+    return row
+
+
+def seal_totp_secrets(cd):
+    """At start: shared secrets stored before encryption are sealed."""
+    for row in rows(cd,'SELECT account_id,secret FROM customer_totp'):
+        if not secret_box.is_sealed(row['secret']):
+            cd.execute('UPDATE customer_totp SET secret=? WHERE account_id=?',
+                       (secret_box.seal_value(row['secret'],_totp_context(row['account_id'])),row['account_id']))
 
 
 def start_totp(cd, account_id, secret):
     """A setup that is not confirmed yet; a second setup replaces the first."""
     cd.execute('''INSERT INTO customer_totp(account_id,secret,confirmed_at,last_step,created_at) VALUES(?,?,NULL,0,?)
                   ON CONFLICT(account_id) DO UPDATE SET secret=excluded.secret,confirmed_at=NULL,last_step=0,created_at=excluded.created_at''',
-               (account_id,secret,now()))
+               (account_id,secret_box.seal_value(secret,_totp_context(account_id)),now()))
 
 
 def confirm_totp(cd, account_id, step):

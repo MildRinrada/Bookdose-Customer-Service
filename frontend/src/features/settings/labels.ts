@@ -16,3 +16,15 @@ export const isSettingsTab = (value: string | null | undefined): value is Settin
 
 /** Badge words for a member's access (the old badge('active'|'suspended')). */
 export const memberStatusLabels: Record<string, string> = { active: 'เปิดใช้งาน', suspended: 'ระงับใช้งาน' };
+
+/** Support access: the lengths that may be asked for and approved, and where a request stands. */
+export const supportHours = [1, 4, 8, 24, 72];
+
+export const supportStatusLabels: Record<string, string> = {
+  pending: 'รออนุมัติ',
+  approved: 'อนุมัติแล้ว',
+  denied: 'ปฏิเสธ',
+  cancelled: 'ผู้ขอยกเลิก',
+  ended: 'หยุดก่อนเวลา',
+  expired: 'หมดเวลา',
+};

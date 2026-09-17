@@ -52,6 +52,8 @@ from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
 from backend.modules.security import blocks, events as security_events, routes as security_routes, traps
 from backend.modules.security.model import TRAP_PATH
+from backend.modules.staff_security import routes as staff_security_routes
+from backend.modules.support_access import routes as support_access_routes
 from backend.modules.tickets import routes as ticket_routes
 from backend.modules.trash import routes as trash_routes
 from backend.utils.dates import now
@@ -61,7 +63,8 @@ from backend.utils.validation import require
 ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *organization_routes.ROUTES,
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
-          *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES]
+          *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
+          *support_access_routes.ROUTES, *staff_security_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')
@@ -218,13 +221,23 @@ def route_request(req, path):
                 raise APIError(404,'ไม่พบรายการ AI' if path.startswith('/api/ai/') else 'ไม่พบรายการ')
 
 
+def limit_customer_area(req):
+    """Reading and writing are counted apart, so a customer who opened many pages can still act on the next one. A
+    signed-in customer is counted by account: behind one proxy or office network every visitor may share an address,
+    and one busy customer must not slow down the others. Anyone else (guests, signed out, a cookie naming no session)
+    is counted by address."""
+    from backend.modules.customers.service import cookie_account
+    account = cookie_account(req.cd,req.headers.get('Cookie',''))
+    who = ('account',account) if account else ('ip',req.ip)
+    limited(('public-read' if req.command=='GET' else 'public-write',*who),180 if req.command=='GET' else 30,60)
+
+
 def route_portal(req, path):
     match = portal_routes.PORTAL_PATH.fullmatch(path)
     require(match,'ไม่พบรายการ',404)
-    # Reading and writing are counted apart, so a customer who opened many pages can still act on the next one.
-    limited(('public-read' if req.command=='GET' else 'public-write',req.ip),180 if req.command=='GET' else 30,60)
     with D.control() as cd:
         req.cd = cd
+        limit_customer_area(req)
         req.org = portal_service.active_organization(cd,match[1])
         with D.tenant(req.org['id']) as db:
             req.db = db
@@ -251,10 +264,9 @@ def route_guest(req, path):
 
 def route_customer(req, path):
     """The customer's account, the same for every organization (control database only)."""
-    # Reading and writing are counted apart, so a customer who opened many pages can still act on the next one.
-    limited(('public-read' if req.command=='GET' else 'public-write',req.ip),180 if req.command=='GET' else 30,60)
     with D.control() as cd:
         req.cd = cd
+        limit_customer_area(req)
         if run(req,path,'customer-public'):
             return
         req.customer = auth.customer_session(req)

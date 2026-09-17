@@ -12,8 +12,11 @@ export type Tenant = {
   member_count: number;
 };
 
-/** GET /api/platform/tenants */
-export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[] };
+/** The platform admin's own support request for an organization, while it waits or is in force. */
+export type SupportSummary = { id: string; status: 'pending' | 'approved'; hours: number; reason: string; created_at: string; expires_at: string | null };
+
+/** GET /api/platform/tenants (support: by organization id). */
+export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[]; support: Record<string, SupportSummary> };
 
 export type TenantFilters = { q?: string; status?: string };
 
@@ -50,6 +53,8 @@ export type SystemOverview = {
   };
   organizations: { active: number; suspended: number; members: number };
   audit: AuditEvent[];
+  /** Where the secret key comes from, and whether this admin's own account has a second factor or a passkey. */
+  security?: { secret_key: 'environment' | 'file'; account_protected: boolean };
 };
 
 export type PlatformAdmin = { id: string; name: string; email: string; created_at: string };
@@ -59,7 +64,11 @@ export type PlatformTeam = { admins: PlatformAdmin[]; me: string };
 
 export type GlobalAudience = 'platform' | 'staff' | 'customer';
 
-/** A row of GET /api/platform/faq. */
+/** Where a global article stands: never published, published as it is, or published with changes waiting. */
+export type GlobalArticleState = 'draft' | 'published' | 'changed';
+
+/** A row of GET /api/platform/faq: the latest words (with the waiting changes) and, while they differ, `live`: the
+    version readers see. */
 export type GlobalArticle = {
   id: string;
   title: string;
@@ -68,10 +77,13 @@ export type GlobalArticle = {
   audience: GlobalAudience;
   author: string;
   updated_at: string;
+  published_at: string | null;
+  state: GlobalArticleState;
+  live: { title: string; category: string; body: string; audience: GlobalAudience } | null;
 };
 
 export type GlobalFaqPage = { articles: GlobalArticle[] };
 
-export type GlobalFaqFilters = { q?: string; audience?: string };
+export type GlobalFaqFilters = { q?: string; audience?: string; state?: string };
 
 export type GlobalArticleInput = { title: string; category: string; body: string; audience: string };

@@ -505,6 +505,13 @@ class Worker:
                 with D.control() as cd:
                     ids = tenants.active_tenant_ids(cd)
                 monitor.heartbeat('automation')
+                try:
+                    # Support accesses whose time is over are closed; requests nobody decided lapse.
+                    from backend.modules.support_access import service as support
+                    support.sweep()
+                except Exception as error:
+                    print(f'Support access: {type(error).__name__}; retrying next round',flush=True)
+                    monitor.error('automation','support: '+type(error).__name__)
                 for tenant_id in ids:
                     if self.stop.is_set():
                         return

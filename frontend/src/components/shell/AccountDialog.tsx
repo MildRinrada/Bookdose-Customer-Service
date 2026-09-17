@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
@@ -9,7 +11,8 @@ import { api } from '@/lib/api/client';
 import { useInvalidate } from '@/lib/query';
 import { useBoot, useStaffLogout } from '@/lib/session';
 
-/* "จัดการบัญชี": the staff member's picture and name, their password, and signing out. */
+/* "จัดการบัญชี": the staff member's picture and name, their password, the way to two-factor sign-in and passkeys,
+   and signing out. */
 
 export function AccountDialog() {
   const boot = useBoot().data!;
@@ -48,6 +51,10 @@ export function AccountDialog() {
           เปลี่ยนรหัสผ่าน
         </button>
       </Form>
+      <Link className="btn" href="/account/security" onClick={() => closeModal()}>
+        <Icon name="shield" />
+        การยืนยันสองขั้นตอนและ Passkey
+      </Link>
       <button type="button" className="btn danger" onClick={() => void logout().catch((error: Error) => toast(error.message, true))}>
         ออกจากระบบ
       </button>

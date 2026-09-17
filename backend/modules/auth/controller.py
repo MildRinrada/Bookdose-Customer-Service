@@ -41,9 +41,24 @@ def set_up(req):
     return req.send(200,{'ok':True},headers=session_cookie(req,service.set_up_platform(cookie(req),req.body)))
 
 
+def challenge_cookie(req, token, max_age=None):
+    """The waiting second step of a staff sign-in (HttpOnly; the page never sees it)."""
+    from backend.modules.staff_security.model import CHALLENGE_COOKIE, LOGIN_CHALLENGE_MINUTES
+    age = LOGIN_CHALLENGE_MINUTES*60 if max_age is None else max_age
+    return f'{CHALLENGE_COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/api/; Max-Age={age}'+('; Secure' if req.server.secure_cookies else '')
+
+
+def staff_result(req, result, extra=None):
+    """Answer a staff password sign-in: the session cookie, or the second step's cookie and its methods."""
+    if isinstance(result,dict):
+        return req.send(200,{'ok':True,**(extra or {}),'two_factor':True,'methods':result['methods']},
+                        headers={'Set-Cookie':challenge_cookie(req,result['challenge'])})
+    return req.send(200,{'ok':True,**(extra or {})},headers=session_cookie(req,result))
+
+
 def log_in(req):
     limited(('login',req.ip),15,900)
-    return req.send(200,{'ok':True},headers=session_cookie(req,service.log_in(cookie(req),req.body,client(req))))
+    return staff_result(req,service.log_in(cookie(req),req.body,client(req)))
 
 
 def sign_in(req):
@@ -58,7 +73,7 @@ def sign_in(req):
         req.cd = cd
         kind,result = service.sign_in(cd,cookie(req),req.body,client(req))
         if kind=='staff':
-            return req.send(200,{'ok':True,'kind':'staff'},headers=session_cookie(req,result))
+            return staff_result(req,result,{'kind':'staff'})
         return customers.finish(req,result,extra={'kind':'customer'})
 
 

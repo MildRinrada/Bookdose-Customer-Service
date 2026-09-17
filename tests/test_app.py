@@ -485,28 +485,95 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(tenant_admin.call('/api/platform/tenants')[0],403)
         self.assertEqual(self.ok(tenant_admin,'/api/tickets')['tickets'],[])
 
-    def test_platform_support_access_is_explicit_audited_and_revocable(self):
+    def test_platform_support_access_needs_the_organizations_approval_and_ends_by_itself(self):
+        from backend.modules.support_access import service as support
         other=self.ok(self.admin,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
         path=f'/api/platform/tenants/{other}/support-access'
+        me=self.boot['user']['id']
         self.assertEqual(self.admin.call(path,{})[0],400)
         self.assertEqual(self.admin.call(path,{'reason':'ab'})[0],400)
+        self.assertEqual(self.admin.call(path,{'reason':'ตรวจสอบคำร้อง #123','hours':5})[0],400)
         tenant_admin=Client(self.base);tenant_admin.login('private@example.com')
         self.assertEqual(tenant_admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],403)
-        self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #123'})
+        # Asking gives nothing yet.
+        first=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #123','hours':4})['id']
         self.assertEqual(self.admin.call(path,{'reason':'ตรวจสอบคำร้อง #123'})[0],409)
-        self.assertTrue(any(e['action']=='tenant.support_access' and e['entity']==other and e['detail']=='ตรวจสอบคำร้อง #123' for e in self.ok(self.admin,'/api/platform/tenants')['audit']))
-        self.assertTrue(any(e['action']=='tenant.support_access' and e['detail']=='ตรวจสอบคำร้อง #123' for e in self.ok(tenant_admin,'/api/audit')['events']))
+        self.assertEqual(self.ok(self.admin,'/api/platform/tenants')['support'][other]['status'],'pending')
+        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        self.assertNotIn(other,[m['id'] for m in self.ok(self.admin,'/api/bootstrap')['memberships']])
+        # The organization's admins see it with its reason; nobody else there may decide.
+        waiting=self.ok(tenant_admin,'/api/support-access')['requests']
+        self.assertEqual([(r['id'],r['status'],r['reason'],r['hours'],r['requester']['email']) for r in waiting],
+                         [(first,'pending','ตรวจสอบคำร้อง #123',4,'admin@example.com')])
+        tenant_team=self.ok(tenant_admin,'/api/workspace')['team_id']
+        self.ok(tenant_admin,'/api/members',{'name':'เจ้าหน้าที่','email':'private-agent@example.com','password':'Test-password-123!','role':'manager','team_id':tenant_team})
+        private_manager=Client(self.base);private_manager.login('private-agent@example.com')
+        self.assertEqual(private_manager.call(f'/api/support-access/{first}/approve',{})[0],403)
+        self.assertEqual(self.admin.call(f'/api/support-access/{first}/approve',{})[0],404)    # not the admin's organization
+        # Denied: still nothing.
+        self.ok(tenant_admin,f'/api/support-access/{first}/deny',{'note':'ยังไม่จำเป็น'})
+        self.assertEqual(tenant_admin.call(f'/api/support-access/{first}/approve',{})[0],409)
+        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        # Asked again and approved for less than asked: a manager until then, never longer than asked.
+        second=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #124','hours':24})['id']
+        self.assertEqual(tenant_admin.call(f'/api/support-access/{second}/approve',{'hours':72})[0],400)
+        approved=self.ok(tenant_admin,f'/api/support-access/{second}/approve',{'hours':8})['requests'][0]
+        self.assertEqual(approved['status'],'approved')
         self.admin.switch(other)
         self.assertEqual(self.ok(self.admin,'/api/workspace')['role'],'manager')
         self.assertEqual(self.admin.call('/api/tickets')[0],200)
-        team=self.ok(tenant_admin,'/api/workspace')['team_id']
-        self.ok(tenant_admin,'/api/members/'+self.boot['user']['id'],{'team_id':team,'role':'manager','active':False},'PATCH')
+        self.assertTrue(any(e['action']=='tenant.support_access' and 'ตรวจสอบคำร้อง #124' in e['detail'] for e in self.ok(tenant_admin,'/api/audit')['events']))
+        member=next(m for m in self.ok(tenant_admin,'/api/workspace')['members'] if m['id']==me)
+        self.assertTrue(member['active'] and member['expires_at'])
+        # The time runs out: the access stops that minute, before any tidying up.
+        with D.control() as cd:
+            cd.execute("UPDATE memberships SET expires_at='2000-01-01T00:00:00+00:00' WHERE tenant_id=? AND user_id=?",(other,me))
+            cd.execute("UPDATE support_requests SET expires_at='2000-01-01T00:00:00+00:00' WHERE id=?",(second,))
         self.assertEqual(self.admin.call('/api/tickets')[0],403)
-        self.assertEqual(self.admin.call(path,{'reason':'ขอเข้าอีกครั้ง'})[0],409)
+        support.sweep()
+        self.assertEqual(self.ok(tenant_admin,'/api/support-access')['requests'][0]['status'],'expired')
+        with D.control() as cd:
+            self.assertEqual(cd.execute('SELECT active FROM memberships WHERE tenant_id=? AND user_id=?',(other,me)).fetchone()[0],0)
+        # An access in force can be stopped early by the organization, and by the platform admin.
         self.admin.switch(self.org)
-        third=self.ok(self.admin,'/api/platform/tenants',{'name':'Third Org','slug':'third','email':'third@example.com','admin_name':'ผู้ดูแล 3','password':'Test-password-123!'})['id']
-        self.ok(self.admin,'/api/platform/tenants/'+third,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
-        self.assertEqual(self.admin.call(f'/api/platform/tenants/{third}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
+        third=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #125','hours':1})['id']
+        self.ok(tenant_admin,f'/api/support-access/{third}/approve',{})
+        self.admin.switch(other)
+        self.ok(tenant_admin,f'/api/support-access/{third}/end',{})
+        # Refused at once; the session is back in the platform admin's own organization (a page still showing the
+        # other one is told to refresh).
+        self.assertEqual(self.admin.call('/api/tickets')[0],409)
+        self.assertEqual(self.ok(self.admin,'/api/bootstrap')['tenant_id'],self.org)
+        self.admin.tenant=other
+        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        self.admin.switch(self.org)
+        fourth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #126','hours':1})['id']
+        self.ok(tenant_admin,f'/api/support-access/{fourth}/approve',{})
+        self.ok(self.admin,f'/api/platform/support-access/{fourth}',None,'DELETE')
+        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        # Switching the member off on the members page ends the request too.
+        fifth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #127','hours':1})['id']
+        self.ok(tenant_admin,f'/api/support-access/{fifth}/approve',{})
+        self.ok(tenant_admin,'/api/members/'+me,{'team_id':tenant_team,'role':'manager','active':False},'PATCH')
+        self.assertEqual(self.ok(tenant_admin,'/api/support-access')['requests'][0]['status'],'ended')
+        # A waiting request the platform admin withdraws, and one nobody decides, lapse.
+        sixth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #128'})['id']
+        self.ok(self.admin,f'/api/platform/support-access/{sixth}',None,'DELETE')
+        seventh=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #129'})['id']
+        with D.control() as cd:
+            cd.execute("UPDATE support_requests SET created_at='2000-01-01T00:00:00+00:00' WHERE id=?",(seventh,))
+        statuses={r['id']:r['status'] for r in self.ok(tenant_admin,'/api/support-access')['requests']}
+        self.assertEqual((statuses[sixth],statuses[seventh]),('cancelled','expired'))
+        self.assertEqual(tenant_admin.call(f'/api/support-access/{seventh}/approve',{})[0],409)
+        # A member with a permanent membership never goes through support access, and it never touches one.
+        self.assertEqual(tenant_admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],403)
+        events=[e['action'] for e in self.ok(self.admin,'/api/platform/tenants')['audit']]
+        self.assertTrue({'tenant.support_requested','tenant.support_access','tenant.support_denied','tenant.support_ended',
+                         'tenant.support_cancelled','tenant.support_expired'}<=set(events))
+        third_org=self.ok(self.admin,'/api/platform/tenants',{'name':'Third Org','slug':'third','email':'third@example.com','admin_name':'ผู้ดูแล 3','password':'Test-password-123!'})['id']
+        self.ok(self.admin,'/api/platform/tenants/'+third_org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        self.assertEqual(self.admin.call(f'/api/platform/tenants/{third_org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
+        self.assertEqual(self.admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
 
     def test_team_boundaries_and_live_revocation(self):
         other_team=self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']

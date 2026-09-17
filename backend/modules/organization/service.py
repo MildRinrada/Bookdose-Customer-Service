@@ -28,7 +28,14 @@ def workspace_overview(cd, db, ctx):
             'macros':automation.macro_list(db),
             # Without the platform's email, customer sign-ups work but are not verified and get no email.
             'customer_email':customers.email_ready(cd),
+            # Support access requests waiting for this organization's admins (0 for everyone else).
+            'support_pending':_support_pending(cd,ctx),
             'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id'])}}
+
+
+def _support_pending(cd, ctx):
+    from backend.modules.support_access import service as support
+    return support.pending_for(cd,ctx)
 
 
 def update_settings(db, ctx, body):
@@ -72,6 +79,10 @@ def save_member(cd, db, ctx, member_id, body, creating):
         require(user_id!=ctx['id'] or (active and role=='admin'),'ไม่สามารถถอนสิทธิ์ผู้ดูแลของตัวเองได้')
         repository.update_membership(cd,ctx['tenant_id'],user_id,role,team_id,active)
         tickets.unassign_member(db,user_id,active,team_id)
+        if not active:
+            # A support member switched off here: the approved request ends with it.
+            from backend.modules.support_access import service as support
+            support.member_removed(cd,db,ctx['tenant_id'],user_id,ctx['id'])
     else:
         raise APIError(404,'ไม่พบรายการ')
     audit.record(db,ctx['name'],'member.updated',user_id,role)

@@ -1,7 +1,7 @@
 import { api } from '@/lib/api/client';
 import type { Boot } from '@/lib/types';
 import type { PasskeyAnswer, PasskeyRequestOptions } from './passkeys';
-import type { CustomerLoginResult, CustomerSignupResult, RegistrationConfig, RegistrationSettingsInput, SignInResult } from './types';
+import type { CustomerLoginResult, CustomerSignupResult, PasskeySignInResult, RegistrationConfig, RegistrationSettingsInput, SignInResult } from './types';
 
 /* Endpoints of backend/modules/auth (the shared sign-in, setup, organization sign-up), backend/modules/customers (the
    customer account's public actions) and the platform's registration email settings. */
@@ -48,6 +48,13 @@ export const customerLoginVerify = (body: { code?: string; recovery_code?: strin
 /** Signing in with a passkey: no account is named, the passkey itself says who it is. */
 export const passkeyLoginOptions = () => api<PasskeyRequestOptions>('/api/customer/passkey/options', {});
 export const passkeyLogin = (credential: PasskeyAnswer) => api('/api/customer/passkey/login', { credential });
+
+/** The shared sign-in page's passkey button: a staff passkey or a customer passkey (the answer says which). */
+export const signInPasskeyOptions = () => api<PasskeyRequestOptions>('/api/sign-in/passkey/options', {});
+export const signInPasskey = (credential: PasskeyAnswer) => api<PasskeySignInResult>('/api/sign-in/passkey', { credential });
+
+/** The second step of a staff sign-in: the code from the app, or a recovery code. */
+export const staffLoginVerify = (body: { code?: string; recovery_code?: string }) => api('/api/login/verify', body);
 
 export const customerRegister = (body: { name: string; email: string; password: string; phone: string; consent: boolean; org?: string } & Honeypot) =>
   api<CustomerSignupResult>('/api/customer/register', body);

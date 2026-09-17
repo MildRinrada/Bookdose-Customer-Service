@@ -19,7 +19,7 @@ from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets
 from backend.realtime import events as realtime
 from backend.utils.dates import after, now
-from backend.utils.files import write_private_file
+from backend.utils import secret_box
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -29,15 +29,16 @@ LEASE_SECONDS = 120
 PSID = re.compile(r'[0-9]{1,40}')
 
 
-# Credentials: a private file per organization, never in the database, API responses or backups.
+# Credentials: a private file per organization, never in the database, API responses or backups, sealed with the
+# platform's secret key (utils/secret_box).
 def secret_path(tenant_id):
     D.tenant_path(tenant_id)
     return D.DATA/'secrets'/f'{tenant_id}.facebook.json'
 
 
 def read_secret(tenant_id):
-    path = secret_path(tenant_id)
-    return json.loads(path.read_text()) if path.is_file() else {}
+    text = secret_box.read_file(secret_path(tenant_id))
+    return json.loads(text) if text else {}
 
 
 def write_secret(tenant_id, value):
@@ -45,7 +46,7 @@ def write_secret(tenant_id, value):
     if not value:
         path.unlink(missing_ok=True)
         return
-    write_private_file(path,json.dumps(value))
+    secret_box.write_file(path,json.dumps(value))
 
 
 def ready(secret):

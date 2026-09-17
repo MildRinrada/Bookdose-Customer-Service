@@ -18,7 +18,7 @@ import { useApi } from '@/lib/query';
 import { useBoot } from '@/lib/session';
 import { expiryNotices, type ExpiryReason } from '@/lib/session-expiry';
 import type { Boot } from '@/lib/types';
-import { customerRegister, customerResend, passkeyLogin, passkeyLoginOptions, registerOrganization, setUp, signIn } from './api';
+import { customerRegister, customerResend, registerOrganization, setUp, signIn, signInPasskey, signInPasskeyOptions } from './api';
 import { AuthStory } from './components/AuthStory';
 import { ForgotPasswordHelp } from './components/ForgotPasswordHelp';
 import { SinglePage } from './components/Frames';
@@ -160,7 +160,9 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
   const [resending, setResending] = useState(false);
   // The password was right and the account asks for a second step (customer_security); the waiting sign-in is a
   // short HttpOnly cookie, so the page only remembers what may finish it.
+  // The second step of a sign-in: the methods it offers, and whose account asked for it.
   const [secondStep, setSecondStep] = useState<string[] | null>(null);
+  const [secondKind, setSecondKind] = useState<'staff' | 'customer'>('customer');
   const [passkeyError, setPasskeyError] = useState('');
   const passkeys = usePasskeysAvailable();
   // Locked after too many wrong passwords: a countdown instead of the error, the button waits (SignInLock).
@@ -207,12 +209,13 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
         if (lock.catchLock(error)) return;
         throw error;
       }
-      if (result.kind === 'staff') {
-        finishStaff(staffDestination(next));
+      if (result.two_factor) {
+        setSecondKind(result.kind);
+        setSecondStep(result.methods ?? ['totp']);
         return;
       }
-      if (result.two_factor) {
-        setSecondStep(result.methods ?? ['totp']);
+      if (result.kind === 'staff') {
+        finishStaff(staffDestination(next));
         return;
       }
       finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว');
@@ -279,8 +282,10 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
     setPasskeyError('');
     if (lock.locked) return;
     try {
-      await passkeyLogin(await requestPasskey(await passkeyLoginOptions()));
-      finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบด้วย Passkey แล้ว');
+      // One button for everyone: the passkey itself says whether it is a staff account's or a customer's.
+      const result = await signInPasskey(await requestPasskey(await signInPasskeyOptions()));
+      if (result.kind === 'staff') finishStaff(staffDestination(next));
+      else finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบด้วย Passkey แล้ว');
     } catch (error) {
       // Refused passkeys count towards the same lock: its countdown instead of the message.
       if (lock.catchLock(error)) return;
@@ -323,7 +328,13 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
             </p>
           )}
           {secondStep ? (
-            <TwoFactorStep methods={secondStep} onDone={() => finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว')} />
+            <TwoFactorStep
+              kind={secondKind}
+              methods={secondStep}
+              onDone={() =>
+                secondKind === 'staff' ? finishStaff(staffDestination(next)) : finishCustomer(customerDestination(next, signupOrg), 'เข้าสู่ระบบแล้ว')
+              }
+            />
           ) : signUp ? (
             <div className="auth-form" role="tabpanel">
               {sentTo ? (

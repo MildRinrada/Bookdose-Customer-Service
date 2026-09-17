@@ -5,26 +5,27 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
-import { customerLoginVerify } from '../api';
+import { customerLoginVerify, staffLoginVerify } from '../api';
 import { LockNotice, useSignInLock } from './SignInLock';
 
-/* The second step of a customer sign-in: the password was right, and the account asks for the code from its
-   authenticator app (or one of the printed recovery codes). Nothing is signed in until this passes; the waiting
+/* The second step of a sign-in (a customer's, or a staff account's with `kind="staff"`): the password was right, and
+   the account asks for the code from its authenticator app (or one of the printed recovery codes). Nothing is signed in until this passes; the waiting
    sign-in lives in a short cookie the page never sees. Wrong codes count towards the account's sign-in lock: while
    it lasts the step shows the countdown and waits. Markup: pages/security.css. */
 
-export function TwoFactorStep({ methods, onDone }: { methods: string[]; onDone: () => void }) {
+export function TwoFactorStep({ methods, onDone, kind = 'customer' }: { methods: string[]; onDone: () => void; kind?: 'staff' | 'customer' }) {
   const [recovery, setRecovery] = useState(false);
   const canRecover = methods.includes('recovery');
   const lock = useSignInLock();
   return (
     <Form
       className="auth-form two-factor"
-      data-form="customer-2fa"
+      data-form={kind === 'staff' ? 'staff-2fa' : 'customer-2fa'}
       onSubmit={async (values) => {
         if (lock.locked) return;
         try {
-          await customerLoginVerify(recovery ? { recovery_code: values.recovery_code } : { code: values.code });
+          const body = recovery ? { recovery_code: values.recovery_code } : { code: values.code };
+          await (kind === 'staff' ? staffLoginVerify(body) : customerLoginVerify(body));
         } catch (error) {
           if (lock.catchLock(error)) return;
           throw error;
@@ -67,10 +68,16 @@ export function TwoFactorStep({ methods, onDone }: { methods: string[]; onDone: 
         lock={lock}
         help={
           <>
-            จำรหัสผ่านไม่ได้?{' '}
-            <Link className="btn subtle" href="/customer/forgot">
-              ลืมรหัสผ่าน
-            </Link>
+            {kind === 'staff' ? (
+              'ทำโทรศัพท์และรหัสสำรองหาย? ติดต่อผู้ดูแลระบบให้รีเซ็ตการยืนยันสองขั้นตอน'
+            ) : (
+              <>
+                จำรหัสผ่านไม่ได้?{' '}
+                <Link className="btn subtle" href="/customer/forgot">
+                  ลืมรหัสผ่าน
+                </Link>
+              </>
+            )}
           </>
         }
       />

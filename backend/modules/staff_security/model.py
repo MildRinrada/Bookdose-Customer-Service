@@ -1,0 +1,46 @@
+"""Two-factor sign-in and passkeys for staff accounts (the members of organizations and the platform admins), kept
+in the control database because one account works in every organization it belongs to. The same rules as the
+customer's (customer_security/service.py): a TOTP step is accepted once, a recovery code works once, every passkey
+challenge is random, one-time and short, a passkey with user verification counts as both factors, and adding or
+removing a way in costs the account's password.
+
+  staff_totp              the shared secret (sealed, utils/secret_box), when it was confirmed, the last step used.
+  staff_recovery_codes    ten codes, stored hashed, each usable once.
+  staff_passkeys          registered WebAuthn credentials (id, COSE public key, algorithm, signature counter).
+  staff_challenges        one-time passkey challenges (hashed, five minutes).
+  staff_login_challenges  a right password on an account that asks for a second step: a short-lived token in an
+                          HttpOnly cookie, five tries.
+What happens to the account is written to the platform's history (audit_logs), never a code or a secret."""
+
+from backend.modules.customer_security.model import (CHALLENGE_MINUTES, LOGIN_CHALLENGE_MINUTES, LOGIN_CHALLENGE_TRIES,
+                                                     RECOVERY_ALPHABET, RECOVERY_COUNT, RECOVERY_GROUP, TOTP_ISSUER)
+
+__all__ = ['CHALLENGE_MINUTES','LOGIN_CHALLENGE_MINUTES','LOGIN_CHALLENGE_TRIES','RECOVERY_ALPHABET','RECOVERY_COUNT',
+           'RECOVERY_GROUP','TOTP_ISSUER','CONTROL_TABLES','CHALLENGE_COOKIE']
+
+CHALLENGE_COOKIE = 'bookdose_staff_2fa'
+
+CONTROL_TABLES = '''
+CREATE TABLE IF NOT EXISTS staff_totp (
+    user_id TEXT PRIMARY KEY, secret TEXT NOT NULL, confirmed_at TEXT, last_step INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS staff_recovery_codes (
+    id TEXT PRIMARY KEY, user_id TEXT NOT NULL, code_hash TEXT NOT NULL, created_at TEXT NOT NULL, used_at TEXT
+);
+CREATE TABLE IF NOT EXISTS staff_passkeys (
+    id TEXT PRIMARY KEY, user_id TEXT NOT NULL, credential_id TEXT NOT NULL UNIQUE, public_key TEXT NOT NULL,
+    alg INTEGER NOT NULL, sign_count INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL DEFAULT '',
+    transports TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL, last_used_at TEXT
+);
+CREATE TABLE IF NOT EXISTS staff_challenges (
+    challenge_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL DEFAULT '', purpose TEXT NOT NULL,
+    rp_id TEXT NOT NULL, origin TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS staff_login_challenges (
+    token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL, expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS staff_recovery_user ON staff_recovery_codes(user_id);
+CREATE INDEX IF NOT EXISTS staff_passkeys_user ON staff_passkeys(user_id);
+'''

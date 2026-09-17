@@ -13,6 +13,7 @@ from backend.extensions import channel_transport as T
 from backend.modules.auth import repository, schema
 from backend.modules.organization import repository as memberships
 from backend.modules.platform import repository as tenants, service as platform
+from backend.modules.staff_security import service as staff_security
 from backend.utils.dates import after, now
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import require
@@ -180,8 +181,9 @@ def set_up_platform(cookie_header, body):
 
 
 def log_in(cookie_header, body, client=None):
-    """A password sign-in. Wrong passwords count towards the lock of the typed email (security.lockout), whether or
-    not it has an account; while it is locked every attempt is answered 429 before the password is looked at."""
+    """A password sign-in: the session token, or {'challenge','methods'} when the account asks for a second step
+    (staff_security). Wrong passwords count towards the lock of the typed email (security.lockout), whether or not it
+    has an account; while it is locked every attempt is answered 429 before the password is looked at."""
     from backend.modules.security import lockout
     from backend.modules.security import traps
     email,password = schema.login_form(body)
@@ -194,19 +196,23 @@ def log_in(cookie_header, body, client=None):
         user = repository.find_user_by_email(db,email)
         encoded = user['password'] if user else DUMMY_PASSWORD_HASH
         correct = password_ok(password,encoded) and user
-        token = _replace_session(db,cookie_header,user['id']) if correct else None
+        challenge = staff_security.start_challenge(db,user) if correct else None
+        token = _replace_session(db,cookie_header,user['id']) if correct and not challenge else None
     actor = 'platform' if user and user['platform_admin'] else 'staff'
     if not correct:
         lockout.fail(key,client,actor=actor,owner={'email':user['email'],'name':user['name']} if user else None)
         require(False,'อีเมลหรือรหัสผ่านไม่ถูกต้อง',401)
+    if challenge:
+        return challenge
     lockout.succeed(key,client,actor=actor)
     return token
 
 
 def sign_in(cd, cookie_header, body, client=None):
     """POST /api/sign-in, the shared sign-in page: one request checks the staff account and the customer account of the
-    typed email. Returns ('staff', session token) or ('customer', {'session'} / {'challenge','methods'}); a staff
-    account whose password matches wins over a customer account with the same password.
+    typed email. Returns ('staff', session token / {'challenge','methods'}) or ('customer', {'session'} /
+    {'challenge','methods'}); a staff account whose password matches wins over a customer account with the same
+    password. A staff account with two-factor sign-in gets a challenge instead of a session (staff_security).
 
     The lock is 'signin:<email>' (a lock on the email's staff or customer key refuses it too, lockout.related_keys),
     checked before any password. Both password hashes always run - a dummy one for a missing account - so the time
@@ -229,6 +235,9 @@ def sign_in(cd, cookie_header, body, client=None):
     customer_ok = password_ok(password,account['password'] if account else customers.DUMMY_PASSWORD_HASH) and bool(account)
     staff_actor = 'platform' if user and user['platform_admin'] else 'staff'
     if staff_ok:
+        challenge = staff_security.start_challenge(cd,user)
+        if challenge:
+            return 'staff',challenge
         with SETUP_LOCK:
             token = _replace_session(cd,cookie_header,user['id'])
         lockout.succeed(key,client,actor=staff_actor)
@@ -244,6 +253,12 @@ def sign_in(cd, cookie_header, body, client=None):
              ([{'email':account['email'],'name':account['name'],'actor':'customer'}] if account else [])
     lockout.fail(key,client,actor=staff_actor if user else 'customer' if account else 'anonymous',owner=owners)
     require(False,customers.WRONG_LOGIN,401)
+
+
+def replace_session(db, cookie_header, user_id):
+    """Sign the browser in as user_id (after a second step or a passkey); returns the session token."""
+    with SETUP_LOCK:
+        return _replace_session(db,cookie_header,user_id)
 
 
 def _replace_session(db, cookie_header, user_id):

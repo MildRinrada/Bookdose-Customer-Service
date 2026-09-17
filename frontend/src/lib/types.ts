@@ -3,7 +3,8 @@
 
 export type Role = 'admin' | 'manager' | 'agent';
 
-export type Membership = { id: string; name: string; slug: string; status: string; role: Role };
+/** expires_at: when a support access approved by the organization ends (null for a permanent membership). */
+export type Membership = { id: string; name: string; slug: string; status: string; role: Role; expires_at?: string | null };
 
 /** GET /api/bootstrap: who is signed in (user is null when signed out) and how this copy is set up. */
 export type Boot = {
@@ -24,7 +25,16 @@ export type Boot = {
   session_expired?: 'idle' | 'absolute';
 };
 
-export type Member = { id: string; name: string; email: string; role: Role; team_id: string | null; active: boolean | number };
+export type Member = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  team_id: string | null;
+  active: boolean | number;
+  /** A platform admin let in for support until then (null: a permanent member). */
+  expires_at?: string | null;
+};
 
 export type Team = { id: string; name: string } & Record<string, unknown>;
 
@@ -40,6 +50,8 @@ export type Workspace = {
   macros: Macro[];
   customer_email: boolean;
   ai: Record<string, unknown> & { key_configured: boolean };
+  /** Support access requests waiting for this organization's admins (always 0 for other roles). */
+  support_pending?: number;
 };
 
 /** A macro: one click, several steps (Workspace.macros, GET /api/automation). */

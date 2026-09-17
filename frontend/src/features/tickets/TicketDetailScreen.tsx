@@ -1,14 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { Badge, ChannelBadge, ErrorState, PageLoading, PriorityTag, PrivacyTag } from '@/components/ui/display';
-import { useToast } from '@/components/ui/Toast';
 import { AuditList } from '@/features/audit/components/AuditList';
 import { Composer } from '@/features/inbox/components/Composer';
 import { MessageThread, ThreadFilter } from '@/features/inbox/components/MessageThread';
-import { useMarkMentionsSeen, useModalOpen } from '@/features/inbox/hooks';
+import { useMarkMentionsSeen, useModalOpen, useRefreshFailure } from '@/features/inbox/hooks';
 import { date, overdue } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
@@ -21,25 +20,16 @@ import type { TicketConversation, TicketDetail } from './types';
 /* One case (the old ticketDetail): heading with status, SLA and escalation; each conversation with its thread and
    composer; the case history; the side column. The case is read again every 12 seconds (every minute while live
    updates are connected; not while a dialog is open) without touching drafts, the side form or the reader's place in
-   a thread. Markup: pages/tickets/ticket-detail, ticket-conversation. */
+   a thread. A failed refresh says why once and the next round tries again. Markup: pages/tickets/ticket-detail, ticket-conversation. */
 
 const POLL_MS = 12000;
 
 export function TicketDetailScreen({ id }: { id: string }) {
-  const toast = useToast();
   const modalOpen = useModalOpen();
-  // A failed refresh stops polling until the screen is opened again (the old poll cleared its timer), and says why once.
-  const [failedAt, setFailedAt] = useState(0);
-  const interval = useRealtimeInterval(modalOpen || failedAt ? false : POLL_MS);
+  const interval = useRealtimeInterval(modalOpen ? false : POLL_MS);
   const detail = useApi<TicketDetail>(ticketPath(id), { refetchInterval: interval });
   useMarkMentionsSeen(detail.data?.conversations.map((c) => c.id) ?? []);
-
-  const { error, data, errorUpdatedAt } = detail;
-  if (error && data && !failedAt) setFailedAt(errorUpdatedAt || 1);
-  const failure = failedAt && error ? error.message : '';
-  useEffect(() => {
-    if (failure) toast(failure, true);
-  }, [failedAt, failure, toast]);
+  useRefreshFailure(detail);
 
   if (detail.error && !detail.data) return <ErrorState title="เปิดพื้นที่ทำงานไม่สำเร็จ" error={detail.error} onRetry={() => void detail.refetch()} />;
   if (!detail.data) return <PageLoading />;

@@ -19,8 +19,9 @@ import { useCustomerAccount } from '@/lib/customer-session';
 import { relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { RealtimeProvider } from '@/lib/realtime-provider';
-import { guestBase, guestPath, guestPortalSlug, widgetPath } from './api';
+import { guestBase, guestPages, guestPath, guestPortalSlug, widgetPath } from './api';
 import { FollowCard } from './components/FollowCard';
+import { GuestNav, SignedInLink } from './components/GuestFrame';
 import { GuestClaimBanners } from './components/GuestClaimBanners';
 import { GuestMenu } from './components/GuestMenu';
 import { GuestStartForm } from './components/GuestStartForm';
@@ -109,6 +110,7 @@ function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
           <Brand />
           {orgName && <span className="customer-link-org guest-head-org">{orgName}</span>}
           <div className="guest-head-actions">
+            <GuestNav slug={slug} current="chat" />
             <SignedInLink slug={slug} />
             <TextSizeMenu />
           </div>
@@ -122,23 +124,6 @@ function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
         </p>
       )}
     </main>
-  );
-}
-
-/** A signed-in customer can go to their own chats instead (the organization joins their list via ?org=). */
-function SignedInLink({ slug }: { slug: string }) {
-  const account = useCustomerAccount();
-  if (account.data?.signed_in)
-    return (
-      <Link className="btn" href={`/customer/chats?org=${encodeURIComponent(slug)}`}>
-        <Icon name="chat" />
-        ไปที่แชทของฉัน
-      </Link>
-    );
-  return (
-    <Link className="btn subtle" href={`/login?org=${encodeURIComponent(slug)}`}>
-      เข้าสู่ระบบ
-    </Link>
   );
 }
 
@@ -436,7 +421,18 @@ function GuestChatView({
             <span className={`customer-state tone-${view.tone}`} id="customer-state-label" data-tone={view.tone}>
               {view.label}
             </span>
-            {data.ticket && <span className="inbox-case">เคส BD-{data.ticket.number}</span>}
+            {data.ticket && (
+              // Where the case stands, its progress and deadlines (inside a website's frame: a new window).
+              <Link
+                className="conv-case-link"
+                href={guestPages.case(slug, data.ticket.id)}
+                target={embed ? '_blank' : undefined}
+                rel={embed ? 'noopener' : undefined}
+                title={`ดูสถานะและความคืบหน้าของเคส BD-${data.ticket.number}`}
+              >
+                เคส BD-{data.ticket.number} · ดูความคืบหน้า
+              </Link>
+            )}
             <span className="customer-state-hint guest-state-hint">{view.hint}</span>
           </p>
         </div>
@@ -449,7 +445,7 @@ function GuestChatView({
         />
       </div>
       <div className="notice customer-ai-status" id="customer-ai-status">
-        <AiPortalStatus ai={data.ai} slug={portal} />
+        <AiPortalStatus ai={data.ai} slug={portal} conversationId={id} />
       </div>
       {/* The survey and the follow card are part of the conversation: they follow the newest message. */}
       <MessageThread
@@ -464,7 +460,7 @@ function GuestChatView({
           <>
             {survey && (
               <div id="customer-survey">
-                <CustomerSurvey survey={survey} slug={portal} org={orgName} />
+                <CustomerSurvey survey={survey} slug={portal} conversationId={id} org={orgName} />
               </div>
             )}
             <FollowCard

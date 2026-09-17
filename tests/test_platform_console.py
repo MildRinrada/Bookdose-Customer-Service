@@ -43,6 +43,14 @@ class PlatformConsoleTests(unittest.TestCase):
         self.assertEqual(self.admin.call('/api/platform/faq',{'title':'x','category':'y','body':'z','audience':'everyone'})[0],400)
         agent,_ = self.create_member()
         self.assertEqual(agent.call('/api/platform/faq')[0],403)
+        # A new article is a draft: nobody reads it until it is published.
+        self.assertEqual({a['state'] for a in self.ok(self.admin,'/api/platform/faq')['articles']},{'draft'})
+        self.assertEqual(self.ok(agent,'/api/guides')['articles'],[])
+        self.assertEqual(self.ok(Client(self.base),'/api/public/alpha')['articles'],[])
+        self.assertEqual(agent.call(f'/api/platform/faq/{ids["staff"]}/publish',{})[0],403)
+        for article_id in ids.values():
+            self.ok(self.admin,f'/api/platform/faq/{article_id}/publish',{})
+        self.assertEqual(self.admin.call(f'/api/platform/faq/{ids["staff"]}/publish',{})[0],409)
         self.assertEqual([a['id'] for a in self.ok(agent,'/api/guides')['articles']],[ids['staff']])
         public = [a['id'] for a in self.ok(Client(self.base),'/api/public/alpha')['articles']]
         self.assertIn(ids['customer'],public)
@@ -51,9 +59,45 @@ class PlatformConsoleTests(unittest.TestCase):
         # Customers of an organization created later read it too.
         self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
         self.assertIn(ids['customer'],[a['id'] for a in self.ok(Client(self.base),'/api/public/beta')['articles']])
+        # Changes to a published article wait: readers keep the published words until the changes are published.
+        public_article = lambda: next((a for a in self.ok(Client(self.base),'/api/public/alpha')['articles'] if a['id']==ids['customer']),None)
+        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'customer'},'PATCH')
+        self.assertEqual(public_article()['title'],'บทความ customer')
+        edited = next(a for a in self.ok(self.admin,'/api/platform/faq')['articles'] if a['id']==ids['customer'])
+        self.assertEqual((edited['state'],edited['title'],edited['live']['title']),('changed','แก้แล้ว','บทความ customer'))
+        # Thrown away: back to the published words.
+        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}/changes',None,'DELETE')
+        self.assertEqual(next(a for a in self.ok(self.admin,'/api/platform/faq')['articles'] if a['id']==ids['customer'])['state'],'published')
+        self.assertEqual(self.admin.call(f'/api/platform/faq/{ids["customer"]}/changes',None,'DELETE')[0],409)
+        # Changed again and published: readers see the new words.
+        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'customer'},'PATCH')
+        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}/publish',{})
+        self.assertEqual((public_article()['title'],public_article()['body']),('แก้แล้ว','ใหม่'))
+        # A new audience waits too, then moves the article away from customers once published.
         self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'staff'},'PATCH')
-        self.assertNotIn(ids['customer'],[a['id'] for a in self.ok(Client(self.base),'/api/public/alpha')['articles']])
+        self.assertIsNotNone(public_article())
+        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}/publish',{})
+        self.assertIsNone(public_article())
+        # Unpublished: gone from readers, kept as a draft.
+        self.ok(self.admin,f'/api/platform/faq/{ids["staff"]}/unpublish',{})
+        self.assertEqual([a['id'] for a in self.ok(agent,'/api/guides')['articles']],[ids['customer']])
+        self.assertEqual(self.admin.call(f'/api/platform/faq/{ids["staff"]}/unpublish',{})[0],409)
+        events = [e['action'] for e in self.ok(self.admin,'/api/platform/tenants')['audit']]
+        self.assertTrue({'faq.published','faq.unpublished','faq.changes_discarded'} <= set(events))
         self.assertEqual(self.admin.call('/api/platform/faq/'+'0'*32,None,'DELETE')[0],404)
+        self.assertEqual(self.admin.call('/api/platform/faq/'+'0'*32+'/publish',{})[0],404)
+
+    def test_articles_from_before_drafts_stay_published(self):
+        from backend.modules.platform import repository
+        with D.control() as cd:
+            cd.executescript('''ALTER TABLE global_articles RENAME TO new_articles;
+                CREATE TABLE global_articles (id TEXT PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL, body TEXT NOT NULL,
+                    audience TEXT NOT NULL, author TEXT NOT NULL, updated_at TEXT NOT NULL);
+                INSERT INTO global_articles SELECT id,title,category,body,audience,author,updated_at FROM new_articles;
+                DROP TABLE new_articles;''')
+            repository.add_publish_columns(cd)
+            self.assertEqual(cd.execute('SELECT COUNT(*) FROM global_articles WHERE published_at IS NULL').fetchone()[0],0)
+        self.assertTrue(self.ok(Client(self.base),'/api/public/alpha')['articles'])
 
     def test_starter_articles_are_added_once(self):
         with D.control() as cd:

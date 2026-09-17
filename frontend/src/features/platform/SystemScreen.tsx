@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { ChartColumn, ErrorState, PageLoading, StatCard } from '@/components/ui/display';
 import { AuditList } from '@/features/audit';
@@ -72,6 +73,24 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           </button>
         </div>
       </div>
+      {data.security && !data.security.account_protected && (
+        <p className="notice warning system-notice" role="status">
+          <Icon name="shield" />
+          <span>
+            บัญชีผู้ดูแลแพลตฟอร์มของคุณยังใช้รหัสผ่านอย่างเดียว ·{' '}
+            <Link href="/account/security">เปิดการยืนยันสองขั้นตอนหรือเพิ่ม Passkey</Link>
+          </span>
+        </p>
+      )}
+      {data.security?.secret_key === 'file' && (
+        <p className="notice system-notice" role="status">
+          <Icon name="lock" />
+          <span>
+            Token ของ LINE, Facebook, OpenAI และรหัสผ่านอีเมลถูกเข้ารหัสด้วยกุญแจในไฟล์ <code>data/keys/secret.key</code> ซึ่งอยู่ในโฟลเดอร์ข้อมูลเดียวกัน
+            บนเซิร์ฟเวอร์จริงให้ตั้ง <code>BOOKDOSE_SECRET_KEY</code> แยกจากโฟลเดอร์ข้อมูลและไฟล์สำรอง
+          </span>
+        </p>
+      )}
       <div className="stats-grid">
         <StatCard
           label="สถานะเซิร์ฟเวอร์"

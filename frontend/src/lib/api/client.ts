@@ -1,8 +1,9 @@
 /* Calls to the Python server. Every request carries the staff session's CSRF token and the selected organization
-   (X-Tenant-ID); on the customer side, the customer session's CSRF token and the conversation being read; for a
-   visitor without an account, the guest cookie's CSRF token (X-Guest-CSRF) and, inside an iframe, X-Embed.
-   The providers keep these up to date (setStaffCredentials / setCustomerCredentials / setConversation); feature
-   code only calls api() and download().
+   (X-Tenant-ID); on the customer side, the customer session's CSRF token; for a visitor without an account, the
+   guest cookie's CSRF token (X-Guest-CSRF) and, inside an iframe, X-Embed. The providers keep these up to date
+   (setStaffCredentials / setCustomerCredentials / setGuestCredentials); feature code only calls api() and download().
+   A customer's chat is named by each call that acts on it ({ conversation }, sent as X-Conversation-ID), never by
+   page-wide state: a message whose files are still being read must not land in the chat opened meanwhile.
 
    Same contract as before the move to Next.js: api(path) is a GET, api(path, body) a POST, api(path, body, method)
    anything else. A failed call throws an ApiError with the server's Thai message and the HTTP status.
@@ -33,14 +34,12 @@ const credentials: {
   csrf: string | null;
   tenantId: string | null;
   customerCsrf: string | null;
-  conversation: string | null;
   guestCsrf: string | null;
   embed: boolean;
 } = {
   csrf: null,
   tenantId: null,
   customerCsrf: null,
-  conversation: null,
   guestCsrf: null,
   embed: false,
 };
@@ -54,11 +53,6 @@ export function setCustomerCredentials(csrf: string | null | undefined) {
   credentials.customerCsrf = csrf ?? null;
 }
 
-/** The customer's open chat: /api/public/<org>/session, /messages and /csat act on it. */
-export function setConversation(id: string | null | undefined) {
-  credentials.conversation = id ?? null;
-}
-
 /** A visitor chatting without an account (/chat/<org>): the csrf of this browser's guest cookie (GET …/guest). */
 export function setGuestCredentials(csrf: string | null | undefined) {
   credentials.guestCsrf = csrf ?? null;
@@ -70,26 +64,31 @@ export function setEmbedded(embedded: boolean) {
   credentials.embed = embedded;
 }
 
-function headers(hasBody: boolean): Record<string, string> {
+export type RequestOptions = {
+  /** The customer's or guest's chat the call acts on (/session, /messages, /handoff, /csat of a portal). */
+  conversation?: string;
+};
+
+function headers(hasBody: boolean, options: RequestOptions): Record<string, string> {
   const result: Record<string, string> = {};
   if (credentials.csrf) result['X-CSRF-Token'] = credentials.csrf;
   if (credentials.tenantId) result['X-Tenant-ID'] = credentials.tenantId;
   if (credentials.customerCsrf) result['X-Customer-CSRF'] = credentials.customerCsrf;
-  if (credentials.conversation) result['X-Conversation-ID'] = credentials.conversation;
+  if (options.conversation) result['X-Conversation-ID'] = options.conversation;
   if (credentials.guestCsrf) result['X-Guest-CSRF'] = credentials.guestCsrf;
   if (credentials.embed) result['X-Embed'] = '1';
   if (hasBody) result['Content-Type'] = 'application/json';
   return result;
 }
 
-async function send(path: string, body?: unknown, method?: Method): Promise<Response> {
+async function send(path: string, body?: unknown, method?: Method, options: RequestOptions = {}): Promise<Response> {
   const hasBody = body !== undefined;
   const verb = method ?? (hasBody ? 'POST' : 'GET');
   let response: Response;
   try {
     response = await fetch(path, {
       method: verb,
-      headers: headers(hasBody),
+      headers: headers(hasBody, options),
       body: hasBody ? JSON.stringify(body) : undefined,
       credentials: 'same-origin',
       cache: 'no-store',
@@ -121,8 +120,8 @@ async function send(path: string, body?: unknown, method?: Method): Promise<Resp
   return response;
 }
 
-export async function api<T = unknown>(path: string, body?: unknown, method?: Method): Promise<T> {
-  const response = await send(path, body, method);
+export async function api<T = unknown>(path: string, body?: unknown, method?: Method, options?: RequestOptions): Promise<T> {
+  const response = await send(path, body, method, options);
   if (response.headers.get('content-type')?.includes('application/json')) return (await response.json()) as T;
   return (await response.blob()) as T;
 }

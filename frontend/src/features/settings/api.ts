@@ -17,3 +17,9 @@ export const saveMember = (id: string | null, body: MemberBody) =>
   api<{ id: string }>(`/api/members${id ? `/${id}` : ''}`, body, id ? 'PATCH' : 'POST');
 
 export const downloadBackup = (slug: string) => download('/api/backup', `bookdose-${slug}-backup.zip`);
+
+/** Support access (backend support_access): the requests of platform admins to enter this organization. */
+export const SUPPORT_PATH = '/api/support-access';
+export const approveSupport = (id: string, body: { hours: number; note: string }) => api(`${SUPPORT_PATH}/${id}/approve`, body);
+export const denySupport = (id: string) => api(`${SUPPORT_PATH}/${id}/deny`, {});
+export const endSupport = (id: string) => api(`${SUPPORT_PATH}/${id}/end`, {});

@@ -22,8 +22,8 @@ export function openTicketFromConversation(conversationId: string) {
 }
 
 /** The customer's message from the organization's portal (customer side). */
-export function postPortalMessage(slug: string, body: { body: string; attachments?: Upload[] }) {
-  return api<{ id: string }>(`/api/public/${slug}/messages`, body);
+export function postPortalMessage(slug: string, conversationId: string, body: { body: string; attachments?: Upload[] }) {
+  return api<{ id: string }>(`/api/public/${slug}/messages`, body, 'POST', { conversation: conversationId });
 }
 
 /** Opening the conversation where the member was @mentioned counts as reading the mention. */

@@ -201,7 +201,9 @@ STAFF_HOW = 'หากไม่ใช่คุณ เมื่อเข้าส
 
 def _mail_owner(actor, owners, ip, moment):
     """The owners of a locked account are told once (never the password or where the attempts came from in full): one
-    email per address, with what to do for each kind of account it has (a customer and a staff account may share it)."""
+    email per address, with what to do for each kind of account it has (a customer and a staff account may share it).
+    A customer account is told only when its email was proven: an address typed at sign-up without confirming it may
+    belong to someone else."""
     from backend.extensions import channel_transport as T
     from backend.modules.platform import service as platform
     try:
@@ -212,10 +214,16 @@ def _mail_owner(actor, owners, ip, moment):
         addresses = {}
         for owner in owners:
             kind = 'customer' if owner.get('actor',actor)=='customer' else 'staff'
+            if kind=='customer':
+                with D.control() as cd:
+                    if not D.one(cd,'SELECT 1 FROM customer_accounts WHERE lower(email)=lower(?) AND email_verified=1',(owner['email'],)):
+                        continue
             addresses.setdefault(owner['email'],[])
             if kind not in addresses[owner['email']]:
                 addresses[owner['email']].append(kind)
         for address,kinds in addresses.items():
+            if not kinds:
+                continue
             if len(kinds)==1:
                 how = CUSTOMER_HOW if kinds[0]=='customer' else STAFF_HOW
             else:

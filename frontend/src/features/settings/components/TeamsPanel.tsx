@@ -5,6 +5,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { Avatar, Badge, EmptyState } from '@/components/ui/display';
 import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
+import { date } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { useWork } from '@/lib/session';
 import type { Member } from '@/lib/types';
@@ -12,6 +13,7 @@ import { useUiState } from '@/lib/ui-state';
 import { memberStatusLabels } from '../labels';
 import type { MemberFilters } from '../types';
 import { MemberForm } from './MemberForm';
+import { SupportRequestsPanel } from './SupportRequestsPanel';
 import { TeamForm } from './TeamForm';
 
 /* ตั้งค่า → ทีมและสมาชิก. The member list is a list like any other in the app: the same search box, filter pills
@@ -26,6 +28,7 @@ export function TeamsPanel() {
 
   return (
     <>
+      <SupportRequestsPanel />
       <section className="card">
         <div className="card-header">
           <div>
@@ -141,7 +144,10 @@ function MembersList({ onEdit }: { onEdit: (member: Member) => void }) {
                         </div>
                       </td>
                       <td className="muted">{m.email}</td>
-                      <td className="member-cell">{roleLabels[m.role]}</td>
+                      <td className="member-cell">
+                        {roleLabels[m.role]}
+                        {m.expires_at && m.active ? <span className="tiny muted support-member"> · Support ถึง {date(m.expires_at, true)}</span> : null}
+                      </td>
                       <td className="member-cell">{work.teams.find((t) => t.id === m.team_id)?.name || '-'}</td>
                       <td>
                         <Badge status={status} label={memberStatusLabels[status]} />

@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import { api, ApiError, setConversation, setCustomerCredentials } from './api/client';
+import { api, ApiError, setCustomerCredentials } from './api/client';
 import { useApi } from './query';
 import { clearExpiry } from './session-expiry';
 import { resetUiState } from './ui-state';
@@ -74,7 +74,6 @@ export function useCustomerLogout() {
   return useCallback(async () => {
     await api('/api/customer/logout', {});
     setCustomerCredentials(null);
-    setConversation(null);
     clearExpiry('customer');
     resetUiState();
     client.clear();

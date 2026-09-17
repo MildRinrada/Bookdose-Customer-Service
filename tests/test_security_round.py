@@ -184,6 +184,13 @@ class SecurityRoundTests(unittest.TestCase):
         self.fail_logins('visitor@example.com',5,'/api/customer/login')
         time.sleep(0.5)
         self.assertEqual(len(self.lock_mails()),1)
+        # An account whose email was never proven is not told: the address may be someone else's.
+        self.customer(email='unproven@example.com')
+        with D.control() as cd:
+            cd.execute("UPDATE customer_accounts SET email_verified=0 WHERE email='unproven@example.com'")
+        self.fail_logins('unproven@example.com',6,'/api/customer/login')
+        time.sleep(0.8)
+        self.assertEqual([m.args[2] for m in self.lock_mails()],['visitor@example.com'])
 
     def test_attempts_during_a_lock_do_not_extend_it(self):
         self.create_member(email='agent@example.com')
@@ -491,7 +498,10 @@ class SecurityRoundTests(unittest.TestCase):
         self.assertEqual(agent.call('/api/session/tenant',{'tenant_id':'0'*32})[0],403)
         other_org = self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'beta@example.com',
                                                                 'admin_name':'ผู้ดูแล B','password':PASSWORD})['id']
-        self.ok(self.admin,f'/api/platform/tenants/{other_org}/support-access',{'reason':'ตรวจสอบคำร้อง #1'})
+        request = self.ok(self.admin,f'/api/platform/tenants/{other_org}/support-access',{'reason':'ตรวจสอบคำร้อง #1'})['id']
+        beta_admin = Client(self.base)
+        beta_admin.login('beta@example.com',PASSWORD)
+        self.ok(beta_admin,f'/api/support-access/{request}/approve',{})
         # webhook_signature_failed
         route = self.configure()['route_id']
         self.assertEqual(Client(self.base).call('/api/webhooks/line/'+route,{'events':[]},headers={'X-Line-Signature':'bad'})[0],403)

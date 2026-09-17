@@ -13,12 +13,15 @@ import type { AiState } from '../types';
 export function AiPortalStatus({
   ai,
   slug,
+  conversationId,
   onHandedOff,
 }: {
   /** session.ai of GET /api/public/<slug>/session */
   ai: AiState | null | undefined;
   /** The organization of the open chat. */
   slug: string;
+  /** The chat that asks for a person. */
+  conversationId: string;
   /** After asking for a person (the customer chat refreshes itself; /api/public/<slug> is refreshed here too). */
   onHandedOff?: () => unknown | Promise<unknown>;
 }) {
@@ -45,7 +48,7 @@ export function AiPortalStatus({
           className="btn sm"
           onClick={() =>
             run(async () => {
-              await portalHandoff(slug);
+              await portalHandoff(slug, conversationId);
               await refresh(`/api/public/${slug}`);
               await onHandedOff?.();
               toast('ส่งเรื่องให้เจ้าหน้าที่แล้ว');

@@ -1,11 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { FilterPill, FilterSelect, SearchInput } from '@/components/ui/filters';
-import { useToast } from '@/components/ui/Toast';
-import type { ApiError } from '@/lib/api/client';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
@@ -13,39 +11,23 @@ import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
 import { ConversationView } from './components/ConversationView';
 import { InboxItem } from './components/InboxItem';
-import { needsReply, useMarkMentionsSeen, useModalOpen, useSinglePane } from './hooks';
+import { needsReply, useMarkMentionsSeen, useModalOpen, useRefreshFailure, useSinglePane } from './hooks';
 import type { ConversationDetail, ConversationSummary } from './types';
 
 /* The inbox (the old pages/inbox/inbox.js): every channel in one filterable list, and the open conversation beside
    it. Wide screens open the first conversation of the current tab; narrow screens show the list first. The list and
    the open conversation refresh every 12 seconds (every minute while live updates are connected) without touching the
-   draft or the reader's place in the thread.
+   draft or the reader's place in the thread; a failed refresh says why once and the next round tries again.
    Markup: pages/inbox/inbox. */
 
 const inboxFilters: Record<string, string> = { waiting: 'รอตอบ', open: 'เปิดอยู่', all: 'ทั้งหมด' };
 const POLL_MS = 12000;
 
-/** A refresh that fails while the screen shows older data says so once, in red (the old poll's toast). */
-function usePollError(query: { error: ApiError | null; data: unknown; errorUpdatedAt: number }, onFail: () => void) {
-  const toast = useToast();
-  const { error, data, errorUpdatedAt } = query;
-  useEffect(() => {
-    if (error && data) {
-      toast(error.message, true);
-      onFail();
-    }
-    // Only a new failure is reported.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errorUpdatedAt]);
-}
-
 export function InboxScreen({ id }: { id?: string }) {
   const router = useRouter();
   const singlePane = useSinglePane();
   const modalOpen = useModalOpen();
-  // A failed refresh stops polling until the screen is opened again (the old poll cleared its timer).
-  const [pollFailed, setPollFailed] = useState(false);
-  const interval = useRealtimeInterval(modalOpen || pollFailed ? false : POLL_MS);
+  const interval = useRealtimeInterval(modalOpen ? false : POLL_MS);
   const list = useApi<{ conversations: ConversationSummary[] }>('/api/conversations', { refetchInterval: interval });
   const [filter, setFilter] = useUiState('inbox:filter', 'open');
   const [query, setQuery] = useUiState('inbox:query', '');
@@ -70,9 +52,8 @@ export function InboxScreen({ id }: { id?: string }) {
   const selectedId = id ?? fallback;
   const detail = useApi<ConversationDetail>(selectedId ? conversationPath(selectedId) : null, { refetchInterval: interval });
 
-  const stopPolling = () => setPollFailed(true);
-  usePollError(list, stopPolling);
-  usePollError(detail, stopPolling);
+  useRefreshFailure(list);
+  useRefreshFailure(detail);
   useMarkMentionsSeen(detail.data ? [detail.data.conversation.id] : []);
 
   // Put the default conversation in the address, so clicking it again does not open it anew (and drop a draft).

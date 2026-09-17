@@ -1,5 +1,8 @@
 import { api } from '@/lib/api/client';
 import type { PasskeyAnswer, PasskeyCreateOptions } from '@/features/auth/passkeys';
+import type { Passkey, RecoveryCodes, SecurityApi, TotpSetup } from '@/features/account-security/cards';
+
+export type { Passkey, RecoveryCodes, SecurityState, TotpSetup } from '@/features/account-security/cards';
 
 /* Endpoints and shapes of ตั้งค่าบัญชี → ความปลอดภัย (backend/modules/customer_security). Kept beside its own
    screen rather than in features/customer/api.ts, so each section of the account settings stays self-contained.
@@ -9,20 +12,6 @@ export const SECURITY_PATH = '/api/customer/security';
 export const PASSKEYS_PATH = `${SECURITY_PATH}/passkeys`;
 export const SESSIONS_PATH = `${SECURITY_PATH}/sessions`;
 export const activityPath = (page: number) => `${SECURITY_PATH}/activity?page=${page}`;
-
-/** GET /api/customer/security */
-export type SecurityState = {
-  two_factor: { enabled: boolean; pending: boolean; confirmed_at: string | null };
-  recovery: { left: number; total: number };
-  passkeys: Passkey[];
-};
-
-export type Passkey = { id: string; name: string; created_at: string; last_used_at: string | null; alg: number };
-
-/** POST .../totp/setup: the secret to type by hand, its otpauth link and the QR as a data: URL. */
-export type TotpSetup = { secret: string; otpauth_uri: string; qr: string };
-
-export type RecoveryCodes = { ok: true; recovery_codes: string[] };
 
 /** GET .../sessions: one row per browser signed in to this account. */
 export type CustomerSession = {
@@ -64,3 +53,16 @@ export const removePasskey = (id: string, password: string) => api<{ passkeys: P
 export const revokeSession = (id: string) => api<{ sessions: CustomerSession[] }>(`${SESSIONS_PATH}/${id}`, undefined, 'DELETE');
 export const signOutEverywhere = (keepCurrent: boolean) =>
   api<{ ok: true; kept_current: boolean }>(`${SESSIONS_PATH}/sign-out-all`, { keep_current: keepCurrent });
+
+/** The customer's endpoints for the shared two-factor and passkey cards. */
+export const customerSecurityApi: SecurityApi = {
+  path: SECURITY_PATH,
+  startTotp,
+  confirmTotp,
+  disableTotp,
+  newRecoveryCodes,
+  passkeyOptions,
+  addPasskey,
+  renamePasskey,
+  removePasskey,
+};

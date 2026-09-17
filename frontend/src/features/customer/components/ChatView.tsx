@@ -18,7 +18,7 @@ import type { PortalSession, PortalSurvey } from '../types';
 
 /** After a case is closed the customer is asked how it went: stars, and a few words if they like. `slug` is the
     portal the answer goes to (a guest chat passes "<org>/guest"). */
-export function CustomerSurvey({ survey, slug, org }: { survey: PortalSurvey; slug: string; org: string }) {
+export function CustomerSurvey({ survey, slug, conversationId, org }: { survey: PortalSurvey; slug: string; conversationId: string; org: string }) {
   const [rating, setRating] = useState(0);
   const toast = useToast();
   const refresh = useInvalidate();
@@ -31,7 +31,7 @@ export function CustomerSurvey({ survey, slug, org }: { survey: PortalSurvey; sl
           aria-labelledby="customer-survey-title"
           onSubmit={async (values) => {
             if (!values.rating) throw new Error('กรุณาเลือกคะแนน 1-5 ดาว');
-            await rateService(slug, { rating: Number(values.rating), comment: values.comment || '' });
+            await rateService(slug, conversationId, { rating: Number(values.rating), comment: values.comment || '' });
             toast('ขอบคุณสำหรับคะแนนค่ะ');
             await refresh(`/api/public/${slug}/session`, OVERVIEW_PATH);
           }}
@@ -113,7 +113,7 @@ export function ChatView({
         </div>
       </div>
       <div className="notice customer-ai-status" id="customer-ai-status">
-        <AiPortalStatus ai={data.ai} slug={slug} />
+        <AiPortalStatus ai={data.ai} slug={slug} conversationId={id} />
       </div>
       {/* The survey is part of the conversation: it follows the newest message and scrolls with the messages. */}
       <MessageThread
@@ -127,7 +127,7 @@ export function ChatView({
         after={
           survey && (
             <div id="customer-survey">
-              <CustomerSurvey survey={survey} slug={slug} org={orgName} />
+              <CustomerSurvey survey={survey} slug={slug} conversationId={id} org={orgName} />
             </div>
           )
         }

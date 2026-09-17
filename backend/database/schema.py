@@ -17,12 +17,14 @@ from backend.modules.org_links import model as org_links
 from backend.modules.organization import model as organization
 from backend.modules.platform import model as platform
 from backend.modules.security import model as security
+from backend.modules.staff_security import model as staff_security
+from backend.modules.support_access import model as support_access
 from backend.modules.tickets import model as tickets
 from backend.modules.trash import model as trash
 
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
                   customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
-                  security.CONTROL_TABLES)
+                  security.CONTROL_TABLES, support_access.CONTROL_TABLES, staff_security.CONTROL_TABLES)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
@@ -32,6 +34,15 @@ def create_control_tables(db):
     for script in CONTROL_TABLES:
         db.executescript(script)
     customer_migrate.control_columns(db)
+    # Support access with the organization's consent: a membership it makes ends at memberships.expires_at.
+    from backend.modules.support_access import repository as support_repository
+    support_repository.add_membership_expiry(db)
+    # Global FAQ drafts: articles published before drafts existed stay published.
+    from backend.modules.platform import repository as platform_repository
+    platform_repository.add_publish_columns(db)
+    # Two-factor secrets from before encryption are sealed with the platform's key (utils/secret_box).
+    from backend.modules.customer_security import repository as customer_security_repository
+    customer_security_repository.seal_totp_secrets(db)
     # Session limits (security round): when each staff / customer session was made and last really used.
     from backend.modules.security import sessions
     sessions.add_session_columns(db)

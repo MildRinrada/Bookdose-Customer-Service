@@ -6,12 +6,13 @@ from backend.database import db as D
 from backend.database.db import one, rows
 from backend.modules.channels.model import KINDS
 from backend.utils.dates import now
-from backend.utils.files import write_private_file
+from backend.utils import secret_box
 from backend.utils.security import uid
 from backend.utils.validation import require
 
 
-# Credentials: a private JSON file per organization and channel, never in the database, API responses or backups.
+# Credentials: a private JSON file per organization and channel, never in the database, API responses or backups,
+# and sealed with the platform's secret key (utils/secret_box).
 def secret_path(tenant_id, kind):
     D.tenant_path(tenant_id)
     require(kind in KINDS,'ช่องทางไม่ถูกต้อง')
@@ -19,8 +20,8 @@ def secret_path(tenant_id, kind):
 
 
 def read_secret(tenant_id, kind):
-    path = secret_path(tenant_id,kind)
-    return json.loads(path.read_text()) if path.is_file() else {}
+    text = secret_box.read_file(secret_path(tenant_id,kind))
+    return json.loads(text) if text else {}
 
 
 def write_secret(tenant_id, kind, value):
@@ -29,7 +30,7 @@ def write_secret(tenant_id, kind, value):
     if not value:
         path.unlink(missing_ok=True)
         return
-    write_private_file(path,json.dumps(value))
+    secret_box.write_file(path,json.dumps(value))
 
 
 def tenant_id_of(db):

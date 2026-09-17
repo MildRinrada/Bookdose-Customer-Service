@@ -2,20 +2,20 @@
 from backend.database import db as D
 from backend.database.db import one, rows
 from backend.utils.dates import now
-from backend.utils.files import write_private_file
+from backend.utils import secret_box
 
 IN_FLIGHT = "status IN ('pending','running')"
 
 
-# API key: a private file per organization, never in the database, API responses or backups.
+# API key: a private file per organization, never in the database, API responses or backups, sealed with the
+# platform's secret key (utils/secret_box).
 def key_path(tenant_id):
     D.tenant_path(tenant_id)  # Validate the ID before constructing a secret path.
     return D.DATA/'secrets'/f'{tenant_id}.openai-key'
 
 
 def read_key(tenant_id):
-    path = key_path(tenant_id)
-    return path.read_text().strip() if path.is_file() else ''
+    return secret_box.read_file(key_path(tenant_id)).strip()
 
 
 def write_key(tenant_id, value):
@@ -24,7 +24,7 @@ def write_key(tenant_id, value):
     if not value:
         path.unlink(missing_ok=True)
         return
-    write_private_file(path,value)
+    secret_box.write_file(path,value)
 
 
 # Settings

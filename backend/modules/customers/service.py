@@ -348,6 +348,20 @@ def load_session(cd, cookie_header, client=None):
     return session,None
 
 
+def cookie_account(cd, cookie_header):
+    """The account id the session cookie names, or None; nothing is judged or written. The session's limits are left
+    to load_session: a request limit only needs to know whose requests these are, and a token cannot be guessed."""
+    from http import cookies
+    jar = cookies.SimpleCookie()
+    try:
+        jar.load(cookie_header)
+    except cookies.CookieError:
+        return None
+    token = jar.get(SESSION_COOKIE)
+    session = repository.find_session(cd,token_hash(token.value)) if token and token.value else None
+    return session['account_id'] if session else None
+
+
 def read_session(cd, cookie_header):
     """The signed-in customer from the session cookie, or None (also for a session that has just run out)."""
     return load_session(cd,cookie_header)[0]
@@ -689,7 +703,8 @@ def send_notices(tenant_id):
                 if by_line and notify.queue_line(cd,db,tenant_id,account['id'],f"{org['name']} ตอบกลับเรื่อง “{notice['subject']}” แล้ว",
                                                  f"/customer/chats/{org['slug']}/{notice['conversation_id']}",f"reply:{notice['id']}"):
                     lines += 1
-                if not account or not mail or not account['notify_email']:
+                # Email only to an address the customer proved: a notice queued for LINE must not reach an unproven one.
+                if not account or not mail or not account['notify_email'] or not account['email_verified']:
                     repository.finish_notification(db,notice['id'],'line' if by_line else 'off')
                 else:
                     repository.claim_notification(db,notice['id'])

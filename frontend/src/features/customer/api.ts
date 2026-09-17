@@ -24,8 +24,9 @@ export const publicInfoPath = (slug: string) => `/api/public/${slug}`;
 export const openChat = (slug: string, body: { subject: string; body: string; category: string; attachments: Upload[] }) =>
   api<{ id: string }>(`/api/public/${slug}/conversations`, body);
 
-/** Answer the satisfaction survey of the open chat (X-Conversation-ID). */
-export const rateService = (slug: string, body: { rating: number; comment: string }) => api<{ ok: true }>(`/api/public/${slug}/csat`, body);
+/** Answer the satisfaction survey of a chat (X-Conversation-ID). */
+export const rateService = (slug: string, conversationId: string, body: { rating: number; comment: string }) =>
+  api<{ ok: true }>(`/api/public/${slug}/csat`, body, 'POST', { conversation: conversationId });
 
 export const joinOrganization = (slug: string) => api<{ organization: CustomerOrg }>(ORGS_PATH, { slug });
 

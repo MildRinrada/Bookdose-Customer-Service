@@ -1,7 +1,9 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useToast } from '@/components/ui/Toast';
+import type { ApiError } from '@/lib/api/client';
 import type { StaffAlerts } from '@/lib/types';
 import { markMentionsRead } from './api';
 import type { ConversationSummary } from './types';
@@ -49,6 +51,23 @@ export function useModalOpen(): boolean {
     () => Boolean((document.getElementById('modal') as HTMLDialogElement | null)?.open),
     () => false,
   );
+}
+
+/** A refresh that fails while the screen shows older data says why once, in red: one message for a run of failures,
+    not one per round. Polling goes on, so the screen catches up by itself once the server answers again (stopping
+    for good left the thread frozen until the page was reloaded). */
+export function useRefreshFailure(query: { error: ApiError | null; data: unknown; dataUpdatedAt: number; errorUpdatedAt: number }) {
+  const toast = useToast();
+  const { error, data, dataUpdatedAt, errorUpdatedAt } = query;
+  // The answer whose failing refresh was already reported.
+  const reported = useRef(-1);
+  useEffect(() => {
+    if (!error || !data || reported.current === dataUpdatedAt) return;
+    reported.current = dataUpdatedAt;
+    toast(error.message, true);
+    // Only a new failure is reported.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorUpdatedAt]);
 }
 
 /** Opening a conversation (or the case holding it) where someone @mentioned the member counts as reading the

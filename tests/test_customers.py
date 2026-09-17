@@ -59,6 +59,25 @@ class CustomerAccountTests(unittest.TestCase):
         self.assertTrue(self.ok(Client(self.base),'/api/public/alpha')['email_verification'])
         self.assertEqual(self.signup(email='later@example.com')[0],202)
 
+    def test_reads_of_a_signed_in_customer_are_counted_by_account(self):
+        import time
+        client = Client(self.base)
+        self.assertEqual(self.signup(client)[0],201)
+        with D.control() as cd:
+            account = cd.execute('SELECT id FROM customer_accounts').fetchone()[0]
+        # Every visitor behind one web app or office network shares an address, and its reads are used up.
+        rate_limit.RATES[('public-read','ip','127.0.0.1')].extend([time.monotonic()]*180)
+        self.assertEqual(Client(self.base).call('/api/public/alpha')[0],429)
+        # A cookie that names no session is counted by address like anyone signed out.
+        self.assertEqual(Client(self.base).call('/api/public/alpha',headers={'Cookie':f'{customers.SESSION_COOKIE}=made-up'})[0],429)
+        # The signed-in customer is counted apart, by account, in every part of the customer area.
+        self.ok(client,'/api/customer/overview')
+        self.ok(client,'/api/public/alpha')
+        self.assertIn(('public-read','account',account),rate_limit.RATES)
+        # And an account has its own limit.
+        rate_limit.RATES[('public-read','account',account)].extend([time.monotonic()]*180)
+        self.assertEqual(client.call('/api/customer/overview')[0],429)
+
     def test_signup_asks_only_what_is_needed_and_requires_consent(self):
         self.customer_mail()
         for changes in ({'consent':False},{'consent':'yes'},{'email':'not-an-email'},{'password':'short'},{'name':''},
@@ -229,6 +248,21 @@ class CustomerAccountTests(unittest.TestCase):
         self.ok(visitor,'/api/public/alpha/session')
         self.assertEqual(customers.send_notices(self.org),0)
         self.assertEqual(self.mailer.call_count,sent+1)
+
+    def test_reply_notice_is_never_emailed_to_an_unproven_address(self):
+        visitor,conv = self.visitor()
+        sent = self.mailer.call_count
+        self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'reply','body':'ตอบแล้ว'})
+        # Queued while the email was proven; by the time it is sent the address is no longer (for example the account
+        # was reached through LINE). Nothing goes to that address.
+        with D.tenant(self.org) as db:
+            db.execute("UPDATE customer_notifications SET created_at='2000-01-01T00:00:00+00:00'")
+        with D.control() as cd:
+            cd.execute("UPDATE customer_accounts SET email_verified=0 WHERE email='visitor@example.com'")
+        customers.send_notices(self.org)
+        self.assertEqual(self.mailer.call_count,sent)
+        with D.tenant(self.org) as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM customer_notifications WHERE sent_at IS NULL').fetchone()[0],0)
 
     def test_survey_takes_stars_and_a_comment(self):
         visitor,conv = self.visitor()

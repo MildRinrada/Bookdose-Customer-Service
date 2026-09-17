@@ -17,8 +17,7 @@ import { followThread } from '@/features/rich/thread';
 import { readFiles } from '@/lib/files';
 import { useInvalidate } from '@/lib/query';
 import { useTypingNotifier } from '@/lib/realtime-provider';
-import { customerHomeUrl } from '@/lib/routes';
-import { useBoot, useWork } from '@/lib/session';
+import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { CONVERSATION_PREFIXES, postMessage, postPortalMessage } from '../api';
 import { SEND_SHORTCUT } from '../hooks';
@@ -130,7 +129,6 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 
 function StaffComposer({ conversationId: id, channel = 'web', manual = false, compact = false, conversation, onSent }: ComposerProps) {
   const work = useWork();
-  const boot = useBoot().data;
   const toast = useToast();
   const refresh = useInvalidate();
   const { openModal, closeModal, openSheet, closeSheet } = useDialogs();
@@ -183,8 +181,9 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   };
 
   const articleLink = (article: Article) => {
-    // A link the customer can open without signing in; chat channels get the address on its own line.
-    const url = `${customerHomeUrl(work.tenant.slug, boot?.home?.slug)}#faq/${article.id}`;
+    // A link the customer can open without signing in (the organization's public FAQ page); chat channels get the
+    // address on its own line.
+    const url = `${window.location.origin}/chat/${work.tenant.slug}/faq/${article.id}`;
     return channel === 'web' ? `แนะนำบทความ: [${article.title}](${url})` : `แนะนำบทความ: ${article.title}\n${url}`;
   };
 
@@ -402,7 +401,8 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
       onSubmit={async (values, form) => {
         if (!publicSlug) throw new Error('กรุณาเปิดแชทก่อน');
         const attachments = await readFiles(filesOf(form));
-        await postPortalMessage(publicSlug, { body: values.body ?? '', attachments });
+        // The chat this composer belongs to, even when another one was opened while the files were being read.
+        await postPortalMessage(publicSlug, id, { body: values.body ?? '', attachments });
         followThread(form);
         if (area.current) {
           area.current.value = '';

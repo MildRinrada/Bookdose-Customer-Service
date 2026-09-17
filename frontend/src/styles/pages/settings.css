@@ -278,3 +278,67 @@
     grid-column: 1;
   }
 }
+
+/* Support access requests from the platform team (ตั้งค่า → ทีมและสมาชิก), admins only. */
+.support-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.support-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.support-item.status-pending {
+  border-color: #f0c36d;
+  background: #fffaf0;
+}
+.support-item.status-active {
+  border-color: #9fd3b6;
+  background: #f4fbf7;
+}
+.support-item .grow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: min(16rem, 100%);
+}
+.support-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #eef1f7;
+  color: #3d4a5c;
+}
+.support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.badge.support-status-pending {
+  background: #fff1d6;
+  color: #7a4b00;
+}
+.badge.support-status-active,.badge.support-status-approved {
+  background: #e3f4ea;
+  color: #1a6340;
+}
+.support-history {
+  margin-top: 14px;
+}
+.support-history summary {
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-weight: 600;
+}

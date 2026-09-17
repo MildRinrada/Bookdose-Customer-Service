@@ -38,13 +38,6 @@ def global_article(body):
     return field(body,'title',200),field(body,'category',80),field(body,'body',50000),audience
 
 
-def support_reason(body):
-    """Why a platform admin needs to enter an organization; kept in both audit logs."""
-    reason = field(body,'reason',300)
-    require(len(reason.strip())>=5,'กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร')
-    return reason.strip()
-
-
 def registration_mail(body):
     """(settings, new SMTP password or '') from the platform admin's form."""
     cfg = {'enabled':body.get('enabled') is True}

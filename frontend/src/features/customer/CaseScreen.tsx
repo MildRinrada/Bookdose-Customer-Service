@@ -12,7 +12,8 @@ import { caseState, chatState } from './labels';
 import type { CaseDetail } from './types';
 
 /* One case (pages/customer/customer-case.html): where it stands, what the team did and promised, its facts, and the
-   chats that belong to it. */
+   chats that belong to it. The signed-in customer's page; a guest follows a case of their chat with the same view
+   (features/guest/GuestCaseScreen). */
 
 export function CaseScreen({ slug, id }: { slug: string; id: string }) {
   const query = useApi<CaseDetail>(casePath(slug, id));
@@ -21,11 +22,32 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
   if (query.error) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   if (!query.data) return <PageLoading />;
   const data = query.data;
+  const listed = overview.cases.find((x) => x.id === data.case.id);
+  return (
+    <CaseView
+      data={data}
+      orgName={orgs.find((o) => o.slug === slug)?.name || listed?.org_name || slug}
+      back={{ href: '/customer/cases', label: 'เคสทั้งหมดของฉัน' }}
+      chatHref={(chat) => `/customer/chats/${slug}/${chat}`}
+      newChatHref="/customer/chats/new"
+    />
+  );
+}
+
+export type CaseViewProps = {
+  data: CaseDetail;
+  orgName: string;
+  back: { href: string; label: string };
+  /** Where one of the case's chats opens. */
+  chatHref: (conversationId: string) => string;
+  newChatHref: string;
+};
+
+/** Where a case stands and what comes next, for whoever follows it. */
+export function CaseView({ data, orgName, back, chatHref, newChatHref }: CaseViewProps) {
   const t = data.case;
   const view = caseState(t.status);
   const done = view.tone === 'done';
-  const listed = overview.cases.find((x) => x.id === t.id);
-  const orgName = orgs.find((o) => o.slug === slug)?.name || listed?.org_name || '';
   const reference = `BD-${t.number}`;
   const replyChat = view.tone === 'waiting' ? data.conversations[0]?.id || '' : '';
 
@@ -40,7 +62,7 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
       : { title: 'กำหนดดำเนินการเสร็จ', detail: `ภายใน ${date(t.resolution_due_at, true)}`, done: false },
   ];
   const facts: Array<[string, string]> = [
-    ['องค์กร', orgName || slug],
+    ['องค์กร', orgName],
     ['เลขเคส', reference],
     ['หมวดหมู่', t.category],
     ['เปิดเมื่อ', date(t.created_at, true)],
@@ -50,9 +72,9 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
 
   return (
     <>
-      <Link href="/customer/cases" className="back-link">
+      <Link href={back.href} className="back-link">
         <Icon name="back" />
-        เคสทั้งหมดของฉัน
+        {back.label}
       </Link>
       <section className={`customer-banner tone-${view.tone}`}>
         <div className="customer-banner-main">
@@ -64,7 +86,7 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
             <strong>{view.label}</strong> · {view.hint}
           </p>
           {replyChat && (
-            <Link className="btn primary" href={`/customer/chats/${slug}/${replyChat}`}>
+            <Link className="btn primary" href={chatHref(replyChat)}>
               <Icon name="chat" />
               ตอบกลับทีมงาน
             </Link>
@@ -121,7 +143,7 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
             {data.conversations.length ? (
               <div className="customer-link-list">
                 {data.conversations.map((x) => (
-                  <Link key={x.id} className="customer-link-row" href={`/customer/chats/${slug}/${x.id}`}>
+                  <Link key={x.id} className="customer-link-row" href={chatHref(x.id)}>
                     <span className="customer-link-icon">
                       <Icon name="chat" />
                     </span>
@@ -138,7 +160,7 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
             ) : (
               <div className="card-body">
                 <p className="muted">
-                  ทีมงานบันทึกเคสนี้จากช่องทางอื่น ถ้าต้องการคุยเรื่องนี้ <Link href="/customer/chats/new">เริ่มแชทใหม่</Link> แล้วแจ้งเลขเคส {reference}
+                  ทีมงานบันทึกเคสนี้จากช่องทางอื่น ถ้าต้องการคุยเรื่องนี้ <Link href={newChatHref}>เริ่มแชทใหม่</Link> แล้วแจ้งเลขเคส {reference}
                 </p>
               </div>
             )}

@@ -1,5 +1,5 @@
-# The API server: FastAPI on uvicorn (backend/asgi.py). Everything else in Bookdose uses the Python 3.10+ standard
-# library. Install with: python -m pip install -r requirements.txt
+# The API server: FastAPI on uvicorn (backend/asgi.py), and cryptography for sealing stored secrets. Everything else
+# in Bookdose uses the Python 3.10+ standard library. Install with: python -m pip install -r requirements.txt
 fastapi==0.141.1
 uvicorn==0.53.0
 # Used directly by backend/asgi.py and backend/http/adapter.py (installed by the two above; pinned so an upgrade is
@@ -10,3 +10,6 @@ h11==0.16.0
 # WebSocket for uvicorn (realtime chat hints, backend/realtime; uvicorn's 'websockets-sansio' implementation). The
 # tests use its sync client too.
 websockets==16.1.1
+# AES-256-GCM for the stored secrets: channel and OpenAI tokens, the SMTP password, two-factor secrets
+# (backend/utils/secret_box.py). The standard library has no authenticated cipher.
+cryptography==50.0.1

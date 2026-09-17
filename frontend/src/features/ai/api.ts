@@ -26,8 +26,8 @@ export function testAiConnection() {
 }
 
 /** The customer asks for a person instead of the chatbot (portal). */
-export function portalHandoff(slug: string) {
-  return api<{ ok: true }>(`/api/public/${slug}/handoff`, {});
+export function portalHandoff(slug: string, conversationId: string) {
+  return api<{ ok: true }>(`/api/public/${slug}/handoff`, {}, 'POST', { conversation: conversationId });
 }
 
 /** Wait for a job to finish (1.5 s between checks, 80 checks at most). `alive` false stops waiting with the old

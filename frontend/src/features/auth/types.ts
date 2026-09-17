@@ -18,7 +18,12 @@ export type CustomerLoginResult = { ok: true; signed_in?: boolean; two_factor?: 
 
 /** POST /api/sign-in: which kind of account signed in (a staff account wins when both passwords match). Staff get the
     staff session; a customer gets exactly the customer sign-in's answer, the second step included. */
-export type SignInResult = { ok: true; kind: 'staff' } | ({ kind: 'customer' } & CustomerLoginResult);
+export type SignInResult =
+  | { ok: true; kind: 'staff'; two_factor?: boolean; methods?: string[] }
+  | ({ kind: 'customer' } & CustomerLoginResult);
+
+/** POST /api/sign-in/passkey: which kind of account the passkey belongs to (each gets its own session). */
+export type PasskeySignInResult = { ok: true; kind: 'staff' | 'customer' };
 
 /** POST /api/customer/register: 201 and signed in when email is not set up, else 202 and a link is on its way. */
 export type CustomerSignupResult = { ok: true; signed_in?: boolean; verification_required?: boolean };

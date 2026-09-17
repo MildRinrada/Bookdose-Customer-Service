@@ -5,11 +5,10 @@ import { FormActions, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
-import { useSwitchTenant } from '@/lib/session';
-import { createTenant, PLATFORM_PREFIX, requestSupportAccess } from '../api';
+import { createTenant, PLATFORM_PREFIX, requestSupportAccess, setTenantStatus } from '../api';
 
-/* The organizations page's two dialogs: a new organization (pages/platform/new-tenant.html) and a platform admin's
-   request to enter one for support (pages/platform/support-access.html). */
+/* The organizations page's dialogs: a new organization (pages/platform/new-tenant.html), a platform admin's request
+   to enter one for support (pages/platform/support-access.html), and suspending one. */
 
 export function TenantForm() {
   const { closeModal } = useDialogs();
@@ -49,27 +48,81 @@ export function TenantForm() {
   );
 }
 
+/** Suspending stops everything of the organization at once, so its name (or CONFIRM) is typed first, like the
+    server asks. */
+export function SuspendTenantForm({ id, name }: { id: string; name: string }) {
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  return (
+    <Form
+      data-form="suspend-tenant"
+      data-id={id}
+      onSubmit={async (values) => {
+        await setTenantStatus(id, 'suspended', (values.confirmation ?? '').trim());
+        closeModal();
+        toast(`ระงับ ${name} แล้ว`);
+        // The signed-in account may work in it: its workspace list changes too.
+        await refresh(PLATFORM_PREFIX, '/api/bootstrap');
+      }}
+    >
+      <div className="notice warning">
+        <p>
+          เมื่อระงับ <strong>{name}</strong> จะมีผลทันที:
+        </p>
+        <ul>
+          <li>ทีมงานขององค์กรเข้าพื้นที่ทำงานไม่ได้</li>
+          <li>หน้าลูกค้า แชทผู้เยี่ยมชม และลิงก์เชิญเปิดไม่ได้ ลูกค้าไม่เห็นองค์กรนี้ในรายการ</li>
+          <li>รับข้อความจาก LINE / Facebook ไม่ได้ และหยุดส่งข้อความกับงาน AI ที่ค้างอยู่</li>
+        </ul>
+        <p>ข้อมูลทั้งหมดยังเก็บไว้ครบ กด “เปิดใช้งานอีกครั้ง” ได้ภายหลัง</p>
+      </div>
+      <TextField label={`พิมพ์ชื่อองค์กร “${name}” หรือ CONFIRM เพื่อยืนยัน`} name="confirmation" max={100} autoComplete="off" />
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={() => closeModal()}>
+          ยกเลิก
+        </button>
+        <button className="btn danger" type="submit">
+          ระงับองค์กร
+        </button>
+      </div>
+    </Form>
+  );
+}
+
 export function SupportAccessForm({ id, name }: { id: string; name: string }) {
   const { closeModal } = useDialogs();
   const toast = useToast();
-  const switchTenant = useSwitchTenant();
+  const refresh = useInvalidate();
   return (
     <Form
       data-form="support-access"
       data-id={id}
       onSubmit={async (values) => {
-        await requestSupportAccess(id, values.reason ?? '');
+        await requestSupportAccess(id, values.reason ?? '', Number(values.hours));
         closeModal();
-        toast('เพิ่มสิทธิ์ Support Access และบันทึกใน audit log แล้ว');
-        await switchTenant(id);
+        toast(`ส่งคำขอถึงผู้ดูแล ${name} แล้ว · เข้าได้เมื่อได้รับอนุมัติ`);
+        await refresh(PLATFORM_PREFIX);
       }}
     >
       <p className="notice">
-        ระบบจะเพิ่มคุณเป็นสมาชิกของ <strong>{name}</strong> ในบทบาทหัวหน้าทีม อ่านและตอบเคสได้ทุกทีม แต่แก้การตั้งค่าองค์กรไม่ได้ ชื่อของคุณและเหตุผลจะถูกบันทึกทั้งใน
-        “ประวัติแพลตฟอร์ม” และ “ประวัติการทำงาน” ขององค์กรนั้น ผู้ดูแลองค์กรปิดสิทธิ์นี้ได้ทุกเมื่อจากหน้าจัดการสมาชิก
+        คำขอจะส่งถึงผู้ดูแลของ <strong>{name}</strong> ทางอีเมลและในหน้าตั้งค่าองค์กร คุณยังเข้าไม่ได้จนกว่าผู้ดูแลองค์กรจะอนุมัติ เมื่ออนุมัติแล้ว
+        คุณจะเป็นหัวหน้าทีมชั่วคราว อ่านและตอบเคสได้ทุกทีม แต่แก้การตั้งค่าองค์กรไม่ได้ และสิทธิ์จะหมดเองเมื่อครบเวลา ผู้ดูแลองค์กรหยุดสิทธิ์ได้ทุกเมื่อ
+        ทุกขั้นตอนบันทึกทั้งใน “ประวัติแพลตฟอร์ม” และ “ประวัติการทำงาน” ขององค์กร
       </p>
       <TextField label="เหตุผลที่ต้องเข้าดูข้อมูล (เช่น เลขคำร้อง หรือปัญหาที่ต้องตรวจสอบ)" name="reason" max={300} />
-      <FormActions label="ยืนยันและเข้าองค์กร" onCancel={() => closeModal()} />
+      <div className="field">
+        <label htmlFor="support-request-hours">ขอใช้งานเป็นเวลา</label>
+        <select id="support-request-hours" name="hours" defaultValue="4">
+          {[1, 4, 8, 24, 72].map((h) => (
+            <option key={h} value={h}>
+              {h} ชั่วโมง
+            </option>
+          ))}
+        </select>
+        <small className="muted">ผู้ดูแลองค์กรอนุมัติได้เท่ากับหรือน้อยกว่าที่ขอ คำขอที่ไม่มีใครตัดสินภายใน 24 ชั่วโมงจะหมดอายุเอง</small>
+      </div>
+      <FormActions label="ส่งคำขอ" onCancel={() => closeModal()} />
     </Form>
   );
 }

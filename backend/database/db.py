@@ -112,6 +112,9 @@ def init():
     DATA.mkdir(parents=True, exist_ok=True, mode=0o700)
     (DATA / 'tenants').mkdir(exist_ok=True, mode=0o700)
     (DATA / 'files').mkdir(exist_ok=True, mode=0o700)
+    # Secret files still in plain text (from before encryption) are sealed with the platform's key.
+    from backend.utils import secret_box
+    secret_box.seal_existing_files()
     with control() as db:
         schema.create_control_tables(db)
         seed.seed_global_faq(db)

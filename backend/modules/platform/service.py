@@ -67,31 +67,6 @@ def set_tenant_status(cd, session, tenant_id, body):
     cd.commit()
 
 
-def grant_support_access(cd, session, tenant_id, body):
-    """A platform admin joins an organization as a manager to help its team. Never silent: the reason goes to the
-    platform history and to the organization's own history, and only the organization's admins can remove it
-    (a removed access cannot be taken back from here)."""
-    reason = schema.support_reason(body)
-    D.begin(cd)
-    require(repository.find_tenant(cd,tenant_id),'ไม่พบองค์กร',404)
-    require(repository.is_active(cd,tenant_id),'องค์กรนี้ถูกระงับอยู่',409)
-    user_id = session['user_id']
-    membership = organization.find_membership(cd,tenant_id,user_id)
-    if membership:
-        if not membership['active']:
-            # The organization's admins took the access away: a refused support access.
-            cd.rollback()
-            events.record('cross_tenant_denied',actor='platform',subject=session['email'],tenant_id=tenant_id,
-                          detail={'action':'support_access','reason':'revoked_by_organization'})
-        require(False,'คุณเป็นสมาชิกขององค์กรนี้อยู่แล้ว' if membership['active'] else 'ผู้ดูแลองค์กรปิดสิทธิ์ของคุณไว้ ต้องให้ผู้ดูแลองค์กรเปิดคืน',409)
-    with D.tenant(tenant_id) as td:
-        organization.insert_membership(cd,tenant_id,user_id,'manager',organization.first_team_id(td))
-        audit.record(td,session['name'],'tenant.support_access',user_id,reason)
-    audit.record(cd,user_id,'tenant.support_access',tenant_id,reason)
-    cd.commit()
-    events.record('support_access',actor='platform',subject=session['email'],tenant_id=tenant_id,detail={'reason':reason[:300]})
-
-
 # System overview
 def _bytes(path):
     """Size of a SQLite file with its journal files, or of every file in a folder."""
@@ -165,9 +140,27 @@ def remove_platform_admin(cd, session, user_id):
     cd.commit()
 
 
-# Global FAQ: written once here, read by its audience in every organization.
+# Global FAQ: written once here, read by its audience in every organization once published.
+FIELDS = ('title','category','body','audience')
+
+
+def _waiting(article):
+    return json.loads(article['draft']) if article['draft'] else None
+
+
+def _admin_view(row):
+    """An article as its editor sees it: the latest words (the waiting changes, if any) and where it stands:
+    'draft' (never published), 'published', or 'changed' (published, with changes not published yet). `live` is the
+    version readers see, while it differs from the latest words."""
+    waiting = _waiting(row)
+    live = {key:row[key] for key in FIELDS}
+    state = 'draft' if not row['published_at'] else 'changed' if waiting else 'published'
+    return {'id':row['id'],**(waiting or live),'author':row['author'],'updated_at':row['updated_at'],
+            'published_at':row['published_at'],'state':state,'live':live if waiting else None}
+
+
 def global_faq(cd):
-    return repository.global_articles(cd)
+    return [_admin_view(row) for row in repository.global_articles(cd)]
 
 
 def staff_guides(cd):
@@ -175,17 +168,66 @@ def staff_guides(cd):
 
 
 def save_global_article(cd, session, article_id, body):
-    """Create (no id) or update an article; returns its id."""
-    title,category,text,audience = schema.global_article(body)
+    """Create (no id) or update an article; returns its id. Nothing reaches readers here: a new article is a draft,
+    and changes to a published one wait beside it until they are published."""
+    words = dict(zip(FIELDS,schema.global_article(body)))
     if article_id is None:
         article_id = uid()
-        repository.insert_global_article(cd,article_id,title,category,text,audience,session['name'])
+        repository.insert_global_article(cd,article_id,*(words[key] for key in FIELDS),session['name'])
     else:
-        require(repository.find_global_article(cd,article_id),'ไม่พบบทความ',404)
-        repository.update_global_article(cd,article_id,title,category,text,audience,session['name'])
-    audit.record(cd,session['user_id'],'faq.saved',article_id,title)
+        article = _found_article(cd,article_id)
+        if article['published_at']:
+            same = all(article[key]==words[key] for key in FIELDS)
+            repository.save_global_draft(cd,article_id,None if same else json.dumps(words,ensure_ascii=False),session['name'])
+        else:
+            repository.update_global_article(cd,article_id,*(words[key] for key in FIELDS),session['name'])
+    audit.record(cd,session['user_id'],'faq.saved',article_id,words['title'])
     cd.commit()
     return article_id
+
+
+def _found_article(cd, article_id):
+    article = repository.find_global_article(cd,article_id)
+    require(article,'ไม่พบบทความ',404)
+    return article
+
+
+def _apply_waiting(cd, session, article):
+    """Make the waiting changes the article's own words; returns the title it now has."""
+    waiting = _waiting(article)
+    if waiting:
+        repository.update_global_article(cd,article['id'],*(waiting[key] for key in FIELDS),session['name'])
+        repository.save_global_draft(cd,article['id'],None,session['name'])
+    return (waiting or article)['title']
+
+
+def publish_global_article(cd, session, article_id):
+    """Readers see the latest words from now on (a draft, or the waiting changes of a published article)."""
+    article = _found_article(cd,article_id)
+    require(article['draft'] or not article['published_at'],'บทความนี้เผยแพร่อยู่แล้ว และไม่มีการแก้ไขที่รอเผยแพร่',409)
+    title = _apply_waiting(cd,session,article)
+    repository.set_global_published(cd,article_id,True,session['name'])
+    audit.record(cd,session['user_id'],'faq.published',article_id,title)
+    cd.commit()
+
+
+def unpublish_global_article(cd, session, article_id):
+    """Take an article away from its readers; it is a draft again, with its latest words."""
+    article = _found_article(cd,article_id)
+    require(article['published_at'],'บทความนี้ยังไม่ได้เผยแพร่',409)
+    title = _apply_waiting(cd,session,article)
+    repository.set_global_published(cd,article_id,False,session['name'])
+    audit.record(cd,session['user_id'],'faq.unpublished',article_id,title)
+    cd.commit()
+
+
+def discard_global_changes(cd, session, article_id):
+    """Throw away the waiting changes of a published article; the version readers see stays."""
+    article = _found_article(cd,article_id)
+    require(article['draft'],'ไม่มีการแก้ไขที่รอเผยแพร่',409)
+    repository.save_global_draft(cd,article_id,None,session['name'])
+    audit.record(cd,session['user_id'],'faq.changes_discarded',article_id,article['title'])
+    cd.commit()
 
 
 def delete_global_article(cd, session, article_id):

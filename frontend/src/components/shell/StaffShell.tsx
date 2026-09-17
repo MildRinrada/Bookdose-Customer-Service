@@ -11,7 +11,7 @@ import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { isDone } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
-import { isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
+import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AccountDialog } from './AccountDialog';
 import { SessionGuard } from './SessionGuard';
@@ -118,7 +118,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
 
   let content: ReactNode = children;
   if (!allowed) content = <PageLoading />;
-  else if (!work && !platform)
+  else if (!work && !platform && !isAccountPath(pathname))
     content = (
       <EmptyState title="ไม่มีพื้นที่ทำงานที่ใช้งานอยู่" description="เลือกองค์กรอื่นจากเมนู หรือติดต่อผู้ดูแลองค์กรเพื่อเปิดใช้งานอีกครั้ง" icon="lock">
         {user.platform_admin && (
@@ -219,6 +219,15 @@ export function StaffShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="app-main">
+        {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (
+          <Link className="support-banner" href="/settings?tab=teams" role="status">
+            <Icon name="shield" />
+            <span>
+              ทีมผู้ดูแลแพลตฟอร์มขอเข้าช่วยดูแล {work.tenant.name} {work.support_pending} คำขอ · ยังไม่มีใครเข้าได้จนกว่าคุณจะอนุมัติ
+            </span>
+            <Icon name="arrow" />
+          </Link>
+        )}
         {user.platform_admin && (
           <div className="platform-banner" role="status">
             <Icon name="shield" />

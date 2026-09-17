@@ -34,6 +34,20 @@
 .customer-link-org:empty {
   display: none;
 }
+/* Between the organization's chat and its FAQ; the page being shown is marked. */
+.guest-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.guest-nav .btn.active {
+  background: var(--info-soft);
+  color: var(--link);
+}
+.guest-head-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .guest-foot {
   display: flex;
   align-items: center;
@@ -379,6 +393,13 @@
     padding: 10px 12px 18px;
   }
   .guest-head .brand-text {
+    display: none;
+  }
+  /* Icons only: the chat and the FAQ stay one tap away. */
+  .guest-nav .btn {
+    padding-inline: 10px;
+  }
+  .guest-nav .btn > :not(.icon) {
     display: none;
   }
   .guest-chat,

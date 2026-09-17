@@ -32,7 +32,13 @@ export const managePages: StaffPage[] = [
 ];
 
 /** Screens outside the menu. */
-export const otherStaffPages: StaffPage[] = [{ key: 'notifications', href: '/notifications', label: 'การแจ้งเตือน', icon: 'bell' }];
+export const otherStaffPages: StaffPage[] = [
+  { key: 'notifications', href: '/notifications', label: 'การแจ้งเตือน', icon: 'bell' },
+  { key: 'account-security', href: '/account/security', label: 'ความปลอดภัยของบัญชี', icon: 'shield' },
+];
+
+/** Screens of the signed-in account itself: they open without a selected organization too. */
+export const isAccountPath = (pathname: string) => pathname === '/account' || pathname.startsWith('/account/');
 
 /** The platform console (platform administrators only): nothing on these screens belongs to one organization. */
 export const platformPages: StaffPage[] = [

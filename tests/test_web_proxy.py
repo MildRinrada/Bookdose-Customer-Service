@@ -79,7 +79,7 @@ class WebProxyTests(unittest.TestCase):
         # A customer switching chats quickly behind the web app: the reads of this address are used up. The answer
         # says when a read is allowed again (the page asks again then instead of freezing the chat).
         moment = time.monotonic()
-        rate_limit.RATES[('public-read','127.0.0.1')].extend([moment-50]+[moment]*179)
+        rate_limit.RATES[('public-read','ip','127.0.0.1')].extend([moment-50]+[moment]*179)
         request = urllib.request.Request(self.base+'/api/public/alpha',headers={'X-Forwarded-Host':'localhost:3000'})
         with self.assertRaises(urllib.error.HTTPError) as caught:
             urllib.request.urlopen(request,timeout=20)

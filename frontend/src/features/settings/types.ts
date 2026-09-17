@@ -23,3 +23,21 @@ export type MemberBody = {
 
 /** The member list's filters (kept while moving between screens, like uiState.members). */
 export type MemberFilters = { q?: string; role?: string };
+
+export type SupportStatus = 'pending' | 'approved' | 'denied' | 'cancelled' | 'ended' | 'expired';
+
+/** A row of GET /api/support-access. */
+export type SupportRequest = {
+  id: string;
+  status: SupportStatus;
+  reason: string;
+  hours: number;
+  requester: { name: string; email: string };
+  created_at: string;
+  decided_at: string | null;
+  decided_by: string | null;
+  note: string;
+  expires_at: string | null;
+  ended_at: string | null;
+  ended_by: string | null;
+};

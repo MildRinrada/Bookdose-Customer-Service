@@ -12,17 +12,17 @@ import type { RegistrationConfig } from '@/features/auth/types';
 import { useCopyText } from '@/components/ui/actions';
 import { date } from '@/lib/format';
 import { tenantStatusLabels } from '@/lib/labels';
-import { useApi } from '@/lib/query';
+import { useApi, useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
-import { REGISTRATION_PATH, TENANTS_PATH } from './api';
-import { SupportAccessForm, TenantForm } from './components/TenantForms';
-import type { Tenant, TenantFilters, TenantsPage } from './types';
+import { PLATFORM_PREFIX, REGISTRATION_PATH, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { SupportAccessForm, SuspendTenantForm, TenantForm } from './components/TenantForms';
+import type { SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
 /* Platform console, จัดการองค์กร: every organization on this installation - who is running, how many people are
-   inside, and the link to its customer side. (Suspending is not offered on screen.) One list with the search, pills
+   inside, the link to its customer side, and suspending or reopening it. One list with the search, pills
    and pager every other screen uses, the platform's own activity underneath, then the sign-up email settings.
    Markup: pages/platform/platform*.html. */
 
@@ -53,14 +53,17 @@ export function OrganizationsScreen() {
 type Access =
   | { current: true }
   | { canOpen: true }
+  | { pending: SupportSummary }
   | { noAccess: string; canRequest: boolean };
 
-/* Platform rights manage organizations; reading their cases needs a membership. Each row says which applies to you. */
-function tenantAccess(t: Tenant, boot: Boot, hasWorkspace: boolean): Access {
+/* Platform rights manage organizations; reading their cases needs a membership - a permanent one, or a support
+   access the organization approved (with an end time). Each row says which applies to you. */
+function tenantAccess(t: Tenant, boot: Boot, hasWorkspace: boolean, support: SupportSummary | undefined): Access {
   const membership = boot.memberships.find((m) => m.id === t.id);
   if (membership?.status === 'active' && t.status === 'active') return t.id === boot.tenant_id && hasWorkspace ? { current: true } : { canOpen: true };
-  if (!membership) return { noAccess: 'ไม่ได้เป็นสมาชิก', canRequest: t.status === 'active' };
-  return { noAccess: t.status === 'active' ? 'ผู้ดูแลองค์กรปิดสิทธิ์ของคุณไว้' : 'เปิดไม่ได้ขณะองค์กรถูกระงับ', canRequest: false };
+  if (t.status !== 'active') return { noAccess: 'เปิดไม่ได้ขณะองค์กรถูกระงับ', canRequest: false };
+  if (support?.status === 'pending') return { pending: support };
+  return { noAccess: 'ไม่ได้เป็นสมาชิก', canRequest: true };
 }
 
 function OrganizationsView({ data }: { data: TenantsPage }) {
@@ -138,11 +141,14 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
                       <th>สมาชิก</th>
                       <th>สถานะ</th>
                       <th>พื้นที่ทำงานของคุณ</th>
+                      <th>
+                        <span className="sr-only">จัดการสถานะ</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {slice.shown.map((t, i) => (
-                      <TenantRow key={t.id} tenant={t} index={slice.start + i} />
+                      <TenantRow key={t.id} tenant={t} index={slice.start + i} support={data.support?.[t.id]} />
                     ))}
                   </tbody>
                 </table>
@@ -174,15 +180,29 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
   );
 }
 
-function TenantRow({ tenant: t, index }: { tenant: Tenant; index: number }) {
+function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: number; support?: SupportSummary }) {
   const boot = useBoot().data!;
   const { data: work } = useWorkspace();
   const switchTenant = useSwitchTenant();
   const copyText = useCopyText();
   const toast = useToast();
-  const { openModal } = useDialogs();
+  const { openModal, confirm } = useDialogs();
+  const refresh = useInvalidate();
   const url = customerHomeUrl(t.slug, boot.home?.slug);
-  const access = tenantAccess(t, boot, Boolean(work));
+  const access = tenantAccess(t, boot, Boolean(work), support);
+  const inForce = support?.status === 'approved' && support.expires_at ? support : null;
+  const withdraw = (summary: SupportSummary, leaving: boolean) =>
+    confirm({
+      title: leaving ? 'ออกจากองค์กรก่อนเวลา' : 'ยกเลิกคำขอ',
+      message: leaving ? `สิทธิ์เข้าช่วยเหลือ ${t.name} จะสิ้นสุดทันที` : `คำขอเข้าช่วยเหลือ ${t.name} จะถูกยกเลิก`,
+      confirmLabel: leaving ? 'ออกจากองค์กร' : 'ยกเลิกคำขอ',
+      tone: 'danger',
+      run: async () => {
+        await withdrawSupportAccess(summary.id);
+        toast(leaving ? 'ออกจากองค์กรแล้ว' : 'ยกเลิกคำขอแล้ว');
+        await refresh(PLATFORM_PREFIX, '/api/bootstrap');
+      },
+    });
 
   return (
     <tr className={t.status === 'active' ? '' : 'org-suspended'}>
@@ -222,6 +242,23 @@ function TenantRow({ tenant: t, index }: { tenant: Tenant; index: number }) {
             ใช้งานอยู่ตอนนี้
           </span>
         )}
+        {'pending' in access && (
+          <span className="org-access org-support-pending">
+            <Icon name="clock" />
+            <span>รอผู้ดูแลองค์กรอนุมัติ · ขอ {access.pending.hours} ชม.</span>
+            <button type="button" className="btn sm subtle" onClick={() => withdraw(access.pending, false)}>
+              ยกเลิกคำขอ
+            </button>
+          </span>
+        )}
+        {inForce && 'canOpen' in access && (
+          <span className="tiny muted org-support-until">
+            Support ถึง {date(inForce.expires_at, true)} ·{' '}
+            <button type="button" className="link-btn" onClick={() => withdraw(inForce, true)}>
+              ออกก่อนเวลา
+            </button>
+          </span>
+        )}
         {'canOpen' in access && (
           <button
             type="button"
@@ -238,11 +275,11 @@ function TenantRow({ tenant: t, index }: { tenant: Tenant; index: number }) {
             <button
               type="button"
               className="btn sm"
-              title="คุณยังไม่ได้เป็นสมาชิก · ขอเข้าองค์กรเพื่อ Support พร้อมบันทึกเหตุผล"
+              title="คุณยังไม่ได้เป็นสมาชิก · ส่งคำขอให้ผู้ดูแลองค์กรอนุมัติ พร้อมเหตุผลและระยะเวลา"
               onClick={() => openModal('ขอสิทธิ์ Support Access', <SupportAccessForm id={t.id} name={t.name} />)}
             >
               <Icon name="shield" />
-              ขอ Support Access
+              ขอเข้าช่วยเหลือ
             </button>
           ) : (
             <span className="org-access muted" title="ต้องเป็นสมาชิกขององค์กรนี้จึงจะอ่านเคสและบทสนทนาได้">
@@ -250,6 +287,41 @@ function TenantRow({ tenant: t, index }: { tenant: Tenant; index: number }) {
               {access.noAccess}
             </span>
           ))}
+      </td>
+      <td className="org-status-action">
+        {t.status === 'active' ? (
+          <button
+            type="button"
+            className="btn sm org-suspend"
+            title={`ระงับ ${t.name}: ทีมงานและลูกค้าใช้งานไม่ได้จนกว่าจะเปิดอีกครั้ง`}
+            onClick={() => openModal(`ระงับองค์กร ${t.name}`, <SuspendTenantForm id={t.id} name={t.name} />)}
+          >
+            <Icon name="lock" />
+            ระงับ
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn sm"
+            title={`เปิดใช้งาน ${t.name} อีกครั้ง`}
+            onClick={() =>
+              confirm({
+                title: `เปิดใช้งาน ${t.name} อีกครั้ง`,
+                message: 'ทีมงานกลับเข้าพื้นที่ทำงานได้ หน้าลูกค้าและช่องทาง LINE / Facebook กลับมารับเรื่องทันที',
+                cancelLabel: 'ยกเลิก',
+                confirmLabel: 'เปิดใช้งาน',
+                run: async () => {
+                  await setTenantStatus(t.id, 'active');
+                  toast(`เปิดใช้งาน ${t.name} แล้ว`);
+                  await refresh(PLATFORM_PREFIX, '/api/bootstrap');
+                },
+              })
+            }
+          >
+            <Icon name="restore" />
+            เปิดใช้งานอีกครั้ง
+          </button>
+        )}
       </td>
     </tr>
   );

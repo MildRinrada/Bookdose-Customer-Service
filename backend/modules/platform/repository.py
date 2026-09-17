@@ -4,7 +4,7 @@ import json
 from backend.database import db as D
 from backend.database.db import one, rows
 from backend.utils.dates import now
-from backend.utils.files import write_private_file
+from backend.utils import secret_box
 
 
 def insert_tenant(db, tenant_id, name, slug):
@@ -77,10 +77,22 @@ def set_platform_admin(db, user_id, enabled):
 
 
 # Global FAQ
+def add_publish_columns(db):
+    """Databases from before drafts: every article there was already shown to its readers, so it stays published."""
+    columns = {row[1] for row in db.execute('PRAGMA table_info(global_articles)')}
+    if 'published_at' not in columns:
+        db.execute('ALTER TABLE global_articles ADD COLUMN published_at TEXT')
+        db.execute('ALTER TABLE global_articles ADD COLUMN draft TEXT')
+        db.execute('UPDATE global_articles SET published_at=updated_at')
+        db.commit()
+
+
 def global_articles(db, audience=None):
-    """Every global article (for the platform admin), or those written for one audience (for its readers)."""
+    """Every global article with its waiting changes (for the platform admin), or the published articles written for
+    one audience (for its readers)."""
     if audience:
-        return rows(db,'SELECT id,title,category,body,updated_at FROM global_articles WHERE audience=? ORDER BY category,title',(audience,))
+        return rows(db,'''SELECT id,title,category,body,updated_at FROM global_articles
+                          WHERE audience=? AND published_at IS NOT NULL ORDER BY category,title''',(audience,))
     return rows(db,'SELECT * FROM global_articles ORDER BY updated_at DESC')
 
 
@@ -88,13 +100,25 @@ def find_global_article(db, article_id):
     return one(db,'SELECT * FROM global_articles WHERE id=?',(article_id,))
 
 
-def insert_global_article(db, article_id, title, category, body, audience, author):
-    db.execute('INSERT INTO global_articles VALUES(?,?,?,?,?,?,?)',(article_id,title,category,body,audience,author,now()))
+def insert_global_article(db, article_id, title, category, body, audience, author, published=False):
+    moment = now()
+    db.execute('''INSERT INTO global_articles(id,title,category,body,audience,author,updated_at,published_at)
+                  VALUES(?,?,?,?,?,?,?,?)''',(article_id,title,category,body,audience,author,moment,moment if published else None))
 
 
 def update_global_article(db, article_id, title, category, body, audience, author):
     db.execute('UPDATE global_articles SET title=?,category=?,body=?,audience=?,author=?,updated_at=? WHERE id=?',
                (title,category,body,audience,author,now(),article_id))
+
+
+def save_global_draft(db, article_id, draft, author):
+    """Changes to a published article, kept apart until they are published (None: no waiting changes)."""
+    db.execute('UPDATE global_articles SET draft=?,author=?,updated_at=? WHERE id=?',(draft,author,now(),article_id))
+
+
+def set_global_published(db, article_id, published, author):
+    moment = now()
+    db.execute('UPDATE global_articles SET published_at=?,author=?,updated_at=? WHERE id=?',(moment if published else None,author,moment,article_id))
 
 
 def delete_global_article(db, article_id):
@@ -120,17 +144,19 @@ def save_registration_mail(db, value):
     db.execute("INSERT INTO platform_settings VALUES('registration_mail',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(value,))
 
 
-# The SMTP password lives in a private file, never in the database, API responses or backups.
+# The SMTP password lives in a private file, never in the database, API responses or backups, sealed with the
+# platform's secret key (utils/secret_box).
 def registration_secret_path():
     return D.DATA/'secrets'/'registration-smtp.json'
 
 
 def read_registration_secret():
     try:
-        return json.loads(registration_secret_path().read_text())
+        text = secret_box.read_file(registration_secret_path())
+        return json.loads(text) if text else {}
     except (OSError, ValueError):
         return {}
 
 
 def write_registration_secret(secret):
-    write_private_file(registration_secret_path(),json.dumps(secret))
+    secret_box.write_file(registration_secret_path(),json.dumps(secret))

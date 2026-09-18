@@ -6,6 +6,7 @@ from backend.database import audit
 from backend.modules.ai import model as ai
 from backend.modules.auth import model as auth
 from backend.modules.automation import model as automation
+from backend.modules.board import model as board
 from backend.modules.channels import model as channels
 from backend.modules.contacts import model as contacts
 from backend.modules.customer_security import model as customer_security
@@ -78,6 +79,8 @@ def upgrade_tenant(db):
     db.executescript(channels.TENANT_TABLES)
     db.execute(trash.TENANT_TABLES)
     db.executescript(automation.TENANT_TABLES)
+    # The overview's handover notes and to-dos.
+    db.executescript(board.TENANT_TABLES)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',automation.DEFAULT_SETTINGS)
     db.executescript(customers.TENANT_TABLES)
     db.execute('INSERT OR IGNORE INTO settings VALUES(?,?)',('customer_categories',json.dumps(customers.DEFAULT_CATEGORIES,ensure_ascii=False)))

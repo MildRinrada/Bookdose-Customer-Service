@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { ChartColumn, PageLoading, PriorityTag, StatCard } from '@/components/ui/display';
+import { ChartColumn, PageLoading, StatCard } from '@/components/ui/display';
 import { useModalOpen } from '@/features/inbox/hooks';
 import { NewTicketButton } from '@/features/tickets/components/NewTicket';
 import { TicketTable } from '@/features/tickets/components/TicketTable';
@@ -14,18 +14,22 @@ import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useStaffAlerts, useStaffTickets, useStaffUser, useWork } from '@/lib/session';
 import { overviewPath } from './api';
+import { HandoverCard, TodoCard } from './components/BoardCards';
 import { BotCard, BriefCard, GapsCard } from './components/InsightsCards';
 import { ManagerView } from './components/ManagerView';
 import { MeItems } from './components/MeItems';
 import { MyDay } from './components/MyDay';
 import { NextTaskButton } from './components/NextTaskButton';
+import { QuickReplies } from './components/QuickReplies';
 import { SetupCard } from './components/SetupCard';
+import { SlaWatch } from './components/SlaWatch';
 import { WaitingChats } from './components/WaitingChats';
 import { actionNeeded, meItems } from './labels';
 import type { Overview } from './types';
 
 /* Overview: greeting with รับงานถัดไป, the owner's setup checklist, stat cards, วันนี้ของฉัน and แชทรอตอบ, recent cases,
-   "ถึงคุณ" (mentions, follow-ups, escalations), "Action Needed", the new-cases chart and, for the organization's
+   คำตอบด่วน, "ถึงคุณ" (mentions, follow-ups, escalations), SLA Watch, the new-cases chart, ส่งต่อกะ and the member's
+   to-dos and, for the organization's
    owners, the AI and knowledge cards and the manager view. The overview's own data
    (/api/automation/overview) refreshes every 30 seconds (every minute while live updates are connected, which refresh it on changes)
    while the screen is visible and no dialog is open; it also
@@ -52,10 +56,10 @@ export function DashboardScreen() {
 
   // Without its own data (a failed first request) the rest of the overview still opens, as before.
   if (overview.isPending) return <PageLoading />;
-  return <DashboardView dash={overview.data ?? null} />;
+  return <DashboardView dash={overview.data ?? null} interval={interval} />;
 }
 
-function DashboardView({ dash }: { dash: Overview | null }) {
+function DashboardView({ dash, interval }: { dash: Overview | null; interval: number | false }) {
   const user = useStaffUser();
   const work = useWork();
   const alerts = useStaffAlerts().data;
@@ -84,7 +88,6 @@ function DashboardView({ dash }: { dash: Overview | null }) {
   const chartMid = max > 1 && max % 2 === 0 ? max / 2 : 0;
   const needed = actionNeeded(tickets);
   const me = meItems(dash?.me ?? alerts);
-  const moreNeeded = Math.max(0, needed.length - ASIDE_ITEMS);
   const shownTickets = tickets.filter(
     (t) => tab === 'all' || (tab === 'mine' && t.assignee_id === user.id && !isDone(t)) || (tab === 'new' && t.status === 'new'),
   );
@@ -184,9 +187,14 @@ function DashboardView({ dash }: { dash: Overview | null }) {
               <div className="chart-legend">ชี้หรือแตะที่แท่งเพื่อดูจำนวนเคส</div>
             </div>
           </section>
+          <div className="board-grid">
+            <HandoverCard interval={interval} readOnly={readOnly} />
+            {!readOnly && <TodoCard interval={interval} now={now} />}
+          </div>
         </div>
         <aside className="stack dashboard-aside">
           <WaitingChats now={now} />
+          {!readOnly && <QuickReplies />}
           <section className="card me-card">
             <div className="card-header">
               <div>
@@ -201,40 +209,7 @@ function DashboardView({ dash }: { dash: Overview | null }) {
               <MeItems items={me} limit={ASIDE_ITEMS} />
             </div>
           </section>
-          <section className="card action-needed">
-            <div className="card-header">
-              <div>
-                <h2>เคสที่ต้องดำเนินการทันที</h2>
-                <p>Action Needed</p>
-              </div>
-              <span className={`badge${needed.length ? ' suspended' : ''}`}>{needed.length} เคส</span>
-            </div>
-            <div className="card-body">
-              {needed.length ? (
-                needed.slice(0, ASIDE_ITEMS).map(({ t, reason, tone, symbol }) => (
-                  <div key={t.id} className={`sla-item ${tone}`}>
-                    <div className="flex between">
-                      <span className="ticket-id">BD-{t.number}</span>
-                      <PriorityTag value={t.priority} />
-                    </div>
-                    <Link href={`/tickets/${t.id}`} className="truncate">
-                      {t.subject}
-                    </Link>
-                    <div className="time">
-                      <Icon name={symbol} /> {reason}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-mini">ไม่มีเคสที่ต้องเร่งดำเนินการ ✨</div>
-              )}
-              {moreNeeded > 0 && (
-                <Link className="small" href="/tickets?filter=active">
-                  ดูอีก {moreNeeded} เคส →
-                </Link>
-              )}
-            </div>
-          </section>
+          <SlaWatch needed={needed} shown={ASIDE_ITEMS} />
         </aside>
       </div>
       {dash?.insights && (

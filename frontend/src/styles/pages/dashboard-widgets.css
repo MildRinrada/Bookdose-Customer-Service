@@ -1,0 +1,390 @@
+/* Overview widgets: SLA Watch, คำตอบด่วน, ส่งต่อกะ and สิ่งที่ต้องทำของฉัน (features/dashboard/components). */
+
+/* A long quick reply or name is cut with "…", never widens its column (dashboard.css: .dashboard-aside). */
+.dashboard-main>*,.dashboard-aside>*,.board-grid>* {
+  min-width: 0;
+}
+/* Both columns end on one line whatever the data: the last card of each takes the height that is left. */
+@media (min-width: 951px) {
+  .dashboard-grid {
+    align-items: stretch;
+  }
+  .dashboard-main,.dashboard-aside {
+    display: flex;
+    flex-direction: column;
+  }
+  .dashboard-main>:last-child,.dashboard-aside>:last-child {
+    flex: 1;
+  }
+}
+
+/* SLA Watch: a ticking clock on the left of each case, red once late, amber in the last two hours. */
+.sla-watch-list,.handover-list,.my-todo-list,.quick-reply-list {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sla-watch-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f7f7f9;
+}
+.sla-timer {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 86px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: #1c1c1e;
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  text-align: center;
+}
+.sla-timer small {
+  color: #c7c7cc;
+  font-size: .72rem;
+  font-weight: 600;
+}
+.sla-watch-item.danger .sla-timer {
+  background: #e5484d;
+}
+.sla-watch-item.danger .sla-timer small {
+  color: #ffe1e1;
+}
+.sla-watch-item.warn .sla-timer {
+  background: #f5b942;
+  color: #1c1c1e;
+}
+.sla-watch-item.warn .sla-timer small {
+  color: #5c4204;
+}
+.sla-timer.info {
+  min-width: 86px;
+  min-height: 44px;
+  background: #e8e8ec;
+  color: #3a3a3c;
+}
+.sla-timer.info .icon {
+  width: 18px;
+  height: 18px;
+}
+.sla-watch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.sla-watch-body a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sla-watch-body a:hover {
+  text-decoration: underline;
+}
+.sla-watch-reason {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.sla-watch-item.danger .sla-watch-reason {
+  color: #c4262e;
+}
+.sla-watch .card-body>.small {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+/* คำตอบด่วน: one row per reply, the shortcut as a dark key; a click copies it. */
+.quick-reply-list {
+  gap: 6px;
+}
+.quick-reply-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: #f4f4f6;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s;
+}
+.quick-reply-list button:hover {
+  background: #ebebef;
+}
+.quick-reply-list button.copied {
+  background: #e3f4ea;
+}
+.quick-reply-key {
+  flex-shrink: 0;
+  max-width: 40%;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-reply-text {
+  flex: 1;
+  min-width: 0;
+  color: #3a3a3c;
+  font-size: .92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-reply-state {
+  flex-shrink: 0;
+  color: #6e6e73;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.quick-reply-list button.copied .quick-reply-state {
+  color: #1f7a4d;
+}
+.quick-reply-state .icon {
+  width: 16px;
+  height: 16px;
+}
+.dash-replies .card-body>.small {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+/* ส่งต่อกะ and สิ่งที่ต้องทำของฉัน side by side under the chart. */
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(280px,100%),1fr));
+  gap: 22px;
+}
+/* The two cards share one height; the list or the empty note fills what is left of each. */
+.board-card {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.board-card>.card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.handover-list,.my-todo-list {
+  align-content: start;
+}
+.board-empty {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  min-height: 130px;
+  padding: 18px;
+  border: 1.5px dashed #dcdce0;
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+.board-empty .icon {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 4px;
+  color: #a1a1a6;
+}
+.board-empty strong {
+  color: #3a3a3c;
+}
+.board-empty span {
+  max-width: 260px;
+  font-size: .88rem;
+}
+.board-card .card-header>.icon {
+  color: #6e6e73;
+}
+.board-form {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.board-form textarea,.todo-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d8d8dc;
+  border-radius: 12px;
+  background: #fafafb;
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+.board-form textarea:focus,.todo-form input:focus {
+  border-color: #1c1c1e;
+  outline: 2px solid #1c1c1e26;
+  background: #fff;
+}
+.board-form .btn {
+  justify-self: end;
+}
+.handover-list {
+  gap: 4px;
+}
+.handover-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+}
+.handover-list li:hover {
+  background: #f6f6f8;
+}
+.handover-list li.mine {
+  background: #f4f4f6;
+}
+.handover-list .avatar {
+  flex-shrink: 0;
+}
+.handover-body {
+  flex: 1;
+  min-width: 0;
+}
+.handover-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.handover-meta time {
+  color: var(--muted);
+  font-size: .82rem;
+}
+.handover-body p {
+  margin: 2px 0 0;
+  color: #3a3a3c;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.board-case {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: .88em;
+  font-weight: 700;
+  text-decoration: none;
+}
+.board-case:hover {
+  background: #000;
+}
+.board-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+:is(.handover-list,.my-todo-list) li:is(:hover,:focus-within) .board-remove {
+  opacity: 1;
+}
+@media (hover:none) {
+  .board-remove { opacity: 1; }
+}
+.board-remove .icon {
+  width: 14px;
+  height: 14px;
+}
+.todo-form {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.todo-form input[type=time] {
+  width: 118px;
+}
+.todo-form .btn {
+  padding-inline: 12px;
+}
+.my-todo-list {
+  gap: 2px;
+}
+.my-todo-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.my-todo-list li:hover {
+  background: #f6f6f8;
+}
+.my-todo-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.my-todo-list input[type=checkbox] {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  accent-color: #1c1c1e;
+}
+.my-todo-list label span {
+  overflow-wrap: anywhere;
+}
+.my-todo-list li.done label span {
+  color: #a1a1a6;
+  text-decoration: line-through;
+}
+.todo-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ececf0;
+  color: #3a3a3c;
+  font-size: .82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.todo-time .icon {
+  width: 13px;
+  height: 13px;
+}
+.my-todo-list li.soon .todo-time {
+  background: #fdf0d5;
+  color: #7a4507;
+}
+.my-todo-list li.late .todo-time {
+  background: #fde7ea;
+  color: #a3182b;
+}
+@media (max-width:560px) {
+  .todo-form {
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+  .todo-form input:first-child {
+    grid-column: 1 / -1;
+  }
+}

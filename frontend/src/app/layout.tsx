@@ -11,6 +11,7 @@ import '@/styles/layout.css';
 import '@/styles/pages/auth.css';
 import '@/styles/pages/dashboard.css';
 import '@/styles/pages/dashboard-extras.css';
+import '@/styles/pages/dashboard-widgets.css';
 import '@/styles/pages/tickets.css';
 import '@/styles/pages/inbox.css';
 import '@/styles/pages/contacts.css';

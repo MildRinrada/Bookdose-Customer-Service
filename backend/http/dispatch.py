@@ -39,6 +39,7 @@ from backend.middleware.security import SECURITY_HEADERS, check_host_and_origin,
 from backend.modules.ai import routes as ai_routes
 from backend.modules.auth import routes as auth_routes
 from backend.modules.automation import routes as automation_routes, service as automation
+from backend.modules.board import routes as board_routes
 from backend.modules.channels import routes as channel_routes
 from backend.modules.contacts import routes as contact_routes
 from backend.modules.customer_security import routes as customer_security_routes
@@ -66,7 +67,8 @@ ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
-          *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES, *staff_prefs_routes.ROUTES]
+          *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES, *staff_prefs_routes.ROUTES,
+          *board_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')

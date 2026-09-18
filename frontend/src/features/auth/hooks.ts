@@ -25,9 +25,10 @@ export function useSignupOrg(org: string, home: Boot['home'] | undefined) {
   return { info, signupOrg: failedOver ? '' : org, loading };
 }
 
-/** Where a staff member goes after signing in: the screen they came from (?next=), else the overview. */
+/** Where a staff member goes after signing in: the screen they came from (?next=), else their home (the main address
+    sends a member to the overview and a platform admin to the console). */
 export function staffDestination(next: string): string {
-  return next && !next.startsWith('/customer') ? next : '/dashboard';
+  return next && !next.startsWith('/customer') ? next : '/';
 }
 
 /** Where a customer goes after signing in: the customer screen they came from (or the /join/<token> link that sent

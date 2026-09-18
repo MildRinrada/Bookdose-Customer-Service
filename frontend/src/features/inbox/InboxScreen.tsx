@@ -3,10 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
-import { FilterPill, FilterSelect, SearchInput } from '@/components/ui/filters';
+import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
+import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
 import { ConversationView } from './components/ConversationView';
@@ -25,6 +26,7 @@ const POLL_MS = 12000;
 
 export function InboxScreen({ id }: { id?: string }) {
   const router = useRouter();
+  const work = useWork();
   const singlePane = useSinglePane();
   const modalOpen = useModalOpen();
   const interval = useRealtimeInterval(modalOpen ? false : POLL_MS);
@@ -122,25 +124,27 @@ export function InboxScreen({ id }: { id?: string }) {
   return (
     <>
       <div className="page-heading inbox-heading">
-        <h1>กล่องข้อความ</h1>
+        <div>
+          <h1>กล่องข้อความ</h1>
+          <p>แชทกับลูกค้าจากทุกช่องทางของ {work.tenant.name} ในที่เดียว และติดตามทุกเรื่องที่ลูกค้าส่งมา</p>
+        </div>
       </div>
-      <section className={`card inbox-layout${selectedId ? ' show-detail' : ''}`}>
+      <section className={`card inbox-layout staff-chats${selectedId ? ' show-detail' : ''}`}>
         <div className="inbox-list">
-          <div className="inbox-tools">
+          {/* The customer's list has a search box and one choice under it; the team's has two choices side by side. */}
+          <div className="inbox-tools customer-chat-tools staff-chat-tools">
             <SearchInput id="inbox-search" label="ค้นหาบทสนทนา" placeholder="ค้นหาชื่อ เรื่อง หรือเลขเคส" value={query} onChange={setQuery} />
-            <div className="inbox-filter-row">
-              <div className="inbox-tabs" role="group" aria-label="แสดงบทสนทนา">
-                {Object.entries(inboxFilters).map(([key, label]) => (
-                  <FilterPill
-                    key={key}
-                    value={key}
-                    label={label}
-                    pressed={filter === key}
-                    count={conversations.filter((c) => matches(c, key, '')).length}
-                    onClick={setFilter}
-                  />
-                ))}
-              </div>
+            <div className="staff-chat-filters">
+              <FilterSelect
+                id="inbox-filter"
+                label="แสดงบทสนทนา"
+                value={filter}
+                onChange={setFilter}
+                options={Object.entries(inboxFilters).map(([key, label]) => ({
+                  value: key,
+                  label: `${label} (${conversations.filter((c) => matches(c, key, '')).length})`,
+                }))}
+              />
               <FilterSelect
                 id="inbox-channel"
                 label="กรองตามช่องทาง"

@@ -350,9 +350,9 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(self.status(page,GUEST+'/link',{'via':'sms','to':'081-234-5678'}),409)
         agent,_ = self.create_member()
         self.assertEqual(self.status(agent,'/api/platform/sms'),403)
-        self.assertEqual(self.ok(self.admin,'/api/platform/sms')['provider'],'off')
-        self.assertEqual(self.status(self.admin,'/api/platform/sms',{'provider':'twilio'}),400)
-        self.assertEqual(self.ok(self.admin,'/api/platform/sms',{'provider':'log'})['provider'],'log')
+        self.assertEqual(self.ok(self.owner,'/api/platform/sms')['provider'],'off')
+        self.assertEqual(self.status(self.owner,'/api/platform/sms',{'provider':'twilio'}),400)
+        self.assertEqual(self.ok(self.owner,'/api/platform/sms',{'provider':'log'})['provider'],'log')
         self.assertTrue(self.overview(page)['follow']['sms_ready'])
         for bad in ('call me','12345','+660812345678','02-12'):
             self.assertEqual(self.status(page,GUEST+'/link',{'via':'sms','to':bad}),400,bad)
@@ -367,7 +367,7 @@ class GuestChatTests(unittest.TestCase):
         me = self.overview(phone)['guest']
         self.assertEqual((me['phone_masked'],me['phone_verified'],me['email_verified']),('+66*****5678',True,False))
         # Switched off again, the option disappears.
-        self.ok(self.admin,'/api/platform/sms',{'provider':'off'})
+        self.ok(self.owner,'/api/platform/sms',{'provider':'off'})
         self.assertFalse(self.overview(page)['follow']['sms_ready'])
 
     def test_links_are_revoked_by_a_newer_one_and_end_after_20_uses_or_30_days(self):
@@ -475,7 +475,7 @@ class GuestChatTests(unittest.TestCase):
         self.reply(conv)
         self.assertEqual(self.notices(),[])                       # sent but not opened: still not proven
         self.resume(token)
-        self.ok(self.admin,'/api/platform/sms',{'provider':'log'})
+        self.ok(self.owner,'/api/platform/sms',{'provider':'log'})
         with patch.object(sms,'_log') as logged:
             self.send_link(page,'sms','0812345678')
         self.resume(re.search(r'#t=([A-Za-z0-9_-]{43})',logged.call_args.args[0])[1])
@@ -617,7 +617,7 @@ class GuestChatTests(unittest.TestCase):
                                                                    'title':'คุยกับเรา','origins':saved['widget']['origins']})
 
     def test_another_organizations_guest_is_never_visible(self):
-        self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'owner@example.com',
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'owner@example.com',
                                                     'admin_name':'ผู้ดูแล B','password':'Test-password-123!'})
         page = self.browser()
         conv = self.started(page)

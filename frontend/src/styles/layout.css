@@ -859,3 +859,28 @@ html.platform-mode .nav-console {
   height: 18px;
   flex-shrink: 0;
 }
+
+/* A platform admin looking into an organization on support access: read-only, said once at the top. */
+.support-view-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #fdf0d5;
+  color: #7a4507;
+  font-weight: 600;
+}
+.support-view-banner .icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.support-view-banner span {
+  flex: 1;
+}
+.read-only-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 16px;
+}

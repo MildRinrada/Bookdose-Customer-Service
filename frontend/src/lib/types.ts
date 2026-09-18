@@ -34,7 +34,14 @@ export type Member = {
   active: boolean | number;
   /** A platform admin let in for support until then (null: a permanent member). */
   expires_at?: string | null;
+  /** Whether routing may give them a new case now (ตั้งค่าบัญชี → สถานะการทำงาน). */
+  availability?: Availability;
 };
+
+/** A member's work status: available for new cases, or why not (a break, busy, away, off shift, on leave). */
+export type Availability = { available: boolean; status: WorkStatus; label: string; reason: string; since?: string | null };
+
+export type WorkStatus = 'online' | 'break' | 'busy' | 'offline';
 
 export type Team = { id: string; name: string } & Record<string, unknown>;
 
@@ -42,6 +49,8 @@ export type Team = { id: string; name: string } & Record<string, unknown>;
 export type Workspace = {
   tenant: { id: string; name: string; slug: string };
   role: Role;
+  /** A platform admin on a support access: they may look, never reply, take a case or change anything. */
+  read_only?: boolean;
   team_id: string | null;
   members: Member[];
   teams: Team[];

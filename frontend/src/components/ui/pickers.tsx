@@ -50,7 +50,17 @@ function Picker({ id, teamId, value }: { id: string; teamId: string | null | und
       required={false}
       placeholder="ยังไม่มอบหมาย · พิมพ์เพื่อค้นหาชื่อ"
       value={value ?? ''}
-      items={[{ value: '', label: 'ยังไม่มอบหมาย' }, ...members.map((m) => ({ value: m.id, label: m.name, detail: roleLabels[m.role] || '' }))]}
+      items={[
+        { value: '', label: 'ยังไม่มอบหมาย' },
+        ...members.map((m) => ({
+          value: m.id,
+          label: m.name,
+          // Someone on a break or off shift can still be chosen by hand; the list says so.
+          detail: [roleLabels[m.role] || '', m.availability && !m.availability.available ? `ไม่พร้อมรับเรื่อง: ${m.availability.reason}` : '']
+            .filter(Boolean)
+            .join(' · '),
+        })),
+      ]}
     />
   );
 }

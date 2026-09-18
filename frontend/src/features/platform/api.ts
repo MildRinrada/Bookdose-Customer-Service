@@ -25,6 +25,10 @@ export const requestSupportAccess = (tenantId: string, reason: string, hours: nu
   api<{ id: string; status: 'pending' }>(`${TENANTS_PATH}/${tenantId}/support-access`, { reason, hours });
 
 /** Withdraw a waiting request, or leave an access in force early. */
+/** Give an organization an admin: an emailed invitation, or (with a first password) the account made at once. */
+export const addTenantAdmin = (tenantId: string, body: { email: string; admin_name?: string; password?: string }) =>
+  api<{ mode: 'invited'; sent: boolean } | { mode: 'created' }>(`${TENANTS_PATH}/${tenantId}/admins`, body);
+
 export const withdrawSupportAccess = (id: string) => api<{ ok: true }>(`${PLATFORM_PREFIX}/support-access/${id}`, undefined, 'DELETE');
 
 export const addPlatformAdmin = (body: { email: string; admin_name?: string; password?: string }) => api<{ id: string }>(ADMINS_PATH, body);

@@ -34,6 +34,13 @@ def create_tenant(req):
     return req.send(201,{'id':service.add_tenant(req.cd,req.body)})
 
 
+def add_admin(req, tenant_id):
+    """POST /api/platform/tenants/<id>/admins {email[, admin_name, password]}: invite (or make) an organization's admin."""
+    from backend.middleware.rate_limit import limited
+    limited(('platform-admin-invite',req.session['user_id']),30,900)
+    return req.send(201,service.add_admin(req.cd,req.session,tenant_id,req.body))
+
+
 def set_tenant_status(req, tenant_id):
     service.set_tenant_status(req.cd,req.session,tenant_id,req.body)
     return req.send(200,{'ok':True})

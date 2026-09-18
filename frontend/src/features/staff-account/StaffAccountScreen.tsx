@@ -2,20 +2,30 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { NotificationSettings } from './NotificationSettings';
 import { OrganizationsSettings } from './OrganizationsSettings';
 import { ProfileSettings } from './ProfileSettings';
+import { RepliesSettings } from './RepliesSettings';
 import { SecuritySettings } from './SecuritySettings';
-import { isStaffAccountTab, staffAccountTabPath, staffAccountTabs, type StaffAccountTab } from './tabs';
+import { StatusSettings } from './StatusSettings';
+import { useBoot } from '@/lib/session';
+import { isStaffAccountTab, platformHiddenTabs, staffAccountTabPath, staffAccountTabs, type StaffAccountTab } from './tabs';
 
 /* ตั้งค่าบัญชี of a staff account - a member of any role, or a platform admin (/account?tab=): laid out as a
    customer's (features/customer/AccountScreen.tsx), a menu of sections beside a column of cards. One account works
-   in every organization it belongs to, so nothing here depends on the organization selected.
+   in every organization it belongs to, so nothing here depends on the organization selected. A platform admin
+   takes no cases, so their account has no work status, work notifications or quick replies.
    Markup: pages/settings.css (.settings-nav), pages/account-settings.css. */
 
 export function StaffAccountScreen({ tab }: { tab?: string }) {
-  const current: StaffAccountTab = isStaffAccountTab(tab) ? tab : 'profile';
+  const platformAdmin = Boolean(useBoot().data?.user?.platform_admin);
+  const tabs = (Object.keys(staffAccountTabs) as StaffAccountTab[]).filter((key) => !platformAdmin || !platformHiddenTabs.includes(key));
+  const current: StaffAccountTab = isStaffAccountTab(tab) && tabs.includes(tab) ? tab : 'profile';
   const content = {
     profile: () => <ProfileSettings />,
+    status: () => <StatusSettings />,
+    notifications: () => <NotificationSettings />,
+    replies: () => <RepliesSettings />,
     security: () => <SecuritySettings />,
     organizations: () => <OrganizationsSettings />,
   }[current]();
@@ -29,7 +39,7 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
       </div>
       <div className="settings-frame account-frame">
         <nav className="settings-nav" aria-label="หมวดการตั้งค่าบัญชี">
-          {(Object.keys(staffAccountTabs) as StaffAccountTab[]).map((key) => {
+          {tabs.map((key) => {
             const meta = staffAccountTabs[key];
             const active = key === current;
             return (

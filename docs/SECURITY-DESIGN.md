@@ -107,9 +107,17 @@ WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admi
   can be read yet. The organization's admins get an email (platform mailbox) and a banner on every staff screen.
 - Admins (`role=admin`, permanent membership) decide at `GET /api/support-access`, `POST …/{id}/approve {hours ≤ asked, note}`,
   `…/deny`, `…/end`. The platform admin can `DELETE /api/platform/support-access/{id}` (withdraw, or leave early).
-- Approval makes/reactivates the membership as manager with `memberships.expires_at`. **Every membership query ignores a
+- Approval makes/reactivates the membership with `memberships.expires_at`. **Every membership query ignores a
   row past `expires_at`**, so access ends on the minute; the automation worker then marks it `expired`, sets `active=0`
   and unassigns cases. Undecided requests lapse after 24 h. A permanent membership is never touched.
+- **Platform admins never work in an organization** (`organization/repository.py`): a support access is their only way
+  in (`WORKS`), and it is **read-only** - `middleware/auth.select_workspace` refuses every non-GET workspace request of a
+  platform admin (`SUPPORT_READ_ONLY`), so they reply to no customer, take no case and change nothing. They are never in
+  an organization's member list, assignee picker, routing rule, escalation or @mention list (`NOT_PLATFORM`), cannot be
+  invited or added as a member, and an organization's member cannot be made a platform admin. First-run setup makes
+  the owner a platform admin only; the platform's own organization gets its admin from the console
+  (`POST /api/platform/tenants/{id}/admins`, invitation or first password). A permanent membership from before
+  (the first-run owner's) is simply ignored.
 - Audit: `tenant.support_requested|access|denied|ended|cancelled|expired` in both the platform and the organization log;
   security event `support_access` on approval.
 
@@ -127,12 +135,17 @@ WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admi
   credentials. An organization's own backup (ตั้งค่าองค์กร → สำรองข้อมูล) carries no secrets.
 
 ### Staff two-factor sign-in and passkeys (`backend/modules/staff_security`)
-- Tables `staff_totp` (sealed), `staff_recovery_codes`, `staff_passkeys`, `staff_challenges`, `staff_login_challenges`.
+- Tables `staff_totp` (sealed), `staff_recovery_codes`, `staff_passkeys`, `staff_challenges`, `staff_login_challenges`,
+  `staff_activity` (the account's own history, a year: sign-ins, wrong passwords of an existing account, 2FA, passkeys,
+  devices signed out, password and profile - with IP and browser, never a code or a password).
 - `/api/sign-in` and `/api/login`: a right password on an account with TOTP answers `{two_factor, methods}` plus the
   `bookdose_staff_2fa` cookie (5 min, 5 tries); `POST /api/login/verify {code|recovery_code}` gives the session. Wrong codes
   count on `staff:<email>` (which also locks `signin:<email>`).
 - Settings at `/api/account/security` (state, totp setup/confirm/disable, recovery codes, passkeys options/add/rename/remove);
-  adding or removing a way in costs the password. Page: `/account/security` (link in จัดการบัญชี).
+  adding or removing a way in costs the password. Devices: `GET .../sessions` (from `sessions.id / ip / user_agent`; the
+  token never leaves the server), `DELETE .../sessions/{id}` (another device only), `POST .../sessions/sign-out-all
+  {keep_current}`; history: `GET .../activity?page=`. Page: ตั้งค่าบัญชี → ความปลอดภัย (`/account?tab=security`, the
+  same cards as a customer's; the old `/account/security` redirects there).
 - One passkey button on the sign-in page: `POST /api/sign-in/passkey/options` stores the challenge for both kinds,
   `POST /api/sign-in/passkey` answers `{kind:'staff'|'customer'}` with that kind's session.
 - The platform overview warns a platform admin whose account has neither TOTP nor a passkey, and when the key is a file.

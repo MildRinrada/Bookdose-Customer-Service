@@ -55,7 +55,9 @@ def active_tenant_ids(db):
 
 
 def list_with_member_count(db):
-    return rows(db,'''SELECT t.*,(SELECT COUNT(*) FROM memberships m WHERE m.tenant_id=t.id AND m.active=1) AS member_count FROM tenants t ORDER BY t.created_at''')
+    """Each organization with how many of its own members are active (platform admins are never counted)."""
+    return rows(db,'''SELECT t.*,(SELECT COUNT(*) FROM memberships m WHERE m.tenant_id=t.id AND m.active=1 AND m.expires_at IS NULL
+                      AND m.user_id NOT IN (SELECT id FROM users WHERE platform_admin=1)) AS member_count FROM tenants t ORDER BY t.created_at''')
 
 
 def set_status(db, tenant_id, status):

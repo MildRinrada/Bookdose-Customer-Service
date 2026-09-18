@@ -72,7 +72,7 @@ class ExtensionTests(unittest.TestCase):
         self.configure('email',enabled=False,auth_mode='google',oauth_client_id='test-client-id',oauth_redirect_uri=self.base+O.CALLBACK)
         response,_=self.finish_oauth(state);self.assertEqual(response[0],400)
         state=self.start()['state'][0]
-        second=self.ok(self.admin,'/api/platform/tenants',{'name':'Second','slug':'second','email':'admin@example.com'})['id']
+        second=self.ok(self.owner,'/api/platform/tenants',{'name':'Second','slug':'second','email':'admin@example.com'})['id']
         self.admin.switch(second)
         response,_=self.finish_oauth(state);self.assertEqual(response[0],400)
 

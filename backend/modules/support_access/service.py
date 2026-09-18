@@ -39,8 +39,8 @@ def request_access(cd, session, tenant_id, body):
     require(tenants.find_tenant(cd,tenant_id),'ไม่พบองค์กร',404)
     require(tenants.is_active(cd,tenant_id),'องค์กรนี้ถูกระงับอยู่',409)
     user_id = session['user_id']
-    membership = memberships.find_membership(cd,tenant_id,user_id)
-    require(not (membership and membership['active'] and not membership['expires_at']),'คุณเป็นสมาชิกขององค์กรนี้อยู่แล้ว',409)
+    # A platform admin's permanent membership (the first-run owner's) opens nothing any more: support access is the
+    # only way in, for the owner too (organization/repository.py WORKS).
     require(not repository.open_request(cd,tenant_id,user_id),'มีคำขอที่รออนุมัติหรือสิทธิ์ที่ยังใช้งานอยู่แล้ว',409)
     request_id = uid()
     repository.insert(cd,request_id,tenant_id,user_id,reason,hours)
@@ -86,7 +86,8 @@ def requests_of(cd, ctx):
 
 
 def approve(cd, db, ctx, request_id, body):
-    """Say yes: the platform admin is a manager of the organization until the time chosen (no longer than asked)."""
+    """Say yes: the platform admin may look at the organization (read-only, middleware/auth.select_workspace) until
+    the time chosen (no longer than asked)."""
     D.begin(cd)
     tidy(cd)
     row = repository.find(cd,schema.request_id(request_id))
@@ -94,7 +95,6 @@ def approve(cd, db, ctx, request_id, body):
     require(row['status']=='pending',GONE,409)
     hours = schema.approved_hours(body,row['hours'])
     existing = memberships.find_membership(cd,row['tenant_id'],row['user_id'])
-    require(not (existing and existing['active'] and not existing['expires_at']),'ผู้ขอเป็นสมาชิกขององค์กรนี้อยู่แล้ว',409)
     expires_at = after(hours=hours)
     require(repository.decide(cd,row['id'],'approved',ctx['id'],schema.note(body),expires_at)==1,GONE,409)
     repository.grant(cd,row['tenant_id'],row['user_id'],memberships.first_team_id(db),expires_at,existing)
@@ -198,8 +198,7 @@ def _mail_admins(tenant_id, requester, reason, hours):
                 return
             cfg,secret = platform.registration_config(cd),platform.registration_secret()
             org = tenants.tenant_summary(cd,tenant_id)
-            admins = D.rows(cd,'''SELECT u.email FROM memberships m JOIN users u ON u.id=m.user_id
-                                  WHERE m.tenant_id=? AND m.role='admin' AND m.active=1 AND m.expires_at IS NULL''',(tenant_id,))
+            admins = memberships.organization_admins(cd,tenant_id)
         for admin in admins:
             mail = EmailMessage()
             mail['Subject'] = f"คำขอเข้าช่วยดูแลองค์กร {org['name']} รอการอนุมัติ"

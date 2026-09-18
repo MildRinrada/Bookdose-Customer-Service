@@ -11,3 +11,236 @@
 .account-section .field {
   margin-bottom: 15px;
 }
+
+/* สถานะการทำงาน: the four choices, the pill of where the member stands, and the switch in the top bar. */
+.status-dot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+.status-online .status-dot { background: #1f9d63; }
+.status-break .status-dot { background: #d49a2a; }
+.status-busy .status-dot { background: #c2410c; }
+.status-offline .status-dot,.status-offhours .status-dot { background: #94a3b8; }
+.work-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.work-status-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.work-status-option .tiny {
+  grid-column: 2;
+}
+.work-status-option:hover {
+  background: #f8f5fd;
+}
+.work-status-option.selected {
+  border: 2px solid var(--purple);
+  padding: 11px 13px;
+  background: #f4effe;
+}
+.work-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #eef1f7;
+  color: #334155;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.work-status-pill.status-online { background: #e3f5ec; color: #166344; }
+.work-status-pill.status-break { background: #fdf0d5; color: #7a4507; }
+.work-status-pill.status-busy { background: #fde7dc; color: #9a3412; }
+.status-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 4px 3px 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #eef1f7;
+  font-weight: 600;
+}
+.status-switch.status-online { background: #e3f5ec; color: #166344; }
+.status-switch.status-break { background: #fdf0d5; color: #7a4507; }
+.status-switch.status-busy { background: #fde7dc; color: #9a3412; }
+.status-switch.status-offline,.status-switch.status-offhours { background: #eef1f7; color: #475569; }
+.status-switch select {
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.status-switch:focus-within {
+  border-color: var(--focus);
+}
+html.platform-mode .status-switch {
+  display: none;
+}
+.work-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+}
+.work-days legend,.notify-group legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.day-check {
+  position: relative;
+}
+.day-check input {
+  position: absolute;
+  opacity: 0;
+}
+.day-check span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.day-check input:checked+span {
+  border-color: var(--purple);
+  background: #f1eefb;
+  color: #4b2f99;
+  font-weight: 700;
+}
+.day-check input:focus-visible+span {
+  outline: 2px solid var(--focus);
+}
+.work-time,.leave-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.work-time .field,.leave-form .field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 0;
+}
+.leave-form {
+  margin-top: 14px;
+}
+.leave-form .field.grow {
+  flex: 1 1 200px;
+}
+/* การแจ้งเตือน */
+.notify-group {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+.notify-group .check {
+  align-items: flex-start;
+  color: var(--ink);
+}
+.notify-group .check .switch {
+  margin-top: 2px;
+}
+.block {
+  display: block;
+}
+.notify-tests {
+  border-top: 1px solid var(--line);
+}
+.notify-tests h3 {
+  margin: 0 0 10px;
+}
+/* ชื่อและลายเซ็นที่ลูกค้าเห็น */
+.reply-preview {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 15px;
+}
+.reply-preview-bubble {
+  max-width: 460px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f1f5f9;
+}
+.reply-preview-bubble p {
+  margin: 4px 0 0;
+  white-space: pre-line;
+}
+/* คำตอบด่วน */
+.snippet-list code,.quick-reply code {
+  font-weight: 700;
+}
+.snippet-list strong,.quick-reply strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.snippet-text,.quick-reply .muted {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: pre-line;
+}
+.quick-replies {
+  display: grid;
+  gap: 8px;
+  min-width: min(520px,80vw);
+}
+.quick-reply {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.quick-reply:hover,.quick-reply:focus-visible {
+  border-color: var(--purple);
+  background: #f8f5fd;
+}
+.shortcut-table th {
+  width: 40%;
+  text-align: left;
+  font-weight: 400;
+}
+.shortcut-table th,.shortcut-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width:760px) {
+  .status-switch {
+    padding-left: 9px;
+  }
+  .status-switch select {
+    max-width: 7.5rem;
+  }
+}

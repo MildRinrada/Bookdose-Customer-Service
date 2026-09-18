@@ -391,7 +391,7 @@ class SecurityRoundTests(unittest.TestCase):
         for email in ('admin@example.com','manager@example.com'):
             self.staff_session(email,last_active_at=ago(minutes=31))
         self.assertEqual(manager.call('/api/tickets')[0],200)
-        self.assertEqual(self.raw(self.admin,'/api/platform/system')[1].get('reason'),'idle')
+        self.assertEqual(self.raw(self.owner,'/api/platform/system')[1].get('reason'),'idle')
         admin,_ = self.staff_login('admin@example.com')
         self.staff_session('admin@example.com',created_at=ago(hours=8,seconds=5))
         self.staff_session('manager@example.com',created_at=ago(hours=8,seconds=5))
@@ -496,9 +496,9 @@ class SecurityRoundTests(unittest.TestCase):
         self.assertEqual(agent.call('/api/account/profile',{'name':'x'},headers={'Origin':'https://evil.example'})[0],403)
         # cross_tenant_denied and support_access
         self.assertEqual(agent.call('/api/session/tenant',{'tenant_id':'0'*32})[0],403)
-        other_org = self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'beta@example.com',
+        other_org = self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'beta@example.com',
                                                                 'admin_name':'ผู้ดูแล B','password':PASSWORD})['id']
-        request = self.ok(self.admin,f'/api/platform/tenants/{other_org}/support-access',{'reason':'ตรวจสอบคำร้อง #1'})['id']
+        request = self.ok(self.owner,f'/api/platform/tenants/{other_org}/support-access',{'reason':'ตรวจสอบคำร้อง #1'})['id']
         beta_admin = Client(self.base)
         beta_admin.login('beta@example.com',PASSWORD)
         self.ok(beta_admin,f'/api/support-access/{request}/approve',{})

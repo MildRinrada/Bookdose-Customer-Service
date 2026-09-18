@@ -171,7 +171,9 @@ def update_profile(db, session, body, client=None):
 
 # First run and sign-in
 def set_up_platform(cookie_header, body, client=None):
-    """First run only: create the platform owner and the first organization; returns a session token."""
+    """First run only: create the platform owner and the first organization (the platform's own); returns a session
+    token. The owner looks after the platform and is not the organization's member: its admin is invited from the
+    platform console (organization/repository.py)."""
     with SETUP_LOCK, D.control() as db:
         require(repository.count_users(db)==0,'ระบบตั้งค่าเรียบร้อยแล้ว',409)
         setup_token = settings.setup_token()
@@ -182,7 +184,7 @@ def set_up_platform(cookie_header, body, client=None):
         form = schema.setup_form(body)
         user_id = uid()
         repository.insert_user(db,user_id,form['name'],form['email'],form['password'],platform_admin=True)
-        platform.create_tenant(db,form['organization'],form['slug'],user_id,body.get('demo') is True)
+        platform.create_tenant(db,form['organization'],form['slug'],None,body.get('demo') is True)
         return _replace_session(db,cookie_header,user_id,client)
 
 

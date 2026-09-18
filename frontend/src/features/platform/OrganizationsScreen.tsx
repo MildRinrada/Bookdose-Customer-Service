@@ -18,7 +18,7 @@ import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
 import { PLATFORM_PREFIX, REGISTRATION_PATH, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
-import { SupportAccessForm, SuspendTenantForm, TenantForm } from './components/TenantForms';
+import { SupportAccessForm, SuspendTenantForm, TenantAdminForm, TenantForm } from './components/TenantForms';
 import type { SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
 /* Platform console, จัดการองค์กร: every organization on this installation - who is running, how many people are
@@ -56,17 +56,18 @@ type Access =
   | { pending: SupportSummary }
   | { noAccess: string; canRequest: boolean };
 
-/* Platform rights manage organizations; reading their cases needs a membership - a permanent one, or a support
-   access the organization approved (with an end time). Each row says which applies to you. */
+/* Platform rights manage organizations, never their work: a platform admin sees an organization's cases only on a
+   support access the organization approved (with an end time), and only to look. Each row says where you stand. */
 function tenantAccess(t: Tenant, boot: Boot, hasWorkspace: boolean, support: SupportSummary | undefined): Access {
   const membership = boot.memberships.find((m) => m.id === t.id);
   if (membership?.status === 'active' && t.status === 'active') return t.id === boot.tenant_id && hasWorkspace ? { current: true } : { canOpen: true };
   if (t.status !== 'active') return { noAccess: 'เปิดไม่ได้ขณะองค์กรถูกระงับ', canRequest: false };
   if (support?.status === 'pending') return { pending: support };
-  return { noAccess: 'ไม่ได้เป็นสมาชิก', canRequest: true };
+  return { noAccess: 'ยังไม่มีสิทธิ์', canRequest: true };
 }
 
 function OrganizationsView({ data }: { data: TenantsPage }) {
+  const withoutAdmin = data.tenants.filter((t) => t.status === 'active' && !t.admins.length);
   const [f, setFilters] = useUiState<TenantFilters>('platform:filters', {});
   const { openModal } = useDialogs();
   const all = data.tenants;
@@ -102,10 +103,15 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
       <p className="muted platform-note">
         <Icon name="lock" />
         <span>
-          หน้านี้ทำงานระดับแพลตฟอร์ม ใช้สร้างองค์กรลูกค้าต้นทางและเข้าไปช่วยดูแล เคสและบทสนทนาเป็นข้อมูลของแต่ละองค์กร จึงเปิดได้เฉพาะองค์กรที่คุณเป็นสมาชิก
-          ดูได้ในคอลัมน์ “พื้นที่ทำงานของคุณ”
+          ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น ไม่รับเคสและไม่ตอบลูกค้า แต่ละองค์กรมีผู้ดูแลองค์กรของตัวเอง (เชิญได้จากคอลัมน์ “ผู้ดูแลองค์กร”)
+          เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
         </span>
       </p>
+      {withoutAdmin.length > 0 && (
+        <p className="notice warning" role="status">
+          {withoutAdmin.map((t) => t.name).join(', ')} ยังไม่มีผู้ดูแลองค์กร เรื่องจากลูกค้าจะรอโดยไม่มีใครรับ กด “เชิญผู้ดูแล” ในแถวขององค์กรนั้น
+        </p>
+      )}
       <section className="card">
         <div className="filters platform-filters">
           <SearchInput
@@ -138,9 +144,10 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
                     <tr>
                       <th>องค์กร</th>
                       <th>หน้าลูกค้า</th>
+                      <th>ผู้ดูแลองค์กร</th>
                       <th>สมาชิก</th>
                       <th>สถานะ</th>
-                      <th>พื้นที่ทำงานของคุณ</th>
+                      <th>สิทธิ์เข้าช่วยเหลือ</th>
                       <th>
                         <span className="sr-only">จัดการสถานะ</span>
                       </th>
@@ -148,7 +155,7 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
                   </thead>
                   <tbody>
                     {slice.shown.map((t, i) => (
-                      <TenantRow key={t.id} tenant={t} index={slice.start + i} support={data.support?.[t.id]} />
+                      <TenantRow key={t.id} tenant={t} index={slice.start + i} support={data.support?.[t.id]} canInvite={data.can_invite} />
                     ))}
                   </tbody>
                 </table>
@@ -180,7 +187,7 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
   );
 }
 
-function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: number; support?: SupportSummary }) {
+function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; index: number; support?: SupportSummary; canInvite: boolean }) {
   const boot = useBoot().data!;
   const { data: work } = useWorkspace();
   const switchTenant = useSwitchTenant();
@@ -231,6 +238,28 @@ function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: numbe
           </button>
         </div>
       </td>
+      <td className="org-admins">
+        {t.admins.map((a) => (
+          <span key={a.email} className="org-admin" title={a.email}>
+            {a.name}
+          </span>
+        ))}
+        {t.admin_invites.map((email) => (
+          <span key={email} className="org-admin muted" title="ส่งคำเชิญแล้ว ยังไม่ตอบรับ">
+            <Icon name="clock" />
+            {email}
+          </span>
+        ))}
+        {!t.admins.length && !t.admin_invites.length && <span className="org-admin-missing">ยังไม่มีผู้ดูแล</span>}
+        <button
+          type="button"
+          className="btn sm"
+          onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={canInvite} />)}
+        >
+          <Icon name="plus" />
+          {t.admins.length ? 'เพิ่มผู้ดูแล' : 'เชิญผู้ดูแล'}
+        </button>
+      </td>
       <td className="org-members">{t.member_count}</td>
       <td>
         <Badge status={t.status} />
@@ -239,7 +268,7 @@ function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: numbe
         {'current' in access && (
           <span className="org-access">
             <Icon name="check" />
-            ใช้งานอยู่ตอนนี้
+            กำลังดูอยู่ (อ่านอย่างเดียว)
           </span>
         )}
         {'pending' in access && (
@@ -263,11 +292,11 @@ function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: numbe
           <button
             type="button"
             className="btn sm"
-            title={`สลับไปทำงานในองค์กร ${t.name}`}
+            title={`ดูข้อมูลของ ${t.name} แบบอ่านอย่างเดียว`}
             onClick={() => switchTenant(t.id).catch((error: unknown) => toast(error instanceof Error ? error.message : String(error), true))}
           >
             <Icon name="arrow" />
-            เปิดพื้นที่ทำงาน
+            ดูแบบอ่านอย่างเดียว
           </button>
         )}
         {'noAccess' in access &&
@@ -275,14 +304,14 @@ function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: numbe
             <button
               type="button"
               className="btn sm"
-              title="คุณยังไม่ได้เป็นสมาชิก · ส่งคำขอให้ผู้ดูแลองค์กรอนุมัติ พร้อมเหตุผลและระยะเวลา"
+              title="ส่งคำขอให้ผู้ดูแลองค์กรอนุมัติ พร้อมเหตุผลและระยะเวลา · เมื่ออนุมัติจะดูข้อมูลได้อย่างเดียว"
               onClick={() => openModal('ขอสิทธิ์ Support Access', <SupportAccessForm id={t.id} name={t.name} />)}
             >
               <Icon name="shield" />
               ขอเข้าช่วยเหลือ
             </button>
           ) : (
-            <span className="org-access muted" title="ต้องเป็นสมาชิกขององค์กรนี้จึงจะอ่านเคสและบทสนทนาได้">
+            <span className="org-access muted" title="ดูเคสและบทสนทนาได้เมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือเท่านั้น">
               <Icon name="lock" />
               {access.noAccess}
             </span>

@@ -27,11 +27,14 @@ SAMPLE_MACRO = {'name':'ขอข้อมูลเพิ่มเติม','se
 
 
 def seed_demo(db, user_id, team_id):
+    """Sample cases, articles and a macro. `user_id` (None at first-run setup: the platform's owner is never one of
+    the organization's members) owns the sample cases and wrote the sample replies."""
     from backend.modules.tickets.service import open_ticket
+    author = user_id or 'ระบบ'
     for index, (name,email,company,subject,priority,status,category,body) in enumerate(SAMPLE_CASES):
         cid, conv_id = uid(), uid()
         timestamp = iso(utc_now()-dt.timedelta(hours=index+1))
-        contacts.insert(db,cid,name,email,'',company,'ข้อมูลตัวอย่าง',user_id,timestamp)
+        contacts.insert(db,cid,name,email,'',company,'ข้อมูลตัวอย่าง',author,timestamp)
         conversations.insert(db,conv_id,cid,subject,'web',team_id,None,timestamp)
         conversations.insert_message(db,uid(),conv_id,None,name,'customer',body,timestamp)
         tid = open_ticket(db,cid,team_id,subject,priority,user_id if index != 1 else None,category,conv_id)
@@ -46,7 +49,7 @@ def seed_demo(db, user_id, team_id):
             tickets.set_first_response_due(db,tid,iso(utc_now()-dt.timedelta(minutes=35)))
     for title,category,body in SAMPLE_ARTICLES:
         knowledge.insert(db,uid(),title,category,body,'internal','ทีม Bookdose')
-    automation.insert_macro(db,uid(),SAMPLE_MACRO,user_id)
+    automation.insert_macro(db,uid(),SAMPLE_MACRO,author)
 
 
 # Starter articles for the platform's global FAQ. They are added once, to a new or an upgraded installation; the

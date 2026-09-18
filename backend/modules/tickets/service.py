@@ -58,6 +58,9 @@ def create_ticket(cd, db, ctx, body):
     conv_id = uid()
     conversations.insert(db,conv_id,contact_id,subject,'manual',team_id)
     tid = open_ticket(db,contact_id,team_id,subject,priority,assignee,category,conv_id)
+    created = D.one(db,'SELECT * FROM tickets WHERE id=?',(tid,))
+    if assignee and created['assignee_id']==assignee:
+        notify_assigned(db,created,assignee,ctx)
     if body.get('body'):
         mid = conversation_service.store_message(db,ctx['tenant_id'],conv_id,ctx['id'],ctx['name'],'note',body)
         automation.record_mentions(cd,db,ctx,conversations.find(db,conv_id),mid,body['body'])
@@ -97,7 +100,17 @@ def update_ticket(cd, db, ctx, ticket_id, body):
         realtime.conversation(db,conv['id'],public=status!=ticket['status'],teams=(ticket['team_id'],))
     changes = {key:{'before':ticket[key],'after':value} for key,value in [('status',status),('priority',priority),('team_id',team_id),('assignee_id',assignee)] if ticket[key]!=value}
     audit.record(db,ctx['name'],'ticket.updated',ticket['id'],json.dumps(changes,ensure_ascii=False))
+    if assignee and assignee!=ticket['assignee_id']:
+        notify_assigned(db,ticket,assignee,ctx)
     db.commit()
+
+
+def notify_assigned(db, ticket, assignee, ctx=None):
+    """The new owner of a case hears about it by email when they asked to (not when they took it themselves)."""
+    from backend.modules.staff_prefs import service as staff_prefs
+    by = f"โดย {ctx['name']}" if ctx else 'โดยระบบอัตโนมัติ'
+    staff_prefs.queue(db,assignee,'assigned',f"เคส BD-{ticket['number']} มอบหมายให้คุณ",f"{ticket['subject']}\n{by}",
+                      f"/tickets/{ticket['id']}",actor_id=ctx['id'] if ctx else None)
 
 
 def export_tickets_csv(db, ctx):

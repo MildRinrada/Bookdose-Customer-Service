@@ -7,6 +7,8 @@ import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
+import { StatusSwitch } from '@/features/staff-account/StatusSwitch';
+import { useWorkAlerts } from '@/features/staff-account/useWorkAlerts';
 import { isDone } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
@@ -19,7 +21,11 @@ import { TextSizeMenu } from './TextSize';
 /* The frame around every staff screen: sidebar (collapsible), top bar, organization switch and the account menu.
    It opens once the session, the workspace, the case list and the member's alerts are loaded, so the screens
    inside can use useWork(). It also keeps members out of screens their role does not include (they land on the
-   overview, as before) and shows the platform console only to platform administrators. */
+   overview, as before) and shows the platform console only to platform administrators.
+
+   A platform administrator looks after the server, never an organization's work: every page they open is the
+   console (the organization's screens send them to /platform/system), except an organization they were let into by
+   support access, which they can only look at (work.read_only; the server refuses every change). */
 
 const SEARCH_SHORTCUT = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
@@ -39,9 +45,18 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const search = useRef<HTMLInputElement>(null);
 
   const work = workspace.data;
+  const readOnly = Boolean(work?.read_only);
+  // The member's own desktop notifications and sound (ตั้งค่าบัญชี → การแจ้งเตือน), while an organization is open.
+  useWorkAlerts(user.id, Boolean(work) && !readOnly);
   const page = staffPageOf(pathname);
-  const platform = isPlatformPath(pathname) && user.platform_admin;
-  const allowed = isPlatformPath(pathname) ? user.platform_admin : !page?.roles || (work ? page.roles.includes(work.role) : true);
+  // A platform admin looking into an organization on support access; anywhere else they are in the console.
+  const supportView = user.platform_admin && Boolean(work) && !isPlatformPath(pathname) && !isAccountPath(pathname);
+  const platform = user.platform_admin && !supportView;
+  const allowed = isPlatformPath(pathname)
+    ? user.platform_admin
+    : user.platform_admin && !isAccountPath(pathname)
+      ? Boolean(work)
+      : !page?.roles || (work ? page.roles.includes(work.role) : true);
 
   // Platform mode swaps the organization switch, search and alerts for a banner: nothing there belongs to one organization.
   useEffect(() => {
@@ -54,8 +69,11 @@ export function StaffShell({ children }: { children: ReactNode }) {
   }, [page]);
 
   useEffect(() => {
-    if (!allowed && (work || isPlatformPath(pathname))) router.replace('/dashboard');
-  }, [allowed, work, pathname, router]);
+    if (allowed) return;
+    // A platform admin's home is the console; a member's is the overview of their organization.
+    if (user.platform_admin) router.replace('/platform/system');
+    else if (work || isPlatformPath(pathname)) router.replace('/dashboard');
+  }, [allowed, work, pathname, router, user.platform_admin]);
 
   // A copied article link (/knowledge/<id>?tenant=<id>) while the selected organization is not usable: the knowledge
   // screen cannot open to switch, so the frame does it (then the address loses ?tenant, as in the knowledge screen).
@@ -109,7 +127,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const manageNav = work ? managePages.filter(visible) : [];
   const crumb = platform ? { label: 'คอนโซลระบบกลาง', href: '/platform/system' } : { label: work?.tenant.name || 'พื้นที่ทำงาน', href: '/dashboard' };
   const photo = boot.avatar ? <ProfilePhoto src={boot.avatar} /> : <Avatar name={user.name} index={2} />;
-  const roleLabel = work ? roleLabels[work.role] : 'ผู้ดูแลระบบกลาง';
+  const roleLabel = user.platform_admin ? 'ผู้ดูแลแพลตฟอร์ม' : work ? roleLabels[work.role] : 'ผู้ดูแลระบบกลาง';
   const activeMemberships = boot.memberships.filter((m) => m.status === 'active');
 
   let content: ReactNode = children;
@@ -192,10 +210,10 @@ export function StaffShell({ children }: { children: ReactNode }) {
             {platformPages.map(nav)}
             {work && (
               <>
-                <div className="nav-label nav-space">พื้นที่ทำงาน</div>
-                <Link className="nav-item" href="/dashboard" title={`กลับไปพื้นที่ทำงาน ${work.tenant.name}`}>
-                  <Icon name="back" />
-                  <span className="truncate">กลับไป {work.tenant.name}</span>
+                <div className="nav-label nav-space">สิทธิ์เข้าช่วยเหลือ</div>
+                <Link className="nav-item" href="/dashboard" title={`ดู ${work.tenant.name} แบบอ่านอย่างเดียว`}>
+                  <Icon name="shield" />
+                  <span className="truncate">ดู {work.tenant.name} (อ่านอย่างเดียว)</span>
                 </Link>
               </>
             )}
@@ -223,6 +241,17 @@ export function StaffShell({ children }: { children: ReactNode }) {
             </span>
             <Icon name="arrow" />
           </Link>
+        )}
+        {supportView && (
+          <div className="support-view-banner" role="status">
+            <Icon name="shield" />
+            <span>
+              คุณกำลังดู {work?.tenant.name} ด้วยสิทธิ์เข้าช่วยเหลือ แบบอ่านอย่างเดียว · ผู้ดูแลแพลตฟอร์มไม่ตอบลูกค้า ไม่รับเคส และไม่แก้ไขข้อมูลขององค์กร
+            </span>
+            <Link className="btn sm" href="/platform/system">
+              กลับคอนโซลระบบกลาง
+            </Link>
+          </div>
         )}
         {user.platform_admin && (
           <div className="platform-banner" role="status">
@@ -258,9 +287,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
                     {SEARCH_SHORTCUT}
                   </span>
                 </form>
-                <span className="online" title="ระบบพร้อมใช้งาน">
-                  Online
-                </span>
+                {!readOnly && <StatusSwitch />}
                 <NotificationBell />
               </>
             )}

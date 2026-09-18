@@ -245,7 +245,8 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
       ...(values.setup_token !== undefined ? { setup_token: values.setup_token } : {}),
       demo: (form.elements.namedItem('demo') as HTMLInputElement | null)?.checked ?? false,
     });
-    finishStaff('/dashboard');
+    // The owner made at first-run setup is the platform admin: the console, where they invite the organization's admin.
+    finishStaff('/platform/organizations');
   };
 
   const submitSignup = async (values: Record<string, string>, form: HTMLFormElement) => {

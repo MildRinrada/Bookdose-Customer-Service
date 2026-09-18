@@ -17,11 +17,17 @@ from backend.utils.validation import require
 
 def workspace_overview(cd, db, ctx):
     """Everything the staff app needs after sign-in. Agents only see active members of their own team."""
+    from backend.modules.staff_prefs import service as staff_prefs
     team_members = repository.tenant_members(cd,ctx['tenant_id'])
     if ctx['role']=='agent':
         team_members = [m for m in team_members if m['team_id']==ctx['team_id'] and m['active']]
+    # Whether each member takes new cases now (ตั้งค่าบัญชี → สถานะการทำงาน), for the owner picker and the team list.
+    states = staff_prefs.availability_of(cd,[m['id'] for m in team_members])
+    team_members = [{**m,'availability':states[m['id']]} for m in team_members]
     return {'tenant':{'id':ctx['tenant_id'],'name':ctx['tenant_name'],'slug':ctx['slug']},
             'role':ctx['role'],'team_id':ctx['team_id'],'members':team_members,
+            # A platform admin on a support access: the pages show everything and offer no change.
+            'read_only':bool(ctx.get('read_only')),
             'teams':repository.teams(db),
             'settings':repository.settings(db),
             'channels':channels.workspace_summary(db),

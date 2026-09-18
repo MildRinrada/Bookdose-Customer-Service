@@ -150,10 +150,15 @@ class IntegrationTests(unittest.TestCase):
         rate_limit.RATES.clear()
         self.server,self.thread=start_server()
         self.base=f'http://127.0.0.1:{self.server.server_port}'
+        # The platform's owner looks after the server only (platform console); the organization is run by its own
+        # admin, made from the console (organization/repository.py: platform admins never work in an organization).
+        self.owner=Client(self.base)
+        self.assertEqual(self.owner.call('/api/setup',{'name':'เจ้าของระบบ','email':'admin@example.com','password':'Test-password-123!','organization':'องค์กร A','slug':'alpha','demo':True})[0],200)
+        self.owner.boot()
+        self.org=next(t['id'] for t in self.ok(self.owner,'/api/platform/tenants')['tenants'] if t['slug']=='alpha')
+        self.ok(self.owner,f'/api/platform/tenants/{self.org}/admins',{'email':'orgadmin@example.com','admin_name':'ผู้ดูแลองค์กร A','password':'Test-password-123!'})
         self.admin=Client(self.base)
-        self.assertEqual(self.admin.call('/api/setup',{'name':'เจ้าของระบบ','email':'admin@example.com','password':'Test-password-123!','organization':'องค์กร A','slug':'alpha','demo':True})[0],200)
-        self.boot=self.admin.boot()
-        self.org=self.admin.tenant
+        self.boot=self.admin.login('orgadmin@example.com')
         self.work=self.ok(self.admin,'/api/workspace')
         self.team=self.work['team_id']
 
@@ -210,7 +215,7 @@ class IntegrationTests(unittest.TestCase):
     def enable_registration_mail(self):
         cfg={'enabled':True,'smtp_host':'smtp.example.com','smtp_port':465,'username':'mailer@example.com',
              'address':'mailer@example.com','public_base_url':'https://bookdose.example.com','password':'Secret-smtp-password'}
-        self.ok(self.admin,'/api/platform/registration',cfg)
+        self.ok(self.owner,'/api/platform/registration',cfg)
         self.mailer=patch.object(T,'send_email',return_value='message-id').start()
         self.addCleanup(patch.stopall)
         return cfg
@@ -384,13 +389,13 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(visitor.call('/api/register',self.registration())[0],503)
         self.assertEqual(visitor.call('/api/platform/registration')[0],401)
         cfg=self.enable_registration_mail()
-        public=self.ok(self.admin,'/api/platform/registration')
+        public=self.ok(self.owner,'/api/platform/registration')
         self.assertTrue(public['has_password'])
         self.assertNotIn('Secret-smtp-password',json.dumps(public))
         self.assertNotIn('smtp_host',json.dumps(visitor.boot()))
         self.assertEqual(platform_repository.registration_secret_path().stat().st_mode&0o777,0o600)
         for origin in ('http://evil.example','https://user:pass@example.com','https://example.com/path','https://example.com/?x=1','https://[bad'):
-            self.assertEqual(self.admin.call('/api/platform/registration',{**cfg,'public_base_url':origin})[0],400)
+            self.assertEqual(self.owner.call('/api/platform/registration',{**cfg,'public_base_url':origin})[0],400)
         member=self.create_member(role='admin')
         staff=Client(self.base);staff.login('agent@example.com')
         self.assertEqual(staff.call('/api/platform/registration')[0],403)
@@ -471,7 +476,7 @@ class IntegrationTests(unittest.TestCase):
         visitor,conv=self.visitor()
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'TENANT A ONLY','attachments':[{'name':'a.txt','data':base64.b64encode(b'A secret').decode()}]})
         attachment=self.ok(self.admin,f'/api/conversations/{conv}')['messages'][-1]['attachments'][0]['id']
-        second=self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        second=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
         self.admin.switch(second)
         self.assertEqual(self.ok(self.admin,'/api/tickets')['tickets'],[])
         self.assertEqual(self.admin.call('/api/tickets/'+original['id'])[0],404)
@@ -491,7 +496,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.ok(self.admin,'/api/tickets/'+original['id'])['ticket']['subject'],original['subject'])
 
     def test_platform_role_does_not_grant_tenant_data(self):
-        other=self.ok(self.admin,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
+        other=self.ok(self.owner,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
         self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
         self.assertEqual(self.admin.call('/api/tickets',headers={'X-Tenant-ID':other})[0],409)
         tenant_admin=Client(self.base);tenant_admin.login('private@example.com')
@@ -500,7 +505,7 @@ class IntegrationTests(unittest.TestCase):
 
     def test_platform_support_access_needs_the_organizations_approval_and_ends_by_itself(self):
         from backend.modules.support_access import service as support
-        other=self.ok(self.admin,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
+        other=self.ok(self.owner,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
         path=f'/api/platform/tenants/{other}/support-access'
         me=self.boot['user']['id']
         self.assertEqual(self.admin.call(path,{})[0],400)
@@ -511,7 +516,7 @@ class IntegrationTests(unittest.TestCase):
         # Asking gives nothing yet.
         first=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #123','hours':4})['id']
         self.assertEqual(self.admin.call(path,{'reason':'ตรวจสอบคำร้อง #123'})[0],409)
-        self.assertEqual(self.ok(self.admin,'/api/platform/tenants')['support'][other]['status'],'pending')
+        self.assertEqual(self.ok(self.owner,'/api/platform/tenants')['support'][other]['status'],'pending')
         self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
         self.assertNotIn(other,[m['id'] for m in self.ok(self.admin,'/api/bootstrap')['memberships']])
         # The organization's admins see it with its reason; nobody else there may decide.
@@ -562,7 +567,7 @@ class IntegrationTests(unittest.TestCase):
         self.admin.switch(self.org)
         fourth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #126','hours':1})['id']
         self.ok(tenant_admin,f'/api/support-access/{fourth}/approve',{})
-        self.ok(self.admin,f'/api/platform/support-access/{fourth}',None,'DELETE')
+        self.ok(self.owner,f'/api/platform/support-access/{fourth}',None,'DELETE')
         self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
         # Switching the member off on the members page ends the request too.
         fifth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #127','hours':1})['id']
@@ -571,7 +576,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.ok(tenant_admin,'/api/support-access')['requests'][0]['status'],'ended')
         # A waiting request the platform admin withdraws, and one nobody decides, lapse.
         sixth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #128'})['id']
-        self.ok(self.admin,f'/api/platform/support-access/{sixth}',None,'DELETE')
+        self.ok(self.owner,f'/api/platform/support-access/{sixth}',None,'DELETE')
         seventh=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #129'})['id']
         with D.control() as cd:
             cd.execute("UPDATE support_requests SET created_at='2000-01-01T00:00:00+00:00' WHERE id=?",(seventh,))
@@ -580,13 +585,13 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(tenant_admin.call(f'/api/support-access/{seventh}/approve',{})[0],409)
         # A member with a permanent membership never goes through support access, and it never touches one.
         self.assertEqual(tenant_admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],403)
-        events=[e['action'] for e in self.ok(self.admin,'/api/platform/tenants')['audit']]
+        events=[e['action'] for e in self.ok(self.owner,'/api/platform/tenants')['audit']]
         self.assertTrue({'tenant.support_requested','tenant.support_access','tenant.support_denied','tenant.support_ended',
                          'tenant.support_cancelled','tenant.support_expired'}<=set(events))
-        third_org=self.ok(self.admin,'/api/platform/tenants',{'name':'Third Org','slug':'third','email':'third@example.com','admin_name':'ผู้ดูแล 3','password':'Test-password-123!'})['id']
-        self.ok(self.admin,'/api/platform/tenants/'+third_org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
-        self.assertEqual(self.admin.call(f'/api/platform/tenants/{third_org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
-        self.assertEqual(self.admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
+        third_org=self.ok(self.owner,'/api/platform/tenants',{'name':'Third Org','slug':'third','email':'third@example.com','admin_name':'ผู้ดูแล 3','password':'Test-password-123!'})['id']
+        self.ok(self.owner,'/api/platform/tenants/'+third_org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        self.assertEqual(self.owner.call(f'/api/platform/tenants/{third_org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
+        self.assertEqual(self.owner.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
 
     def test_team_boundaries_and_live_revocation(self):
         other_team=self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']
@@ -609,7 +614,7 @@ class IntegrationTests(unittest.TestCase):
 
     def second_organization(self):
         """Organization B, with the platform admin as its admin and working in it now."""
-        beta=self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        beta=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
         self.admin.switch(beta)
         return beta,self.ok(self.admin,'/api/workspace')['team_id']
 
@@ -617,17 +622,17 @@ class IntegrationTests(unittest.TestCase):
         beta,team=self.second_organization()
         visitor,_=self.visitor('beta')
         agent,_=self.create_member(team=team)
-        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        self.ok(self.owner,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
         self.assertEqual(agent.call('/api/tickets')[0],403)
         self.assertEqual(self.admin.call('/api/tickets')[0],403)
         self.assertEqual(visitor.call('/api/public/beta/session')[0],404)
-        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'active'},'PATCH')
+        self.ok(self.owner,'/api/platform/tenants/'+beta,{'status':'active'},'PATCH')
         self.assertEqual(agent.call('/api/tickets')[0],200)
         self.assertEqual(visitor.call('/api/public/beta/session')[0],200)
 
     def test_the_platforms_own_organization_is_never_suspended(self):
         # Every customer signs up and signs in through it: suspended, the next organization would quietly take its place.
-        status,answer=self.admin.call('/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'องค์กร A'},'PATCH')
+        status,answer=self.owner.call('/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'องค์กร A'},'PATCH')
         self.assertEqual(status,409)
         self.assertIn('องค์กรหลัก',answer['error'])
         self.assertEqual(self.ok(self.admin,'/api/workspace')['tenant']['id'],self.org)
@@ -913,11 +918,11 @@ class IntegrationTests(unittest.TestCase):
 
     def test_review_suspension_requires_typed_confirmation(self):
         beta,_=self.second_organization()
-        self.assertEqual(self.admin.call('/api/platform/tenants/'+beta,{'status':'suspended'},'PATCH')[0],400)
-        self.assertEqual(self.admin.call('/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'wrong'},'PATCH')[0],400)
-        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'องค์กร B'},'PATCH')
+        self.assertEqual(self.owner.call('/api/platform/tenants/'+beta,{'status':'suspended'},'PATCH')[0],400)
+        self.assertEqual(self.owner.call('/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'wrong'},'PATCH')[0],400)
+        self.ok(self.owner,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'องค์กร B'},'PATCH')
         self.assertEqual(self.admin.call('/api/workspace')[0],403)
-        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'active'},'PATCH')
+        self.ok(self.owner,'/api/platform/tenants/'+beta,{'status':'active'},'PATCH')
         self.assertEqual(self.admin.call('/api/workspace')[0],200)
 
     def test_review_note_does_not_clear_waiting_customer_and_audit_resolves_actor(self):
@@ -929,7 +934,7 @@ class IntegrationTests(unittest.TestCase):
         self.ok(self.admin,'/api/conversations/'+conversation+'/messages',{'kind':'reply','body':'ตอบแล้ว'})
         row=next(c for c in self.ok(self.admin,'/api/conversations')['conversations'] if c['id']==conversation)
         self.assertEqual(row['last_public_kind'],'reply')
-        events=self.ok(self.admin,'/api/platform/tenants')['audit']
+        events=self.ok(self.owner,'/api/platform/tenants')['audit']
         login=next(e for e in events if e['action']=='auth.login')
         self.assertIn('admin@example.com',login['actor_display'])
 

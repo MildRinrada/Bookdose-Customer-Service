@@ -214,7 +214,7 @@ class RealtimeTests(unittest.TestCase):
         # A staff cookie is not a customer's, and a guest cookie of this organization is not another's.
         self.closed(self.socket(self.admin,CUSTOMER),4401)
         page = self.guest()
-        self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
         self.closed(self.socket(page,'/api/public/beta/guest/realtime'),4401)
         # No such organization, or guest chat switched off: 4403.
         self.closed(self.socket(page,'/api/public/nowhere/guest/realtime'),4403)
@@ -281,7 +281,7 @@ class RealtimeTests(unittest.TestCase):
         self.say(other_chat)
         self.assertEqual(self.frame(ws),{'type':'changed','scope':'conversation','id':other_chat,'org':'alpha'})
         # Another organization: its staff and customers never hear about alpha, and alpha's staff not about beta.
-        self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
         staff = self.joined(self.admin)
         beta_customer = self.customer(slug='beta',email='beta@example.com')
         beta_chat = self.chat(beta_customer,slug='beta')

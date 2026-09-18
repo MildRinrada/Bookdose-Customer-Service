@@ -23,7 +23,7 @@ class PlatformConsoleTests(unittest.TestCase):
         self.assertEqual(agent.call('/api/platform/system')[0],403)
         self.ok(self.admin,'/api/tickets')
         self.assertEqual(self.admin.call('/api/tickets/'+'0'*32)[0],404)
-        data = self.ok(self.admin,'/api/platform/system')
+        data = self.ok(self.owner,'/api/platform/system')
         self.assertGreaterEqual(data['requests'],2)
         self.assertGreaterEqual(data['client_errors'],1)
         self.assertEqual(len(data['hours']),24)
@@ -34,58 +34,58 @@ class PlatformConsoleTests(unittest.TestCase):
         self.assertEqual(set(data['queues']),{'outbox_waiting','outbox_failed','ai_pending','notices_pending'})
 
     def test_global_faq_reaches_its_audience_in_every_organization(self):
-        seeded = self.ok(self.admin,'/api/platform/faq')['articles']
+        seeded = self.ok(self.owner,'/api/platform/faq')['articles']
         self.assertEqual({a['audience'] for a in seeded},{'platform','staff','customer'})
         for article in seeded:
-            self.ok(self.admin,f'/api/platform/faq/{article["id"]}',None,'DELETE')
-        ids = {audience:self.ok(self.admin,'/api/platform/faq',{'title':f'บทความ {audience}','category':'ทดสอบ','body':'เนื้อหา','audience':audience})['id']
+            self.ok(self.owner,f'/api/platform/faq/{article["id"]}',None,'DELETE')
+        ids = {audience:self.ok(self.owner,'/api/platform/faq',{'title':f'บทความ {audience}','category':'ทดสอบ','body':'เนื้อหา','audience':audience})['id']
                for audience in ('platform','staff','customer')}
-        self.assertEqual(self.admin.call('/api/platform/faq',{'title':'x','category':'y','body':'z','audience':'everyone'})[0],400)
+        self.assertEqual(self.owner.call('/api/platform/faq',{'title':'x','category':'y','body':'z','audience':'everyone'})[0],400)
         agent,_ = self.create_member()
         self.assertEqual(agent.call('/api/platform/faq')[0],403)
         # A new article is a draft: nobody reads it until it is published.
-        self.assertEqual({a['state'] for a in self.ok(self.admin,'/api/platform/faq')['articles']},{'draft'})
+        self.assertEqual({a['state'] for a in self.ok(self.owner,'/api/platform/faq')['articles']},{'draft'})
         self.assertEqual(self.ok(agent,'/api/guides')['articles'],[])
         self.assertEqual(self.ok(Client(self.base),'/api/public/alpha')['articles'],[])
         self.assertEqual(agent.call(f'/api/platform/faq/{ids["staff"]}/publish',{})[0],403)
         for article_id in ids.values():
-            self.ok(self.admin,f'/api/platform/faq/{article_id}/publish',{})
-        self.assertEqual(self.admin.call(f'/api/platform/faq/{ids["staff"]}/publish',{})[0],409)
+            self.ok(self.owner,f'/api/platform/faq/{article_id}/publish',{})
+        self.assertEqual(self.owner.call(f'/api/platform/faq/{ids["staff"]}/publish',{})[0],409)
         self.assertEqual([a['id'] for a in self.ok(agent,'/api/guides')['articles']],[ids['staff']])
         public = [a['id'] for a in self.ok(Client(self.base),'/api/public/alpha')['articles']]
         self.assertIn(ids['customer'],public)
         self.assertNotIn(ids['staff'],public)
         self.assertNotIn(ids['platform'],public)
         # Customers of an organization created later read it too.
-        self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
         self.assertIn(ids['customer'],[a['id'] for a in self.ok(Client(self.base),'/api/public/beta')['articles']])
         # Changes to a published article wait: readers keep the published words until the changes are published.
         public_article = lambda: next((a for a in self.ok(Client(self.base),'/api/public/alpha')['articles'] if a['id']==ids['customer']),None)
-        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'customer'},'PATCH')
+        self.ok(self.owner,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'customer'},'PATCH')
         self.assertEqual(public_article()['title'],'บทความ customer')
-        edited = next(a for a in self.ok(self.admin,'/api/platform/faq')['articles'] if a['id']==ids['customer'])
+        edited = next(a for a in self.ok(self.owner,'/api/platform/faq')['articles'] if a['id']==ids['customer'])
         self.assertEqual((edited['state'],edited['title'],edited['live']['title']),('changed','แก้แล้ว','บทความ customer'))
         # Thrown away: back to the published words.
-        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}/changes',None,'DELETE')
-        self.assertEqual(next(a for a in self.ok(self.admin,'/api/platform/faq')['articles'] if a['id']==ids['customer'])['state'],'published')
-        self.assertEqual(self.admin.call(f'/api/platform/faq/{ids["customer"]}/changes',None,'DELETE')[0],409)
+        self.ok(self.owner,f'/api/platform/faq/{ids["customer"]}/changes',None,'DELETE')
+        self.assertEqual(next(a for a in self.ok(self.owner,'/api/platform/faq')['articles'] if a['id']==ids['customer'])['state'],'published')
+        self.assertEqual(self.owner.call(f'/api/platform/faq/{ids["customer"]}/changes',None,'DELETE')[0],409)
         # Changed again and published: readers see the new words.
-        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'customer'},'PATCH')
-        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}/publish',{})
+        self.ok(self.owner,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'customer'},'PATCH')
+        self.ok(self.owner,f'/api/platform/faq/{ids["customer"]}/publish',{})
         self.assertEqual((public_article()['title'],public_article()['body']),('แก้แล้ว','ใหม่'))
         # A new audience waits too, then moves the article away from customers once published.
-        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'staff'},'PATCH')
+        self.ok(self.owner,f'/api/platform/faq/{ids["customer"]}',{'title':'แก้แล้ว','category':'ทดสอบ','body':'ใหม่','audience':'staff'},'PATCH')
         self.assertIsNotNone(public_article())
-        self.ok(self.admin,f'/api/platform/faq/{ids["customer"]}/publish',{})
+        self.ok(self.owner,f'/api/platform/faq/{ids["customer"]}/publish',{})
         self.assertIsNone(public_article())
         # Unpublished: gone from readers, kept as a draft.
-        self.ok(self.admin,f'/api/platform/faq/{ids["staff"]}/unpublish',{})
+        self.ok(self.owner,f'/api/platform/faq/{ids["staff"]}/unpublish',{})
         self.assertEqual([a['id'] for a in self.ok(agent,'/api/guides')['articles']],[ids['customer']])
-        self.assertEqual(self.admin.call(f'/api/platform/faq/{ids["staff"]}/unpublish',{})[0],409)
-        events = [e['action'] for e in self.ok(self.admin,'/api/platform/tenants')['audit']]
+        self.assertEqual(self.owner.call(f'/api/platform/faq/{ids["staff"]}/unpublish',{})[0],409)
+        events = [e['action'] for e in self.ok(self.owner,'/api/platform/tenants')['audit']]
         self.assertTrue({'faq.published','faq.unpublished','faq.changes_discarded'} <= set(events))
-        self.assertEqual(self.admin.call('/api/platform/faq/'+'0'*32,None,'DELETE')[0],404)
-        self.assertEqual(self.admin.call('/api/platform/faq/'+'0'*32+'/publish',{})[0],404)
+        self.assertEqual(self.owner.call('/api/platform/faq/'+'0'*32,None,'DELETE')[0],404)
+        self.assertEqual(self.owner.call('/api/platform/faq/'+'0'*32+'/publish',{})[0],404)
 
     def test_articles_from_before_drafts_stay_published(self):
         from backend.modules.platform import repository
@@ -110,23 +110,23 @@ class PlatformConsoleTests(unittest.TestCase):
 
     def test_platform_team_grows_and_shrinks_but_never_to_nobody(self):
         me = self.boot['user']['id']
-        self.assertEqual([a['id'] for a in self.ok(self.admin,'/api/platform/admins')['admins']],[me])
+        self.assertEqual([a['id'] for a in self.ok(self.owner,'/api/platform/admins')['admins']],[me])
         agent,_ = self.create_member()
         self.assertEqual(agent.call('/api/platform/admins')[0],403)
-        self.assertEqual(self.admin.call(f'/api/platform/admins/{me}',None,'DELETE')[0],400)
-        self.ok(self.admin,'/api/platform/admins',{'email':'agent@example.com'})
-        self.assertEqual(self.admin.call('/api/platform/admins',{'email':'agent@example.com'})[0],409)
+        self.assertEqual(self.owner.call(f'/api/platform/admins/{me}',None,'DELETE')[0],400)
+        self.ok(self.owner,'/api/platform/admins',{'email':'agent@example.com'})
+        self.assertEqual(self.owner.call('/api/platform/admins',{'email':'agent@example.com'})[0],409)
         # The role applies from the next request, next to the account's work in its organization.
         self.assertEqual(agent.call('/api/platform/system')[0],200)
         self.assertEqual(agent.call('/api/tickets')[0],200)
-        self.assertEqual(self.admin.call('/api/platform/admins',{'email':'ops@example.com'})[0],400)
-        ops_id = self.ok(self.admin,'/api/platform/admins',{'email':'ops@example.com','admin_name':'ทีมเซิร์ฟเวอร์','password':'Test-password-123!'})['id']
+        self.assertEqual(self.owner.call('/api/platform/admins',{'email':'ops@example.com'})[0],400)
+        ops_id = self.ok(self.owner,'/api/platform/admins',{'email':'ops@example.com','admin_name':'ทีมเซิร์ฟเวอร์','password':'Test-password-123!'})['id']
         ops = Client(self.base)
         ops.login('ops@example.com')
         self.assertEqual(ops.call('/api/platform/system')[0],200)
-        self.ok(self.admin,f'/api/platform/admins/{ops_id}',None,'DELETE')
+        self.ok(self.owner,f'/api/platform/admins/{ops_id}',None,'DELETE')
         self.assertEqual(ops.call('/api/platform/system')[0],403)
-        events = [e['action'] for e in self.ok(self.admin,'/api/platform/tenants')['audit']]
+        events = [e['action'] for e in self.ok(self.owner,'/api/platform/tenants')['audit']]
         self.assertIn('platform.admin_added',events)
         self.assertIn('platform.admin_removed',events)
 

@@ -53,6 +53,7 @@ from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
 from backend.modules.security import blocks, events as security_events, routes as security_routes, traps
 from backend.modules.security.model import TRAP_PATH
+from backend.modules.staff_prefs import routes as staff_prefs_routes
 from backend.modules.staff_security import routes as staff_security_routes
 from backend.modules.support_access import routes as support_access_routes
 from backend.modules.tickets import routes as ticket_routes
@@ -65,7 +66,7 @@ ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
-          *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES]
+          *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES, *staff_prefs_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')
@@ -216,8 +217,9 @@ def route_request(req, path):
         req.ctx = auth.select_workspace(req)
         with D.tenant(req.ctx['tenant_id']) as db:
             req.db = db
-            # For the live agent monitor: who is using the app right now.
-            automation.touch_activity(db,req.ctx)
+            # For the live agent monitor: who is using the app right now (a platform admin looking in is not staff).
+            if not req.ctx.get('read_only'):
+                automation.touch_activity(db,req.ctx)
             if not run(req,path,'workspace'):
                 raise APIError(404,'ไม่พบรายการ AI' if path.startswith('/api/ai/') else 'ไม่พบรายการ')
 

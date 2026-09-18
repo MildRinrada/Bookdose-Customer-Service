@@ -24,7 +24,8 @@ export default function Home() {
     }
     if (!boot.data || !customer.data) return;
     const search = window.location.search;
-    if (boot.data.user) router.replace('/dashboard');
+    // A platform admin looks after the server: their home is the console, not an organization's overview.
+    if (boot.data.user) router.replace(boot.data.user.platform_admin ? '/platform/system' : '/dashboard');
     else if (customer.data.signed_in) router.replace(`/customer/chats${search}`);
     else router.replace(`/login${search}`);
   }, [boot.data, customer.data, router]);

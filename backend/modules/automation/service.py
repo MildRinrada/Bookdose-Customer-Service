@@ -141,14 +141,27 @@ def apply_rules(db, ticket_id):
         if rule['set_team_id'] and organization.team_exists(db,rule['set_team_id']):
             team = rule['set_team_id']
         assignee = rule['set_assignee_id'] or assignee
+    away = ''
     if assignee:
+        from backend.modules.staff_prefs import service as staff_prefs
         with D.control() as cd:
             if not organization.is_active_team_member(cd,channel_repository.tenant_id_of(db),assignee,team):
                 assignee = None
+            elif assignee!=ticket['assignee_id']:
+                # A member on a break, busy, away, off shift or on leave gets no new case from a rule: it waits for
+                # the team (and the SLA escalation) instead.
+                state = staff_prefs.availability(staff_prefs.prefs_of(cd,assignee))
+                if not state['available']:
+                    away = f" · ไม่มอบหมายให้ผู้รับผิดชอบตามกฎ เพราะ{state['reason']}"
+                    assignee = ticket['assignee_id']
     tickets.update(db,ticket_id,ticket['status'],priority,team,assignee,ticket['resolved_at'])
     conversations.set_team_for_ticket(db,ticket_id,team)
     names = [rule['name'] for rule in matched]
-    audit.record(db,SYSTEM_ACTOR,'automation.rule_applied',ticket_id,', '.join(names))
+    audit.record(db,SYSTEM_ACTOR,'automation.rule_applied',ticket_id,', '.join(names)+away)
+    if assignee and assignee!=ticket['assignee_id']:
+        from backend.modules.staff_prefs import service as staff_prefs
+        staff_prefs.queue(db,assignee,'assigned',f"เคส BD-{ticket['number']} มอบหมายให้คุณ",
+                          f"{ticket['subject']}\nโดยกฎการกระจายงาน {', '.join(names)}",f'/tickets/{ticket_id}')
     return names
 
 
@@ -165,10 +178,12 @@ def on_new_conversation(db, conversation_id):
 
 
 # SLA escalation
-def team_lead(members, load, team_id):
-    """The team's manager with the fewest open cases (an admin of the team when it has no manager), or None."""
+def team_lead(members, load, team_id, available=None):
+    """The team's manager with the fewest open cases (an admin of the team when it has no manager), or None. A lead
+    who is available for new cases (`available`: user ids, ตั้งค่าบัญชี → สถานะการทำงาน) comes before one who is not;
+    when none is, the case still goes to a lead rather than to nobody."""
     leads = [m for m in members if m['active'] and m['team_id']==team_id and m['role'] in ('manager','admin')]
-    leads.sort(key=lambda m:(m['role']!='manager',load.get(m['id'],0),m['name']))
+    leads.sort(key=lambda m:(available is not None and m['id'] not in available,m['role']!='manager',load.get(m['id'],0),m['name']))
     return leads[0] if leads else None
 
 
@@ -185,22 +200,28 @@ def escalate_due(cd, db, tenant_id):
     if not unclaimed and not at_risk:
         db.commit()
         return 0
+    from backend.modules.staff_prefs import service as staff_prefs
     members = organization.tenant_members(cd,tenant_id)
     names = {m['id']:m['name'] for m in members}
+    available = {user_id for user_id,state in staff_prefs.availability_of(cd,[m['id'] for m in members]).items() if state['available']}
     load = repository.open_count_by_assignee(db)
     for t in unclaimed:
-        lead = team_lead(members,load,t['team_id'])
+        lead = team_lead(members,load,t['team_id'],available)
         if lead:
             tickets.update(db,t['id'],t['status'],t['priority'],t['team_id'],lead['id'],t['resolved_at'])
             load[lead['id']] = load.get(lead['id'],0)+1
+            staff_prefs.queue(db,lead['id'],'assigned',f"เคส BD-{t['number']} ยกระดับมาหาคุณ",
+                              f"{t['subject']}\nไม่มีผู้รับเรื่องภายใน {minutes} นาที",f"/tickets/{t['id']}")
         repository.insert_escalation(db,t['id'],'unclaimed',None,lead['id'] if lead else None)
         realtime.ticket(db,t['id'])
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
                      f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที · {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
     for t in at_risk:
-        lead = team_lead(members,load,t['team_id'])
+        lead = team_lead(members,load,t['team_id'],available)
         repository.insert_escalation(db,t['id'],'sla_risk',t['assignee_id'],lead['id'] if lead else None)
         realtime.ticket(db,t['id'])
+        staff_prefs.queue(db,t['assignee_id'],'sla',f"เคส BD-{t['number']} ใกล้ครบกำหนด SLA",
+                          f"{t['subject']}\nยังไม่ได้ตอบกลับลูกค้าครั้งแรก",f"/tickets/{t['id']}")
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
                      f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA · {'แจ้ง '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
     db.commit()
@@ -521,6 +542,13 @@ class Worker:
                     except Exception as error:
                         print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation',type(error).__name__)
+                    try:
+                        # Emails members asked for about their own work (ตั้งค่าบัญชี → การแจ้งเตือน).
+                        from backend.modules.staff_prefs import service as staff_prefs
+                        staff_prefs.send_notices(tenant_id)
+                    except Exception as error:
+                        print(f'Staff notices: {type(error).__name__}; retrying next round',flush=True)
+                        monitor.error('automation','staff notices: '+type(error).__name__)
                     try:
                         customers.send_notices(tenant_id)
                     except Exception as error:

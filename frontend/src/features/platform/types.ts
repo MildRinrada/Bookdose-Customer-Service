@@ -10,13 +10,17 @@ export type Tenant = {
   status: 'active' | 'suspended' | (string & {});
   created_at: string;
   member_count: number;
+  /** Who runs the organization: its own admins (a platform admin never is one). */
+  admins: { name: string; email: string }[];
+  /** Emails invited as its admin, not answered yet. */
+  admin_invites: string[];
 };
 
 /** The platform admin's own support request for an organization, while it waits or is in force. */
 export type SupportSummary = { id: string; status: 'pending' | 'approved'; hours: number; reason: string; created_at: string; expires_at: string | null };
 
 /** GET /api/platform/tenants (support: by organization id). */
-export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[]; support: Record<string, SupportSummary> };
+export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[]; support: Record<string, SupportSummary>; can_invite: boolean };
 
 export type TenantFilters = { q?: string; status?: string };
 

@@ -398,3 +398,32 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
+
+/* จัดการองค์กร: who runs each organization (a platform admin never does). */
+.org-admins {
+  min-width: 180px;
+}
+.org-admin,.org-admin-missing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+.org-admin .icon {
+  width: 14px;
+  height: 14px;
+}
+.org-admin-missing {
+  color: #9a3412;
+  font-weight: 600;
+}
+.org-admins .btn {
+  margin-top: 6px;
+}
+.admin-password-option {
+  margin-bottom: 15px;
+}
+.admin-password-option summary {
+  margin-bottom: 10px;
+  cursor: pointer;
+}

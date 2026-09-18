@@ -47,7 +47,7 @@
   color: var(--muted);
 }
 
-/* แชทของฉัน */
+/* แชทของฉัน, and the team's inbox laid out the same way (features/inbox, .staff-chats) */
 .customer-chat-tools {
   display: grid;
   gap: 10px;
@@ -57,7 +57,7 @@
 }
 /* The customer's chat list reads more calmly than the team's inbox: each chat is its own card with air around it,
    and the preview line is lighter than the subject so the eye lands on the subject first. */
-.customer-chats .inbox-item {
+.customer-chats .inbox-item,.staff-chats .inbox-item {
   margin: 8px;
   padding: 14px 16px;
   border: 1px solid var(--line);
@@ -65,26 +65,79 @@
   border-bottom: 1px solid var(--line);
   border-radius: 12px;
 }
-.customer-chats .inbox-item.selected {
+.customer-chats .inbox-item.selected,.staff-chats .inbox-item.selected {
   border-left: 3px solid var(--purple);
   padding-left: 16px;
 }
-.customer-chats .inbox-item h3 {
+.customer-chats .inbox-item h3,.staff-chats .inbox-item h3 {
   margin: 7px 0 4px;
   font-weight: 600;
 }
-.customer-chats .inbox-preview {
+.customer-chats .inbox-preview,.staff-chats .inbox-preview {
   font-size: .92rem;
   line-height: 1.5;
   color: #71697d;
 }
-.customer-chat-item .inbox-top {
+.customer-chat-item .inbox-top,.staff-chat-item .inbox-top {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.customer-chat-item .inbox-time {
+.customer-chat-item .inbox-time,.staff-chat-item .inbox-time {
   margin-left: auto;
+}
+/* The team's list keeps its bold "waiting for us" rows (pages/inbox.css); a channel sits where the customer's list
+   names the organization, and urgency reads as a chip. */
+.staff-chats .inbox-item.needs-reply .inbox-preview {
+  color: #1e293b;
+}
+/* The team's list: the customer's name where the customer's list names the organization, the channel's icon in it. */
+.staff-contact-badge {
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.staff-contact-badge .icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.staff-contact-badge .inbox-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.staff-contact-badge.channel-web { background: #eee4ff; color: #3f2378; }
+.staff-contact-badge.channel-line { background: #d5f4e1; color: #0b4d2d; }
+.staff-contact-badge.channel-email { background: #dbeafe; color: #123c78; }
+.staff-contact-badge.channel-facebook { background: #e0e9fb; color: #1b3f86; }
+.staff-chat-item .inbox-top .customer-org-badge {
+  max-width: 70%;
+}
+.staff-chat-filters {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 8px;
+}
+.staff-chat-filters .filter-select {
+  width: 100%;
+  min-width: 0;
+}
+.staff-chats .customer-chat-meta .guest-badge {
+  padding: 1px 8px;
+}
+.priority-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.priority-tag.urgent {
+  border-color: #f3b4bd;
+  color: #9f1427;
+}
+.priority-tag.high {
+  border-color: #efd29b;
+  color: #7a4507;
 }
 .customer-ai-status {
   margin: 0;

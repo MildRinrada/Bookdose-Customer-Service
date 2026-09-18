@@ -92,9 +92,19 @@ def store_staff_message(db, ctx, conv, kind, body, cd=None):
     require(kind=='note' or conv['channel'] in ('web',)+EXTERNAL,'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าลูกค้าเพื่อสนทนากับลูกค้า')
     external = kind=='reply' and conv['channel'] in EXTERNAL
     provider = facebook if conv['channel']=='facebook' else channels
+    author = ctx['name']
+    if kind=='reply':
+        # What the customer sees of the member: the name they chose for customers, and their signature under it.
+        from backend.modules.staff_prefs import service as staff_prefs
+        if cd is None:
+            with D.control() as own:
+                author,text = staff_prefs.reply_parts(own,ctx['id'],author,str(body.get('body') or ''))
+        else:
+            author,text = staff_prefs.reply_parts(cd,ctx['id'],author,str(body.get('body') or ''))
+        body = {**body,'body':text}
     if external:
         provider.check_reply(db,ctx['tenant_id'],conv,body)
-    mid = store_message(db,ctx['tenant_id'],conv['id'],ctx['id'],ctx['name'],kind,body)
+    mid = store_message(db,ctx['tenant_id'],conv['id'],ctx['id'],author,kind,body)
     if external:
         provider.enqueue_reply(db,ctx,conv,mid)
     if kind=='reply':
@@ -210,4 +220,11 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
         tickets.reopen_for_conversation(db,conversation_id)
         if repository.customer_message_count(db,conversation_id)==1:
             automation.on_new_conversation(db,conversation_id)
+        else:
+            # The case's owner asked to hear when the customer answers (ตั้งค่าบัญชี → การแจ้งเตือน).
+            from backend.modules.staff_prefs import service as staff_prefs
+            ticket = tickets.for_conversation(db,conversation_id)
+            if ticket and ticket['assignee_id']:
+                staff_prefs.queue(db,ticket['assignee_id'],'customer_reply',f"ลูกค้าตอบกลับในเคส BD-{ticket['number']}",
+                                  f"{ticket['subject']}\n\n{text[:300]}",f"/tickets/{ticket['id']}")
     return mid

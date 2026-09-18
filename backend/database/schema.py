@@ -18,6 +18,7 @@ from backend.modules.org_links import model as org_links
 from backend.modules.organization import model as organization
 from backend.modules.platform import model as platform
 from backend.modules.security import model as security
+from backend.modules.staff_prefs import model as staff_prefs
 from backend.modules.staff_security import model as staff_security
 from backend.modules.support_access import model as support_access
 from backend.modules.tickets import model as tickets
@@ -26,7 +27,7 @@ from backend.modules.trash import model as trash
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
                   customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
                   security.CONTROL_TABLES, support_access.CONTROL_TABLES, staff_security.CONTROL_TABLES,
-                  invitations.CONTROL_TABLES)
+                  invitations.CONTROL_TABLES, staff_prefs.CONTROL_TABLES)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
@@ -88,3 +89,5 @@ def upgrade_tenant(db):
     customer_migrate.tenant_columns(db)
     # Read receipts in web chat: when staff last read a conversation after the customer's message.
     db.execute(conversations.READS_TABLE)
+    # Emails members asked for about their own work (ตั้งค่าบัญชี → การแจ้งเตือน), sent by the automation worker.
+    db.executescript(staff_prefs.TENANT_TABLES)

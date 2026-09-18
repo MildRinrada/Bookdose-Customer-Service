@@ -16,7 +16,8 @@ from backend.utils.validation import require
 
 
 def create_tenant(cd, name, slug, admin_id, demo=False):
-    """Create an organization with its own database, a default team and `admin_id` as admin; returns its id.
+    """Create an organization with its own database, a default team and `admin_id` as admin (None: no member yet,
+    the platform's own organization at first-run setup, whose admin is invited from the console); returns its id.
     Used by first-run setup, self-registration and platform admins."""
     tenant_id, team_id = uid(), uid()
     repository.insert_tenant(cd,tenant_id,name,slug)
@@ -29,14 +30,56 @@ def create_tenant(cd, name, slug, admin_id, demo=False):
         if demo:
             seed_demo(td,admin_id,team_id)
         audit.record(td,'ระบบ','organization.created',tenant_id,name)
-    organization.insert_membership(cd,tenant_id,admin_id,'admin',team_id)
-    audit.record(cd,admin_id,'tenant.created',tenant_id,name)
+    if admin_id:
+        organization.insert_membership(cd,tenant_id,admin_id,'admin',team_id)
+    audit.record(cd,admin_id or 'ระบบ','tenant.created',tenant_id,name)
     return tenant_id
 
 
 def list_tenants(cd):
-    return {'tenants':repository.list_with_member_count(cd),
-            'audit':audit.with_names(cd,audit.latest(cd,100))}
+    """The organizations with who runs each (its own admins, never a platform admin) and the admin invitations waiting."""
+    from backend.modules.invitations import service as invitations
+    found = repository.list_with_member_count(cd)
+    for org in found:
+        org['admins'] = [{'name':a['name'],'email':a['email']} for a in organization.organization_admins(cd,org['id'])]
+        org['admin_invites'] = invitations.open_admin_invites(cd,org['id'])
+    return {'tenants':found,'audit':audit.with_names(cd,audit.latest(cd,100)),'can_invite':invitations.ready(cd)}
+
+
+def add_admin(cd, session, tenant_id, body):
+    """Give an organization an admin from the console: an emailed invitation, or - without the platform's email, or
+    when asked with a first password - the account made (or an existing one reused) and made admin at once. Never a
+    platform admin: they look after the server, not an organization's work."""
+    from backend.modules.invitations import service as invitations
+    org = repository.find_tenant(cd,tenant_id)
+    require(org,'ไม่พบองค์กร',404)
+    email = schema.admin_email(body)
+    user = users.find_user_by_email(cd,email)
+    require(not (user and user['platform_admin']),invitations.PLATFORM_ACCOUNT,409)
+    current = organization.find_membership(cd,tenant_id,user['id']) if user else None
+    require(not (current and current['active'] and not current['expires_at'] and current['role']=='admin'),'อีเมลนี้เป็นผู้ดูแลขององค์กรนี้อยู่แล้ว',409)
+    if not body.get('password'):
+        return {'mode':'invited','sent':invitations.invite_admin(cd,session,tenant_id,email)}
+    D.begin(cd)
+    if user:
+        admin_id = user['id']
+    else:
+        admin_id = uid()
+        admin_name,password = schema.new_admin(body)
+        users.insert_user(cd,admin_id,admin_name,email,password)
+    with D.tenant(tenant_id) as db:
+        team_id = organization.first_team_id(db)
+        if current:
+            organization.update_membership(cd,tenant_id,admin_id,'admin',current['team_id'] or team_id,True)
+            cd.execute('UPDATE memberships SET expires_at=NULL WHERE tenant_id=? AND user_id=?',(tenant_id,admin_id))
+        else:
+            organization.insert_membership(cd,tenant_id,admin_id,'admin',team_id)
+        invitations.member_added(cd,tenant_id,email)
+        audit.record(db,session['name'],'member.updated',admin_id,'admin')
+        db.commit()
+    audit.record(cd,session['user_id'],'tenant.admin_added',tenant_id,email)
+    cd.commit()
+    return {'mode':'created'}
 
 
 def add_tenant(cd, body):
@@ -46,6 +89,8 @@ def add_tenant(cd, body):
     email = schema.admin_email(body)
     user = users.find_user_by_email(cd,email)
     if user:
+        from backend.modules.invitations.service import PLATFORM_ACCOUNT
+        require(not user['platform_admin'],PLATFORM_ACCOUNT,409)
         admin_id = user['id']
     else:
         admin_id = uid()
@@ -128,6 +173,9 @@ def add_platform_admin(cd, session, body):
     user = users.find_user_by_email(cd,email)
     if user:
         require(not user['platform_admin'],'บัญชีนี้เป็นผู้ดูแลระบบกลางอยู่แล้ว',409)
+        # A platform admin works in no organization: an account that does would silently stop taking its cases.
+        require(not organization.user_memberships(cd,user['id']),
+                'บัญชีนี้เป็นทีมงานขององค์กรอยู่ ผู้ดูแลแพลตฟอร์มไม่รับเคสหรือทำงานในองค์กร กรุณาใช้อีเมลอื่นสำหรับบัญชีผู้ดูแลแพลตฟอร์ม',409)
         user_id = user['id']
         repository.set_platform_admin(cd,user_id,True)
     else:

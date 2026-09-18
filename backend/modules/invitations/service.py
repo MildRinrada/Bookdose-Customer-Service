@@ -27,6 +27,8 @@ from backend.utils.validation import require
 
 NO_MAILBOX = 'ยังส่งอีเมลเชิญไม่ได้ กรุณาให้ผู้ดูแลแพลตฟอร์มตั้งค่าอีเมลของระบบก่อน หรือเพิ่มสมาชิกพร้อมรหัสผ่านเริ่มต้นแทน'
 TOO_SOON = 'เพิ่งส่งคำเชิญไปเมื่อครู่นี้ กรุณารอสักครู่แล้วส่งอีกครั้ง'
+# A platform admin looks after the server only; they never join an organization's team (organization/repository.py).
+PLATFORM_ACCOUNT = 'อีเมลนี้เป็นบัญชีผู้ดูแลแพลตฟอร์ม ซึ่งดูแลระบบเท่านั้น ไม่รับเคสหรือทำงานในองค์กร กรุณาใช้อีเมลอื่น'
 
 
 def ready(cd):
@@ -52,6 +54,7 @@ def invite(cd, db, ctx, body):
     repository.purge(cd,after(days=-KEEP_DAYS))
     user = users.find_user_by_email(cd,email)
     if user:
+        require(not user['platform_admin'],PLATFORM_ACCOUNT,409)
         membership = memberships.find_membership(cd,ctx['tenant_id'],user['id'])
         require(not (membership and membership['active'] and not membership['expires_at']),
                 'อีเมลนี้เป็นสมาชิกขององค์กรอยู่แล้ว',409)
@@ -93,6 +96,29 @@ def cancel(cd, db, ctx, invite_id):
     return invitations_of(cd,ctx)
 
 
+def invite_admin(cd, session, tenant_id, email):
+    """The platform console invites an organization's admin (the platform's own organization has none at first):
+    the same invitation as a colleague's, role admin, first team. Returns whether the email went out."""
+    require(ready(cd),'ยังส่งอีเมลเชิญไม่ได้ ตั้งค่าอีเมลของระบบก่อน หรือสร้างบัญชีผู้ดูแลพร้อมรหัสผ่านเริ่มต้นแทน',503)
+    ctx = {'tenant_id':tenant_id,'id':session['user_id'],'name':session['name']}
+    with D.tenant(tenant_id) as db:
+        D.begin(cd)
+        D.begin(db)
+        repository.purge(cd,after(days=-KEEP_DAYS))
+        user = users.find_user_by_email(cd,email)
+        token = _issue(cd,ctx,repository.open_for(cd,tenant_id,email),email,'admin',memberships.first_team_id(db))
+        audit.record(db,session['name'],'member.invited',tenant_id,f'{email} · admin')
+        cd.commit()
+        db.commit()
+    return _deliver(cd,ctx,email,token,bool(user))
+
+
+def open_admin_invites(cd, tenant_id):
+    """The emails invited as this organization's admin who have not answered yet."""
+    return [row['email'] for row in repository.of_tenant(cd,tenant_id)
+            if row['role']=='admin' and not row['accepted_at'] and not row['cancelled_at'] and row['expires_at']>now()]
+
+
 def member_added(cd, tenant_id, email):
     """The admin added this address on the members page instead: its open invitation waits for nothing any more."""
     repository.cancel_open_for(cd,tenant_id,email)
@@ -132,6 +158,7 @@ def accept(cookie_header, body, client=None):
         require(row and not row['accepted_at'] and not row['cancelled_at'] and row['expires_at']>now(),schema.BAD_LINK)
         require(row['tenant_status']=='active','องค์กรนี้หยุดให้บริการชั่วคราว กรุณาติดต่อผู้ดูแลองค์กร',409)
         user = users.find_user_by_email(cd,row['email'])
+        require(not (user and user['platform_admin']),PLATFORM_ACCOUNT,409)
         name,password = (None,None) if user else schema.accept_form(body)
         with D.tenant(row['tenant_id']) as db:
             # The team of the invitation may have been removed while the link was on its way.

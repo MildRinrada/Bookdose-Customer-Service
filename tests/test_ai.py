@@ -159,7 +159,7 @@ class AITests(unittest.TestCase):
 
     def test_per_tenant_knowledge_credentials_and_job_authorization(self):
         self.enable();article=self.article()
-        second=self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        second=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
         self.admin.switch(second)
         self.assertFalse(self.ok(self.admin,'/api/ai/settings')['key_configured'])
         self.enable()
@@ -291,7 +291,7 @@ class AITests(unittest.TestCase):
                 cd.commit()
             return fake_provider(*args)
         self.run_job(provider=suspend)
-        self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'active'},'PATCH')
+        self.ok(self.owner,'/api/platform/tenants/'+self.org,{'status':'active'},'PATCH')
         self.assertFalse(any(m['source']=='ai' for m in self.ok(visitor,'/api/public/alpha/session')['messages']))
 
     def test_conversation_limit_falls_back_after_one_bot_reply(self):

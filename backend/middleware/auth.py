@@ -54,7 +54,15 @@ def select_workspace(req):
     ctx = workspace_context(req.cd,req.session)
     # A tab must declare its selected tenant, preventing writes after another tab switches the session.
     require(req.headers.get('X-Tenant-ID')==ctx['tenant_id'],'องค์กรที่เลือกเปลี่ยนไป กรุณารีเฟรชหน้า',409)
+    if req.session['platform_admin']:
+        # A platform admin is here only on a support access (organization/repository.py WORKS), and only to look:
+        # they answer no customer, take no case and change nothing of the organization's.
+        require(req.command=='GET',SUPPORT_READ_ONLY,403)
+        ctx['read_only'] = True
     return ctx
+
+
+SUPPORT_READ_ONLY = 'สิทธิ์เข้าช่วยเหลือของผู้ดูแลแพลตฟอร์มเป็นแบบดูอย่างเดียว ตอบลูกค้า รับเคส หรือเปลี่ยนแปลงข้อมูลขององค์กรไม่ได้'
 
 
 def customer_session(req):

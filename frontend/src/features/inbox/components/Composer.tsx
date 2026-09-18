@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
@@ -12,7 +13,8 @@ import type { AiConversation } from '@/features/ai/types';
 import { useMacroMenu } from '@/features/automation';
 import { ArticleRead, useArticleActions, type Article } from '@/features/knowledge';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
-import { RichTextField, RichToolbar, useRichEditor } from '@/features/rich/RichEditor';
+import { RichTextField, RichToolbar, useRichEditor, type RichEditor } from '@/features/rich/RichEditor';
+import { usePreferences, type Snippet } from '@/features/staff-account/prefs';
 import { followThread } from '@/features/rich/thread';
 import { readFiles } from '@/lib/files';
 import { useInvalidate } from '@/lib/query';
@@ -51,7 +53,20 @@ export type ComposerProps = {
 };
 
 export function Composer(props: ComposerProps) {
-  return props.publicView ? <PortalComposer {...props} /> : <StaffComposer {...props} />;
+  return props.publicView ? <PortalComposer {...props} /> : <TeamComposer {...props} />;
+}
+
+/* A platform admin looking in on support access answers nobody: the box is not there (the server refuses it too). */
+function TeamComposer(props: ComposerProps) {
+  const work = useWork();
+  if (work.read_only)
+    return (
+      <p className="notice read-only-composer" role="note">
+        <Icon name="lock" />
+        ดูอย่างเดียว · ผู้ดูแลแพลตฟอร์มไม่ตอบลูกค้าและไม่บันทึกในบทสนทนาขององค์กร
+      </p>
+    );
+  return <StaffComposer {...props} />;
 }
 
 /* Files dropped anywhere on the form join the chosen ones. */
@@ -245,6 +260,22 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       />,
     );
 
+  // The member's own quick replies (ตั้งค่าบัญชี → คำตอบด่วน): "/คีย์ลัด" then a space or Tab, Alt+1 … Alt+9, or the list.
+  const snippets = usePreferences().data?.preferences.snippets;
+  useSnippetKeys(editor, snippets);
+  const openReplies = () =>
+    openModal(
+      'คำตอบสำเร็จรูป',
+      <QuickReplies
+        canned={String(work.settings.canned_reply ?? '')}
+        snippets={snippets ?? []}
+        onPick={(text) => {
+          closeModal(true);
+          void insert(text);
+        }}
+      />,
+    );
+
   const tool = (icon: string, label: string, title: string, onClick: () => void, extra?: Record<string, string>): ReactNode => (
     <button type="button" className="tool-btn" aria-label={title === label ? label : title} title={title} onClick={onClick} {...extra}>
       <Icon name={icon} />
@@ -336,10 +367,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
           <RichToolbar editor={editor} tools={['bold', 'italic', 'bullet', 'link']} label="จัดรูปแบบข้อความ" className="composer-format" role="group" />
           <span className="tool-divider" aria-hidden="true" />
           <AttachButton id={id} inputRef={pills.inputRef} onChange={pills.onChange} />
-          {tool('bolt', 'คำตอบสำเร็จรูป', 'แทรกคำตอบสำเร็จรูป', () => {
-            editor.setValue(String(work.settings.canned_reply ?? ''));
-            editor.focus();
-          })}
+          {tool('bolt', 'คำตอบสำเร็จรูป', 'แทรกคำตอบสำเร็จรูป หรือพิมพ์ / ตามด้วยคีย์ลัด', openReplies)}
           <button
             type="button"
             className="tool-btn"
@@ -373,6 +401,71 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       </div>
       <ComposerTip channel={channel} manual={manual} />
     </Form>
+  );
+}
+
+/** "/คีย์ลัด" then a space or Tab turns into the quick reply; Alt+1 … Alt+9 put in the first nine where the cursor is. */
+function useSnippetKeys(editor: RichEditor, snippets: Snippet[] | undefined) {
+  useEffect(() => {
+    const area = editor.element();
+    if (!area || !snippets?.length) return;
+    const onKey = (event: KeyboardEvent) => {
+      const digit = /^Digit([1-9])$/.exec(event.code);
+      if (event.altKey && !event.ctrlKey && !event.metaKey && digit) {
+        const snippet = snippets[Number(digit[1]) - 1];
+        if (!snippet) return;
+        event.preventDefault();
+        document.execCommand('insertText', false, snippet.text);
+        editor.sync();
+        return;
+      }
+      if ((event.key !== ' ' && event.key !== 'Tab') || event.altKey || event.ctrlKey || event.metaKey) return;
+      const selection = getSelection();
+      const node = selection?.anchorNode;
+      if (!selection?.isCollapsed || !node || node.nodeType !== Node.TEXT_NODE || !area.contains(node)) return;
+      const before = (node.textContent ?? '').slice(0, selection.anchorOffset);
+      const typed = /(?:^|\s)\/([^\s/]+)$/.exec(before);
+      const snippet = typed && snippets.find((s) => s.shortcut === typed[1].toLowerCase());
+      if (!typed || !snippet) return;
+      event.preventDefault();
+      const range = document.createRange();
+      range.setStart(node, selection.anchorOffset - typed[1].length - 1);
+      range.setEnd(node, selection.anchorOffset);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.execCommand('insertText', false, snippet.text);
+      editor.sync();
+    };
+    area.addEventListener('keydown', onKey);
+    return () => area.removeEventListener('keydown', onKey);
+  }, [editor, snippets]);
+}
+
+/** The ⚡ list: the organization's canned reply, then the member's own quick replies. */
+function QuickReplies({ canned, snippets, onPick }: { canned: string; snippets: Snippet[]; onPick: (text: string) => void }) {
+  return (
+    <div className="quick-replies">
+      {canned && (
+        <button type="button" className="quick-reply" onClick={() => onPick(canned)}>
+          <strong>คำตอบสำเร็จรูปขององค์กร</strong>
+          <span className="muted">{canned}</span>
+        </button>
+      )}
+      {snippets.map((snippet, index) => (
+        <button key={snippet.id ?? snippet.shortcut} type="button" className="quick-reply" onClick={() => onPick(snippet.text)}>
+          <strong>
+            <code>/{snippet.shortcut}</code>
+            {index < 9 && <span className="kbd">Alt+{index + 1}</span>}
+          </strong>
+          <span className="muted">{snippet.text}</span>
+        </button>
+      ))}
+      {!snippets.length && (
+        <p className="tiny muted">
+          เพิ่มคำตอบด่วนของคุณเองได้ที่ <Link href="/account?tab=replies">ตั้งค่าบัญชี → คำตอบด่วนและคีย์ลัด</Link> แล้วพิมพ์ / ตามด้วยคีย์ลัดในช่องนี้
+        </p>
+      )}
+    </div>
   );
 }
 

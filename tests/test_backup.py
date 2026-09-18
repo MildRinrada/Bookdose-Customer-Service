@@ -27,7 +27,7 @@ class BackupTests(unittest.TestCase):
 
     def credentials(self):
         self.enable_registration_mail()
-        self.ok(self.admin,'/api/platform/sms',SMS)
+        self.ok(self.owner,'/api/platform/sms',SMS)
         return app.make_backup()
 
     def restore(self, raw, key=True, *flags):

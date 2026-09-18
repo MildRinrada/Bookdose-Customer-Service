@@ -1,13 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { TextField } from '@/components/ui/fields';
+import { TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { useBoot, useStaffLogout } from '@/lib/session';
 import { saveStaffProfile } from './api';
+import { PREFS_PATH, savePreferences, usePreferences } from './prefs';
 
 /* ตั้งค่าบัญชี → ข้อมูลส่วนตัว: the picture and name every team the member works with sees, the email they sign in
    with, and signing out (as a customer's, features/customer/settings/ProfileSettings.tsx). */
@@ -59,6 +61,7 @@ export function ProfileSettings() {
           </button>
         </Form>
       </section>
+      {!user.platform_admin && <CustomerFacingCard />}
       <section className="card">
         <div className="card-header">
           <div>
@@ -74,5 +77,81 @@ export function ProfileSettings() {
         </div>
       </section>
     </div>
+  );
+}
+
+/* What the customer sees of the member on a reply: the name (a chosen alias instead of the real one, for privacy) and
+   a signature added under every reply. Internal notes and the team always show the real name. */
+function CustomerFacingCard() {
+  const view = usePreferences();
+  const user = useBoot().data!.user!;
+  const refresh = useInvalidate();
+  const toast = useToast();
+  const [preview, setPreview] = useState<{ alias: string; signature: string; on: boolean } | null>(null);
+  if (!view.data) return null;
+  const prefs = view.data.preferences;
+  const shown = preview ?? { alias: prefs.alias, signature: prefs.signature.text, on: prefs.signature.enabled };
+  return (
+    <section className="card">
+      <div className="card-header">
+        <div>
+          <h2>สิ่งที่ลูกค้าเห็นเมื่อคุณตอบ</h2>
+          <p>ชื่อบนข้อความตอบกลับ และลายเซ็นท้ายข้อความ ใช้กับทุกช่องทาง (หน้าเว็บ LINE อีเมล Facebook)</p>
+        </div>
+      </div>
+      <Form
+        key={JSON.stringify([prefs.alias, prefs.signature])}
+        className="card-body"
+        data-form="customer-facing"
+        onChange={(event) => {
+          const form = event.currentTarget;
+          const read = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null);
+          setPreview({ alias: read('alias')?.value.trim() ?? '', signature: read('signature')?.value.trim() ?? '', on: Boolean((read('signature_on') as HTMLInputElement | null)?.checked) });
+        }}
+        onSubmit={async (values) => {
+          await savePreferences({ alias: values.alias ?? '', signature: { enabled: values.signature_on === 'on', text: values.signature ?? '' } });
+          await refresh(PREFS_PATH);
+          setPreview(null);
+          toast('บันทึกแล้ว ข้อความตอบกลับถัดไปจะใช้ค่านี้');
+        }}
+      >
+        <TextField
+          label="ชื่อที่แสดงต่อลูกค้า (ไม่บังคับ)"
+          name="alias"
+          max={60}
+          required={false}
+          defaultValue={prefs.alias}
+          placeholder={user.name}
+          hint="เว้นว่างไว้เพื่อใช้ชื่อจริง ใส่ชื่อเล่นหรือชื่อกลางได้ เช่น “ทีมบริการลูกค้า” เพื่อความเป็นส่วนตัว"
+        />
+        <label className="check">
+          <input type="checkbox" className="switch" name="signature_on" defaultChecked={prefs.signature.enabled} />
+          ต่อท้ายลายเซ็นในข้อความตอบกลับลูกค้าอัตโนมัติ
+        </label>
+        <TextArea
+          label="ลายเซ็น"
+          name="signature"
+          max={500}
+          rows={3}
+          required={false}
+          defaultValue={prefs.signature.text}
+          hint="เช่น ชื่อ ตำแหน่ง หรือข้อความบริการมาตรฐาน บันทึกภายในไม่มีลายเซ็น"
+        />
+        <div className="reply-preview" aria-live="polite">
+          <span className="tiny muted">ตัวอย่างที่ลูกค้าเห็น</span>
+          <div className="reply-preview-bubble">
+            <strong>{shown.alias || user.name}</strong>
+            <p>
+              ขอบคุณที่แจ้งเข้ามาค่ะ ทีมงานตรวจสอบให้แล้ว
+              {shown.on && shown.signature ? `\n\n${shown.signature}` : ''}
+            </p>
+          </div>
+        </div>
+        <button className="btn primary" type="submit">
+          <Icon name="check" />
+          บันทึก
+        </button>
+      </Form>
+    </section>
   );
 }

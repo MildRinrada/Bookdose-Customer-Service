@@ -147,7 +147,7 @@ class CustomerAccountTests(unittest.TestCase):
 
     def test_one_account_contacts_many_organizations_that_stay_apart(self):
         self.assertEqual(Client(self.base).boot()['home'],{'slug':'alpha','name':'องค์กร A'})
-        beta = self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'owner@example.com',
+        beta = self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'owner@example.com',
                                                            'admin_name':'ผู้ดูแล B','password':'Test-password-123!'})['id']
         # The platform's own organization stays first for everyone, however many there are.
         self.assertEqual(Client(self.base).boot()['home']['slug'],'alpha')
@@ -171,20 +171,20 @@ class CustomerAccountTests(unittest.TestCase):
         self.assertEqual(customer.call('/api/public/alpha/session')[0],404)
         self.assertEqual(self.ok(customer,'/api/public/beta/session')['conversation']['subject'],'สอบถามสินค้า')
         # A suspended organization leaves the customer's list.
-        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        self.ok(self.owner,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
         self.assertEqual([o['slug'] for o in self.ok(customer,'/api/customer/organizations')['organizations']],['alpha'])
 
     def test_an_older_installation_keeps_its_oldest_organization_first(self):
         # Installed before the platform remembered its own organization: a new organization does not take its place.
         with D.control() as cd:
             cd.execute("DELETE FROM platform_settings WHERE key='home_tenant'")
-        self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
         self.assertEqual(Client(self.base).boot()['home']['slug'],'alpha')
         with D.control() as cd:
             self.assertEqual(cd.execute("SELECT value FROM platform_settings WHERE key='home_tenant'").fetchone()[0],self.org)
 
     def test_signing_up_from_an_organization_link_connects_it(self):
-        self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
         client = Client(self.base)
         status,_ = self.signup(client,org='beta')
         self.assertEqual(status,201)

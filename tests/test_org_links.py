@@ -43,7 +43,7 @@ class OrgLinkTests(unittest.TestCase):
     def beta(self):
         """A second organization with its own admin, signed in (customers are connected with alpha, the platform's
         own, but reach beta only by its code or a link)."""
-        tenant = self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'owner@example.com',
+        tenant = self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'owner@example.com',
                                                              'admin_name':'ผู้ดูแล B','password':'Test-password-123!'})['id']
         client = Client(self.base)
         client.login('owner@example.com')
@@ -140,7 +140,7 @@ class OrgLinkTests(unittest.TestCase):
         self.assertEqual([o['slug'] for o in self.ok(customer,'/api/customer/organizations')['organizations']],['alpha'])
         # A suspended organization's link says no more than an unknown one.
         live = self.ok(owner,LINKS,{})
-        self.ok(self.admin,'/api/platform/tenants/'+self.ok(owner,'/api/workspace')['tenant']['id'],
+        self.ok(self.owner,'/api/platform/tenants/'+self.ok(owner,'/api/workspace')['tenant']['id'],
                 {'status':'suspended','confirmation':'CONFIRM'},'PATCH')
         self.assertEqual(self.status(customer,join_path(live['url'])),404)
 

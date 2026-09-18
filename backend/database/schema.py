@@ -81,6 +81,8 @@ def upgrade_tenant(db):
     db.executescript(automation.TENANT_TABLES)
     # The overview's handover notes and to-dos.
     db.executescript(board.TENANT_TABLES)
+    # How the team uses the knowledge base (uses, helpful marks, pins) and each article's earlier versions.
+    db.executescript(knowledge.ACTIVITY_TABLES)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',automation.DEFAULT_SETTINGS)
     db.executescript(customers.TENANT_TABLES)
     db.execute('INSERT OR IGNORE INTO settings VALUES(?,?)',('customer_categories',json.dumps(customers.DEFAULT_CATEGORIES,ensure_ascii=False)))

@@ -209,11 +209,12 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       void insert(article.body);
       toast('แทรกเนื้อหาในช่องร่างแล้ว กรุณาตรวจสอบก่อนส่ง');
     };
-    const onRead = (article: Article) =>
+    const onRead = (article: Article, words: string[] = []) =>
       openModal(
         article.title,
         <ArticleRead
           article={article}
+          highlight={words}
           onEdit={(a) => articleActions.edit(a)}
           onDelete={articleActions.remove}
           onInsert={(a) => {

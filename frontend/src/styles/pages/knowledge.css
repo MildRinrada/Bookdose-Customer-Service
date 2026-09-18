@@ -187,3 +187,695 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* The page's head, in the dark of the notifications panel: the search is the first thing to reach for, the team's
+   numbers beside it (KnowledgeScreen). */
+.kb-hero {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: end;
+  gap: 20px 32px;
+  margin: 0 0 18px;
+  padding: 24px 28px;
+  border-radius: 20px;
+  background: radial-gradient(120% 160% at 100% 0,#3a3a3c 0,#1c1c1e 60%);
+  color: #fff;
+  box-shadow: 0 18px 40px -24px #000000a0;
+}
+.kb-hero-main {
+  min-width: 0;
+}
+.kb-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.kb-hero h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.4rem,1.1rem + 1vw,1.85rem);
+}
+.kb-hero-head p {
+  margin: 2px 0 0;
+  color: #c7c7cc;
+}
+.btn.kb-new {
+  flex-shrink: 0;
+  border-color: #fff;
+  background: #fff;
+  color: #1c1c1e;
+  font-weight: 700;
+}
+.btn.kb-new:hover {
+  border-color: #e5e5ea;
+  background: #e5e5ea;
+}
+.kb-search-box .input-wrap {
+  min-height: 52px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -12px #000000b0;
+}
+.kb-search-box .input-wrap .icon {
+  width: 20px;
+  height: 20px;
+  color: #1c1c1e;
+}
+.kb-search-box .input-wrap input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem;
+}
+.kb-search-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: #aeaeb2;
+  font-size: .85rem;
+}
+.kb-search-hint .icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: #ffd60a;
+}
+.kb-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(96px,auto));
+  gap: 8px;
+  margin: 0;
+}
+.kb-hero-stats>div {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #ffffff12;
+}
+.kb-hero-stats dt {
+  color: #aeaeb2;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.kb-hero-stats dd {
+  margin: 2px 0 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.kb-hero-stats dd small {
+  margin-left: 4px;
+  color: #aeaeb2;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.kb-hero-stats .warn dd {
+  color: #ffd60a;
+}
+.kb-hero-top {
+  grid-column: 1 / -1;
+  max-width: 260px;
+}
+.kb-hero-top button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 700;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kb-hero-top button:hover {
+  text-decoration: underline;
+}
+.kb-relevance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: #f4f4f6;
+  color: #3a3a3c;
+  font-size: .9rem;
+  font-weight: 600;
+}
+.kb-relevance .icon {
+  width: 14px;
+  height: 14px;
+}
+.knowledge-tags .filter-pill.warning {
+  color: #7a4507;
+}
+.knowledge-tags .filter-pill.warning[aria-pressed=true] {
+  background: #fff4d6;
+}
+
+/* ปักหมุดของฉัน: a row of small dark cards to drag into order (PinnedShelf). */
+.pin-shelf {
+  margin: 0 0 20px;
+}
+.pin-shelf-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+}
+.pin-shelf h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 1rem;
+}
+.pin-shelf h2 .icon {
+  width: 16px;
+  height: 16px;
+}
+.pin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(min(220px,100%),1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pin-card {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 6px 6px 4px;
+  border-radius: 14px;
+  background: #1c1c1e;
+  color: #fff;
+  box-shadow: 0 8px 20px -14px #000000c0;
+  cursor: grab;
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+}
+.pin-card:hover {
+  transform: translateY(-1px);
+}
+.pin-card.dragging {
+  opacity: .4;
+  cursor: grabbing;
+}
+.pin-card.over {
+  box-shadow: 0 0 0 2px #ffd60a, 0 8px 20px -14px #000000c0;
+}
+.pin-grip {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  color: #8e8e93;
+}
+.pin-grip .icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 3;
+}
+.pin-open {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pin-open:focus-visible {
+  outline: 2px solid #ffd60a;
+}
+.pin-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pin-meta {
+  color: #aeaeb2;
+  font-size: .8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pin-card .pin-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff1f;
+  color: #fff;
+}
+.pin-card .pin-remove:hover {
+  background: #ff453a;
+  color: #fff;
+}
+.pin-remove .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.6;
+}
+
+/* The card: its pin in the corner, the team's numbers in the foot, copy buttons on hover. A search shows the
+   sentence that answers, the matched words marked. */
+.article-card {
+  position: relative;
+}
+.article-card.needs-review {
+  box-shadow: var(--lift), inset 0 0 0 1px #f5d48a;
+}
+.article-card .pin-btn {
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  color: #a1a1a6;
+}
+.pin-btn .icon {
+  width: 16px;
+  height: 16px;
+}
+.article-card .pin-btn:hover {
+  background: #f0f0f2;
+  color: #1c1c1e;
+}
+.article-card .pin-btn.on {
+  background: #1c1c1e;
+  color: #fff;
+}
+.review-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff4d6;
+  color: #7a4507;
+}
+.review-badge .icon {
+  width: 12px;
+  height: 12px;
+}
+.article-card mark,.kb-row mark {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: #ffe58a;
+  color: inherit;
+}
+.article-answer {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f7f9;
+  box-shadow: inset 3px 0 0 #1c1c1e;
+}
+.article-answer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #6e6e73;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.article-answer-label .icon {
+  width: 12px;
+  height: 12px;
+}
+.article-answer p {
+  margin: 4px 0 0;
+  color: #3a3a3c;
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.article-card-foot {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: .85rem;
+}
+.article-updated,.article-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.article-stat {
+  color: #3a3a3c;
+  font-weight: 600;
+}
+.article-stat .icon {
+  width: 13px;
+  height: 13px;
+}
+.article-stat.rate {
+  color: #1f7a4d;
+}
+.article-stat.rate.low {
+  color: #a3182b;
+}
+/* Floats over the end of the preview, so the foot's numbers stay readable. */
+.article-card-actions {
+  position: absolute;
+  right: 14px;
+  bottom: 52px;
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--pop);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .15s, transform .15s;
+  pointer-events: none;
+}
+.article-card:is(:hover,:focus-within) .article-card-actions {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.card-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: #1c1c1e;
+  color: #fff;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.card-copy+.card-copy {
+  background: #f0f0f2;
+  color: #1c1c1e;
+}
+.card-copy:hover {
+  background: #000;
+}
+.card-copy+.card-copy:hover {
+  background: #e4e4e8;
+}
+.card-copy.done,.card-copy+.card-copy.done {
+  background: #1f7a4d;
+  color: #fff;
+}
+.card-copy .icon {
+  width: 13px;
+  height: 13px;
+}
+@media (hover:none) {
+  .article-card-actions {
+    position: static;
+    align-self: flex-start;
+    padding: 0;
+    box-shadow: none;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin-card,.article-card-actions { transition: none; }
+}
+
+/* The reader: a warning when the article may be out of date, the words a search matched marked in the text, and
+   the team's numbers with "did it help?" under it (ArticleRead; its ::highlight(kb-hit) rule is added there, the
+   CSS build does not know that pseudo-element yet). */
+.pin-toggle {
+  margin-left: auto;
+}
+.btn.pin-toggle.on {
+  border-color: #1c1c1e;
+  background: #1c1c1e;
+  color: #fff;
+}
+/* Pinned stays dark under the pointer (the plain .btn hover is a light grey that would hide the white text). */
+.btn.pin-toggle.on:hover {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+.kb-stat-empty {
+  color: #aeaeb2;
+  font-size: .85rem;
+  font-weight: 600;
+}
+.article-review-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -6px 0 18px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff4d6;
+  color: #7a4507;
+}
+.article-review-note .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+.article-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f7f7f9;
+}
+.article-feedback-stats {
+  display: grid;
+  gap: 4px;
+  color: #3a3a3c;
+  font-size: .9rem;
+}
+.article-feedback-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.article-feedback-stats .icon {
+  width: 14px;
+  height: 14px;
+  color: #6e6e73;
+}
+.article-vote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.article-vote>span {
+  margin-right: 4px;
+  color: #3a3a3c;
+  font-weight: 700;
+}
+.vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #dcdce0;
+  border-radius: 999px;
+  background: #fff;
+  color: #3a3a3c;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.vote-btn:hover {
+  border-color: #1c1c1e;
+}
+.vote-btn:active {
+  transform: scale(.94);
+}
+.vote-btn .icon {
+  width: 15px;
+  height: 15px;
+}
+.vote-btn.up.on {
+  border-color: #1f7a4d;
+  background: #1f7a4d;
+  color: #fff;
+}
+.vote-btn.down.on {
+  border-color: #c4262e;
+  background: #c4262e;
+  color: #fff;
+}
+
+/* ประวัติการแก้ไข: a timeline, newest on top; a version opens to what the change did (ArticleHistory). */
+.article-history {
+  display: grid;
+  gap: 4px;
+}
+.history-now,.history-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0,1fr);
+  gap: 10px;
+}
+.history-now {
+  align-items: center;
+  padding: 8px 0;
+}
+.history-now div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.history-list li::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  bottom: 0;
+  left: 10px;
+  width: 2px;
+  background: #e5e5ea;
+}
+.history-dot {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  margin: 15px 0 0 5px;
+  border: 2px solid #aeaeb2;
+  border-radius: 50%;
+  background: #fff;
+}
+.history-dot.now {
+  margin-top: 0;
+  border-color: #1c1c1e;
+  background: #1c1c1e;
+}
+.history-entry {
+  min-width: 0;
+  padding: 4px 0 8px;
+}
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.history-head>span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.history-head:hover,.history-list li.open .history-head {
+  background: #f4f4f6;
+}
+.history-head .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  transition: transform .15s;
+}
+.history-list li.open .history-head .icon {
+  transform: rotate(180deg);
+}
+.history-detail {
+  padding: 6px 12px 4px;
+}
+.history-diff {
+  display: grid;
+  max-height: 46vh;
+  margin: 8px 0 12px;
+  padding: 10px 0;
+  overflow: auto;
+  border-radius: 12px;
+  background: #f7f7f9;
+  font-family: inherit;
+  font-size: .9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.history-diff span {
+  padding: 1px 14px;
+}
+.history-diff .add {
+  background: #e3f4ea;
+  color: #14532d;
+}
+.history-diff .del {
+  background: #fde7ea;
+  color: #7f1d1d;
+  text-decoration: line-through;
+  text-decoration-color: #7f1d1d66;
+}
+.history-diff .same {
+  color: #6e6e73;
+}
+.history-diff .fold {
+  color: #8e8e93;
+  font-size: .82rem;
+  font-style: italic;
+}
+
+/* The composer's knowledge search: the member's pins marked, the team's numbers under each (KnowledgeSearch). */
+.kb-pinned {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.kb-stats {
+  display: block;
+  margin-top: 2px;
+  color: #6e6e73;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+@media (max-width: 950px) {
+  .kb-hero {
+    grid-template-columns: minmax(0,1fr);
+    padding: 20px;
+  }
+  .kb-hero-stats {
+    grid-template-columns: repeat(auto-fit,minmax(110px,1fr));
+  }
+  .kb-hero-top {
+    max-width: none;
+  }
+}
+@media (max-width: 560px) {
+  .kb-hero-head {
+    flex-direction: column;
+  }
+}

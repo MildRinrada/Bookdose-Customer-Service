@@ -12,6 +12,23 @@ def list_visible(db, agent_id=None, team_id=None):
     return rows(db,f'SELECT c.*,n.first_name,n.last_name FROM contacts c LEFT JOIN contact_names n ON n.contact_id=c.id WHERE {where} ORDER BY c.name',args)
 
 
+def satisfaction(db):
+    """Each contact's answered surveys: {contact_id: {average, count, last}} (the list's mood badge)."""
+    found = rows(db,'''SELECT t.contact_id,AVG(s.rating) AS average,COUNT(*) AS count,MAX(s.answered_at) AS last FROM csat_surveys s
+                    JOIN tickets t ON t.id=s.ticket_id WHERE s.answered_at IS NOT NULL AND s.rating IS NOT NULL GROUP BY t.contact_id''')
+    return {r['contact_id']:{'average':round(r['average'],1),'count':r['count'],'last':r['last']} for r in found}
+
+
+def main_channels(db):
+    """The channel each contact wrote on most (ties go to the most recent): {contact_id: channel}."""
+    found = rows(db,'''SELECT contact_id,channel,COUNT(*) AS n,MAX(created_at) AS latest FROM conversations
+                    WHERE contact_id IS NOT NULL GROUP BY contact_id,channel ORDER BY contact_id,n DESC,latest DESC''')
+    main = {}
+    for r in found:
+        main.setdefault(r['contact_id'],r['channel'])
+    return main
+
+
 def find(db, contact_id):
     return one(db,'SELECT * FROM contacts WHERE id=?',(contact_id,))
 

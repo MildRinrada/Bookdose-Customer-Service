@@ -171,6 +171,10 @@ class AutomationTests(unittest.TestCase):
         self.ok(visitor,'/api/public/alpha/csat',{'rating':3})
         csat = self.ok(self.admin,'/api/automation/overview?tz=-420')['manager']['csat']
         self.assertEqual((csat['count'],csat['average'],csat['distribution']['5']),(2,4.0,1))
+        # The customer list shows how satisfied this customer has been and where they write.
+        contact = self.ok(self.admin,f'/api/tickets/{tid}')['contact']['id']
+        row = next(c for c in self.ok(self.admin,'/api/contacts')['contacts'] if c['id']==contact)
+        self.assertEqual((row['satisfaction']['average'],row['satisfaction']['count'],row['main_channel']),(4.0,2,'web'))
 
     def test_no_survey_when_switched_off_or_case_recorded_by_staff(self):
         self.ok(self.admin,'/api/automation/settings',{'escalation_enabled':True,'escalation_minutes':15,'csat_enabled':False,'csat_message':'ให้คะแนน'},'PATCH')

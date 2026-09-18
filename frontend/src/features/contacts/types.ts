@@ -18,6 +18,10 @@ export type Contact = {
   last_name?: string | null;
   /** The contact came from a web chat without an account: how they can be reached again. */
   guest?: GuestReach | null;
+  /** Their answered satisfaction surveys (average 1-5), or null before any answer. */
+  satisfaction?: { average: number; count: number; last: string } | null;
+  /** The channel they wrote on most (web, line, email, facebook, manual). */
+  main_channel?: string | null;
 } & Record<string, unknown>;
 
 export type ContactsPage = { contacts: Contact[] };

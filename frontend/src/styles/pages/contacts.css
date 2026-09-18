@@ -269,3 +269,302 @@ tbody tr:hover .contact-actions .btn,tbody tr:focus-within .contact-actions .btn
   flex-direction: column;
   min-width: 0;
 }
+
+/* Smart badges, mood, note, main channel, copy, overdue rows, the duplicate banner and the quick view
+   (features/contacts: labels contactBadges / contactMood, components/ContactPeek). */
+.contact-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+.contact-mood {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px #fff, 0 1px 3px #0000002e;
+  font-size: 12px;
+  line-height: 1;
+}
+.contact-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.contact-badge {
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.contact-badge.dark { background: #1c1c1e; color: #fff; }
+.contact-badge.warn { background: #fdf0d5; color: #7a4507; }
+.contact-badge.danger { background: #fde7ea; color: #a3182b; }
+.contact-badge.info { background: #e8f1f8; color: #2f6385; }
+/* The customer's note, like a small sticky note under the name. */
+.contact-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 1px 8px;
+  width: fit-content;
+  border-radius: 6px;
+  background: #fff6cf;
+  color: #6b5310;
+  font-size: .82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contact-note .icon {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+.contact-channel {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #f0f0f2;
+  color: #3a3a3c;
+  font-size: .78rem;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.contact-channel .icon {
+  width: 13px;
+  height: 13px;
+}
+/* Copy: a small button that shows on the row it belongs to, and says "คัดลอกแล้ว!" for a moment. */
+.copy-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #6e6e73;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity .15s, background .15s;
+}
+.contact-line:hover .copy-btn,.copy-btn:focus-visible,.copy-btn.copied {
+  opacity: 1;
+}
+@media (hover:none) {
+  .copy-btn { opacity: 1; }
+}
+.copy-btn:hover {
+  background: #ececf0;
+  color: var(--ink);
+}
+.contact-line .copy-btn .icon {
+  width: 14px;
+  height: 14px;
+  color: inherit;
+}
+.copy-btn.copied {
+  color: #1f7a4d;
+}
+.copy-tip:empty {
+  display: none;
+}
+.copy-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  animation: note-pop .18s ease-out;
+  pointer-events: none;
+}
+/* A customer with a case past its SLA: a red edge on the row and a gentle pulse on the badge. */
+.contacts-list tr.contact-late>td:first-child {
+  box-shadow: inset 3px 0 #e5484d;
+}
+.contacts-list tr.contact-late {
+  background: linear-gradient(90deg,#fff5f5,#fff 40%);
+}
+.contacts-list tr.contact-late .badge.suspended {
+  animation: late-pulse 2.4s ease-in-out infinite;
+}
+@keyframes late-pulse {
+  0%,100% { box-shadow: 0 0 0 0 #e5484d00; }
+  50% { box-shadow: 0 0 0 4px #e5484d2e; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .contacts-list tr.contact-late .badge.suspended { animation: none; }
+}
+/* Duplicates found: one line above the list with the way to them. */
+.dup-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 20px 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff8e6;
+  box-shadow: inset 0 0 0 1px #f3dfa8;
+}
+.dup-banner>span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.dup-banner-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f5b942;
+  color: #1c1c1e;
+}
+.dup-banner-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+/* The quick view beside a customer's name. */
+.contact-person .contact-name strong[tabindex] {
+  cursor: default;
+}
+.contact-peek {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  gap: 10px;
+  width: min(360px,calc(100vw - 32px));
+  padding: 16px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--pop, 0 24px 60px -12px #11111140);
+  animation: note-pop .16s ease-out;
+}
+.contact-peek-head {
+  display: flex;
+  flex-direction: column;
+}
+.contact-peek-head strong {
+  font-size: 1.05rem;
+}
+.contact-peek-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.contact-peek-facts>span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #f4f4f6;
+  font-size: .85rem;
+}
+.contact-peek-facts .icon {
+  width: 14px;
+  height: 14px;
+}
+.contact-peek-facts .mood.good { background: #e3f4ea; color: #1f7a4d; }
+.contact-peek-facts .mood.okay { background: #fdf0d5; color: #7a4507; }
+.contact-peek-facts .mood.bad { background: #fde7ea; color: #a3182b; }
+.contact-peek-note {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff6cf;
+  color: #6b5310;
+  font-size: .88rem;
+  white-space: pre-line;
+}
+.contact-peek-note .icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+}
+/* The latest cases as a timeline: a line with a dot per case, red when late, green when done. */
+.contact-peek-timeline {
+  margin: 0;
+  padding: 0 0 0 16px;
+  list-style: none;
+  border-left: 2px solid #ececf0;
+}
+.contact-peek-timeline li {
+  position: relative;
+  padding: 2px 0 8px;
+}
+.contact-peek-timeline li::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: -22px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8e8e93;
+  box-shadow: 0 0 0 3px #fff;
+}
+.contact-peek-timeline li.late::before { background: #e5484d; }
+.contact-peek-timeline li.done::before { background: #2f9e6b; }
+.contact-peek-timeline a {
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  text-decoration: none;
+}
+.contact-peek-timeline a:hover .contact-peek-subject {
+  text-decoration: underline;
+}
+.contact-peek-subject {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contact-peek-meta {
+  color: var(--muted);
+  font-size: .8rem;
+}
+.contact-peek-meta .badge {
+  padding: 0 6px;
+  font-size: .75rem;
+}
+.contact-peek-empty {
+  margin: 0;
+  font-size: .88rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .contact-peek,.copy-tip { animation: none; }
+}
+/* On a card (narrow screens) a badge beside the name drops below it instead of squeezing the name to a letter. */
+@container (max-width: 58rem) {
+  .contact-name {
+    flex-wrap: wrap;
+  }
+}

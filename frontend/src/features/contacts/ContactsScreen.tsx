@@ -14,6 +14,7 @@ import { AUDIT_PATH } from '@/features/audit/api';
 import { GuestBadge } from '@/features/inbox/components/GuestBadge';
 import { TRASH_PATH } from '@/features/trash/api';
 import { date, relative } from '@/lib/format';
+import { channelIcons, channelNames } from '@/lib/labels';
 import { useApi, useInvalidate } from '@/lib/query';
 import { useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
@@ -21,8 +22,11 @@ import { CONTACTS_PATH, deleteContact } from './api';
 import { ContactHistory } from './components/ContactHistory';
 import { useContactModal } from './components/ContactForm';
 import { ContactMerge } from './components/ContactMerge';
+import { ContactPeek, CopyButton, useContactPeek } from './components/ContactPeek';
 import {
   compareContacts,
+  contactBadges,
+  contactMood,
   contactSortColumns,
   contactTagLabels,
   contactTicketStats,
@@ -52,6 +56,7 @@ export function ContactsScreen() {
   const [tag, setTag] = useUiState('contacts:filter', 'all');
   const [company, setCompany] = useUiState('contacts:company', '');
   const [sort, setSort] = useUiState<{ key: ContactSortKey; direction: 1 | -1 }>('contacts:sort', { key: 'name', direction: 1 });
+  const peek = useContactPeek();
 
   const contacts = list.data?.contacts ?? [];
   const stats = contactTicketStats(contacts, tickets);
@@ -173,6 +178,27 @@ export function ContactsScreen() {
               ))}
           </div>
         </div>
+        {counts.duplicate > 0 && activeTag !== 'duplicate' && (
+          <div className="dup-banner" role="status">
+            <span className="dup-banner-icon" aria-hidden="true">
+              <Icon name="users" />
+            </span>
+            <span>
+              <strong>พบอีเมลซ้ำ {counts.duplicate} รายชื่อ ({duplicates.size} กลุ่ม)</strong>
+              <span className="muted"> · รวมเป็นรายชื่อเดียวเพื่อให้ประวัติเคสอยู่ที่เดียวกัน</span>
+            </span>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => {
+                setTag('duplicate');
+                slice.setPage(1);
+              }}
+            >
+              ดูรายชื่อซ้ำ
+            </button>
+          </div>
+        )}
         <div id="contacts-table">
           {!records.length ? (
             contacts.length ? (
@@ -219,6 +245,8 @@ export function ContactsScreen() {
                         onNewTicket={() => void openNewTicket(c.id)}
                         onEdit={() => contactModal(c)}
                         onDelete={() => remove(c)}
+                        onPeek={(el, now) => peek.show(c, stats.get(c.id)!, el, now)}
+                        onUnpeek={peek.hide}
                       />
                     ))}
                   </tbody>
@@ -229,6 +257,7 @@ export function ContactsScreen() {
           )}
         </div>
       </section>
+      <ContactPeek peek={peek.peek} onKeep={peek.keep} onHide={peek.hide} />
     </>
   );
 }
@@ -245,6 +274,8 @@ function ContactRow({
   onNewTicket,
   onEdit,
   onDelete,
+  onPeek,
+  onUnpeek,
 }: {
   c: Contact;
   index: number;
@@ -256,16 +287,35 @@ function ContactRow({
   onNewTicket: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onPeek: (anchor: HTMLElement, now?: boolean) => void;
+  onUnpeek: () => void;
 }) {
   const phoneHref = String(c.phone || '').replace(/[^\d+]/g, '');
+  const mood = contactMood(c);
+  const badges = contactBadges(c, s);
   return (
-    <tr>
+    <tr className={s.late ? 'contact-late' : undefined}>
       <td className="contact-main">
-        <div className="contact-person">
-          <Avatar name={c.name} index={index} />
+        <div
+          className="contact-person"
+          onMouseEnter={(e) => onPeek(e.currentTarget)}
+          onMouseLeave={onUnpeek}
+          onFocus={(e) => onPeek(e.currentTarget, true)}
+          onBlur={onUnpeek}
+        >
+          <span className="contact-avatar">
+            <Avatar name={c.name} index={index} />
+            {mood && (
+              <span className={`contact-mood ${mood.tone}`} title={`${mood.label} · คะแนนเฉลี่ย ${c.satisfaction!.average}/5 จาก ${c.satisfaction!.count} ครั้ง`}>
+                {mood.face}
+              </span>
+            )}
+          </span>
           <div className="contact-id">
             <div className="contact-name">
-              <strong title={c.name}>{c.name}</strong>
+              <strong title={c.name} tabIndex={0}>
+                {c.name}
+              </strong>
               <GuestBadge guest={c.guest} />
               {duplicate &&
                 (canEdit ? (
@@ -291,16 +341,38 @@ function ContactRow({
             ) : (
               <div className="contact-org muted">ไม่ระบุองค์กร</div>
             )}
+            {badges.length > 0 && (
+              <div className="contact-badges">
+                {badges.map((b) => (
+                  <span key={b.key} className={`contact-badge ${b.tone}`} title={b.title}>
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            )}
+            {c.notes && (
+              <div className="contact-note" title={c.notes}>
+                <Icon name="edit" />
+                {c.notes}
+              </div>
+            )}
           </div>
         </div>
       </td>
       <td className="contact-reach">
+        {c.main_channel && (
+          <span className="contact-channel" title={`ติดต่อผ่าน${channelNames[c.main_channel] ?? c.main_channel}บ่อยที่สุด`}>
+            <Icon name={channelIcons[c.main_channel] ?? 'chat'} />
+            {channelNames[c.main_channel] ?? c.main_channel}
+          </span>
+        )}
         {c.email && (
           <div className="contact-line">
             <Icon name="mail" />
             <a href={`mailto:${c.email}`} aria-label={`ส่งอีเมลถึง ${c.email}`} title={`ส่งอีเมลถึง ${c.email}`}>
               {c.email}
             </a>
+            <CopyButton value={c.email} label="อีเมล" />
           </div>
         )}
         {c.phone && (
@@ -309,6 +381,7 @@ function ContactRow({
             <a href={`tel:${phoneHref}`} aria-label={`โทรหา ${c.phone}`} title={`โทรหา ${c.phone}`}>
               {c.phone}
             </a>
+            <CopyButton value={c.phone} label="เบอร์โทร" />
           </div>
         )}
         {!c.email && !c.phone && <span className="muted">ยังไม่มีช่องทางติดต่อ</span>}

@@ -16,11 +16,14 @@ def contact_visible(db, contact_id, ctx):
 
 
 def list_contacts(db, ctx):
-    """Each contact carries guest: {follow: [...]} when it is a guest of guest web chat (else null)."""
+    """Each contact carries guest: {follow: [...]} when it is a guest of guest web chat (else null), satisfaction
+    ({average, count, last} of its answered surveys, else null) and main_channel (the channel it wrote on most)."""
     from backend.modules.guest import service as guest
     found = repository.list_visible(db,ctx['id'],visible_team(ctx))
     reach = guest.reach(db,[c['id'] for c in found])
-    return [{**c,'guest':reach.get(c['id'])} for c in found]
+    # The list's badges: how satisfied the customer has been (answered surveys) and where they usually write.
+    moods,channels = repository.satisfaction(db),repository.main_channels(db)
+    return [{**c,'guest':reach.get(c['id']),'satisfaction':moods.get(c['id']),'main_channel':channels.get(c['id'])} for c in found]
 
 
 def create_contact(db, ctx, body):

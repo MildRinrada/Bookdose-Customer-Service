@@ -257,8 +257,9 @@ def pending_notification(db, conversation_id):
     return one(db,'SELECT id FROM customer_notifications WHERE conversation_id=? AND sent_at IS NULL',(conversation_id,))
 
 
-def insert_notification(db, notification_id, account_id, conversation_id):
-    db.execute('INSERT INTO customer_notifications(id,account_id,conversation_id,created_at) VALUES(?,?,?,?)',(notification_id,account_id,conversation_id,now()))
+def insert_notification(db, notification_id, account_id, conversation_id, event='reply'):
+    db.execute('INSERT INTO customer_notifications(id,account_id,conversation_id,created_at,event) VALUES(?,?,?,?,?)',
+               (notification_id,account_id,conversation_id,now(),event))
 
 
 def due_notifications(db, created_before):

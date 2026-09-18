@@ -159,10 +159,3 @@ def settings_form(body, current_guest, current_widget):
     if 'title' in given:
         widget['title'] = field(given,'title',60,False)
     return guest_chat,widget
-
-
-def sms_form(body):
-    from backend.extensions.sms import PROVIDERS
-    provider = body.get('provider')
-    require(provider in PROVIDERS,'ผู้ให้บริการ SMS ไม่ถูกต้อง')
-    return provider

@@ -28,3 +28,11 @@ export const supportStatusLabels: Record<string, string> = {
   ended: 'หยุดก่อนเวลา',
   expired: 'หมดเวลา',
 };
+
+/** Where a staff invitation stands (backend invitations.schema.state_of). */
+export const inviteStateLabels: Record<string, string> = {
+  pending: 'รอตอบรับ',
+  accepted: 'เข้าร่วมแล้ว',
+  cancelled: 'ยกเลิกแล้ว',
+  expired: 'หมดอายุ',
+};

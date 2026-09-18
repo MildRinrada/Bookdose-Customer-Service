@@ -32,6 +32,11 @@ def registration_email(body):
     return email_field(body)
 
 
+def reset_form(body):
+    """(link token, new password hash) of "ลืมรหัสผ่าน" for a staff account."""
+    return verification_token(body.get('token')),new_password(body)
+
+
 def verification_token(token):
     require(isinstance(token,str) and re.fullmatch(r'[A-Za-z0-9_-]{43}',token), 'ลิงก์ยืนยันไม่ถูกต้องหรือหมดอายุ กรุณาขอลิงก์ใหม่')
     return token

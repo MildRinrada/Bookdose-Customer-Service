@@ -12,8 +12,8 @@ A customer can chat with an organization on the web **without an account**, and 
 1. **This browser, forever (one device only)** — a persistent cookie, refreshed on use (default); can be switched off
    ("เครื่องสาธารณะ ไม่ต้องจำ" → session cookie).
 2. **A follow link by email** — for people who have email.
-3. **A follow link by SMS** — for people without email. No SMS vendor yet: a pluggable sender with an `off` and a `log`
-   (test) provider; the phone option is hidden until the platform turns a provider on.
+3. **A follow link by SMS** — for people without email. The platform chooses the sender: ThaiBulkSMS (Thai numbers),
+   Twilio (any country) or `log` (test: the text goes to the server log); the phone option is hidden while it is `off`.
 4. **LINE notifications** — when the organization's LINE OA is connected: the guest sends a 6-digit code to the OA.
 Then: **merge the history into an account** on sign-up/sign-in, and an **embed code** so the chat runs on the
 organization's own website.
@@ -30,7 +30,9 @@ guest_line_links(visitor_id PK, line_user_id UNIQUE, linked_at)
 guest_notifications(id PK, visitor_id, conversation_id, channel CHECK IN ('email','sms','line'), created_at, sent_at,
                     attempts, error)                                   -- or extend the existing outbox if cleaner; say which
 settings keys: 'guest_chat' {enabled:true}, 'widget' {enabled:false, origins:[], position:'right', theme:'purple', title:''}
-control database: platform setting 'sms' {provider:'off'|'log'}
+control database: platform setting 'sms' {provider:'off'|'log'|'thaibulksms'|'twilio', sender, account}
+private file data/secrets/sms.json (sealed): {thaibulksms:{key, secret}, twilio:{secret}}
+guest_notifications.event: 'reply' | 'ai' | 'handoff' (what happened; kind stays 'reply' / 'linked')
 ```
 The contact made for a guest has source `'guest'`. All tokens: 32 random bytes (urlsafe), stored as SHA-256 only.
 
@@ -64,15 +66,20 @@ absent) and **`guest-open`** (no cookie needed; req.guest set when one is presen
 | GET/POST `/api/settings/guest-chat` | workspace, admin | `{guest_chat:{enabled}, widget:{enabled, origins, position, theme, title}}`; origins = up to 10 `https://host[:port]` (plus `http://localhost…` allowed) |
 | GET `/api/customer/guest-claims` | customer-account | → `{claims:[{org_slug, org_name, conversations:n}]}` from the `g_*` cookies this browser sends |
 | POST `/api/customer/guest-claims` | customer-account | `{org}` → `{moved:n}`: link the guest's contact to the account (`link_contact`), set visitor.account_id, delete its devices, links, clear the cookie |
-| GET/POST `/api/platform/sms` | platform | `{provider:'off'\|'log'}` |
+| GET/POST `/api/platform/sms` | platform | GET → `{provider, sender, account, configured:{thaibulksms, twilio}}` (never the credentials); POST `{provider, sender, account, key, secret}` - empty key/secret keep the saved ones |
+| POST `/api/platform/sms/test` | platform | `{to}` → `{sent, to_masked}`; the provider's refusal comes back as 502 with its reason (5 an hour) |
 
 Rules:
 - **Follow links** open `/chat/<org>/resume#t=<token>` (token in the fragment, never in a query string / server log).
   Valid 30 days, reusable up to 20 times, revoked by a newer link or by a merge. Link requests: 3 per hour per visitor
   and per target, 10 per hour per IP. Email goes through the platform mailbox (`customers.email_ready`); SMS through
-  `backend/extensions/sms.py` (`send(cd, phone, text)`; provider `log` writes the text to the server log). Thai phone
+  `backend/extensions/sms.py` (`send(cd, phone, text)`; ThaiBulkSMS `POST api-v2.thaibulksms.com/sms` with the number
+  written 0812345678, Twilio `POST api.twilio.com/2010-04-01/Accounts/<SID>/Messages.json`, both HTTP Basic, no
+  redirects; `log` writes the text to the server log). Refusals map to channel errors: credentials / credit /
+  rejected are final, temporary / network are tried again, a timeout is 'unknown' and never sent twice. Thai phone
   numbers normalised to E.164 (+66…). Email/SMS text: organization name + link, never message content.
-- **Notices of replies:** when the team replies in a guest's web conversation and it is unread after the same delay the
+- **Notices of replies:** when the team replies in a guest's web conversation - or the chatbot answers ('ai'), or
+  passes the conversation to the team without the guest asking ('handoff') - and it is unread after the same delay the
   account notices use, send ONE notice per conversation per unread spell on each channel the guest has *proven*
   (email_verified, phone_verified, LINE linked) — the email/SMS carries a fresh follow link, LINE the same. Never notify
   an unproven address. Runs in the existing automation worker loop.
@@ -121,7 +128,8 @@ Rules:
   + copy + QR (reuse the QR helper used by join links), widget switch, allowed website origins (chips input), position,
   theme (preset choices, no free colour → no inline styles), title, the embed snippet with a copy button, and a
   "ทดลองดู" link to `/chat/<slug>`.
-- **Platform → ระบบ:** SMS provider select (ปิด / ทดสอบ: แสดงข้อความใน log ของเซิร์ฟเวอร์).
+- **Platform → ระบบ:** SMS provider select (ปิด / ทดสอบใน log / ThaiBulkSMS / Twilio), its sender and credentials
+  (password boxes, empty keeps the saved ones) and "ส่งทดสอบ" to a real phone.
 - **Customer side:** after sign-in/verify and on `/customer/chats`, when `/api/customer/guest-claims` has rows, a banner
   per organization: "พบแชท N เรื่องที่คุยไว้ก่อนเข้าสู่ระบบกับ <org> — ย้ายเข้าบัญชีนี้" (confirm) → POST.
 - **Inbox (staff):** "ผู้เยี่ยมชม" badge on the conversation row/header and contact card, with how they can be reached.

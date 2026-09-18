@@ -100,7 +100,9 @@ class CustomerAlertTests(unittest.TestCase):
     def test_preferences_choose_the_channels_of_each_event(self):
         owner = self.customer(email='owner@example.com',name='เจ้าของงาน')
         settings = self.ok(owner,SETTINGS)
-        self.assertEqual(settings['events'],[{'key':'reply','label':'ทีมงานตอบกลับในแชท','email':True,'line':True}])
+        self.assertEqual(settings['events'],[{'key':'reply','label':'ทีมงานตอบกลับในแชท','email':True,'line':True},
+                                             {'key':'ai','label':'ผู้ช่วย AI ตอบคำถามในแชท','email':True,'line':True},
+                                             {'key':'handoff','label':'ส่งต่อเรื่องให้เจ้าหน้าที่ดูแล','email':True,'line':True}])
         self.assertEqual((settings['email']['ready'],settings['email']['verified'],settings['line']),(True,True,[]))
         self.assertEqual(self.status(owner,SETTINGS,{'events':{'nothing':{'email':True}}}),400)
         self.assertEqual(self.status(owner,SETTINGS,{'events':{'reply':{'email':'yes'}}}),400)

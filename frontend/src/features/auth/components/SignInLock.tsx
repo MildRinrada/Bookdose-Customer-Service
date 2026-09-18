@@ -60,7 +60,7 @@ const mmss = (seconds: number) => {
 };
 
 /** The lock message: what happened and when to try again (read once), the ticking countdown, and what else to do
-    (`help`: the customer's "ลืมรหัสผ่าน" link; staff have no reset, they wait or ask the platform admin). */
+    (`help`: the "ลืมรหัสผ่าน" links - a new password from the email lifts the lock at once). */
 export function LockNotice({ lock, help }: { lock: SignInLock; help: ReactNode }) {
   if (!lock.locked || lock.until === null) return null;
   // The server's sentence ends with "…ในอีก N นาที", which the countdown says better.

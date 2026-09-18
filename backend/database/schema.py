@@ -11,6 +11,7 @@ from backend.modules.contacts import model as contacts
 from backend.modules.customer_security import model as customer_security
 from backend.modules.customers import model as customers
 from backend.modules.guest import model as guest
+from backend.modules.invitations import model as invitations
 from backend.modules.conversations import model as conversations
 from backend.modules.knowledge import model as knowledge
 from backend.modules.org_links import model as org_links
@@ -24,7 +25,8 @@ from backend.modules.trash import model as trash
 
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
                   customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
-                  security.CONTROL_TABLES, support_access.CONTROL_TABLES, staff_security.CONTROL_TABLES)
+                  security.CONTROL_TABLES, support_access.CONTROL_TABLES, staff_security.CONTROL_TABLES,
+                  invitations.CONTROL_TABLES)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
@@ -78,5 +80,8 @@ def upgrade_tenant(db):
     # Guest web chat (customers chatting without an account): its tables and the switches of the chat and widget.
     db.executescript(guest.TENANT_TABLES)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',guest.DEFAULT_SETTINGS)
+    # Notices of web conversations say what happened: a team reply, an AI answer or a handoff to the team.
+    from backend.modules.customers import migrate as customer_migrate
+    customer_migrate.tenant_columns(db)
     # Read receipts in web chat: when staff last read a conversation after the customer's message.
     db.execute(conversations.READS_TABLE)

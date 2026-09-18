@@ -443,19 +443,21 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   lock={lock}
                   help={
                     // One page for both kinds of account, and the answer must not tell which one this email is.
-                    // Staff have no password reset: they wait, or ask the platform admin.
-                    <>
-                      {verifyEmail && (
-                        <>
-                          ลูกค้า:{' '}
-                          <Link className="btn subtle" href={withOrg('/customer/forgot', org)}>
-                            ลืมรหัสผ่าน
-                          </Link>
-                          <span aria-hidden="true">·</span>
-                        </>
-                      )}
-                      <span>{verifyEmail ? 'เจ้าหน้าที่: ' : ''}รอให้ครบเวลา หรือติดต่อผู้ดูแลแพลตฟอร์ม</span>
-                    </>
+                    // Setting a new password from the email lifts the lock at once, for either kind of account.
+                    verifyEmail ? (
+                      <>
+                        ตั้งรหัสผ่านใหม่เพื่อปลดล็อกทันที · ลูกค้า:{' '}
+                        <Link className="btn subtle" href={withOrg('/customer/forgot', org)}>
+                          ลืมรหัสผ่าน
+                        </Link>
+                        <span aria-hidden="true">·</span> ทีมงาน:{' '}
+                        <Link className="btn subtle" href="/forgot-password">
+                          ลืมรหัสผ่าน
+                        </Link>
+                      </>
+                    ) : (
+                      <span>รอให้ครบเวลา หรือติดต่อผู้ดูแลองค์กร</span>
+                    )
                   }
                 />
               )}

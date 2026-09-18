@@ -11,6 +11,7 @@ from backend.database import audit, db as D
 from backend.exceptions.errors import APIError, ChannelError
 from backend.extensions import channel_transport as T
 from backend.modules.auth import repository, schema
+from backend.modules.auth.model import RESET_RESEND_SECONDS, RESET_SECONDS
 from backend.modules.organization import repository as memberships
 from backend.modules.platform import repository as tenants, service as platform
 from backend.modules.staff_security import service as staff_security
@@ -269,6 +270,83 @@ def _replace_session(db, cookie_header, user_id):
     audit.record(db,user_id,'auth.login',user_id)
     db.commit()
     return token
+
+
+# Forgotten passwords
+def forgot_password(body, client=None):
+    """Email a staff member a link to choose a new password. The answer is the same whether or not the address has an
+    account, so nobody can use this to find out who works where; one link at a time, and the newest one wins."""
+    from backend.modules.security import events, traps
+    email = schema.registration_email(body)
+    if traps.form_trapped(body):
+        # The hidden field of the form was filled: a bot. Nothing is recorded or sent; the answer is the usual one.
+        traps.record_form(client,'staff_forgot',email)
+        return
+    client = client or {}
+    task = None
+    with D.control() as db:
+        require(platform.registration_ready(db),
+                'ยังส่งอีเมลไม่ได้ กรุณาติดต่อผู้ดูแลองค์กรหรือผู้ดูแลแพลตฟอร์มเพื่อขอตั้งรหัสผ่านใหม่',503)
+        D.begin(db)
+        repository.purge_resets(db,after(seconds=-RESET_SECONDS))
+        user = repository.find_user_by_email(db,email)
+        if user:
+            latest = repository.latest_reset(db,user['id'])
+            if not latest or latest['created_at']<=after(seconds=-RESET_RESEND_SECONDS):
+                token = secrets.token_urlsafe(32)
+                repository.insert_reset(db,token_hash(token),user['id'],after(seconds=RESET_SECONDS))
+                task = {'email':email,'name':user['name'],'token':token,
+                        'config':platform.registration_config(db),'secret':platform.registration_secret()}
+        db.commit()
+    events.record('password_reset_requested',actor='staff',subject=email,ip=client.get('ip',''),
+                  user_agent=client.get('user_agent',''))
+    # SMTP may take seconds; the write transaction is already over.
+    _send_reset(task)
+
+
+def _send_reset(task):
+    if task is None:
+        return
+    cfg = task['config']
+    link = cfg['public_base_url'].rstrip('/')+'/reset-password?token='+task['token']
+    mail = EmailMessage()
+    mail['Subject'] = 'ตั้งรหัสผ่านใหม่ บัญชีทีมงาน Bookdose'
+    mail['From'],mail['To'] = cfg['address'],task['email']
+    mail['Date'],mail['Message-ID'],mail['Auto-Submitted'] = formatdate(localtime=False,usegmt=True),make_msgid(),'auto-generated'
+    mail.set_content(f"สวัสดีคุณ{task['name']}\n\nมีการขอตั้งรหัสผ่านใหม่สำหรับบัญชีทีมงานที่ใช้อีเมลนี้\n\n"
+                     f"เปิดลิงก์นี้เพื่อตั้งรหัสผ่านใหม่:\n{link}\n\n"
+                     'ลิงก์มีอายุ 1 ชั่วโมงและใช้ได้ครั้งเดียว การตั้งรหัสผ่านใหม่จะปลดล็อกบัญชีที่ถูกล็อกจากการกรอกรหัสผิดด้วย\n'
+                     'ลิงก์นี้ไม่ได้พาเข้าสู่ระบบเอง คุณจะต้องเข้าสู่ระบบด้วยรหัสผ่านใหม่อีกครั้ง\n'
+                     'หากคุณไม่ได้ขอ ไม่ต้องทำอะไร รหัสผ่านเดิมยังใช้ได้ตามปกติ\n')
+    try:
+        T.send_email(cfg,task['secret'],task['email'],mail)
+    except ChannelError:
+        raise APIError(503,'ยังยืนยันผลการส่งอีเมลไม่ได้ กรุณาตรวจกล่องจดหมายและสแปม หากไม่พบให้รอ 1 นาทีแล้วขอลิงก์ใหม่') from None
+
+
+def reset_password(body, client=None):
+    """Choose a new password from the emailed link. Every session of the account ends and every passkey is forgotten,
+    so a device left behind cannot outlive the reset, and the lock from wrong passwords is lifted - the owner proved
+    the mailbox, so they no longer have to wait for the lock or ask an admin. The link itself signs nobody in: the
+    new password (and the second step, when the account has one) is still asked for on the sign-in page."""
+    from backend.modules.security import events, lockout
+    token,password = schema.reset_form(body)
+    with D.control() as db:
+        D.begin(db)
+        reset = repository.find_reset(db,token_hash(token))
+        require(reset,'ลิงก์ตั้งรหัสผ่านใหม่ไม่ถูกต้อง หมดอายุ หรือใช้ไปแล้ว กรุณาขอลิงก์ใหม่')
+        email = reset['email']
+        repository.set_password(db,reset['user_id'],password)
+        repository.delete_user_sessions(db,reset['user_id'])
+        repository.delete_resets(db,reset['user_id'])
+        staff_security.forget_passkeys(db,reset['user_id'])
+        audit.record(db,reset['user_id'],'account.password_reset',reset['user_id'])
+        db.commit()
+    client = client or {}
+    unlocked = lockout.clear(lockout.key_for('staff',email),related=True)
+    events.record('password_reset_completed',actor='staff',subject=email,ip=client.get('ip',''),
+                  user_agent=client.get('user_agent',''),detail={'unlocked':unlocked})
+    return {'email':email,'unlocked':unlocked}
 
 
 # Self-registration

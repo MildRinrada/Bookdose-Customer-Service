@@ -245,12 +245,24 @@ def sms_settings(cd):
 
 
 def save_sms_settings(cd, session, body):
-    from backend.modules.guest.schema import sms_form
-    provider = sms_form(body)
-    repository.save_setting(cd,'sms',json.dumps({'provider':provider}))
-    audit.record(cd,session['user_id'],'sms.settings_updated','platform',provider)
+    """Choose the provider; credentials typed now are sealed in their own file, empty ones keep what was saved."""
+    from backend.extensions import sms
+    public,typed = sms.settings_form(body)
+    D.begin(cd)
+    sms.save(cd,public,typed)
+    audit.record(cd,session['user_id'],'sms.settings_updated','platform',public['provider']+(' · credentials' if typed else ''))
     cd.commit()
     return sms_settings(cd)
+
+
+def send_test_sms(cd, body):
+    """A test text to a number the platform admin types, through the provider in use now."""
+    from backend.extensions import sms
+    from backend.modules.guest.schema import phone_e164, mask_phone
+    phone = phone_e164(body.get('to',''))
+    require(sms.ready(cd),'ยังไม่ได้เลือกผู้ให้บริการ SMS หรือยังไม่ได้ใส่ข้อมูลบัญชี',409)
+    sms.send_test(cd,phone)
+    return {'sent':True,'to_masked':mask_phone(phone)}
 
 
 # Registration email

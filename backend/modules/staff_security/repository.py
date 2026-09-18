@@ -86,6 +86,11 @@ def delete_passkey(cd, passkey_id):
     cd.execute('DELETE FROM staff_passkeys WHERE id=?',(passkey_id,))
 
 
+def delete_passkeys(cd, user_id):
+    """Every passkey of the account (a completed password reset); returns how many there were."""
+    return cd.execute('DELETE FROM staff_passkeys WHERE user_id=?',(user_id,)).rowcount
+
+
 def delete_everything(cd, user_id):
     """Every second factor and passkey of the account (the server owner's reset, reset_account())."""
     for table in ('staff_totp','staff_recovery_codes','staff_passkeys','staff_login_challenges'):

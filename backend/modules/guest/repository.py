@@ -246,9 +246,9 @@ def notice_open(db, visitor_id, conversation_id, channel):
              WHERE s.visitor_id=n.visitor_id AND s.conversation_id=n.conversation_id),'')))''',(visitor_id,conversation_id,channel)))
 
 
-def insert_notice(db, notice_id, visitor_id, conversation_id, channel, kind='reply'):
-    db.execute('INSERT INTO guest_notifications(id,visitor_id,conversation_id,channel,kind,created_at) VALUES(?,?,?,?,?,?)',
-               (notice_id,visitor_id,conversation_id,channel,kind,now()))
+def insert_notice(db, notice_id, visitor_id, conversation_id, channel, kind='reply', event='reply'):
+    db.execute('INSERT INTO guest_notifications(id,visitor_id,conversation_id,channel,kind,created_at,event) VALUES(?,?,?,?,?,?,?)',
+               (notice_id,visitor_id,conversation_id,channel,kind,now(),event))
 
 
 def due_notices(db, reply_before, max_attempts):

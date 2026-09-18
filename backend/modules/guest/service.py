@@ -378,28 +378,37 @@ def _proven(db, visitor):
     return found
 
 
-def notify_reply(db, conversation_id):
-    """The team wrote in a web conversation (inside the transaction that stored it): when a guest started it, queue
-    a notice on each channel the guest has proven, unless this unread spell already has one."""
+def notify_reply(db, conversation_id, event='reply'):
+    """Something new in a web conversation (inside the transaction that stored it): the team wrote ('reply'), the
+    chatbot answered ('ai') or passed it to the team ('handoff'). When a guest started it, queue a notice on each
+    channel the guest has proven, unless this unread spell already has one."""
     visitor = repository.visitor_of_conversation(db,conversation_id)
     if not visitor:
         return
     for channel in _proven(db,visitor):
         if not repository.notice_open(db,visitor['id'],conversation_id,channel):
-            repository.insert_notice(db,uid(),visitor['id'],conversation_id,channel)
+            repository.insert_notice(db,uid(),visitor['id'],conversation_id,channel,event=event)
+
+
+# (email subject, sentence, short SMS words) of each thing a guest hears about; never the messages themselves.
+EVENT_WORDS = {'reply':('มีคำตอบใหม่จาก {org}','ทีมงาน {org} ตอบกลับในแชทของคุณแล้ว','ทีมงานตอบกลับในแชทของคุณแล้ว'),
+               'ai':('มีคำตอบใหม่จาก {org}','ผู้ช่วย AI ของ {org} ตอบคำถามในแชทของคุณแล้ว','มีคำตอบใหม่ในแชทของคุณ'),
+               'handoff':('ส่งต่อให้เจ้าหน้าที่ของ {org} แล้ว','แชทของคุณถูกส่งต่อให้เจ้าหน้าที่ของ {org} แล้ว เจ้าหน้าที่จะตอบกลับในแชทนี้',
+                          'ส่งต่อแชทให้เจ้าหน้าที่แล้ว')}
 
 
 def _text(org, job):
     """(subject, text) of a notice: the organization's name and a link, never the messages."""
     if job['kind']=='linked':
         return '',f"เชื่อม LINE กับแชทบนเว็บไซต์ของ {org['name']} เรียบร้อยแล้ว เมื่อทีมงานตอบกลับจะแจ้งที่แชทนี้"
+    what = EVENT_WORDS.get(job.get('event') or 'reply',EVENT_WORDS['reply'])
     if job['channel']=='email':
-        return (f"มีคำตอบใหม่จาก {org['name']}",
-                f"ทีมงาน {org['name']} ตอบกลับในแชทของคุณแล้ว\n\nเปิดแชทต่อได้ที่:\n{job['link']}\n\n"
+        return (what[0].format(org=org['name']),
+                f"{what[1].format(org=org['name'])}\n\nเปิดแชทต่อได้ที่:\n{job['link']}\n\n"
                 'ลิงก์ใช้ได้ 30 วัน อย่าส่งต่อให้ผู้อื่น เพราะผู้ที่มีลิงก์จะอ่านแชทนี้ได้\n')
     if job['channel']=='sms':
-        return '',f"{org['name']}: ทีมงานตอบกลับในแชทของคุณแล้ว {job['link']}"
-    return '',f"{org['name']} ตอบกลับในแชทของคุณแล้ว เปิดแชทต่อได้ที่\n{job['link']}"
+        return '',f"{org['name']}: {what[2]} {job['link']}"
+    return '',f"{what[1].format(org=org['name'])} เปิดแชทต่อได้ที่\n{job['link']}"
 
 
 def send_notices(tenant_id):

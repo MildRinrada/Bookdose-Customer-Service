@@ -297,6 +297,13 @@ def passkey_sign_in(req):
     return 'staff',token
 
 
+def forget_passkeys(cd, user_id):
+    """A password reset is a clean slate: the passkeys go with the old password, because a key added from a borrowed
+    screen would otherwise outlive every remedy the owner has. The caller commits."""
+    if repository.delete_passkeys(cd,user_id):
+        _record(cd,user_id,'passkeys_cleared')
+
+
 # The server owner's way back in
 def reset_account(email):
     """Remove every second factor and passkey of a staff account (someone lost their phone and their recovery codes).

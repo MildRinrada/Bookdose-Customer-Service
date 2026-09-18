@@ -1,5 +1,5 @@
 import { api, download } from '@/lib/api/client';
-import type { CustomerCategory, MemberBody, SettingsBody } from './types';
+import type { CustomerCategory, InviteBody, MemberBody, SettingsBody } from './types';
 
 /* Endpoints of backend/modules/organization/routes.py used by the settings screen. Everything saved here lives in
    the workspace (GET /api/workspace), so callers refresh WORKSPACE_PATH afterwards. */
@@ -23,3 +23,9 @@ export const SUPPORT_PATH = '/api/support-access';
 export const approveSupport = (id: string, body: { hours: number; note: string }) => api(`${SUPPORT_PATH}/${id}/approve`, body);
 export const denySupport = (id: string) => api(`${SUPPORT_PATH}/${id}/deny`, {});
 export const endSupport = (id: string) => api(`${SUPPORT_PATH}/${id}/end`, {});
+
+/** Staff invitations (backend invitations): the admin names an address, the colleague chooses their own password. */
+export const INVITATIONS_PATH = '/api/invitations';
+export const inviteMember = (body: InviteBody) => api(INVITATIONS_PATH, body);
+export const resendInvitation = (id: string) => api(`${INVITATIONS_PATH}/${id}/resend`, {});
+export const cancelInvitation = (id: string) => api(`${INVITATIONS_PATH}/${id}`, undefined, 'DELETE');

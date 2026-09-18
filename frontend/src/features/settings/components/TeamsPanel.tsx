@@ -12,6 +12,7 @@ import type { Member } from '@/lib/types';
 import { useUiState } from '@/lib/ui-state';
 import { memberStatusLabels } from '../labels';
 import type { MemberFilters } from '../types';
+import { InvitationsPanel } from './InvitationsPanel';
 import { MemberForm } from './MemberForm';
 import { SupportRequestsPanel } from './SupportRequestsPanel';
 import { TeamForm } from './TeamForm';
@@ -24,11 +25,15 @@ export function TeamsPanel() {
   const work = useWork();
   const { openModal } = useDialogs();
   const openMember = (member?: Member) =>
-    openModal(member ? 'จัดการสมาชิก' : 'เพิ่มสมาชิกใหม่', <MemberForm key={member?.id ?? 'new'} member={member} />);
+    openModal(
+      member ? 'จัดการสมาชิก' : work.customer_email ? 'เชิญเพื่อนร่วมงาน' : 'เพิ่มสมาชิกใหม่',
+      <MemberForm key={member?.id ?? 'new'} member={member} />,
+    );
 
   return (
     <>
       <SupportRequestsPanel />
+      <InvitationsPanel />
       <section className="card">
         <div className="card-header">
           <div>
@@ -36,8 +41,8 @@ export function TeamsPanel() {
             <p>ผู้ดูแลองค์กรและหัวหน้าทีมเห็นงานทุกทีม เจ้าหน้าที่เห็นเฉพาะทีมของตน</p>
           </div>
           <button type="button" className="btn" onClick={() => openMember()}>
-            <Icon name="plus" />
-            เพิ่มสมาชิก
+            <Icon name={work.customer_email ? 'mail' : 'plus'} />
+            {work.customer_email ? 'เชิญสมาชิก' : 'เพิ่มสมาชิก'}
           </button>
         </div>
         <div id="members-panel">

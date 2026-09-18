@@ -3,7 +3,7 @@ customer accounts. An email already moved from another organization keeps that a
 organization's records point at it. Old sign-up links, reset links and sessions are dropped, so customers sign in
 again once."""
 from backend.database.db import rows
-from backend.modules.customers.model import ADDED_CONTROL_COLUMNS
+from backend.modules.customers.model import ADDED_CONTROL_COLUMNS, ADDED_TENANT_COLUMNS
 
 LEGACY_TABLES = ('customer_accounts','customer_signups','customer_resets','customer_sessions')
 
@@ -19,6 +19,11 @@ def _add_columns(db, added):
 def control_columns(cd):
     """Columns added to the control tables after the first release (safe to repeat; existing rows get the default)."""
     _add_columns(cd,ADDED_CONTROL_COLUMNS)
+
+
+def tenant_columns(db):
+    """Columns added to an organization's tables after the first release (safe to repeat)."""
+    _add_columns(db,ADDED_TENANT_COLUMNS)
 
 
 def legacy_accounts(cd, db, tenant_id):

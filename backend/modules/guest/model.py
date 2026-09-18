@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS guest_notifications (
     id TEXT PRIMARY KEY, visitor_id TEXT NOT NULL, conversation_id TEXT NOT NULL DEFAULT '',
     channel TEXT NOT NULL CHECK(channel IN ('email','sms','line')),
     kind TEXT NOT NULL DEFAULT 'reply' CHECK(kind IN ('reply','linked')),
-    created_at TEXT NOT NULL, sent_at TEXT, attempts INTEGER NOT NULL DEFAULT 0, error TEXT NOT NULL DEFAULT ''
+    created_at TEXT NOT NULL, sent_at TEXT, attempts INTEGER NOT NULL DEFAULT 0, error TEXT NOT NULL DEFAULT '',
+    event TEXT NOT NULL DEFAULT 'reply'
 );
 CREATE INDEX IF NOT EXISTS guest_visitors_contact ON guest_visitors(contact_id);
 CREATE INDEX IF NOT EXISTS guest_visitors_email ON guest_visitors(email);

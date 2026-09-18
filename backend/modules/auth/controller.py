@@ -36,6 +36,19 @@ def verify_registration(req):
     return req.send(201,{'ok':True},headers=session_cookie(req,service.verify_registration(cookie(req),req.body)))
 
 
+def forgot_password(req):
+    """POST /api/forgot-password {email}: 202 whether or not the address has a staff account."""
+    limited(('forgot',req.ip),5,900)
+    service.forgot_password(req.body,client(req))
+    return req.send(202,{'ok':True})
+
+
+def reset_password(req):
+    """POST /api/reset-password {token, password}: the new password is set; the page then signs in with it."""
+    limited(('reset',req.ip),10,900)
+    return req.send(200,{'ok':True,**service.reset_password(req.body,client(req))})
+
+
 def set_up(req):
     limited(('login',req.ip),15,900)
     return req.send(200,{'ok':True},headers=session_cookie(req,service.set_up_platform(cookie(req),req.body)))

@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, SmsSettings } from './types';
+import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, SmsSettings, SmsSettingsBody } from './types';
 
 /* Endpoints of the guest web chat (docs/GUEST-CHAT-DESIGN.md §3). The visitor's routes live under
    /api/public/<org>/guest; the chat named by X-Conversation-ID (the `conversation` option of api()) is the one /session, /messages,
@@ -62,4 +62,7 @@ export const claimGuestChats = (org: string) => api<{ moved: number }>(GUEST_CLA
 
 /* Platform console */
 export const SMS_PATH = '/api/platform/sms';
-export const saveSmsSettings = (provider: string) => api<SmsSettings>(SMS_PATH, { provider });
+/** Choose the provider; credentials left empty keep the saved ones (they never come back from the server). */
+export const saveSmsSettings = (body: SmsSettingsBody) => api<SmsSettings>(SMS_PATH, body);
+/** A test text through the provider in use now. */
+export const sendTestSms = (to: string) => api<{ sent: true; to_masked: string }>(`${SMS_PATH}/test`, { to });

@@ -683,13 +683,26 @@ body:has(.guest-embed) {
   }
 }
 
-/* Platform console → ภาพรวมระบบ: the SMS sender */
+/* Platform console → ภาพรวมระบบ: the SMS sender, its credentials and a test message */
 .sms-settings {
-  align-items: flex-end;
+  gap: 12px;
 }
-.sms-settings .field {
+.sms-settings > .field {
+  max-width: 28rem;
+  margin-bottom: 0;
+}
+.sms-settings .form-grid .field {
+  margin-bottom: 0;
+}
+.sms-test {
+  align-items: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.sms-test .field {
   flex: 1;
-  min-width: min(16rem, 100%);
+  min-width: min(14rem, 100%);
+  max-width: 20rem;
   margin-bottom: 0;
 }
 .guest-reach-text {

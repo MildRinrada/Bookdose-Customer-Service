@@ -41,3 +41,23 @@ export type SupportRequest = {
   ended_at: string | null;
   ended_by: string | null;
 };
+
+/** POST /api/invitations: an address invited into this organization. */
+export type InviteBody = { email: string; role: string; team_id: string };
+
+export type InviteState = 'pending' | 'accepted' | 'cancelled' | 'expired';
+
+/** A row of GET /api/invitations. */
+export type Invitation = {
+  id: string;
+  email: string;
+  role: string;
+  team_id: string;
+  invited_by: string;
+  created_at: string;
+  last_sent_at: string;
+  expires_at: string;
+  state: InviteState;
+};
+
+export type InvitationsPage = { invitations: Invitation[]; can_invite: boolean; sent?: boolean };

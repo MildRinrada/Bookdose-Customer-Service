@@ -651,17 +651,32 @@ def case_detail(db, session, case_id):
                             repository.case_followups(db,ticket['id']),repository.case_rating(db,ticket['id']))
 
 
-# Notices of new replies (email, and LINE when linked)
-def notify_reply(db, conversation_id):
-    """A team (or the survey) wrote in a web conversation of an account holder who wants reply emails and whose
-    email is proven, or who wants replies on this organization's LINE and is linked with it: queue one notice.
-    Called inside the transaction that stored the message. A guest's chat is told on the guest's proven channels
-    (guest.service.notify_reply)."""
+# Notices of what happened in a web conversation (email, and LINE when linked)
+def notice_words(event, org_name, subject):
+    """(email subject, email sentence, short LINE sentence) of a notice: what happened and in which conversation,
+    never the messages themselves. event: 'reply' (the team wrote), 'ai' (the chatbot answered) or 'handoff' (the
+    chatbot passed the conversation to the team)."""
+    if event=='ai':
+        return (f'มีคำตอบใหม่: {subject}',f'ผู้ช่วย AI ของ {org_name} ตอบคำถามเรื่อง “{subject}” แล้ว',
+                f'ผู้ช่วย AI ของ {org_name} ตอบเรื่อง “{subject}” แล้ว')
+    if event=='handoff':
+        return (f'ส่งต่อให้เจ้าหน้าที่แล้ว: {subject}',
+                f'เรื่อง “{subject}” ถูกส่งต่อให้เจ้าหน้าที่ของ {org_name} แล้ว เจ้าหน้าที่จะตอบกลับในแชทนี้',
+                f'{org_name} ส่งเรื่อง “{subject}” ให้เจ้าหน้าที่ดูแลแล้ว')
+    return (f'มีคำตอบใหม่: {subject}',f'ทีมงาน {org_name} ตอบกลับเรื่อง “{subject}” แล้ว',f'{org_name} ตอบกลับเรื่อง “{subject}” แล้ว')
+
+
+def notify_reply(db, conversation_id, event='reply'):
+    """Something new for the customer in a web conversation: the team (or the survey) wrote ('reply'), the chatbot
+    answered ('ai') or the chatbot passed it to the team ('handoff'). An account holder who wants that event by email
+    (and whose email is proven), or on this organization's LINE and is linked with it, gets one notice - unless one is
+    still waiting for this conversation. Called inside the transaction that stored the message. A guest's chat is told
+    on the guest's proven channels (guest.service.notify_reply)."""
     from backend.modules.customers import notify
     from backend.modules.guest import service as guest
     conv = conversations.find(db,conversation_id)
     if conv and conv['channel']=='web':
-        guest.notify_reply(db,conversation_id)
+        guest.notify_reply(db,conversation_id,event)
     if not conv or conv['channel']!='web' or repository.pending_notification(db,conversation_id):
         return
     owners = repository.owners_of_contact(db,conv['contact_id'])
@@ -671,14 +686,14 @@ def notify_reply(db, conversation_id):
     with D.control() as cd:
         for account_id in owners:
             account = repository.find(cd,account_id)
-            if account and account['email_verified'] and account['notify_email']:
-                repository.insert_notification(db,uid(),account_id,conversation_id)
+            if account and account['email_verified'] and notify.wants(account,event,'email'):
+                repository.insert_notification(db,uid(),account_id,conversation_id,event)
                 return
             if account and repository.line_link(db,account_id):
                 from backend.modules.channels import repository as channel_repository
                 tenant_id = tenant_id or channel_repository.tenant_id_of(db)
-                if notify.line_wanted(db,tenant_id,account,'reply'):
-                    repository.insert_notification(db,uid(),account_id,conversation_id)
+                if notify.line_wanted(db,tenant_id,account,event):
+                    repository.insert_notification(db,uid(),account_id,conversation_id,event)
                     return
 
 
@@ -699,21 +714,23 @@ def send_notices(tenant_id):
                 if notice['seen_at'] and notice['seen_at']>=notice['created_at']:
                     repository.finish_notification(db,notice['id'],'seen')
                     continue
-                by_line = notify.line_wanted(db,tenant_id,account,'reply')
-                if by_line and notify.queue_line(cd,db,tenant_id,account['id'],f"{org['name']} ตอบกลับเรื่อง “{notice['subject']}” แล้ว",
+                event = notice.get('event') or 'reply'
+                by_line = notify.line_wanted(db,tenant_id,account,event)
+                if by_line and notify.queue_line(cd,db,tenant_id,account['id'],notice_words(event,org['name'],notice['subject'])[2],
                                                  f"/customer/chats/{org['slug']}/{notice['conversation_id']}",f"reply:{notice['id']}"):
                     lines += 1
                 # Email only to an address the customer proved: a notice queued for LINE must not reach an unproven one.
-                if not account or not mail or not account['notify_email'] or not account['email_verified']:
+                if not account or not mail or not notify.wants(account,event,'email') or not account['email_verified']:
                     repository.finish_notification(db,notice['id'],'line' if by_line else 'off')
                 else:
                     repository.claim_notification(db,notice['id'])
-                    due.append({**notice,'email':account['email'],'name':account['name']})
+                    due.append({**notice,'event':event,'email':account['email'],'name':account['name']})
     for notice in due:
         error = ''
+        subject,sentence,_ = notice_words(notice['event'],org['name'],notice['subject'])
         try:
-            _send(cfg,secret,notice['email'],f"มีคำตอบใหม่: {notice['subject']}",
-                  f"สวัสดีคุณ{notice['name']}\n\nทีมงาน {org['name']} ตอบกลับเรื่อง “{notice['subject']}” แล้ว\n"
+            _send(cfg,secret,notice['email'],subject,
+                  f"สวัสดีคุณ{notice['name']}\n\n{sentence}\n"
                   f"เข้าสู่ระบบเพื่ออ่านและตอบกลับ:\n{_page(cfg,'chats/'+org['slug']+'/'+notice['conversation_id'])}\n")
         except ChannelError as failure:
             error = failure.code if not failure.uncertain else 'unknown'

@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS customer_seen (
 );
 CREATE TABLE IF NOT EXISTS customer_notifications (
     id TEXT PRIMARY KEY, account_id TEXT NOT NULL, conversation_id TEXT NOT NULL, created_at TEXT NOT NULL,
-    sent_at TEXT, attempts INTEGER NOT NULL DEFAULT 0, error TEXT NOT NULL DEFAULT ''
+    sent_at TEXT, attempts INTEGER NOT NULL DEFAULT 0, error TEXT NOT NULL DEFAULT '', event TEXT NOT NULL DEFAULT 'reply'
 );
 CREATE TABLE IF NOT EXISTS conversation_categories (
     conversation_id TEXT PRIMARY KEY, category TEXT NOT NULL
@@ -99,4 +99,12 @@ ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFA
 
 # What a customer can be told about, in the order the settings table lists them: (key, label, emailed by default).
 # LINE is on once the account is linked with the organization's LINE. 'reply' by email is the notify_email switch.
-NOTIFY_EVENTS = (('reply','ทีมงานตอบกลับในแชท',True),)
+NOTIFY_EVENTS = (('reply','ทีมงานตอบกลับในแชท',True),
+                 ('ai','ผู้ช่วย AI ตอบคำถามในแชท',True),
+                 ('handoff','ส่งต่อเรื่องให้เจ้าหน้าที่ดูแล',True))
+
+# Columns added to the organization's tables after the first release (customers.migrate.tenant_columns adds them). A
+# notice of a web conversation says what happened there: 'reply' (the team wrote), 'ai' (the chatbot answered) or
+# 'handoff' (the chatbot passed the conversation to the team) - a customer who closed the page hears about each.
+ADDED_TENANT_COLUMNS = {'customer_notifications':{'event':"TEXT NOT NULL DEFAULT 'reply'"},
+                        'guest_notifications':{'event':"TEXT NOT NULL DEFAULT 'reply'"}}

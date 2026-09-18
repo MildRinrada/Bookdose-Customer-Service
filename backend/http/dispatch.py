@@ -44,6 +44,7 @@ from backend.modules.contacts import routes as contact_routes
 from backend.modules.customer_security import routes as customer_security_routes
 from backend.modules.customers import routes as customer_routes
 from backend.modules.guest import routes as guest_routes, service as guest_service
+from backend.modules.invitations import routes as invitation_routes
 from backend.modules.conversations import routes as conversation_routes
 from backend.modules.knowledge import routes as knowledge_routes
 from backend.modules.org_links import routes as org_link_routes
@@ -64,7 +65,7 @@ ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
-          *support_access_routes.ROUTES, *staff_security_routes.ROUTES]
+          *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')

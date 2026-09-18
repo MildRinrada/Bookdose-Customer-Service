@@ -18,6 +18,12 @@ def save_sms_settings(req):
     return req.send(200,service.save_sms_settings(req.cd,req.session,req.body))
 
 
+def test_sms(req):
+    from backend.middleware.rate_limit import limited
+    limited(('sms-test',req.session['user_id']),5,3600)
+    return req.send(200,service.send_test_sms(req.cd,req.body))
+
+
 def list_tenants(req):
     """The organizations, the platform's history, and where each of this admin's support requests stands."""
     from backend.modules.support_access import service as support

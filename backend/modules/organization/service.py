@@ -72,6 +72,9 @@ def save_member(cd, db, ctx, member_id, body, creating):
         name,password = schema.new_member_account(body)
         users.insert_user(cd,user_id,name,email,password)
         repository.insert_membership(cd,ctx['tenant_id'],user_id,role,team_id)
+        # The address is a member now: an invitation still waiting for it has nothing left to do.
+        from backend.modules.invitations import service as invitations
+        invitations.member_added(cd,ctx['tenant_id'],email)
     elif not creating and member_id:
         user_id = member_id
         require(repository.find_membership(cd,ctx['tenant_id'],user_id),'ไม่พบสมาชิก',404)

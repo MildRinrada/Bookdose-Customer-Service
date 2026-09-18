@@ -1,7 +1,16 @@
 import { api } from '@/lib/api/client';
 import type { Boot } from '@/lib/types';
 import type { PasskeyAnswer, PasskeyRequestOptions } from './passkeys';
-import type { CustomerLoginResult, CustomerSignupResult, PasskeySignInResult, RegistrationConfig, RegistrationSettingsInput, SignInResult } from './types';
+import type {
+  CustomerLoginResult,
+  CustomerSignupResult,
+  InvitationAccepted,
+  InvitationView,
+  PasskeySignInResult,
+  RegistrationConfig,
+  RegistrationSettingsInput,
+  SignInResult,
+} from './types';
 
 /* Endpoints of backend/modules/auth (the shared sign-in, setup, organization sign-up), backend/modules/customers (the
    customer account's public actions) and the platform's registration email settings. */
@@ -66,6 +75,18 @@ export const customerVerify = (token: string, password: string) => api('/api/cus
 export const customerForgot = (email: string, extra: Honeypot = {}) => api('/api/customer/forgot', { email, ...extra });
 
 export const customerReset = (token: string, password: string) => api<CustomerLoginResult>('/api/customer/reset', { token, password });
+
+/** A staff member who forgot their password: a link by email, then a new password (backend auth). The answer is the
+    same whether or not the address has an account. */
+export const staffForgotPassword = (email: string, extra: Honeypot = {}) => api('/api/forgot-password', { email, ...extra });
+
+export const staffResetPassword = (token: string, password: string) => api<{ ok: true; email: string }>('/api/reset-password', { token, password });
+
+/** The invitation an organization's admin sent by email (backend invitations). */
+export const INVITATION_PATH = (token: string) => `/api/invitation?token=${encodeURIComponent(token)}`;
+export const acceptInvitation = (body: { token: string; name?: string; password?: string }) =>
+  api<InvitationAccepted>('/api/invitation/accept', body);
+export type { InvitationView };
 
 export const saveRegistrationSettings = (body: RegistrationSettingsInput) =>
   api<RegistrationConfig>('/api/platform/registration', body);

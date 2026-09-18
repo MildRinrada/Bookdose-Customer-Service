@@ -87,5 +87,15 @@ export type GuestClaim = { org_slug: string; org_name: string; conversations: nu
 /** How a guest can be reached, on the staff side (conversation rows, the open conversation, contacts). */
 export type GuestReach = { follow: Array<'browser' | 'email' | 'sms' | 'line' | string> };
 
-/** GET/POST /api/platform/sms */
-export type SmsSettings = { provider: 'off' | 'log' | string };
+export type SmsProvider = 'off' | 'log' | 'thaibulksms' | 'twilio';
+
+/** GET/POST /api/platform/sms: the provider in use and, per real provider, whether its credentials are saved. */
+export type SmsSettings = {
+  provider: SmsProvider;
+  sender: string;
+  account: string;
+  configured: { thaibulksms: boolean; twilio: boolean };
+};
+
+/** POST /api/platform/sms. key / secret: '' keeps the saved credentials. */
+export type SmsSettingsBody = { provider: string; sender?: string; account?: string; key?: string; secret?: string };

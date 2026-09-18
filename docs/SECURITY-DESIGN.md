@@ -137,6 +137,31 @@ WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admi
 - Reply notices: re-checked at send time (`customer_accounts.email_verified`), not only when queued.
 - Lock notices: skipped for a customer account whose email was never proven. Guest emails already required proof.
 
+## 3c. Round 3: organizations look after their own people
+
+- **Staff invitations** (`backend/modules/invitations`). An organization's admin names an email, a role and a team;
+  the colleague opens the emailed link (`/invite?token=`, 7 days, one use, stored hashed; a newer invitation for the
+  same address replaces the link) and chooses their own name and password - no admin ever knows it. An address that
+  already has an account joins without any password change and gets **no session** from the link: it signs in as
+  always, second step included. Invitations can be sent again (60 s apart) or taken back; accepted and cancelled ones
+  stay 90 days as the organization's record. Only the organization's admins (`require_role('admin')`), 30 an hour.
+  Without the platform mailbox the members page falls back to the admin setting a first password.
+- **Staff password reset** (`POST /api/forgot-password`, `POST /api/reset-password`). The same answer (202) whether
+  or not the address has an account; one link an hour-long at a time (60 s between requests); the hidden form field
+  refuses bots silently. Completing it ends every session and removes every passkey of the account, and clears the
+  password locks of that email (`lockout.clear(..., related=True)`), so a locked staff member no longer waits or asks
+  an admin. The link signs nobody in: the new password and the second step still come from the sign-in page.
+- **Notices of what the chatbot did** (`ai.system_message(notice=...)`). The chatbot's answer ('ai') and a handoff the
+  customer did not ask for ('handoff'; not for the customer's own "talk to a person" nor a member of staff taking over)
+  queue the same notice a team reply does: customer_notifications / guest_notifications gained `event`. Account holders
+  choose email / LINE per event; guests are told on proven channels only. The same delay and "read on the page"
+  check apply; the notice names the conversation, never its messages.
+- **SMS providers** (`backend/extensions/sms.py`). ThaiBulkSMS or Twilio over HTTPS with HTTP Basic, redirects refused so
+  a credential only reaches the provider's own URL. The API key/secret and auth token are sealed (utils/secret_box) in
+  `data/secrets/sms.json`, never in the database, answers, logs or backups; empty boxes keep them. A timeout is treated
+  as possibly sent and never retried; credit / credential / number refusals are final. A test message (5 an hour)
+  checks the setup from the platform console.
+
 ## 4. Frontend
 - **Sign-in screens** (staff login, customer login, customer 2FA step): show the 429 lock message with a live countdown
   from `retry_after`, disable the submit button meanwhile, link to "ลืมรหัสผ่าน".

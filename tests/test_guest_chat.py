@@ -350,9 +350,9 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(self.status(page,GUEST+'/link',{'via':'sms','to':'081-234-5678'}),409)
         agent,_ = self.create_member()
         self.assertEqual(self.status(agent,'/api/platform/sms'),403)
-        self.assertEqual(self.ok(self.admin,'/api/platform/sms'),{'provider':'off'})
+        self.assertEqual(self.ok(self.admin,'/api/platform/sms')['provider'],'off')
         self.assertEqual(self.status(self.admin,'/api/platform/sms',{'provider':'twilio'}),400)
-        self.assertEqual(self.ok(self.admin,'/api/platform/sms',{'provider':'log'}),{'provider':'log'})
+        self.assertEqual(self.ok(self.admin,'/api/platform/sms',{'provider':'log'})['provider'],'log')
         self.assertTrue(self.overview(page)['follow']['sms_ready'])
         for bad in ('call me','12345','+660812345678','02-12'):
             self.assertEqual(self.status(page,GUEST+'/link',{'via':'sms','to':bad}),400,bad)

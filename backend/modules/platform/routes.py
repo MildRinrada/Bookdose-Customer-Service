@@ -6,6 +6,7 @@ ROUTES = [
     ('POST',  '/api/platform/registration',   controller.save_registration_settings, 'platform'),
     ('GET',   '/api/platform/sms',            controller.sms_settings,               'platform'),
     ('POST',  '/api/platform/sms',            controller.save_sms_settings,          'platform'),
+    ('POST',  '/api/platform/sms/test',       controller.test_sms,                   'platform'),
     ('GET',   '/api/platform/tenants',        controller.list_tenants,               'platform'),
     ('POST',  '/api/platform/tenants',        controller.create_tenant,              'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}',  controller.set_tenant_status,          'platform'),

@@ -71,13 +71,19 @@ def resume_bot(db, conversation_id):
     repository.set_bot(db,conversation_id)
 
 
-def system_message(db, conversation_id, body, source='system', citations=None, job=None, signature=None):
+def system_message(db, conversation_id, body, source='system', citations=None, job=None, signature=None, notice=None):
+    """Post the chatbot's answer or a system notice. On the web, `notice` ('ai' / 'handoff') also tells a customer who
+    has closed the page (customers.notify_reply: email / LINE / SMS, after a couple of minutes unless they read it)."""
     mid = uid()
     conversations.insert_message(db,mid,conversation_id,None,'Bookdose AI' if source=='ai' else 'ระบบ','reply',body)
     repository.insert_message_meta(db,mid,source,json.dumps(citations or [],ensure_ascii=False))
     conversations.touch(db,conversation_id)
-    if conversations.find(db,conversation_id)['channel'] in ('line','email'):
+    channel = conversations.find(db,conversation_id)['channel']
+    if channel in ('line','email'):
         channels.queue_ai(db,mid,job,signature,notice=source!='ai')
+    elif channel=='web' and notice:
+        from backend.modules.customers import service as customers
+        customers.notify_reply(db,conversation_id,notice)
     realtime.conversation(db,conversation_id)
     # AI and system notices deliberately do not satisfy the human first-response SLA.
     return mid
@@ -93,7 +99,10 @@ def handoff(db, conversation_id, reason='customer'):
     conversations.reopen(db,conversation_id)
     tickets.reopen(db,tid)
     if previous['mode']=='bot' or not previous['reason']:
-        system_message(db,conversation_id,HANDOFF_MESSAGE if conv['channel']=='web' else CHANNEL_HANDOFF_MESSAGE)
+        # The customer who asked for a person is looking at the page, and a member of staff who takes over is about to
+        # write (that reply is the notice); any other handoff may happen after the customer left.
+        system_message(db,conversation_id,HANDOFF_MESSAGE if conv['channel']=='web' else CHANNEL_HANDOFF_MESSAGE,
+                       notice=None if reason in ('customer','staff') else 'handoff')
         audit.record(db,'Bookdose AI','ai.handoff',conversation_id,reason)
     realtime.conversation(db,conversation_id)
     return tid
@@ -308,7 +317,7 @@ def process_one(tenant_id):
             if error or result.get('needs_human'):
                 handoff(db,job['conversation_id'],error or 'insufficient_knowledge')
             else:
-                system_message(db,job['conversation_id'],result['answer'],'ai',result['citations'],job,signature)
+                system_message(db,job['conversation_id'],result['answer'],'ai',result['citations'],job,signature,notice='ai')
         audit.record(db,'Bookdose AI','ai.'+('failed' if error else 'completed'),job['conversation_id'] or job['id'],job['mode']+(':'+error if error else ''))
     return True
 

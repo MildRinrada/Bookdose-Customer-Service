@@ -49,3 +49,10 @@ export type RegistrationSettingsInput = {
   username: string;
   password: string;
 };
+
+/** GET /api/invitation?token=: what the invitation page shows before anything is typed. `needs_account` is false
+    when the address already has an account on the platform - it then only joins the organization. */
+export type InvitationView = { organization: string; email: string; role: string; needs_account: boolean };
+
+/** POST /api/invitation/accept: joined. `signed_in` only for a brand-new account, which chose its password here. */
+export type InvitationAccepted = { ok: true; organization: string; email: string; signed_in: boolean };

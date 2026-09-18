@@ -104,3 +104,26 @@ def save_pending(db, email, applicant, token_hash, expires_at):
 
 def delete_pending(db, email):
     db.execute('DELETE FROM pending_registrations WHERE email=?',(email,))
+
+
+# Password-reset links (the token column stores a hash of the link's token)
+def latest_reset(db, user_id):
+    return one(db,'SELECT * FROM staff_resets WHERE user_id=? ORDER BY created_at DESC LIMIT 1',(user_id,))
+
+
+def insert_reset(db, token_hash, user_id, expires_at):
+    db.execute('INSERT INTO staff_resets VALUES(?,?,?,?)',(token_hash,user_id,expires_at,now()))
+
+
+def find_reset(db, token_hash):
+    """The link's user, while the link has not run out."""
+    return one(db,'''SELECT r.*,u.email,u.name FROM staff_resets r JOIN users u ON u.id=r.user_id
+                     WHERE r.token_hash=? AND r.expires_at>?''',(token_hash,now()))
+
+
+def delete_resets(db, user_id):
+    db.execute('DELETE FROM staff_resets WHERE user_id=?',(user_id,))
+
+
+def purge_resets(db, created_before):
+    db.execute('DELETE FROM staff_resets WHERE created_at<?',(created_before,))

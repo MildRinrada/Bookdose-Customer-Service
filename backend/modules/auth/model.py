@@ -1,4 +1,4 @@
-"""Control database: user accounts, profile pictures, sign-in sessions and self-registration.
+"""Control database: user accounts, profile pictures, sign-in sessions, self-registration and password-reset links.
 A pending registration has no account or organization access until its email is verified."""
 
 CONTROL_TABLES = '''
@@ -21,4 +21,13 @@ CREATE TABLE IF NOT EXISTS email_verifications (
 CREATE TABLE IF NOT EXISTS user_profiles (
     user_id TEXT PRIMARY KEY REFERENCES users(id), avatar TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS staff_resets (
+    token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id),
+    expires_at TEXT NOT NULL, created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS staff_resets_user ON staff_resets(user_id,created_at);
 '''
+
+# A staff member who forgot their password gets one link at a time; it lasts an hour and signs nobody in by itself.
+RESET_SECONDS = 3600
+RESET_RESEND_SECONDS = 60

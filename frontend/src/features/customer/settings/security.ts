@@ -1,8 +1,8 @@
 import { api } from '@/lib/api/client';
 import type { PasskeyAnswer, PasskeyCreateOptions } from '@/features/auth/passkeys';
-import type { Passkey, RecoveryCodes, SecurityApi, TotpSetup } from '@/features/account-security/cards';
+import type { AccountSession, Passkey, RecoveryCodes, SecurityApi, TotpSetup } from '@/features/account-security/cards';
 
-export type { Passkey, RecoveryCodes, SecurityState, TotpSetup } from '@/features/account-security/cards';
+export type { ActivityItem, ActivityPage, Passkey, RecoveryCodes, SecurityState, TotpSetup } from '@/features/account-security/cards';
 
 /* Endpoints and shapes of ตั้งค่าบัญชี → ความปลอดภัย (backend/modules/customer_security). Kept beside its own
    screen rather than in features/customer/api.ts, so each section of the account settings stays self-contained.
@@ -14,29 +14,7 @@ export const SESSIONS_PATH = `${SECURITY_PATH}/sessions`;
 export const activityPath = (page: number) => `${SECURITY_PATH}/activity?page=${page}`;
 
 /** GET .../sessions: one row per browser signed in to this account. */
-export type CustomerSession = {
-  id: string;
-  device: string;
-  user_agent: string;
-  ip: string;
-  created_at: string;
-  last_seen_at: string;
-  expires_at: string;
-  current: boolean;
-};
-
-/** GET .../activity: the account's own history merged with what it signed and approved in each organization. */
-export type ActivityItem = {
-  at: string;
-  action: string;
-  label: string;
-  detail: string;
-  ip: string;
-  device: string;
-  org_name: string;
-};
-
-export type ActivityPage = { items: ActivityItem[]; page: number; has_more: boolean; total: number };
+export type CustomerSession = AccountSession;
 
 /** Turning the second step on, and adding a passkey, cost the account's password: both add a way into the account. */
 export const startTotp = (password: string) => api<TotpSetup>(`${SECURITY_PATH}/totp/setup`, { password });

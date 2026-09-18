@@ -10,11 +10,11 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { createPasskey, usePasskeysAvailable, type PasskeyAnswer, type PasskeyCreateOptions } from '@/features/auth/passkeys';
 import { date } from '@/lib/format';
-import { useInvalidate } from '@/lib/query';
+import { useApi, useInvalidate } from '@/lib/query';
 
-/* The two-factor sign-in and passkey cards of an account's security settings, shared by a customer's account
-   (ตั้งค่าบัญชี → ความปลอดภัย, backend customer_security) and a staff account (ความปลอดภัยของบัญชี, backend
-   staff_security): the same rules, each with its own endpoints (`api`). Markup: pages/security.css. */
+/* The cards of ตั้งค่าบัญชี → ความปลอดภัย, shared by a customer's account (backend customer_security) and a staff
+   account (backend staff_security): the password, two-factor sign-in, passkeys, the devices signed in and the
+   account's history. The same rules, each kind of account with its own endpoints (`api`). Markup: pages/security.css. */
 
 /** GET <path>: whether two-factor sign-in is on, the recovery codes left, and the passkeys. */
 export type SecurityState = {
@@ -42,6 +42,212 @@ export type SecurityApi = {
   renamePasskey: (id: string, name: string) => Promise<unknown>;
   removePasskey: (id: string, password: string) => Promise<unknown>;
 };
+
+/** GET .../sessions: one row per browser signed in to the account. */
+export type AccountSession = {
+  id: string;
+  device: string;
+  user_agent: string;
+  ip: string;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  current: boolean;
+};
+
+/** GET .../activity: what happened to the account (a customer's also lists what it signed in each organization). */
+export type ActivityItem = {
+  at: string;
+  action: string;
+  label: string;
+  detail: string;
+  ip: string;
+  device: string;
+  org_name: string;
+};
+
+export type ActivityPage = { items: ActivityItem[]; page: number; has_more: boolean; total: number };
+
+/** The devices and history endpoints of one kind of account. */
+export type DevicesApi = {
+  sessionsPath: string;
+  activityPath: (page: number) => string;
+  revokeSession: (id: string) => Promise<unknown>;
+  signOutEverywhere: (keepCurrent: boolean) => Promise<unknown>;
+  /** After signing out everywhere: refresh what the page shows, or leave it when this browser went too. */
+  signedOut: (keptCurrent: boolean) => Promise<unknown>;
+};
+
+/* The password: every other signed-in device signs out when it changes. */
+export function PasswordCard({ change, form }: { change: (currentPassword: string, password: string) => Promise<unknown>; form: string }) {
+  const toast = useToast();
+  return (
+    <section className="card">
+      <div className="card-header">
+        <div>
+          <h2>เปลี่ยนรหัสผ่าน</h2>
+          <p>เมื่อเปลี่ยนแล้ว อุปกรณ์อื่นที่เข้าสู่ระบบไว้จะออกจากระบบ</p>
+        </div>
+      </div>
+      <Form
+        className="card-body"
+        data-form={form}
+        onSubmit={async (values, element) => {
+          if (values.password !== values.password_confirm) throw new Error('รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน');
+          await change(values.current_password ?? '', values.password ?? '');
+          element.reset();
+          toast('เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นออกจากระบบแล้ว');
+        }}
+      >
+        <TextField label="รหัสผ่านปัจจุบัน" name="current_password" type="password" max={200} minLength={undefined} autoComplete="current-password" />
+        <TextField label="รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)" name="password" type="password" max={200} />
+        <TextField label="พิมพ์รหัสผ่านใหม่อีกครั้ง" name="password_confirm" type="password" max={200} matches="password" />
+        <button className="btn" type="submit">
+          <Icon name="lock" />
+          เปลี่ยนรหัสผ่าน
+        </button>
+      </Form>
+    </section>
+  );
+}
+
+/* The browsers signed in to the account: sign one out, all the others, or every one. */
+export function SessionsCard({ api }: { api: DevicesApi }) {
+  const sessions = useApi<{ sessions: AccountSession[] }>(api.sessionsPath);
+  const refresh = useInvalidate();
+  const toast = useToast();
+  const { confirm } = useDialogs();
+  const rows = sessions.data?.sessions ?? [];
+
+  const signOutAll = (keepCurrent: boolean) =>
+    confirm({
+      title: keepCurrent ? 'ออกจากระบบอุปกรณ์อื่นทั้งหมด' : 'ออกจากระบบทุกอุปกรณ์',
+      message: keepCurrent
+        ? 'อุปกรณ์อื่นทุกเครื่องจะต้องเข้าสู่ระบบใหม่ เครื่องนี้ยังใช้งานต่อได้'
+        : 'ทุกเครื่องรวมถึงเครื่องนี้จะออกจากระบบ และต้องเข้าสู่ระบบใหม่',
+      confirmLabel: 'ออกจากระบบ',
+      tone: 'danger',
+      run: async () => {
+        await api.signOutEverywhere(keepCurrent);
+        toast(keepCurrent ? 'ออกจากระบบอุปกรณ์อื่นแล้ว' : 'ออกจากระบบทุกอุปกรณ์แล้ว');
+        await api.signedOut(keepCurrent);
+      },
+    });
+
+  return (
+    <section className="card security-card">
+      <div className="card-header">
+        <div>
+          <h2>อุปกรณ์ที่เข้าสู่ระบบ</h2>
+          <p>ถ้าเห็นอุปกรณ์ที่ไม่ใช่ของคุณ ให้กดออกจากระบบแล้วเปลี่ยนรหัสผ่าน</p>
+        </div>
+      </div>
+      <div className="card-body">
+        <ul className="security-list">
+          {rows.map((row) => (
+            <li key={row.id}>
+              <span className="security-list-icon">
+                <Icon name="sidebar" />
+              </span>
+              <span className="grow">
+                <strong>
+                  {row.device}
+                  {row.current && <span className="badge resolved">เครื่องนี้</span>}
+                </strong>
+                <span className="muted">
+                  {row.ip || 'ไม่ทราบ IP'} · เข้าสู่ระบบ {date(row.created_at, true)} · ใช้งานล่าสุด {date(row.last_seen_at, true)}
+                </span>
+              </span>
+              {!row.current && (
+                <button
+                  className="btn sm"
+                  type="button"
+                  onClick={() =>
+                    void api
+                      .revokeSession(row.id)
+                      .then(() => refresh(api.sessionsPath))
+                      .then(() => toast('ออกจากระบบอุปกรณ์นั้นแล้ว'))
+                      .catch((error: Error) => toast(error.message, true))
+                  }
+                >
+                  <Icon name="logout" />
+                  ออกจากระบบ
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="security-actions">
+          <button className="btn" type="button" onClick={() => signOutAll(true)}>
+            ออกจากระบบอุปกรณ์อื่นทั้งหมด
+          </button>
+          <button className="btn danger" type="button" onClick={() => signOutAll(false)}>
+            ออกจากระบบทุกอุปกรณ์
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* Everything that happened to the account, newest first, a page at a time. */
+export function ActivityCard({ api, description }: { api: DevicesApi; description: string }) {
+  const [page, setPage] = useState(0);
+  const history = useApi<ActivityPage>(api.activityPath(page), { keepPrevious: true });
+  const items = history.data?.items ?? [];
+  return (
+    <section className="card security-card">
+      <div className="card-header">
+        <div>
+          <h2>ประวัติการใช้งานบัญชี</h2>
+          <p>{description}</p>
+        </div>
+      </div>
+      <div className="card-body">
+        {items.length === 0 ? (
+          <EmptyState icon="clock" title="ยังไม่มีประวัติ" description="เมื่อมีการเข้าสู่ระบบหรือเปลี่ยนการตั้งค่า รายการจะแสดงที่นี่" />
+        ) : (
+          <div className="table-wrap">
+            <table className="activity-table">
+              <thead>
+                <tr>
+                  <th>เมื่อ</th>
+                  <th>รายการ</th>
+                  <th>รายละเอียด</th>
+                  <th>อุปกรณ์ / IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={`${item.at}-${index}`}>
+                    <td>{date(item.at, true)}</td>
+                    <td>
+                      <strong>{item.label}</strong>
+                      {item.org_name && <span className="muted"> · {item.org_name}</span>}
+                    </td>
+                    <td>{item.detail || '—'}</td>
+                    <td className="muted">
+                      {item.device || '—'}
+                      {item.ip ? ` · ${item.ip}` : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="security-actions">
+          <button className="btn sm" type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            ‹ ก่อนหน้า
+          </button>
+          <button className="btn sm" type="button" disabled={!history.data?.has_more} onClick={() => setPage(page + 1)}>
+            ถัดไป ›
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /* Two-factor sign-in: set up, confirm, the ten recovery codes, and turning it off again. */
 export function TwoFactorCard({ state, api }: { state: SecurityState | undefined; api: SecurityApi }) {

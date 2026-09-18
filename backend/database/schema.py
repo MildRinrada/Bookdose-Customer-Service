@@ -48,6 +48,9 @@ def create_control_tables(db):
     # Session limits (security round): when each staff / customer session was made and last really used.
     from backend.modules.security import sessions
     sessions.add_session_columns(db)
+    # The devices a staff account is signed in on (ตั้งค่าบัญชี → ความปลอดภัย): an id and where each was opened.
+    from backend.modules.staff_security import repository as staff_security_repository
+    staff_security_repository.add_session_columns(db)
 
 
 def create_tenant_tables(db):

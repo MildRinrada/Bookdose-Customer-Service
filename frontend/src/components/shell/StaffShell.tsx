@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePhoto } from '@/components/ui/display';
-import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { isDone } from '@/lib/format';
@@ -13,7 +12,6 @@ import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
 import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
-import { AccountDialog } from './AccountDialog';
 import { SessionGuard } from './SessionGuard';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
 import { TextSizeMenu } from './TextSize';
@@ -37,7 +35,6 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const switchTenant = useSwitchTenant();
   const logout = useStaffLogout();
   const toast = useToast();
-  const { openModal } = useDialogs();
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
   const search = useRef<HTMLInputElement>(null);
 
@@ -114,7 +111,6 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const photo = boot.avatar ? <ProfilePhoto src={boot.avatar} /> : <Avatar name={user.name} index={2} />;
   const roleLabel = work ? roleLabels[work.role] : 'ผู้ดูแลระบบกลาง';
   const activeMemberships = boot.memberships.filter((m) => m.status === 'active');
-  const openAccount = () => openModal('จัดการบัญชี', <AccountDialog />);
 
   let content: ReactNode = children;
   if (!allowed) content = <PageLoading />;
@@ -212,9 +208,9 @@ export function StaffShell({ children }: { children: ReactNode }) {
               <strong className="truncate">{user.name}</strong>
               <div className="tiny muted">{roleLabel}</div>
             </div>
-            <button type="button" className="icon-btn" aria-label="จัดการบัญชี" onClick={openAccount}>
+            <Link className="icon-btn" href="/account" aria-label="ตั้งค่าบัญชี" title="ตั้งค่าบัญชี">
               <Icon name="settings" />
-            </button>
+            </Link>
           </div>
         </div>
       </aside>
@@ -279,10 +275,10 @@ export function StaffShell({ children }: { children: ReactNode }) {
                 </>
               }
             >
-              <button type="button" className="menu-item" onClick={openAccount}>
+              <Link className="menu-item" href="/account">
                 <Icon name="settings" />
-                แก้ไขโปรไฟล์และบัญชี
-              </button>
+                ตั้งค่าบัญชี
+              </Link>
               <button type="button" className="menu-item danger" onClick={() => void logout().catch((error: Error) => toast(error.message, true))}>
                 <Icon name="logout" />
                 ออกจากระบบ

@@ -153,7 +153,7 @@ def accept(cookie_header, body, client=None):
         answer = {'organization':row['tenant_name'],'email':row['email'],'signed_in':not user}
         if user:
             return answer,None
-        return answer,auth.replace_session(cd,cookie_header,user_id)
+        return answer,auth.replace_session(cd,cookie_header,user_id,client)
 
 
 # Sending the invitation

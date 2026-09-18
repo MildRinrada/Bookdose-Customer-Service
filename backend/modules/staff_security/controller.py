@@ -5,6 +5,7 @@ from http import cookies
 from backend.database import db as D
 from backend.middleware.rate_limit import limited
 from backend.modules.auth.controller import challenge_cookie, client, session_cookie
+from backend.modules.customer_security import schema
 from backend.modules.staff_security import service
 from backend.modules.staff_security.model import CHALLENGE_COOKIE
 
@@ -61,17 +62,17 @@ def totp_setup(req):
 
 def totp_confirm(req):
     limited(('staff-2fa-setup',req.session['user_id']),20,900)
-    return req.send(200,service.confirm_totp(req.cd,req.session,req.body))
+    return req.send(200,service.confirm_totp(req.cd,req.session,req.body,client(req)))
 
 
 def totp_disable(req):
     limited(('staff-2fa-setup',req.session['user_id']),10,900)
-    return req.send(200,service.disable_totp(req.cd,req.session,req.body))
+    return req.send(200,service.disable_totp(req.cd,req.session,req.body,client(req)))
 
 
 def recovery_codes(req):
     limited(('staff-2fa-setup',req.session['user_id']),10,900)
-    return req.send(200,service.new_recovery_codes(req.cd,req.session,req.body))
+    return req.send(200,service.new_recovery_codes(req.cd,req.session,req.body,client(req)))
 
 
 def passkey_options(req):
@@ -91,3 +92,25 @@ def passkey_rename(req, passkey_id):
 def passkey_remove(req, passkey_id):
     limited(('staff-passkey',req.session['user_id']),20,900)
     return req.send(200,service.remove_passkey(req,passkey_id))
+
+
+# Signed-in devices and the account's history
+def sessions(req):
+    return req.send(200,service.sessions(req.cd,req.session))
+
+
+def revoke_session(req, session_id):
+    return req.send(200,service.revoke_session(req,session_id))
+
+
+def sign_out_all(req):
+    """Signing out everywhere without keeping this browser also clears its cookie."""
+    from backend.modules.auth.service import SESSION_COOKIE
+    result = service.sign_out_all(req)
+    if result['kept_current']:
+        return req.send(200,result)
+    return req.send(200,result,headers={'Set-Cookie':f'{SESSION_COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'})
+
+
+def activity(req):
+    return req.send(200,service.activity(req.cd,req.session,schema.page(req.query)))

@@ -51,9 +51,9 @@ def find_session(db, token_hash):
                JOIN users u ON u.id=s.user_id WHERE s.token=?''',(token_hash,))
 
 
-def insert_session(db, token_hash, user_id, tenant_id, csrf, expires_at):
-    db.execute('INSERT INTO sessions(token,user_id,tenant_id,csrf,expires_at,created_at,last_active_at) VALUES(?,?,?,?,?,?,?)',
-               (token_hash,user_id,tenant_id,csrf,expires_at,now(),now()))
+def insert_session(db, token_hash, user_id, tenant_id, csrf, expires_at, session_id, ip='', user_agent=''):
+    db.execute('''INSERT INTO sessions(token,user_id,tenant_id,csrf,expires_at,created_at,last_active_at,id,ip,user_agent)
+                  VALUES(?,?,?,?,?,?,?,?,?,?)''',(token_hash,user_id,tenant_id,csrf,expires_at,now(),now(),session_id,ip,user_agent))
 
 
 def touch_session(db, token_hash):

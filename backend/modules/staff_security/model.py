@@ -10,15 +10,27 @@ removing a way in costs the account's password.
   staff_challenges        one-time passkey challenges (hashed, five minutes).
   staff_login_challenges  a right password on an account that asks for a second step: a short-lived token in an
                           HttpOnly cookie, five tries.
-What happens to the account is written to the platform's history (audit_logs), never a code or a secret."""
+  staff_activity          the account's own history, as a customer's (ตั้งค่าบัญชี → ความปลอดภัย): sign-ins, wrong
+                          passwords, two-factor, passkeys, devices signed out, the password and the profile, each with
+                          the address and browser it came from.
+What happens to the account is also written to the platform's history (audit_logs), never a code or a secret.
 
-from backend.modules.customer_security.model import (CHALLENGE_MINUTES, LOGIN_CHALLENGE_MINUTES, LOGIN_CHALLENGE_TRIES,
-                                                     RECOVERY_ALPHABET, RECOVERY_COUNT, RECOVERY_GROUP, TOTP_ISSUER)
+The sessions themselves stay in auth.sessions, which gained id / user_agent / ip (SESSION_COLUMNS) so the owner can see
+the devices signed in and sign one out."""
 
-__all__ = ['CHALLENGE_MINUTES','LOGIN_CHALLENGE_MINUTES','LOGIN_CHALLENGE_TRIES','RECOVERY_ALPHABET','RECOVERY_COUNT',
-           'RECOVERY_GROUP','TOTP_ISSUER','CONTROL_TABLES','CHALLENGE_COOKIE']
+from backend.modules.customer_security.model import (ACTIVITY_KEEP_DAYS, ACTIVITY_LABELS, ACTIVITY_PAGE, CHALLENGE_MINUTES,
+                                                     LOGIN_CHALLENGE_MINUTES, LOGIN_CHALLENGE_TRIES, RECOVERY_ALPHABET,
+                                                     RECOVERY_COUNT, RECOVERY_GROUP, TOTP_ISSUER)
+
+__all__ = ['ACTIVITY_KEEP_DAYS','ACTIVITY_LABELS','ACTIVITY_PAGE','CHALLENGE_MINUTES','LOGIN_CHALLENGE_MINUTES',
+           'LOGIN_CHALLENGE_TRIES','RECOVERY_ALPHABET','RECOVERY_COUNT','RECOVERY_GROUP','TOTP_ISSUER','CONTROL_TABLES',
+           'CHALLENGE_COOKIE','SESSION_COLUMNS']
 
 CHALLENGE_COOKIE = 'bookdose_staff_2fa'
+
+# Added to auth's sessions table: the id the device list names a session by (the token stays secret), and where it
+# was opened from. Sessions from before the upgrade get an id and show as an unknown device.
+SESSION_COLUMNS = {'id':"TEXT NOT NULL DEFAULT ''",'user_agent':"TEXT NOT NULL DEFAULT ''",'ip':"TEXT NOT NULL DEFAULT ''"}
 
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS staff_totp (
@@ -41,6 +53,11 @@ CREATE TABLE IF NOT EXISTS staff_login_challenges (
     token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL, expires_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS staff_activity (
+    id TEXT PRIMARY KEY, user_id TEXT NOT NULL, action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '',
+    ip TEXT NOT NULL DEFAULT '', user_agent TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS staff_recovery_user ON staff_recovery_codes(user_id);
 CREATE INDEX IF NOT EXISTS staff_passkeys_user ON staff_passkeys(user_id);
+CREATE INDEX IF NOT EXISTS staff_activity_user ON staff_activity(user_id,created_at);
 '''

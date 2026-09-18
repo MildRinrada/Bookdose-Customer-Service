@@ -91,17 +91,19 @@ def cookie_max_age(db):
     return max(sessions.seconds_of(values,'staff')[1],sessions.seconds_of(values,'platform')[1])
 
 
-def create_session(db, user_id):
+def create_session(db, user_id, client=None):
     """Store a session on the user's first active organization and return the raw cookie token. It lasts as long as
-    the security settings allow for the user (platform admins have shorter limits)."""
+    the security settings allow for the user (platform admins have shorter limits). `client` (address and browser) is
+    what the account's device list shows for it."""
     from backend.modules.security import sessions
     token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
     tenant_id = memberships.first_active_tenant(db,user_id)
     user = D.one(db,'SELECT platform_admin FROM users WHERE id=?',(user_id,))
     _,absolute = sessions.limits(db,'platform' if user and user['platform_admin'] else 'staff')
     expires = after(seconds=absolute)
+    client = client or {}
     repository.delete_expired_sessions(db)
-    repository.insert_session(db,token_hash(token),user_id,tenant_id,csrf,expires)
+    repository.insert_session(db,token_hash(token),user_id,tenant_id,csrf,expires,uid(),client.get('ip',''),client.get('user_agent',''))
     return token
 
 
@@ -128,8 +130,9 @@ def bootstrap_data(db, session):
         memberships=memberships.user_memberships(db,session['user_id']) if session else [])
 
 
-def end_session(db, session):
+def end_session(db, session, client=None):
     repository.delete_session(db,session['token'])
+    staff_security.note(db,session['user_id'],'logout',client=client)
     db.commit()
 
 
@@ -145,27 +148,29 @@ def switch_tenant(db, session, body):
 
 
 # The signed-in user's account
-def change_password(db, session, body):
+def change_password(db, session, body, client=None):
     """Check the current password, sign out every session of the user and return a fresh session token."""
     encoded,current = schema.password_change_form(body)
     require(password_ok(current,repository.password_of(db,session['user_id'])),'รหัสผ่านเดิมไม่ถูกต้อง',403)
     repository.set_password(db,session['user_id'],encoded)
     repository.delete_user_sessions(db,session['user_id'])
-    token = create_session(db,session['user_id'])
+    token = create_session(db,session['user_id'],client)
+    staff_security.note(db,session['user_id'],'password',client=client)
     db.commit()
     return token
 
 
-def update_profile(db, session, body):
+def update_profile(db, session, body, client=None):
     name,avatar = schema.profile_form(body)
     repository.set_user_name(db,session['user_id'],name)
     repository.save_avatar(db,session['user_id'],avatar)
     audit.record(db,session['user_id'],'account.profile_updated',session['user_id'])
+    staff_security.note(db,session['user_id'],'profile',client=client)
     db.commit()
 
 
 # First run and sign-in
-def set_up_platform(cookie_header, body):
+def set_up_platform(cookie_header, body, client=None):
     """First run only: create the platform owner and the first organization; returns a session token."""
     with SETUP_LOCK, D.control() as db:
         require(repository.count_users(db)==0,'ระบบตั้งค่าเรียบร้อยแล้ว',409)
@@ -178,7 +183,7 @@ def set_up_platform(cookie_header, body):
         user_id = uid()
         repository.insert_user(db,user_id,form['name'],form['email'],form['password'],platform_admin=True)
         platform.create_tenant(db,form['organization'],form['slug'],user_id,body.get('demo') is True)
-        return _replace_session(db,cookie_header,user_id)
+        return _replace_session(db,cookie_header,user_id,client)
 
 
 def log_in(cookie_header, body, client=None):
@@ -198,7 +203,11 @@ def log_in(cookie_header, body, client=None):
         encoded = user['password'] if user else DUMMY_PASSWORD_HASH
         correct = password_ok(password,encoded) and user
         challenge = staff_security.start_challenge(db,user) if correct else None
-        token = _replace_session(db,cookie_header,user['id']) if correct and not challenge else None
+        token = _replace_session(db,cookie_header,user['id'],client) if correct and not challenge else None
+        if user and not correct:
+            # Only an email that has an account gets a line, so nobody fills another's history by guessing.
+            staff_security.note(db,user['id'],'login_failed',client=client)
+            db.commit()
     actor = 'platform' if user and user['platform_admin'] else 'staff'
     if not correct:
         lockout.fail(key,client,actor=actor,owner={'email':user['email'],'name':user['name']} if user else None)
@@ -240,7 +249,7 @@ def sign_in(cd, cookie_header, body, client=None):
         if challenge:
             return 'staff',challenge
         with SETUP_LOCK:
-            token = _replace_session(cd,cookie_header,user['id'])
+            token = _replace_session(cd,cookie_header,user['id'],client)
         lockout.succeed(key,client,actor=staff_actor)
         return 'staff',token
     if customer_ok:
@@ -250,24 +259,30 @@ def sign_in(cd, cookie_header, body, client=None):
         return 'customer',result
     if account:
         customers.wrong_password(cd,account,client)
+    if user:
+        staff_security.note(cd,user['id'],'login_failed',client=client)
+        cd.commit()
     owners = ([{'email':user['email'],'name':user['name'],'actor':staff_actor}] if user else [])+\
              ([{'email':account['email'],'name':account['name'],'actor':'customer'}] if account else [])
     lockout.fail(key,client,actor=staff_actor if user else 'customer' if account else 'anonymous',owner=owners)
     require(False,customers.WRONG_LOGIN,401)
 
 
-def replace_session(db, cookie_header, user_id):
-    """Sign the browser in as user_id (after a second step or a passkey); returns the session token."""
+def replace_session(db, cookie_header, user_id, client=None, login='login'):
+    """Sign the browser in as user_id (after a second step or a passkey); returns the session token. `login` is the
+    line written to the account's history; None when the caller has written its own (the second step, a passkey)."""
     with SETUP_LOCK:
-        return _replace_session(db,cookie_header,user_id)
+        return _replace_session(db,cookie_header,user_id,client,login)
 
 
-def _replace_session(db, cookie_header, user_id):
+def _replace_session(db, cookie_header, user_id, client=None, login='login'):
     old = read_session(db,cookie_header,True)
     if old:
         repository.delete_session(db,old['token'])
-    token = create_session(db,user_id)
+    token = create_session(db,user_id,client)
     audit.record(db,user_id,'auth.login',user_id)
+    if login:
+        staff_security.note(db,user_id,login,client=client)
     db.commit()
     return token
 
@@ -339,8 +354,9 @@ def reset_password(body, client=None):
         repository.set_password(db,reset['user_id'],password)
         repository.delete_user_sessions(db,reset['user_id'])
         repository.delete_resets(db,reset['user_id'])
-        staff_security.forget_passkeys(db,reset['user_id'])
+        staff_security.forget_passkeys(db,reset['user_id'],client)
         audit.record(db,reset['user_id'],'account.password_reset',reset['user_id'])
+        staff_security.note(db,reset['user_id'],'password_reset',client=client)
         db.commit()
     client = client or {}
     unlocked = lockout.clear(lockout.key_for('staff',email),related=True)
@@ -374,13 +390,14 @@ def request_registration(cookie_header, body, resend, client=None):
     _send_verification(task)
 
 
-def verify_registration(cookie_header, body):
+def verify_registration(cookie_header, body, client=None):
     """Activate a verified sign-up and return a session token for the new organization admin."""
     with SETUP_LOCK, D.control() as db:
         D.begin(db)
         _require_registration_open(db,cookie_header)
         user_id = _activate_registration(db,body.get('token'))
-        token = create_session(db,user_id)
+        token = create_session(db,user_id,client)
+        staff_security.note(db,user_id,'login',client=client)
         db.commit()
         return token
 

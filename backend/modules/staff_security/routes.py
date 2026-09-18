@@ -16,4 +16,8 @@ ROUTES = [
     ('POST', SECURITY+'/passkeys',              controller.passkey_add,      'account'),
     ('POST', SECURITY+f'/passkeys/{ID}',        controller.passkey_rename,   'account'),
     ('POST', SECURITY+f'/passkeys/{ID}/remove', controller.passkey_remove,   'account'),
+    ('GET',    SECURITY+'/sessions',              controller.sessions,         'account'),
+    ('DELETE', SECURITY+f'/sessions/{ID}',        controller.revoke_session,   'account'),
+    ('POST',   SECURITY+'/sessions/sign-out-all', controller.sign_out_all,     'account'),
+    ('GET',    SECURITY+'/activity',              controller.activity,         'account'),
 ]

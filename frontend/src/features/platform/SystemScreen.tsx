@@ -78,7 +78,7 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           <Icon name="shield" />
           <span>
             บัญชีผู้ดูแลแพลตฟอร์มของคุณยังใช้รหัสผ่านอย่างเดียว ·{' '}
-            <Link href="/account/security">เปิดการยืนยันสองขั้นตอนหรือเพิ่ม Passkey</Link>
+            <Link href="/account?tab=security">เปิดการยืนยันสองขั้นตอนหรือเพิ่ม Passkey</Link>
           </span>
         </p>
       )}

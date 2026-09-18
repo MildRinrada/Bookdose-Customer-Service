@@ -33,7 +33,7 @@ def resend_registration(req):
 
 def verify_registration(req):
     limited(('verify',req.ip),20,900)
-    return req.send(201,{'ok':True},headers=session_cookie(req,service.verify_registration(cookie(req),req.body)))
+    return req.send(201,{'ok':True},headers=session_cookie(req,service.verify_registration(cookie(req),req.body,client(req))))
 
 
 def forgot_password(req):
@@ -51,7 +51,7 @@ def reset_password(req):
 
 def set_up(req):
     limited(('login',req.ip),15,900)
-    return req.send(200,{'ok':True},headers=session_cookie(req,service.set_up_platform(cookie(req),req.body)))
+    return req.send(200,{'ok':True},headers=session_cookie(req,service.set_up_platform(cookie(req),req.body,client(req))))
 
 
 def challenge_cookie(req, token, max_age=None):
@@ -115,7 +115,7 @@ def activity(req):
 
 
 def log_out(req):
-    service.end_session(req.cd,req.session)
+    service.end_session(req.cd,req.session,client(req))
     return req.send(200,{'ok':True},headers={'Set-Cookie':f'{service.SESSION_COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'})
 
 
@@ -125,9 +125,9 @@ def switch_tenant(req):
 
 
 def change_password(req):
-    return req.send(200,{'ok':True},headers=session_cookie(req,service.change_password(req.cd,req.session,req.body)))
+    return req.send(200,{'ok':True},headers=session_cookie(req,service.change_password(req.cd,req.session,req.body,client(req))))
 
 
 def update_profile(req):
-    service.update_profile(req.cd,req.session,req.body)
+    service.update_profile(req.cd,req.session,req.body,client(req))
     return req.send(200,{'ok':True})

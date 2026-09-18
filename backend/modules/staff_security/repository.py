@@ -97,6 +97,48 @@ def delete_everything(cd, user_id):
         cd.execute(f'DELETE FROM {table} WHERE user_id=?',(user_id,))
 
 
+# Signed-in devices (auth's sessions table; the token column is a hash and never leaves the server)
+def add_session_columns(cd):
+    """SESSION_COLUMNS added to existing databases; sessions from before get their id here (safe to repeat)."""
+    from backend.modules.staff_security.model import SESSION_COLUMNS
+    present = {row[1] for row in cd.execute('PRAGMA table_info(sessions)')}
+    for name,definition in SESSION_COLUMNS.items():
+        if name not in present:
+            cd.execute(f'ALTER TABLE sessions ADD COLUMN {name} {definition}')
+    cd.execute("UPDATE sessions SET id=lower(hex(randomblob(16))) WHERE id=''")
+
+
+def sessions_of(cd, user_id):
+    return rows(cd,'SELECT * FROM sessions WHERE user_id=? ORDER BY last_active_at DESC,rowid DESC',(user_id,))
+
+
+def delete_session_by_id(cd, user_id, session_id, keep_token):
+    """Sign out one other device of the account (never the one asking: that is the sign-out button)."""
+    return cd.execute('DELETE FROM sessions WHERE user_id=? AND id=? AND token<>?',(user_id,session_id,keep_token)).rowcount
+
+
+def delete_other_sessions(cd, user_id, keep_token):
+    return cd.execute('DELETE FROM sessions WHERE user_id=? AND token<>?',(user_id,keep_token)).rowcount
+
+
+# The account's history
+def insert_activity(cd, activity_id, user_id, action, detail, ip, user_agent):
+    cd.execute('INSERT INTO staff_activity VALUES(?,?,?,?,?,?,?)',(activity_id,user_id,action,detail,ip,user_agent,now()))
+
+
+def activity(cd, user_id, limit, offset):
+    return rows(cd,'SELECT * FROM staff_activity WHERE user_id=? ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?',
+                (user_id,limit,offset))
+
+
+def count_activity(cd, user_id):
+    return cd.execute('SELECT COUNT(*) FROM staff_activity WHERE user_id=?',(user_id,)).fetchone()[0]
+
+
+def purge_activity(cd, before):
+    cd.execute('DELETE FROM staff_activity WHERE created_at<?',(before,))
+
+
 # One-time challenges of a passkey ceremony
 def insert_challenge(cd, challenge_hash, user_id, purpose, rp_id, origin, expires_at):
     cd.execute('DELETE FROM staff_challenges WHERE expires_at<=?',(now(),))

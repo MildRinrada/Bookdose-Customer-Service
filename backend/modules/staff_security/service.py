@@ -8,8 +8,9 @@ from backend.database import audit, db as D
 from backend.exceptions.errors import APIError
 from backend.modules.customer_security import repository as customer_repository, schema, service as customer, totp, webauthn
 from backend.modules.staff_security import repository
-from backend.modules.staff_security.model import (CHALLENGE_MINUTES, LOGIN_CHALLENGE_MINUTES, LOGIN_CHALLENGE_TRIES,
-                                                  RECOVERY_ALPHABET, RECOVERY_COUNT, RECOVERY_GROUP, TOTP_ISSUER)
+from backend.modules.staff_security.model import (ACTIVITY_KEEP_DAYS, ACTIVITY_PAGE, CHALLENGE_MINUTES,
+                                                  LOGIN_CHALLENGE_MINUTES, LOGIN_CHALLENGE_TRIES, RECOVERY_ALPHABET,
+                                                  RECOVERY_COUNT, RECOVERY_GROUP, TOTP_ISSUER)
 from backend.utils.dates import after
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import existing_password, require
@@ -17,14 +18,23 @@ from backend.utils.validation import existing_password, require
 WRONG_STEP = customer.WRONG_STEP
 STALE = customer.STALE
 NO_SESSION = customer.NO_SESSION
+client_info = customer.client_info
 
 
 def _user(cd, user_id):
     return D.one(cd,'SELECT * FROM users WHERE id=?',(user_id,))
 
 
-def _record(cd, user_id, action, detail=''):
+def note(cd, user_id, action, detail='', client=None):
+    """One line in the account's own history (ตั้งค่าบัญชี → ความปลอดภัย): what happened, from which address and
+    browser - never a code or a token. The caller commits."""
+    client = client or {}
+    repository.insert_activity(cd,uid(),user_id,action,(detail or '')[:200],client.get('ip',''),client.get('user_agent',''))
+
+
+def _record(cd, user_id, action, detail='', client=None):
     audit.record(cd,user_id,'account.'+action,user_id,detail)
+    note(cd,user_id,action,detail,client)
 
 
 # State
@@ -76,7 +86,7 @@ def setup_totp(cd, session, body):
     return {'secret':secret,'otpauth_uri':uri,'qr':customer._qr(uri)}
 
 
-def confirm_totp(cd, session, body):
+def confirm_totp(cd, session, body, client=None):
     entered = schema.code(body)
     D.begin(cd)
     row = repository.totp(cd,session['user_id'])
@@ -84,12 +94,12 @@ def confirm_totp(cd, session, body):
     step = totp.check(row['secret'],entered,row['last_step'])
     require(step and repository.confirm_totp(cd,session['user_id'],step)==1,WRONG_STEP,403)
     codes = _new_recovery_codes(cd,session['user_id'])
-    _record(cd,session['user_id'],'totp_on')
+    _record(cd,session['user_id'],'totp_on',client=client)
     cd.commit()
     return {'ok':True,'recovery_codes':codes}
 
 
-def disable_totp(cd, session, body):
+def disable_totp(cd, session, body, client=None):
     password = existing_password(body)
     D.begin(cd)
     user = _user(cd,session['user_id'])
@@ -98,19 +108,19 @@ def disable_totp(cd, session, body):
     require(_second_step_ok(cd,user['id'],body),WRONG_STEP,403)
     repository.delete_totp(cd,user['id'])
     repository.delete_recovery_codes(cd,user['id'])
-    _record(cd,user['id'],'totp_off')
+    _record(cd,user['id'],'totp_off',client=client)
     cd.commit()
     return {'ok':True}
 
 
-def new_recovery_codes(cd, session, body):
+def new_recovery_codes(cd, session, body, client=None):
     password = existing_password(body)
     D.begin(cd)
     user = _user(cd,session['user_id'])
     require(password_ok(password,user['password']),'รหัสผ่านไม่ถูกต้อง',403)
     require(two_factor_on(cd,user['id']),'ยังไม่ได้เปิดการยืนยันสองขั้นตอน',409)
     codes = _new_recovery_codes(cd,user['id'])
-    _record(cd,user['id'],'recovery_new')
+    _record(cd,user['id'],'recovery_new',client=client)
     cd.commit()
     return {'ok':True,'recovery_codes':codes}
 
@@ -176,9 +186,9 @@ def finish_challenge(cd, cookie_header, token, body, client=None):
                          detail={'method':kind})
         require(False,WRONG_STEP,403)
     require(repository.delete_login_challenge(cd,token_hash(token))==1,NO_SESSION,401)
-    _record(cd,user['id'],'login_2fa' if kind=='code' else 'login_recovery')
+    _record(cd,user['id'],'login_2fa' if kind=='code' else 'login_recovery',client=client)
     cd.commit()
-    session_token = auth.replace_session(cd,cookie_header,user['id'])
+    session_token = auth.replace_session(cd,cookie_header,user['id'],client,login=None)
     for key in keys:
         lockout.succeed(key,client,actor=actor)
     return session_token
@@ -216,7 +226,7 @@ def add_passkey(req):
     found['transports_json'] = json.dumps(found['transports'])
     label = name or schema.device_name((req.headers.get('User-Agent') or '')[:300])
     repository.insert_passkey(req.cd,uid(),session['user_id'],found,label)
-    _record(req.cd,session['user_id'],'passkey_added',label)
+    _record(req.cd,session['user_id'],'passkey_added',label,client_info(req))
     req.cd.commit()
     return {'ok':True,'passkeys':[schema.passkey_view(p) for p in repository.passkeys(req.cd,session['user_id'])]}
 
@@ -226,6 +236,7 @@ def rename_passkey(req, passkey_id):
     require(row,'ไม่พบ Passkey นี้',404)
     name = schema.passkey_name(req.body,required=True)
     repository.rename_passkey(req.cd,row['id'],name)
+    note(req.cd,req.session['user_id'],'passkey_renamed',name,client_info(req))
     req.cd.commit()
     return {'ok':True,'passkeys':[schema.passkey_view(p) for p in repository.passkeys(req.cd,req.session['user_id'])]}
 
@@ -236,7 +247,7 @@ def remove_passkey(req, passkey_id):
     require(row,'ไม่พบ Passkey นี้',404)
     prove_owner(req.cd,session['user_id'],req.body)
     repository.delete_passkey(req.cd,row['id'])
-    _record(req.cd,session['user_id'],'passkey_removed',row['name'])
+    _record(req.cd,session['user_id'],'passkey_removed',row['name'],client_info(req))
     req.cd.commit()
     return {'ok':True,'passkeys':[schema.passkey_view(p) for p in repository.passkeys(req.cd,session['user_id'])]}
 
@@ -284,24 +295,69 @@ def passkey_sign_in(req):
     try:
         count = webauthn.verify_assertion(credential,value,row['origin'],row['rp_id'],stored)
     except APIError:
-        _record(req.cd,user['id'],'passkey_refused',stored['name'])
+        _record(req.cd,user['id'],'passkey_refused',stored['name'],client)
         req.cd.commit()
         lockout.fail(keys[0],client,actor=actor,owner={'email':user['email'],'name':user['name']},detail={'method':'passkey'})
         raise
     repository.use_passkey(req.cd,stored['id'],count)
-    _record(req.cd,user['id'],'login_passkey',stored['name'])
+    _record(req.cd,user['id'],'login_passkey',stored['name'],client)
     req.cd.commit()
-    token = auth.replace_session(req.cd,req.headers.get('Cookie',''),user['id'])
+    token = auth.replace_session(req.cd,req.headers.get('Cookie',''),user['id'],client,login=None)
     for key in keys:
         lockout.succeed(key,client,actor=actor)
     return 'staff',token
 
 
-def forget_passkeys(cd, user_id):
+def forget_passkeys(cd, user_id, client=None):
     """A password reset is a clean slate: the passkeys go with the old password, because a key added from a borrowed
     screen would otherwise outlive every remedy the owner has. The caller commits."""
     if repository.delete_passkeys(cd,user_id):
-        _record(cd,user_id,'passkeys_cleared')
+        _record(cd,user_id,'passkeys_cleared',client=client)
+
+
+# The devices signed in to the account, and its history
+def sessions(cd, session):
+    """Every live session of the account, the one asking marked `current`."""
+    from backend.modules.auth.service import session_actor
+    from backend.modules.security import sessions as limits
+    seconds = limits.limits(cd,session_actor(session))
+    found = [row for row in repository.sessions_of(cd,session['user_id'])
+             if not limits.expired_reason(row['created_at'],row['last_active_at'],seconds,row['expires_at'])]
+    return {'sessions':[{'id':row['id'],'device':schema.device_name(row['user_agent']),'user_agent':row['user_agent'],
+                         'ip':row['ip'],'created_at':row['created_at'],'last_seen_at':row['last_active_at'] or row['created_at'],
+                         'expires_at':row['expires_at'],'current':row['token']==session['token']} for row in found]}
+
+
+def revoke_session(req, session_id):
+    session = req.session
+    require(repository.delete_session_by_id(req.cd,session['user_id'],session_id,session['token']),'ไม่พบอุปกรณ์นี้',404)
+    note(req.cd,session['user_id'],'session_revoked',client=client_info(req))
+    req.cd.commit()
+    return sessions(req.cd,session)
+
+
+def sign_out_all(req):
+    """Sign out everywhere; keep_current false signs this browser out too (the caller clears the cookie)."""
+    from backend.modules.auth import repository as auth_repository
+    session = req.session
+    keep = schema.keep_current(req.body)
+    if keep:
+        repository.delete_other_sessions(req.cd,session['user_id'],session['token'])
+    else:
+        auth_repository.delete_user_sessions(req.cd,session['user_id'])
+    note(req.cd,session['user_id'],'sessions_revoked',client=client_info(req))
+    req.cd.commit()
+    return {'ok':True,'kept_current':keep}
+
+
+def activity(cd, session, page):
+    """Newest first, a page at a time: what happened to the account (a year of it)."""
+    user_id = session['user_id']
+    repository.purge_activity(cd,after(days=-ACTIVITY_KEEP_DAYS))
+    cd.commit()
+    start,total = page*ACTIVITY_PAGE,repository.count_activity(cd,user_id)
+    return {'items':[{**schema.activity_view(row),'org_name':''} for row in repository.activity(cd,user_id,ACTIVITY_PAGE,start)],
+            'page':page,'has_more':total>start+ACTIVITY_PAGE,'total':total}
 
 
 # The server owner's way back in

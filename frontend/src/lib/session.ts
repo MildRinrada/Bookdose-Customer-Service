@@ -98,11 +98,22 @@ export function useStaffSignedIn() {
 
 /** Sign out and go to sign-in; `stay` keeps the page (it then shows its signed-out state, e.g. /verify-email). */
 export function useStaffLogout() {
-  const client = useQueryClient();
-  const router = useRouter();
+  const signedOut = useStaffSignedOut();
   return useCallback(
     async (options: { stay?: boolean } = {}) => {
       await api('/api/logout', {});
+      signedOut(options);
+    },
+    [signedOut],
+  );
+}
+
+/** The session is already over on the server (e.g. ตั้งค่าบัญชี → ออกจากระบบทุกอุปกรณ์): forget it here too. */
+export function useStaffSignedOut() {
+  const client = useQueryClient();
+  const router = useRouter();
+  return useCallback(
+    (options: { stay?: boolean } = {}) => {
       setStaffCredentials(null, null);
       clearExpiry('staff');
       resetUiState();

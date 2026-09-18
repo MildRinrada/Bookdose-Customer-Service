@@ -34,7 +34,7 @@ export const managePages: StaffPage[] = [
 /** Screens outside the menu. */
 export const otherStaffPages: StaffPage[] = [
   { key: 'notifications', href: '/notifications', label: 'การแจ้งเตือน', icon: 'bell' },
-  { key: 'account-security', href: '/account/security', label: 'ความปลอดภัยของบัญชี', icon: 'shield' },
+  { key: 'account', href: '/account', label: 'ตั้งค่าบัญชี', icon: 'settings' },
 ];
 
 /** Screens of the signed-in account itself: they open without a selected organization too. */

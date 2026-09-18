@@ -11,7 +11,8 @@ import { heatmapParts, presenceLabels, sortedAgents, type PeakLine } from '../la
 import type { ManagerOverview } from '../types';
 
 /* The manager view (admins and team leads): live agent activity, satisfaction, automation and the busy hours of
-   the week. Markup: pages/dashboard/manager-view, agent-row, csat-bar, heat-row, heat-cell, peak-item. */
+   the week. Its head and cards glide in from the right as they are scrolled to (data-reveal, lib/reveal), so it
+   reads as a board of its own below the member's work. Markup: pages/dashboard/manager-view, agent-row, csat-bar, heat-row, heat-cell, peak-item. */
 
 function PeakItem({ line }: { line: PeakLine }) {
   return (
@@ -32,7 +33,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
 
   return (
     <>
-      <div className="manager-head">
+      <div className="manager-head" data-reveal="">
         <div>
           <h2 id="manager-title">มุมมองผู้ดูแล</h2>
           <p>Manager View · อัปเดตอัตโนมัติทุก 30 วินาที · ล่าสุด {clockTime(m.generated_at)}</p>
@@ -43,7 +44,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         </Link>
       </div>
       <div className="manager-grid">
-        <section className="card agents-card">
+        <section className="card agents-card" data-reveal="">
           <div className="card-header">
             <div>
               <h2>สถานะเจ้าหน้าที่ Real-time</h2>
@@ -98,7 +99,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
           </div>
           <p className="card-note tiny muted">“กำลังใช้งาน” คือเปิดโปรแกรมภายใน 5 นาทีล่าสุด · ตอบครั้งแรกเฉลี่ยและ CSAT นับ 30 วันล่าสุดจากเคสที่รับผิดชอบ</p>
         </section>
-        <section className="card csat-card">
+        <section className="card csat-card" data-reveal="">
           <div className="card-header">
             <div>
               <h2>ความพึงพอใจลูกค้า</h2>
@@ -140,7 +141,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             </div>
           </div>
         </section>
-        <section className="card auto-card">
+        <section className="card auto-card" data-reveal="">
           <div className="card-header">
             <div>
               <h2>ระบบอัตโนมัติ</h2>
@@ -174,7 +175,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             ))}
           </div>
         </section>
-        <section className="card heat-card">
+        <section className="card heat-card" data-reveal="">
           <div className="card-header">
             <div>
               <h2>ช่วงเวลาที่เรื่องเข้ามามากที่สุด</h2>

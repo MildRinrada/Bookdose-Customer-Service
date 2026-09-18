@@ -91,3 +91,16 @@ export function compareContacts(a: Contact, b: Contact, key: ContactSortKey, sta
   if (key === 'last') return String(stats.get(b.id)!.last).localeCompare(String(stats.get(a.id)!.last));
   return String(a[key] || '').localeCompare(String(b[key] || ''), 'th');
 }
+
+/* The care profile's choices (backend/modules/contacts/model.py). */
+export const preferredChannelLabels: Record<string, string> = {
+  line: 'LINE',
+  facebook: 'Facebook',
+  web: 'แชทบนเว็บ',
+  email: 'อีเมล',
+  phone: 'โทรศัพท์',
+};
+export const languageLabels: Record<string, string> = { th: 'ภาษาไทย', en: 'English' };
+export const consentLabels: Record<string, string> = { '': 'ยังไม่ได้ถาม', yes: 'ยินยอมให้ติดต่อกลับ', no: 'ไม่ยินยอมให้ติดต่อกลับ' };
+export const TAGS_MAX = 10;
+export const TAG_MAX = 30;

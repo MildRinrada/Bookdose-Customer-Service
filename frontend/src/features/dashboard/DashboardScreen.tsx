@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ChartColumn, PageLoading, StatCard } from '@/components/ui/display';
 import { useModalOpen } from '@/features/inbox/hooks';
@@ -12,6 +12,7 @@ import type { TicketRow } from '@/features/tickets/types';
 import { date, isDone, overdue } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
+import { useScrollReveal } from '@/lib/reveal';
 import { useStaffAlerts, useStaffTickets, useStaffUser, useWork } from '@/lib/session';
 import { overviewPath } from './api';
 import { HandoverCard, TodoCard } from './components/BoardCards';
@@ -72,6 +73,9 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
     return () => window.clearInterval(timer);
   }, []);
   const readOnly = Boolean(work.read_only);
+  // มุมมองผู้ดูแล glides in as it is scrolled to, so it reads as a board of its own.
+  const managerRef = useRef<HTMLElement>(null);
+  useScrollReveal(managerRef, Boolean(dash?.manager));
 
   const active = tickets.filter((t) => !isDone(t));
   const late = tickets.filter(overdue);
@@ -230,7 +234,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         </section>
       )}
       {dash?.manager && (
-        <section className="manager-view" id="manager-view" aria-labelledby="manager-title">
+        <section className="manager-view" id="manager-view" aria-labelledby="manager-title" ref={managerRef}>
           <ManagerView manager={dash.manager} />
         </section>
       )}

@@ -14,6 +14,6 @@ KEEP_DAYS = 30
 # What can be thrown away, which tables its snapshot covers, and who may put it back.
 KINDS = {
     'article': {'label':'บทความ',     'tables':('knowledge_articles',),        'roles':('admin','manager')},
-    'contact': {'label':'ข้อมูลลูกค้า', 'tables':('contacts','contact_names'),   'roles':('admin','manager')},
+    'contact': {'label':'ข้อมูลลูกค้า', 'tables':('contacts','contact_names','contact_profiles'),   'roles':('admin','manager')},
     'ticket':  {'label':'เคสบริการ',   'tables':('tickets','ticket_conversations'),'roles':('admin',)},
 }

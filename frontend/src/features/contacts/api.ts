@@ -5,6 +5,9 @@ import type { ContactsPage, ContactValues } from './types';
 
 export const CONTACTS_PATH = '/api/contacts';
 
+/** The customer's care profile, channels and last edit (ContactProfileView). */
+export const contactProfilePath = (id: string) => `${CONTACTS_PATH}/${id}/profile`;
+
 export const fetchContacts = () => api<ContactsPage>(CONTACTS_PATH);
 
 /** New customer (id empty) or changes to one (admins and team leads). */

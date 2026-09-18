@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar, PrivacyTag } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { AiControls } from '@/features/ai/components/AiControls';
+import { ContactHeadsUp } from '@/features/contacts/components/ContactProfileParts';
 import { reachText } from '@/features/guest/labels';
 import { useRunAction } from '@/components/ui/actions';
 import { channelIcons, channelNames, priorityLabels, statusLabels } from '@/lib/labels';
@@ -112,6 +113,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         <PrivacyTag org={work.tenant.name} />
         <ThreadFilter messages={messages} notesOnly={notesOnly} onChange={setNotesOnly} />
       </div>
+      <ContactHeadsUp contactId={contact.id} className="conv-headsup" />
       {c.line && c.line.source_type !== 'user' && (
         <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม · เรียก AI ด้วย /bookdose หรือเมนชันบอต</div>
       )}

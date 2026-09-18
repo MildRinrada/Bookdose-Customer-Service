@@ -76,6 +76,8 @@ def upgrade_tenant(db):
     from backend.modules.ai import repository as ai_repository
     ai_repository.widen_jobs(db)
     db.execute(contacts.NAME_TABLE)
+    # The customer's care profile: the team's tags, a warning, contact preferences, language and consent.
+    db.execute(contacts.PROFILE_TABLE)
     db.executescript(channels.TENANT_TABLES)
     db.execute(trash.TENANT_TABLES)
     db.executescript(automation.TENANT_TABLES)

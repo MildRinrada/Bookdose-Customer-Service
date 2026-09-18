@@ -6,6 +6,10 @@ def list_contacts(req):
     return req.send(200,{'contacts':service.list_contacts(req.db,req.ctx)})
 
 
+def contact_profile(req, contact_id):
+    return req.send(200,service.contact_profile(req.db,req.ctx,contact_id))
+
+
 def create_contact(req):
     return req.send(201,{'id':service.create_contact(req.db,req.ctx,req.body)})
 

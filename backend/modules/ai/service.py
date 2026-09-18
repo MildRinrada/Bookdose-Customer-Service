@@ -226,6 +226,10 @@ def snapshot(db, job, exclude_message=None):
     # Do not transmit contact records, visitor tokens, names, emails, or attachments.
     payload = {'subject':conv['subject'],'messages':[{'kind':m['kind'],'body':m['body'][:2500],'attachment_count':m['attachment_count']} for m in messages],
                'articles':[{'id':a['id'],'title':a['title'],'visibility':a['visibility'],'text':a['body']} for a in articles]}
+    # The language the team noted for this customer (ข้อมูลลูกค้า → ภาษาที่ใช้ตอบ): only the code, nothing about who they are.
+    language = db.execute('SELECT language FROM contact_profiles WHERE contact_id=?',(conv['contact_id'],)).fetchone()
+    if language and language[0]:
+        payload['reply_language'] = language[0]
     signature = token_hash(json.dumps({'payload':payload,'message_ids':[m['id'] for m in messages],'team_id':conv['team_id'],'status':conv['status'],
                                       'versions':[(a['id'],a['updated_at']) for a in articles]},sort_keys=True,ensure_ascii=False))
     return payload,articles,signature

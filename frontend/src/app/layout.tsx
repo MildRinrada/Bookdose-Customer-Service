@@ -37,6 +37,7 @@ import '@/styles/pages/celebrations.css';
 import '@/styles/text-size.css';
 import '@/styles/theme.css';
 import '@/styles/refresh.css';
+import '@/styles/reveal.css';
 
 export const metadata: Metadata = {
   title: 'Bookdose · Customer Service',

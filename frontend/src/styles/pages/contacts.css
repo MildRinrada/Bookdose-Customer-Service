@@ -568,3 +568,290 @@ tbody tr:hover .contact-actions .btn,tbody tr:focus-within .contact-actions .btn
     flex-wrap: wrap;
   }
 }
+
+/* The care profile (ContactProfileParts, ContactForm): the team's tags, the warning, preferences and channels. */
+.contact-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.contact-warning-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  margin-top: 4px;
+  color: #a3182b;
+  font-size: .82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contact-warning-line .icon {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+
+/* On a chat (under its toolbar) and in a case's customer card. */
+.contact-headsup {
+  display: grid;
+  gap: 8px;
+}
+.conv-headsup {
+  margin: 0 18px 10px;
+}
+.case-headsup {
+  margin: 4px 0 10px;
+}
+.contact-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fff1f0;
+  box-shadow: inset 0 0 0 1px #f6c9c5;
+  color: #7f1d1d;
+  white-space: pre-line;
+}
+.contact-warning .icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  color: #c4262e;
+}
+.contact-warning strong {
+  display: block;
+  color: #a3182b;
+  font-size: .8rem;
+}
+.contact-prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.contact-pref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f0f0f2;
+  color: #3a3a3c;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.contact-pref .icon {
+  width: 13px;
+  height: 13px;
+}
+.contact-pref.bad {
+  background: #fde7ea;
+  color: #a3182b;
+}
+
+/* The edit form: sections with small headings; the warning field in red so it reads as one. */
+.contact-form-section {
+  padding: 0 0 18px;
+}
+.contact-form-section+.contact-form-section {
+  padding-top: 18px;
+  border-top: 1px solid #ececf0;
+}
+.contact-form-section h3 {
+  margin: 0 0 12px;
+  color: #6e6e73;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  color: #6e6e73;
+  font-size: .82rem;
+}
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.warning-field label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #a3182b;
+}
+.warning-field label .icon {
+  width: 15px;
+  height: 15px;
+}
+.warning-field textarea {
+  border-color: #f0b4ae;
+  background: #fffafa;
+}
+.warning-field textarea:focus {
+  border-color: #c4262e;
+  outline-color: #c4262e33;
+}
+.tag-input-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border: 1px solid #8992a5;
+  border-radius: 12px;
+  background: #fff;
+}
+.tag-input-box:focus-within {
+  border-color: #1c1c1e;
+  outline: 2px solid #1c1c1e26;
+}
+.tag-input-box input {
+  flex: 1;
+  min-width: 120px;
+  padding: 4px 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+.contact-tag.editable {
+  padding-right: 3px;
+}
+.contact-tag.editable {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.tag-input-box .contact-tag.editable button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  min-width: 0;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff4d;
+  color: #fff;
+  cursor: pointer;
+}
+.tag-input-box .contact-tag.editable button:hover {
+  background: #ff453a;
+}
+.contact-tag.editable .icon {
+  width: 10px;
+  height: 10px;
+  stroke-width: 3;
+}
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.tag-suggestions button {
+  padding: 2px 9px;
+  border: 1px dashed #c7c7cc;
+  border-radius: 999px;
+  background: #fff;
+  color: #3a3a3c;
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+}
+.tag-suggestions button:hover {
+  border-style: solid;
+  border-color: #1c1c1e;
+}
+.contact-channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(min(240px,100%),1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.contact-channels li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f7f7f9;
+}
+.contact-channel-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #1c1c1e;
+  color: #fff;
+}
+.contact-channel-icon .icon {
+  width: 17px;
+  height: 17px;
+}
+.contact-channel-body {
+  display: grid;
+  min-width: 0;
+}
+.contact-channel-body .muted {
+  font-size: .82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deletion-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #d8d8dc;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.deletion-check.on {
+  border-color: #f0b4ae;
+  background: #fff1f0;
+  color: #7f1d1d;
+}
+.deletion-check input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #c4262e;
+}
+.deletion-check small {
+  display: block;
+  color: #a3182b;
+  font-weight: 500;
+}
+.contact-last-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.contact-last-edit .icon {
+  width: 14px;
+  height: 14px;
+}

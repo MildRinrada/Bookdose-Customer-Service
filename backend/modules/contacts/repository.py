@@ -1,4 +1,6 @@
 """Contact queries. With team_id (agents), only contacts the agent created or that have work in the team are returned."""
+import json
+
 from backend.database.db import one, rows
 from backend.utils.dates import now
 
@@ -50,6 +52,7 @@ def update(db, contact_id, name, email, phone, company, notes):
 
 
 def delete(db, contact_id):
+    db.execute('DELETE FROM contact_profiles WHERE contact_id=?',(contact_id,))
     db.execute('DELETE FROM contact_names WHERE contact_id=?',(contact_id,))
     db.execute('DELETE FROM contacts WHERE id=?',(contact_id,))
 
@@ -58,12 +61,85 @@ def names_of(db, contact_id):
     return rows(db,'SELECT * FROM contact_names WHERE contact_id=?',(contact_id,))
 
 
+def profile_rows(db, contact_id):
+    """The stored profile row as is (for the recycle bin)."""
+    return rows(db,'SELECT * FROM contact_profiles WHERE contact_id=?',(contact_id,))
+
+
 def insert_names(db, contact_id, first_name, last_name):
     db.execute('INSERT INTO contact_names VALUES(?,?,?)',(contact_id,first_name,last_name))
 
 
 def save_names(db, contact_id, first_name, last_name):
     db.execute('INSERT INTO contact_names VALUES(?,?,?) ON CONFLICT(contact_id) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name',(contact_id,first_name,last_name))
+
+
+# The care profile (model.py: contact_profiles).
+
+def _profile(row):
+    return {**row,'tags':json.loads(row['tags'] or '[]')}
+
+
+def profiles(db):
+    """{contact_id: profile} of every contact that has one (the list shows the tags and the warning)."""
+    return {r['contact_id']:_profile(r) for r in rows(db,'SELECT * FROM contact_profiles')}
+
+
+def profile_of(db, contact_id):
+    row = one(db,'SELECT * FROM contact_profiles WHERE contact_id=?',(contact_id,))
+    return _profile(row) if row else None
+
+
+def save_profile(db, contact_id, values, actor):
+    """Keep the profile; consent and the deletion request remember who set them and when (only when they change)."""
+    before = profile_of(db,contact_id) or {}
+    stamp = now()
+    consent_changed = values['consent']!=before.get('consent','')
+    requested = values['deletion_requested']
+    already = bool(before.get('deletion_requested_at'))
+    db.execute('''INSERT INTO contact_profiles(contact_id,preferred_channel,contact_hours,language,tags,warning,consent,consent_at,
+                  consent_by,deletion_requested_at,deletion_requested_by,updated_by,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  ON CONFLICT(contact_id) DO UPDATE SET preferred_channel=excluded.preferred_channel,contact_hours=excluded.contact_hours,
+                  language=excluded.language,tags=excluded.tags,warning=excluded.warning,consent=excluded.consent,
+                  consent_at=excluded.consent_at,consent_by=excluded.consent_by,deletion_requested_at=excluded.deletion_requested_at,
+                  deletion_requested_by=excluded.deletion_requested_by,updated_by=excluded.updated_by,updated_at=excluded.updated_at''',
+               (contact_id,values['preferred_channel'],values['contact_hours'],values['language'],
+                json.dumps(values['tags'],ensure_ascii=False),values['warning'],values['consent'],
+                (stamp if values['consent'] else None) if consent_changed else before.get('consent_at'),
+                (actor if values['consent'] else '') if consent_changed else before.get('consent_by',''),
+                (before.get('deletion_requested_at') if already else stamp) if requested else None,
+                (before.get('deletion_requested_by','') if already else actor) if requested else '',
+                actor,stamp))
+
+
+def move_profile(db, from_contact_id, to_contact_id):
+    """Merging: the kept contact takes a duplicate's profile only when it has none of its own."""
+    db.execute('UPDATE OR IGNORE contact_profiles SET contact_id=? WHERE contact_id=?',(to_contact_id,from_contact_id))
+    db.execute('DELETE FROM contact_profiles WHERE contact_id=?',(from_contact_id,))
+
+
+def channels(db, contact_id):
+    """Where the customer has talked to the team: per channel the number of conversations, the latest, and for email
+    the addresses they wrote from. LINE and Facebook ids are never shown."""
+    found = rows(db,'''SELECT channel,COUNT(*) AS conversations,MAX(updated_at) AS last_at FROM conversations
+                      WHERE contact_id=? GROUP BY channel ORDER BY last_at DESC''',(contact_id,))
+    emails = [r['recipient'] for r in rows(db,'''SELECT DISTINCT cc.recipient FROM channel_conversations cc
+                  JOIN conversations c ON c.id=cc.conversation_id WHERE c.contact_id=? AND c.channel='email' LIMIT 3''',(contact_id,))]
+    for item in found:
+        item['addresses'] = emails if item['channel']=='email' else []
+    return found
+
+
+def support_account(db, contact_id):
+    """The support-page account this contact belongs to, and whether it gets its notices on LINE."""
+    row = one(db,'''SELECT m.account_id,EXISTS(SELECT 1 FROM customer_line_links l WHERE l.account_id=m.account_id) AS line
+                    FROM customer_members m WHERE m.contact_id=?''',(contact_id,))
+    return {'line':bool(row['line'])} if row else None
+
+
+def last_edit(db, contact_id):
+    return one(db,'''SELECT actor,action,created_at FROM audit_logs WHERE entity=? AND action IN ('contact.created','contact.updated','contact.merged')
+                     ORDER BY id DESC LIMIT 1''',(contact_id,))
 
 
 def linked_counts(db, contact_id):

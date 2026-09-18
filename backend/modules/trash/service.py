@@ -88,6 +88,6 @@ def _check_links(db, kind, payload):
 def _restorable_row(db, table, row):
     if table=='ticket_conversations':
         return repository.conversation_free(db,row.get('conversation_id'))
-    if table=='contact_names':
+    if table in ('contact_names','contact_profiles'):
         return not repository.row_exists(db,table,row.get('contact_id'),'contact_id')
     return not repository.row_exists(db,table,row.get('id'))

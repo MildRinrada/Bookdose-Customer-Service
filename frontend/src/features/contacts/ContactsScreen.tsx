@@ -85,7 +85,7 @@ export function ContactsScreen() {
     .filter((c) => {
       const s = stats.get(c.id)!;
       return (
-        (!q || [c.name, c.email, c.company, c.phone].some((v) => String(v || '').toLowerCase().includes(q))) &&
+        (!q || [c.name, c.email, c.company, c.phone, ...(c.profile?.tags ?? [])].some((v) => String(v || '').toLowerCase().includes(q))) &&
         (!activeCompany || c.company === activeCompany) &&
         (activeTag === 'all' ||
           (activeTag === 'open' && s.open > 0) ||
@@ -341,11 +341,22 @@ function ContactRow({
             ) : (
               <div className="contact-org muted">ไม่ระบุองค์กร</div>
             )}
-            {badges.length > 0 && (
+            {c.profile?.warning && (
+              <div className="contact-warning-line" title={`คำเตือนถึงทีม: ${c.profile.warning}`}>
+                <Icon name="bell" />
+                {c.profile.warning}
+              </div>
+            )}
+            {(badges.length > 0 || Boolean(c.profile?.tags.length)) && (
               <div className="contact-badges">
                 {badges.map((b) => (
                   <span key={b.key} className={`contact-badge ${b.tone}`} title={b.title}>
                     {b.label}
+                  </span>
+                ))}
+                {c.profile?.tags.map((t) => (
+                  <span key={`tag:${t}`} className="contact-tag" title="แท็กของทีม">
+                    #{t}
                   </span>
                 ))}
               </div>

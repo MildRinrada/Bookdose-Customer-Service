@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FollowupsPanel, MacroButtons, SurveySummary } from '@/features/automation';
 import type { TicketAutomation } from '@/features/automation/types';
 import { AUDIT_PATH } from '@/features/audit/api';
+import { ContactHeadsUp } from '@/features/contacts/components/ContactProfileParts';
 import { GuestBadge } from '@/features/inbox/components/GuestBadge';
 import { TRASH_PATH } from '@/features/trash/api';
 import { priorityLabels, statusLabels } from '@/lib/labels';
@@ -41,6 +42,7 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
             {c.company && <span className="muted">{c.company}</span>}
           </div>
         </div>
+        <ContactHeadsUp contactId={c.id} className="case-headsup" />
         {c.guest && (
           <p className="guest-reach">
             <GuestBadge guest={c.guest} detail />

@@ -3,6 +3,7 @@
 
 export { ContactForm, ContactModal, useContactModal } from './components/ContactForm';
 export { ContactHistory } from './components/ContactHistory';
+export { ContactHeadsUp } from './components/ContactProfileParts';
 export { contactTicketStats, duplicateEmails, emailKey } from './labels';
 export { CONTACTS_PATH, deleteContact, fetchContacts, mergeContacts, saveContact } from './api';
 export type * from './types';

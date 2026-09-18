@@ -146,7 +146,9 @@ class AutomationTests(unittest.TestCase):
     def test_closing_sends_survey_and_rating_does_not_reopen(self):
         visitor,conv = self.visitor()
         tid = self.open_case(conv)
-        self.ok(self.admin,f'/api/tickets/{tid}',{'status':'resolved'},'PATCH')
+        me = self.admin.boot()['user']['id']
+        self.ok(self.admin,f'/api/tickets/{tid}',{'status':'resolved','assignee_id':me},'PATCH')
+        self.assertEqual(self.ok(self.admin,'/api/automation/alerts')['praise'],[])
         session = self.ok(visitor,'/api/public/alpha/session')
         self.assertTrue(session['survey']['pending'])
         self.assertTrue(session['messages'][-1]['survey'])
@@ -154,6 +156,10 @@ class AutomationTests(unittest.TestCase):
         detail = self.ok(self.admin,f'/api/tickets/{tid}')
         self.assertEqual(detail['ticket']['status'],'resolved')
         self.assertEqual(detail['automation']['survey']['rating'],5)
+        # Five stars on the member's own case reach their alerts (the staff frame celebrates them); nobody else's.
+        self.assertEqual([p['ticket_id'] for p in self.ok(self.admin,'/api/automation/alerts')['praise']],[tid])
+        agent,_ = self.create_member()
+        self.assertEqual(self.ok(agent,'/api/automation/alerts')['praise'],[])
         # The survey is a system message, never the team's first reply.
         self.assertIsNone(detail['ticket']['first_response_at'])
         self.assertEqual(visitor.call('/api/public/alpha/csat',{'rating':4})[0],409)

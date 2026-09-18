@@ -1,0 +1,86 @@
+/* Celebrations (features/staff-account/Celebrations): paper over the page that takes no clicks, and a dark card at the
+   bottom in the notifications panel's language. */
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.celebration-card {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 91;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(440px,calc(100vw - 32px));
+  padding: 14px 12px 14px 16px;
+  border-radius: 18px;
+  background: radial-gradient(120% 160% at 100% 0,#3a3a3c 0,#1c1c1e 60%);
+  color: #fff;
+  box-shadow: 0 24px 60px -12px #11111160;
+  transform: translateX(-50%);
+  animation: celebration-in .45s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes celebration-in {
+  from { opacity: 0; transform: translate(-50%,24px) scale(.94); }
+}
+.celebration-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #2f9e6b;
+  color: #fff;
+  animation: celebration-pop .6s .15s cubic-bezier(.2,1.6,.4,1) both;
+}
+.celebration-card.praise .celebration-icon {
+  background: #f5b942;
+  color: #1c1c1e;
+}
+.celebration-icon .icon {
+  width: 24px;
+  height: 24px;
+}
+@keyframes celebration-pop {
+  from { transform: scale(.3) rotate(-30deg); }
+}
+.celebration-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.celebration-text small {
+  color: #f5b942;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.celebration-text strong {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.celebration-text span {
+  color: #c7c7cc;
+  font-size: .9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.celebration-card .icon-btn {
+  flex-shrink: 0;
+  color: #c7c7cc;
+}
+.celebration-card .icon-btn:hover {
+  background: #ffffff1f;
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebration-card,.celebration-icon { animation: none; }
+}

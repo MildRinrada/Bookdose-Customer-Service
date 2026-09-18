@@ -33,7 +33,8 @@ DEFAULTS = {
     'status':'online',
     'hours':{'enabled':False,'days':[0,1,2,3,4],'start':'09:00','end':'18:00'},
     'leave':[],
-    'notify':{'desktop':False,'sound':False,'email':False,'events':{key:True for key in EVENTS}},
+    # celebrate: confetti and a card when the member closes a case or a customer gives their case 5 stars.
+    'notify':{'desktop':False,'sound':False,'email':False,'celebrate':True,'events':{key:True for key in EVENTS}},
     'signature':{'enabled':False,'text':''},
     'alias':'',
     'snippets':[],

@@ -111,6 +111,8 @@ export type StaffAlerts = {
     >
   >;
   followups: Array<{ ticket_id: string; number: number; note: string; due_at: string; subject: string; status?: string } & Record<string, unknown>>;
+  /** Five-star answers of the last 7 days on the member's own cases (celebrated once each). */
+  praise?: Array<{ id: string; ticket_id: string; number: number; subject: string; comment: string; answered_at: string }>;
   mentions: Array<
     {
       conversation_id: string;

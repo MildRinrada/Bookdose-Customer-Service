@@ -120,6 +120,13 @@ def escalations_to(db, user_id):
                     WHERE e.to_user_id=? AND t.status NOT IN {DONE} ORDER BY e.escalated_at DESC LIMIT 20''',(user_id,))
 
 
+def praise_for(db, user_id, since):
+    """5-star answers since `since` to the surveys of cases the member now owns (the staff frame celebrates new ones)."""
+    return rows(db,'''SELECT s.id,s.answered_at,s.comment,t.id AS ticket_id,t.number,t.subject FROM csat_surveys s
+                    JOIN tickets t ON t.id=s.ticket_id WHERE t.assignee_id=? AND s.rating=5 AND s.answered_at>=?
+                    ORDER BY s.answered_at DESC LIMIT 10''',(user_id,since))
+
+
 def escalation_count_since(db, since):
     return db.execute('SELECT COUNT(*) FROM escalations e JOIN tickets t ON t.id=e.ticket_id WHERE e.escalated_at>=?',(since,)).fetchone()[0]
 

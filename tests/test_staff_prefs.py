@@ -37,6 +37,7 @@ class StaffPrefsTests(unittest.TestCase):
         agent,_ = self.create_member()
         view = self.ok(agent,PREFS)
         self.assertEqual((view['preferences']['status'],view['availability']['available']),('online',True))
+        self.assertTrue(view['preferences']['notify']['celebrate'])
         saved = self.ok(agent,PREFS,{'hours':{'enabled':True,'days':[0,1,2,3,4],'start':'08:30','end':'17:30'},
                                      'leave':[{'from':'2026-12-28','to':'2026-12-31','note':'พักร้อน'}],
                                      'notify':{'desktop':True,'sound':True,'email':False,'events':{'assigned':True,'customer_reply':False,'sla':True}},
@@ -45,6 +46,7 @@ class StaffPrefsTests(unittest.TestCase):
         self.assertEqual(saved['hours']['start'],'08:30')
         self.assertEqual([s['shortcut'] for s in saved['snippets']],['thanks','รอสักครู่'])
         self.assertFalse(saved['notify']['events']['customer_reply'])
+        self.assertFalse(self.ok(agent,PREFS,{'notify':{**saved['notify'],'celebrate':False}})['preferences']['notify']['celebrate'])
         # A later save of one section keeps the others.
         self.ok(agent,PREFS,{'alias':''})
         self.assertEqual(self.ok(agent,PREFS)['preferences']['signature']['text'],'ขอบคุณค่ะ\nฝ่ายบริการลูกค้า')
@@ -52,7 +54,7 @@ class StaffPrefsTests(unittest.TestCase):
                      {'hours':{'enabled':False,'days':[1],'start':'9:00','end':'18:00'}},
                      {'leave':[{'from':'2026-12-31','to':'2026-12-01'}]},{'signature':{'enabled':True,'text':''}},
                      {'snippets':[{'shortcut':'a','text':'x'},{'shortcut':'A','text':'y'}]},{'snippets':[{'shortcut':'มี ช่องว่าง','text':'x'}]},
-                     {'alias':'x'*61},{'unknown':1},{'notify':{'events':{'party':True}}}):
+                     {'alias':'x'*61},{'unknown':1},{'notify':{'events':{'party':True}}},{'notify':{'celebrate':'yes'}}):
             self.assertEqual(agent.call(PREFS,body)[0],400,body)
         # Each account has its own; a visitor has none.
         self.assertEqual(self.ok(self.admin,PREFS)['preferences']['alias'],'')

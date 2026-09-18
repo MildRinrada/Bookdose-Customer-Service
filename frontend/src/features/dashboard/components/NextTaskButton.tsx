@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useToast } from '@/components/ui/Toast';
+import { claimSound } from '@/features/staff-account/celebrate';
 import { useInvalidate } from '@/lib/query';
 import { takeNextTask } from '../api';
 import type { NextTask } from '../types';
@@ -34,7 +35,10 @@ export function NextTaskButton() {
         toast('ไม่มีงานค้างสำหรับคุณตอนนี้ 🎉');
         return;
       }
-      if (next.taken) await refresh('/api/tickets', '/api/conversations', '/api/automation/overview');
+      if (next.taken) {
+        claimSound();
+        await refresh('/api/tickets', '/api/conversations', '/api/automation/overview');
+      }
       toast(`BD-${next.ticket.number} · ${why[next.reason]}`);
       router.push(`/tickets/${next.ticket.id}`);
     } catch (error) {

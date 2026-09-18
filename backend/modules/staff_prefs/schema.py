@@ -83,6 +83,7 @@ def notify(value):
     require(isinstance(events,dict) and set(events)<=set(EVENTS),'เหตุการณ์แจ้งเตือนไม่ถูกต้อง')
     return {'desktop':_bool(value.get('desktop',False),'การแจ้งเตือนบนหน้าจอ'),'sound':_bool(value.get('sound',False),'เสียงเตือน'),
             'email':_bool(value.get('email',False),'การแจ้งเตือนทางอีเมล'),
+            'celebrate':_bool(value.get('celebrate',True),'การฉลองเมื่อปิดเคส'),
             'events':{key:_bool(events.get(key,True),'เหตุการณ์แจ้งเตือน') for key in EVENTS}}
 
 

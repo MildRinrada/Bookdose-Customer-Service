@@ -1,35 +1,66 @@
-/* The two ways the page itself tells a member about new work (ตั้งค่าบัญชี → การแจ้งเตือน): a short sound made by
+/* The ways the page itself tells a member about their work (ตั้งค่าบัญชี → การแจ้งเตือน): a short sound made by
    the browser (Web Audio, no file to download) and a desktop notification (the Notification API, after the member
    allows it). Both are quiet when the browser cannot do them. */
 
 let audio: AudioContext | null = null;
 
-/** Two short rising tones. */
-export function playAlertSound() {
+type Tone = { frequency: number; at: number; length: number; to?: number; type?: OscillatorType; volume?: number };
+
+/** The page's sounds, each a few tones made on the spot:
+    alert - new work (two soft rising tones); urgent - a case escalated to the member, past its SLA or urgent (three
+    quick firm beeps, then higher); claim - the member takes a case (a short upward pop); success - a case closed or
+    five stars (a bright rising chord). */
+export type SoundKind = 'alert' | 'urgent' | 'claim' | 'success';
+
+const SOUNDS: Record<SoundKind, Tone[]> = {
+  alert: [
+    { frequency: 880, at: 0, length: 0.14 },
+    { frequency: 1175, at: 0.16, length: 0.14 },
+  ],
+  urgent: [
+    { frequency: 988, at: 0, length: 0.09, type: 'triangle', volume: 0.3 },
+    { frequency: 988, at: 0.13, length: 0.09, type: 'triangle', volume: 0.3 },
+    { frequency: 988, at: 0.26, length: 0.09, type: 'triangle', volume: 0.3 },
+    { frequency: 1319, at: 0.42, length: 0.22, type: 'triangle', volume: 0.3 },
+  ],
+  claim: [{ frequency: 520, to: 1040, at: 0, length: 0.1, volume: 0.22 }],
+  success: [
+    { frequency: 523, at: 0, length: 0.12 },
+    { frequency: 659, at: 0.09, length: 0.12 },
+    { frequency: 784, at: 0.18, length: 0.12 },
+    { frequency: 1047, at: 0.27, length: 0.38, volume: 0.2 },
+  ],
+};
+
+export function playSound(kind: SoundKind) {
   try {
     const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Context) return false;
     audio ??= new Context();
     void audio.resume();
     const start = audio.currentTime;
-    [880, 1175].forEach((frequency, index) => {
-      const tone = audio!.createOscillator();
-      const volume = audio!.createGain();
-      tone.type = 'sine';
-      tone.frequency.value = frequency;
-      const at = start + index * 0.16;
+    for (const t of SOUNDS[kind]) {
+      const tone = audio.createOscillator();
+      const volume = audio.createGain();
+      const at = start + t.at;
+      tone.type = t.type ?? 'sine';
+      tone.frequency.setValueAtTime(t.frequency, at);
+      if (t.to) tone.frequency.exponentialRampToValueAtTime(t.to, at + t.length);
       volume.gain.setValueAtTime(0.0001, at);
-      volume.gain.exponentialRampToValueAtTime(0.25, at + 0.02);
-      volume.gain.exponentialRampToValueAtTime(0.0001, at + 0.14);
-      tone.connect(volume).connect(audio!.destination);
+      volume.gain.exponentialRampToValueAtTime(t.volume ?? 0.25, at + 0.02);
+      volume.gain.exponentialRampToValueAtTime(0.0001, at + t.length);
+      tone.connect(volume).connect(audio.destination);
       tone.start(at);
-      tone.stop(at + 0.15);
-    });
+      tone.stop(at + t.length + 0.01);
+    }
     return true;
   } catch {
     return false;
   }
 }
+
+/** Two short rising tones (new work). */
+export const playAlertSound = () => playSound('alert');
 
 export const desktopSupported = () => typeof window !== 'undefined' && 'Notification' in window;
 

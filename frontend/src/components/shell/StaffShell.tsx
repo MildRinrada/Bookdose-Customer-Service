@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { AiAssistant } from '@/features/ai/components/AiAssistant';
+import { Celebrations } from '@/features/staff-account/Celebrations';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { PlatformBell } from '@/features/platform/components/PlatformBell';
 import { StatusSwitch } from '@/features/staff-account/StatusSwitch';
@@ -227,6 +228,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
       <SidebarTips />
       {/* ผู้ช่วย AI: for the organization's own team, not the console or a look in on support access. */}
       {work && !readOnly && !platform && <AiAssistant />}
+      {work && !readOnly && !platform && <Celebrations userId={user.id} />}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (

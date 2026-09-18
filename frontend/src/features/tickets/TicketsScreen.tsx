@@ -102,7 +102,7 @@ export function TicketsScreen() {
     try {
       for (const t of pending) {
         try {
-          await updateTicket(t.id, changes);
+          await updateTicket(t.id, changes, t);
         } catch (error) {
           failed.push({ t, error });
         }

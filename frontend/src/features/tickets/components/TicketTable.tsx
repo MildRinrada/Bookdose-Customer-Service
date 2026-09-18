@@ -11,6 +11,7 @@ import { escalationReasons, statusLabels } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
 import { useMemberName, useStaffUser, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
+import { claimSound } from '@/features/staff-account/celebrate';
 import { TICKET_PREFIXES, updateTicket } from '../api';
 import { lateBy } from '../labels';
 import type { TicketChanges, TicketRow } from '../types';
@@ -299,7 +300,8 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
     setPending(changes);
     setBusy(true);
     try {
-      await updateTicket(t.id, changes);
+      await updateTicket(t.id, changes, t);
+      if (changes.assignee_id && changes.assignee_id === me) claimSound();
       toast(`${message} · BD-${t.number}`);
     } catch (error) {
       toast(error instanceof Error ? error.message : String(error), true);

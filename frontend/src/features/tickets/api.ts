@@ -1,4 +1,6 @@
+import { celebrate } from '@/features/staff-account/celebrate';
 import { api, download } from '@/lib/api/client';
+import { isDone } from '@/lib/format';
 import type { NewTicket, TicketChanges } from './types';
 
 /* The case endpoints (backend/modules/tickets/routes.py). Read the list with useStaffTickets() and one case with
@@ -16,8 +18,12 @@ export function createTicket(body: NewTicket) {
   return api<{ id: string }>(TICKETS_PATH, body);
 }
 
-export function updateTicket(id: string, changes: TicketChanges) {
-  return api<{ ok: true }>(ticketPath(id), changes, 'PATCH');
+/** `before` is the case as the member saw it: closing an open case is celebrated (Celebrations in the staff frame). */
+export async function updateTicket(id: string, changes: TicketChanges, before?: { status: string; number: number }) {
+  const saved = await api<{ ok: true }>(ticketPath(id), changes, 'PATCH');
+  if (before && changes.status && !isDone(before) && isDone({ status: changes.status }))
+    celebrate({ kind: 'resolved', title: `ปิดเคส BD-${before.number} แล้ว`, detail: 'ขอบคุณที่ดูแลลูกค้าจนจบเรื่อง' });
+  return saved;
 }
 
 /** Moves the case to the recycle bin (admins only). */

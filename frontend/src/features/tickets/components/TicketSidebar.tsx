@@ -125,7 +125,7 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
     <Form
       className="card info-block"
       onSubmit={async (values) => {
-        await updateTicket(t.id, values);
+        await updateTicket(t.id, values, t);
         toast('บันทึกเคสเรียบร้อยแล้ว');
         await refresh(...TICKET_PREFIXES);
         onSaved();

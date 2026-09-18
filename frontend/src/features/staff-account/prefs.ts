@@ -16,7 +16,8 @@ export type StaffPreferences = {
   status: WorkStatus;
   hours: { enabled: boolean; days: number[]; start: string; end: string };
   leave: { from: string; to: string; note: string }[];
-  notify: { desktop: boolean; sound: boolean; email: boolean; events: Record<NotifyEvent, boolean> };
+  /** celebrate: confetti and a card when the member closes a case or gets five stars (Celebrations). */
+  notify: { desktop: boolean; sound: boolean; email: boolean; celebrate: boolean; events: Record<NotifyEvent, boolean> };
   signature: { enabled: boolean; text: string };
   alias: string;
   snippets: Snippet[];

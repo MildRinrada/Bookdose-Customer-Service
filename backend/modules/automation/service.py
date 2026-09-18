@@ -431,7 +431,8 @@ def my_alerts(db, ctx):
     team = visible_team(ctx)
     return {'mentions':repository.unread_mentions(db,ctx['id'],team),
             'followups':repository.open_followups_for(db,ctx['id'],team),
-            'escalations':repository.escalations_to(db,ctx['id'])}
+            'escalations':repository.escalations_to(db,ctx['id']),
+            'praise':repository.praise_for(db,ctx['id'],after(days=-7))}
 
 
 def ticket_extras(db, ticket_id):

@@ -7,7 +7,8 @@ import { PageLoading } from '@/components/ui/display';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
-import { allowDesktop, desktopPermission, playAlertSound, showDesktop } from './alerts';
+import { allowDesktop, desktopPermission, playAlertSound, playSound, showDesktop } from './alerts';
+import { showCelebration } from './celebrate';
 import { PREFS_PATH, savePreferences, sendTestEmail, usePreferences, type NotifyEvent, type PreferencesView } from './prefs';
 
 /* ตั้งค่าบัญชี → การแจ้งเตือน: how the member hears about their own work - a desktop notification and a sound from
@@ -55,7 +56,9 @@ function NotifyCard({ view }: { view: PreferencesView }) {
           }
           setPermission(desktopPermission());
           const events = Object.fromEntries(Object.keys(view.events).map((key) => [key, values[`event:${key}`] === 'on'])) as Record<NotifyEvent, boolean>;
-          await savePreferences({ notify: { desktop: values.desktop === 'on', sound: values.sound === 'on', email: values.email === 'on', events } });
+          await savePreferences({
+            notify: { desktop: values.desktop === 'on', sound: values.sound === 'on', email: values.email === 'on', celebrate: values.celebrate === 'on', events },
+          });
           await refresh(PREFS_PATH);
           toast('บันทึกการแจ้งเตือนแล้ว');
         }}
@@ -79,7 +82,14 @@ function NotifyCard({ view }: { view: PreferencesView }) {
             <input type="checkbox" className="switch" name="sound" defaultChecked={notify.sound} />
             <span>
               เสียงเตือน
-              <span className="tiny muted block">เสียงสั้น ๆ เมื่อมีเรื่องใหม่ ขณะเปิดระบบค้างไว้</span>
+              <span className="tiny muted block">เสียงสั้น ๆ เมื่อมีเรื่องใหม่ เสียงเร่งขึ้นเมื่อเคสด่วน ยกระดับ หรือเกิน SLA และเสียงเมื่อรับเคส ขณะเปิดระบบค้างไว้</span>
+            </span>
+          </label>
+          <label className="check">
+            <input type="checkbox" className="switch" name="celebrate" defaultChecked={notify.celebrate} />
+            <span>
+              ฉลองเมื่อปิดเคสหรือได้ 5 ดาว
+              <span className="tiny muted block">พลุกระดาษและการ์ดแสดงความยินดีสั้น ๆ มีเสียงด้วยเมื่อเปิดเสียงเตือนไว้</span>
             </span>
           </label>
           <label className="check">
@@ -119,6 +129,27 @@ function NotifyCard({ view }: { view: PreferencesView }) {
           >
             <Icon name="bell" />
             ทดสอบเสียงแจ้งเตือน
+          </button>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => {
+              const played = playSound('urgent');
+              toast(played ? 'เล่นเสียงเคสด่วนแล้ว' : 'เบราว์เซอร์นี้เล่นเสียงไม่ได้', !played);
+            }}
+          >
+            <Icon name="bolt" />
+            ทดสอบเสียงเคสด่วน
+          </button>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => {
+              showCelebration({ kind: 'resolved', title: 'ลองฉลอง: ปิดเคสสำเร็จ', detail: 'หน้าตาแบบนี้เมื่อคุณปิดเคส' });
+            }}
+          >
+            <Icon name="sparkle" />
+            ลองดูการฉลอง
           </button>
           <button
             className="btn"

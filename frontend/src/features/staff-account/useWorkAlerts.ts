@@ -7,7 +7,7 @@ import { isDone, overdue, plainText } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useStaffAlerts, useStaffTickets } from '@/lib/session';
-import { playAlertSound, showDesktop } from './alerts';
+import { playSound, showDesktop } from './alerts';
 import { usePreferences, type NotifyEvent } from './prefs';
 
 /* The desktop notification and sound of ตั้งค่าบัญชี → การแจ้งเตือน, run by the staff frame while a workspace is open.
@@ -15,7 +15,8 @@ import { usePreferences, type NotifyEvent } from './prefs';
    the conversation list) and speaks up only about something new since the page opened: a case now assigned to the
    member or escalated to them, their case past its SLA, a customer answering on their case. */
 
-type WorkEvent = { key: string; event: NotifyEvent; title: string; body: string; href: string };
+/** urgent: escalated to the member, past its SLA or an urgent case - it gets the firmer sound. */
+type WorkEvent = { key: string; event: NotifyEvent; title: string; body: string; href: string; urgent?: boolean };
 
 export function useWorkAlerts(userId: string, enabled: boolean) {
   const notify = usePreferences(enabled).data?.preferences.notify;
@@ -37,11 +38,11 @@ export function useWorkAlerts(userId: string, enabled: boolean) {
     const ticketEvents: WorkEvent[] = [];
     for (const t of tickets) {
       if (t.assignee_id !== userId || isDone(t)) continue;
-      ticketEvents.push({ key: `assigned:${t.id}`, event: 'assigned', title: `เคส BD-${t.number} มอบหมายให้คุณ`, body: t.subject, href: `/tickets/${t.id}` });
-      if (overdue(t)) ticketEvents.push({ key: `sla:${t.id}`, event: 'sla', title: `เคส BD-${t.number} เกินกำหนด SLA`, body: t.subject, href: `/tickets/${t.id}` });
+      ticketEvents.push({ key: `assigned:${t.id}`, event: 'assigned', title: `เคส BD-${t.number} มอบหมายให้คุณ`, body: t.subject, href: `/tickets/${t.id}`, urgent: t.priority === 'urgent' });
+      if (overdue(t)) ticketEvents.push({ key: `sla:${t.id}`, event: 'sla', title: `เคส BD-${t.number} เกินกำหนด SLA`, body: t.subject, href: `/tickets/${t.id}`, urgent: true });
     }
     for (const e of alerts?.escalations ?? [])
-      ticketEvents.push({ key: `escalated:${e.ticket_id}`, event: 'assigned', title: `เคส BD-${e.number} ยกระดับมาหาคุณ`, body: e.subject, href: `/tickets/${e.ticket_id}` });
+      ticketEvents.push({ key: `escalated:${e.ticket_id}`, event: 'assigned', title: `เคส BD-${e.number} ยกระดับมาหาคุณ`, body: e.subject, href: `/tickets/${e.ticket_id}`, urgent: true });
     // Every waiting message is taken in, whoever owns it: a case handed over later is "assigned", not a new answer.
     const conversationEvents: (WorkEvent & { mine: boolean })[] = [];
     if (conversations) {
@@ -71,7 +72,7 @@ export function useWorkAlerts(userId: string, enabled: boolean) {
       }
     }
     if (!found.length) return;
-    if (notify.sound) playAlertSound();
+    if (notify.sound) playSound(found.some((item) => item.urgent) ? 'urgent' : 'alert');
     if (notify.desktop) for (const item of found.slice(0, 3)) showDesktop(item.title, item.body, item.href, item.key);
   }, [active, notify, tickets, alerts, conversations, userId]);
 }

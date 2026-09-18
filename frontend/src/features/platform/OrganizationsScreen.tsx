@@ -289,7 +289,13 @@ function TenantRow({ tenant: t, index, support }: { tenant: Tenant; index: numbe
           ))}
       </td>
       <td className="org-status-action">
-        {t.status === 'active' ? (
+        {t.status === 'active' && t.slug === boot.home?.slug ? (
+          // The platform's own organization: every customer signs up and signs in through it (the server refuses too).
+          <span className="org-access muted" title="ลูกค้าทุกคนสมัครและเข้าสู่ระบบผ่านองค์กรนี้ จึงระงับไม่ได้">
+            <Icon name="globe" />
+            องค์กรหลัก
+          </span>
+        ) : t.status === 'active' ? (
           <button
             type="button"
             className="btn sm org-suspend"

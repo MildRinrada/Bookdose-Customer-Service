@@ -120,6 +120,11 @@ WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admi
   (0600, outside `data/secrets`, never in backups). `BOOKDOSE_SECRET_KEY_OLD` (comma list) still opens old values, which
   are re-sealed on read. Plain files and TOTP rows from before are sealed at start (`D.init`). A value that does not open
   reads as "not configured" (logged) rather than crashing every request.
+- Backups (`backend/database/backup.py`): a **platform** backup (`python app.py --backup`) carries `data/secrets/*` only
+  sealed with the current key, and its manifest names the key id (`secret_key_id`), never the key. `--restore` checks
+  that id against the keys this server has (the variables, or `keys/secret.key` put back in the otherwise empty data
+  folder) before writing anything; without it the restore stops, and `--new-key` restores everything but the
+  credentials. An organization's own backup (ตั้งค่าองค์กร → สำรองข้อมูล) carries no secrets.
 
 ### Staff two-factor sign-in and passkeys (`backend/modules/staff_security`)
 - Tables `staff_totp` (sealed), `staff_recovery_codes`, `staff_passkeys`, `staff_challenges`, `staff_login_challenges`.
@@ -158,7 +163,8 @@ WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admi
   check apply; the notice names the conversation, never its messages.
 - **SMS providers** (`backend/extensions/sms.py`). ThaiBulkSMS or Twilio over HTTPS with HTTP Basic, redirects refused so
   a credential only reaches the provider's own URL. The API key/secret and auth token are sealed (utils/secret_box) in
-  `data/secrets/sms.json`, never in the database, answers, logs or backups; empty boxes keep them. A timeout is treated
+  `data/secrets/sms.json`, never in the database, answers or logs (a platform backup carries it sealed only); empty
+  boxes keep them. A timeout is treated
   as possibly sent and never retried; credit / credential / number refusals are final. A test message (5 an hour)
   checks the setup from the platform console.
 

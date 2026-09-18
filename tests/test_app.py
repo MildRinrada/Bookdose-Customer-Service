@@ -30,6 +30,20 @@ from backend.utils.dates import after
 from backend.utils.security import password_ok
 
 
+def assert_sealed_backup(case, raw, *plain):
+    """A platform backup carries credential files only sealed (never the key), and no plain value in any entry."""
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        names = archive.namelist()
+        case.assertFalse(any(n.startswith('keys/') for n in names))
+        for name in names:
+            content = archive.read(name)
+            if name.startswith('secrets/'):
+                case.assertTrue(content.startswith(b'bdsec1.'),name)
+            for value in plain:
+                case.assertNotIn(value.encode(),content,name)
+        return names
+
+
 class Client:
     def __init__(self,base):
         self.base=base
@@ -381,8 +395,7 @@ class IntegrationTests(unittest.TestCase):
         staff=Client(self.base);staff.login('agent@example.com')
         self.assertEqual(staff.call('/api/platform/registration')[0],403)
         self.assertEqual(staff.call('/api/platform/registration',cfg)[0],403)
-        archive=zipfile.ZipFile(io.BytesIO(app.make_backup()))
-        self.assertFalse(any('registration-smtp' in name for name in archive.namelist()))
+        self.assertIn('secrets/registration-smtp.json',assert_sealed_backup(self,app.make_backup(),'Secret-smtp-password'))
 
     def test_verification_mail_failure_allows_explicit_resend_and_trusted_link(self):
         self.enable_registration_mail()
@@ -594,16 +607,31 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(agent.call('/api/tickets')[0],403)
         self.assertIsNone(self.ok(self.admin,'/api/tickets/'+ticket['id'])['ticket']['assignee_id'])
 
+    def second_organization(self):
+        """Organization B, with the platform admin as its admin and working in it now."""
+        beta=self.ok(self.admin,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        self.admin.switch(beta)
+        return beta,self.ok(self.admin,'/api/workspace')['team_id']
+
     def test_suspension_blocks_staff_and_public_then_recovers(self):
-        visitor,_=self.visitor()
-        agent,_=self.create_member()
-        self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        beta,team=self.second_organization()
+        visitor,_=self.visitor('beta')
+        agent,_=self.create_member(team=team)
+        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
         self.assertEqual(agent.call('/api/tickets')[0],403)
         self.assertEqual(self.admin.call('/api/tickets')[0],403)
-        self.assertEqual(visitor.call('/api/public/alpha/session')[0],404)
-        self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'active'},'PATCH')
+        self.assertEqual(visitor.call('/api/public/beta/session')[0],404)
+        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'active'},'PATCH')
         self.assertEqual(agent.call('/api/tickets')[0],200)
-        self.assertEqual(visitor.call('/api/public/alpha/session')[0],200)
+        self.assertEqual(visitor.call('/api/public/beta/session')[0],200)
+
+    def test_the_platforms_own_organization_is_never_suspended(self):
+        # Every customer signs up and signs in through it: suspended, the next organization would quietly take its place.
+        status,answer=self.admin.call('/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'องค์กร A'},'PATCH')
+        self.assertEqual(status,409)
+        self.assertIn('องค์กรหลัก',answer['error'])
+        self.assertEqual(self.ok(self.admin,'/api/workspace')['tenant']['id'],self.org)
+        self.assertEqual(Client(self.base).boot()['home']['slug'],'alpha')
 
     def test_csrf_origin_session_and_stale_tab(self):
         self.assertEqual(Client(self.base).call('/api/tickets')[0],401)
@@ -820,9 +848,20 @@ class IntegrationTests(unittest.TestCase):
         archive=Path(self.temporary.name)/'backup.zip'
         archive.write_bytes(app.make_backup())
         restore_dir=Path(self.temporary.name)/'restored'
-        env={**os.environ,'BOOKDOSE_DATA':str(restore_dir)}
+        env={k:v for k,v in os.environ.items() if not k.startswith('BOOKDOSE_SECRET_KEY')}
+        env['BOOKDOSE_DATA']=str(restore_dir)
+        # The key is kept apart from the backups; it goes back in place before restoring.
+        (restore_dir/'keys').mkdir(parents=True)
+        (restore_dir/'keys'/'secret.key').write_bytes((D.DATA/'keys'/'secret.key').read_bytes())
         result=subprocess.run([sys.executable,app.__file__,'--restore',str(archive)],env=env,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('credential files restored',result.stdout)
+        original=D.DATA
+        try:
+            D.DATA=restore_dir
+            self.assertEqual(platform_repository.read_registration_secret().get('password'),'Secret-smtp-password')
+        finally:
+            D.DATA=original
         with closing(sqlite3.connect(restore_dir/'control.sqlite3')) as cd:
             self.assertEqual(cd.execute('SELECT COUNT(*) FROM sessions').fetchone()[0],0)
             self.assertEqual(cd.execute('SELECT COUNT(*) FROM pending_registrations').fetchone()[0],0)
@@ -873,11 +912,12 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.admin.boot()['avatar'],'')
 
     def test_review_suspension_requires_typed_confirmation(self):
-        self.assertEqual(self.admin.call('/api/platform/tenants/'+self.org,{'status':'suspended'},'PATCH')[0],400)
-        self.assertEqual(self.admin.call('/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'wrong'},'PATCH')[0],400)
-        self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'องค์กร A'},'PATCH')
+        beta,_=self.second_organization()
+        self.assertEqual(self.admin.call('/api/platform/tenants/'+beta,{'status':'suspended'},'PATCH')[0],400)
+        self.assertEqual(self.admin.call('/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'wrong'},'PATCH')[0],400)
+        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'suspended','confirmation':'องค์กร B'},'PATCH')
         self.assertEqual(self.admin.call('/api/workspace')[0],403)
-        self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'active'},'PATCH')
+        self.ok(self.admin,'/api/platform/tenants/'+beta,{'status':'active'},'PATCH')
         self.assertEqual(self.admin.call('/api/workspace')[0],200)
 
     def test_review_note_does_not_clear_waiting_customer_and_audit_resolves_actor(self):

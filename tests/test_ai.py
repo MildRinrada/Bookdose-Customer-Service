@@ -65,9 +65,7 @@ class AITests(unittest.TestCase):
         self.assertNotIn(FAKE_KEY,json.dumps(enabled))
         self.assertNotIn(FAKE_KEY,json.dumps(self.ok(self.admin,'/api/workspace')))
         self.assertEqual(stat.S_IMODE(AIR.key_path(self.org).stat().st_mode),0o600)
-        with zipfile.ZipFile(io.BytesIO(app.make_backup())) as backup:
-            self.assertFalse(any('secret' in name for name in backup.namelist()))
-            self.assertFalse(any(FAKE_KEY.encode() in backup.read(name) for name in backup.namelist()))
+        self.assertIn(f'secrets/{self.org}.openai-key',base.assert_sealed_backup(self,app.make_backup(),FAKE_KEY))
         agent,_=self.create_member()
         self.assertEqual(agent.call('/api/ai/settings')[0],403)
         self.assertEqual(agent.call('/api/ai/settings',{'api_key':FAKE_KEY},'PATCH')[0],403)
@@ -286,8 +284,11 @@ class AITests(unittest.TestCase):
 
     def test_suspend_during_generation_cancels_without_publishing(self):
         self.enable();self.article();visitor,conv=self.visitor()
+        # The platform's own organization cannot be suspended on screen; what matters here is the state itself.
         def suspend(*args):
-            self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+            with D.control() as cd:
+                cd.execute("UPDATE tenants SET status='suspended' WHERE id=?",(self.org,))
+                cd.commit()
             return fake_provider(*args)
         self.run_job(provider=suspend)
         self.ok(self.admin,'/api/platform/tenants/'+self.org,{'status':'active'},'PATCH')

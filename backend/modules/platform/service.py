@@ -56,11 +56,19 @@ def add_tenant(cd, body):
     return tid
 
 
+def home_tenant_id(cd):
+    """The id of the platform's own organization (the one first-run setup made)."""
+    return repository.setting(cd,'home_tenant') or (repository.home_organization(cd) or {}).get('id')
+
+
 def set_tenant_status(cd, session, tenant_id, body):
     status = schema.tenant_status(body)
     org = repository.find_tenant(cd,tenant_id)
     require(org,'ไม่พบองค์กร',404)
     if status=='suspended':
+        # The platform's own organization is where every customer signs up and signs in on the main page; with it
+        # suspended, the oldest other organization would quietly take its place (repository.home_organization).
+        require(tenant_id!=home_tenant_id(cd),'ระงับองค์กรหลักของแพลตฟอร์มไม่ได้ เพราะลูกค้าทุกคนสมัครและเข้าสู่ระบบผ่านองค์กรนี้',409)
         schema.suspension_confirmed(body,org)
     repository.set_status(cd,tenant_id,status)
     audit.record(cd,session['name'],'tenant.'+status,tenant_id)

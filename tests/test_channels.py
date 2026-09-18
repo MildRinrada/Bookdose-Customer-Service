@@ -158,8 +158,7 @@ class ChannelTests(unittest.TestCase):
         result=json.dumps(self.ok(self.admin,'/api/channels'))
         for value in ('secret-for-tests','token-for-tests','mail-password'):self.assertNotIn(value,result)
         for file in (D.DATA/'secrets').iterdir():self.assertEqual(file.stat().st_mode&0o777,0o600)
-        with zipfile.ZipFile(io.BytesIO(app.make_backup())) as archive:
-            self.assertFalse(any('secrets' in n for n in archive.namelist()))
+        base.assert_sealed_backup(self,app.make_backup(),'secret-for-tests','token-for-tests','mail-password')
         member=self.create_member(team=self.team,email='limited@example.com')
         client=base.Client(self.base);client.login('limited@example.com')
         self.assertEqual(client.call('/api/channels')[0],403)
@@ -178,7 +177,10 @@ class ChannelTests(unittest.TestCase):
             self.assertEqual(self.admin.call('/api/channels/line',{'enabled':True,'team_id':team,'channel_secret':'secret-for-tests','access_token':'token'},'PATCH')[0],400)
         for row in self.ok(self.admin,'/api/channels'):self.assertFalse(row['credentials_configured'])
         self.admin.switch(original)
-        self.ok(self.admin,'/api/platform/tenants/'+original,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        # The platform's own organization cannot be suspended on screen; what matters here is the state itself.
+        with D.control() as cd:
+            cd.execute("UPDATE tenants SET status='suspended' WHERE id=?",(original,))
+            cd.commit()
         self.assertEqual(self.webhook(route)[0],503)
         with patch.object(T,'send_line') as send:C.process_outbox(original);send.assert_not_called()
         self.assertEqual(self.job(mid)['status'],'failed')

@@ -87,6 +87,25 @@ def _keys():
         return current,known
 
 
+def current_key_id():
+    """The id of the key new values are sealed with (never the key itself): what a backup records."""
+    return key_id(_keys()[0])
+
+
+def available_key_ids():
+    """The ids of the keys this server could open values with - from the variables, or the key file when there is one
+    - without making a new key file (a restore asks before anything is written)."""
+    found = set()
+    current_text = os.environ.get('BOOKDOSE_SECRET_KEY','').strip()
+    if current_text:
+        found.add(key_id(_decode_key(current_text,'BOOKDOSE_SECRET_KEY')))
+    elif _key_file().is_file():
+        found.add(key_id(_decode_key(_key_file().read_text(),str(_key_file()))))
+    for part in (p for p in os.environ.get('BOOKDOSE_SECRET_KEY_OLD','').split(',') if p.strip()):
+        found.add(key_id(_decode_key(part,'BOOKDOSE_SECRET_KEY_OLD')))
+    return found
+
+
 def key_source():
     """'environment' or 'file': where the current key comes from (shown to the platform admin)."""
     return 'environment' if os.environ.get('BOOKDOSE_SECRET_KEY','').strip() else 'file'

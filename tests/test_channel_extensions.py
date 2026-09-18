@@ -59,7 +59,7 @@ class ExtensionTests(unittest.TestCase):
             overview=json.dumps(self.ok(self.admin,'/api/channels'))
             for token in ('secret-access','secret-refresh','test-client-secret',pending['verifier']):self.assertNotIn(token,overview)
             response,_=self.finish_oauth(query['state'][0]);self.assertEqual(response[0],400)
-            with zipfile.ZipFile(io.BytesIO(app.make_backup())) as backup:self.assertFalse(any('secret' in name for name in backup.namelist()))
+            base.assert_sealed_backup(self,app.make_backup(),'secret-access','secret-refresh','test-client-secret')
 
     def test_oauth_wrong_session_tenant_generation_and_expiry(self):
         self.oauth_setup();state=self.start()['state'][0]

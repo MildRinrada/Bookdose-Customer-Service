@@ -50,6 +50,10 @@
   gap: 22px;
   align-items: start;
 }
+/* On a narrow screen the recent cases scroll inside their card instead of widening the page. */
+#dashboard-tickets {
+  overflow-x: auto;
+}
 .sla-item {
   padding: 14px 0;
   border-bottom: 1px solid #f2f2f7;
@@ -171,7 +175,7 @@
 }
 @media (max-width:950px) {
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
   .dashboard-aside {
     display: grid;
@@ -446,6 +450,6 @@
 }
 @media (max-width:1250px) {
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0,1fr);
   }
 }

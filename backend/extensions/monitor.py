@@ -11,8 +11,10 @@ from backend.utils.dates import iso, now
 
 STARTED = time.time()
 KEEP_MINUTES = 24*60
-# How long a worker may go without starting a round before the console calls it stopped (seconds).
-WORKER_GRACE = {'ai':30,'channels':30,'email':30,'automation':120}
+# How long a worker may go without starting a round before the console calls it stopped (seconds). A worker that has
+# not had its first round yet counts as starting, not stopped, for that long after the server started (the automation
+# worker's first round comes only after its first 30 seconds of waiting).
+WORKER_GRACE = {'ai':30,'channels':30,'email':30,'automation':120,'security':150}
 
 _lock = threading.Lock()
 _minutes = collections.OrderedDict()      # minute number -> [requests, server errors, client errors, total ms]
@@ -72,5 +74,13 @@ def snapshot():
             'requests':total[0],'server_errors':total[1],'client_errors':total[2],
             'average_ms':round(total[3]/total[0],1) if total[0] else 0,
             'last_hour':hours[-1]['requests'],'hours':hours,'areas':areas,'tenants':tenants,'errors':errors,
-            'workers':[{'name':name,'running':name in workers and moment-workers[name]<=grace,
+            'workers':[{'name':name,'running':(moment-workers[name]<=grace) if name in workers else moment-STARTED<=grace,
+                        'starting':name not in workers and moment-STARTED<=grace,
                         'seconds_ago':int(moment-workers[name]) if name in workers else None} for name,grace in WORKER_GRACE.items()]}
+
+
+def server_errors_since(minutes):
+    """Requests answered with a server error in the last `minutes` (the console's alert on a sudden rise)."""
+    first = int(time.time()//60)-minutes+1
+    with _lock:
+        return sum(v[1] for m,v in _minutes.items() if m>=first)

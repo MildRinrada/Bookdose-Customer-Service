@@ -74,6 +74,20 @@ def platform_admins(db):
     return rows(db,'SELECT id,name,email,created_at FROM users WHERE platform_admin=1 ORDER BY name')
 
 
+def owner_id(db):
+    """The platform's owner: the account made at first-run setup (it alone manages the platform admins)."""
+    return setting(db,'platform_owner')
+
+
+def remember_owner(db):
+    """Name the owner once on an installation from before: the platform admin who was there first."""
+    if setting(db,'platform_owner'):
+        return
+    first = one(db,'SELECT id FROM users WHERE platform_admin=1 ORDER BY created_at,rowid LIMIT 1')
+    if first:
+        save_setting(db,'platform_owner',first['id'])
+
+
 def set_platform_admin(db, user_id, enabled):
     db.execute('UPDATE users SET platform_admin=? WHERE id=?',(int(enabled),user_id))
 

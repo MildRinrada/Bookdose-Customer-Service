@@ -1,0 +1,280 @@
+/* ภาพรวมระบบ (features/platform/SystemScreen.tsx, components/HealthCards.tsx): what needs doing first, then the
+   numbers, then the cards that look across every organization. Cards lift slightly off the page, the key numbers are
+   large, and colour says the state: green normal, amber worth a look, red broken. */
+
+.system-page .card,
+.system-page .stat-card {
+  box-shadow: 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
+}
+.system-page .card-header {
+  border-bottom: 1px solid var(--line);
+}
+.system-page .stats-grid {
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.system-page .stat-card .stat-value {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+}
+.system-page .stat-card:has(.stat-icon.green) {
+  box-shadow: inset 4px 0 #1f9d63, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
+}
+.system-page .stat-card:has(.stat-icon.green) .stat-value {
+  color: #166344;
+}
+.system-page .stat-card:has(.stat-icon.blue) {
+  box-shadow: inset 4px 0 #2d6ea3, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
+}
+.system-page .stat-card.urgent {
+  background: #fff6f3;
+  box-shadow: inset 4px 0 #c2410c, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a14;
+}
+.system-page .stat-card.urgent .stat-value {
+  color: #b42318;
+}
+.system-page .system-worker.starting .system-dot {
+  background: #d49a2a;
+}
+
+/* ต้องจัดการ: compact rows, the level as a coloured chip, the fix on the right. */
+.todo-card {
+  margin-bottom: 20px;
+  border-left: 4px solid #d97706;
+}
+.todo-card .tag-count {
+  background: #fde3b0;
+  color: #7a4507;
+}
+.todo-clear {
+  border-left-color: #1f9d63;
+}
+.todo-clear .card-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.todo-clear .icon {
+  flex-shrink: 0;
+  color: #1f9d63;
+}
+.todo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.todo-item:last-child {
+  border-bottom: 0;
+}
+.todo-item .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.todo-item .muted {
+  font-size: .92rem;
+}
+.todo-item .btn {
+  flex-shrink: 0;
+}
+.todo-level {
+  flex-shrink: 0;
+  min-width: 3.6rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+  text-align: center;
+}
+.level-critical .todo-level {
+  background: #fde2dd;
+  color: #9f1b10;
+}
+.level-warning .todo-level {
+  background: #fdf0d5;
+  color: #7a4507;
+}
+.level-info .todo-level {
+  background: #e6f0fc;
+  color: #1f4f8f;
+}
+.todo-more {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  border-top: 1px solid var(--line);
+}
+
+/* Backups */
+.backup-last {
+  margin-top: 0;
+  font-weight: 600;
+}
+.backup-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 12px 0;
+}
+.backup-settings .field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 0;
+}
+.backup-files td .muted {
+  font-weight: 400;
+}
+
+/* Channels and usage across organizations */
+.health-table {
+  width: 100%;
+}
+.health-table td {
+  vertical-align: top;
+}
+.health-table td strong {
+  display: block;
+}
+.health-channels {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.health-channels li {
+  display: grid;
+  gap: 1px;
+  padding-left: 10px;
+  border-left: 3px solid #cbd5e1;
+}
+.health-channels li.health-ok {
+  border-left-color: #1f9d63;
+}
+.health-channels li.health-warning {
+  border-left-color: #d49a2a;
+}
+.health-channels li.health-error {
+  border-left-color: #c2410c;
+}
+.health-pill {
+  display: inline-flex;
+  margin-top: 4px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+.health-pill.health-ok {
+  background: #e3f5ec;
+  color: #166344;
+}
+.health-pill.health-warning {
+  background: #fdf0d5;
+  color: #7a4507;
+}
+.health-pill.health-error {
+  background: #fde2dd;
+  color: #9f1b10;
+}
+.usage-table td,.usage-table th {
+  white-space: nowrap;
+}
+.usage-table td:first-child {
+  white-space: normal;
+}
+.usage-quiet {
+  color: #9a4a06;
+}
+
+/* Security at a glance */
+.security-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+  gap: 10px;
+  margin: 0;
+}
+.security-tiles div {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.security-tiles dt {
+  font-size: .9rem;
+  color: #64748b;
+}
+.security-tiles dd {
+  margin: 4px 0 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #166344;
+}
+.security-tiles div.alert {
+  border-color: #f3c4b8;
+  background: #fff6f3;
+}
+.security-tiles div.alert dd {
+  color: #b42318;
+}
+
+/* The announcement form */
+.announcement-form textarea {
+  width: 100%;
+}
+.announcement-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.announcement-options .field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 0;
+}
+
+/* The announcement everybody sees at the top of the page (StaffShell, CustomerShell). */
+.announcement-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px clamp(16px, 3vw, 36px);
+  background: #e6f0fc;
+  color: #1f3f6b;
+  font-weight: 600;
+}
+.announcement-bar.warning {
+  background: #fdf0d5;
+  color: #7a4507;
+}
+.announcement-bar .icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.announcement-bar span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width:760px) {
+  .todo-item {
+    flex-wrap: wrap;
+    padding: 10px 14px;
+  }
+  .todo-item .btn {
+    margin-left: auto;
+  }
+}

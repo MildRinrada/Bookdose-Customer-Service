@@ -69,6 +69,87 @@ def system(req):
                                      'account_protected':staff_security.protected(req.cd,req.session['user_id'])}})
 
 
+def _snapshot():
+    """The server's monitor snapshot with the data disk, which the checklist reads."""
+    import shutil
+    from backend.database import db as D
+    from backend.extensions import monitor
+    disk = shutil.disk_usage(D.DATA)
+    return {**monitor.snapshot(),'disk':{'free':disk.free,'total':disk.total}}
+
+
+def health(req):
+    """GET /api/platform/health: what needs doing, the channels of every organization, how busy each one is, security
+    at a glance, the backups and the announcement (health.py)."""
+    from backend.modules.platform import backups, health as H
+    snapshot = _snapshot()
+    return req.send(200,{'todo':H.checklist(req.cd,req.session,snapshot),'channels':H.channel_health(req.cd),
+                         'usage':H.org_usage(req.cd),'security':H.security_summary(req.cd),
+                         'backups':backups.overview(req.cd),'announcement':H.announcement(req.cd)})
+
+
+def notifications(req):
+    """GET /api/platform/notifications: the console's bell (health.notifications)."""
+    from backend.modules.platform import health as H
+    return req.send(200,{'items':H.notifications(req.cd,req.session,_snapshot())})
+
+
+def key_saved(req):
+    from backend.modules.platform import health as H
+    H.key_saved(req.cd,req.session)
+    return req.send(200,{'ok':True})
+
+
+def retry_channels(req, tenant_id):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import health as H
+    limited(('platform-channel-retry',req.session['user_id']),20,900)
+    return req.send(200,H.retry_failed(req.cd,req.session,tenant_id))
+
+
+def backups(req):
+    from backend.modules.platform import backups as B
+    return req.send(200,B.overview(req.cd))
+
+
+def run_backup(req):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import backups as B
+    limited(('platform-backup',req.session['user_id']),10,3600)
+    return req.send(201,B.run_now(req.cd,req.session))
+
+
+def save_backup_settings(req):
+    from backend.modules.platform import backups as B
+    return req.send(200,B.save_settings(req.cd,req.session,req.body))
+
+
+def download_backup(req, name):
+    """A whole-platform archive: its credentials are sealed, and the key never travels with it."""
+    from backend.database import audit
+    from backend.modules.platform import backups as B
+    path = B.path_of(name)
+    audit.record(req.cd,req.session['user_id'],'platform.backup_downloaded',name)
+    req.cd.commit()
+    return req.send(200,path.read_bytes(),'application/zip',{'Content-Disposition':f'attachment; filename="{name}"'})
+
+
+def announcement(req):
+    from backend.modules.platform import health as H
+    return req.send(200,{'announcement':H.announcement(req.cd)})
+
+
+def save_announcement(req):
+    from backend.modules.platform import health as H
+    return req.send(200,{'announcement':H.save_announcement(req.cd,req.session,req.body)})
+
+
+def clear_announcement(req):
+    from backend.modules.platform import health as H
+    H.clear_announcement(req.cd,req.session)
+    return req.send(200,{'announcement':None})
+
+
 # Global FAQ
 def global_faq(req):
     return req.send(200,{'articles':service.global_faq(req.cd)})

@@ -3,7 +3,6 @@
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState } from '@/components/ui/display';
-import { FilterPill } from '@/components/ui/filters';
 import { AiCitations } from '@/features/ai/components/AiCitations';
 import { ChannelDelivery } from '@/features/channels/components/ChannelDelivery';
 import { MarkdownBlocks } from '@/features/rich/Markdown';
@@ -180,8 +179,7 @@ function TypingBubble({ name, side }: { name: string; side: 'staff' | 'customer'
   );
 }
 
-/** "ทุกข้อความ" or only the team's internal notes, for reading the back-room discussion on its own (the old
-    threadFilterHTML, with its div.thread-filter). */
+/** A small switch: every message, or only the team's internal notes (the back-room discussion on its own). */
 export function ThreadFilter({
   messages,
   notesOnly,
@@ -192,15 +190,9 @@ export function ThreadFilter({
   onChange: (notesOnly: boolean) => void;
 }) {
   return (
-    <div className="thread-filter" role="group" aria-label="แสดงข้อความ">
-      <FilterPill label="ทุกข้อความ" value="all" pressed={!notesOnly} onClick={() => onChange(false)} />
-      <FilterPill
-        label="เฉพาะบันทึกภายใน"
-        value="notes"
-        pressed={notesOnly}
-        count={messages.filter((m) => m.kind === 'note').length}
-        onClick={() => onChange(true)}
-      />
-    </div>
+    <button type="button" className="notes-switch" aria-pressed={notesOnly} onClick={() => onChange(!notesOnly)}>
+      <span className="notes-switch-track" aria-hidden="true" />
+      เฉพาะบันทึกภายใน ({messages.filter((m) => m.kind === 'note').length})
+    </button>
   );
 }

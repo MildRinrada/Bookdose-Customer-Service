@@ -102,7 +102,7 @@ class SecurityRoundTests(unittest.TestCase):
 
     def events_of(self, kind, **filters):
         query = '&'.join(f'{k}={v}' for k,v in {'kind':kind,'limit':200,**filters}.items())
-        return self.ok(self.admin,f'{SEC}/events?{query}')['events']
+        return self.ok(self.owner,f'{SEC}/events?{query}')['events']
 
     def total(self, kind, **filters):
         return sum(e['count'] for e in self.events_of(kind,**filters))
@@ -242,16 +242,16 @@ class SecurityRoundTests(unittest.TestCase):
         agent,_ = self.create_member(email='agent@example.com')
         self.fail_logins('agent@example.com',5)
         self.fail_logins('nobody@example.com',5)
-        locks = self.ok(self.admin,f'{SEC}/locks')['locks']
+        locks = self.ok(self.owner,f'{SEC}/locks')['locks']
         self.assertEqual({l['key'] for l in locks},{'staff:agent@example.com','staff:nobody@example.com'})
         entry = next(l for l in locks if l['subject']=='agent@example.com')
         self.assertEqual((entry['actor'],entry['level'],entry['failures'],entry['last_ip']),('staff',1,0,'127.0.0.1'))
-        self.assertEqual(self.ok(self.admin,f'{SEC}/locks/unlock',{'key':'staff:agent@example.com'}),{'ok':True})
-        self.assertEqual(self.admin.call(f'{SEC}/locks/unlock',{'key':'staff:agent@example.com'})[0],404)
-        self.assertEqual(self.admin.call(f'{SEC}/locks/unlock',{'key':'nonsense'})[0],400)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/locks/unlock',{'key':'staff:agent@example.com'}),{'ok':True})
+        self.assertEqual(self.owner.call(f'{SEC}/locks/unlock',{'key':'staff:agent@example.com'})[0],404)
+        self.assertEqual(self.owner.call(f'{SEC}/locks/unlock',{'key':'nonsense'})[0],400)
         rate_limit.RATES.clear()
         self.assertEqual(self.staff_login('agent@example.com')[1][0],200)
-        self.assertEqual([l['subject'] for l in self.ok(self.admin,f'{SEC}/locks')['locks']],['nobody@example.com'])
+        self.assertEqual([l['subject'] for l in self.ok(self.owner,f'{SEC}/locks')['locks']],['nobody@example.com'])
         unlocked = self.events_of('admin_unlock')
         self.assertEqual((unlocked[0]['subject'],unlocked[0]['detail']['account'],unlocked[0]['actor']),
                          ('admin@example.com','agent@example.com','platform'))
@@ -381,7 +381,7 @@ class SecurityRoundTests(unittest.TestCase):
 
     def test_platform_admin_sessions_have_shorter_limits(self):
         manager,_ = self.create_member(role='admin',email='manager@example.com')
-        state = self.ok(self.admin,'/api/session')
+        state = self.ok(self.owner,'/api/session')
         self.assertTrue(state['user']['platform_admin'])
         created = dt.datetime.fromisoformat(self.staff_session('admin@example.com')[0]['created_at'])
         self.assertLessEqual(abs((dt.datetime.fromisoformat(state['absolute_expires_at'])-created).total_seconds()-8*3600),2)
@@ -399,13 +399,13 @@ class SecurityRoundTests(unittest.TestCase):
         self.assertEqual(self.raw(admin,'/api/tickets')[1].get('reason'),'absolute')
         # Identical events in the same minute share a row.
         rate_limit.RATES.clear()
-        self.admin,_ = self.staff_login('admin@example.com')
-        self.admin.boot()
+        self.owner,_ = self.staff_login('admin@example.com')
+        self.owner.boot()
         self.assertEqual(self.total('session_expired',actor='platform'),2)
         self.assertEqual(self.total('session_expired',actor='staff'),0)
 
     def test_settings_bounds_and_effect(self):
-        self.assertEqual(self.ok(self.admin,f'{SEC}/settings'),model.DEFAULT_SETTINGS)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/settings'),model.DEFAULT_SETTINGS)
         bad = ({'sessions':{'staff':{'idle_minutes':4}}},{'sessions':{'staff':{'absolute_hours':0}}},
                {'sessions':{'platform':{'absolute_hours':2161}}},{'sessions':{'staff':{'idle_minutes':43201}}},
                {'sessions':{'staff':{'idle_minutes':180,'absolute_hours':2}}},{'sessions':{'customer':{'idle_days':31}}},
@@ -413,14 +413,14 @@ class SecurityRoundTests(unittest.TestCase):
                {'sessions':{'staff':{'idle_minutes':'60'}}},{'sessions':{'staff':{'idle_minutes':30.5}}},{'sessions':[]},
                {'alerts':{'locks_1h':0}},{'alerts':{'ip_failed_logins_10m':True}})
         for body in bad:
-            self.assertEqual(self.admin.call(f'{SEC}/settings',body)[0],400,body)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/settings'),model.DEFAULT_SETTINGS)
-        saved = self.ok(self.admin,f'{SEC}/settings',{'sessions':{'staff':{'idle_minutes':5,'absolute_hours':1},'customer':{'idle_days':30,'absolute_days':30}},
+            self.assertEqual(self.owner.call(f'{SEC}/settings',body)[0],400,body)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/settings'),model.DEFAULT_SETTINGS)
+        saved = self.ok(self.owner,f'{SEC}/settings',{'sessions':{'staff':{'idle_minutes':5,'absolute_hours':1},'customer':{'idle_days':30,'absolute_days':30}},
                                                       'alerts':{'locks_1h':3}})
         self.assertEqual(saved['sessions']['staff'],{'idle_minutes':5,'absolute_hours':1})
         self.assertEqual(saved['sessions']['platform'],{'idle_minutes':30,'absolute_hours':8})
         self.assertEqual(saved['alerts']['locks_1h'],3)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/settings'),saved)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/settings'),saved)
         changed = self.events_of('security_settings_changed')
         self.assertEqual((changed[0]['severity'],changed[0]['subject']),('critical','admin@example.com'))
         self.assertEqual(changed[0]['detail']['sessions']['staff'],{'idle_minutes':5,'absolute_hours':1})
@@ -429,14 +429,14 @@ class SecurityRoundTests(unittest.TestCase):
         self.assertEqual(self.raw(manager,'/api/tickets')[1].get('reason'),'idle')
         # A longer lifetime never lengthens a session already running (it ends when it was made to end)...
         again,_ = self.staff_login('manager@example.com')
-        self.ok(self.admin,f'{SEC}/settings',{'sessions':{'staff':{'idle_minutes':60,'absolute_hours':24}}})
+        self.ok(self.owner,f'{SEC}/settings',{'sessions':{'staff':{'idle_minutes':60,'absolute_hours':24}}})
         self.staff_session('manager@example.com',created_at=ago(hours=2),expires_at=ago(hours=1))
         self.assertEqual(self.raw(again,'/api/tickets')[1].get('reason'),'absolute')
         # ...and a shorter one applies to it at once.
         third,_ = self.staff_login('manager@example.com')
         third.boot()
         self.assertEqual(third.call('/api/tickets')[0],200)
-        self.ok(self.admin,f'{SEC}/settings',{'sessions':{'staff':{'idle_minutes':60,'absolute_hours':2}}})
+        self.ok(self.owner,f'{SEC}/settings',{'sessions':{'staff':{'idle_minutes':60,'absolute_hours':2}}})
         self.staff_session('manager@example.com',created_at=ago(hours=3))
         self.assertEqual(self.raw(third,'/api/tickets')[1].get('reason'),'absolute')
 
@@ -481,7 +481,7 @@ class SecurityRoundTests(unittest.TestCase):
         agent,_ = self.staff_login('agent@example.com')
         agent.boot()
         # sessions_revoked
-        self.ok(self.admin,f'{SEC}/revoke-sessions',{'actor':'customer','subject':'visitor@example.com'})
+        self.ok(self.owner,f'{SEC}/revoke-sessions',{'actor':'customer','subject':'visitor@example.com'})
         # rate_limited
         rate_limit.RATES.clear()
         answers = [Client(self.base).call('/api/register',{})[0] for _ in range(6)]
@@ -508,14 +508,14 @@ class SecurityRoundTests(unittest.TestCase):
         # guest_link_invalid
         self.assertEqual(Client(self.base).call('/api/public/alpha/guest/resume',{'token':'A'*43})[0],410)
         # admin_ip_block, ip_blocked_request, admin_unlock
-        self.ok(self.admin,f'{SEC}/ip-blocks',{'ip':'203.0.113.9','reason':'ทดสอบ','duration':'1h'})
+        self.ok(self.owner,f'{SEC}/ip-blocks',{'ip':'203.0.113.9','reason':'ทดสอบ','duration':'1h'})
         proxied = {'X-Forwarded-Host':f'127.0.0.1:{self.server.server_port}','X-Bookdose-Client-IP':'203.0.113.9'}
         self.assertEqual(Client(self.base).call('/api/bootstrap',headers=proxied)[0],403)
         self.fail_logins('nobody@example.com',5)
-        self.ok(self.admin,f'{SEC}/locks/unlock',{'key':'staff:nobody@example.com'})
+        self.ok(self.owner,f'{SEC}/locks/unlock',{'key':'staff:nobody@example.com'})
         # security_settings_changed
-        self.ok(self.admin,f'{SEC}/settings',{'alerts':{'locks_1h':20}})
-        found = {e['kind']:e for e in self.ok(self.admin,f'{SEC}/events?limit=200')['events']}
+        self.ok(self.owner,f'{SEC}/settings',{'alerts':{'locks_1h':20}})
+        found = {e['kind']:e for e in self.ok(self.owner,f'{SEC}/events?limit=200')['events']}
         # The honeypot / honeytoken kinds have their own tests (test_honeypot.py).
         round_kinds = {k:v for k,v in model.EVENT_KINDS.items() if k not in model.TRAP_EVENT_KINDS}
         self.assertEqual(set(found),set(round_kinds))
@@ -537,20 +537,20 @@ class SecurityRoundTests(unittest.TestCase):
         for secret_text in (PASSWORD,CUSTOMER_PASSWORD,'Wrong-password-000','New-customer-pass-1','AAAAA','A'*43):
             self.assertNotIn(secret_text,stored)
         # Filters, search and paging.
-        page = self.ok(self.admin,f'{SEC}/events?limit=3')
+        page = self.ok(self.owner,f'{SEC}/events?limit=3')
         self.assertEqual(len(page['events']),3)
-        rest = self.ok(self.admin,f'{SEC}/events?limit=200&before={page["next_before"]}')['events']
+        rest = self.ok(self.owner,f'{SEC}/events?limit=200&before={page["next_before"]}')['events']
         self.assertTrue(all(e['id']<page['next_before'] for e in rest))
-        self.assertIsNone(self.ok(self.admin,f'{SEC}/events?limit=200')['next_before'])
-        self.assertTrue(all(e['severity']=='critical' for e in self.ok(self.admin,f'{SEC}/events?severity=critical')['events']))
-        self.assertTrue(all(e['actor']=='customer' for e in self.ok(self.admin,f'{SEC}/events?actor=customer')['events']))
-        searched = self.ok(self.admin,f'{SEC}/events?q=nobody%40example')['events']
+        self.assertIsNone(self.ok(self.owner,f'{SEC}/events?limit=200')['next_before'])
+        self.assertTrue(all(e['severity']=='critical' for e in self.ok(self.owner,f'{SEC}/events?severity=critical')['events']))
+        self.assertTrue(all(e['actor']=='customer' for e in self.ok(self.owner,f'{SEC}/events?actor=customer')['events']))
+        searched = self.ok(self.owner,f'{SEC}/events?q=nobody%40example')['events']
         self.assertTrue(searched and all('nobody@example.com' in e['subject']+json.dumps(e['detail']) for e in searched))
-        self.assertTrue(all(e['ip']=='203.0.113.9' for e in self.ok(self.admin,f'{SEC}/events?ip=203.0.113.9')['events']))
+        self.assertTrue(all(e['ip']=='203.0.113.9' for e in self.ok(self.owner,f'{SEC}/events?ip=203.0.113.9')['events']))
         for query in ('kind=nope','severity=high','actor=robot','tenant=abc','before=x','limit=0','limit=201'):
-            self.assertEqual(self.admin.call(f'{SEC}/events?{query}')[0],400,query)
+            self.assertEqual(self.owner.call(f'{SEC}/events?{query}')[0],400,query)
         # The overview adds them up.
-        overview = self.ok(self.admin,f'{SEC}/overview?range=24h')
+        overview = self.ok(self.owner,f'{SEC}/overview?range=24h')
         self.assertEqual(len(overview['series']),24)
         self.assertEqual(overview['cards']['failed_logins'],self.total('login_failed')+self.total('twofa_failed'))
         self.assertEqual(sum(b['failed_logins'] for b in overview['series']),overview['cards']['failed_logins'])
@@ -563,10 +563,10 @@ class SecurityRoundTests(unittest.TestCase):
         blocked_ip = next(i for i in overview['top_ips'] if i['ip']=='203.0.113.9')
         self.assertTrue(blocked_ip['blocked'])
         self.assertIn({'subject':'nobody@example.com','actor':'staff','failures':5},overview['top_subjects'])
-        week = self.ok(self.admin,f'{SEC}/overview?range=7d')
+        week = self.ok(self.owner,f'{SEC}/overview?range=7d')
         self.assertEqual(len(week['series']),28)
         self.assertEqual(week['cards']['failed_logins'],overview['cards']['failed_logins'])
-        self.assertEqual(self.admin.call(f'{SEC}/overview?range=1y')[0],400)
+        self.assertEqual(self.owner.call(f'{SEC}/overview?range=1y')[0],400)
 
     def test_flood_aggregation(self):
         moment = utc_now().replace(second=10,microsecond=0)
@@ -600,23 +600,23 @@ class SecurityRoundTests(unittest.TestCase):
 
     def test_alert_opening_updating_and_acknowledging(self):
         self.enable_registration_mail()
-        self.ok(self.admin,f'{SEC}/settings',{'alerts':{'ip_failed_logins_10m':3,'platform_failed_logins_10m':8}})
+        self.ok(self.owner,f'{SEC}/settings',{'alerts':{'ip_failed_logins_10m':3,'platform_failed_logins_10m':8}})
         for index in range(3):
             events.record('login_failed',subject=f'user{index}@example.com',ip='198.51.100.7')
         self.assertEqual(len(alerts.run_rules()),1)
-        opened = self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts']
+        opened = self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts']
         self.assertEqual([(a['rule'],a['severity'],a['ip'],a['count']) for a in opened],[('ip_failed_logins','warning','198.51.100.7',3)])
-        self.assertEqual(self.ok(self.admin,f'{SEC}/overview')['cards']['open_alerts'],1)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/overview')['cards']['open_alerts'],1)
         # Still going: the same alert is updated, not a new one.
         events.record('login_failed',subject='user9@example.com',ip='198.51.100.7')
         self.assertEqual(alerts.run_rules(),[])
-        again = self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts']
+        again = self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts']
         self.assertEqual((len(again),again[0]['id'],again[0]['count']),(1,opened[0]['id'],4))
         self.assertGreaterEqual(again[0]['last_seen_at'],opened[0]['last_seen_at'])
-        self.assertEqual(self.ok(self.admin,f'{SEC}/alerts/{opened[0]["id"]}/ack',{}),{'ok':True})
-        self.assertEqual(self.admin.call(f'{SEC}/alerts/999999/ack',{})[0],404)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts'],[])
-        acknowledged = self.ok(self.admin,f'{SEC}/alerts')['alerts'][0]
+        self.assertEqual(self.ok(self.owner,f'{SEC}/alerts/{opened[0]["id"]}/ack',{}),{'ok':True})
+        self.assertEqual(self.owner.call(f'{SEC}/alerts/999999/ack',{})[0],404)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts'],[])
+        acknowledged = self.ok(self.owner,f'{SEC}/alerts')['alerts'][0]
         self.assertEqual(acknowledged['acknowledged_by'],'admin@example.com')
         # Acknowledged while it continues inside the same window: no new alert.
         events.record('login_failed',subject='user10@example.com',ip='198.51.100.7')
@@ -628,7 +628,7 @@ class SecurityRoundTests(unittest.TestCase):
         with D.control() as cd:
             self.assertEqual({(r['rule'],r['ip']) for r in D.rows(cd,f"SELECT rule,ip FROM security_alerts WHERE id IN ({','.join(map(str,opened))})")},
                              {('platform_failed_logins',''),('ip_failed_logins','198.51.100.8')})
-        critical = [a for a in self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts'] if a['rule']=='platform_failed_logins']
+        critical = [a for a in self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts'] if a['rule']=='platform_failed_logins']
         self.assertEqual((len(critical),critical[0]['severity']),(1,'critical'))
         mails = [c for c in self.mailer.call_args_list if c.args[3]['Subject']=='แจ้งเตือนความปลอดภัยระดับวิกฤต']
         self.assertEqual([c.args[2] for c in mails],['admin@example.com'])
@@ -637,27 +637,27 @@ class SecurityRoundTests(unittest.TestCase):
         self.assertEqual(len(alerts.run_rules()),1)
         self.assertEqual(len([c for c in self.mailer.call_args_list if c.args[3]['Subject']=='แจ้งเตือนความปลอดภัยระดับวิกฤต']),1)
         # The other rules.
-        self.ok(self.admin,f'{SEC}/settings',{'alerts':{'locks_1h':2,'ip_rate_limited_10m':2,'webhook_failures_10m':2}})
+        self.ok(self.owner,f'{SEC}/settings',{'alerts':{'locks_1h':2,'ip_rate_limited_10m':2,'webhook_failures_10m':2}})
         for index in range(2):
             events.record('login_locked',subject=f'l{index}@example.com')
             events.record('rate_limited',ip='198.51.100.9',detail={'n':index})
             events.record('webhook_signature_failed',ip=f'198.51.100.{20+index}')
         alerts.run_rules()
-        rules = {(a['rule'],a['ip']) for a in self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts']}
+        rules = {(a['rule'],a['ip']) for a in self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts']}
         self.assertTrue({('locks',''),('ip_rate_limited','198.51.100.9'),('webhook_failures','')}<=rules,rules)
 
     def test_ip_block_http_websocket_expiry_and_own_address(self):
         port = self.server.server_port
         proxied = lambda ip:{'X-Forwarded-Host':f'127.0.0.1:{port}','X-Bookdose-Client-IP':ip}
-        self.assertEqual(self.admin.call(f'{SEC}/ip-blocks',{'ip':'127.0.0.1','reason':'','duration':'1h'})[0],400)
-        self.assertEqual(self.admin.call(f'{SEC}/ip-blocks',{'ip':'198.51.100.5','duration':'1h'},headers=proxied('198.51.100.5'))[0],400)
+        self.assertEqual(self.owner.call(f'{SEC}/ip-blocks',{'ip':'127.0.0.1','reason':'','duration':'1h'})[0],400)
+        self.assertEqual(self.owner.call(f'{SEC}/ip-blocks',{'ip':'198.51.100.5','duration':'1h'},headers=proxied('198.51.100.5'))[0],400)
         for bad in ({'ip':'not-an-ip','duration':'1h'},{'ip':'203.0.113.9','duration':'2h'},{'ip':'203.0.113.0/24','duration':'1h'}):
-            self.assertEqual(self.admin.call(f'{SEC}/ip-blocks',bad)[0],400,bad)
-        answer = self.ok(self.admin,f'{SEC}/ip-blocks',{'ip':'203.0.113.9','reason':'ยิงรหัสผ่าน','duration':'24h'})
+            self.assertEqual(self.owner.call(f'{SEC}/ip-blocks',bad)[0],400,bad)
+        answer = self.ok(self.owner,f'{SEC}/ip-blocks',{'ip':'203.0.113.9','reason':'ยิงรหัสผ่าน','duration':'24h'})
         self.assertEqual([(b['ip'],b['reason'],b['created_by']) for b in answer['blocks']],[('203.0.113.9','ยิงรหัสผ่าน','admin@example.com')])
         self.assertTrue(after(hours=23)<answer['blocks'][0]['expires_at']<=after(hours=24))
-        self.ok(self.admin,f'{SEC}/ip-blocks',{'ip':'2001:DB8::1','duration':'permanent'})
-        blocked = self.ok(self.admin,f'{SEC}/ip-blocks')['blocks']
+        self.ok(self.owner,f'{SEC}/ip-blocks',{'ip':'2001:DB8::1','duration':'permanent'})
+        blocked = self.ok(self.owner,f'{SEC}/ip-blocks')['blocks']
         self.assertEqual({(b['ip'],b['expires_at']) for b in blocked if b['ip']=='2001:db8::1'},{('2001:db8::1',None)})
         # Checked first on every request: signed in or not, any route, even with a wrong Host.
         for path in ('/api/bootstrap','/api/login','/api/public/alpha','/api/nothing-here'):
@@ -680,12 +680,12 @@ class SecurityRoundTests(unittest.TestCase):
             cd.execute("UPDATE ip_blocks SET expires_at=? WHERE ip='203.0.113.9'",(ago(seconds=1),))
         blocks.invalidate()
         self.assertEqual(Client(self.base).call('/api/bootstrap',headers=proxied('203.0.113.9'))[0],200)
-        self.assertEqual([b['ip'] for b in self.ok(self.admin,f'{SEC}/ip-blocks')['blocks']],['2001:db8::1'])
+        self.assertEqual([b['ip'] for b in self.ok(self.owner,f'{SEC}/ip-blocks')['blocks']],['2001:db8::1'])
         # Removed by a Superadmin ({ip} in the body, or ?ip=).
-        self.ok(self.admin,f'{SEC}/ip-blocks',{'ip':'203.0.113.11','duration':'7d'})
-        self.assertEqual(self.ok(self.admin,f'{SEC}/ip-blocks',{'ip':'2001:db8::1'},'DELETE')['blocks'][0]['ip'],'203.0.113.11')
-        self.assertEqual(self.ok(self.admin,f'{SEC}/ip-blocks?ip=203.0.113.11',None,'DELETE')['blocks'],[])
-        self.assertEqual(self.admin.call(f'{SEC}/ip-blocks',{'ip':'203.0.113.11'},'DELETE')[0],404)
+        self.ok(self.owner,f'{SEC}/ip-blocks',{'ip':'203.0.113.11','duration':'7d'})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/ip-blocks',{'ip':'2001:db8::1'},'DELETE')['blocks'][0]['ip'],'203.0.113.11')
+        self.assertEqual(self.ok(self.owner,f'{SEC}/ip-blocks?ip=203.0.113.11',None,'DELETE')['blocks'],[])
+        self.assertEqual(self.owner.call(f'{SEC}/ip-blocks',{'ip':'203.0.113.11'},'DELETE')[0],404)
         self.assertEqual(Client(self.base).call('/api/bootstrap',headers=proxied('2001:db8::1'))[0],200)
         self.assertEqual(self.total('admin_ip_block'),5)
         with D.control() as cd:
@@ -701,25 +701,25 @@ class SecurityRoundTests(unittest.TestCase):
         for method,path,body in calls:
             self.assertEqual(manager.call(SEC+path,body,method)[0],403,path)
             self.assertEqual(Client(self.base).call(SEC+path,body,method)[0],401,path)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/settings'),model.DEFAULT_SETTINGS)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/ip-blocks')['blocks'],[])
+        self.assertEqual(self.ok(self.owner,f'{SEC}/settings'),model.DEFAULT_SETTINGS)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/ip-blocks')['blocks'],[])
         self.assertEqual(len(self.staff_session('admin@example.com')),1)
-        self.assertEqual(self.admin.call(f'{SEC}/nothing')[0],404)
+        self.assertEqual(self.owner.call(f'{SEC}/nothing')[0],404)
 
     def test_revoke_sessions(self):
         first,_ = self.create_member(email='agent@example.com')
         second,_ = self.staff_login('agent@example.com')
         second.boot()
-        self.assertEqual(self.ok(self.admin,f'{SEC}/revoke-sessions',{'actor':'staff','subject':'Agent@Example.com'}),{'revoked':2})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/revoke-sessions',{'actor':'staff','subject':'Agent@Example.com'}),{'revoked':2})
         self.assertEqual(first.call('/api/tickets')[0],401)
         self.assertEqual(second.call('/api/tickets')[0],401)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/revoke-sessions',{'actor':'staff','subject':'agent@example.com'}),{'revoked':0})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/revoke-sessions',{'actor':'staff','subject':'agent@example.com'}),{'revoked':0})
         customer = self.customer(email='visitor@example.com')
-        self.assertEqual(self.ok(self.admin,f'{SEC}/revoke-sessions',{'actor':'customer','subject':'visitor@example.com'}),{'revoked':1})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/revoke-sessions',{'actor':'customer','subject':'visitor@example.com'}),{'revoked':1})
         self.assertEqual(customer.call('/api/customer/overview')[0],401)
-        self.assertEqual(self.admin.call(f'{SEC}/revoke-sessions',{'actor':'customer','subject':'ghost@example.com'})[0],404)
-        self.assertEqual(self.admin.call(f'{SEC}/revoke-sessions',{'actor':'robot','subject':'agent@example.com'})[0],400)
-        self.assertEqual(self.admin.call(f'{SEC}/revoke-sessions',{'actor':'staff','subject':'not an email'})[0],400)
+        self.assertEqual(self.owner.call(f'{SEC}/revoke-sessions',{'actor':'customer','subject':'ghost@example.com'})[0],404)
+        self.assertEqual(self.owner.call(f'{SEC}/revoke-sessions',{'actor':'robot','subject':'agent@example.com'})[0],400)
+        self.assertEqual(self.owner.call(f'{SEC}/revoke-sessions',{'actor':'staff','subject':'not an email'})[0],400)
         self.assertEqual({e['subject']:e['count'] for e in self.events_of('sessions_revoked')},{'agent@example.com':2,'visitor@example.com':1})
         # A signed-out staff member signs in again as usual.
         rate_limit.RATES.clear()

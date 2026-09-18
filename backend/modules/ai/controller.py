@@ -22,5 +22,26 @@ def test_connection(req):
     return req.send(201,{'id':service.queue_connection_test(req.db,req.ctx),'status':'pending'})
 
 
+OWNERS_ONLY = 'เฉพาะเจ้าขององค์กร'
+
+
+@require_role('admin',message=OWNERS_ONLY)
+def draft_article(req):
+    """The overview's "ให้ AI ร่างบทความ" for one group of unanswered questions (ai/insights.py)."""
+    from backend.modules.ai import insights
+    limited(('ai-owner',req.ctx['id']),10,3600)
+    return req.send(201,{'id':insights.request_article(req.db,req.ctx,req.body),'status':'pending'})
+
+
+@require_role('admin',message=OWNERS_ONLY)
+def brief(req):
+    """The overview's "สรุปสถานการณ์วันนี้": made only when the owner asks (it costs a request to the provider)."""
+    from backend.modules.ai import insights
+    from backend.modules.automation import schema as automation_schema, service as automation
+    limited(('ai-owner',req.ctx['id']),10,3600)
+    day = automation._local_day_start(automation_schema.tz_offset(req.query))
+    return req.send(201,{'id':insights.request_brief(req.db,req.ctx,day),'status':'pending'})
+
+
 def job(req, job_id):
     return req.send(200,service.job_view(req.db,req.ctx,job_id))

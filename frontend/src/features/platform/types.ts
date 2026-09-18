@@ -24,9 +24,104 @@ export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[]; support: Rec
 
 export type TenantFilters = { q?: string; status?: string };
 
-export type SystemWorker = { name: string; running: boolean; seconds_ago: number | null };
+export type SystemWorker = { name: string; running: boolean; starting?: boolean; seconds_ago: number | null };
 
-export type SystemHour = { start: string; requests: number; errors: number };
+/** One thing to do on ภาพรวมระบบ → ต้องจัดการ; `action.do` is a button the card handles itself. */
+export type TodoItem = {
+  key: string;
+  level: 'critical' | 'warning' | 'info';
+  title: string;
+  detail: string;
+  action: { label: string; href: string; do?: 'key-saved' };
+};
+
+export type ChannelState = {
+  kind: 'line' | 'email' | 'facebook';
+  name: string;
+  enabled: boolean;
+  status: 'ok' | 'warning' | 'error';
+  error: string;
+  stuck: boolean;
+  last_received: string | null;
+  waiting: number;
+  failed: number;
+  unknown: number;
+  oldest_waiting: string | null;
+  last_failure: string;
+  last_failure_at: string | null;
+};
+
+export type OrgChannels = { id: string; name: string; slug: string; status: 'ok' | 'warning' | 'error'; channels: ChannelState[] };
+
+export type OrgUsage = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  members: number;
+  open_cases: number;
+  messages_7d: number;
+  storage_bytes: number;
+  last_active: string | null;
+};
+
+export type SecuritySummary = { failed_sign_ins: number; locked_accounts: number; blocked_ips: number; trap_hits: number; open_alerts: number };
+
+export type BackupSettings = { enabled: boolean; hour: number; keep: number };
+
+export type BackupFile = { name: string; kind: 'auto' | 'manual'; size: number; created_at: string };
+
+export type BackupsView = {
+  folder: string;
+  inside_data: boolean;
+  same_disk: boolean;
+  from_environment: boolean;
+  settings: BackupSettings;
+  last: { at: string; ok: boolean; name?: string; size?: number; kind: string; error?: string } | null;
+  files: BackupFile[];
+  running: boolean;
+  key_id: string;
+};
+
+export type Announcement = {
+  text: string;
+  level: 'info' | 'warning';
+  audience: 'staff' | 'all';
+  starts_at?: string;
+  ends_at?: string;
+  by?: string;
+  at?: string;
+};
+
+export type AnnouncementInput = Pick<Announcement, 'text' | 'level' | 'audience' | 'starts_at' | 'ends_at'>;
+
+/** GET /api/platform/health */
+export type HealthPage = {
+  todo: TodoItem[];
+  channels: OrgChannels[];
+  usage: OrgUsage[];
+  security: SecuritySummary;
+  backups: BackupsView;
+  announcement: Announcement | null;
+};
+
+/** A row of GET /api/platform/notifications: a to-do of ภาพรวมระบบ, or the answer to the admin's own support request.
+    `notify`: counted on the bell (advice and a request still waiting are listed only). */
+export type PlatformNotice = {
+  key: string;
+  kind: 'system' | 'support';
+  level: 'critical' | 'warning' | 'info';
+  icon: string;
+  title: string;
+  detail: string;
+  href: string;
+  at: string | null;
+  /** When an approved support access ends. */
+  until: string | null;
+  notify: boolean;
+};
+
+export type SystemHour ={ start: string; requests: number; errors: number };
 
 export type SystemError = { at: string; source: string; detail: string; where: string };
 
@@ -61,7 +156,7 @@ export type SystemOverview = {
   security?: { secret_key: 'environment' | 'file'; account_protected: boolean };
 };
 
-export type PlatformAdmin = { id: string; name: string; email: string; created_at: string };
+export type PlatformAdmin = { id: string; name: string; email: string; created_at: string; owner: boolean };
 
 /** GET /api/platform/admins */
 export type PlatformTeam = { admins: PlatformAdmin[]; me: string };

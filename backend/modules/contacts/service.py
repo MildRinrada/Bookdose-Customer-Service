@@ -36,7 +36,7 @@ def create_contact(db, ctx, body):
 def update_contact(db, ctx, contact_id, body):
     require(contact_visible(db,contact_id,ctx),'ไม่พบลูกค้า',404)
     # Shared contact details are edited by managers to avoid cross-team mutations.
-    require(ctx['role'] in ('admin','manager'),'เฉพาะผู้ดูแลหรือหัวหน้าทีมแก้ไขข้อมูลลูกค้าได้',403)
+    require(ctx['role'] in ('admin','manager'),'เฉพาะเจ้าขององค์กรแก้ไขข้อมูลลูกค้าได้',403)
     values,names = schema.contact_values(body)
     repository.update(db,contact_id,*values)
     repository.save_names(db,contact_id,*names)
@@ -48,7 +48,7 @@ def merge_contacts(db, ctx, target_id, body):
     """Staff-confirmed merge of duplicate contacts: their cases and conversations move to the target, blank target
     details are filled from them, notes are combined, then the duplicates are deleted. Never done automatically.
     A support-page account that owned a duplicate owns the target afterwards (staff said they are the same person)."""
-    require(ctx['role'] in ('admin','manager'),'เฉพาะผู้ดูแลหรือหัวหน้าทีมรวมข้อมูลลูกค้าได้',403)
+    require(ctx['role'] in ('admin','manager'),'เฉพาะเจ้าขององค์กรรวมข้อมูลลูกค้าได้',403)
     target = contact_visible(db,target_id,ctx)
     require(target,'ไม่พบลูกค้า',404)
     sources = [contact_visible(db,contact_id,ctx) for contact_id in schema.merge_sources(body,target_id)]
@@ -71,7 +71,7 @@ def delete_contact(db, ctx, contact_id):
     """Remove a customer record. Refused while cases or conversations still point at it: those carry the history,
     so they are moved (merge) or dealt with first, and nothing is ever silently orphaned. What is removed goes to
     the recycle bin, so a delete aimed at the wrong row can be undone."""
-    require(ctx['role'] in ('admin','manager'),'เฉพาะผู้ดูแลหรือหัวหน้าทีมลบข้อมูลลูกค้าได้',403)
+    require(ctx['role'] in ('admin','manager'),'เฉพาะเจ้าขององค์กรลบข้อมูลลูกค้าได้',403)
     contact = contact_visible(db,contact_id,ctx)
     require(contact,'ไม่พบลูกค้า',404)
     counts = repository.linked_counts(db,contact_id)

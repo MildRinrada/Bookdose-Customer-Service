@@ -94,5 +94,44 @@ class PlatformRoleTests(unittest.TestCase):
         self.assertEqual([m['kind'] for m in self.ok(self.admin,f'/api/conversations/{conv}')['messages']],['customer'])
 
 
+    def test_only_the_platform_owner_manages_the_platform_admins(self):
+        team = self.ok(self.owner,'/api/platform/admins')
+        self.assertEqual([(a['email'],a['owner']) for a in team['admins']],[('admin@example.com',True)])
+        self.assertTrue(self.ok(self.owner,'/api/bootstrap')['user']['platform_owner'])
+        ops_id = self.ok(self.owner,'/api/platform/admins',{'email':'ops@example.com','admin_name':'ทีมเซิร์ฟเวอร์','password':PASSWORD})['id']
+        ops = Client(self.base)
+        boot = ops.login('ops@example.com')
+        self.assertEqual((boot['user']['platform_admin'],boot['user']['platform_owner']),(True,False))
+        # An admin looks after the platform but does not grow or shrink its team; the owner is never removed.
+        self.assertEqual(ops.call('/api/platform/system')[0],200)
+        self.assertEqual(ops.call('/api/platform/admins',{'email':'more@example.com','admin_name':'อีกคน','password':PASSWORD})[0],403)
+        owner_id = next(a['id'] for a in team['admins'] if a['owner'])
+        self.assertEqual(ops.call(f'/api/platform/admins/{owner_id}',None,'DELETE')[0],403)
+        self.assertEqual(self.owner.call(f'/api/platform/admins/{owner_id}',None,'DELETE')[0],400)
+        self.ok(self.owner,f'/api/platform/admins/{ops_id}',None,'DELETE')
+        self.assertEqual(ops.call('/api/platform/system')[0],403)
+
+    def test_an_organization_has_owners_and_agents_and_always_an_owner(self):
+        me = self.boot['user']['id']
+        self.assertEqual(self.admin.call('/api/members',{'name':'หัวหน้า','email':'lead@example.com','password':PASSWORD,
+                                                        'role':'manager','team_id':self.team})[0],400)
+        # The only owner cannot step down; with a second owner they can.
+        self.assertEqual(self.admin.call(f'/api/members/{me}',{'team_id':self.team,'role':'agent','active':True},'PATCH')[0],400)
+        _,second = self.create_member(role='admin',email='owner2@example.com')
+        other = Client(self.base)
+        other.login('owner2@example.com')
+        self.assertEqual(other.call(f'/api/members/{second}',{'team_id':self.team,'role':'agent','active':True},'PATCH')[0],400)
+        self.ok(other,f'/api/members/{me}',{'team_id':self.team,'role':'agent','active':True},'PATCH')
+        self.assertEqual(other.call(f'/api/members/{second}',{'team_id':self.team,'role':'admin','active':False},'PATCH')[0],400)
+        # A team lead from before becomes an agent when the server starts.
+        lead = self.ok(other,'/api/members',{'name':'หัวหน้าเดิม','email':'oldlead@example.com','password':PASSWORD,
+                                               'role':'agent','team_id':self.team})['id']
+        with base.D.control() as cd:
+            cd.execute("UPDATE memberships SET role='manager' WHERE user_id=?",(lead,))
+        base.D.init()
+        with base.D.control() as cd:
+            self.assertEqual(cd.execute('SELECT role FROM memberships WHERE user_id=?',(lead,)).fetchone()[0],'agent')
+
+
 if __name__=='__main__':
     unittest.main()

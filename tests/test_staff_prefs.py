@@ -101,8 +101,10 @@ class StaffPrefsTests(unittest.TestCase):
         self.assertIsNone(self.ticket_of(third)['assignee_id'])
 
     def test_escalation_goes_to_an_available_lead(self):
-        first,first_id = self.create_member(role='manager',email='lead1@example.com')
-        second,second_id = self.create_member(role='manager',email='lead2@example.com')
+        first,first_id = self.create_member(role='admin',email='lead1@example.com')
+        second,second_id = self.create_member(role='admin',email='lead2@example.com')
+        # The organization's first owner is away: the two under test are the ones to choose from.
+        self.ok(self.admin,'/api/account/status',{'status':'offline'})
         with D.control() as cd, D.tenant(self.org) as db:
             A.escalate_due(cd,db,self.org)
         for away,expected in ((first,second_id),(second,first_id)):

@@ -1,24 +1,36 @@
 'use client';
 
-import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { ChartColumn, ErrorState, PageLoading, StatCard } from '@/components/ui/display';
 import { AuditList } from '@/features/audit';
 import { date, number, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
-import { SYSTEM_PATH } from './api';
-import { SmsSettingsCard } from './components/SmsSettingsCard';
+import { HEALTH_PATH, SYSTEM_PATH } from './api';
+import { AnnouncementCard, BackupsCard, ChannelsCard, SecurityCard, TodoCard, UsageCard } from './components/HealthCards';
 import { apiAreaLabels, bytesText, durationText, logSourceLabels, workerLabels, workerStatus } from './labels';
-import type { SystemOverview } from './types';
+import type { HealthPage, SystemOverview } from './types';
 
-/* Platform console, ภาพรวมระบบ: is the server healthy, how much is the API used and by which organization, is the
-   background work moving, and what went wrong lately. The numbers come from the running server and start again when
-   it restarts; the page refreshes itself every 30 seconds. Markup: pages/platform/system*.html. */
+/* Platform console, ภาพรวมระบบ: what needs doing first (ต้องจัดการ), then is the server healthy, are the backups and
+   every organization's channels fine, how busy each organization is, security at a glance, how much the API is used,
+   what went wrong lately, and the announcement to every organization. The server's numbers come from the running
+   server and start again when it restarts; the page refreshes itself (30 seconds; the cross-organization checks every
+   minute). Markup: pages/platform.css (.system-page). */
 
 export function SystemScreen() {
   // A failed refresh keeps what is shown; the next round tries again (like the old refreshSystem).
   const system = useApi<SystemOverview>(SYSTEM_PATH, { refetchInterval: 30000 });
-  if (system.data) return <SystemView data={system.data} onRefresh={() => void system.refetch()} />;
+  const health = useApi<HealthPage>(HEALTH_PATH, { refetchInterval: 60000 });
+  if (system.data)
+    return (
+      <SystemView
+        data={system.data}
+        health={health.data}
+        onRefresh={() => {
+          void system.refetch();
+          void health.refetch();
+        }}
+      />
+    );
   if (system.error) return <ErrorState error={system.error} onRetry={() => void system.refetch()} />;
   return <PageLoading />;
 }
@@ -34,7 +46,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 const pad = (hour: number) => String(hour).padStart(2, '0');
 
-function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () => void }) {
+function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?: HealthPage; onRefresh: () => void }) {
   const s = data.server;
   const q = data.queues;
   const stopped = data.workers.filter((w) => !w.running).length;
@@ -60,7 +72,7 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
   const errors = data.errors.slice(0, 30);
 
   return (
-    <>
+    <div className="system-page">
       <div className="page-heading">
         <div>
           <h1>ภาพรวมระบบ</h1>
@@ -73,28 +85,11 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           </button>
         </div>
       </div>
-      {data.security && !data.security.account_protected && (
-        <p className="notice warning system-notice" role="status">
-          <Icon name="shield" />
-          <span>
-            บัญชีผู้ดูแลแพลตฟอร์มของคุณยังใช้รหัสผ่านอย่างเดียว ·{' '}
-            <Link href="/account?tab=security">เปิดการยืนยันสองขั้นตอนหรือเพิ่ม Passkey</Link>
-          </span>
-        </p>
-      )}
-      {data.security?.secret_key === 'file' && (
-        <p className="notice system-notice" role="status">
-          <Icon name="lock" />
-          <span>
-            Token ของ LINE, Facebook, OpenAI และรหัสผ่านอีเมลถูกเข้ารหัสด้วยกุญแจในไฟล์ <code>data/keys/secret.key</code> ซึ่งอยู่ในโฟลเดอร์ข้อมูลเดียวกัน
-            บนเซิร์ฟเวอร์จริงให้ตั้ง <code>BOOKDOSE_SECRET_KEY</code> แยกจากโฟลเดอร์ข้อมูลและไฟล์สำรอง
-          </span>
-        </p>
-      )}
+      {health && <TodoCard items={health.todo} />}
       <div className="stats-grid">
         <StatCard
           label="สถานะเซิร์ฟเวอร์"
-          value={stopped ? 'ต้องตรวจสอบ' : 'ทำงานปกติ'}
+          value={stopped ? 'ต้องตรวจสอบ' : 'ปกติ'}
           icon="shield"
           color={stopped ? 'red' : 'green'}
           foot={stopped ? `งานเบื้องหลังหยุด ${stopped} อย่าง` : `เปิดมาแล้ว ${durationText(data.uptime_seconds)}`}
@@ -105,6 +100,7 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           label="คำขอ API 24 ชม."
           value={number(data.requests)}
           icon="chart"
+          color="blue"
           foot={`ชั่วโมงล่าสุด ${number(data.last_hour)} · เฉลี่ย ${data.average_ms} ms`}
           href="/platform/system"
         />
@@ -121,12 +117,13 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           label="องค์กรที่ใช้งาน"
           value={number(data.organizations.active)}
           icon="globe"
+          color="blue"
           foot={`ระงับ ${data.organizations.suspended} · สมาชิก ${number(data.organizations.members)} คน`}
           href="/platform/organizations"
         />
       </div>
       <div className="system-grid">
-        <section className="card">
+        <section className="card" id="health">
           <div className="card-header">
             <div>
               <h2>Server Health</h2>
@@ -152,7 +149,7 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
             </div>
           </div>
         </section>
-        <section className="card">
+        <section className="card" id="workers">
           <div className="card-header">
             <div>
               <h2>งานเบื้องหลัง</h2>
@@ -163,7 +160,7 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           <div className="card-body">
             <ul className="system-workers">
               {data.workers.map((w) => (
-                <li key={w.name} className={`system-worker${w.running ? ' ok' : ''}`}>
+                <li key={w.name} className={`system-worker${w.running ? ' ok' : ''}${w.starting ? ' starting' : ''}`}>
                   <span className="system-dot" aria-hidden="true" />
                   <span className="system-worker-text">
                     <strong>{workerLabels[w.name] || w.name}</strong>
@@ -180,6 +177,20 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           </div>
         </section>
       </div>
+      {health && (
+        <>
+          <div className="system-grid system-section">
+            <BackupsCard view={health.backups} />
+            <SecurityCard summary={health.security} />
+          </div>
+          <div className="system-section">
+            <ChannelsCard orgs={health.channels} />
+          </div>
+          <div className="system-section">
+            <UsageCard orgs={health.usage} />
+          </div>
+        </>
+      )}
       <section className="card system-section">
         <div className="card-header">
           <div>
@@ -273,7 +284,11 @@ function SystemView({ data, onRefresh }: { data: SystemOverview; onRefresh: () =
           </div>
         </section>
       </div>
-      <SmsSettingsCard />
-    </>
+      {health && (
+        <div className="system-section">
+          <AnnouncementCard current={health.announcement} />
+        </div>
+      )}
+    </div>
   );
 }

@@ -38,7 +38,7 @@ export function TeamsPanel() {
         <div className="card-header">
           <div>
             <h2>สมาชิกในองค์กร</h2>
-            <p>ผู้ดูแลองค์กรและหัวหน้าทีมเห็นงานทุกทีม เจ้าหน้าที่เห็นเฉพาะทีมของตน</p>
+            <p>เจ้าขององค์กรเห็นงานทุกทีมและจัดการองค์กรได้ (มีได้หลายคน อย่างน้อย 1 คน) เจ้าหน้าที่ตอบลูกค้าและเห็นเฉพาะทีมของตน</p>
           </div>
           <button type="button" className="btn" onClick={() => openMember()}>
             <Icon name={work.customer_email ? 'mail' : 'plus'} />

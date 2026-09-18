@@ -2,7 +2,21 @@
 AI settings are rows in the organization's settings table (keys starting with ai_)."""
 
 DEFAULT_MODEL = 'gpt-4.1-mini'
-JOB_MODES = ('draft','bot','test')
+# draft: a reply for staff; bot: the chatbot's answer; test: the connection check; article: an article drafted from
+# questions no article answers; brief: the overview's summary of today (the last two for an organization's owner).
+JOB_MODES = ('draft','bot','test','article','brief')
+OWNER_MODES = ('article','brief')
+
+JOBS_TABLE = '''CREATE TABLE IF NOT EXISTS {name} (
+    id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
+    trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
+    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief')),
+    status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
+    result TEXT NOT NULL DEFAULT '{{}}', error TEXT NOT NULL DEFAULT '',
+    lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+    payload TEXT NOT NULL DEFAULT '{{}}'
+);'''
 
 TENANT_TABLES = '''
 CREATE TABLE IF NOT EXISTS ai_conversations (
@@ -10,15 +24,7 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
     mode TEXT NOT NULL CHECK(mode IN ('human','bot')),
     reason TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS ai_jobs (
-    id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
-    trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
-    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test')),
-    status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
-    result TEXT NOT NULL DEFAULT '{}', error TEXT NOT NULL DEFAULT '',
-    lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,
-    output_tokens INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-);
+'''+JOBS_TABLE.format(name='ai_jobs')+'''
 CREATE UNIQUE INDEX IF NOT EXISTS ai_bot_trigger ON ai_jobs(trigger_id) WHERE mode='bot';
 CREATE INDEX IF NOT EXISTS ai_jobs_pending ON ai_jobs(status,created_at);
 CREATE TABLE IF NOT EXISTS ai_message_meta (

@@ -27,6 +27,38 @@ def write_key(tenant_id, value):
     secret_box.write_file(path,value)
 
 
+OLD_JOB_COLUMNS = ('id,conversation_id,trigger_id,requested_by,mode,status,result,error,lease,config_version,'
+                   'input_tokens,output_tokens,created_at,updated_at')
+
+
+def widen_jobs(db):
+    """Databases from before the owner's AI (article, brief) rebuild ai_jobs with the wider mode list and the payload
+    column; SQLite cannot change a CHECK in place. Every job is kept. Runs once."""
+    from backend.modules.ai.model import JOBS_TABLE
+    row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_jobs'").fetchone()
+    if not row or "'article'" in row[0]:
+        return
+    db.commit()
+    # The copy is the same rows: their references were checked when written (and the pragma only works outside a
+    # transaction).
+    db.execute('PRAGMA foreign_keys=OFF')
+    try:
+        db.execute('BEGIN IMMEDIATE')
+        db.execute('DROP TABLE IF EXISTS ai_jobs_wide')
+        db.execute(JOBS_TABLE.format(name='ai_jobs_wide'))
+        db.execute(f'INSERT INTO ai_jobs_wide({OLD_JOB_COLUMNS}) SELECT {OLD_JOB_COLUMNS} FROM ai_jobs')
+        db.execute('DROP TABLE ai_jobs')
+        db.execute('ALTER TABLE ai_jobs_wide RENAME TO ai_jobs')
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ai_bot_trigger ON ai_jobs(trigger_id) WHERE mode='bot'")
+        db.execute('CREATE INDEX IF NOT EXISTS ai_jobs_pending ON ai_jobs(status,created_at)')
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.execute('PRAGMA foreign_keys=ON')
+
+
 # Settings
 def settings(db):
     return dict(db.execute("SELECT key,value FROM settings WHERE key LIKE 'ai_%'").fetchall())
@@ -104,10 +136,21 @@ def bot_jobs_for_conversation(db, conversation_id):
     return db.execute("SELECT COUNT(*) FROM ai_jobs WHERE conversation_id=? AND mode='bot'",(conversation_id,)).fetchone()[0]
 
 
-def insert_job(db, job_id, conversation_id, trigger_id, requested_by, mode, config_version):
-    db.execute('''INSERT INTO ai_jobs(id,conversation_id,trigger_id,requested_by,mode,status,config_version,created_at,updated_at)
-                  VALUES(?,?,?,?,?,'pending',?,?,?)''',
-               (job_id,conversation_id,trigger_id,requested_by,mode,config_version,now(),now()))
+def insert_job(db, job_id, conversation_id, trigger_id, requested_by, mode, config_version, payload='{}'):
+    db.execute('''INSERT INTO ai_jobs(id,conversation_id,trigger_id,requested_by,mode,status,config_version,created_at,updated_at,payload)
+                  VALUES(?,?,?,?,?,'pending',?,?,?,?)''',
+               (job_id,conversation_id,trigger_id,requested_by,mode,config_version,now(),now(),payload))
+
+
+def latest_owner_job(db, user_id, mode, since):
+    """The member's newest article or brief job since then (the overview shows the last brief of the day)."""
+    return one(db,'SELECT * FROM ai_jobs WHERE requested_by=? AND mode=? AND created_at>=? ORDER BY created_at DESC,rowid DESC LIMIT 1',
+               (user_id,mode,since))
+
+
+def pending_owner_job(db, user_id, mode):
+    row = one(db,f'SELECT id FROM ai_jobs WHERE requested_by=? AND mode=? AND {IN_FLIGHT}',(user_id,mode))
+    return row['id'] if row else None
 
 
 def find_job(db, job_id):

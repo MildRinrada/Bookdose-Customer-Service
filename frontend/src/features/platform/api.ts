@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import type { GlobalArticleInput } from './types';
+import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, GlobalArticleInput } from './types';
 
 /* Endpoints of backend/modules/platform/routes.py. Every platform read lives
    under /api/platform, so refreshing PLATFORM_PREFIX after a write also redraws the histories shown on the
@@ -24,12 +24,30 @@ export const setTenantStatus = (tenantId: string, status: 'active' | 'suspended'
 export const requestSupportAccess = (tenantId: string, reason: string, hours: number) =>
   api<{ id: string; status: 'pending' }>(`${TENANTS_PATH}/${tenantId}/support-access`, { reason, hours });
 
-/** Withdraw a waiting request, or leave an access in force early. */
 /** Give an organization an admin: an emailed invitation, or (with a first password) the account made at once. */
 export const addTenantAdmin = (tenantId: string, body: { email: string; admin_name?: string; password?: string }) =>
   api<{ mode: 'invited'; sent: boolean } | { mode: 'created' }>(`${TENANTS_PATH}/${tenantId}/admins`, body);
 
+/** Withdraw a waiting request, or leave an access in force early. */
 export const withdrawSupportAccess = (id: string) => api<{ ok: true }>(`${PLATFORM_PREFIX}/support-access/${id}`, undefined, 'DELETE');
+
+/* ภาพรวมระบบ beyond the server's numbers (backend platform/health.py, backups.py). */
+export const HEALTH_PATH = '/api/platform/health';
+export const BACKUPS_PATH = '/api/platform/backups';
+export const ANNOUNCEMENT_PATH = '/api/platform/announcement';
+/** The console's bell (health.notifications). */
+export const NOTIFICATIONS_PATH = '/api/platform/notifications';
+
+/** "I keep the key file somewhere else": the reminder stops until the key changes. */
+export const markKeySaved = () => api<{ ok: true }>(`${PLATFORM_PREFIX}/checklist/key-saved`, {});
+export const retryChannels = (tenantId: string) =>
+  api<{ retried: number; skipped: number; reasons: string[] }>(`${TENANTS_PATH}/${tenantId}/channels/retry`, {});
+export const runBackup = () => api<BackupsView>(BACKUPS_PATH, {});
+export const saveBackupSettings = (body: BackupSettings) => api<BackupsView>(`${BACKUPS_PATH}/settings`, body);
+/** A plain link: the browser downloads the archive with the session cookie (GET needs no CSRF token). */
+export const backupFileUrl = (name: string) => `${BACKUPS_PATH}/${encodeURIComponent(name)}`;
+export const saveAnnouncement = (body: AnnouncementInput) => api<{ announcement: Announcement }>(ANNOUNCEMENT_PATH, body);
+export const clearAnnouncement = () => api<{ announcement: null }>(ANNOUNCEMENT_PATH, undefined, 'DELETE');
 
 export const addPlatformAdmin = (body: { email: string; admin_name?: string; password?: string }) => api<{ id: string }>(ADMINS_PATH, body);
 

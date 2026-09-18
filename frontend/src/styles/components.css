@@ -217,9 +217,12 @@
   margin-left: 5px;
   font-size: 1rem;
 }
+/* position: an absolutely placed screen-reader label in a header cell stays inside the scroll box instead of widening
+   the page on a phone. */
 .table-scroll {
   overflow: auto;
   max-width: 100%;
+  position: relative;
 }
 table {
   width: 100%;

@@ -427,3 +427,67 @@
   margin-bottom: 10px;
   cursor: pointer;
 }
+
+/* จัดการองค์กร: the page's own tab bar (the shared .tabs, on the page instead of inside a card), then the list. */
+.platform-tabs {
+  gap: 4px 28px;
+  padding: 0 2px;
+  margin: -8px 0 18px;
+}
+.platform-tabs .tab {
+  cursor: pointer;
+}
+/* Each organization is its own clearly bounded row: the table is the page's main content. */
+#platform-organizations tbody td {
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+#platform-organizations tbody tr:last-child td {
+  border-bottom: 0;
+}
+#platform-organizations thead th {
+  font-weight: 600;
+}
+.card+.platform-note {
+  align-items: flex-start;
+  margin: 14px 2px 0;
+}
+.card+.platform-note .icon {
+  margin-top: 3px;
+}
+
+/* ตั้งค่าระบบ: the email and SMS sections, reachable as /platform/settings#email and #sms. */
+.platform-settings-section {
+  scroll-margin-top: 16px;
+}
+.platform-settings-section>.card.mt:first-child {
+  margin-top: 0;
+}
+
+/* จัดการองค์กร with the ผู้ดูแลองค์กร column: seven columns. The widths add up to 100%; below the table's minimum width
+   it scrolls sideways instead of letting buttons run into the next column. */
+#platform-organizations table {
+  min-width: 1080px;
+}
+#platform-organizations th:nth-child(1) { width: 18%; }
+#platform-organizations th:nth-child(2) { width: 17%; }
+#platform-organizations th:nth-child(3) { width: 17%; }
+#platform-organizations th:nth-child(4) { width: 7%; }
+#platform-organizations th:nth-child(5) { width: 10%; }
+#platform-organizations th:nth-child(6) { width: 18%; }
+#platform-organizations th:nth-child(7) { width: 13%; }
+#platform-organizations td {
+  overflow-wrap: anywhere;
+}
+#platform-organizations td .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+#platform-organizations .org-status-action {
+  white-space: normal;
+}
+#platform-organizations .org-status-action .org-access {
+  justify-content: flex-end;
+}

@@ -11,7 +11,7 @@ export const statusLabels: Record<string, string> = {
 
 export const priorityLabels: Record<string, string> = { low: 'ต่ำ', normal: 'ปกติ', high: 'สูง', urgent: 'เร่งด่วน' };
 
-export const roleLabels: Record<string, string> = { admin: 'ผู้ดูแลองค์กร', manager: 'หัวหน้าทีม', agent: 'เจ้าหน้าที่' };
+export const roleLabels: Record<string, string> = { admin: 'เจ้าขององค์กร', agent: 'เจ้าหน้าที่' };
 
 export const tenantStatusLabels: Record<string, string> = { active: 'เปิดใช้งาน', suspended: 'ระงับใช้งาน' };
 

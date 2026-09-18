@@ -60,9 +60,9 @@ class SmsSettingsTests(unittest.TestCase):
     create_member = base.IntegrationTests.create_member
 
     def test_thaibulksms_credentials_are_sealed_and_never_come_back(self):
-        answer = self.ok(self.admin,SMS,THAI)
+        answer = self.ok(self.owner,SMS,THAI)
         self.assertEqual((answer['provider'],answer['sender'],answer['configured']['thaibulksms']),('thaibulksms','BOOKDOSE',True))
-        text = json.dumps(answer)+json.dumps(self.ok(self.admin,SMS))
+        text = json.dumps(answer)+json.dumps(self.ok(self.owner,SMS))
         self.assertNotIn(THAI['key'],text)
         self.assertNotIn(THAI['secret'],text)
         on_disk = (D.DATA/'secrets'/'sms.json').read_text()
@@ -71,9 +71,9 @@ class SmsSettingsTests(unittest.TestCase):
         with D.control() as cd:
             self.assertNotIn(THAI['secret'],json.dumps([list(r) for r in cd.execute('SELECT * FROM platform_settings')]))
         # Saving again without the credentials keeps them; switching to Twilio and back does not lose them either.
-        self.ok(self.admin,SMS,{'provider':'thaibulksms','sender':'NEWNAME'})
-        self.ok(self.admin,SMS,TWILIO)
-        again = self.ok(self.admin,SMS,{'provider':'thaibulksms','sender':'NEWNAME'})
+        self.ok(self.owner,SMS,{'provider':'thaibulksms','sender':'NEWNAME'})
+        self.ok(self.owner,SMS,TWILIO)
+        again = self.ok(self.owner,SMS,{'provider':'thaibulksms','sender':'NEWNAME'})
         self.assertEqual(again['configured'],{'thaibulksms':True,'twilio':True})
         self.assertEqual(sms.read_secret()['thaibulksms']['secret'],THAI['secret'])
         # Only a platform admin sees or changes it.
@@ -88,14 +88,14 @@ class SmsSettingsTests(unittest.TestCase):
                      {**TWILIO,'sender':'0812345678'},
                      {**TWILIO,'secret':'short'},
                      {'provider':'carrier-pigeon'}):
-            self.assertEqual(self.admin.call(SMS,body)[0],400,body)
-        self.assertEqual(self.ok(self.admin,SMS)['provider'],'off')
+            self.assertEqual(self.owner.call(SMS,body)[0],400,body)
+        self.assertEqual(self.ok(self.owner,SMS)['provider'],'off')
 
     def test_the_test_message_goes_to_thaibulksms_the_way_it_expects(self):
-        self.ok(self.admin,SMS,THAI)
+        self.ok(self.owner,SMS,THAI)
         provider = Provider(201,{'remaining_credit':99,'phone_number_list':[{'number':'0812345678'}],'bad_phone_number_list':[]})
         with patch.object(sms,'open_without_redirects',provider):
-            answer = self.ok(self.admin,SMS+'/test',{'to':'081-234-5678'})
+            answer = self.ok(self.owner,SMS+'/test',{'to':'081-234-5678'})
         self.assertEqual(answer,{'sent':True,'to_masked':'+66*****5678'})
         request = provider.requests[0]
         self.assertEqual(request.full_url,'https://api-v2.thaibulksms.com/sms')
@@ -105,48 +105,48 @@ class SmsSettingsTests(unittest.TestCase):
         self.assertIn('ทดสอบ',form['message'])
 
     def test_the_test_message_goes_to_twilio_the_way_it_expects(self):
-        self.ok(self.admin,SMS,TWILIO)
+        self.ok(self.owner,SMS,TWILIO)
         provider = Provider(201,{'sid':'SM'+'0'*32,'status':'queued'})
         with patch.object(sms,'open_without_redirects',provider):
-            self.ok(self.admin,SMS+'/test',{'to':'+447700900123'})
+            self.ok(self.owner,SMS+'/test',{'to':'+447700900123'})
         request = provider.requests[0]
         self.assertEqual(request.full_url,f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO['account']}/Messages.json")
         form = provider.form()
         self.assertEqual((form['To'],form['From']),('+447700900123','+15551234567'))
         # A Messaging Service sends instead of one number.
-        self.ok(self.admin,SMS,{**TWILIO,'sender':'MG'+'2'*32,'secret':''})
+        self.ok(self.owner,SMS,{**TWILIO,'sender':'MG'+'2'*32,'secret':''})
         with patch.object(sms,'open_without_redirects',provider):
-            self.ok(self.admin,SMS+'/test',{'to':'0812345678'})
+            self.ok(self.owner,SMS+'/test',{'to':'0812345678'})
         self.assertEqual(provider.form()['MessagingServiceSid'],'MG'+'2'*32)
         self.assertNotIn('From',provider.form())
 
     def test_a_refusal_says_what_went_wrong(self):
-        self.ok(self.admin,SMS,THAI)
+        self.ok(self.owner,SMS,THAI)
         cases = [(Provider(401,{'error':{'name':'UNAUTHORIZED'}}),'ข้อมูลบัญชี'),
                  (Provider(400,{'error':{'name':'NOT_ENOUGH_CREDIT','description':'Credit is not enough'}}),'เครดิต'),
                  (Provider(201,{'bad_phone_number_list':[{'number':'0812345678'}]}),'ปฏิเสธ'),
                  (Provider(error=TimeoutError()),'ไม่ทราบผล')]
         for provider,words in cases:
             with patch.object(sms,'open_without_redirects',provider):
-                status,answer = self.admin.call(SMS+'/test',{'to':'0812345678'})
+                status,answer = self.owner.call(SMS+'/test',{'to':'0812345678'})
             self.assertEqual(status,502)
             self.assertIn(words,answer['error'])
             base.rate_limit.RATES.clear()
         # A number outside Thailand never reaches ThaiBulkSMS.
         provider = Provider()
         with patch.object(sms,'open_without_redirects',provider):
-            self.assertEqual(self.admin.call(SMS+'/test',{'to':'+447700900123'})[0],502)
+            self.assertEqual(self.owner.call(SMS+'/test',{'to':'+447700900123'})[0],502)
         self.assertEqual(provider.requests,[])
 
     def test_nothing_is_sent_while_off(self):
-        self.assertEqual(self.admin.call(SMS+'/test',{'to':'0812345678'})[0],409)
+        self.assertEqual(self.owner.call(SMS+'/test',{'to':'0812345678'})[0],409)
 
 
 class GuestSmsTests(guest_tests.GuestChatTests):
     """A guest without email follows the chat from another device by SMS, through the real provider."""
 
     def test_a_guest_gets_the_follow_link_and_a_reply_notice_by_real_sms(self):
-        self.ok(self.admin,SMS,THAI)
+        self.ok(self.owner,SMS,THAI)
         page = self.browser()
         conv = self.started(page)
         self.assertTrue(self.overview(page)['follow']['sms_ready'])

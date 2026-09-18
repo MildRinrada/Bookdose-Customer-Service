@@ -168,7 +168,7 @@ class ChannelTests(unittest.TestCase):
         conv=self.incoming_line();mid=self.reply(conv)
         original=self.org
         route=next(c for c in self.ok(self.admin,'/api/channels') if c['kind']=='line')['route_id']
-        second=self.ok(self.owner,'/api/platform/tenants',{'name':'Second','slug':'second','email':'admin@example.com'})['id']
+        second=self.ok(self.owner,'/api/platform/tenants',{'name':'Second','slug':'second','email':'orgadmin@example.com'})['id']
         self.admin.switch(second)
         self.assertEqual(self.admin.call('/api/conversations/'+conv['id'])[0],404)
         self.assertEqual(self.admin.call('/api/messages/'+mid+'/retry',{})[0],404)

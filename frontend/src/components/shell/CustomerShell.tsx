@@ -10,6 +10,7 @@ import { useCustomer, useCustomerLogout, useCustomerOverview, type CustomerOverv
 import { RealtimeProvider } from '@/lib/realtime-provider';
 import { customerAccountPages, customerPageOf, customerServicePages, type CustomerPage } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
+import { AnnouncementBar } from './AnnouncementBar';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
 import { SessionGuard } from './SessionGuard';
 import { TextSizeMenu } from './TextSize';
@@ -83,6 +84,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="app-main">
+        <AnnouncementBar announcement={me.announcement} />
         <header className="topbar">
           <div className="breadcrumb">
             <MobileToggle onClick={() => setMobileOpen((o) => !o)} />

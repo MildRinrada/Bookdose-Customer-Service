@@ -9,7 +9,7 @@ import { saveSmsSettings, sendTestSms, SMS_PATH } from '@/features/guest/api';
 import type { SmsProvider, SmsSettings } from '@/features/guest/types';
 import { useApi, useInvalidate } from '@/lib/query';
 
-/* Platform console → ภาพรวมระบบ: the SMS sender for chat follow links and a guest's notices (GET/POST
+/* Platform console → ตั้งค่าระบบ (#sms): the SMS sender for chat follow links and a guest's notices (GET/POST
    /api/platform/sms, backend/extensions/sms.py). ThaiBulkSMS for Thai numbers, Twilio for any country; "log" writes
    each text to the server log for testing. Credentials are sealed on the server and never shown again: leaving the
    boxes empty keeps what was saved. A test message checks the whole setup with a real phone. */

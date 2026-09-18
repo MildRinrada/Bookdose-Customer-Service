@@ -14,7 +14,7 @@ from backend.exceptions.errors import AIError
 from backend.extensions import openai_client
 from backend.middleware.access import get_scoped
 from backend.modules.ai import repository, schema
-from backend.modules.ai.model import DEFAULT_MODEL
+from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES
 from backend.modules.channels import service as channels
 from backend.modules.conversations import repository as conversations
 from backend.modules.organization import repository as memberships
@@ -123,10 +123,11 @@ def bot_enabled(db, conversation_id):
     return False
 
 
-def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None):
-    """Queue a job (or return the one already queued for the same trigger / draft request); enforces the limits."""
+def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payload=None):
+    """Queue a job (or return the one already queued for the same trigger / draft request); enforces the limits.
+    The owner's jobs (article, brief) carry their input in `payload` and count like a staff draft."""
     cfg = config(db)
-    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode=='draft' and not cfg['drafts_enabled']):
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft',*OWNER_MODES) and not cfg['drafts_enabled']):
         raise AIError('disabled')
     if not has_key(tenant_id):
         raise AIError('not_configured')
@@ -139,12 +140,17 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None):
         old = repository.pending_draft(db,conversation_id,requested_by)
         if old:
             return old
+    if mode in OWNER_MODES:
+        old = repository.pending_owner_job(db,requested_by,mode)
+        if old:
+            return old
     if repository.jobs_since(db,today())>=cfg['daily_limit']:
         raise AIError('quota')
     if conversation_id and repository.bot_jobs_for_conversation(db,conversation_id)>=cfg['conversation_limit'] and mode=='bot':
         raise AIError('quota')
     job_id = uid()
-    repository.insert_job(db,job_id,conversation_id,trigger_id,requested_by,mode,cfg['version'])
+    repository.insert_job(db,job_id,conversation_id,trigger_id,requested_by,mode,cfg['version'],
+                          json.dumps(payload or {},ensure_ascii=False))
     audit.record(db,requested_by or 'Bookdose AI','ai.queued',conversation_id or job_id,mode)
     return job_id
 
@@ -234,6 +240,22 @@ def validate_result(result, articles, mode):
     return {**result,'citations':citations}
 
 
+def validate_owner_result(result, mode):
+    """An article draft (title, category, Markdown body) or today's summary (a few short lines); nothing else passes."""
+    if not isinstance(result,dict):
+        raise AIError('invalid_output')
+    if mode=='article':
+        title,category,body = (result.get(k) for k in ('title','category','body'))
+        if not all(isinstance(v,str) for v in (title,category,body)) or not title.strip() or not body.strip() \
+                or len(title)>200 or len(category)>80 or len(body)>20000:
+            raise AIError('invalid_output')
+        return {'title':title.strip(),'category':category.strip() or 'ทั่วไป','body':body.strip()}
+    lines = result.get('lines')
+    if not isinstance(lines,list) or not 1<=len(lines)<=6 or not all(isinstance(l,str) and 0<len(l.strip())<=300 for l in lines):
+        raise AIError('invalid_output')
+    return {'lines':[l.strip() for l in lines]}
+
+
 def permitted(cd, tenant_id, job, db):
     """The job may still run: organization active, bot still on, or the requester still has access."""
     if not tenants.is_active(cd,tenant_id):
@@ -243,8 +265,8 @@ def permitted(cd, tenant_id, job, db):
     membership = memberships.find_active_membership(cd,tenant_id,job['requested_by'])
     if not membership:
         return False
-    if job['mode']=='test':
-        return membership['role']=='admin'
+    if job['mode']=='test' or job['mode'] in OWNER_MODES:
+        return membership['role']=='admin' and not membership.get('expires_at')
     conv = conversations.find(db,job['conversation_id'])
     return bool(conv and (membership['role']!='agent' or membership['team_id']==conv['team_id']))
 
@@ -270,8 +292,12 @@ def process_one(tenant_id):
             return True
         lease = uid()
         repository.claim(db,job['id'],lease)
+        owner = job['mode'] in OWNER_MODES
         if job['mode']=='test':
             payload,articles,signature = {'test':'Bookdose connection check'},[],None
+        elif owner:
+            # Built when the owner asked (ai/insights.py), from counts and customers' questions only.
+            payload,articles,signature = json.loads(job['payload'] or '{}'),[],None
         else:
             payload,articles,signature = snapshot(db,job)
         key = repository.read_key(tenant_id)
@@ -280,7 +306,10 @@ def process_one(tenant_id):
     try:
         if not key:
             raise AIError('not_configured')
-        if job['mode']!='test' and not articles:
+        if owner:
+            raw,usage = openai_client.call_provider(key,cfg,payload,job['mode'])
+            result = validate_owner_result(raw,job['mode'])
+        elif job['mode']!='test' and not articles:
             result = {'answer':'','summary':NO_KNOWLEDGE_SUMMARY,'needs_human':True,'citations':[]}
         else:
             raw,usage = openai_client.call_provider(key,cfg,payload,job['mode'])
@@ -301,7 +330,7 @@ def process_one(tenant_id):
         repository.set_usage(db,job['id'],usage)
         if current['status']!='running':
             return True
-        unchanged = job['mode']=='test' or signature==snapshot(db,job)[2]
+        unchanged = job['mode']=='test' or owner or signature==snapshot(db,job)[2]
         if not permitted(cd,tenant_id,job,db) or cfg['version']!=config(db)['version'] or not unchanged:
             repository.set_job_state(db,job['id'],'cancelled','stale')
             if job['mode']=='bot' and tenants.is_active(cd,tenant_id):

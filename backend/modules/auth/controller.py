@@ -93,7 +93,10 @@ def sign_in(req):
 def bootstrap(req):
     data = service.bootstrap_data(req.cd,req.session)
     if req.session:
+        from backend.modules.platform import health
         data.update(service.session_times(req.cd,req.session))
+        # The platform's message to every organization's staff (planned downtime and the like), while it lasts.
+        data['announcement'] = health.active_announcement(req.cd,'staff')
     elif getattr(req,'session_expired',None):
         # The cookie named a session that has just run out: the page can say why it is signed out.
         data['session_expired'] = req.session_expired

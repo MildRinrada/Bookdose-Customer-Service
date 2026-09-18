@@ -74,9 +74,9 @@ class TeamAccessTests(unittest.TestCase):
         answer,token = self.invite()
         invite_id = answer['invitations'][0]['id']
         # A second invitation for the same address replaces the first one instead of piling up.
-        again = self.ok(self.admin,INVITATIONS,{'email':'newcomer@example.com','role':'manager','team_id':self.team})
+        again = self.ok(self.admin,INVITATIONS,{'email':'newcomer@example.com','role':'admin','team_id':self.team})
         self.assertEqual(len(again['invitations']),1)
-        self.assertEqual(again['invitations'][0]['role'],'manager')
+        self.assertEqual(again['invitations'][0]['role'],'admin')
         self.assertEqual(self.signed_out().call('/api/invitation?token='+token,method='GET')[0],400)
         self.ok(self.admin,f'{INVITATIONS}/{invite_id}',method='DELETE')
         self.assertEqual(self.ok(self.admin,INVITATIONS,method='GET')['invitations'][0]['state'],'cancelled')

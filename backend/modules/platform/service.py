@@ -163,12 +163,17 @@ def system_overview(cd):
 # Platform team. Bookdose works in two roles: the platform team runs the server and the organizations (this list);
 # the people who answer Bookdose's own customers are members of the Bookdose organization, like in any other.
 def platform_team(cd):
-    return repository.platform_admins(cd)
+    owner = repository.owner_id(cd)
+    return [{**a,'owner':a['id']==owner} for a in repository.platform_admins(cd)]
+
+
+OWNER_ONLY = 'เฉพาะเจ้าของแพลตฟอร์มเพิ่มหรือถอดผู้ดูแลแพลตฟอร์มได้'
 
 
 def add_platform_admin(cd, session, body):
-    """Give an account the platform role; a new email gets an account with the name and password given.
-    Returns the user id."""
+    """Give an account the platform role; a new email gets an account with the name and password given. Only the
+    platform's owner may. Returns the user id."""
+    require(session['user_id']==repository.owner_id(cd),OWNER_ONLY,403)
     email = schema.admin_email(body)
     user = users.find_user_by_email(cd,email)
     if user:
@@ -188,8 +193,9 @@ def add_platform_admin(cd, session, body):
 
 
 def remove_platform_admin(cd, session, user_id):
-    """Someone else takes the role away, so the platform always keeps at least one admin who can sign in."""
-    require(user_id!=session['user_id'],'ถอดสิทธิ์ของตัวเองไม่ได้ ให้ผู้ดูแลระบบกลางคนอื่นเป็นผู้ถอด',400)
+    """The owner takes the role away from another admin; the owner's own role is never taken away."""
+    require(session['user_id']==repository.owner_id(cd),OWNER_ONLY,403)
+    require(user_id!=session['user_id'],'ถอดสิทธิ์ของตัวเองไม่ได้ เจ้าของแพลตฟอร์มมีสิทธิ์เสมอ',400)
     require(any(a['id']==user_id for a in repository.platform_admins(cd)),'ไม่พบผู้ดูแลระบบกลางคนนี้',404)
     repository.set_platform_admin(cd,user_id,False)
     audit.record(cd,session['user_id'],'platform.admin_removed',user_id)

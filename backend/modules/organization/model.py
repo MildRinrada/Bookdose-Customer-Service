@@ -1,6 +1,11 @@
-"""Organization membership (control database), and teams and settings (tenant database)."""
+"""Organization membership (control database), and teams and settings (tenant database).
 
-ROLES = ('admin','manager','agent')
+An organization has two roles: its owners ('admin', shown as เจ้าขององค์กร: they run the organization - members,
+settings, channels, automation - and see every team; one or more, never none) and its agents ('agent', เจ้าหน้าที่:
+they answer customers in their own team). The team lead role ('manager') was taken out: the table still accepts the
+word so old rows can be read, and start-up turns them into agents (database/schema.py)."""
+
+ROLES = ('admin','agent')
 
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS memberships (

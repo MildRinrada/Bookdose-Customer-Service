@@ -2,7 +2,7 @@
 from backend.middleware.auth import require_role
 from backend.modules.trash import model, service
 
-STAFF_ONLY = 'เฉพาะผู้ดูแลองค์กรหรือหัวหน้าทีมเปิดถังขยะได้'
+STAFF_ONLY = 'เฉพาะเจ้าขององค์กรเปิดถังขยะได้'
 
 
 @require_role('admin','manager',message=STAFF_ONLY)

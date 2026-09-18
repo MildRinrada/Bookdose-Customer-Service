@@ -92,7 +92,7 @@ class StaffSecurityTests(unittest.TestCase):
         self.assertEqual(Client(self.base).call('/api/sign-in',{'email':'agent@example.com','password':PASSWORD})[0],429)
 
     def test_platform_admins_get_it_too_and_turning_it_off_needs_a_code(self):
-        secret,_ = self.enable_totp(self.admin)
+        secret,_ = self.enable_totp(self.owner)
         client,(status,answer) = self.password_step('admin@example.com')
         self.assertTrue(answer['two_factor'])
         self.ok(client,'/api/login/verify',{'code':totp.code(secret,totp.step_now())})

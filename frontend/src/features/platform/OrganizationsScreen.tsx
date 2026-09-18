@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Avatar, Badge, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -7,8 +9,6 @@ import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
 import { useToast } from '@/components/ui/Toast';
 import { AuditList } from '@/features/audit';
-import { RegistrationSettingsPanel } from '@/features/auth/components/RegistrationSettingsPanel';
-import type { RegistrationConfig } from '@/features/auth/types';
 import { useCopyText } from '@/components/ui/actions';
 import { date } from '@/lib/format';
 import { tenantStatusLabels } from '@/lib/labels';
@@ -17,36 +17,26 @@ import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
-import { PLATFORM_PREFIX, REGISTRATION_PATH, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { PLATFORM_PREFIX, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
 import { SupportAccessForm, SuspendTenantForm, TenantAdminForm, TenantForm } from './components/TenantForms';
 import type { SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
 /* Platform console, จัดการองค์กร: every organization on this installation - who is running, how many people are
-   inside, the link to its customer side, and suspending or reopening it. One list with the search, pills
-   and pager every other screen uses, the platform's own activity underneath, then the sign-up email settings.
-   Markup: pages/platform/platform*.html. */
+   inside, the link to its customer side, and suspending or reopening it. Two tabs: the list (search, pills and the
+   pager every other screen uses) and the platform's own activity, paged too (?tab=activity). A link from ภาพรวมระบบ
+   → ต้องจัดการ (?admin=<id>) opens that organization's "invite admin" dialog once. The sign-up email and SMS
+   settings live on ตั้งค่าระบบ (/platform/settings). Markup: pages/platform/platform*.html. */
 
-export function OrganizationsScreen() {
+type OrgTab = 'list' | 'activity';
+
+const BASE = '/platform/organizations';
+const tabHref = (tab: OrgTab) => (tab === 'activity' ? `${BASE}?tab=activity` : BASE);
+const tabOf = (tab?: string): OrgTab => (tab === 'activity' ? 'activity' : 'list');
+
+export function OrganizationsScreen({ tab, admin }: { tab?: string; admin?: string }) {
   const tenants = useApi<TenantsPage>(TENANTS_PATH);
-  const registration = useApi<RegistrationConfig>(REGISTRATION_PATH);
-  const error = tenants.error ?? registration.error;
-  if (tenants.data && registration.data)
-    return (
-      <>
-        <OrganizationsView data={tenants.data} />
-        <RegistrationSettingsPanel config={registration.data} />
-      </>
-    );
-  if (error)
-    return (
-      <ErrorState
-        error={error}
-        onRetry={() => {
-          void tenants.refetch();
-          void registration.refetch();
-        }}
-      />
-    );
+  if (tenants.data) return <OrganizationsView data={tenants.data} tab={tab} admin={admin} />;
+  if (tenants.error) return <ErrorState error={tenants.error} onRetry={() => void tenants.refetch()} />;
   return <PageLoading />;
 }
 
@@ -66,23 +56,38 @@ function tenantAccess(t: Tenant, boot: Boot, hasWorkspace: boolean, support: Sup
   return { noAccess: 'ยังไม่มีสิทธิ์', canRequest: true };
 }
 
-function OrganizationsView({ data }: { data: TenantsPage }) {
-  const withoutAdmin = data.tenants.filter((t) => t.status === 'active' && !t.admins.length);
-  const [f, setFilters] = useUiState<TenantFilters>('platform:filters', {});
+function OrganizationsView({ data, tab, admin }: { data: TenantsPage; tab?: string; admin?: string }) {
+  const router = useRouter();
   const { openModal } = useDialogs();
-  const all = data.tenants;
-  const term = (f.q || '').toLowerCase();
-  const visible = all
-    .filter((t) => (!f.status || t.status === f.status) && (!term || [t.name, t.slug].some((v) => String(v || '').toLowerCase().includes(term))))
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  const slice = usePager('platform', visible, { size: 25 });
-  const counts = (status: string) => all.filter((t) => !status || t.status === status).length;
-  const members = all.reduce((total, t) => total + t.member_count, 0);
-  // A new search or filter starts the list again from its first page.
-  const update = (next: TenantFilters) => {
-    setFilters(next);
-    slice.setPage(1);
+  const [current, setCurrent] = useState<OrgTab>(tabOf(tab));
+  // A link to ?tab=… while already here picks that tab.
+  const [seenTab, setSeenTab] = useState(tab);
+  if (tab !== seenTab) {
+    setSeenTab(tab);
+    setCurrent(tabOf(tab));
+  }
+  const select = (key: OrgTab) => {
+    setCurrent(key);
+    // Only the address changes; the screen is already showing the tab.
+    window.history.replaceState(null, '', tabHref(key));
   };
+
+  // ?admin=<id> (ภาพรวมระบบ → ต้องจัดการ → เชิญผู้ดูแล): the dialog opens once, then the address forgets it so a
+  // reload does not open it again.
+  const adminOpened = useRef(false);
+  useEffect(() => {
+    if (!admin || adminOpened.current) return;
+    adminOpened.current = true;
+    const t = data.tenants.find((x) => x.id === admin);
+    if (t) openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={data.can_invite} />);
+    router.replace(tabHref(tabOf(tab)), { scroll: false });
+  }, [admin, tab, data.tenants, data.can_invite, openModal, router]);
+
+  const audit = data.audit || [];
+  const tabs: Array<[OrgTab, string, number]> = [
+    ['list', 'รายชื่อองค์กร', data.tenants.length],
+    ['activity', 'ประวัติกิจกรรม', audit.length],
+  ];
 
   return (
     <>
@@ -90,7 +95,7 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
         <div>
           <h1>จัดการองค์กร</h1>
           <p>
-            {all.length} องค์กรบนระบบนี้ · สมาชิกที่ใช้งานรวม {members} คน
+            {data.tenants.length} องค์กรบนระบบนี้ · สมาชิกที่ใช้งานรวม {data.tenants.reduce((total, t) => total + t.member_count, 0)} คน
           </p>
         </div>
         <div className="flex">
@@ -100,13 +105,68 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
           </button>
         </div>
       </div>
-      <p className="muted platform-note">
-        <Icon name="lock" />
-        <span>
-          ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น ไม่รับเคสและไม่ตอบลูกค้า แต่ละองค์กรมีผู้ดูแลองค์กรของตัวเอง (เชิญได้จากคอลัมน์ “ผู้ดูแลองค์กร”)
-          เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
-        </span>
-      </p>
+      <div className="tabs platform-tabs" role="tablist" aria-label="จัดการองค์กร">
+        {tabs.map(([key, label, count]) => (
+          <button
+            key={key}
+            type="button"
+            id={`org-tab-${key}`}
+            className={`tab${current === key ? ' active' : ''}`}
+            role="tab"
+            aria-selected={current === key}
+            aria-controls={`org-panel-${key}`}
+            onClick={() => select(key)}
+          >
+            {label} <span>{count}</span>
+          </button>
+        ))}
+      </div>
+      <div id={`org-panel-${current}`} role="tabpanel" aria-labelledby={`org-tab-${current}`}>
+        {current === 'list' ? <OrganizationsList data={data} /> : <PlatformActivity events={audit} />}
+      </div>
+    </>
+  );
+}
+
+/** The platform's own activity (organizations, support access, the admin team, FAQ กลาง): the server sends the
+    latest 100, shown a page at a time so the tab has an end. */
+function PlatformActivity({ events }: { events: TenantsPage['audit'] }) {
+  const slice = usePager('platform-activity', events, { size: 25 });
+  return (
+    <section className="card">
+      <div className="card-header">
+        <div>
+          <h2>ประวัติแพลตฟอร์ม</h2>
+          <p>การสร้างองค์กร Support Access ทีมผู้ดูแล และ FAQ กลาง · {events.length} รายการล่าสุด</p>
+        </div>
+        <Icon name="shield" />
+      </div>
+      <div className="card-body">
+        <AuditList events={slice.shown} />
+        {events.length > 0 && <Pager slice={slice} unit="กิจกรรม" sizes={[25, 50, 100]} />}
+      </div>
+    </section>
+  );
+}
+
+function OrganizationsList({ data }: { data: TenantsPage }) {
+  const withoutAdmin = data.tenants.filter((t) => t.status === 'active' && !t.admins.length);
+  const [f, setFilters] = useUiState<TenantFilters>('platform:filters', {});
+  const all = data.tenants;
+  const term = (f.q || '').toLowerCase();
+  const visible = all
+    .filter((t) => (!f.status || t.status === f.status) && (!term || [t.name, t.slug].some((v) => String(v || '').toLowerCase().includes(term))))
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const slice = usePager('platform', visible, { size: 25 });
+  const counts = (status: string) => all.filter((t) => !status || t.status === status).length;
+  // A new search or filter starts the list again from its first page.
+  const update = (next: TenantFilters) => {
+    setFilters(next);
+    slice.setPage(1);
+  };
+
+  return (
+    <>
       {withoutAdmin.length > 0 && (
         <p className="notice warning" role="status">
           {withoutAdmin.map((t) => t.name).join(', ')} ยังไม่มีผู้ดูแลองค์กร เรื่องจากลูกค้าจะรอโดยไม่มีใครรับ กด “เชิญผู้ดูแล” ในแถวขององค์กรนั้น
@@ -171,18 +231,14 @@ function OrganizationsView({ data }: { data: TenantsPage }) {
           )}
         </div>
       </section>
-      <section className="card mt">
-        <div className="card-header">
-          <div>
-            <h2>ประวัติแพลตฟอร์ม</h2>
-            <p>การสร้างองค์กร Support Access ทีมผู้ดูแล และ FAQ กลาง 30 รายการล่าสุด</p>
-          </div>
-          <Icon name="shield" />
-        </div>
-        <div className="card-body">
-          <AuditList events={(data.audit || []).slice(0, 30)} />
-        </div>
-      </section>
+      {/* The rule behind the "ขอเข้าช่วยเหลือ" column, under the list so the list comes first. */}
+      <p className="muted platform-note">
+        <Icon name="lock" />
+        <span>
+          ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น ไม่รับเคสและไม่ตอบลูกค้า แต่ละองค์กรมีผู้ดูแลองค์กรของตัวเอง (เชิญได้จากคอลัมน์ “ผู้ดูแลองค์กร”)
+          เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
+        </span>
+      </p>
     </>
   );
 }

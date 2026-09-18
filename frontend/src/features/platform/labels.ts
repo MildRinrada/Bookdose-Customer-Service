@@ -7,6 +7,7 @@ export const workerLabels: Record<string, string> = {
   channels: 'ส่งข้อความ LINE / Facebook / Email',
   email: 'รับอีเมลเข้า',
   automation: 'ระบบอัตโนมัติและอีเมลแจ้งลูกค้า',
+  security: 'ความปลอดภัย การแจ้งเตือนผู้ดูแล และสำรองข้อมูลอัตโนมัติ',
 };
 
 export const apiAreaLabels: Record<string, string> = {
@@ -73,6 +74,7 @@ export function durationText(seconds: number): string {
 }
 
 export function workerStatus(w: SystemWorker): string {
+  if (w.starting) return 'กำลังเริ่มทำงานหลังเปิดโปรแกรม';
   if (w.seconds_ago === null) return 'ยังไม่เริ่มทำงาน';
   return w.running ? `ทำงานอยู่ · เริ่มรอบล่าสุด ${durationText(w.seconds_ago)}ที่แล้ว` : `ไม่ตอบสนองมา ${durationText(w.seconds_ago)}`;
 }

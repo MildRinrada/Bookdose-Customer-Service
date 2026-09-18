@@ -80,7 +80,8 @@ class AutomationTests(unittest.TestCase):
 
     # SLA escalation
     def test_unclaimed_case_moves_to_team_lead_once(self):
-        lead,lead_id = self.create_member(role='manager',email='lead@example.com')
+        lead,lead_id = self.create_member(role='admin',email='lead@example.com')
+        self.ok(self.admin,'/api/account/status',{'status':'offline'})
         with D.control() as cd, D.tenant(self.org) as db:
             A.escalate_due(cd,db,self.org)   # the demo data already has an unclaimed case
         _,conv = self.visitor()
@@ -186,7 +187,7 @@ class AutomationTests(unittest.TestCase):
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'reply','body':'@เจ้าหน้าที่ทดสอบ ไม่ใช่บันทึก'})
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'@เจ้าหน้าที่ทดสอบ ช่วยดูเรื่องนี้หน่อย'})
         mentions = self.ok(agent,'/api/automation/alerts')['mentions']
-        self.assertEqual([(m['conversation_id'],m['author_name']) for m in mentions],[(conv,'เจ้าของระบบ')])
+        self.assertEqual([(m['conversation_id'],m['author_name']) for m in mentions],[(conv,'ผู้ดูแลองค์กร A')])
         self.assertEqual(self.ok(outsider,'/api/automation/alerts')['mentions'],[])
         self.ok(agent,'/api/mentions/read',{'conversation_id':conv})
         self.assertEqual(self.ok(agent,'/api/automation/alerts')['mentions'],[])

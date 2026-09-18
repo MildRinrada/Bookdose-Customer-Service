@@ -117,7 +117,9 @@ def cleanup():
 
 
 class Worker:
-    """Background thread: alert rules and clean-up every minute (bookdose-security)."""
+    """Background thread every minute (bookdose-security): alert rules and clean-up, the platform admins' email about
+    the server itself (platform/watch.py), and the day's automatic backup when it is due (platform/backups.py, in its
+    own thread so a long backup never holds up the alerts)."""
     INTERVAL = 60
 
     def __init__(self):
@@ -128,11 +130,20 @@ class Worker:
         self.thread.start()
 
     def run(self):
+        from backend.modules.platform import backups, watch
         while not self.stop.wait(self.INTERVAL):
+            monitor.heartbeat('security')
+            for name,step in (('security',run_rules),('security',cleanup),('watch',watch.run)):
+                try:
+                    step()
+                except Exception as error:
+                    print(f'Security worker ({name}): {type(error).__name__}; retrying next round',flush=True)
+                    monitor.error('security',f'{name}: {type(error).__name__}')
             try:
-                run_rules()
-                cleanup()
-                monitor.heartbeat('security')
+                with D.control() as cd:
+                    due = backups.due(cd)
+                if due and not backups.busy():
+                    threading.Thread(target=backups.auto_round,name='bookdose-backup',daemon=True).start()
             except Exception as error:
-                print(f'Security worker: {type(error).__name__}; retrying next round',flush=True)
-                monitor.error('security',type(error).__name__)
+                print(f'Automatic backup: {type(error).__name__}; retrying next round',flush=True)
+                monitor.error('security','backup: '+type(error).__name__)

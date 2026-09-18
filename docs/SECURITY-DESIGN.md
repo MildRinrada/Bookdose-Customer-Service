@@ -118,6 +118,13 @@ WebSocket), expiry, can't block own IP; every endpoint platform-only (staff admi
   the owner a platform admin only; the platform's own organization gets its admin from the console
   (`POST /api/platform/tenants/{id}/admins`, invitation or first password). A permanent membership from before
   (the first-run owner's) is simply ignored.
+- **The platform owner** (platform setting `platform_owner`, set at first-run setup; on an older copy the earliest
+  platform admin, `platform/repository.remember_owner`) is the only one who adds or removes platform admins
+  (`OWNER_ONLY`, 403 for the others); the owner cannot be removed, so the platform always keeps one admin.
+- **Organization roles are `admin` (owner) and `agent` only.** An organization may have several owners but never
+  none: demoting or deactivating the last permanent owner is refused (409). The old `manager` role is converted at
+  server start (`schema.create_control_tables`): a permanent one becomes `agent`, a support access becomes `admin`
+  (still read-only). SLA escalation goes to an available owner.
 - Audit: `tenant.support_requested|access|denied|ended|cancelled|expired` in both the platform and the organization log;
   security event `support_access` on approval.
 

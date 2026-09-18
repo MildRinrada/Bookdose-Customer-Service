@@ -11,7 +11,8 @@ def list_with_previews(db, team_id=None):
         p.name AS contact_name,p.company,tc.ticket_id,t.number AS ticket_number,t.status AS ticket_status,t.priority AS ticket_priority,
         (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS preview,
         (SELECT kind FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_kind,
-        (SELECT kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_kind
+        (SELECT kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_kind,
+        (SELECT created_at FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_at
         FROM conversations c JOIN contacts p ON p.id=c.contact_id LEFT JOIN ticket_conversations tc ON tc.conversation_id=c.id
         LEFT JOIN tickets t ON t.id=tc.ticket_id WHERE {where} ORDER BY c.updated_at DESC''',params)
 

@@ -83,10 +83,10 @@ class HoneypotTests(unittest.TestCase):
             return D.one(cd,'SELECT * FROM ip_blocks WHERE ip=?',(ip,))
 
     def settings(self, honeypot):
-        return self.ok(self.admin,f'{SEC}/settings',{'honeypot':honeypot})
+        return self.ok(self.owner,f'{SEC}/settings',{'honeypot':honeypot})
 
     def plant(self, kind, label='กับดักทดสอบ', note='ไฟล์ backup.txt บนไดรฟ์ทีม'):
-        status,data = self.admin.call(f'{SEC}/honeytokens',{'kind':kind,'label':label,'placed_at_note':note})
+        status,data = self.owner.call(f'{SEC}/honeytokens',{'kind':kind,'label':label,'placed_at_note':note})
         self.assertEqual(status,201,data)
         return data['token'],data['secret']
 
@@ -142,7 +142,7 @@ class HoneypotTests(unittest.TestCase):
         self.assertEqual(len(self.trap_events()),before)
 
     def test_custom_api_paths_validation_and_overlaps(self):
-        self.assertEqual(self.ok(self.admin,f'{SEC}/settings')['honeypot'],model.DEFAULT_SETTINGS['honeypot'])
+        self.assertEqual(self.ok(self.owner,f'{SEC}/settings')['honeypot'],model.DEFAULT_SETTINGS['honeypot'])
         # The built-in decoys shadow no real route either.
         from backend.modules.security import schema
         for path in model.DECOY_API_PATHS:
@@ -159,21 +159,21 @@ class HoneypotTests(unittest.TestCase):
                    [{'path':'/api/old','match':'regex'}],[{'path':'/api/old'},{'path':'/API/old/'}],
                    [{'path':f'/api/decoy-{n}'} for n in range(51)],'/api/old',[{'path':5}])
         for paths in refused:
-            status,data = self.admin.call(f'{SEC}/settings',{'honeypot':{'custom_api_paths':paths}})
+            status,data = self.owner.call(f'{SEC}/settings',{'honeypot':{'custom_api_paths':paths}})
             self.assertEqual(status,400,(paths,data))
-        status,data = self.admin.call(f'{SEC}/settings',{'honeypot':{'custom_api_paths':[{'path':'/api/tickets','match':'exact'}]}})
+        status,data = self.owner.call(f'{SEC}/settings',{'honeypot':{'custom_api_paths':[{'path':'/api/tickets','match':'exact'}]}})
         self.assertIn('ซ้อนกับเส้นทางจริง',data['error'])
         for rule in ({'block_on_path_hits':{'hits':0}},{'block_on_path_hits':{'window_minutes':1441}},{'block_on_path_hits':{'duration':'2h'}},
                      {'block_on_path_hits':{'enabled':'yes'}},{'block_on_honeytoken':{'duration':'forever'}},{'paths_enabled':1},
                      {'forms_enabled':None},{'block_on_honeytoken':[]}):
-            self.assertEqual(self.admin.call(f'{SEC}/settings',{'honeypot':rule})[0],400,rule)
+            self.assertEqual(self.owner.call(f'{SEC}/settings',{'honeypot':rule})[0],400,rule)
         saved = self.settings({'custom_api_paths':[{'path':'/API/Secret-Backup/','match':'exact'},{'path':'/api/old-admin','match':'prefix'},
                                                    {'path':'/api/tick','match':'prefix'}],
                                'block_on_path_hits':{'hits':5,'window_minutes':30,'duration':'24h'}})['honeypot']
         self.assertEqual(saved['custom_api_paths'],[{'path':'/api/secret-backup','match':'exact'},{'path':'/api/old-admin','match':'prefix'},
                                                     {'path':'/api/tick','match':'prefix'}])
         self.assertEqual(saved['block_on_path_hits'],{'enabled':True,'hits':5,'window_minutes':30,'duration':'24h'})
-        self.assertEqual(self.ok(self.admin,f'{SEC}/settings')['honeypot'],saved)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/settings')['honeypot'],saved)
         changed = self.events_of('security_settings_changed')[0]
         self.assertEqual(changed['detail']['honeypot']['block_on_path_hits']['hits'],5)
         for path in ('/api/secret-backup','/api/old-admin','/api/old-admin/users/export','/api/tick/1'):
@@ -214,7 +214,7 @@ class HoneypotTests(unittest.TestCase):
         block = self.block_of('198.51.100.77')
         self.assertEqual(block['created_by'],model.TRAP_BLOCKER)
         self.assertEqual(self.exchange('/api/bootstrap',headers=self.proxied('198.51.100.77'))[0],403)
-        self.assertEqual(self.admin.call(f'{SEC}/settings',{'honeypot':{'custom_api_paths':[{'path':'/api/trap'}]}})[0],400)
+        self.assertEqual(self.owner.call(f'{SEC}/settings',{'honeypot':{'custom_api_paths':[{'path':'/api/trap'}]}})[0],400)
 
     def test_path_hits_block_after_n_hits_but_never_loopback_or_a_platform_admin(self):
         attacker = '198.51.100.20'
@@ -231,18 +231,18 @@ class HoneypotTests(unittest.TestCase):
         self.assertEqual(Client(self.base).call('/api/bootstrap',headers=self.proxied(attacker)),(403,{'error':model.BLOCKED_MESSAGE}))
         blocked = self.events_of('trap_ip_block')
         self.assertEqual([(e['ip'],e['detail']['trigger'],e['detail']['hits']) for e in blocked],[(attacker,'honeypot_path',3)])
-        self.assertIn(attacker,[b['ip'] for b in self.ok(self.admin,f'{SEC}/ip-blocks')['blocks']])
+        self.assertIn(attacker,[b['ip'] for b in self.ok(self.owner,f'{SEC}/ip-blocks')['blocks']])
         # Loopback, however many hits.
         for _ in range(5):
             self.exchange('/api/admin')
         # The address of a signed-in platform admin (seen on one of their requests).
         admin_ip = '198.51.100.30'
-        self.assertEqual(self.admin.call('/api/session',headers=self.proxied(admin_ip))[0],200)
+        self.assertEqual(self.owner.call('/api/session',headers=self.proxied(admin_ip))[0],200)
         for _ in range(5):
             self.exchange('/api/admin',headers=self.proxied(admin_ip))
         # A request that itself carries a platform admin's session.
         for _ in range(5):
-            self.exchange('/api/debug',headers=self.proxied('198.51.100.31'),client=self.admin)
+            self.exchange('/api/debug',headers=self.proxied('198.51.100.31'),client=self.owner)
         # The rule switched off.
         self.settings({'block_on_path_hits':{'enabled':False}})
         for _ in range(5):
@@ -253,7 +253,7 @@ class HoneypotTests(unittest.TestCase):
         self.assertEqual(self.total('honeypot_path',ip=admin_ip),5)
         # Once the admin has signed out, their address is no longer spared.
         self.settings({'block_on_path_hits':{'enabled':True,'hits':1}})
-        self.ok(self.admin,'/api/logout',{})
+        self.ok(self.owner,'/api/logout',{})
         self.exchange('/api/admin',headers=self.proxied(admin_ip))
         self.flush()
         self.assertTrue(self.block_of(admin_ip))
@@ -323,10 +323,10 @@ class HoneypotTests(unittest.TestCase):
 
     # 2. Honeytokens
     def test_honeytoken_create_returns_the_secret_once_and_stores_only_its_hash(self):
-        self.assertEqual(self.ok(self.admin,f'{SEC}/honeytokens'),{'tokens':[]})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/honeytokens'),{'tokens':[]})
         for body in ({'kind':'nope','label':'x'},{'kind':'api_key'},{'kind':'api_key','label':''},{'kind':'api_key','label':'x'*101},
                      {'kind':'api_key','label':'x','placed_at_note':'y'*301}):
-            self.assertEqual(self.admin.call(f'{SEC}/honeytokens',body)[0],400,body)
+            self.assertEqual(self.owner.call(f'{SEC}/honeytokens',body)[0],400,body)
         created = {kind:self.plant(kind,label=f'กับดัก {kind}') for kind in model.HONEYTOKEN_KINDS}
         token,key = created['api_key']
         self.assertRegex(key,r'^bdk_live_[A-Za-z0-9]{40}$')
@@ -349,7 +349,7 @@ class HoneypotTests(unittest.TestCase):
             self.assertNotIn(secret,everything)
         hashes = {r['kind']:r['secret_hash'] for r in rows}
         self.assertEqual(hashes,{'api_key':sha256(key),'password':sha256(password),'link':sha256(link.rsplit('/',1)[1]),'decoy_account':sha256(email)})
-        listed = self.ok(self.admin,f'{SEC}/honeytokens')['tokens']
+        listed = self.ok(self.owner,f'{SEC}/honeytokens')['tokens']
         self.assertEqual(len(listed),4)
         self.assertEqual(set(listed[0]),{'id','kind','label','placed_at_note','decoy_email','preview','enabled','created_at','created_by',
                                          'trigger_count','last_triggered_at','last_ip'})
@@ -361,14 +361,14 @@ class HoneypotTests(unittest.TestCase):
         self.assertTrue(self.plant('link')[1].startswith('https://bookdose.example.com/files/'))
         self.assertTrue(self.plant('decoy_account')[1].endswith('@bookdose.example.com'))
         # Change and delete.
-        changed = self.ok(self.admin,f"{SEC}/honeytokens/{token['id']}",{'label':'คีย์ในไฟล์ .env เก่า','enabled':False},'PATCH')['token']
+        changed = self.ok(self.owner,f"{SEC}/honeytokens/{token['id']}",{'label':'คีย์ในไฟล์ .env เก่า','enabled':False},'PATCH')['token']
         self.assertEqual((changed['label'],changed['enabled'],changed['placed_at_note']),('คีย์ในไฟล์ .env เก่า',False,token['placed_at_note']))
         for body in ({},{'enabled':'no'},{'label':''}):
-            self.assertEqual(self.admin.call(f"{SEC}/honeytokens/{token['id']}",body,'PATCH')[0],400,body)
-        self.assertEqual(self.admin.call(f"{SEC}/honeytokens/{'0'*32}",{'label':'x'},'PATCH')[0],404)
-        self.assertEqual(self.ok(self.admin,f"{SEC}/honeytokens/{token['id']}",None,'DELETE'),{'ok':True})
-        self.assertEqual(self.admin.call(f"{SEC}/honeytokens/{token['id']}",None,'DELETE')[0],404)
-        self.assertEqual(len(self.ok(self.admin,f'{SEC}/honeytokens')['tokens']),5)
+            self.assertEqual(self.owner.call(f"{SEC}/honeytokens/{token['id']}",body,'PATCH')[0],400,body)
+        self.assertEqual(self.owner.call(f"{SEC}/honeytokens/{'0'*32}",{'label':'x'},'PATCH')[0],404)
+        self.assertEqual(self.ok(self.owner,f"{SEC}/honeytokens/{token['id']}",None,'DELETE'),{'ok':True})
+        self.assertEqual(self.owner.call(f"{SEC}/honeytokens/{token['id']}",None,'DELETE')[0],404)
+        self.assertEqual(len(self.ok(self.owner,f'{SEC}/honeytokens')['tokens']),5)
         changed = [e for e in self.events_of('security_settings_changed') if 'honeytoken' in e['detail']]
         self.assertTrue(changed and all(e['severity']=='critical' and e['subject']=='admin@example.com' for e in changed))
         self.assertEqual(sum(e['count'] for e in changed),8)
@@ -396,7 +396,7 @@ class HoneypotTests(unittest.TestCase):
             self.exchange('/api/sign-in',{'email':email,'password':'x'},headers=self.proxied('203.0.113.49'))
             self.exchange('/api/login',{'email':email,'password':'x'},headers=self.proxied('203.0.113.49'))
             self.flush()
-        alerts = [a for a in self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts'] if a['rule']=='honeytoken']
+        alerts = [a for a in self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts'] if a['rule']=='honeytoken']
         self.assertEqual(sorted((a['ip'],a['severity'],a['count'],a['detail']['token_id']) for a in alerts),
                          sorted([('203.0.113.49','critical',2,token['id'])]+[(f'203.0.113.{54+i}','critical',1,token['id']) for i in range(4)]))
         self.assertIsNone(self.block_of('203.0.113.49'))
@@ -425,7 +425,7 @@ class HoneypotTests(unittest.TestCase):
         self.assertEqual(manager.call('/api/tickets')[0],200)
         self.assertEqual(len(self.trap_mails()),1)
         self.assertEqual(self.token_row(token['id'])['trigger_count'],8)
-        cards = self.ok(self.admin,f'{SEC}/overview')['cards']
+        cards = self.ok(self.owner,f'{SEC}/overview')['cards']
         self.assertEqual(cards['honeytoken_triggers'],8)
 
     def test_api_key_triggers_in_header_cookie_query_and_json_body(self):
@@ -455,7 +455,7 @@ class HoneypotTests(unittest.TestCase):
         self.assertEqual(self.token_row(token['id'])['trigger_count'],5)
         # From loopback: recorded, never blocked. With a platform admin's session: never blocked either.
         self.exchange('/api/tickets',headers={'Authorization':f'Bearer {key}'})
-        self.exchange('/api/tickets',headers={**self.proxied('203.0.113.71'),'X-API-Key':key},client=self.admin)
+        self.exchange('/api/tickets',headers={**self.proxied('203.0.113.71'),'X-API-Key':key},client=self.owner)
         self.flush()
         self.assertIsNone(self.block_of('127.0.0.1'))
         self.assertIsNone(self.block_of('203.0.113.71'))
@@ -497,29 +497,29 @@ class HoneypotTests(unittest.TestCase):
     def test_disabled_token_and_the_test_button(self):
         self.enable_registration_mail()
         token,key = self.plant('api_key')
-        self.ok(self.admin,f"{SEC}/honeytokens/{token['id']}",{'enabled':False},'PATCH')
+        self.ok(self.owner,f"{SEC}/honeytokens/{token['id']}",{'enabled':False},'PATCH')
         self.exchange('/api/tickets',headers={**self.proxied('203.0.113.40'),'X-API-Key':key})
         self.flush()
         self.assertEqual(self.triggers(),[])
         self.assertIsNone(self.block_of('203.0.113.40'))
-        self.assertEqual(self.ok(self.admin,f"{SEC}/honeytokens/{token['id']}/test",{}),{'ok':True})
-        self.assertEqual(self.admin.call(f"{SEC}/honeytokens/{'0'*32}/test",{})[0],404)
+        self.assertEqual(self.ok(self.owner,f"{SEC}/honeytokens/{token['id']}/test",{}),{'ok':True})
+        self.assertEqual(self.owner.call(f"{SEC}/honeytokens/{'0'*32}/test",{})[0],404)
         tests = self.events_of('honeytoken_triggered')
         self.assertEqual([(e['severity'],e['detail']['test'],e['detail']['token_id'],e['actor']) for e in tests],[('info',True,token['id'],'platform')])
         self.assertEqual(self.token_row(token['id'])['trigger_count'],0)
-        self.assertEqual([a for a in self.ok(self.admin,f'{SEC}/alerts?open=1')['alerts'] if a['rule']=='honeytoken'],[])
-        self.assertEqual(self.ok(self.admin,f'{SEC}/ip-blocks')['blocks'],[])
+        self.assertEqual([a for a in self.ok(self.owner,f'{SEC}/alerts?open=1')['alerts'] if a['rule']=='honeytoken'],[])
+        self.assertEqual(self.ok(self.owner,f'{SEC}/ip-blocks')['blocks'],[])
         self.assertEqual(self.trap_mails(),[])
-        self.assertEqual(self.ok(self.admin,f'{SEC}/overview')['cards']['honeytoken_triggers'],0)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/overview')['cards']['honeytoken_triggers'],0)
         # Enabled again, it triggers.
-        self.ok(self.admin,f"{SEC}/honeytokens/{token['id']}",{'enabled':True},'PATCH')
+        self.ok(self.owner,f"{SEC}/honeytokens/{token['id']}",{'enabled':True},'PATCH')
         self.exchange('/api/tickets',headers={**self.proxied('203.0.113.41'),'X-API-Key':key})
         self.flush()
         self.assertEqual(len(self.triggers()),1)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/overview')['cards']['honeytoken_triggers'],1)
+        self.assertEqual(self.ok(self.owner,f'{SEC}/overview')['cards']['honeytoken_triggers'],1)
         # The filters know the new kinds.
         for kind in model.TRAP_EVENT_KINDS:
-            self.assertEqual(self.admin.call(f'{SEC}/events?kind={kind}')[0],200)
+            self.assertEqual(self.owner.call(f'{SEC}/events?kind={kind}')[0],200)
 
     def test_trap_endpoints_are_platform_only(self):
         manager,_ = self.create_member(role='admin',email='manager@example.com')
@@ -530,8 +530,8 @@ class HoneypotTests(unittest.TestCase):
         for method,path,body in calls:
             self.assertEqual(manager.call(SEC+path,body,method)[0],403,path)
             self.assertEqual(Client(self.base).call(SEC+path,body,method)[0],401,path)
-        self.assertEqual(len(self.ok(self.admin,f'{SEC}/honeytokens')['tokens']),1)
-        self.assertTrue(self.ok(self.admin,f'{SEC}/settings')['honeypot']['paths_enabled'])
+        self.assertEqual(len(self.ok(self.owner,f'{SEC}/honeytokens')['tokens']),1)
+        self.assertTrue(self.ok(self.owner,f'{SEC}/settings')['honeypot']['paths_enabled'])
 
     def test_real_users_are_not_trapped(self):
         self.customer_mail()
@@ -555,8 +555,8 @@ class HoneypotTests(unittest.TestCase):
                                     headers=self.proxied('198.51.100.4'))[0],201)
         self.flush()
         self.assertEqual(self.trap_events(),[])
-        self.assertEqual(self.ok(self.admin,f'{SEC}/ip-blocks')['blocks'],[])
-        cards = self.ok(self.admin,f'{SEC}/overview')['cards']
+        self.assertEqual(self.ok(self.owner,f'{SEC}/ip-blocks')['blocks'],[])
+        cards = self.ok(self.owner,f'{SEC}/overview')['cards']
         self.assertEqual((cards['honeypot_hits'],cards['honeytoken_triggers']),(0,0))
 
     def test_settings_survive_an_upgrade_and_bad_saved_values(self):
@@ -568,10 +568,10 @@ class HoneypotTests(unittest.TestCase):
                                   'block_on_path_hits':{'hits':'3','duration':'2h','window_minutes':20}}}))
         D.init()
         traps.invalidate()
-        honeypot = self.ok(self.admin,f'{SEC}/settings')['honeypot']
+        honeypot = self.ok(self.owner,f'{SEC}/settings')['honeypot']
         self.assertEqual(honeypot,{**model.DEFAULT_SETTINGS['honeypot'],'forms_enabled':False,'custom_api_paths':[{'path':'/api/x','match':'exact'}],
                                    'block_on_path_hits':{'enabled':True,'hits':3,'window_minutes':20,'duration':'1h'}})
-        self.assertEqual(self.ok(self.admin,f'{SEC}/honeytokens'),{'tokens':[]})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/honeytokens'),{'tokens':[]})
 
 
 if __name__=='__main__':

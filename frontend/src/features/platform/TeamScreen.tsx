@@ -11,9 +11,10 @@ import { useApi, useInvalidate } from '@/lib/query';
 import { addPlatformAdmin, ADMINS_PATH, PLATFORM_PREFIX, removePlatformAdmin } from './api';
 import type { PlatformTeam } from './types';
 
-/* Platform console, ทีมผู้ดูแลระบบ: who may use the console. Bookdose works in two roles - the platform team runs
-   the server and the organizations (this list), and the people who answer Bookdose's own customers are members of
-   the Bookdose organization, managed in its settings like any other organization's team.
+/* Platform console, ทีมผู้ดูแลระบบ: who may use the console. The platform's owner (the account made at first-run
+   setup) adds and removes the platform admins; the admins look after the server and the organizations like the owner,
+   but the list is read-only for them. The people who answer Bookdose's own customers are members of the Bookdose
+   organization, run by its own owners like any other organization.
    Markup: pages/platform/platform-team.html, platform-admin-row.html, platform-admin-form.html. */
 
 export function TeamScreen() {
@@ -25,6 +26,7 @@ export function TeamScreen() {
 
 function TeamView({ data }: { data: PlatformTeam }) {
   const { openModal, confirm } = useDialogs();
+  const owner = data.admins.some((a) => a.owner && a.id === data.me);
   const toast = useToast();
   const refresh = useInvalidate();
   return (
@@ -34,12 +36,14 @@ function TeamView({ data }: { data: PlatformTeam }) {
           <h1>ทีมผู้ดูแลระบบ</h1>
           <p>บัญชีที่เข้าคอนโซลระบบกลางได้ · {data.admins.length} คน</p>
         </div>
-        <div className="flex">
-          <button type="button" className="btn primary" onClick={() => openModal('เพิ่มผู้ดูแลระบบกลาง', <PlatformAdminForm />)}>
-            <Icon name="plus" />
-            เพิ่มผู้ดูแลระบบกลาง
-          </button>
-        </div>
+        {owner && (
+          <div className="flex">
+            <button type="button" className="btn primary" onClick={() => openModal('เพิ่มผู้ดูแลระบบกลาง', <PlatformAdminForm />)}>
+              <Icon name="plus" />
+              เพิ่มผู้ดูแลระบบกลาง
+            </button>
+          </div>
+        )}
       </div>
       <div className="role-split">
         <section className="card role-card">
@@ -49,7 +53,10 @@ function TeamView({ data }: { data: PlatformTeam }) {
             </span>
             <div>
               <h2>ทีมจัดการระบบ (หน้านี้)</h2>
-              <p>ดูแลเซิร์ฟเวอร์ องค์กรลูกค้า และ FAQ กลาง เข้าคอนโซลระบบกลางได้ แต่ไม่ได้สิทธิ์อ่านเคสขององค์กรโดยอัตโนมัติ ต้องขอ Support Access ก่อนทุกครั้ง</p>
+              <p>
+                เจ้าของแพลตฟอร์มเพิ่มและถอดผู้ดูแลได้ ผู้ดูแลดูแลเซิร์ฟเวอร์ องค์กรลูกค้า และ FAQ กลาง แต่ไม่รับเคสหรือตอบลูกค้า
+                ดูข้อมูลขององค์กรได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
+              </p>
             </div>
           </div>
         </section>
@@ -61,8 +68,8 @@ function TeamView({ data }: { data: PlatformTeam }) {
             <div>
               <h2>ทีมติดต่อลูกค้า Bookdose</h2>
               <p>
-                เป็นสมาชิกขององค์กร Bookdose เหมือนองค์กรอื่น ใช้บทบาทผู้ดูแลองค์กร หัวหน้าทีม หรือเจ้าหน้าที่ เพิ่มหรือเปลี่ยนได้ที่ ตั้งค่าองค์กร → ทีมและสมาชิก
-                ในพื้นที่ทำงาน Bookdose
+                เป็นทีมงานขององค์กร Bookdose เหมือนองค์กรอื่น มีเจ้าขององค์กรและเจ้าหน้าที่ เชิญเจ้าขององค์กรได้จาก จัดการองค์กร
+                แล้วเจ้าขององค์กรเพิ่มเจ้าหน้าที่เองที่ ตั้งค่าองค์กร → ทีมและสมาชิก
               </p>
             </div>
           </div>
@@ -72,7 +79,7 @@ function TeamView({ data }: { data: PlatformTeam }) {
         <div className="card-header">
           <div>
             <h2>ผู้ดูแลระบบกลาง</h2>
-            <p>ถอดสิทธิ์ของตัวเองไม่ได้ ต้องให้ผู้ดูแลคนอื่นทำ ระบบจึงมีผู้ดูแลอย่างน้อยหนึ่งคนเสมอ</p>
+            <p>{owner ? 'คุณเป็นเจ้าของแพลตฟอร์ม เพิ่มหรือถอดผู้ดูแลได้ สิทธิ์ของเจ้าของไม่ถูกถอด' : 'เฉพาะเจ้าของแพลตฟอร์มเพิ่มหรือถอดผู้ดูแลได้'}</p>
           </div>
           <Icon name="shield" />
         </div>
@@ -98,21 +105,24 @@ function TeamView({ data }: { data: PlatformTeam }) {
                         <Avatar name={a.name} index={i} />
                         <div className="org-text">
                           <strong className="truncate">{a.name}</strong>
-                          {me && <span className="muted">บัญชีของคุณ</span>}
+                          <span className="muted">
+                            {a.owner ? 'เจ้าของแพลตฟอร์ม' : 'ผู้ดูแลแพลตฟอร์ม'}
+                            {me ? ' · บัญชีของคุณ' : ''}
+                          </span>
                         </div>
                       </div>
                     </td>
                     <td>{a.email}</td>
                     <td>{date(a.created_at)}</td>
                     <td>
-                      {!me && (
+                      {owner && !a.owner && (
                         <button
                           type="button"
                           className="btn sm subtle"
                           onClick={() =>
                             confirm({
                               title: 'ถอดสิทธิ์ผู้ดูแลระบบกลาง',
-                              message: `${a.name} จะเข้าคอนโซลระบบกลางไม่ได้ตั้งแต่คำขอถัดไป งานในองค์กรที่เป็นสมาชิกอยู่ยังทำได้ตามเดิม`,
+                              message: `${a.name} จะเข้าคอนโซลระบบกลางไม่ได้ตั้งแต่คำขอถัดไป`,
                               cancelLabel: 'ยกเลิก',
                               confirmLabel: 'ถอดสิทธิ์',
                               tone: 'danger',
@@ -158,7 +168,7 @@ function PlatformAdminForm() {
       }}
     >
       <div className="notice">
-        ใช้อีเมลของบัญชีที่มีอยู่แล้ว (เช่น คนในทีม Bookdose) หรืออีเมลใหม่พร้อมชื่อและรหัสผ่านเริ่มต้น ผู้ดูแลระบบกลางไม่ได้สิทธิ์อ่านเคสขององค์กรใดโดยอัตโนมัติ
+        ใช้อีเมลใหม่พร้อมชื่อและรหัสผ่านเริ่มต้น (อีเมลที่เป็นทีมงานขององค์กรใช้ไม่ได้ เพราะผู้ดูแลแพลตฟอร์มไม่รับเคส) ผู้ดูแลแพลตฟอร์มดูข้อมูลขององค์กรได้เฉพาะเมื่อได้รับสิทธิ์เข้าช่วยเหลือ
       </div>
       <TextField label="อีเมล" name="email" type="email" max={254} />
       <div className="form-grid">

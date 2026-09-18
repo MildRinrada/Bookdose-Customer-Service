@@ -123,9 +123,24 @@ export function ArticleEditorFields({
 
 const snapshot = (form: HTMLFormElement) => JSON.stringify(Object.fromEntries(new FormData(form)));
 
+/** A new article's words written elsewhere (the overview's AI draft): filled in, saved as a new article. */
+export type ArticleDraft = Pick<Article, 'title' | 'category' | 'body'> & { visibility?: Article['visibility'] };
+
 /** Write or edit a knowledge article. Open with openModal(title, <ArticleForm/>, { wide: true }). Closing with
-    unsaved words asks first, on top of the editor, so "keep writing" leaves the text where it was. */
-export function ArticleForm({ article, categories, onSaved }: { article?: Article; categories: string[]; onSaved?: (id: string) => unknown }) {
+    unsaved words asks first, on top of the editor, so "keep writing" leaves the text where it was; a `draft` counts
+    as unsaved words from the start. */
+export function ArticleForm({
+  article,
+  draft,
+  categories,
+  onSaved,
+}: {
+  article?: Article;
+  draft?: ArticleDraft;
+  categories: string[];
+  onSaved?: (id: string) => unknown;
+}) {
+  const fill = article ?? draft;
   const editor = useRichEditor();
   const { closeModal, setCloseGuard, confirm } = useDialogs();
   const toast = useToast();
@@ -134,7 +149,7 @@ export function ArticleForm({ article, categories, onSaved }: { article?: Articl
   const saved = useRef(false);
   // <Form> keeps its element to itself; the body's hidden field belongs to it.
   const formOf = () => editor.sourceElement()?.form ?? null;
-  const [ready, setReady] = useState(Boolean(article?.title.trim() && article?.body.trim()));
+  const [ready, setReady] = useState(Boolean(fill?.title.trim() && fill?.body.trim()));
 
   // Save is only possible with a title and some content.
   const check = () => {
@@ -147,7 +162,7 @@ export function ArticleForm({ article, categories, onSaved }: { article?: Articl
   useEffect(() => {
     const form = formOf();
     if (!form) return;
-    initial.current = snapshot(form);
+    initial.current = draft ? '' : snapshot(form);
     const dirty = () => !saved.current && initial.current !== null && initial.current !== snapshot(form);
     setCloseGuard(() => {
       if (!dirty()) return true;
@@ -194,16 +209,16 @@ export function ArticleForm({ article, categories, onSaved }: { article?: Articl
     >
       <ArticleEditorFields
         editor={editor}
-        title={article?.title}
+        title={fill?.title}
         titlePlaceholder="เช่น วิธีตั้งค่า Bookdose e-Library สำหรับผู้ดูแล"
-        category={article?.category}
+        category={fill?.category}
         categories={categories}
-        body={article?.body}
+        body={fill?.body}
         onBodyChange={check}
         aside={
           <div className="field">
             <label htmlFor="article-visibility">สิทธิ์การอ่าน</label>
-            <select id="article-visibility" name="visibility" defaultValue={article?.visibility || 'internal'}>
+            <select id="article-visibility" name="visibility" defaultValue={fill?.visibility || 'internal'}>
               <option value="internal">{visibilityLabels.internal}</option>
               <option value="public">{visibilityLabels.public}</option>
             </select>

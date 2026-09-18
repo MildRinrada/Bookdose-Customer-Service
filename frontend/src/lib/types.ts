@@ -1,7 +1,8 @@
 /* Shapes of the API answers every part of the app reads. A feature's own shapes live in src/features/<feature>/types.ts.
    Field names are the server's (snake_case), so a response can be used as it arrives. */
 
-export type Role = 'admin' | 'manager' | 'agent';
+/** An organization's owner ('admin', เจ้าขององค์กร) or an agent who answers customers. */
+export type Role = 'admin' | 'agent';
 
 /** expires_at: when a support access approved by the organization ends (null for a permanent membership). */
 export type Membership = { id: string; name: string; slug: string; status: string; role: Role; expires_at?: string | null };
@@ -13,7 +14,8 @@ export type Boot = {
   registration_available: boolean;
   /** The platform's own organization, where customers sign up on the main page. */
   home: { slug: string; name: string } | null;
-  user: { id: string; name: string; email: string; platform_admin: boolean } | null;
+  /** platform_owner: the account made at first-run setup, the one who manages the platform admins. */
+  user: { id: string; name: string; email: string; platform_admin: boolean; platform_owner?: boolean } | null;
   avatar: string;
   csrf: string | null;
   tenant_id: string | null;
@@ -23,6 +25,8 @@ export type Boot = {
   absolute_expires_at?: string | null;
   /** Signed out because the cookie's session has just run out. */
   session_expired?: 'idle' | 'absolute';
+  /** The platform's announcement to every organization's staff, while it lasts. */
+  announcement?: { text: string; level: 'info' | 'warning'; ends_at: string | null } | null;
 };
 
 export type Member = {
@@ -134,6 +138,8 @@ export type CustomerAccount =
       consent_version: string;
       consent_at: string;
       created_at: string;
+      /** The platform's announcement written for customers too, while it lasts. */
+      announcement?: { text: string; level: 'info' | 'warning'; ends_at: string | null } | null;
       /** When the session ends without activity / at the latest (docs/SECURITY-DESIGN.md §2). */
       idle_expires_at?: string | null;
       absolute_expires_at?: string | null;

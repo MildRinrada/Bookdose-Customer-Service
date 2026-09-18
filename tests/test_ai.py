@@ -159,7 +159,7 @@ class AITests(unittest.TestCase):
 
     def test_per_tenant_knowledge_credentials_and_job_authorization(self):
         self.enable();article=self.article()
-        second=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        second=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})['id']
         self.admin.switch(second)
         self.assertFalse(self.ok(self.admin,'/api/ai/settings')['key_configured'])
         self.enable()

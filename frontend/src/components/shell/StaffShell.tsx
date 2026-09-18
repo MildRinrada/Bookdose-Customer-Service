@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
+import { PlatformBell } from '@/features/platform/components/PlatformBell';
 import { StatusSwitch } from '@/features/staff-account/StatusSwitch';
 import { useWorkAlerts } from '@/features/staff-account/useWorkAlerts';
 import { isDone } from '@/lib/format';
@@ -14,6 +15,7 @@ import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
 import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
+import { AnnouncementBar } from './AnnouncementBar';
 import { SessionGuard } from './SessionGuard';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
 import { TextSizeMenu } from './TextSize';
@@ -233,6 +235,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="app-main">
+        <AnnouncementBar announcement={boot.announcement} />
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (
           <Link className="support-banner" href="/settings?tab=teams" role="status">
             <Icon name="shield" />
@@ -253,12 +256,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
         )}
-        {user.platform_admin && (
-          <div className="platform-banner" role="status">
-            <Icon name="shield" />
-            <span>คุณกำลังอยู่ในโหมดผู้ดูแลแพลตฟอร์ม (System Level) · การเปลี่ยนแปลงในหน้านี้มีผลกับทุกองค์กร</span>
-          </div>
-        )}
+        {user.platform_admin && <PlatformBanner />}
         <header className="topbar">
           <div className="breadcrumb">
             <MobileToggle onClick={() => setMobileOpen((o) => !o)} />
@@ -291,6 +289,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
                 <NotificationBell />
               </>
             )}
+            {platform && <PlatformBell />}
             <TextSizeMenu />
             <ProfileMenu
               photo={photo}
@@ -318,5 +317,46 @@ export function StaffShell({ children }: { children: ReactNode }) {
         </main>
       </div>
     </RealtimeProvider>
+  );
+}
+
+// The platform-mode banner can be closed for the rest of the browser session (sessionStorage; in memory when the
+// browser refuses storage). The server has no session storage, so the banner starts hidden and appears after hydration.
+const BANNER_KEY = 'bookdose.platform-banner';
+const bannerListeners = new Set<() => void>();
+let bannerClosedHere = false;
+const subscribeBanner = (listener: () => void) => {
+  bannerListeners.add(listener);
+  return () => void bannerListeners.delete(listener);
+};
+const bannerHidden = () => {
+  if (bannerClosedHere) return true;
+  try {
+    return sessionStorage.getItem(BANNER_KEY) === 'hidden';
+  } catch {
+    return false;
+  }
+};
+const hideBanner = () => {
+  bannerClosedHere = true;
+  try {
+    sessionStorage.setItem(BANNER_KEY, 'hidden');
+  } catch {
+    /* Hidden for this page only. */
+  }
+  bannerListeners.forEach((listener) => listener());
+};
+
+function PlatformBanner() {
+  const hidden = useSyncExternalStore(subscribeBanner, bannerHidden, () => true);
+  if (hidden) return null;
+  return (
+    <div className="platform-banner" role="status">
+      <Icon name="shield" />
+      <span>โหมดผู้ดูแลแพลตฟอร์ม · การเปลี่ยนแปลงมีผลกับทุกองค์กร</span>
+      <button type="button" className="platform-banner-close" aria-label="ซ่อนแถบโหมดผู้ดูแลแพลตฟอร์ม" title="ซ่อนจนกว่าจะปิดเบราว์เซอร์" onClick={hideBanner}>
+        <Icon name="close" />
+      </button>
+    </div>
   );
 }

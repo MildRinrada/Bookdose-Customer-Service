@@ -11,6 +11,10 @@ def create_ticket(req):
     return req.send(201,{'id':service.create_ticket(req.cd,req.db,req.ctx,req.body)})
 
 
+def next_task(req):
+    return req.send(200,service.next_task(req.cd,req.db,req.ctx))
+
+
 def show_ticket(req, ticket_id):
     return req.send(200,service.ticket_detail(req.db,req.ctx,ticket_id))
 

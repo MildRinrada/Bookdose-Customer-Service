@@ -214,7 +214,7 @@ class RealtimeTests(unittest.TestCase):
         # A staff cookie is not a customer's, and a guest cookie of this organization is not another's.
         self.closed(self.socket(self.admin,CUSTOMER),4401)
         page = self.guest()
-        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})
         self.closed(self.socket(page,'/api/public/beta/guest/realtime'),4401)
         # No such organization, or guest chat switched off: 4403.
         self.closed(self.socket(page,'/api/public/nowhere/guest/realtime'),4403)
@@ -281,7 +281,7 @@ class RealtimeTests(unittest.TestCase):
         self.say(other_chat)
         self.assertEqual(self.frame(ws),{'type':'changed','scope':'conversation','id':other_chat,'org':'alpha'})
         # Another organization: its staff and customers never hear about alpha, and alpha's staff not about beta.
-        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})
         staff = self.joined(self.admin)
         beta_customer = self.customer(slug='beta',email='beta@example.com')
         beta_chat = self.chat(beta_customer,slug='beta')
@@ -289,10 +289,10 @@ class RealtimeTests(unittest.TestCase):
         received = self.until(staff,lambda f:f.get('scope')=='conversation')
         self.assertEqual(received,{'type':'changed','scope':'conversation','id':alpha_chat,'org':'alpha'})
         self.assertNotIn(beta_chat,json.dumps(self.quiet(staff,0.5)))
-        # An agent of another team hears nothing about this team's conversations; a manager hears everything.
+        # An agent of another team hears nothing about this team's conversations; an owner hears everything.
         other_team = self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']
         agent,_ = self.create_member(team=other_team)
-        manager,_ = self.create_member(role='manager',email='manager@example.com',team=other_team)
+        manager,_ = self.create_member(role='admin',email='owner2@example.com',team=other_team)
         agent_ws,manager_ws = self.joined(agent),self.joined(manager)
         self.say(alpha_chat)
         self.until(manager_ws,self.changed('conversation',alpha_chat))
@@ -334,7 +334,7 @@ class RealtimeTests(unittest.TestCase):
             other_ws = self.joined(stranger,CUSTOMER)
             staff.send(json.dumps({'type':'typing','conversation_id':own}))
             self.assertEqual(self.frame(ws),{'type':'typing','conversation_id':own,'org':'alpha','who':'staff',
-                                             'name':'เจ้าของระบบ','ttl_ms':6000})
+                                             'name':'ผู้ดูแลองค์กร A','ttl_ms':6000})
             self.assertEqual(self.quiet(other_ws,0.5),[])
             # A guest's typing, and an agent who cannot see the conversation cannot type in it.
             page = self.guest('สมศรี')
@@ -437,7 +437,7 @@ class RealtimeTests(unittest.TestCase):
         self.closed(self.socket(self.admin),4429)
         # Another session of the same person has its own allowance.
         second = Client(self.base)
-        second.login('admin@example.com')
+        second.login('orgadmin@example.com')
         self.joined(second)
         for ws in open_sockets:
             ws.close()

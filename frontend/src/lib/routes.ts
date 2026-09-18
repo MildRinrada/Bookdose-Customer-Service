@@ -25,9 +25,9 @@ export const workspacePages: StaffPage[] = [
 ];
 
 export const managePages: StaffPage[] = [
-  { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin', 'manager'] },
-  { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin', 'manager'] },
-  { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin', 'manager'] },
+  { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin'] },
+  { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin'] },
+  { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin'] },
   { key: 'settings', href: '/settings', label: 'ตั้งค่าองค์กร', icon: 'settings', roles: ['admin'] },
 ];
 
@@ -47,6 +47,7 @@ export const platformPages: StaffPage[] = [
   { key: 'global-faq', href: '/platform/faq', label: 'FAQ กลาง', icon: 'book' },
   { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield' },
   { key: 'platform-security', href: '/platform/security', label: 'ความปลอดภัย', icon: 'lock' },
+  { key: 'platform-settings', href: '/platform/settings', label: 'ตั้งค่าระบบ', icon: 'settings' },
 ];
 
 const staffPages = [...workspacePages, ...managePages, ...otherStaffPages, ...platformPages];
@@ -105,6 +106,7 @@ const legacyStaff: Record<string, string> = {
   'global-faq': '/platform/faq',
   'platform-team': '/platform/team',
   'platform-security': '/platform/security',
+  'platform-settings': '/platform/settings',
   'verify-email': '/verify-email',
   'check-email': '/check-email',
   'resend-email': '/resend-email',

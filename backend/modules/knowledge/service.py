@@ -23,6 +23,9 @@ def save_article(db, ctx, article_id, body, creating):
     save(db,article_id,title,category,text,visibility,ctx['name'])
     audit.record(db,ctx['name'],'article.saved',article_id)
     db.commit()
+    # The overview's "คำถามที่ยังไม่มีบทความตอบ" is counted again with this article.
+    from backend.modules.ai import insights
+    insights.forget(ctx['tenant_id'])
     return article_id
 
 

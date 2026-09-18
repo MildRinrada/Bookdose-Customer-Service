@@ -61,9 +61,8 @@ class OrgLinkTests(unittest.TestCase):
         self.assertIn('<svg',self.svg(view['org_qr']))
         # Only the organization's admin sees and makes links.
         agent,_ = self.create_member()
-        manager,_ = self.create_member(role='manager',email='manager@example.com')
         self.assertEqual(agent.call(LINKS)[0],403)
-        self.assertEqual(manager.call(LINKS,{'label':'ทดสอบ'})[0],403)
+        self.assertEqual(agent.call(LINKS,{'label':'ทดสอบ'})[0],403)
         self.assertIn(Client(self.base).call(LINKS)[0],(401,403))
         # With the platform's public address set, every link uses it (a QR is scanned on another device).
         self.enable_registration_mail()

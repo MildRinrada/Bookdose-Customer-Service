@@ -50,7 +50,12 @@ def account(req):
     session,reason = service.load_session(req.cd,req.headers.get('Cookie',''),security.client_info(req))
     if reason:
         raise sessions.expired_error(reason)
-    return req.send(200,service.account_view(req.cd,session))
+    view = service.account_view(req.cd,session)
+    if session:
+        # The platform's announcement, when it was written for customers too.
+        from backend.modules.platform import health
+        view['announcement'] = health.active_announcement(req.cd,'customer')
+    return req.send(200,view)
 
 
 def activity(req):

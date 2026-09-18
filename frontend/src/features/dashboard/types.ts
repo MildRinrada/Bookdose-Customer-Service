@@ -45,7 +45,66 @@ export type ManagerOverview = {
   generated_at: string;
 };
 
-export type Overview = { me: StaffAlerts; manager: ManagerOverview | null };
+/** วันนี้ของฉัน: the member's own row of the manager view (automation.service.my_today). */
+export type MyDay = {
+  replies: number;
+  resolved: number;
+  open: number;
+  /** Minutes, 30 days. */
+  avg_first_response: number | null;
+  csat: number | null;
+  csat_count: number;
+};
+
+type SetupAction = { label: string; href: string };
+
+/** ตั้งค่าองค์กรให้ครบ (automation/setup.py): the steps, and what is broken now. */
+export type SetupChecklist = {
+  steps: Array<{ key: string; done: boolean; title: string; detail: string; action: SetupAction }>;
+  problems: Array<{ key: string; level: 'critical' | 'warning'; title: string; detail: string; action: SetupAction }>;
+};
+
+/** The chatbot's last 30 days (ai/insights.bot_performance). */
+export type BotPerformance = {
+  conversations: number;
+  resolved: number;
+  handed_off: number;
+  waiting: number;
+  answers: number;
+  reasons: Array<{ reason: string; count: number }>;
+};
+
+/** Questions that ask the same thing and no public article answers (ai/insights.knowledge_gaps). */
+export type KnowledgeGap = {
+  label: string;
+  count: number;
+  /** How many of them the chatbot tried and found no article for. */
+  bot_unsure: number;
+  examples: string[];
+  conversations: string[];
+  last_at: string;
+};
+
+/** The owner's last AI summary of today, or where it stands. */
+export type Brief = { id: string; status: string; lines: string[]; created_at: string; error: string };
+
+export type Insights = {
+  days: number;
+  bot: BotPerformance;
+  gaps: { total: number; groups: KnowledgeGap[] };
+  ai: { drafts_enabled: boolean; chatbot_enabled: boolean; key_configured: boolean };
+  brief: Brief | null;
+};
+
+/** setup and insights: the organization's owners only. */
+export type Overview = { me: StaffAlerts; today?: MyDay; manager: ManagerOverview | null; setup?: SetupChecklist | null; insights?: Insights | null };
+
+/** POST /api/tickets/next: the case to open now and why (none: nothing waits for the member). */
+export type NextTask = {
+  ticket: { id: string; number: number; subject: string } | null;
+  reason: 'overdue' | 'due_soon' | 'unassigned' | 'mine' | 'none';
+  taken: boolean;
+};
 
 /* Shapes of GET /api/customer/dashboard (customers/dashboard.py build). */
 

@@ -68,31 +68,67 @@
 .work-status-pill.status-online { background: #e3f5ec; color: #166344; }
 .work-status-pill.status-break { background: #fdf0d5; color: #7a4507; }
 .work-status-pill.status-busy { background: #fde7dc; color: #9a3412; }
+/* The work status in the top bar: a quiet control of the same height as its neighbours (Aa, the bell) - white, a
+   thin line, the status in words and its colour only in the dot. The select fills the control, so the whole of it
+   opens the list. */
 .status-switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 3px 4px 3px 11px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: #eef1f7;
-  font-weight: 600;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 500;
+  white-space: nowrap;
 }
-.status-switch.status-online { background: #e3f5ec; color: #166344; }
-.status-switch.status-break { background: #fdf0d5; color: #7a4507; }
-.status-switch.status-busy { background: #fde7dc; color: #9a3412; }
-.status-switch.status-offline,.status-switch.status-offhours { background: #eef1f7; color: #475569; }
+.status-switch:hover {
+  background: #f7f8f6;
+}
+.status-switch .status-dot {
+  width: 8px;
+  height: 8px;
+}
 .status-switch select {
-  padding: 2px 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0 16px 0 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
   color: inherit;
   font: inherit;
+  line-height: 1.2;
   cursor: pointer;
 }
+.status-switch select:focus {
+  outline: none;
+}
+/* The arrow: two borders turned, drawn by CSS so no image is needed. */
+.status-switch::after {
+  content: '';
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  opacity: .6;
+  pointer-events: none;
+}
 .status-switch:focus-within {
-  border-color: var(--focus);
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
 }
 html.platform-mode .status-switch {
   display: none;

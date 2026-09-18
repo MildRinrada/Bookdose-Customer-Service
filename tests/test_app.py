@@ -262,10 +262,10 @@ class IntegrationTests(unittest.TestCase):
         self.mailer.assert_not_called()
         self.assertEqual(client.call('/api/register',self.registration(slug='alpha'))[0],409)
         with D.control() as db:
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],1)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],2)
             self.assertEqual(db.execute('SELECT COUNT(*) FROM tenants').fetchone()[0],1)
         self.assertEqual(len(list((D.DATA/'tenants').glob('*.sqlite3'))),1)
-        self.assertEqual(self.admin.login('admin@example.com')['tenant_id'],self.org)
+        self.assertEqual(self.admin.login('orgadmin@example.com')['tenant_id'],self.org)
 
     def test_register_validates_fields_and_confirmation(self):
         client=Client(self.base)
@@ -274,7 +274,7 @@ class IntegrationTests(unittest.TestCase):
             with self.subTest(overrides=overrides):
                 self.assertEqual(client.call('/api/register',self.registration(**overrides))[0],400)
         with D.control() as db:
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],1)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],2)
 
     def test_register_requires_setup_and_never_claims_first_admin(self):
         with patch.object(D,'DATA',Path(self.temporary.name)/'empty'):
@@ -339,7 +339,7 @@ class IntegrationTests(unittest.TestCase):
             statuses=list(executor.map(register,range(2)))
         self.assertEqual(sorted(statuses),[201,409])
         with D.control() as db:
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],2)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],3)
             self.assertEqual(db.execute('SELECT COUNT(*) FROM tenants').fetchone()[0],2)
         self.assertEqual(len(list((D.DATA/'tenants').glob('*.sqlite3'))),2)
 
@@ -352,7 +352,7 @@ class IntegrationTests(unittest.TestCase):
             pending=D.one(db,'SELECT * FROM pending_registrations')
             self.assertNotIn(token,json.dumps(pending))
             self.assertNotIn('New-password-123!',json.dumps(pending))
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],1)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM users').fetchone()[0],2)
             self.assertEqual(db.execute('SELECT COUNT(*) FROM tenants').fetchone()[0],1)
             db.execute('UPDATE pending_registrations SET expires_at=?',(after(seconds=-1),))
         self.assertEqual(client.call('/api/register/verify',{'token':token})[0],400)
@@ -476,7 +476,7 @@ class IntegrationTests(unittest.TestCase):
         visitor,conv=self.visitor()
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'TENANT A ONLY','attachments':[{'name':'a.txt','data':base64.b64encode(b'A secret').decode()}]})
         attachment=self.ok(self.admin,f'/api/conversations/{conv}')['messages'][-1]['attachments'][0]['id']
-        second=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        second=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})['id']
         self.admin.switch(second)
         self.assertEqual(self.ok(self.admin,'/api/tickets')['tickets'],[])
         self.assertEqual(self.admin.call('/api/tickets/'+original['id'])[0],404)
@@ -507,77 +507,76 @@ class IntegrationTests(unittest.TestCase):
         from backend.modules.support_access import service as support
         other=self.ok(self.owner,'/api/platform/tenants',{'name':'Private Org','slug':'private','email':'private@example.com','admin_name':'ผู้ดูแลส่วนตัว','password':'Test-password-123!'})['id']
         path=f'/api/platform/tenants/{other}/support-access'
-        me=self.boot['user']['id']
-        self.assertEqual(self.admin.call(path,{})[0],400)
-        self.assertEqual(self.admin.call(path,{'reason':'ab'})[0],400)
-        self.assertEqual(self.admin.call(path,{'reason':'ตรวจสอบคำร้อง #123','hours':5})[0],400)
+        # The platform admin asks (the platform owner); an organization's admin decides.
+        me=self.owner.boot()['user']['id']
+        self.assertEqual(self.owner.call(path,{})[0],400)
+        self.assertEqual(self.owner.call(path,{'reason':'ab'})[0],400)
+        self.assertEqual(self.owner.call(path,{'reason':'ตรวจสอบคำร้อง #123','hours':5})[0],400)
         tenant_admin=Client(self.base);tenant_admin.login('private@example.com')
         self.assertEqual(tenant_admin.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],403)
         # Asking gives nothing yet.
-        first=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #123','hours':4})['id']
-        self.assertEqual(self.admin.call(path,{'reason':'ตรวจสอบคำร้อง #123'})[0],409)
+        first=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #123','hours':4})['id']
+        self.assertEqual(self.owner.call(path,{'reason':'ตรวจสอบคำร้อง #123'})[0],409)
         self.assertEqual(self.ok(self.owner,'/api/platform/tenants')['support'][other]['status'],'pending')
-        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
-        self.assertNotIn(other,[m['id'] for m in self.ok(self.admin,'/api/bootstrap')['memberships']])
+        self.assertEqual(self.owner.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        self.assertNotIn(other,[m['id'] for m in self.ok(self.owner,'/api/bootstrap')['memberships']])
         # The organization's admins see it with its reason; nobody else there may decide.
         waiting=self.ok(tenant_admin,'/api/support-access')['requests']
         self.assertEqual([(r['id'],r['status'],r['reason'],r['hours'],r['requester']['email']) for r in waiting],
                          [(first,'pending','ตรวจสอบคำร้อง #123',4,'admin@example.com')])
         tenant_team=self.ok(tenant_admin,'/api/workspace')['team_id']
-        self.ok(tenant_admin,'/api/members',{'name':'เจ้าหน้าที่','email':'private-agent@example.com','password':'Test-password-123!','role':'manager','team_id':tenant_team})
+        self.ok(tenant_admin,'/api/members',{'name':'เจ้าหน้าที่','email':'private-agent@example.com','password':'Test-password-123!','role':'agent','team_id':tenant_team})
         private_manager=Client(self.base);private_manager.login('private-agent@example.com')
         self.assertEqual(private_manager.call(f'/api/support-access/{first}/approve',{})[0],403)
         self.assertEqual(self.admin.call(f'/api/support-access/{first}/approve',{})[0],404)    # not the admin's organization
         # Denied: still nothing.
         self.ok(tenant_admin,f'/api/support-access/{first}/deny',{'note':'ยังไม่จำเป็น'})
         self.assertEqual(tenant_admin.call(f'/api/support-access/{first}/approve',{})[0],409)
-        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
-        # Asked again and approved for less than asked: a manager until then, never longer than asked.
-        second=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #124','hours':24})['id']
+        self.assertEqual(self.owner.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        # Asked again and approved for less than asked: read-only until then, never longer than asked.
+        second=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #124','hours':24})['id']
         self.assertEqual(tenant_admin.call(f'/api/support-access/{second}/approve',{'hours':72})[0],400)
         approved=self.ok(tenant_admin,f'/api/support-access/{second}/approve',{'hours':8})['requests'][0]
         self.assertEqual(approved['status'],'approved')
-        self.admin.switch(other)
-        self.assertEqual(self.ok(self.admin,'/api/workspace')['role'],'manager')
-        self.assertEqual(self.admin.call('/api/tickets')[0],200)
+        self.owner.switch(other)
+        self.assertTrue(self.ok(self.owner,'/api/workspace')['read_only'])
+        self.assertEqual(self.owner.call('/api/tickets')[0],200)
+        self.assertEqual(self.owner.call('/api/settings',{'response_hours':2},'PATCH')[0],403)
         self.assertTrue(any(e['action']=='tenant.support_access' and 'ตรวจสอบคำร้อง #124' in e['detail'] for e in self.ok(tenant_admin,'/api/audit')['events']))
-        member=next(m for m in self.ok(tenant_admin,'/api/workspace')['members'] if m['id']==me)
-        self.assertTrue(member['active'] and member['expires_at'])
+        # The platform admin looking in is not one of the organization's members.
+        self.assertNotIn(me,[m['id'] for m in self.ok(tenant_admin,'/api/workspace')['members']])
         # The time runs out: the access stops that minute, before any tidying up.
         with D.control() as cd:
             cd.execute("UPDATE memberships SET expires_at='2000-01-01T00:00:00+00:00' WHERE tenant_id=? AND user_id=?",(other,me))
             cd.execute("UPDATE support_requests SET expires_at='2000-01-01T00:00:00+00:00' WHERE id=?",(second,))
-        self.assertEqual(self.admin.call('/api/tickets')[0],403)
+        self.assertEqual(self.owner.call('/api/tickets')[0],403)
         support.sweep()
         self.assertEqual(self.ok(tenant_admin,'/api/support-access')['requests'][0]['status'],'expired')
         with D.control() as cd:
             self.assertEqual(cd.execute('SELECT active FROM memberships WHERE tenant_id=? AND user_id=?',(other,me)).fetchone()[0],0)
         # An access in force can be stopped early by the organization, and by the platform admin.
-        self.admin.switch(self.org)
-        third=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #125','hours':1})['id']
+        third=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #125','hours':1})['id']
         self.ok(tenant_admin,f'/api/support-access/{third}/approve',{})
-        self.admin.switch(other)
+        self.owner.switch(other)
         self.ok(tenant_admin,f'/api/support-access/{third}/end',{})
-        # Refused at once; the session is back in the platform admin's own organization (a page still showing the
-        # other one is told to refresh).
-        self.assertEqual(self.admin.call('/api/tickets')[0],409)
-        self.assertEqual(self.ok(self.admin,'/api/bootstrap')['tenant_id'],self.org)
-        self.admin.tenant=other
-        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
-        self.admin.switch(self.org)
-        fourth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #126','hours':1})['id']
+        # Refused at once; the session is back in no organization (the platform admin has none of their own).
+        self.assertIn(self.owner.call('/api/tickets')[0],(403,409))
+        self.assertIsNone(self.ok(self.owner,'/api/bootstrap')['tenant_id'])
+        self.owner.tenant=other
+        self.assertEqual(self.owner.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        fourth=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #126','hours':1})['id']
         self.ok(tenant_admin,f'/api/support-access/{fourth}/approve',{})
         self.ok(self.owner,f'/api/platform/support-access/{fourth}',None,'DELETE')
-        self.assertEqual(self.admin.call('/api/session/tenant',{'tenant_id':other})[0],403)
+        self.assertEqual(self.owner.call('/api/session/tenant',{'tenant_id':other})[0],403)
         # Switching the member off on the members page ends the request too.
-        fifth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #127','hours':1})['id']
+        fifth=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #127','hours':1})['id']
         self.ok(tenant_admin,f'/api/support-access/{fifth}/approve',{})
-        self.ok(tenant_admin,'/api/members/'+me,{'team_id':tenant_team,'role':'manager','active':False},'PATCH')
+        self.ok(tenant_admin,'/api/members/'+me,{'team_id':tenant_team,'role':'admin','active':False},'PATCH')
         self.assertEqual(self.ok(tenant_admin,'/api/support-access')['requests'][0]['status'],'ended')
         # A waiting request the platform admin withdraws, and one nobody decides, lapse.
-        sixth=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #128'})['id']
+        sixth=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #128'})['id']
         self.ok(self.owner,f'/api/platform/support-access/{sixth}',None,'DELETE')
-        seventh=self.ok(self.admin,path,{'reason':'ตรวจสอบคำร้อง #129'})['id']
+        seventh=self.ok(self.owner,path,{'reason':'ตรวจสอบคำร้อง #129'})['id']
         with D.control() as cd:
             cd.execute("UPDATE support_requests SET created_at='2000-01-01T00:00:00+00:00' WHERE id=?",(seventh,))
         statuses={r['id']:r['status'] for r in self.ok(tenant_admin,'/api/support-access')['requests']}
@@ -591,7 +590,8 @@ class IntegrationTests(unittest.TestCase):
         third_org=self.ok(self.owner,'/api/platform/tenants',{'name':'Third Org','slug':'third','email':'third@example.com','admin_name':'ผู้ดูแล 3','password':'Test-password-123!'})['id']
         self.ok(self.owner,'/api/platform/tenants/'+third_org,{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
         self.assertEqual(self.owner.call(f'/api/platform/tenants/{third_org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
-        self.assertEqual(self.owner.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],409)
+        # The platform's owner is no member of the first organization either: they ask like for any other.
+        self.assertEqual(self.owner.call(f'/api/platform/tenants/{self.org}/support-access',{'reason':'ตรวจสอบปัญหา'})[0],201)
 
     def test_team_boundaries_and_live_revocation(self):
         other_team=self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']
@@ -614,7 +614,7 @@ class IntegrationTests(unittest.TestCase):
 
     def second_organization(self):
         """Organization B, with the platform admin as its admin and working in it now."""
-        beta=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})['id']
+        beta=self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})['id']
         self.admin.switch(beta)
         return beta,self.ok(self.admin,'/api/workspace')['team_id']
 
@@ -692,12 +692,12 @@ class IntegrationTests(unittest.TestCase):
     def test_deleting_is_restricted_audited_and_refuses_to_orphan(self):
         """Cases, customers and articles can be removed, but only by the right role, never leaving history behind."""
         agent,_ = self.create_member(email='del-agent@example.com')
-        manager,_ = self.create_member(role='manager',email='del-manager@example.com')
+        manager,_ = self.create_member(role='admin',email='del-owner@example.com')
         contact = self.ok(self.admin,'/api/contacts',{'first_name':'ลูกค้าลบได้','email':'delete@example.com'})['id']
         keeper = self.ok(self.admin,'/api/contacts',{'first_name':'ลูกค้ามีเคส','email':'keep@example.com'})['id']
         ticket = self.ok(self.admin,'/api/tickets',{'subject':'เคสสำหรับลบ','contact_id':keeper})
         article = self.ok(self.admin,'/api/articles',{'title':'บทความสำหรับลบ','category':'ทั่วไป','body':'เนื้อหา'})['id']
-        # Articles: managers may, agents may not.
+        # Articles: owners may, agents may not.
         self.assertEqual(agent.call('/api/articles/'+article,None,'DELETE')[0],403)
         self.ok(manager,'/api/articles/'+article,None,'DELETE')
         self.assertNotIn(article,[a['id'] for a in self.ok(self.admin,'/api/articles')['articles']])
@@ -708,12 +708,12 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(agent.call('/api/contacts/'+contact,None,'DELETE')[0],403)
         self.ok(manager,'/api/contacts/'+contact,None,'DELETE')
         self.assertNotIn(contact,[c['id'] for c in self.ok(self.admin,'/api/contacts')['contacts']])
-        # Cases: admins only, and the conversation stays in the inbox.
+        # Cases: owners only, and the conversation stays in the inbox.
         _,conversation = self.visitor()
         self.ok(self.admin,f'/api/conversations/{conversation}/ticket',{})
         linked = self.ok(self.admin,'/api/conversations/'+conversation)['ticket']['id']
-        self.assertEqual(manager.call('/api/tickets/'+linked,None,'DELETE')[0],403)
-        self.ok(self.admin,'/api/tickets/'+linked,None,'DELETE')
+        self.assertEqual(agent.call('/api/tickets/'+linked,None,'DELETE')[0],403)
+        self.ok(manager,'/api/tickets/'+linked,None,'DELETE')
         self.assertEqual(self.admin.call('/api/tickets/'+linked)[0],404)
         self.assertIsNone(self.ok(self.admin,'/api/conversations/'+conversation)['ticket'])
         # Every deletion is in the activity log, with what was removed.
@@ -773,14 +773,14 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(agent.call('/api/articles',{'title':'Unauthorized'})[0],403)
 
     def test_password_change_invalidates_other_sessions(self):
-        other=Client(self.base);other.login('admin@example.com')
+        other=Client(self.base);other.login('orgadmin@example.com')
         self.ok(self.admin,'/api/account/password',{'current_password':'Test-password-123!','password':' New-password-456! '})
         self.admin.boot()
         self.assertEqual(other.call('/api/tickets')[0],401)
         self.assertEqual(self.admin.call('/api/tickets')[0],200)
         fresh=Client(self.base)
-        self.assertEqual(fresh.call('/api/login',{'email':'admin@example.com','password':'Test-password-123!'})[0],401)
-        fresh.login('admin@example.com',' New-password-456! ')
+        self.assertEqual(fresh.call('/api/login',{'email':'orgadmin@example.com','password':'Test-password-123!'})[0],401)
+        fresh.login('orgadmin@example.com',' New-password-456! ')
 
     def test_inline_media_upload_types_and_private_access(self):
         visitor,conversation=self.visitor()

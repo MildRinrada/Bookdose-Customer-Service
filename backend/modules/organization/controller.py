@@ -34,7 +34,7 @@ def update_member(req, member_id=None):
     return req.send(200,{'id':service.save_member(req.cd,req.db,req.ctx,member_id,req.body,creating=False)})
 
 
-@require_role('admin','manager',message='เฉพาะผู้ดูแลหรือหัวหน้าทีม')
+@require_role('admin','manager',message='เฉพาะเจ้าขององค์กร')
 def audit_log(req):
     return req.send(200,{'events':service.audit_events(req.cd,req.db,req.ctx)})
 

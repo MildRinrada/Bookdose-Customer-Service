@@ -29,7 +29,7 @@ class PlatformConsoleTests(unittest.TestCase):
         self.assertEqual(len(data['hours']),24)
         self.assertIn(self.org,[u['id'] for u in data['tenant_usage']])
         self.assertEqual(data['organizations']['active'],1)
-        self.assertEqual({w['name'] for w in data['workers']},{'ai','channels','email','automation'})
+        self.assertEqual({w['name'] for w in data['workers']},{'ai','channels','email','automation','security'})
         self.assertGreater(data['server']['disk_total'],0)
         self.assertEqual(set(data['queues']),{'outbox_waiting','outbox_failed','ai_pending','notices_pending'})
 
@@ -57,7 +57,7 @@ class PlatformConsoleTests(unittest.TestCase):
         self.assertNotIn(ids['staff'],public)
         self.assertNotIn(ids['platform'],public)
         # Customers of an organization created later read it too.
-        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})
         self.assertIn(ids['customer'],[a['id'] for a in self.ok(Client(self.base),'/api/public/beta')['articles']])
         # Changes to a published article wait: readers keep the published words until the changes are published.
         public_article = lambda: next((a for a in self.ok(Client(self.base),'/api/public/alpha')['articles'] if a['id']==ids['customer']),None)
@@ -109,15 +109,14 @@ class PlatformConsoleTests(unittest.TestCase):
         self.assertGreater(before,0)
 
     def test_platform_team_grows_and_shrinks_but_never_to_nobody(self):
-        me = self.boot['user']['id']
+        me = self.owner.boot()['user']['id']
         self.assertEqual([a['id'] for a in self.ok(self.owner,'/api/platform/admins')['admins']],[me])
         agent,_ = self.create_member()
         self.assertEqual(agent.call('/api/platform/admins')[0],403)
         self.assertEqual(self.owner.call(f'/api/platform/admins/{me}',None,'DELETE')[0],400)
-        self.ok(self.owner,'/api/platform/admins',{'email':'agent@example.com'})
+        # An organization's member is never made a platform admin: they would silently stop taking its cases.
         self.assertEqual(self.owner.call('/api/platform/admins',{'email':'agent@example.com'})[0],409)
-        # The role applies from the next request, next to the account's work in its organization.
-        self.assertEqual(agent.call('/api/platform/system')[0],200)
+        self.assertEqual(agent.call('/api/platform/system')[0],403)
         self.assertEqual(agent.call('/api/tickets')[0],200)
         self.assertEqual(self.owner.call('/api/platform/admins',{'email':'ops@example.com'})[0],400)
         ops_id = self.ok(self.owner,'/api/platform/admins',{'email':'ops@example.com','admin_name':'ทีมเซิร์ฟเวอร์','password':'Test-password-123!'})['id']

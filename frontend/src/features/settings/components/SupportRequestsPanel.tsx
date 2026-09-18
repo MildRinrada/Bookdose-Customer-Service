@@ -82,7 +82,7 @@ function SupportRow({ request: r }: { request: SupportRequest }) {
         }}
       >
         <p>
-          <strong>{r.requester.name}</strong> ({r.requester.email}) จะเข้าองค์กรในบทบาทหัวหน้าทีม อ่านและตอบเคสได้ทุกทีม แต่แก้การตั้งค่าองค์กรไม่ได้
+          <strong>{r.requester.name}</strong> ({r.requester.email}) จะดูข้อมูลขององค์กรได้แบบอ่านอย่างเดียว เพื่อช่วยตรวจสอบปัญหา ตอบลูกค้า รับเคส หรือแก้ไขข้อมูลไม่ได้
           และสิทธิ์จะหมดเองเมื่อครบเวลา
         </p>
         <p className="notice">เหตุผล: {r.reason}</p>

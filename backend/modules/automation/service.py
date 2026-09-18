@@ -179,11 +179,11 @@ def on_new_conversation(db, conversation_id):
 
 # SLA escalation
 def team_lead(members, load, team_id, available=None):
-    """The team's manager with the fewest open cases (an admin of the team when it has no manager), or None. A lead
-    who is available for new cases (`available`: user ids, ตั้งค่าบัญชี → สถานะการทำงาน) comes before one who is not;
-    when none is, the case still goes to a lead rather than to nobody."""
-    leads = [m for m in members if m['active'] and m['team_id']==team_id and m['role'] in ('manager','admin')]
-    leads.sort(key=lambda m:(available is not None and m['id'] not in available,m['role']!='manager',load.get(m['id'],0),m['name']))
+    """The organization owner an escalated case goes to, or None: an owner in the case's team before one elsewhere,
+    one available for new cases (`available`: user ids, ตั้งค่าบัญชี → สถานะการทำงาน) before one who is not, then the
+    one with the fewest open cases. When no owner is available, the case still goes to one rather than to nobody."""
+    leads = [m for m in members if m['active'] and m['role']=='admin']
+    leads.sort(key=lambda m:(available is not None and m['id'] not in available,m['team_id']!=team_id,load.get(m['id'],0),m['name']))
     return leads[0] if leads else None
 
 
@@ -215,7 +215,7 @@ def escalate_due(cd, db, tenant_id):
         repository.insert_escalation(db,t['id'],'unclaimed',None,lead['id'] if lead else None)
         realtime.ticket(db,t['id'])
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
-                     f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที · {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
+                     f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที · {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
     for t in at_risk:
         lead = team_lead(members,load,t['team_id'],available)
         repository.insert_escalation(db,t['id'],'sla_risk',t['assignee_id'],lead['id'] if lead else None)
@@ -223,7 +223,7 @@ def escalate_due(cd, db, tenant_id):
         staff_prefs.queue(db,t['assignee_id'],'sla',f"เคส BD-{t['number']} ใกล้ครบกำหนด SLA",
                           f"{t['subject']}\nยังไม่ได้ตอบกลับลูกค้าครั้งแรก",f"/tickets/{t['id']}")
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
-                     f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA · {'แจ้ง '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
+                     f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA · {'แจ้ง '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
     db.commit()
     return len(unclaimed)+len(at_risk)
 
@@ -483,9 +483,26 @@ def manager_overview(cd, db, ctx, tz):
             'escalations':repository.recent_escalations(db,5),'generated_at':now()}
 
 
+def my_today(db, ctx, tz):
+    """วันนี้ของฉัน: the member's own row of the manager view - replies and cases closed today, cases in hand, and
+    their first-response time and satisfaction over 30 days."""
+    since,day,me = after(days=-30),_local_day_start(tz),ctx['id']
+    rating = repository.csat_by_assignee(db,since).get(me)
+    return {'replies':repository.replies_since_by_author(db,day).get(me,0),'resolved':repository.resolved_since_by_assignee(db,day).get(me,0),
+            'open':repository.open_count_by_assignee(db).get(me,0),'avg_first_response':repository.first_response_minutes_by_assignee(db,since).get(me),
+            'csat':round(rating['average'],2) if rating else None,'csat_count':rating['count'] if rating else 0}
+
+
 def overview(cd, db, ctx, tz):
-    """The dashboard's own data: everyone's reminders and mentions, plus the manager view for admins and leads."""
-    return {'me':my_alerts(db,ctx),'manager':manager_overview(cd,db,ctx,tz) if ctx['role']!='agent' else None}
+    """The dashboard's own data: everyone's reminders, mentions and own day; for the organization's owners also the
+    manager view, what is left to set up, the chatbot and the knowledge gaps, and today's AI summary."""
+    from backend.modules.ai import insights
+    from backend.modules.automation import setup
+    owner = ctx['role']=='admin' and not ctx.get('read_only')
+    return {'me':my_alerts(db,ctx),'today':my_today(db,ctx,tz),
+            'manager':manager_overview(cd,db,ctx,tz) if ctx['role']!='agent' else None,
+            'setup':setup.checklist(cd,db,ctx) if owner else None,
+            'insights':{**insights.overview(db,ctx['tenant_id']),'brief':insights.latest_brief(db,ctx,_local_day_start(tz))} if owner else None}
 
 
 # Who is active

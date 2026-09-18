@@ -28,6 +28,8 @@ export type ConversationSummary = {
   last_kind: MessageKind | null;
   /** The newest message the customer can see (no notes). */
   last_public_kind: MessageKind | null;
+  /** When that message was written (how long a customer has waited, when it is theirs). */
+  last_public_at?: string | null;
   /** Set when the customer chatted on the web without an account: how they can be reached again. */
   guest?: GuestReach | null;
 };

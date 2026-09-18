@@ -18,6 +18,28 @@ def list_with_contacts(db, team_id=None):
               FROM tickets t LEFT JOIN escalations e ON e.ticket_id=t.id JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.updated_at DESC,t.number DESC''',params)
 
 
+WORKING = "('new','open','pending_internal')"   # a case waiting for the customer is not the member's move
+
+
+def my_most_urgent(db, user_id):
+    """The member's working case whose SLA ends first, with `due`: its first-response deadline while nobody has
+    answered, otherwise its resolution deadline (whichever comes first)."""
+    return one(db,f'''SELECT t.*,MIN(CASE WHEN t.first_response_at IS NULL THEN t.first_response_due_at ELSE t.resolution_due_at END,
+                      t.resolution_due_at) AS due FROM tickets t WHERE t.assignee_id=? AND t.status IN {WORKING}
+                      ORDER BY due,t.number LIMIT 1''',(user_id,))
+
+
+def oldest_unassigned(db, team_id):
+    """The team's case that has waited longest for someone to take it."""
+    return one(db,f'''SELECT * FROM tickets WHERE assignee_id IS NULL AND team_id=? AND status IN {WORKING}
+                      ORDER BY created_at,number LIMIT 1''',(team_id,))
+
+
+def take(db, ticket_id, user_id):
+    """Assign a case nobody has yet; 0 rows when someone took it first."""
+    return db.execute('UPDATE tickets SET assignee_id=?,updated_at=? WHERE id=? AND assignee_id IS NULL',(user_id,now(),ticket_id)).rowcount
+
+
 def export_rows(db, team_id=None):
     where,params = _team_filter(team_id)
     return rows(db,f'''SELECT t.number,t.subject,c.name AS customer,t.status,t.priority,t.category,t.created_at,t.first_response_at,t.resolved_at

@@ -87,6 +87,24 @@ export function meItems(alerts: StaffAlerts | null | undefined): MeItem[] {
   );
 }
 
+/** Why the chatbot handed a conversation to a person (ai_conversations.reason; ai/service.py handoff). */
+export const botReasonLabels: Record<string, string> = {
+  customer: 'ลูกค้าขอคุยกับเจ้าหน้าที่',
+  insufficient_knowledge: 'ไม่มีบทความที่ตอบได้',
+  attachment_requires_staff: 'ลูกค้าส่งไฟล์แนบ',
+  staff: 'เจ้าหน้าที่รับเรื่องเอง',
+  timeout: 'AI ตอบช้าเกินเวลา',
+  changed: 'ลูกค้าส่งข้อความเพิ่มระหว่างรอคำตอบ',
+  settings_changed: 'มีการเปลี่ยนการตั้งค่า AI',
+  disabled: 'ปิดบอต AI',
+  quota: 'ใช้ AI ครบโควตาของวัน',
+  not_configured: 'ยังไม่ได้ตั้ง API Key',
+  unauthorized: 'API Key ใช้ไม่ได้',
+  rate_limit: 'ผู้ให้บริการ AI จำกัดการใช้งานชั่วคราว',
+  provider: 'ผู้ให้บริการ AI ขัดข้อง',
+  invalid_output: 'คำตอบของ AI ใช้ไม่ได้',
+};
+
 // Manager view
 export type Presence = 'online' | 'away' | 'offline';
 export const presenceLabels: Record<Presence, string> = { online: 'กำลังใช้งาน', away: 'ไม่ได้ใช้งานชั่วคราว', offline: 'ออฟไลน์' };

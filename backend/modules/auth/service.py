@@ -121,6 +121,8 @@ def workspace_context(db, session):
 
 
 def bootstrap_data(db, session):
+    if session:
+        session = {**session,'platform_owner':session['user_id']==tenants.owner_id(db)}
     return schema.bootstrap(session,
         setup_required=repository.count_users(db)==0,
         setup_token_required=bool(settings.setup_token()) or settings.on_render(),
@@ -184,6 +186,7 @@ def set_up_platform(cookie_header, body, client=None):
         form = schema.setup_form(body)
         user_id = uid()
         repository.insert_user(db,user_id,form['name'],form['email'],form['password'],platform_admin=True)
+        tenants.save_setting(db,'platform_owner',user_id)
         platform.create_tenant(db,form['organization'],form['slug'],None,body.get('demo') is True)
         return _replace_session(db,cookie_header,user_id,client)
 

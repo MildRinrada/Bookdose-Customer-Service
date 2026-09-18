@@ -3,7 +3,7 @@
   support_requests  (control database) one request of one platform admin for one organization: why, for how long,
                     and what became of it.
       pending    asked; nobody can enter yet. Not decided within PENDING_HOURS, it lapses (status 'expired').
-      approved   an admin of the organization said yes: the platform admin is a manager there until expires_at.
+      approved   an admin of the organization said yes: the platform admin may look at the organization (read-only) until expires_at.
       denied     an admin said no.
       cancelled  the platform admin withdrew it before a decision.
       ended      the access was stopped before its time (by the organization's admins, or the platform admin).

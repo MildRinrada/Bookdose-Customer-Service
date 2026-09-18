@@ -178,13 +178,13 @@ class CustomerAccountTests(unittest.TestCase):
         # Installed before the platform remembered its own organization: a new organization does not take its place.
         with D.control() as cd:
             cd.execute("DELETE FROM platform_settings WHERE key='home_tenant'")
-        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})
         self.assertEqual(Client(self.base).boot()['home']['slug'],'alpha')
         with D.control() as cd:
             self.assertEqual(cd.execute("SELECT value FROM platform_settings WHERE key='home_tenant'").fetchone()[0],self.org)
 
     def test_signing_up_from_an_organization_link_connects_it(self):
-        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'admin@example.com'})
+        self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})
         client = Client(self.base)
         status,_ = self.signup(client,org='beta')
         self.assertEqual(status,201)

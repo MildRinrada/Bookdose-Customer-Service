@@ -14,18 +14,26 @@ import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useStaffAlerts, useStaffTickets, useStaffUser, useWork } from '@/lib/session';
 import { overviewPath } from './api';
+import { BotCard, BriefCard, GapsCard } from './components/InsightsCards';
 import { ManagerView } from './components/ManagerView';
 import { MeItems } from './components/MeItems';
+import { MyDay } from './components/MyDay';
+import { NextTaskButton } from './components/NextTaskButton';
+import { SetupCard } from './components/SetupCard';
+import { WaitingChats } from './components/WaitingChats';
 import { actionNeeded, meItems } from './labels';
 import type { Overview } from './types';
 
-/* Overview: greeting, stat cards, recent cases, "ถึงคุณ" (mentions, follow-ups, escalations), "Action Needed",
-   the new-cases chart and, for admins and team leads, the manager view. The overview's own data
+/* Overview: greeting with รับงานถัดไป, the owner's setup checklist, stat cards, วันนี้ของฉัน and แชทรอตอบ, recent cases,
+   "ถึงคุณ" (mentions, follow-ups, escalations), "Action Needed", the new-cases chart and, for the organization's
+   owners, the AI and knowledge cards and the manager view. The overview's own data
    (/api/automation/overview) refreshes every 30 seconds (every minute while live updates are connected, which refresh it on changes)
    while the screen is visible and no dialog is open; it also
    keeps the bell's alerts current. Markup: pages/dashboard/dashboard. */
 
 const REFRESH_MS = 30000;
+// Each list beside the cases shows its first three, so the two columns end near each other; the rest is a link away.
+const ASIDE_ITEMS = 3;
 const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
 type Tab = 'all' | 'mine' | 'new';
@@ -53,6 +61,13 @@ function DashboardView({ dash }: { dash: Overview | null }) {
   const alerts = useStaffAlerts().data;
   const tickets = (useStaffTickets().data?.tickets ?? []) as TicketRow[];
   const [tab, setTab] = useState<Tab>('all');
+  // "รอ 12 นาที" moves on by itself: the clock ticks every half minute.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+  const readOnly = Boolean(work.read_only);
 
   const active = tickets.filter((t) => !isDone(t));
   const late = tickets.filter(overdue);
@@ -69,7 +84,7 @@ function DashboardView({ dash }: { dash: Overview | null }) {
   const chartMid = max > 1 && max % 2 === 0 ? max / 2 : 0;
   const needed = actionNeeded(tickets);
   const me = meItems(dash?.me ?? alerts);
-  const moreNeeded = Math.max(0, needed.length - 5);
+  const moreNeeded = Math.max(0, needed.length - ASIDE_ITEMS);
   const shownTickets = tickets.filter(
     (t) => tab === 'all' || (tab === 'mine' && t.assignee_id === user.id && !isDone(t)) || (tab === 'new' && t.status === 'new'),
   );
@@ -98,9 +113,11 @@ function DashboardView({ dash }: { dash: Overview | null }) {
           <span className="date-label">
             <Icon name="calendar" /> {new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
           </span>
+          {!readOnly && <NextTaskButton />}
           <NewTicketButton />
         </div>
       </div>
+      {dash?.setup && <SetupCard setup={dash.setup} />}
       <div className="stats-grid">
         <StatCard label="เคสที่กำลังดูแล" value={active.length} icon="ticket" foot="เคสที่ยังไม่แก้ไขหรือปิด" href="/tickets?filter=active" />
         <StatCard label="เคสที่มอบหมายให้ฉัน" value={mine.length} icon="users" color="amber" foot="งานที่คุณเป็นผู้รับผิดชอบ" href="/tickets?filter=mine" />
@@ -115,79 +132,32 @@ function DashboardView({ dash }: { dash: Overview | null }) {
           urgent={late.length > 0}
         />
       </div>
+      {dash?.today && !readOnly && <MyDay day={dash.today} />}
       <div className="dashboard-grid">
-        <section className="card">
-          <div className="card-header">
-            <div>
-              <h2>เคสล่าสุด</h2>
-              <p>ติดตามทุกเรื่องให้ได้รับการดูแลอย่างต่อเนื่อง</p>
-            </div>
-            <Link className="btn subtle small" href="/tickets">
-              ดูทั้งหมด <Icon name="arrow" />
-            </Link>
-          </div>
-          <div className="tabs">
-            {tabs.map(([key, label, count]) => (
-              <button key={key} type="button" className={`tab${tab === key ? ' active' : ''}`} data-filter={key} onClick={() => setTab(key)}>
-                {label} <span>{count}</span>
-              </button>
-            ))}
-          </div>
-          <div id="dashboard-tickets">
-            <TicketTable tickets={shownTickets.slice(0, 6)} compact />
-          </div>
-          <div className="table-footer">
-            <span>แสดงสูงสุด 6 เคสล่าสุด</span>
-            <Link href="/tickets">ไปที่เคสบริการ →</Link>
-          </div>
-        </section>
-        <aside className="stack dashboard-aside">
-          <section className="card me-card">
+        <div className="stack dashboard-main">
+          <section className="card">
             <div className="card-header">
               <div>
-                <h2>ถึงคุณ</h2>
-                <p>ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ</p>
+                <h2>เคสล่าสุด</h2>
+                <p>ติดตามทุกเรื่องให้ได้รับการดูแลอย่างต่อเนื่อง</p>
               </div>
-              <span className={`badge${me.length ? ' pending_customer' : ''}`} id="me-count">
-                {me.length} รายการ
-              </span>
+              <Link className="btn subtle small" href="/tickets">
+                ดูทั้งหมด <Icon name="arrow" />
+              </Link>
             </div>
-            <div className="card-body" id="me-items">
-              <MeItems items={me} />
+            <div className="tabs">
+              {tabs.map(([key, label, count]) => (
+                <button key={key} type="button" className={`tab${tab === key ? ' active' : ''}`} data-filter={key} onClick={() => setTab(key)}>
+                  {label} <span>{count}</span>
+                </button>
+              ))}
             </div>
-          </section>
-          <section className="card action-needed">
-            <div className="card-header">
-              <div>
-                <h2>เคสที่ต้องดำเนินการทันที</h2>
-                <p>Action Needed</p>
-              </div>
-              <span className={`badge${needed.length ? ' suspended' : ''}`}>{needed.length} เคส</span>
+            <div id="dashboard-tickets">
+              <TicketTable tickets={shownTickets.slice(0, 6)} compact />
             </div>
-            <div className="card-body">
-              {needed.length ? (
-                needed.slice(0, 5).map(({ t, reason, tone, symbol }) => (
-                  <div key={t.id} className={`sla-item ${tone}`}>
-                    <div className="flex between">
-                      <span className="ticket-id">BD-{t.number}</span>
-                      <PriorityTag value={t.priority} />
-                    </div>
-                    <Link href={`/tickets/${t.id}`} className="truncate">
-                      {t.subject}
-                    </Link>
-                    <div className="time">
-                      <Icon name={symbol} /> {reason}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-mini">ไม่มีเคสที่ต้องเร่งดำเนินการ ✨</div>
-              )}
-              {moreNeeded > 0 && (
-                <Link className="small" href="/tickets?filter=active">
-                  ดูอีก {moreNeeded} เคส →
-                </Link>
-              )}
+            <div className="table-footer">
+              <span>แสดงสูงสุด 6 เคสล่าสุด</span>
+              <Link href="/tickets">ไปที่เคสบริการ →</Link>
             </div>
           </section>
           <section className="card">
@@ -214,8 +184,76 @@ function DashboardView({ dash }: { dash: Overview | null }) {
               <div className="chart-legend">ชี้หรือแตะที่แท่งเพื่อดูจำนวนเคส</div>
             </div>
           </section>
+        </div>
+        <aside className="stack dashboard-aside">
+          <WaitingChats now={now} />
+          <section className="card me-card">
+            <div className="card-header">
+              <div>
+                <h2>ถึงคุณ</h2>
+                <p>ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ</p>
+              </div>
+              <span className={`badge${me.length ? ' pending_customer' : ''}`} id="me-count">
+                {me.length} รายการ
+              </span>
+            </div>
+            <div className="card-body" id="me-items">
+              <MeItems items={me} limit={ASIDE_ITEMS} />
+            </div>
+          </section>
+          <section className="card action-needed">
+            <div className="card-header">
+              <div>
+                <h2>เคสที่ต้องดำเนินการทันที</h2>
+                <p>Action Needed</p>
+              </div>
+              <span className={`badge${needed.length ? ' suspended' : ''}`}>{needed.length} เคส</span>
+            </div>
+            <div className="card-body">
+              {needed.length ? (
+                needed.slice(0, ASIDE_ITEMS).map(({ t, reason, tone, symbol }) => (
+                  <div key={t.id} className={`sla-item ${tone}`}>
+                    <div className="flex between">
+                      <span className="ticket-id">BD-{t.number}</span>
+                      <PriorityTag value={t.priority} />
+                    </div>
+                    <Link href={`/tickets/${t.id}`} className="truncate">
+                      {t.subject}
+                    </Link>
+                    <div className="time">
+                      <Icon name={symbol} /> {reason}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-mini">ไม่มีเคสที่ต้องเร่งดำเนินการ ✨</div>
+              )}
+              {moreNeeded > 0 && (
+                <Link className="small" href="/tickets?filter=active">
+                  ดูอีก {moreNeeded} เคส →
+                </Link>
+              )}
+            </div>
+          </section>
         </aside>
       </div>
+      {dash?.insights && (
+        <section className="insights-section" aria-labelledby="insights-title">
+          <div className="manager-head">
+            <div>
+              <h2 id="insights-title">AI และคลังความรู้</h2>
+              <p>เห็นเฉพาะเจ้าขององค์กร · อัปเดตทุก 2 นาที</p>
+            </div>
+          </div>
+          <div className="insights-grid">
+            <GapsCard insights={dash.insights} />
+            <div className="stack">
+              <BriefCard brief={dash.insights.brief} ai={dash.insights.ai} />
+              <BotCard bot={dash.insights.bot} ai={dash.insights.ai} days={dash.insights.days} />
+            </div>
+          </div>
+        </section>
+      )}
       {dash?.manager && (
         <section className="manager-view" id="manager-view" aria-labelledby="manager-title">
           <ManagerView manager={dash.manager} />

@@ -2,7 +2,7 @@
 from backend.middleware.auth import require_role
 from backend.modules.knowledge import service
 
-MANAGERS_ONLY = 'เฉพาะผู้ดูแลหรือหัวหน้าทีมจัดการบทความได้'
+MANAGERS_ONLY = 'เฉพาะเจ้าขององค์กรจัดการบทความได้'
 
 
 def list_articles(req):

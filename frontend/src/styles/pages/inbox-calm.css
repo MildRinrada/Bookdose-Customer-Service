@@ -1,0 +1,266 @@
+/* The team's inbox, calmer: a plain list with thin dividers instead of cards of chips, one colour for what waits for
+   us, thin scrollbars that show on hover, a header of plain facts and one slim row for privacy and the notes switch.
+   Loaded after pages/inbox.css and customer.css, whose older rules it settles. */
+
+/* Scrollbars: thin, and only visible while the pointer is over the list or the thread. */
+.staff-chats .inbox-list,
+.staff-chats .thread {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.staff-chats .inbox-list:hover,
+.staff-chats .inbox-list:focus-within,
+.staff-chats .thread:hover,
+.staff-chats .thread:focus-within {
+  scrollbar-color: #c3c8c1 transparent;
+}
+.staff-chats .inbox-list::-webkit-scrollbar,
+.staff-chats .thread::-webkit-scrollbar {
+  width: 6px;
+}
+.staff-chats .inbox-list::-webkit-scrollbar-thumb,
+.staff-chats .thread::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.staff-chats .inbox-list:hover::-webkit-scrollbar-thumb,
+.staff-chats .thread:hover::-webkit-scrollbar-thumb {
+  background: #c3c8c1;
+}
+
+/* The search and filters stay on top while the list scrolls under them. */
+.staff-chats .inbox-tools {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--paper);
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* A row per conversation. */
+.staff-chats .inbox-item {
+  margin: 0;
+  padding: 12px 16px 12px 15px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--paper);
+}
+.staff-chats .inbox-item:hover {
+  background: #f7f8f6;
+}
+.staff-chats .inbox-item.selected {
+  background: #f1f3ef;
+  border-left-color: var(--accent);
+  padding-left: 15px;
+}
+.staff-chat-item .inbox-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.staff-chat-item .inbox-channel {
+  display: inline-flex;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.staff-chat-item .inbox-channel .icon {
+  width: 15px;
+  height: 15px;
+}
+.staff-chat-item .inbox-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.staff-chat-item .inbox-time,
+.staff-chats .inbox-item.needs-reply .inbox-time {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: .875rem;
+  white-space: nowrap;
+}
+.staff-chats .inbox-item h3 {
+  margin: 3px 0 1px;
+  font-size: .9688rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.staff-chats .inbox-preview {
+  margin: 0;
+  font-size: .9063rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.staff-chats .inbox-item.needs-reply .inbox-name,
+.staff-chats .inbox-item.needs-reply h3 {
+  font-weight: 700;
+}
+.staff-chats .inbox-item.needs-reply .inbox-preview {
+  color: var(--ink);
+}
+.inbox-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 0;
+  margin: 5px 0 0;
+  font-size: .8438rem;
+  color: var(--muted);
+}
+.inbox-foot>span+span::before {
+  content: '·';
+  margin: 0 7px;
+  color: #b3b9b2;
+}
+.inbox-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--amber);
+  font-weight: 600;
+}
+.inbox-waiting::after {
+  order: -1;
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.inbox-urgent {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* The open conversation's header: plain facts separated by dots, the case number the only link. */
+.staff-chats .conv-facts {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  color: var(--muted);
+  font-size: .9375rem;
+}
+.staff-chats .conv-facts>*+*::before {
+  content: '·';
+  margin: 0 8px;
+  color: #b3b9b2;
+}
+.staff-chats .conv-facts strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.conv-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.conv-fact .icon {
+  width: 14px;
+  height: 14px;
+}
+.staff-chats .conv-facts .conv-case-link {
+  color: var(--link);
+  font-weight: 600;
+  gap: 0;
+}
+.conv-urgent {
+  color: var(--red);
+}
+
+/* Privacy and the notes switch: one slim row above the thread. */
+.conv-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .875rem;
+}
+.conv-toolbar .privacy-tag {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+}
+.notes-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.notes-switch:hover {
+  color: var(--ink);
+}
+.notes-switch-track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: #cfd4cd;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.notes-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .15s;
+}
+.notes-switch[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.notes-switch[aria-pressed="true"] .notes-switch-track {
+  background: var(--accent);
+}
+.notes-switch[aria-pressed="true"] .notes-switch-track::after {
+  transform: translateX(12px);
+}
+.notes-switch:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .notes-switch-track,
+  .notes-switch-track::after {
+    transition: none;
+  }
+}
+@container (max-width:780px) {
+  .staff-chats .conv-facts {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width:600px) {
+  .conv-toolbar {
+    flex-wrap: wrap;
+    padding: 6px 14px;
+  }
+}

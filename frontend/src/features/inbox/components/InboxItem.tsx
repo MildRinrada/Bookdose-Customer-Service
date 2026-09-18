@@ -3,15 +3,13 @@ import { Icon } from '@/components/Icon';
 import { plainText, relative } from '@/lib/format';
 import { channelIcons, channelNames, priorityLabels } from '@/lib/labels';
 import { needsReply } from '../hooks';
-import { GuestBadge } from './GuestBadge';
 import type { ConversationSummary } from '../types';
 
-/* One conversation in the inbox list, laid out as a chat in the customer's แชทของฉัน (features/customer/ChatsScreen.tsx):
-   who and when on top (channel, customer, the waiting dot), the subject, the last message, then a row of chips - where
-   it stands, the company, urgency and the case number. Markup: pages/inbox/inbox-item, pages/customer.css (the chip
-   row and the card look, shared with the customer's list). */
+/* One conversation in the inbox list: a plain row, not a card of chips. Who (with the channel's icon) and when, the
+   subject, the last message, then one quiet line of what matters: "รอเราตอบ" (the only colour in the row), urgency,
+   the case number and the company. Markup: pages/inbox-calm.css (staff-chat-item). */
 
-/** Where a conversation stands, in the team's words, in the tones of the customer's list. */
+/** Where a conversation stands, in the team's words (the case page and other lists use the tones). */
 export function inboxState(c: Pick<ConversationSummary, 'status' | 'last_public_kind'>): { label: string; tone: string } {
   if (c.status === 'closed') return { label: 'ปิดแล้ว', tone: 'done' };
   if (needsReply(c)) return { label: 'รอเราตอบ', tone: 'waiting' };
@@ -23,7 +21,8 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
   const waiting = needsReply(c);
   const urgent = ['high', 'urgent'].includes(c.ticket_priority ?? '');
   const channelName = channelNames[c.channel] || c.channel;
-  const state = inboxState(c);
+  const guest = c.guest ? ' · ผู้เยี่ยมชม (ไม่ได้เข้าสู่ระบบ)' : '';
+  const foot = [c.ticket_number ? `BD-${c.ticket_number}` : null, c.company, c.status === 'closed' ? 'ปิดแล้ว' : null].filter((x): x is string => Boolean(x));
   return (
     <Link
       className={`inbox-item staff-chat-item${selected ? ' selected' : ''}${waiting ? ' needs-reply' : ''}`}
@@ -31,17 +30,11 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
       aria-current={selected ? 'true' : undefined}
     >
       <div className="inbox-top">
-        {/* Where the customer's list names the organization, the team's names the customer (and the channel). */}
-        <span className={`customer-org-badge staff-contact-badge channel-${c.channel}`} title={`${c.contact_name} · ${channelName}`}>
+        <span className="inbox-channel" title={`${channelName}${guest}`}>
           <Icon name={channelIcons[c.channel] || 'chat'} />
           <span className="sr-only">{channelName}: </span>
-          <span className="inbox-name">{c.contact_name}</span>
         </span>
-        {waiting && (
-          <span className="unread-dot" title="รอตอบกลับ">
-            <span className="sr-only">รอตอบกลับ</span>
-          </span>
-        )}
+        <span className="inbox-name">{c.contact_name}</span>
         <time className="inbox-time" dateTime={c.updated_at}>
           {relative(c.updated_at)}
         </time>
@@ -52,18 +45,15 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
         {c.last_kind === 'note' && 'บันทึกภายใน: '}
         {plainText(c.preview || '').slice(0, 90) || 'ยังไม่มีข้อความ'}
       </p>
-      <div className="customer-chat-meta">
-        <span className={`customer-state tone-${state.tone}`}>{state.label}</span>
-        <GuestBadge guest={c.guest} />
-        {c.company && <span className="customer-category-tag">{c.company}</span>}
-        {urgent && (
-          <span className={`customer-category-tag priority-tag ${c.ticket_priority}`}>
-            <span className={`priority-dot ${c.ticket_priority}`} aria-hidden="true" />
-            {priorityLabels[c.ticket_priority!]}
-          </span>
-        )}
-        {c.ticket_number ? <span className="inbox-case">BD-{c.ticket_number}</span> : null}
-      </div>
+      {(waiting || urgent || foot.length > 0) && (
+        <p className="inbox-foot">
+          {waiting && <span className="inbox-waiting">รอเราตอบ</span>}
+          {urgent && <span className={`inbox-urgent ${c.ticket_priority}`}>{priorityLabels[c.ticket_priority!]}</span>}
+          {foot.map((part) => (
+            <span key={part}>{part}</span>
+          ))}
+        </p>
+      )}
     </Link>
   );
 }

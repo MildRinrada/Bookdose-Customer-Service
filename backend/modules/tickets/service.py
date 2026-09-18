@@ -105,6 +105,35 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     db.commit()
 
 
+NEXT_SOON_HOURS = 2   # "ใกล้เกิน": the same window as ต้องดำเนินการทันที on the overview
+
+
+def next_task(cd, db, ctx):
+    """รับงานถัดไป: the one case the member should open now - their own past its SLA, then their own due within two
+    hours, then the case of their team that has waited longest for anyone, which becomes theirs. Returns the case and
+    why, or None when there is nothing to do."""
+    D.begin(db)
+    mine = repository.my_most_urgent(db,ctx['id'])
+    if mine and mine['due']<=iso(utc_now()+dt.timedelta(hours=NEXT_SOON_HOURS)):
+        db.commit()
+        return {'ticket':{'id':mine['id'],'number':mine['number'],'subject':mine['subject']},
+                'reason':'overdue' if mine['due']<now() else 'due_soon','taken':False}
+    waiting = repository.oldest_unassigned(db,ctx['team_id']) if ctx['team_id'] else None
+    if waiting and organization.is_active_team_member(cd,ctx['tenant_id'],ctx['id'],waiting['team_id']) and repository.take(db,waiting['id'],ctx['id']):
+        audit.record(db,ctx['name'],'ticket.updated',waiting['id'],
+                     json.dumps({'assignee_id':{'before':None,'after':ctx['id']}},ensure_ascii=False))
+        realtime.ticket(db,waiting['id'],public=False,teams=(waiting['team_id'],),conversations_listed=True)
+        for conv in conversations.for_ticket(db,waiting['id']):
+            realtime.conversation(db,conv['id'],public=False)
+        db.commit()
+        return {'ticket':{'id':waiting['id'],'number':waiting['number'],'subject':waiting['subject']},'reason':'unassigned','taken':True}
+    db.commit()
+    # Nothing urgent and nobody waiting: the member's own next case, if any, is still the best thing to open.
+    if mine:
+        return {'ticket':{'id':mine['id'],'number':mine['number'],'subject':mine['subject']},'reason':'mine','taken':False}
+    return {'ticket':None,'reason':'none','taken':False}
+
+
 def notify_assigned(db, ticket, assignee, ctx=None):
     """The new owner of a case hears about it by email when they asked to (not when they took it themselves)."""
     from backend.modules.staff_prefs import service as staff_prefs

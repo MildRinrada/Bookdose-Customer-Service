@@ -11,7 +11,7 @@ import type { Escalation } from '../types';
 export function EscalationRow({ escalation: e }: { escalation: Escalation }) {
   const memberName = useMemberName();
   const tone = e.reason === 'unclaimed' ? 'warn' : 'danger';
-  const to = e.to_user_id ? memberName(e.to_user_id) : 'ไม่พบหัวหน้าทีม';
+  const to = e.to_user_id ? memberName(e.to_user_id) : 'ไม่พบเจ้าขององค์กร';
   return (
     <div className={`sla-item escalation-row ${tone}`}>
       <div className="flex between">

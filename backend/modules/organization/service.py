@@ -85,7 +85,11 @@ def save_member(cd, db, ctx, member_id, body, creating):
         user_id = member_id
         require(repository.find_membership(cd,ctx['tenant_id'],user_id),'ไม่พบสมาชิก',404)
         active = schema.member_active(body)
-        require(user_id!=ctx['id'] or (active and role=='admin'),'ไม่สามารถถอนสิทธิ์ผู้ดูแลของตัวเองได้')
+        require(user_id!=ctx['id'] or (active and role=='admin'),'ไม่สามารถถอนสิทธิ์เจ้าขององค์กรของตัวเองได้')
+        # There is always at least one owner who can run the organization.
+        current = repository.find_membership(cd,ctx['tenant_id'],user_id)
+        if current['role']=='admin' and current['active'] and not current['expires_at'] and (role!='admin' or not active):
+            require(len(repository.organization_admins(cd,ctx['tenant_id']))>1,'องค์กรต้องมีเจ้าของอย่างน้อย 1 คน',409)
         repository.update_membership(cd,ctx['tenant_id'],user_id,role,team_id,active)
         tickets.unassign_member(db,user_id,active,team_id)
         if not active:

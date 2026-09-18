@@ -4,7 +4,7 @@ from backend.middleware.auth import require_role
 from backend.modules.automation import schema, service
 
 LEADS = ('admin','manager')
-LEADS_ONLY = 'เฉพาะผู้ดูแลหรือหัวหน้าทีม'
+LEADS_ONLY = 'เฉพาะเจ้าขององค์กร'
 
 
 @require_role(*LEADS,message=LEADS_ONLY)

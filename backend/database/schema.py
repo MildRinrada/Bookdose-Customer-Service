@@ -49,6 +49,13 @@ def create_control_tables(db):
     # Session limits (security round): when each staff / customer session was made and last really used.
     from backend.modules.security import sessions
     sessions.add_session_columns(db)
+    # Organizations have owners and agents only: a former team lead becomes an agent; a support access (expires_at)
+    # keeps its read-only view of every team as an owner would see it.
+    db.execute("UPDATE memberships SET role='admin' WHERE role='manager' AND expires_at IS NOT NULL")
+    db.execute("UPDATE memberships SET role='agent' WHERE role='manager'")
+    # The platform's owner (the account made at first-run setup) is the one who manages the platform admins.
+    from backend.modules.platform import repository as platform_repository_owner
+    platform_repository_owner.remember_owner(db)
     # The devices a staff account is signed in on (ตั้งค่าบัญชี → ความปลอดภัย): an id and where each was opened.
     from backend.modules.staff_security import repository as staff_security_repository
     staff_security_repository.add_session_columns(db)
@@ -64,6 +71,9 @@ def upgrade_tenant(db):
     """Tables added after the first release; safe to run on every start. Existing rows are left intact."""
     db.executescript(ai.TENANT_TABLES)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',ai.DEFAULT_SETTINGS)
+    # The owner's AI on the overview (an article from unanswered questions, today's summary): wider job modes.
+    from backend.modules.ai import repository as ai_repository
+    ai_repository.widen_jobs(db)
     db.execute(contacts.NAME_TABLE)
     db.executescript(channels.TENANT_TABLES)
     db.execute(trash.TENANT_TABLES)

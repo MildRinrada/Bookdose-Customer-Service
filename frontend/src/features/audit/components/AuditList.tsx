@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { clockTime, date, dayLabel } from '@/lib/format';
 import { priorityLabels, statusLabels } from '@/lib/labels';
 import { useWorkspace } from '@/lib/session';
-import { auditEntityName, auditEventGroup, auditFieldLabels, auditGroups, auditIcon, auditLabel, auditLink, auditTone } from '../labels';
+import { auditEventGroup, auditFieldLabels, auditGroups, auditIcon, auditLabel, auditLink, auditParties, auditTone } from '../labels';
 import type { AuditEvent } from '../types';
 
 /* Events read newest first, in days: the header answers "when", the rows answer "what" (the old auditHTML).
@@ -74,9 +74,9 @@ export function AuditList({ events }: { events: AuditEvent[] }) {
 
 function AuditEventRow({ event: e, changes }: { event: AuditEvent; changes: string }) {
   const group = auditEventGroup(e.action);
-  const name = auditEntityName(e);
+  // "ชื่อ เข้าสู่ระบบ", not "ชื่อ · อีเมล เข้าสู่ระบบ ชื่อ · อีเมล": each person once, their email only on hover.
+  const { actor, actorEmail, target: name, targetEmail } = auditParties(e);
   const href = name ? auditLink(e) : '';
-  const actorName = e.actor_display || (/^[a-f0-9]{32}$/.test(e.actor) ? 'ผู้ใช้งาน' : e.actor);
   return (
     <li className={`audit-event tone-${auditTone(e.action)}`}>
       <time dateTime={e.created_at} title={date(e.created_at, true)}>
@@ -87,11 +87,11 @@ function AuditEventRow({ event: e, changes }: { event: AuditEvent; changes: stri
       </span>
       <div className="audit-body">
         <p className="audit-line">
-          <strong title={e.actor}>{actorName}</strong> <span className="audit-label">{auditLabel(e.action) || 'อัปเดตรายการ'}</span>
+          <strong title={actorEmail || undefined}>{actor}</strong> <span className="audit-label">{auditLabel(e.action) || 'อัปเดตรายการ'}</span>
           {href ? (
             <>
               {' '}
-              <Link className="audit-entity" href={href}>
+              <Link className="audit-entity" href={href} title={targetEmail || undefined}>
                 {name}
                 <Icon name="arrow" />
               </Link>
@@ -99,7 +99,9 @@ function AuditEventRow({ event: e, changes }: { event: AuditEvent; changes: stri
           ) : name ? (
             <>
               {' '}
-              <span className="audit-entity plain">{name}</span>
+              <span className="audit-entity plain" title={targetEmail || undefined}>
+                {name}
+              </span>
             </>
           ) : null}
         </p>

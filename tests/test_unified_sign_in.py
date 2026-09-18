@@ -84,7 +84,7 @@ class UnifiedSignInTests(unittest.TestCase):
         self.assertEqual(self.lock_count(),0)
         for kind in ('login_failed','login_locked','twofa_failed'):
             self.assertEqual(self.total(kind),0,kind)
-        self.assertEqual(self.ok(self.admin,f'{SEC}/locks')['locks'],[])
+        self.assertEqual(self.ok(self.owner,f'{SEC}/locks')['locks'],[])
         # Case and spaces of the email do not matter, as on the other endpoints.
         _,status,data,_ = self.sign_in(' VISITOR@example.com ',CUSTOMER_PASSWORD)
         self.assertEqual((status,data['kind']),(200,'customer'))
@@ -151,14 +151,14 @@ class UnifiedSignInTests(unittest.TestCase):
             self.assertEqual(set(found[5][1]),{'error','retry_after'})
             self.assertEqual(found[5][1]['error'],answers['ghost@example.com'][5][1]['error'])
             self.assertLessEqual(abs(found[5][1]['retry_after']-answers['ghost@example.com'][5][1]['retry_after']),5)
-        locks = self.ok(self.admin,f'{SEC}/locks')['locks']
+        locks = self.ok(self.owner,f'{SEC}/locks')['locks']
         self.assertEqual({(l['actor'],l['subject']) for l in locks},{('signin',e) for e in answers})
         # The owners of the real accounts are told once; the unknown email is not.
         self.assertTrue(self.wait_for(lambda:len(self.lock_mails())==2))
         time.sleep(0.3)
         self.assertEqual(sorted(m.args[2] for m in self.lock_mails()),['agent@example.com','visitor@example.com'])
         # A Superadmin can unlock the sign-in page's key.
-        self.assertEqual(self.ok(self.admin,f'{SEC}/locks/unlock',{'key':'signin:agent@example.com'}),{'ok':True})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/locks/unlock',{'key':'signin:agent@example.com'}),{'ok':True})
         self.assertEqual(self.sign_in('agent@example.com',PASSWORD)[1],200)
 
     def test_both_password_hashes_always_run(self):
@@ -282,7 +282,7 @@ class UnifiedSignInTests(unittest.TestCase):
         self.assertEqual(Client(self.base).call('/api/customer/login',{'email':'ghost@example.com','password':WRONG})[0],429)
         self.assertIsNone(self.lock_row('staff:ghost@example.com'))
         # Unlocking one key of the email unlocks it everywhere.
-        self.assertEqual(self.ok(self.admin,f'{SEC}/locks/unlock',{'key':'staff:agent@example.com'}),{'ok':True})
+        self.assertEqual(self.ok(self.owner,f'{SEC}/locks/unlock',{'key':'staff:agent@example.com'}),{'ok':True})
         self.assertEqual(self.sign_in('agent@example.com',PASSWORD)[1],200)
 
 

@@ -8,8 +8,15 @@ import { Icon } from '@/components/Icon';
 import { api } from '@/lib/api/client';
 import { useStaffAlerts } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
-import { filterItems, NotificationList, NotificationsClear, NotificationTabs, type NotificationFilter } from './components/NotificationList';
+import { filterItems, NotificationGroups, NotificationsClear, NotificationSummary, type NotificationFilter } from './components/NotificationList';
 import { CONVERSATIONS_PATH, useNotificationItems } from './items';
+// Short labels so the four tabs fit on one row of the panel; the notifications screen keeps the long ones.
+const BELL_TABS: Array<[NotificationFilter, string]> = [
+  ['all', 'ทั้งหมด'],
+  ['me', 'ถึงคุณ'],
+  ['ticket', 'เคส'],
+  ['inbox', 'ข้อความ'],
+];
 
 /* The bell in the staff top bar: the number of things waiting for the team (late or unassigned cases, customers
    waiting for a reply, and what is addressed to the member) and the panel that drops down from it, attached to the
@@ -91,16 +98,21 @@ export function NotificationBell() {
       <div className="note-dropdown" id="notification-menu" role="dialog" aria-label="การแจ้งเตือน" hidden={!open}>
         {open && (
           <>
-            <div className="note-menu-head">
-              <strong>การแจ้งเตือน</strong>
-              {count ? <span className="tag-count">{count}</span> : <span className="muted">ไม่มีรายการ</span>}
-            </div>
-            <div className="note-menu-tabs filter-pills" role="group" aria-label="ประเภทการแจ้งเตือน">
-              <NotificationTabs items={items} filter={filter} onChange={setFilter} allCount={false} />
+            <NotificationSummary items={items} title="การแจ้งเตือน" />
+            <div className="note-menu-tabs" role="group" aria-label="ประเภทการแจ้งเตือน">
+              {BELL_TABS.map(([key, label]) => {
+                const n = filterItems(items, key).length;
+                return (
+                  <button key={key} type="button" className="note-tab" aria-pressed={filter === key} onClick={() => setFilter(key)}>
+                    {label}
+                    {n > 0 && key !== 'all' && <span className="note-tab-count">{n}</span>}
+                  </button>
+                );
+              })}
             </div>
             <div className="note-menu-body">
               {shown.length ? (
-                <NotificationList items={shown} />
+                <NotificationGroups items={shown} />
               ) : loading ? (
                 <p className="note-loading" role="status">
                   กำลังตรวจสอบรายการล่าสุด…

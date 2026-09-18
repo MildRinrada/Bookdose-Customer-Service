@@ -110,19 +110,19 @@
   min-height: 48px;
 }
 .nav-item:hover {
-  background: #f7f5fd;
+  background: #f9f9f9;
   color: var(--purple);
 }
 .nav-item.active {
   background: var(--purple-light);
   color: var(--purple);
   font-weight: 650;
-  box-shadow: inset 4px 0 #6544c5;
+  box-shadow: inset 4px 0 #777777;
 }
 .nav-item .nav-count {
   margin-left: auto;
   padding: 0 6px;
-  background: #e1d7f9;
+  background: #e8e8e8;
   border-radius: 5px;
   font-size: 1rem;
 }
@@ -202,9 +202,9 @@ html.sidebar-collapsed .platform-scope>.grow {
   padding-bottom: 10px;
 }
 .help-card {
-  border: 1px solid #eae3f9;
+  border: 1px solid #eeeeee;
   border-radius: 12px;
-  background: linear-gradient(135deg,#f9f6ff,#f4f5fe);
+  background: linear-gradient(135deg,#fbfbfb,#f4f5fe);
   margin-bottom: 18px;
   padding: 12px;
 }
@@ -393,7 +393,7 @@ html.sidebar-collapsed .platform-scope>.grow {
     display: block;
     position: fixed;
     inset: 0;
-    background: #29203866;
+    background: #1b1b1b66;
     z-index: 19;
   }
   .app-main {
@@ -482,12 +482,12 @@ html.sidebar-collapsed .platform-scope>.grow {
   height: 22px;
 }
 .nav-item:hover {
-  background: #e8e3f8;
-  color: #422385;
+  background: #eeeeee;
+  color: #343434;
 }
 .nav-item.active {
-  color: #422385;
-  background: #e4dcfa;
+  color: #343434;
+  background: #ebebeb;
   font-weight: 700;
 }
 .workspace-select>.grow {
@@ -567,10 +567,10 @@ html.sidebar-collapsed .platform-scope>.grow {
   cursor: pointer;
 }
 .avatar-btn:hover .avatar {
-  box-shadow: 0 0 0 3px #e4dcfa;
+  box-shadow: 0 0 0 3px #ebebeb;
 }
 .avatar-btn:focus-visible {
-  outline: 3px solid #b4a0f0;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
 }
 @media (min-width:761px) {
@@ -715,8 +715,8 @@ html.sidebar-collapsed .platform-scope>.grow {
   border-radius: 8px;
 }
 .global-search:focus-within {
-  border-color: #6544c5;
-  outline: 3px solid #b4a0f0;
+  border-color: #777777;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
 }
 .global-search .kbd {
@@ -748,7 +748,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   color: #64748b;
 }
 .breadcrumb .crumb-root:hover {
-  color: #5133a6;
+  color: #434343;
   text-decoration: underline;
 }
 .breadcrumb b {
@@ -811,8 +811,8 @@ html.sidebar-collapsed .platform-scope>.grow {
   cursor: pointer;
 }
 .menu-item:hover,.menu-item:focus-visible {
-  background: #f0ebfb;
-  color: #422385;
+  background: #f3f3f3;
+  color: #343434;
   outline: none;
 }
 .menu-item.danger {
@@ -829,11 +829,11 @@ html.sidebar-collapsed .platform-scope>.grow {
   border-radius: 10px;
 }
 .sidebar .workspace-select:hover {
-  border-color: #6c50d9;
+  border-color: #868686;
 }
 .sidebar .workspace-select:focus-within {
-  border-color: #6544c5;
-  outline: 3px solid #b4a0f0;
+  border-color: #777777;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
 }
 .workspace-select .avatar {

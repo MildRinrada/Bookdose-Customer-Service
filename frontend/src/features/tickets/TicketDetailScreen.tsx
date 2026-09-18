@@ -3,16 +3,17 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { Badge, ChannelBadge, ErrorState, PageLoading, PriorityTag, PrivacyTag } from '@/components/ui/display';
+import { ChannelBadge, ErrorState, PageLoading } from '@/components/ui/display';
 import { AuditList } from '@/features/audit/components/AuditList';
 import { Composer } from '@/features/inbox/components/Composer';
 import { MessageThread, ThreadFilter } from '@/features/inbox/components/MessageThread';
 import { useMarkMentionsSeen, useModalOpen, useRefreshFailure } from '@/features/inbox/hooks';
-import { date, overdue } from '@/lib/format';
+import { overdue } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useMemberName, useWork } from '@/lib/session';
 import { ticketPath } from './api';
+import { CaseHero } from './components/CaseHero';
 import { TicketSidebar } from './components/TicketSidebar';
 import { escalationText } from './labels';
 import type { TicketConversation, TicketDetail } from './types';
@@ -48,33 +49,13 @@ function TicketDetailView({ data }: { data: TicketDetail }) {
         <Icon name="back" />
         กลับไปเคสบริการ
       </Link>
-      <div className="page-heading">
-        <div>
-          <h1>{t.subject}</h1>
-          <p className="case-meta">
-            <strong>BD-{t.number}</strong>
-            <Badge status={t.status} />
-            <PriorityTag value={t.priority} />
-            {late && <span className="badge suspended">⚠ เกินกำหนด SLA</span>}
-            {escalation && (
-              <span className="badge escalated">
-                <Icon name="bolt" />
-                {escalation}
-              </span>
-            )}
-            <span>
-              เปิดเรื่อง {date(t.created_at, true)} · {t.category}
-            </span>
-            <PrivacyTag org={work.tenant.name} />
-          </p>
-        </div>
-      </div>
+      <CaseHero ticket={t} org={work.tenant.name} escalation={escalation} late={late} />
       <div className="detail-layout">
         <div className="stack">
           {data.conversations.map((conv) => (
             <TicketConversationCard key={conv.id} conv={conv} contactName={c.name} />
           ))}
-          <section className="card">
+          <section className="card case-history">
             <div className="card-header">
               <h2>ประวัติเคส</h2>
             </div>
@@ -93,18 +74,20 @@ function TicketDetailView({ data }: { data: TicketDetail }) {
 function TicketConversationCard({ conv, contactName }: { conv: TicketConversation; contactName: string }) {
   const [notesOnly, setNotesOnly] = useState(false);
   return (
-    <section className="card" data-thread-scope="">
+    <section className="card case-conversation" data-thread-scope="">
       <div className="card-header conv-card-header">
         <div className="flex">
           <ChannelBadge kind={conv.channel} />
           <h2>บทสนทนากับ {contactName}</h2>
         </div>
-        <Link className="btn sm" href={`/inbox/${conv.id}`} title="เปิดบทสนทนานี้ในกล่องข้อความ">
-          <Icon name="inbox" />
-          เปิดในกล่องข้อความ
-        </Link>
+        <div className="conv-card-tools">
+          <ThreadFilter messages={conv.messages} notesOnly={notesOnly} onChange={setNotesOnly} />
+          <Link className="btn sm" href={`/inbox/${conv.id}`} title="เปิดบทสนทนานี้ในกล่องข้อความ">
+            <Icon name="inbox" />
+            เปิดในกล่องข้อความ
+          </Link>
+        </div>
       </div>
-      <ThreadFilter messages={conv.messages} notesOnly={notesOnly} onChange={setNotesOnly} />
       <MessageThread messages={conv.messages} threadId={conv.id} notesOnly={notesOnly} readAt={conv.customer_read_at} />
       <Composer conversationId={conv.id} channel={conv.channel} manual={conv.channel === 'manual'} conversation={conv} />
     </section>

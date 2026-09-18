@@ -4,7 +4,7 @@ import { Icon } from '@/components/Icon';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { useStaffAlerts, useStaffTickets } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
-import { filterItems, NotificationList, NotificationTabs, type NotificationFilter } from './components/NotificationList';
+import { filterItems, NotificationGroups, NotificationSummary, NotificationTabs, type NotificationFilter } from './components/NotificationList';
 import { notificationItems, useCachedConversations } from './items';
 
 /* Notifications: what is waiting for the team right now, built from the cases, the member's alerts and the
@@ -42,26 +42,23 @@ export function NotificationsScreen() {
           </button>
         </div>
       </div>
-      <section className="filters">
-        <div className="filter-pills" role="group" aria-label="ประเภทการแจ้งเตือน">
-          <NotificationTabs items={items} filter={filter} onChange={setFilter} allCount />
+      <div className="note-page">
+        <NotificationSummary items={items} title="เรื่องที่รอคุณดูแลตอนนี้" note="เรียงจากเรื่องเร่งด่วนที่สุดก่อน" className="note-hero" />
+        <div className="note-page-tools">
+          <div className="filter-pills" role="group" aria-label="ประเภทการแจ้งเตือน">
+            <NotificationTabs items={items} filter={filter} onChange={setFilter} allCount />
+          </div>
+          <span className="muted" role="status">
+            {shown.length} รายการ
+          </span>
         </div>
-        <span className="muted article-count" role="status">
-          {shown.length} รายการ
-        </span>
-      </section>
-      <div id="notification-list">
-        {shown.length ? (
-          <section className="note-group">
-            <h3>
-              <Icon name="bell" />
-              รายการทั้งหมด<span className="tag-count">{shown.length}</span>
-            </h3>
-            <NotificationList items={shown} />
-          </section>
-        ) : (
-          <EmptyState title="ยังไม่มีเรื่องรอดูแล" description="เมื่อมีเคสเกิน SLA หรือบทสนทนารอตอบ จะแสดงที่นี่" icon="checkCircle" />
-        )}
+        <div id="notification-list" className="note-page-body">
+          {shown.length ? (
+            <NotificationGroups items={shown} />
+          ) : (
+            <EmptyState title="ยังไม่มีเรื่องรอดูแล" description="เมื่อมีเคสเกิน SLA หรือบทสนทนารอตอบ จะแสดงที่นี่" icon="checkCircle" />
+          )}
+        </div>
       </div>
     </>
   );

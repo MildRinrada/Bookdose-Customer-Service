@@ -201,7 +201,7 @@
   margin: 12px 0 0 44px;
 }
 .guest-follow {
-  border: 1px solid #d9d2ee;
+  border: 1px solid #e0e0e0;
   border-radius: 12px;
   background: #faf8ff;
 }
@@ -218,7 +218,7 @@
   text-align: left;
 }
 .guest-follow-head:hover {
-  background: #f3effd;
+  background: #f6f6f6;
 }
 .guest-follow-head>.icon {
   flex-shrink: 0;
@@ -234,8 +234,8 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #ece5fb;
-  color: #5133a6;
+  background: #f0f0f0;
+  color: #434343;
 }
 .guest-follow-head-text {
   display: grid;
@@ -255,7 +255,7 @@
   display: flex;
   gap: 12px;
   padding: 12px 0;
-  border-top: 1px solid #e7e1f5;
+  border-top: 1px solid #ebebeb;
 }
 .guest-follow-icon {
   display: grid;
@@ -317,7 +317,7 @@
   gap: 4px 8px;
   margin: 0;
   padding-top: 12px;
-  border-top: 1px solid #e7e1f5;
+  border-top: 1px solid #ebebeb;
 }
 .guest-follow-foot {
   display: flex;
@@ -326,7 +326,7 @@
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e7e1f5;
+  border-top: 1px solid #ebebeb;
 }
 .btn.guest-forget {
   color: var(--red);
@@ -359,8 +359,8 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #ece5fb;
-  color: #5133a6;
+  background: #f0f0f0;
+  color: #434343;
 }
 .guest-claim-text {
   flex: 1;
@@ -523,8 +523,8 @@ body:has(.guest-embed) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #f1eefb;
-  color: #4b2f99;
+  background: #f4f4f4;
+  color: #3e3e3e;
   white-space: nowrap;
 }
 .guest-badge .icon {

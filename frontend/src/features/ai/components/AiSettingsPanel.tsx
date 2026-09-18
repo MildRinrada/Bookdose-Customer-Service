@@ -36,6 +36,19 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
     };
   }, []);
 
+  const n8n = a.provider === 'n8n';
+  const testUrl = a.webhook_url.includes('/webhook-test/');
+  // A random secret to paste into n8n's Header Auth too; it is shown once, before saving.
+  const makeSecret = () => {
+    const input = document.getElementById('ai-webhook-secret') as HTMLInputElement | null;
+    if (!input) return;
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    input.value = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    input.type = 'text';
+    input.select();
+    toast('สร้างรหัสลับแล้ว คัดลอกไปใส่ใน n8n ก่อนกดบันทึก');
+  };
+
   const test = async () => {
     setTesting(true);
     try {
@@ -62,29 +75,87 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           </h2>
           <p>ตั้งค่าแยกสำหรับ {work.tenant.name}</p>
         </div>
-        <span className={`badge ${a.key_configured ? 'resolved' : ''}`}>{a.key_configured ? 'บันทึก API Key แล้ว' : 'ยังไม่ได้ตั้งค่า API Key'}</span>
+        <span className={`badge ${a.key_configured ? 'resolved' : ''}`}>
+          {n8n ? 'ใช้ n8n Webhook' : a.key_configured ? 'บันทึก API Key แล้ว' : 'ยังไม่ได้เชื่อม AI'}
+        </span>
       </div>
       <Form
-        // A save shows the saved values again (and an empty key box), like reopening the page did.
-        key={`${a.version}:${a.key_configured}`}
+        // A save shows the saved values again (and empty key and secret boxes), like reopening the page did.
+        key={`${a.version}:${a.key_configured}:${a.provider}`}
         className="card-body"
         data-form="ai-settings"
         onSubmit={async (values, form) => {
           const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
           const body: Record<string, unknown> = { ...values };
           for (const key of ['drafts_enabled', 'chatbot_enabled', 'remove_key']) body[key] = checked(key);
+          body.remove_webhook = n8n && checked('remove_webhook');
           for (const key of ['daily_limit', 'conversation_limit', 'max_output_tokens']) body[key] = Number(values[key]);
           await saveAiSettings(body);
-          (form.elements.namedItem('api_key') as HTMLInputElement).value = '';
+          // The form opens again with what was saved (the URL, the secret's ending); the key and secret boxes stay empty.
+          for (const key of ['api_key', 'webhook_secret']) (form.elements.namedItem(key) as HTMLInputElement).value = '';
           toast('บันทึกการตั้งค่า AI แล้ว');
           await refresh(AI_SETTINGS_PATH, '/api/workspace');
           document.getElementById('ai-settings')?.scrollIntoView({ block: 'start' });
         }}
       >
         <div className="notice mb">
-          เมื่อเปิดใช้ ระบบจะส่งข้อความและบทความที่เกี่ยวข้องไปยัง OpenAI เพื่อสร้างคำตอบ มีค่าใช้บริการตามบัญชี API ของคุณ Chatbot
+          เมื่อเปิดใช้ ระบบจะส่งข้อความและบทความที่เกี่ยวข้องไปยัง {n8n ? `workflow n8n ของคุณ (${a.webhook_host})` : 'OpenAI'} เพื่อสร้างคำตอบ
+          {n8n ? ' แล้ว workflow ส่งต่อให้โมเดลที่คุณเลือกใน n8n' : ' มีค่าใช้บริการตามบัญชี API ของคุณ'} Chatbot
           อ่านเฉพาะบทความที่เผยแพร่ให้ลูกค้า ส่วนร่างสำหรับเจ้าหน้าที่อาจใช้บทความและบันทึกภายใน
         </div>
+        <h3 className="ai-settings-heading">n8n Webhook {n8n && <span className="badge resolved">เชื่อมแล้ว</span>}</h3>
+        <p className="tiny muted">
+          เชื่อม workflow ใน n8n แล้วระบบจะส่งงาน AI ทั้งหมดของ {work.tenant.name} ไปที่ workflow นั้นแทน OpenAI (ช่วยร่างคำตอบ, Chatbot,
+          ผู้ช่วย AI, คำแนะนำในหน้าภาพรวม) และเลือกโมเดลใน AI Agent ของ n8n
+        </p>
+        <div className="form-grid">
+          <TextField
+            id="ai-webhook-url"
+            label="Webhook URL (Production URL ของ n8n)"
+            name="webhook_url"
+            type="url"
+            required={false}
+            max={500}
+            defaultValue={a.webhook_url}
+            placeholder="https://xxx.app.n8n.cloud/webhook/bookdose-ai"
+            hint={
+              testUrl ? (
+                <span className="ai-webhook-warn">
+                  นี่คือ Test URL ใช้ได้เฉพาะตอนกด Listen ใน n8n ให้เปลี่ยน /webhook-test/ เป็น /webhook/ แล้วกด Publish ใน n8n
+                </span>
+              ) : (
+                'ใช้ Production URL ของโหนด Webhook (…/webhook/bookdose-ai) ไม่ใช่ Test URL'
+              )
+            }
+          />
+          <div className="ai-secret">
+            <TextField
+              id="ai-webhook-secret"
+              label="รหัสลับ (X-Bookdose-Secret)"
+              name="webhook_secret"
+              type="password"
+              required={false}
+              max={200}
+              placeholder={n8n ? `บันทึกแล้ว ลงท้ายด้วย …${a.webhook_secret_end} · เว้นว่างเพื่อใช้รหัสเดิม` : 'อย่างน้อย 16 ตัว'}
+              hint={
+                n8n
+                  ? `รหัสที่บันทึกไว้ลงท้ายด้วย ${a.webhook_secret_end} · ต้องตรงกับ Value ใน Header Auth ของ n8n (Name: X-Bookdose-Secret)`
+                  : 'ใส่ค่าเดียวกันใน Header Auth ของโหนด Webhook ใน n8n (Name: X-Bookdose-Secret)'
+              }
+            />
+            <button className="btn subtle small" type="button" onClick={makeSecret}>
+              <Icon name="lock" />
+              สร้างรหัสลับ
+            </button>
+          </div>
+          {n8n && (
+            <label className="check">
+              <input name="remove_webhook" type="checkbox" />
+              เลิกใช้ n8n Webhook (กลับไปใช้ OpenAI API Key)
+            </label>
+          )}
+        </div>
+        <h3 className="ai-settings-heading">OpenAI และการใช้งาน</h3>
         <div className="form-grid">
           <TextField
             id="ai-key"
@@ -95,20 +166,20 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
             max={503}
             minLength={undefined}
             autoComplete="new-password"
-            placeholder={a.key_configured ? 'เว้นว่างเพื่อใช้คีย์เดิม' : 'sk-…'}
-            hint="เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิมและไม่รวมในไฟล์สำรอง"
+            placeholder={a.openai_key ? 'เว้นว่างเพื่อใช้คีย์เดิม' : 'sk-…'}
+            hint={n8n ? 'ไม่ใช้ระหว่างที่เชื่อม n8n Webhook อยู่' : 'เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิมและไม่รวมในไฟล์สำรอง'}
           />
           <TextField
             id="ai-model"
-            label="โมเดล"
+            label="โมเดล OpenAI"
             name="model"
             defaultValue={a.model}
             max={100}
-            hint="ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์ และรองรับ Structured Outputs"
+            hint={n8n ? 'เมื่อใช้ n8n ให้เลือกโมเดลใน workflow' : 'ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์ และรองรับ Structured Outputs'}
           />
           <label className="check">
             <input type="checkbox" className="switch" name="drafts_enabled" defaultChecked={a.drafts_enabled} />
-            เปิด AI ช่วยร่างคำตอบให้เจ้าหน้าที่
+            เปิด AI ช่วยเจ้าหน้าที่ (ร่างคำตอบ และผู้ช่วย AI มุมขวาล่าง)
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />

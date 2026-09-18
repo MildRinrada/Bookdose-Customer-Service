@@ -71,6 +71,9 @@ class AITests(unittest.TestCase):
         self.assertEqual(agent.call('/api/ai/settings',{'api_key':FAKE_KEY},'PATCH')[0],403)
         self.assertEqual(agent.call('/api/ai/test',{})[0],403)
         self.assertEqual(self.admin.call('/api/ai/settings',{'remove_key':True},'PATCH')[0],400)
+        # An Anthropic key is refused before it is ever sent to OpenAI.
+        status,body = self.admin.call('/api/ai/settings',{'api_key':'sk-ant-api03-'+'a'*40},'PATCH')
+        self.assertEqual(status,400);self.assertIn('Anthropic',body['error'])
         self.ok(self.admin,'/api/ai/settings',{'remove_key':True,'drafts_enabled':False,'chatbot_enabled':False},'PATCH')
         self.assertFalse(AIR.key_path(self.org).exists())
 

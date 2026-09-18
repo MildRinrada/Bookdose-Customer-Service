@@ -20,12 +20,14 @@ class RateLimited(APIError):
 
 
 AI_ERRORS = {
-    'not_configured':'ยังไม่ได้ตั้งค่า API Key สำหรับองค์กรนี้',
+    'not_configured':'ยังไม่ได้เชื่อม AI (OpenAI API Key หรือ n8n Webhook) สำหรับองค์กรนี้',
     'disabled':'ผู้ดูแลยังไม่ได้เปิดใช้ AI สำหรับงานนี้',
     'quota':'ถึงเพดานการใช้ AI ขององค์กรหรือบทสนทนาแล้ว',
-    'unauthorized':'API Key ใช้งานไม่ได้ กรุณาตรวจสอบคีย์และสิทธิ์โมเดล',
+    'unauthorized':'API Key หรือรหัสลับของ Webhook ใช้งานไม่ได้ กรุณาตรวจสอบคีย์ รหัสลับ และสิทธิ์โมเดล',
     'rate_limit':'บริการ AI จำกัดการใช้งาน หรือยอดใช้งานบัญชีไม่เพียงพอ',
     'provider':'บริการ AI ไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง',
+    'webhook_missing':'n8n ไม่พบ Webhook นี้: ตรวจว่า workflow กด Publish แล้ว และใช้ Production URL (/webhook/…) ไม่ใช่ Test URL',
+    'webhook_failed':'n8n รับงานแล้ว แต่ workflow ทำงานไม่สำเร็จ: เปิดแท็บ Executions ใน n8n เพื่อดูว่าหยุดที่โหนดไหน',
     'invalid_output':'AI ไม่ได้ให้คำตอบที่ตรวจสอบแหล่งอ้างอิงได้',
     'stale':'บทสนทนา ความรู้ การตั้งค่า หรือสิทธิ์เปลี่ยนไป กรุณาร่างใหม่',
     'timeout':'งาน AI หมดเวลา กรุณาลองใหม่ภายหลัง',

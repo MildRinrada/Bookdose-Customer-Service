@@ -1,0 +1,220 @@
+/* One visual language across the staff screens, taken from the notifications panel: a grey switch track for filters
+   and tabs, soft layered shadows, rounder cards, near-black primary actions and panels that pop in.
+   Loaded last (after theme.css); only surface treatment, never layout. The guest chat keeps its organization's colours. */
+:root {
+  --ink-strong: #1c1c1e;
+  --track: #f0f0f2;
+  --track-hover: #e4e4e8;
+  --lift: 0 1px 2px #0000000a, 0 10px 28px -16px #00000029, 0 0 0 1px #1111110d;
+  --lift-hover: 0 2px 4px #0000000d, 0 18px 36px -18px #00000038, 0 0 0 1px #11111114;
+  --pop: 0 1px 0 #0000000d, 0 24px 60px -12px #11111140, 0 0 0 1px #1111110f;
+}
+
+/* Filters: every row of pills becomes one track; the chosen one is a white key on it. */
+:is(.filter-pills,.filter-chips,.contact-tags):not(.guest-categories) {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--track);
+}
+:is(.filter-pills,.filter-chips,.contact-tags):not(.guest-categories) .filter-pill {
+  padding: 6px 13px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #5b5b60;
+  font-weight: 600;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+:is(.filter-pills,.filter-chips,.contact-tags):not(.guest-categories) .filter-pill:hover {
+  border-color: transparent;
+  background: var(--track-hover);
+  color: var(--ink-strong);
+}
+:is(.filter-pills,.filter-chips,.contact-tags):not(.guest-categories) :is(.filter-pill.active,.filter-pill[aria-pressed=true]) {
+  border-color: transparent;
+  background: #fff;
+  color: var(--ink-strong);
+  font-weight: 700;
+  box-shadow: 0 1px 3px #0000001f, 0 0 0 1px #0000000a;
+}
+:is(.filter-pills,.filter-chips,.contact-tags):not(.guest-categories) .filter-pill .tag-count {
+  background: #dcdce0;
+  color: #3a3a3c;
+  font-size: .85em;
+}
+:is(.filter-pills,.filter-chips,.contact-tags):not(.guest-categories) :is(.filter-pill.active,.filter-pill[aria-pressed=true]) .tag-count {
+  background: var(--ink-strong);
+  color: #fff;
+}
+/* A warning filter (duplicates) keeps its amber so it still reads as a problem. */
+.contact-tags .filter-pill.warning {
+  color: #7a4507;
+}
+.contact-tags .filter-pill.warning[aria-pressed=true] {
+  background: #fff4d6;
+  color: #7a4507;
+}
+/* A pill on its own (the customer a case list is narrowed to) is a dark chip. */
+.filter-pill.contact-chip {
+  border-color: var(--ink-strong);
+  background: var(--ink-strong);
+  color: #fff;
+}
+
+/* Tabs: the same track instead of an underline. */
+.tabs {
+  gap: 2px;
+  width: fit-content;
+  max-width: calc(100% - 44px);
+  margin: 0 22px 14px;
+  padding: 4px;
+  border-bottom: 0;
+  border-radius: 14px;
+  background: var(--track);
+}
+.tabs.platform-tabs {
+  max-width: 100%;
+  margin: -8px 0 18px;
+}
+.tab {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 10px;
+  color: #5b5b60;
+  font-weight: 600;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.tab:hover {
+  background: var(--track-hover);
+  color: var(--ink-strong);
+}
+.tab.active,.tab[aria-selected=true] {
+  border: 0;
+  background: #fff;
+  color: var(--ink-strong);
+  font-weight: 700;
+  box-shadow: 0 1px 3px #0000001f, 0 0 0 1px #0000000a;
+}
+.tab span {
+  border-radius: 999px;
+  background: #dcdce0;
+  color: #3a3a3c;
+  font-size: .85em;
+}
+.tab.active span,.tab[aria-selected=true] span {
+  background: var(--ink-strong);
+  color: #fff;
+}
+
+/* Cards float on a soft shadow instead of sitting in a hard outline. */
+.card,.stat-card,.article-card,.settings-nav,.filters.card {
+  border-color: transparent;
+  border-radius: 18px;
+  box-shadow: var(--lift);
+}
+.stat-card {
+  transition: box-shadow .18s, transform .18s;
+}
+/* :is(*,:has(.stat-icon.red)) matches every figure and is as specific as theme.css's coloured-edge rules it replaces. */
+.stat-card:is(*,:has(.stat-icon.red)):hover,.article-card:hover,.article-card:focus-visible {
+  border-color: transparent;
+  box-shadow: var(--lift-hover);
+  transform: translateY(-1px);
+}
+/* The coloured icon alone says what a figure is; theme.css's coloured left edge is dropped. */
+.stat-card:is(*,:has(.stat-icon.red)) {
+  box-shadow: var(--lift);
+}
+.stat-card.urgent:is(*,:has(.stat-icon.red)),.stat-card.urgent:is(*,:has(.stat-icon.red)):hover {
+  border-color: transparent;
+  box-shadow: var(--lift), inset 0 0 0 1px #f3c9c5;
+}
+.stat-icon {
+  border-radius: 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stat-card:is(*,:has(.stat-icon.red)),.stat-card:is(*,:has(.stat-icon.red)):hover,.article-card:hover { transition: none; transform: none; }
+}
+
+/* Actions: primary is near-black, everything a little rounder. */
+.btn {
+  border-radius: 12px;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+}
+.btn.primary,.composer-bottom>.btn.primary,.settings-save .btn.primary {
+  border-color: var(--ink-strong);
+  background: var(--ink-strong);
+}
+.btn.primary:hover,.composer-bottom>.btn.primary:hover,.settings-save .btn.primary:hover {
+  border-color: #000;
+  background: #000;
+}
+
+/* Menus and pop-overs open like the notifications panel. */
+.profile-menu-panel,.text-size-panel,.combo-list {
+  border-color: transparent;
+  border-radius: 16px;
+  box-shadow: var(--pop);
+  animation: note-pop .18s cubic-bezier(.2,.9,.3,1.2);
+}
+dialog {
+  border-color: transparent;
+  border-radius: 20px;
+  box-shadow: var(--pop);
+}
+.menu-item {
+  border-radius: 10px;
+}
+.menu-item:hover,.menu-item:focus-visible {
+  background: #f4f4f6;
+  color: var(--ink-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-menu-panel,.text-size-panel,.combo-list { animation: none; }
+}
+
+/* Tables: quiet grey headers and rows, like the panel's list. */
+th {
+  background: #f7f7f9;
+  color: #6e6e73;
+}
+tbody tr:hover {
+  background: #f6f6f8;
+}
+.row-actions {
+  background: linear-gradient(90deg,#f6f6f800,#f6f6f8 24px);
+}
+
+/* The settings menu marks the current section in the same ink as the rest, not in link blue. */
+.settings-nav-item {
+  border-radius: 12px;
+}
+.settings-nav-item.active {
+  background: #f4f4f6;
+  color: var(--ink-strong);
+  box-shadow: inset 0 0 0 1px #0000000a;
+}
+
+/* The sidebar's current page and counts use the same dark ink. */
+.sidebar .nav-item.active {
+  border-radius: 12px;
+}
+.sidebar .nav-item .nav-count {
+  border-radius: 999px;
+  background: #3a3a3c;
+}
+
+/* Conversations: the team's replies in dark ink (like the notifications' head), the composer on plain white. */
+.message.reply .bubble,#customer-thread .message.customer .bubble {
+  border-color: #2c2c2e;
+  background: #2c2c2e;
+}
+.composer {
+  background: #fff;
+}

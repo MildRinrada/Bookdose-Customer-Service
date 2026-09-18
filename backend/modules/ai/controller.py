@@ -43,5 +43,14 @@ def brief(req):
     return req.send(201,{'id':insights.request_brief(req.db,req.ctx,day),'status':'pending'})
 
 
+def ask(req):
+    """ผู้ช่วย AI: any member of the organization's team; not a platform admin looking in with support access."""
+    from backend.modules.ai import assistant
+    from backend.utils.validation import require
+    require(not req.ctx.get('read_only'),'ผู้ช่วย AI ใช้ได้เฉพาะทีมงานขององค์กร',403)
+    limited(('ai-ask',req.ctx['id']),30,3600)
+    return req.send(201,{'id':assistant.request(req.db,req.ctx,req.body),'status':'pending'})
+
+
 def job(req, job_id):
     return req.send(200,service.job_view(req.db,req.ctx,job_id))

@@ -21,6 +21,11 @@ export function saveAiSettings(body: Record<string, unknown>) {
   return api<AiSettings>(AI_SETTINGS_PATH, body, 'PATCH');
 }
 
+/** ผู้ช่วย AI: a question with the last turns of this chat; the answer is a job like a reply draft. */
+export function askAssistant(question: string, history: { role: 'user' | 'assistant'; text: string }[]) {
+  return api<{ id: string; status: string }>('/api/ai/assistant', { question, history });
+}
+
 export function testAiConnection() {
   return api<{ id: string; status: string }>('/api/ai/test', {});
 }
@@ -30,10 +35,11 @@ export function portalHandoff(slug: string, conversationId: string) {
   return api<{ ok: true }>(`/api/public/${slug}/handoff`, {}, 'POST', { conversation: conversationId });
 }
 
-/** Wait for a job to finish (1.5 s between checks, 80 checks at most). `alive` false stops waiting with the old
-    "moved to another page" reason. A job still running after that is returned as running. */
+/** Wait for a job to finish (1.5 s between checks, 220 checks at most: an n8n workflow on a local model may take up
+    to 5 minutes). `alive` false stops waiting with the old "moved to another page" reason. A job still running after
+    that is returned as running. */
 export async function waitForAiJob(id: string, alive: () => boolean): Promise<AiJob> {
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 220; i++) {
     if (!alive()) throw new Error('เปลี่ยนหน้าแล้ว คุณกลับมากดร่างคำตอบใหม่ได้');
     const job = await getAiJob(id);
     if (!['pending', 'running'].includes(job.status)) return job;

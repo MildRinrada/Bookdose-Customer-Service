@@ -3,14 +3,17 @@ AI settings are rows in the organization's settings table (keys starting with ai
 
 DEFAULT_MODEL = 'gpt-4.1-mini'
 # draft: a reply for staff; bot: the chatbot's answer; test: the connection check; article: an article drafted from
-# questions no article answers; brief: the overview's summary of today (the last two for an organization's owner).
-JOB_MODES = ('draft','bot','test','article','brief')
+# questions no article answers; brief: the overview's summary of today (the last two for an organization's owner);
+# ask: a question to the staff's AI assistant (ai/assistant.py).
+JOB_MODES = ('draft','bot','test','article','brief','ask')
 OWNER_MODES = ('article','brief')
+# Jobs whose input was built when they were asked (the payload column), not read from a conversation.
+PAYLOAD_MODES = (*OWNER_MODES,'ask')
 
 JOBS_TABLE = '''CREATE TABLE IF NOT EXISTS {name} (
     id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
     trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
-    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief')),
+    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask')),
     status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
     result TEXT NOT NULL DEFAULT '{{}}', error TEXT NOT NULL DEFAULT '',
     lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,

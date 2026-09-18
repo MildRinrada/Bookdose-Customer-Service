@@ -1,4 +1,6 @@
-"""AI queries (tenant database) and the organization's OpenAI API key file."""
+"""AI queries (tenant database), the organization's OpenAI API key file and its n8n webhook file."""
+import json
+
 from backend.database import db as D
 from backend.database.db import one, rows
 from backend.utils.dates import now
@@ -27,17 +29,40 @@ def write_key(tenant_id, value):
     secret_box.write_file(path,value)
 
 
-OLD_JOB_COLUMNS = ('id,conversation_id,trigger_id,requested_by,mode,status,result,error,lease,config_version,'
-                   'input_tokens,output_tokens,created_at,updated_at')
+# n8n webhook: the organization's own workflow answers instead of OpenAI. Its URL works like a password (whoever has it
+# can run the workflow), so it is sealed next to the key, with the shared secret sent in X-Bookdose-Secret.
+def webhook_path(tenant_id):
+    D.tenant_path(tenant_id)
+    return D.DATA/'secrets'/f'{tenant_id}.ai-webhook.json'
+
+
+def read_webhook(tenant_id):
+    """{'url','secret'}, or None when the organization has not connected one."""
+    try:
+        value = json.loads(secret_box.read_file(webhook_path(tenant_id)) or 'null')
+    except ValueError:
+        return None
+    return value if isinstance(value,dict) and value.get('url') else None
+
+
+def write_webhook(tenant_id, value):
+    """Save {'url','secret'}, or delete the file when value is None."""
+    path = webhook_path(tenant_id)
+    if not value:
+        path.unlink(missing_ok=True)
+        return
+    secret_box.write_file(path,json.dumps(value))
 
 
 def widen_jobs(db):
-    """Databases from before the owner's AI (article, brief) rebuild ai_jobs with the wider mode list and the payload
-    column; SQLite cannot change a CHECK in place. Every job is kept. Runs once."""
+    """Databases from before a job mode was added (the owner's article and brief, the assistant's ask) rebuild ai_jobs
+    with the current mode list and the payload column; SQLite cannot change a CHECK in place. Every job is kept, with
+    every column it already had. Runs once per new mode list."""
     from backend.modules.ai.model import JOBS_TABLE
     row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_jobs'").fetchone()
-    if not row or "'article'" in row[0]:
+    if not row or "'ask'" in row[0]:
         return
+    columns = ','.join(r[1] for r in db.execute('PRAGMA table_info(ai_jobs)').fetchall())
     db.commit()
     # The copy is the same rows: their references were checked when written (and the pragma only works outside a
     # transaction).
@@ -46,7 +71,7 @@ def widen_jobs(db):
         db.execute('BEGIN IMMEDIATE')
         db.execute('DROP TABLE IF EXISTS ai_jobs_wide')
         db.execute(JOBS_TABLE.format(name='ai_jobs_wide'))
-        db.execute(f'INSERT INTO ai_jobs_wide({OLD_JOB_COLUMNS}) SELECT {OLD_JOB_COLUMNS} FROM ai_jobs')
+        db.execute(f'INSERT INTO ai_jobs_wide({columns}) SELECT {columns} FROM ai_jobs')
         db.execute('DROP TABLE ai_jobs')
         db.execute('ALTER TABLE ai_jobs_wide RENAME TO ai_jobs')
         db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ai_bot_trigger ON ai_jobs(trigger_id) WHERE mode='bot'")

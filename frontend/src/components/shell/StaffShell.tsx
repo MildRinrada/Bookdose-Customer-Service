@@ -6,6 +6,7 @@ import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
+import { AiAssistant } from '@/features/ai/components/AiAssistant';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { PlatformBell } from '@/features/platform/components/PlatformBell';
 import { StatusSwitch } from '@/features/staff-account/StatusSwitch';
@@ -224,6 +225,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
         {/* Who is signed in, and the account settings, are in the profile menu at the top right. */}
       </aside>
       <SidebarTips />
+      {/* ผู้ช่วย AI: for the organization's own team, not the console or a look in on support access. */}
+      {work && !readOnly && !platform && <AiAssistant />}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (

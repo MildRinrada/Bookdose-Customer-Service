@@ -63,31 +63,6 @@
   font-size: 1rem;
   padding: 9px;
 }
-.info-pair {
-  font-size: 1rem;
-  color: #726779;
-  margin: 10px 0;
-  overflow-wrap: anywhere;
-}
-.info-pair strong {
-  display: block;
-  font-size: 1rem;
-  color: #6d6573;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-/* Case heading: the number and the three facts that decide what to do next sit together under the subject. */
-.case-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  margin: 6px 0 0;
-  color: var(--muted);
-}
-.case-meta strong {
-  color: #1e293b;
-}
 /* Narrow cards drop the link to its own line instead of squeezing the title into a column of letters. */
 .conv-card-header {
   flex-wrap: wrap;
@@ -115,13 +90,6 @@
 .case-customer-link {
   width: 100%;
   margin-top: 12px;
-}
-.info-pair a {
-  color: var(--purple);
-  text-decoration: none;
-}
-.info-pair a:hover {
-  text-decoration: underline;
 }
 .back-link {
   display: inline-flex;
@@ -209,7 +177,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   cursor: pointer;
 }
 .quick-select:focus-visible,.row-actions .btn:focus-visible {
-  outline: 3px solid #b4a0f0;
+  outline: 3px solid #b4b4b4;
   outline-offset: 1px;
 }
 @media (hover:none) {
@@ -247,10 +215,10 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   color: #475569;
 }
 .bulk-bar {
-  background: #f3effd;
+  background: #f6f6f6;
 }
 .bulk-bar strong {
-  color: #422385;
+  color: #343434;
   margin-right: 6px;
 }
 /* Full case list: fixed-width status columns, the rest goes to subject and customer. */
@@ -353,6 +321,265 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
     flex: 1 1 100%;
   }
   .preview-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Case screen, in the notifications panel's language: a dark head with the SLA clocks, the conversation, and the
+   side column as a stack of small cards. */
+.case-hero {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(260px,340px);
+  align-items: end;
+  gap: 18px 32px;
+  margin: 0 0 22px;
+  padding: 24px 28px;
+  border-radius: 20px;
+  background: radial-gradient(120% 160% at 100% 0,#3a3a3c 0,#1c1c1e 60%);
+  color: #fff;
+  box-shadow: 0 18px 40px -24px #000000a0;
+}
+.case-hero-main {
+  min-width: 0;
+}
+.case-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  color: #c7c7cc;
+  font-size: .9rem;
+}
+.case-hero-id {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #ffffff1f;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+.case-hero .privacy-tag {
+  border-color: transparent;
+  background: #ffffff14;
+  color: #d1d1d6;
+}
+.case-hero h1 {
+  margin: 10px 0 14px;
+  color: #fff;
+  font-size: clamp(1.35rem,1.1rem + 1vw,1.8rem);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.case-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.case-hero-tags .badge {
+  border-radius: 999px;
+  padding-inline: 12px;
+}
+.case-hero-tags .priority {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #ffffff14;
+  color: #e5e5ea;
+}
+.case-hero-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #f5b94226;
+  color: #f7c96b;
+  font-weight: 600;
+}
+.case-hero-flag.late {
+  background: #ff6b6b26;
+  color: #ff9b9b;
+}
+.case-hero-flag .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+/* Each SLA clock: how much of the allowed time is used, and what is left or how late. */
+.case-sla {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #ffffff0f;
+  box-shadow: inset 0 0 0 1px #ffffff14;
+}
+.case-sla-clock {
+  display: grid;
+  gap: 6px;
+}
+.case-sla-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  font-size: .92rem;
+  font-weight: 600;
+}
+.case-sla-label .icon {
+  width: 18px;
+  height: 18px;
+  color: #5ad19a;
+}
+.case-sla-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: #ffffff1f;
+  overflow: hidden;
+}
+.case-sla-bar>span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 3px;
+  background: #e5e5ea;
+  transition: width .5s ease-out;
+}
+.case-sla-clock.warn .case-sla-bar>span { background: #f5b942; }
+.case-sla-clock.late .case-sla-bar>span { background: #ff6b6b; }
+.case-sla-clock.done .case-sla-bar>span { background: #5ad19a; }
+.case-sla-text {
+  color: #c7c7cc;
+  font-size: .85rem;
+}
+.case-sla-clock.late .case-sla-text {
+  color: #ff9b9b;
+}
+@media (prefers-reduced-motion: reduce) {
+  .case-sla-bar>span { transition: none; }
+}
+.back-link {
+  color: #6e6e73;
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--ink);
+}
+
+/* The page's two columns start at the top: a long side column no longer stretches the conversation card. */
+.detail-layout {
+  grid-template-columns: minmax(0,1fr) 300px;
+  align-items: start;
+}
+.conv-card-header {
+  border-bottom: 1px solid var(--line);
+}
+.conv-card-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+.case-conversation .thread {
+  max-height: 640px;
+  background: #fafafb;
+}
+
+/* The side column: one small card per job, headed like the notifications' groups. */
+.detail-sidebar {
+  display: grid;
+  gap: 16px;
+}
+.detail-sidebar .info-block {
+  padding: 18px 20px;
+  border-bottom: 0;
+}
+.detail-sidebar .info-block h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #6e6e73;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.detail-sidebar .info-block h3::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #1c1c1e;
+}
+.detail-sidebar form.info-block .btn.primary {
+  width: 100%;
+  justify-content: center;
+}
+.detail-sidebar .danger-link {
+  width: 100%;
+  justify-content: center;
+  margin-top: 6px;
+}
+.case-customer-card {
+  background: linear-gradient(#f4f4f6,#fff 64%);
+}
+.case-customer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.case-customer .avatar {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  font-size: 1rem;
+}
+.case-customer>div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.case-customer strong {
+  font-size: 1.05rem;
+}
+.case-contact-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f4f4f6;
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.case-contact-line:hover {
+  background: #ebebef;
+}
+.case-contact-line .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: #6e6e73;
+}
+@media (max-width:950px) {
+  .detail-layout,.case-hero {
+    grid-template-columns: 1fr;
+  }
+  .case-hero {
+    padding: 20px;
+  }
+  .detail-sidebar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width:760px) {
+  .detail-sidebar {
     grid-template-columns: 1fr;
   }
 }

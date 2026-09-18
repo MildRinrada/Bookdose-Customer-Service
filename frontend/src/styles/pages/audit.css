@@ -72,8 +72,8 @@
 }
 /* Each kind of activity keeps its colour, and anything that removes data stands out. */
 .tone-ai .audit-icon {
-  background: #eee9fb;
-  color: #5b3ea8;
+  background: #f2f2f2;
+  color: #474747;
 }
 .tone-security .audit-icon {
   background: #fdeade;
@@ -111,8 +111,8 @@
   max-width: 100%;
   padding: 1px 9px;
   border-radius: 20px;
-  background: #f1eefb;
-  color: #5b4a80;
+  background: #f4f4f4;
+  color: #3f3f3f;
   text-decoration: none;
 }
 .audit-entity .icon {
@@ -120,8 +120,8 @@
   height: 14px;
 }
 a.audit-entity:hover {
-  background: #e8dffc;
-  color: #422385;
+  background: #eeeeee;
+  color: #343434;
 }
 .audit-entity.plain {
   background: #eef1f7;

@@ -359,7 +359,7 @@ dialog.idle-dialog {
   background: #c0773a;
 }
 .security-swatch.series-rejected {
-  background: #7a5ba6;
+  background: #747474;
 }
 .security-chart {
   display: flex;
@@ -414,10 +414,10 @@ dialog.idle-dialog {
   background: #c0773a;
 }
 .security-bars progress.series-rejected::-webkit-progress-value {
-  background: #7a5ba6;
+  background: #747474;
 }
 .security-bars progress.series-rejected::-moz-progress-bar {
-  background: #7a5ba6;
+  background: #747474;
 }
 .security-col small {
   display: block;
@@ -733,7 +733,7 @@ p.card-body.muted .icon {
   background: var(--surface-hover);
 }
 .trap-kind-option:has(input:focus-visible) {
-  outline: 3px solid #b4a0f0;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
 }
 .trap-kind-option input {

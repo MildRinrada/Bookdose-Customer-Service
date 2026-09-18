@@ -129,29 +129,50 @@ export function AiDraftPanel({ draft, onUse }: { draft: AiDraft; onUse: (answer:
   );
 }
 
+/* One message per state: no draft (why, in one line), or the draft itself first, then who it is for and its sources. */
 function DraftResult({ job, onDismiss, onUse }: { job: AiJob; onDismiss: () => void; onUse: () => void }) {
   const r = job.result as Partial<AiDraftResult>;
+  const close = (
+    <button type="button" className="icon-btn ai-result-close" aria-label="ปิดร่าง AI" onClick={onDismiss}>
+      <Icon name="close" />
+    </button>
+  );
+  if (!r.answer)
+    return (
+      <div className="ai-result ai-result-empty">
+        <Icon name="sparkle" />
+        <div className="grow">
+          <strong>AI ร่างคำตอบเรื่องนี้ไม่ได้</strong>
+          <p>ยังไม่มีบทความในคลังความรู้ที่ตอบเรื่องนี้ เพิ่มบทความแล้ว AI จะร่างเรื่องแบบนี้ได้</p>
+          {/* The server's own "no knowledge" summary says the same; a summary from the AI says what to check. */}
+          {r.summary && !r.summary.startsWith('ไม่พบความรู้') && <p>สำหรับเจ้าหน้าที่: {r.summary}</p>}
+        </div>
+        {close}
+      </div>
+    );
   return (
     <div className="ai-result">
-      <div className="flex between">
-        <strong className="small">
+      <div className="ai-result-head">
+        <strong>
           <Icon name="sparkle" />
-          ร่างจาก AI · ยังไม่ได้ส่ง
+          ร่างจาก AI
         </strong>
-        <button type="button" className="icon-btn" aria-label="ปิดร่าง AI" onClick={onDismiss}>
-          <Icon name="close" />
-        </button>
+        <span className="muted">ยังไม่ได้ส่ง · ตรวจก่อนใช้</span>
+        {close}
       </div>
-      <p className="tiny muted mt">สรุปสำหรับเจ้าหน้าที่: {r.summary}</p>
-      {r.needs_human && <div className="notice warning mb">เรื่องนี้ต้องให้เจ้าหน้าที่ตรวจสอบเพิ่มเติม AI ยังยืนยันคำตอบไม่ได้</div>}
-      {r.answer && <div className="pre small">{r.answer}</div>}
-      <AiCitations citations={r.citations} />
-      <p className="tiny muted mt">ตรวจข้อมูลและความเหมาะสมก่อนส่ง โดยเฉพาะร่างที่อ้างอิงข้อมูลภายใน</p>
-      {r.answer && (
-        <button className="btn primary sm" type="button" onClick={onUse}>
-          นำร่างใส่ช่องข้อความ
-        </button>
+      {r.needs_human && <p className="ai-result-warn">AI ไม่แน่ใจคำตอบนี้ ตรวจข้อมูลกับเคสจริงก่อนส่ง</p>}
+      <div className="ai-result-answer">{r.answer}</div>
+      {r.summary && (
+        <p className="ai-result-summary">
+          <span>สำหรับเจ้าหน้าที่:</span> {r.summary}
+        </p>
       )}
+      <div className="ai-result-actions">
+        <button className="btn primary sm" type="button" onClick={onUse}>
+          ใช้ร่างนี้
+        </button>
+        <AiCitations citations={r.citations} />
+      </div>
     </div>
   );
 }

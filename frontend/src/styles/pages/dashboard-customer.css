@@ -72,12 +72,12 @@
   height: 6px;
   border: 0;
   border-radius: 99px;
-  background: #e7e2f7;
+  background: #ececec;
   overflow: hidden;
 }
 .cdash-bar::-webkit-progress-bar {
   border-radius: 99px;
-  background: #e7e2f7;
+  background: #ececec;
 }
 .cdash-bar::-webkit-progress-value {
   border-radius: 99px;

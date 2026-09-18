@@ -28,7 +28,15 @@ export type AiSettings = {
   conversation_limit: number;
   max_output_tokens: number;
   version: string;
+  /** Connected to an AI at all: an n8n webhook or an OpenAI key. */
   key_configured: boolean;
+  openai_key: boolean;
+  /** Who answers: the organization's n8n workflow (when one is connected) or OpenAI. */
+  provider: 'openai' | 'n8n';
+  /** The connected webhook's host, its whole URL, and the last 4 characters of its secret (to compare with n8n). */
+  webhook_host: string;
+  webhook_url: string;
+  webhook_secret_end: string;
   usage: { requests: number; input_tokens: number; output_tokens: number };
 };
 

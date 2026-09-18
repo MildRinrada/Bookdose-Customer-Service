@@ -10,17 +10,17 @@
   overflow: hidden;
   position: relative;
   min-height: 106px;
-  background: #f0edf8;
-  border: 1px solid #ded7ed;
+  background: #f2f2f2;
+  border: 1px solid #e2e2e2;
 }
 .hero-strip h2 {
   font-size: 1.0625rem;
   margin-bottom: 5px;
-  color: #403156;
+  color: #2a2a2a;
 }
 .hero-strip p {
   font-size: 1rem;
-  color: #736487;
+  color: #494949;
   margin: 0;
 }
 .hero-art {
@@ -29,7 +29,7 @@
   align-items: center;
   transform: rotate(-8deg);
   margin-right: 15px;
-  color: #716093;
+  color: #4b4b4b;
 }
 .hero-art .icon {
   width: 50px;
@@ -121,18 +121,18 @@
   background: transparent;
 }
 .chart-col progress::-webkit-progress-value {
-  background: #b4a0e3;
+  background: #aeaeae;
   border-radius: 5px 5px 0 0;
 }
 .chart-col progress::-moz-progress-bar {
-  background: #b4a0e3;
+  background: #aeaeae;
 }
 .chart {
   border-bottom: 1px solid var(--line);
   padding-bottom: 6px;
 }
 .chart-col progress::-moz-progress-bar {
-  background: #b4a0e3;
+  background: #aeaeae;
 }
 .chart-col small {
   font-size: 1rem;
@@ -141,7 +141,7 @@
 }
 .chart-col b {
   font-size: 1rem;
-  color: #706386;
+  color: #484848;
   font-weight: 500;
 }
 .chart-legend {
@@ -157,7 +157,7 @@
   content: '';
   height: 6px;
   width: 6px;
-  background: #b4a0e3;
+  background: #aeaeae;
   border-radius: 2px;
 }
 @media (min-width:1550px) {
@@ -234,7 +234,7 @@
   color: #4b5563;
 }
 .dashboard-summary strong {
-  color: #422385;
+  color: #343434;
   font-weight: 700;
 }
 .dashboard-table table {
@@ -402,17 +402,17 @@
   background: transparent;
 }
 .case-chart .chart-col progress::-webkit-progress-value {
-  background: #8b6fd6;
+  background: #929292;
   border-radius: 5px 5px 0 0;
 }
 .case-chart .chart-col progress::-moz-progress-bar {
-  background: #8b6fd6;
+  background: #929292;
 }
 .case-chart .chart-col:is(:hover,:focus-visible) progress::-webkit-progress-value {
-  background: #4f2fa8;
+  background: #434343;
 }
 .case-chart .chart-col:is(:hover,:focus-visible) progress::-moz-progress-bar {
-  background: #4f2fa8;
+  background: #434343;
 }
 .case-chart .chart-col small {
   color: #4b5563;

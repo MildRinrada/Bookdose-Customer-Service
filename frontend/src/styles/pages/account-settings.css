@@ -47,12 +47,12 @@
   grid-column: 2;
 }
 .work-status-option:hover {
-  background: #f8f5fd;
+  background: #f9f9f9;
 }
 .work-status-option.selected {
   border: 2px solid var(--purple);
   padding: 11px 13px;
-  background: #f4effe;
+  background: #f6f6f6;
 }
 .work-status-pill {
   display: inline-flex;
@@ -163,8 +163,8 @@ html.platform-mode .status-switch {
 }
 .day-check input:checked+span {
   border-color: var(--purple);
-  background: #f1eefb;
-  color: #4b2f99;
+  background: #f4f4f4;
+  color: #353d40;
   font-weight: 700;
 }
 .day-check input:focus-visible+span {
@@ -261,7 +261,7 @@ html.platform-mode .status-switch {
 }
 .quick-reply:hover,.quick-reply:focus-visible {
   border-color: var(--purple);
-  background: #f8f5fd;
+  background: #f9f9f9;
 }
 .shortcut-table th {
   width: 40%;

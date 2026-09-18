@@ -1,0 +1,513 @@
+{
+  "name": "Customer Service AI",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Bookdose AI\nBookdose ส่งงาน AI มาที่ Webhook นี้ แล้วรอคำตอบ\n\n**ตั้งค่า 3 ขั้น**\n1. เปิดโหนด **Bookdose ส่งงาน AI** → Credential แบบ Header Auth\n   Name: `X-Bookdose-Secret` Value: รหัสลับเดียวกับในหน้าตั้งค่า AI ของ Bookdose\n2. เลือกโมเดลในโหนด **ตั้งค่า: ...** ทั้ง 3 โหนด (ค่าเริ่มต้น Ollama `qwen2.5:7b`)\n3. กด **Active** แล้วคัดลอก **Production URL** ของโหนด Webhook ไปใส่ใน Bookdose\n\nn8n ใน Docker: base_url ใช้ `http://host.docker.internal:11434`",
+        "height": 400,
+        "width": 380,
+        "color": 4
+      },
+      "id": "bda8bbf7-ee9a-4caf-92a2-0d490b6a68f7",
+      "name": "คู่มือ",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## เลือกโมเดลแยกตามงาน\n**ผู้ช่วยตอบ (AI tool)** ร่างคำตอบให้เจ้าหน้าที่ และปุ่มทดสอบการเชื่อมต่อ\n**Chatbot** ตอบลูกค้าในแชทบนเว็บ (chat widget), LINE และอีเมล\n**คำแนะนำ** ร่างบทความจากคำถามที่ยังไม่มีคำตอบ และสรุปประจำวันในหน้าภาพรวม\n\n`api_style`: `ollama` หรือ `openai` (OpenAI, Groq, Gemini, OpenRouter, LM Studio)\nแบบ `openai` ให้เปิด Authentication ในโหนด **เรียกโมเดล AI** เป็น Header Auth\n`Authorization: Bearer <API key>`",
+        "height": 400,
+        "width": 440,
+        "color": 5
+      },
+      "id": "df834125-98be-4fb6-ae32-9ccf9057be8a",
+      "name": "คู่มือโมเดล",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        928,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bookdose-ai",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "50d9ae26-c142-408c-ac18-69680b8b2f7d",
+      "name": "Bookdose ส่งงาน AI",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        512
+      ],
+      "webhookId": "11f1b5f9-5116-509e-9b2d-357e8d8d2c9d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DVOwUCAwQfAVnWQ9",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b25c3132-e3e5-5b4c-a78e-bc13c3c136ec",
+                    "leftValue": "={{ $json.body.feature }}",
+                    "rightValue": "assist",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ผู้ช่วยตอบ"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f6edc0d0-6838-5f2f-ab48-bb4e36e1b460",
+                    "leftValue": "={{ $json.body.feature }}",
+                    "rightValue": "chatbot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Chatbot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "de5ca173-498e-507a-887d-1515e3a14497",
+                    "leftValue": "={{ $json.body.feature }}",
+                    "rightValue": "insights",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "คำแนะนำ"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d171c6d1-c1ee-4c41-bcd5-4ba7f1711aff",
+      "name": "แยกตามงาน",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        272,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a40d596a-7239-5e75-81e5-4e063afa3e23",
+              "name": "api_style",
+              "value": "ollama",
+              "type": "string"
+            },
+            {
+              "id": "e248b335-3097-560e-9d8c-cf165f743ae3",
+              "name": "base_url",
+              "value": "http://localhost:11434",
+              "type": "string"
+            },
+            {
+              "id": "e4cec9a8-3e26-5aa8-bd92-82e319f2ab73",
+              "name": "model",
+              "value": "qwen2.5:7b",
+              "type": "string"
+            },
+            {
+              "id": "25873ed1-176d-5ef3-adba-eb7d9818aa54",
+              "name": "temperature",
+              "value": 0.3,
+              "type": "number"
+            },
+            {
+              "id": "4b9bc564-5856-5547-8a91-04b6814eb3aa",
+              "name": "num_ctx",
+              "value": 8192,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a490241-ade0-40df-8511-4e7fef2838da",
+      "name": "ตั้งค่า: ผู้ช่วยตอบ (AI tool)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// งานจาก Bookdose: instructions (กติกาของงาน), schema (รูปแบบคำตอบ JSON), input (ข้อมูลที่ส่งมา), mode\n// สร้าง system + prompt ให้ AI Agent (double brace หนี template ของ n8n ไม่ให้ประเมิน { } ใน schema)\nconst job = $('Bookdose ส่งงาน AI').first().json.body;\nconst system = (job.instructions +\n  '\\n\\nReply with one JSON object only: no other text, no code fences. It must match this JSON Schema:\\n' +\n  JSON.stringify(job.schema))\n  .replace(/\\{/g, '{{').replace(/\\}/g, '}}');\nreturn [{ json: { system, prompt: job.input, mode: job.mode } }];\n"
+      },
+      "id": "5f8076b0-ad3a-4426-8615-3937130f8cda",
+      "name": "เตรียมคำขอ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {
+          "systemMessage": "={{ $json.system }}"
+        }
+      },
+      "id": "c537b66e-af01-4a86-86b1-eedc7cf23fa4",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1472,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// คำตอบของ AI Agent -> { result, usage } ที่ Bookdose รอรับ\n// Bookdose ตรวจคำตอบซ้ำอีกชั้น: Chatbot ตอบลูกค้าได้เฉพาะเมื่ออ้างข้อความจากบทความจริง ไม่อย่างนั้นส่งต่อเจ้าหน้าที่\nconst reply = $input.first().json;\nconst mode = $('เตรียมคำขอ').first().json.mode;\nlet usage = { input_tokens: 0, output_tokens: 0 };\n// AI Agent คืนข้อความไว้ใน output (สตริง)\nlet text = typeof reply.output === 'string' ? reply.output : (reply.output != null ? JSON.stringify(reply.output) : '');\ntext = text.replace(/<think>[\\s\\S]*?<\\/think>/g, '').replace(/```(?:json)?/gi, '').trim();\nconst start = text.indexOf('{');\nconst end = text.lastIndexOf('}');\nif (start < 0 || end < start) throw new Error('โมเดลไม่ได้ตอบเป็น JSON');\nconst result = JSON.parse(text.slice(start, end + 1));\nif (['draft', 'bot', 'test'].includes(mode)) {\n  // โมเดลเล็กมักใส่ชนิดข้อมูลผิดเล็กน้อย: จัดให้ตรงรูปแบบก่อนส่งกลับ\n  result.answer = typeof result.answer === 'string' ? result.answer : '';\n  result.summary = typeof result.summary === 'string' ? result.summary : '';\n  result.needs_human = result.needs_human === true || result.needs_human === 'true';\n  result.citations = Array.isArray(result.citations) ? result.citations : [];\n  if (mode === 'test') result.citations = [];\n}\nreturn [{ json: { result, usage } }];\n"
+      },
+      "id": "6aab7238-6014-446a-a581-326bca4b6405",
+      "name": "ตรวจและจัดรูปคำตอบ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4c61834a-bb5d-4110-ba32-55e928a2d109",
+      "name": "ตอบกลับ Bookdose",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f0be68e-f437-5fde-a129-51041c8828a1",
+              "name": "api_style",
+              "value": "ollama",
+              "type": "string"
+            },
+            {
+              "id": "fda05e97-2022-5ad1-bef7-7e7f77ba849a",
+              "name": "base_url",
+              "value": "http://localhost:11434",
+              "type": "string"
+            },
+            {
+              "id": "fd7c0a82-4e6f-5ac1-af37-ae96838d09aa",
+              "name": "model",
+              "value": "qwen2.5:7b",
+              "type": "string"
+            },
+            {
+              "id": "baf55fc5-418b-5322-a325-52d9ee02a006",
+              "name": "temperature",
+              "value": 0.2,
+              "type": "number"
+            },
+            {
+              "id": "b5ce7e22-ebfc-5ead-806c-fa95d462b961",
+              "name": "num_ctx",
+              "value": 8192,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "783b5d74-c80b-47a5-b06d-d35a17c50d6f",
+      "name": "ตั้งค่า: Chatbot",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aa5d4277-e691-5626-b42b-b1d2e57761e4",
+              "name": "api_style",
+              "value": "ollama",
+              "type": "string"
+            },
+            {
+              "id": "2e0dbd71-af95-52ae-86ed-033d858d65ff",
+              "name": "base_url",
+              "value": "http://localhost:11434",
+              "type": "string"
+            },
+            {
+              "id": "eb836326-2289-5962-90d9-7ee529c1c676",
+              "name": "model",
+              "value": "qwen2.5:7b",
+              "type": "string"
+            },
+            {
+              "id": "40907fb2-c6f6-513f-8f22-827c63b138bf",
+              "name": "temperature",
+              "value": 0.5,
+              "type": "number"
+            },
+            {
+              "id": "bde25232-a5ea-5e6d-b5d8-a6d925cc91c0",
+              "name": "num_ctx",
+              "value": 8192,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d01640f7-ea07-403a-89b1-277b7c010692",
+      "name": "ตั้งค่า: คำแนะนำ",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## งานที่ส่งมา (mode)\n**ผู้ช่วยตอบ (AI tool)** `draft` ร่างคำตอบให้เจ้าหน้าที่, `test` ปุ่มทดสอบการเชื่อมต่อ\n**Chatbot** `bot` ตอบลูกค้าในแชทบนเว็บ (chat widget), LINE และอีเมล\n**คำแนะนำ** `article` ร่างบทความ, `brief` สรุปประจำวันในหน้าภาพรวม\n\nBookdose ส่งกติกาและรูปแบบคำตอบของแต่ละงานมาเอง\nไม่ต้องเขียน prompt ใน AI Agent",
+        "height": 360,
+        "width": 420,
+        "color": 5
+      },
+      "id": "14000692-e3f5-48aa-9cb1-6edb27754aa8",
+      "name": "คู่มืองาน",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        560
+      ],
+      "id": "76d21baf-b39f-4a7a-9599-307775e735d8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Bookdose ส่งงาน AI": {
+      "main": [
+        [
+          {
+            "node": "แยกตามงาน",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "แยกตามงาน": {
+      "main": [
+        [
+          {
+            "node": "ตั้งค่า: ผู้ช่วยตอบ (AI tool)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ตั้งค่า: Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ตั้งค่า: คำแนะนำ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ตั้งค่า: ผู้ช่วยตอบ (AI tool)": {
+      "main": [
+        [
+          {
+            "node": "เตรียมคำขอ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "เตรียมคำขอ": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "ตรวจและจัดรูปคำตอบ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ตรวจและจัดรูปคำตอบ": {
+      "main": [
+        [
+          {
+            "node": "ตอบกลับ Bookdose",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ตั้งค่า: Chatbot": {
+      "main": [
+        [
+          {
+            "node": "เตรียมคำขอ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ตั้งค่า: คำแนะนำ": {
+      "main": [
+        [
+          {
+            "node": "เตรียมคำขอ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c44d066a-9acb-4a8f-af18-8f6341a417c3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c880800fb191ffe54761d023d33e2dae589a577bd9c3500ab6886d1099fabf97"
+  },
+  "nodeGroups": [],
+  "id": "XeYvGcM1DcdvoNBn",
+  "tags": []
+}

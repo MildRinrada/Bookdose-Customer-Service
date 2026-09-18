@@ -31,7 +31,7 @@ function useAlive() {
 function AiOff({ ai }: { ai: Insights['ai'] }) {
   return (
     <p className="ai-off tiny muted">
-      {ai.key_configured ? 'เปิด “AI ช่วยร่างคำตอบ” ก่อนจึงใช้ได้' : 'ตั้งค่า API Key ของ AI ก่อนจึงใช้ได้'} ·{' '}
+      {ai.key_configured ? 'เปิด “AI ช่วยร่างคำตอบ” ก่อนจึงใช้ได้' : 'เชื่อม AI (OpenAI หรือ n8n) ก่อนจึงใช้ได้'} ·{' '}
       <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
     </p>
   );

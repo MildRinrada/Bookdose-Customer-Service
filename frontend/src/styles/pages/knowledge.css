@@ -30,8 +30,8 @@
   gap: 8px;
 }
 .article-category {
-  background: #f1eefb;
-  color: #5b4a80;
+  background: #f4f4f4;
+  color: #3f3f3f;
 }
 .article-card h3 {
   margin: 0;
@@ -86,8 +86,8 @@
   height: 15px;
 }
 .article-card:hover,.article-card:focus-visible {
-  border-color: #7959ba;
-  box-shadow: 0 4px 14px #35256b20;
+  border-color: #7c7c7c;
+  box-shadow: 0 4px 14px #2d2d2d20;
 }
 .article-content {
   color: #26354a;

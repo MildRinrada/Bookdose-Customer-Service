@@ -13,7 +13,7 @@
   background: #fff;
 }
 .auth-story {
-  background: #eee9f7;
+  background: #f0f0f0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -37,7 +37,7 @@
 .auth-story h1 {
   font-size: 2.75rem;
   line-height: 1.5;
-  color: #59447d;
+  color: #3c3c3c;
   letter-spacing: -1.5px;
 }
 .auth-story .story-copy {
@@ -49,7 +49,7 @@
 .auth-story .story-label {
   font-size: 1rem;
   letter-spacing: 2px;
-  color: #706380;
+  color: #464646;
   margin-bottom: 22px;
 }
 /* Photo slideshow: every photo fills the panel and fades in and out on one shared 28 s cycle (4 photos, 7 s each,

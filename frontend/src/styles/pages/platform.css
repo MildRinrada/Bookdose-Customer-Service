@@ -268,7 +268,7 @@
   border-left-color: #334155;
 }
 .audience-item.audience-staff {
-  border-left-color: #5b3ea8;
+  border-left-color: #474747;
 }
 .audience-item.audience-customer {
   border-left-color: #3f9a6c;
@@ -278,8 +278,8 @@
   color: #273142;
 }
 .badge.audience-badge.audience-staff {
-  background: #eee9fb;
-  color: #4b2f99;
+  background: #f2f2f2;
+  color: #3e3e3e;
 }
 .badge.audience-badge.audience-customer {
   background: #e3f4ea;

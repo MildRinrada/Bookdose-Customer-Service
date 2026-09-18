@@ -133,7 +133,7 @@ def set_ai_mode(db, ctx, conv, body):
         ai.handoff(db,conv['id'],'staff')
     else:
         require(conv['channel'] in ('web','line','email') and conv['status']=='open','เปิด AI ได้เฉพาะบทสนทนาที่เปิดอยู่')
-        require(ai.bot_enabled(db,conv['id']) and ai.has_key(ctx['tenant_id']),'กรุณาเปิด Chatbot สำหรับช่องทางนี้และตั้งค่า API Key ก่อน')
+        require(ai.bot_enabled(db,conv['id']) and ai.has_key(ctx['tenant_id']),'กรุณาเปิด Chatbot สำหรับช่องทางนี้และเชื่อม AI ก่อน')
         ai.resume_bot(db,conv['id'])
         audit.record(db,ctx['name'],'ai.resumed',conv['id'])
     realtime.conversation(db,conv['id'],listed=False)

@@ -7,14 +7,15 @@ import json
 import re
 import threading
 import unicodedata
+from urllib.parse import urlsplit
 
 from backend.extensions import monitor
 from backend.database import audit, db as D
 from backend.exceptions.errors import AIError
-from backend.extensions import openai_client
+from backend.extensions import ai_webhook, openai_client
 from backend.middleware.access import get_scoped
 from backend.modules.ai import repository, schema
-from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES
+from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
 from backend.modules.channels import service as channels
 from backend.modules.conversations import repository as conversations
 from backend.modules.organization import repository as memberships
@@ -28,7 +29,8 @@ from backend.utils.validation import require
 HANDOFF_MESSAGE = 'ส่งเรื่องให้เจ้าหน้าที่แล้วค่ะ ทีมงานจะตอบกลับในแชทนี้ คุณส่งรายละเอียดเพิ่มเติมไว้ได้เลย'
 CHANNEL_HANDOFF_MESSAGE = 'ส่งเรื่องให้เจ้าหน้าที่แล้วค่ะ ทีมงานจะตอบกลับผ่านช่องทางนี้'
 NO_KNOWLEDGE_SUMMARY = 'ไม่พบความรู้ที่เกี่ยวข้องเพียงพอ กรุณาตรวจสอบและตอบลูกค้าโดยเจ้าหน้าที่'
-JOB_TIMEOUT_SECONDS = 120
+# Longer than the slowest provider call (an n8n workflow on a local model: ai_webhook.TIMEOUT_SECONDS).
+JOB_TIMEOUT_SECONDS = ai_webhook.TIMEOUT_SECONDS+30
 
 
 def config(db):
@@ -41,12 +43,19 @@ def config(db):
 
 
 def has_key(tenant_id):
-    return bool(repository.read_key(tenant_id))
+    """The organization is connected to an AI: an n8n webhook (used when there is one) or an OpenAI API key."""
+    return bool(repository.read_webhook(tenant_id) or repository.read_key(tenant_id))
 
 
 def overview(db, tenant_id):
     cfg = config(db)
-    cfg.update(key_configured=has_key(tenant_id),usage=repository.usage_since(db,today()))
+    webhook = repository.read_webhook(tenant_id)
+    # The owner sees the saved URL (the secret header is what protects the workflow) and only the last characters of
+    # the secret, enough to compare with n8n's Header Auth. Never on /api/workspace, which every member reads.
+    cfg.update(key_configured=has_key(tenant_id),openai_key=bool(repository.read_key(tenant_id)),
+               provider='n8n' if webhook else 'openai',webhook_host=urlsplit(webhook['url']).netloc if webhook else '',
+               webhook_url=webhook['url'] if webhook else '',webhook_secret_end=webhook['secret'][-4:] if webhook else '',
+               usage=repository.usage_since(db,today()))
     return cfg
 
 
@@ -125,9 +134,10 @@ def bot_enabled(db, conversation_id):
 
 def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payload=None):
     """Queue a job (or return the one already queued for the same trigger / draft request); enforces the limits.
-    The owner's jobs (article, brief) carry their input in `payload` and count like a staff draft."""
+    The owner's jobs (article, brief) and the assistant's (ask) carry their input in `payload` and count like a staff
+    draft."""
     cfg = config(db)
-    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft',*OWNER_MODES) and not cfg['drafts_enabled']):
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft',*PAYLOAD_MODES) and not cfg['drafts_enabled']):
         raise AIError('disabled')
     if not has_key(tenant_id):
         raise AIError('not_configured')
@@ -140,7 +150,7 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
         old = repository.pending_draft(db,conversation_id,requested_by)
         if old:
             return old
-    if mode in OWNER_MODES:
+    if mode in PAYLOAD_MODES:
         old = repository.pending_owner_job(db,requested_by,mode)
         if old:
             return old
@@ -240,10 +250,24 @@ def validate_result(result, articles, mode):
     return {**result,'citations':citations}
 
 
-def validate_owner_result(result, mode):
-    """An article draft (title, category, Markdown body) or today's summary (a few short lines); nothing else passes."""
+def validate_owner_result(result, mode, payload=None):
+    """An article draft (title, category, Markdown body), today's summary (a few short lines) or the assistant's answer
+    (its sources only when they quote an article it was given); nothing else passes."""
     if not isinstance(result,dict):
         raise AIError('invalid_output')
+    if mode=='ask':
+        answer,cites = result.get('answer'),result.get('citations')
+        if not isinstance(answer,str) or not answer.strip() or len(answer)>8000:
+            raise AIError('invalid_output')
+        articles = (payload or {}).get('articles',[])
+        citations = []
+        for cite in cites if isinstance(cites,list) else []:
+            quote = cite.get('quote') if isinstance(cite,dict) else None
+            article = next((a for a in articles if isinstance(quote,str) and 12<=len(quote)<=300
+                            and a['id']==cite.get('article_id') and quote in a['text']),None)
+            if article and article['id'] not in {c['article_id'] for c in citations}:
+                citations.append({'article_id':article['id'],'title':article['title'],'quote':quote,'visibility':article['visibility']})
+        return {'answer':answer.strip(),'citations':citations[:5]}
     if mode=='article':
         title,category,body = (result.get(k) for k in ('title','category','body'))
         if not all(isinstance(v,str) for v in (title,category,body)) or not title.strip() or not body.strip() \
@@ -267,6 +291,8 @@ def permitted(cd, tenant_id, job, db):
         return False
     if job['mode']=='test' or job['mode'] in OWNER_MODES:
         return membership['role']=='admin' and not membership.get('expires_at')
+    if job['mode']=='ask':
+        return not membership.get('expires_at')
     conv = conversations.find(db,job['conversation_id'])
     return bool(conv and (membership['role']!='agent' or membership['team_id']==conv['team_id']))
 
@@ -292,7 +318,7 @@ def process_one(tenant_id):
             return True
         lease = uid()
         repository.claim(db,job['id'],lease)
-        owner = job['mode'] in OWNER_MODES
+        owner = job['mode'] in PAYLOAD_MODES
         if job['mode']=='test':
             payload,articles,signature = {'test':'Bookdose connection check'},[],None
         elif owner:
@@ -300,19 +326,26 @@ def process_one(tenant_id):
             payload,articles,signature = json.loads(job['payload'] or '{}'),[],None
         else:
             payload,articles,signature = snapshot(db,job)
+        webhook = repository.read_webhook(tenant_id)
         key = repository.read_key(tenant_id)
     usage = {'input_tokens':0,'output_tokens':0}
     error = None
+
+    def ask():
+        # The organization's n8n workflow when it connected one, otherwise OpenAI; the answer is checked the same way.
+        if webhook:
+            return ai_webhook.call(webhook,cfg,payload,job['mode'])
+        return openai_client.call_provider(key,cfg,payload,job['mode'])
     try:
-        if not key:
+        if not webhook and not key:
             raise AIError('not_configured')
         if owner:
-            raw,usage = openai_client.call_provider(key,cfg,payload,job['mode'])
-            result = validate_owner_result(raw,job['mode'])
+            raw,usage = ask()
+            result = validate_owner_result(raw,job['mode'],payload)
         elif job['mode']!='test' and not articles:
             result = {'answer':'','summary':NO_KNOWLEDGE_SUMMARY,'needs_human':True,'citations':[]}
         else:
-            raw,usage = openai_client.call_provider(key,cfg,payload,job['mode'])
+            raw,usage = ask()
             result = validate_result(raw,articles,job['mode'])
     except AIError as failure:
         error = failure.code
@@ -354,11 +387,21 @@ def process_one(tenant_id):
 def save_settings(db, ctx, body):
     """Update AI modes, model, limits and the API key. Any change cancels in-flight AI work and hands bot chats to staff."""
     cfg,model,key,remove = schema.settings_form(body,config(db))
+    change = schema.webhook_form(body)
     effective_key = '' if remove else key or repository.read_key(ctx['tenant_id'])
-    require(effective_key or not (cfg['drafts_enabled'] or cfg['chatbot_enabled']),'ต้องตั้งค่า API Key ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบคีย์')
+    saved = repository.read_webhook(ctx['tenant_id'])
+    # Left empty, the URL and the secret keep what was saved (so the secret alone can be changed).
+    require(change in (None,False) or change['url'] or saved,'กรุณาใส่ URL ของ Webhook')
+    webhook = None if change is False else saved if change is None else \
+        {'url':change['url'] or saved['url'],'secret':change['secret'] or (saved or {}).get('secret','')}
+    require(not webhook or webhook['secret'],'กรุณาตั้งรหัสลับของ Webhook (ใส่ค่าเดียวกันใน Header Auth ของ n8n)')
+    require(effective_key or webhook or not (cfg['drafts_enabled'] or cfg['chatbot_enabled']),
+            'ต้องเชื่อม AI (OpenAI API Key หรือ n8n Webhook) ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบการเชื่อมต่อ')
     D.begin(db)
     if key or remove:
         repository.write_key(ctx['tenant_id'],effective_key)
+    if change is not None:
+        repository.write_webhook(ctx['tenant_id'],webhook)
     repository.save_settings(db,[('ai_drafts',str(int(cfg['drafts_enabled']))),('ai_chatbot',str(int(cfg['chatbot_enabled']))),
         ('ai_model',model),('ai_daily_limit',str(cfg['daily_limit'])),('ai_conversation_limit',str(cfg['conversation_limit'])),
         ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_version',uid())])
@@ -392,7 +435,7 @@ def job_view(db, ctx, job_id):
     if job['conversation_id']:
         get_scoped(db,'conversations',job['conversation_id'],ctx)
     else:
-        require(ctx['role']=='admin','เฉพาะผู้ดูแลองค์กร',403)
+        require(ctx['role']=='admin' or job['mode']=='ask','เฉพาะผู้ดูแลองค์กร',403)
     result = json.loads(job['result'])
     signature = result.pop('_context_hash',None)
     if job['mode']=='draft' and job['status']=='done' and (signature!=snapshot(db,job)[2] or job['config_version']!=config(db)['version']):

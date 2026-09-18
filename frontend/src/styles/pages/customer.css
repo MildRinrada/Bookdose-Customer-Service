@@ -28,8 +28,8 @@
   white-space: nowrap;
 }
 .customer-state.tone-received {
-  background: #f1eefb;
-  color: #4b2f99;
+  background: #f4f4f4;
+  color: #353d40;
 }
 .customer-state.tone-working {
   background: #e6f0fc;
@@ -106,7 +106,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.staff-contact-badge.channel-web { background: #eee4ff; color: #3f2378; }
+.staff-contact-badge.channel-web { background: #f2f2f2; color: #303030; }
 .staff-contact-badge.channel-line { background: #d5f4e1; color: #0b4d2d; }
 .staff-contact-badge.channel-email { background: #dbeafe; color: #123c78; }
 .staff-contact-badge.channel-facebook { background: #e0e9fb; color: #1b3f86; }
@@ -152,8 +152,8 @@
   margin-right: 0;
 }
 #customer-thread .message.customer .bubble {
-  background: #5835b3;
-  border-color: #5835b3;
+  background: #484848;
+  border-color: #484848;
   color: #fff;
   border-radius: 14px 4px 14px 14px;
 }
@@ -170,8 +170,8 @@
 }
 #customer-thread .message.reply .file-chip {
   background: #fff;
-  border-color: #e8dff2;
-  color: #77608d;
+  border-color: #e8e8e8;
+  color: #494949;
 }
 .customer-new-chat .field {
   margin-bottom: 15px;
@@ -191,7 +191,7 @@
   cursor: pointer;
 }
 input[type=file].attach-input:focus-visible+.customer-attach {
-  outline: 3px solid #b4a0f0;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
 }
 .customer-none {
@@ -263,11 +263,11 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 }
 .customer-banner-ref {
   font-weight: 600;
-  color: #5b3ea8;
+  color: #474747;
 }
 .customer-banner.tone-received {
-  background: #f6f3fe;
-  border-color: #cdbdf3;
+  background: #f8f8f8;
+  border-color: #d8d8d8;
 }
 .customer-banner.tone-working {
   background: #eef5fd;
@@ -317,12 +317,12 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 }
 .customer-progress-step.done .customer-progress-dot,
 .customer-progress-step.current .customer-progress-dot {
-  border-color: #5835b3;
-  background: #5835b3;
+  border-color: #484848;
+  background: #484848;
   color: #fff;
 }
 .customer-progress-step.current .customer-progress-label {
-  color: #3d2580;
+  color: #333333;
   font-weight: 650;
 }
 .customer-case-grid {
@@ -438,8 +438,8 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #f1eefb;
-  color: #5b3ea8;
+  background: #f4f4f4;
+  color: #474747;
 }
 .customer-link-text {
   display: grid;
@@ -473,7 +473,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   border-radius: 0;
 }
 .customer-article:hover {
-  border-color: #b9a6ea;
+  border-color: #b4b4b4;
   border-radius: 12px;
   background: #faf8ff;
 }
@@ -487,8 +487,8 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: #f1eefb;
-  color: #5b3ea8;
+  background: #f4f4f4;
+  color: #474747;
 }
 .customer-article-text {
   display: flex;
@@ -521,7 +521,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 }
 .customer-article-go {
   flex-shrink: 0;
-  color: #8b7bb8;
+  color: #8a8a8a;
 }
 .customer-ask {
   margin-top: 22px;
@@ -644,8 +644,8 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #f1eefb;
-  color: #5835b3;
+  background: #f4f4f4;
+  color: #484848;
 }
 .customer-center-icon .icon {
   width: 26px;
@@ -789,10 +789,10 @@ main .customer-link-head>.text-size-controls {
   gap: 8px;
   max-width: 100%;
   padding: 5px 6px 5px 5px;
-  border: 1px solid #d5cbf0;
+  border: 1px solid #dedede;
   border-radius: 999px;
-  background: #f5f1fe;
-  color: #3b2b66;
+  background: #f8f8f8;
+  color: #2d2d2d;
   font-weight: 600;
 }
 .org-chip .avatar {
@@ -808,8 +808,8 @@ main .customer-link-head>.text-size-controls {
 .org-chip-tag {
   padding: 2px 8px;
   border-radius: 999px;
-  background: #ece5fb;
-  color: #5133a6;
+  background: #f0f0f0;
+  color: #434343;
   font-size: .8rem;
   font-weight: 600;
 }
@@ -822,12 +822,12 @@ main .customer-link-head>.text-size-controls {
   border: 0;
   border-radius: 50%;
   background: none;
-  color: #6b5b8f;
+  color: #494949;
   cursor: pointer;
 }
 .org-chip-remove:hover {
-  background: #e5dbfa;
-  color: #3b2b66;
+  background: #eaeaea;
+  color: #2d2d2d;
 }
 .org-chip-remove .icon {
   width: 15px;
@@ -856,17 +856,17 @@ main .customer-link-head>.text-size-controls {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #ece5fb;
-  color: #5133a6;
+  background: #f0f0f0;
+  color: #434343;
 }
 .customer-org-intro {
   display: grid;
   gap: 6px;
   margin-bottom: 15px;
   padding: 12px 14px;
-  border: 1px solid #e4dcf7;
+  border: 1px solid #eaeaea;
   border-radius: 12px;
-  background: #f8f6fe;
+  background: #fafafa;
 }
 .customer-org-intro p {
   margin: 0;
@@ -896,7 +896,7 @@ main .customer-link-head>.text-size-controls {
   color: #f5a524;
 }
 .star-btn:focus-within {
-  outline: 3px solid #b4a0f0;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
   border-radius: 6px;
 }

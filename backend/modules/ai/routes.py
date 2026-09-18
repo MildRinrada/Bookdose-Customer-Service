@@ -8,4 +8,5 @@ ROUTES = [
     ('GET',   f'/api/ai/jobs/{ID}',   controller.job,             'workspace'),
     ('POST',  '/api/ai/insights/article', controller.draft_article, 'workspace'),
     ('POST',  '/api/ai/insights/brief',   controller.brief,         'workspace'),
+    ('POST',  '/api/ai/assistant',        controller.ask,           'workspace'),
 ]

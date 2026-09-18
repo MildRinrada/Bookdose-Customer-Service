@@ -19,7 +19,7 @@
   border: 0;
   border-radius: 5px;
   overflow: hidden;
-  background: #f1edf8;
+  background: #f2f2f2;
   height: 12px;
 }
 .bar-row progress::-webkit-progress-bar {
@@ -27,10 +27,10 @@
 }
 .bar-row progress::-webkit-progress-value {
   border-radius: 5px;
-  background: #7655c2;
+  background: #7e7e7e;
 }
 .bar-row progress::-moz-progress-bar {
-  background: #7655c2;
+  background: #7e7e7e;
 }
 @media (max-width:950px) {
   .report-grid {
@@ -103,13 +103,13 @@
   height: 10px;
   border-radius: 3px;
   flex-shrink: 0;
-  background: #7655c2;
+  background: #7e7e7e;
 }
 .bar-value {
   white-space: nowrap;
 }
 .status-new {
-  background: #a78bfa;
+  background: #afafaf;
 }
 .status-open {
   background: #7aa2e8;
@@ -118,7 +118,7 @@
   background: #e8b465;
 }
 .status-pending_internal {
-  background: #d597c6;
+  background: #a4a4a4;
 }
 .status-resolved {
   background: #6fbf9b;

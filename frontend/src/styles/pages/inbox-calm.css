@@ -264,3 +264,104 @@
     padding: 6px 14px;
   }
 }
+
+/* The AI draft above the text box: the draft first, in reading size, with no scroll box of its own unless it is long;
+   no draft is one quiet line. */
+.inbox-detail .composer [data-ai-panel]:not(:empty) {
+  max-height: none;
+  overflow: visible;
+}
+.ai-result {
+  margin: 4px 0 10px;
+  padding: 12px 14px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  background: #fbfaff;
+}
+.ai-result-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ai-result-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3e3e3e;
+}
+.ai-result-head .muted {
+  font-size: .9375rem;
+}
+.ai-result-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+}
+.ai-result-answer {
+  max-height: min(24vh, 240px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-result-warn {
+  margin: 0 0 8px;
+  color: #8a4b06;
+  font-size: .9375rem;
+}
+.ai-result-summary {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+.ai-result-summary span {
+  color: #475569;
+  font-weight: 600;
+}
+.ai-result-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+}
+.ai-result-actions .ai-citations {
+  margin: 0;
+  font-size: .9375rem;
+}
+.ai-result-actions .ai-citations[open] {
+  flex-basis: 100%;
+}
+.ai-result-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8f9fb;
+  border-color: var(--line);
+}
+.ai-result-empty>.icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #6b6b78;
+}
+.ai-result-empty strong {
+  font-size: .9375rem;
+}
+.ai-result-empty p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: .9375rem;
+  line-height: 1.5;
+}
+.ai-result-empty .ai-result-close {
+  margin-top: -4px;
+}

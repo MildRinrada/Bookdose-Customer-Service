@@ -773,3 +773,33 @@ a.auto-stat:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Live agent activity: the status is a plain dot and word (the top bar's green ".online" pill must not reach it), and
+   every column keeps its figures on one line; the table scrolls sideways when the card is narrow. */
+.agent-row {
+  grid-template-columns: minmax(9rem,2fr) minmax(7.5rem,1.2fr) repeat(3,minmax(3.6rem,.6fr)) minmax(6.6rem,1fr) minmax(3.2rem,.5fr);
+  min-width: 640px;
+}
+.agent-head span,.agent-num,.agent-state>span {
+  white-space: nowrap;
+}
+.agent-table .presence-label.online,.agent-table .presence-dot.online {
+  padding: 0;
+  border-radius: 50%;
+  font-size: inherit;
+}
+.agent-table .presence-label.online {
+  border-radius: 0;
+  background: none;
+  color: #166344;
+}
+.agent-table .presence-label.online::before {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+}
+@media (max-width:760px) {
+  .agent-row {
+    min-width: 0;
+  }
+}

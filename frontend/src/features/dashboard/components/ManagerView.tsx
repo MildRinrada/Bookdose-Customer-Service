@@ -57,17 +57,16 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             <div className="agent-row agent-head" role="row">
               <span role="columnheader">เจ้าหน้าที่</span>
               <span role="columnheader">สถานะ</span>
-              <span role="columnheader">เคสที่ถืออยู่</span>
+              <span role="columnheader" title="เคสที่ยังไม่ปิดที่รับผิดชอบอยู่">ถืออยู่</span>
               <span role="columnheader">ปิดวันนี้</span>
               <span role="columnheader">ตอบวันนี้</span>
-              <span role="columnheader">ตอบครั้งแรกเฉลี่ย</span>
+              <span role="columnheader" title="เวลาตอบครั้งแรกเฉลี่ย 30 วันล่าสุด">ตอบแรกเฉลี่ย</span>
               <span role="columnheader">CSAT</span>
             </div>
             {agents.map((x, i) => (
               <div key={x.id} className="agent-row" role="row">
                 <span className="agent-who" role="cell">
                   <Avatar name={x.name} index={i} />
-                  <span className={`presence-dot ${x.presence}`} aria-hidden="true" />
                   <span className="agent-name">
                     <strong className="truncate">{x.name}</strong>
                     <span className="tiny muted truncate">

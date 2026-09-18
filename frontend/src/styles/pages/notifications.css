@@ -20,55 +20,240 @@
 .bell-menu {
   position: relative;
 }
+/* A dark head that says at a glance how much is waiting and how urgent it is, one row of tabs, then the items grouped
+   from most to least urgent. The small caret points back at the bell. */
 .note-dropdown {
   position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
+  right: -6px;
+  top: calc(100% + 12px);
   z-index: 30;
   display: flex;
   flex-direction: column;
-  width: min(440px,calc(100vw - 32px));
-  max-height: min(460px,70vh);
-  border: 1px solid #c9cfdc;
-  border-radius: 14px;
+  width: min(420px,calc(100vw - 32px));
+  max-height: min(540px,76vh);
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 18px 44px #1e293b2e;
-  overflow: hidden;
+  box-shadow: 0 1px 0 #0000000d, 0 24px 60px -12px #11111150, 0 0 0 1px #1111110f;
+  transform-origin: calc(100% - 22px) -8px;
+  animation: note-pop .18s cubic-bezier(.2,.9,.3,1.2);
+}
+.note-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 18px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px 0 0;
+  background: #1c1c1e;
+  transform: rotate(45deg);
+}
+@keyframes note-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .note-dropdown { animation: none; }
 }
 .note-menu-head {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 10px;
+  gap: 4px 14px;
   flex-shrink: 0;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line);
+  padding: 18px 20px 16px;
+  border-radius: 18px 18px 0 0;
+  background: radial-gradient(120% 140% at 100% 0,#3a3a3c 0,#1c1c1e 60%);
+  color: #fff;
 }
-/* Cases and messages sit side by side as tabs: neither one is buried under the other. */
-.note-menu-tabs {
+.note-menu-title {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex-shrink: 0;
-  margin: 0;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
-.note-menu-tabs .filter-pill {
-  padding: 6px 11px;
+.note-menu-title strong {
+  font-size: 1.08rem;
+  letter-spacing: .01em;
+}
+.note-menu-summary {
+  color: #c7c7cc;
+  font-size: .92rem;
+}
+/* The total, large, where the eye lands first. */
+.note-menu-total {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+/* How the total splits by urgency: red late, amber waiting, grey new. */
+.note-meter {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 3px;
+  height: 6px;
+  margin-top: 10px;
+}
+.note-meter span {
+  flex: 1 1 0;
+  min-width: 6px;
+  border-radius: 3px;
+}
+.note-meter-late { background: #ff6b6b; }
+.note-meter-waiting { background: #f5b942; }
+.note-meter-new { background: #8e8e93; }
+/* Four tabs on one track, like a switch: nothing wraps onto a second line. */
+.note-menu-tabs {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 2px;
+  flex-shrink: 0;
+  margin: 12px 14px 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: #f0f0f2;
+}
+.note-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 6px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #5b5b60;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.note-tab:hover {
+  color: #1c1c1e;
+}
+.note-tab[aria-pressed="true"] {
+  background: #fff;
+  color: #1c1c1e;
+  box-shadow: 0 1px 3px #0000001f, 0 0 0 1px #0000000a;
+}
+.note-tab:focus-visible {
+  outline: 2px solid #1c1c1e;
+  outline-offset: 1px;
+}
+.note-tab-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: .8rem;
+  line-height: 20px;
+  text-align: center;
+}
+.note-tab:not([aria-pressed="true"]) .note-tab-count {
+  background: #dcdce0;
+  color: #3a3a3c;
 }
 /* Only this part scrolls, so the tabs and "see all" stay reachable. */
 .note-menu-body {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 10px;
+  padding: 6px 10px 14px;
+  scrollbar-width: thin;
+  /* The last rows fade out above "see all" instead of being cut off. */
+  mask-image: linear-gradient(#000 calc(100% - 22px),transparent);
 }
-.note-dropdown .note-item {
+.note-section + .note-section {
+  margin-top: 6px;
+}
+.note-section h3 {
+  position: sticky;
+  top: -6px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 10px 6px;
+  background: #fff;
+  color: #6e6e73;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.note-section h3::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #8e8e93;
+}
+.note-section-late h3::before { background: #e5484d; }
+.note-section-waiting h3::before { background: #e5a000; }
+.note-section h3 span {
+  margin-left: auto;
+  color: #a1a1a6;
+  font-weight: 600;
+}
+:is(.note-dropdown,.note-page) .note-list {
+  gap: 2px;
+}
+/* A row: the icon, what happened and how long ago; hovering slides an arrow in to say it opens. */
+:is(.note-dropdown,.note-page) .note-item {
+  position: relative;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 34px 10px 10px;
+  border: 0;
+  border-radius: 12px;
+  transition: background .15s;
+}
+:is(.note-dropdown,.note-page) .note-item::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid #1c1c1e;
+  border-right: 2px solid #1c1c1e;
+  opacity: 0;
+  transform: translate(-4px,-50%) rotate(45deg);
+  transition: opacity .15s, transform .15s;
+}
+:is(.note-dropdown,.note-page) .note-item:hover,
+:is(.note-dropdown,.note-page) .note-item:focus-visible {
   border-color: transparent;
-  padding: 10px 12px;
+  background: #f4f4f6;
 }
-.note-dropdown .note-item:hover {
-  border-color: #7959ba;
+:is(.note-dropdown,.note-page) .note-item:hover::after,
+:is(.note-dropdown,.note-page) .note-item:focus-visible::after {
+  opacity: 1;
+  transform: translate(0,-50%) rotate(45deg);
+}
+:is(.note-dropdown,.note-page) .note-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+:is(.note-dropdown,.note-page) .note-body strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:is(.note-dropdown,.note-page) .note-time {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: .85rem;
+}
+:is(.note-dropdown,.note-page) .note-late .note-time {
+  color: #c4262e;
+  font-weight: 600;
 }
 .note-menu-foot {
   display: flex;
@@ -76,15 +261,23 @@
   justify-content: center;
   gap: 8px;
   flex-shrink: 0;
-  padding: 13px;
-  border-top: 1px solid var(--line);
-  background: #fbfaff;
-  color: #56409e;
+  margin: 0 10px 10px;
+  padding: 11px;
+  border-radius: 12px;
+  background: #1c1c1e;
+  color: #fff;
   font-weight: 600;
   text-decoration: none;
+  transition: background .15s;
+}
+.note-menu-foot .icon {
+  transition: transform .15s;
 }
 .note-menu-foot:hover {
-  background: #f1ecff;
+  background: #000;
+}
+.note-menu-foot:hover .icon {
+  transform: translateX(3px);
 }
 .note-loading {
   margin: 0;
@@ -122,6 +315,22 @@
     top: 78px;
     width: auto;
   }
+  .note-dropdown::before {
+    display: none;
+  }
+  .note-menu-tabs {
+    margin-inline: 10px;
+  }
+  .note-tab {
+    gap: 4px;
+    padding-inline: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.note-dropdown,.note-page) .note-item::after,
+  .note-menu-foot .icon {
+    transition: none;
+  }
 }
 .note-group h3 {
   display: flex;
@@ -153,11 +362,11 @@
   text-decoration: none;
 }
 .note-item:hover {
-  border-color: #7959ba;
+  border-color: #7c7c7c;
   background: #faf8ff;
 }
 .note-item:focus-visible {
-  outline: 3px solid #b4a0f0;
+  outline: 3px solid #b4b4b4;
   outline-offset: 2px;
 }
 .note-icon {
@@ -179,8 +388,8 @@
   color: #a3182b;
 }
 .note-new .note-icon {
-  background: #eee9fb;
-  color: #5b3ea8;
+  background: #f2f2f2;
+  color: #474747;
 }
 .note-waiting .note-icon {
   background: #fdf0d5;
@@ -204,6 +413,53 @@
   color: var(--muted);
   white-space: nowrap;
 }
+/* The notifications screen: the panel's dark head and urgency groups, as one large card. */
+.note-page {
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px #0000000a, 0 12px 32px -16px #00000029, 0 0 0 1px #1111110d;
+  overflow: clip;
+}
+.note-hero {
+  padding: 26px 28px 22px;
+  border-radius: 0;
+}
+.note-hero .note-menu-title strong {
+  font-size: 1.3rem;
+}
+.note-hero .note-menu-total {
+  font-size: 3.2rem;
+}
+.note-hero .note-meter {
+  height: 8px;
+  margin-top: 16px;
+}
+.note-menu-note {
+  color: #8e8e93;
+  font-size: .88rem;
+}
+.note-page-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 16px 20px 6px;
+}
+.note-page-tools .filter-pills {
+  margin: 0;
+}
+.note-page-body {
+  padding: 4px 12px 16px;
+}
+.note-page .note-section h3 {
+  position: static;
+  padding: 14px 10px 6px;
+}
+.note-page .note-item {
+  padding-block: 12px;
+}
+/* The customer's alerts screen keeps its groups as cards. */
 #notification-list .note-group {
   padding: 20px 22px;
   border: 1px solid var(--line);

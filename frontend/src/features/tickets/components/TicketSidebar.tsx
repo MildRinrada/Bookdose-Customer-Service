@@ -14,7 +14,6 @@ import type { TicketAutomation } from '@/features/automation/types';
 import { AUDIT_PATH } from '@/features/audit/api';
 import { GuestBadge } from '@/features/inbox/components/GuestBadge';
 import { TRASH_PATH } from '@/features/trash/api';
-import { date, overdue } from '@/lib/format';
 import { priorityLabels, statusLabels } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
@@ -22,8 +21,8 @@ import { deleteTicket, TICKET_PREFIXES, TICKETS_PATH, updateTicket } from '../ap
 import type { TicketDetail } from '../types';
 import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers';
 
-/* The case screen's side column (pages/tickets/ticket-detail, aside): manage the case, macros, follow-up reminders,
-   the CSAT result, the customer and the SLA. */
+/* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, managing the case,
+   follow-up reminders, macros and the CSAT result. The SLA clocks are in the case's head (CaseHero). */
 
 const noAutomation: TicketAutomation = { followups: [], escalation: null, survey: null };
 
@@ -33,27 +32,14 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
   // Saving draws the form again from the saved case (the old screen was drawn again after saving).
   const [formKey, setFormKey] = useState(0);
   return (
-    <aside className="card detail-sidebar">
-      <TicketUpdateForm key={formKey} data={data} onSaved={() => setFormKey((k) => k + 1)} />
-      <div className="info-block">
-        <h3>ปุ่มลัด (Macro)</h3>
-        <MacroButtons kind="ticket" targetId={t.id} />
-      </div>
-      <div className="info-block">
-        <h3>เตือนติดตามผล</h3>
-        <FollowupsPanel ticketId={t.id} followups={extra.followups} />
-      </div>
-      {extra.survey && (
-        <div className="info-block">
-          <h3>ความพึงพอใจ (CSAT)</h3>
-          <SurveySummary survey={extra.survey} />
-        </div>
-      )}
-      <div className="info-block">
-        <h3>ข้อมูลลูกค้า</h3>
-        <div className="flex case-customer">
+    <aside className="detail-sidebar">
+      <section className="card info-block case-customer-card">
+        <div className="case-customer">
           <Avatar name={c.name} index={2} />
-          <strong>{c.name}</strong>
+          <div>
+            <strong>{c.name}</strong>
+            {c.company && <span className="muted">{c.company}</span>}
+          </div>
         </div>
         {c.guest && (
           <p className="guest-reach">
@@ -61,41 +47,37 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
           </p>
         )}
         {c.email && (
-          <div className="info-pair">
-            <strong>อีเมลที่ลูกค้าระบุ</strong>
-            <a href={`mailto:${c.email}`}>{c.email}</a>
-          </div>
+          <a className="case-contact-line" href={`mailto:${c.email}`}>
+            <Icon name="mail" />
+            <span>{c.email}</span>
+          </a>
         )}
         {c.phone && (
-          <div className="info-pair">
-            <strong>โทรศัพท์</strong>
-            <a href={`tel:${String(c.phone).replace(/[^\d+]/g, '')}`}>{c.phone}</a>
-          </div>
-        )}
-        {c.company && (
-          <div className="info-pair">
-            <strong>องค์กร / บริษัท</strong>
-            {c.company}
-          </div>
+          <a className="case-contact-line" href={`tel:${String(c.phone).replace(/[^\d+]/g, '')}`}>
+            <Icon name="phone" />
+            <span>{c.phone}</span>
+          </a>
         )}
         <Link className="btn sm case-customer-link" href={`/tickets?contact=${c.id}`}>
           <Icon name="ticket" />
           ดูเคสทั้งหมดของลูกค้ารายนี้
         </Link>
-      </div>
-      <div className="info-block">
-        <h3>กำหนดเวลา (SLA)</h3>
-        <div className="info-pair">
-          <strong>ตอบกลับครั้งแรก</strong>
-          {t.first_response_at ? `ตอบแล้ว ${date(t.first_response_at, true)}` : `ภายใน ${date(t.first_response_due_at, true)}`}
-        </div>
-        <div className="info-pair">
-          <strong>กำหนดแก้ไขเคส</strong>
-          {date(t.resolution_due_at, true)}
-        </div>
-        {overdue(t) && <span className="badge suspended">เกินกำหนด SLA</span>}
-        <p className="small muted mt">SLA นับเวลาต่อเนื่อง 24 ชั่วโมง ไม่หยุดนับระหว่างรอลูกค้า</p>
-      </div>
+      </section>
+      <TicketUpdateForm key={formKey} data={data} onSaved={() => setFormKey((k) => k + 1)} />
+      <section className="card info-block">
+        <h3>เตือนติดตามผล</h3>
+        <FollowupsPanel ticketId={t.id} followups={extra.followups} />
+      </section>
+      <section className="card info-block">
+        <h3>ปุ่มลัด (Macro)</h3>
+        <MacroButtons kind="ticket" targetId={t.id} />
+      </section>
+      {extra.survey && (
+        <section className="card info-block">
+          <h3>ความพึงพอใจ (CSAT)</h3>
+          <SurveySummary survey={extra.survey} />
+        </section>
+      )}
     </aside>
   );
 }
@@ -141,7 +123,7 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
 
   return (
     <Form
-      className="info-block"
+      className="card info-block"
       onSubmit={async (values) => {
         await updateTicket(t.id, values);
         toast('บันทึกเคสเรียบร้อยแล้ว');

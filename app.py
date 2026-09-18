@@ -63,6 +63,8 @@ def main():
     parser.add_argument('--new-key',action='store_true',help='With --restore: the secret key of the backup is lost; '
                         'restore without the LINE / Facebook / email / OpenAI / SMS credentials (enter them again)')
     args = parser.parse_args()
+    # The address actually served: an n8n webhook on this computer is allowed only while nobody else can reach it.
+    settings.HOST = args.host
     if settings.SERVER not in settings.SERVERS:
         parser.error(f'BOOKDOSE_SERVER must be one of: {", ".join(settings.SERVERS)}')
     os.umask(0o077)

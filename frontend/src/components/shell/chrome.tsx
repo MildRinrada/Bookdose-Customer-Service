@@ -22,7 +22,7 @@ export function Brand() {
 
 export function NavItem({ href, label, icon, active, count = 0 }: { href: string; label: string; icon: string; active: boolean; count?: number }) {
   return (
-    <Link href={href} className={`nav-item${active ? ' active' : ''}`} title={label} aria-current={active ? 'page' : undefined}>
+    <Link href={href} className={`nav-item${active ? ' active' : ''}`} data-tip={label} aria-current={active ? 'page' : undefined}>
       <Icon name={icon} />
       <span>{label}</span>
       {count > 0 && <span className="nav-count">{count}</span>}
@@ -69,9 +69,69 @@ export function useSidebar() {
 export function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const label = collapsed ? 'ขยายเมนู' : 'ยุบเมนู';
   return (
-    <button type="button" className="icon-btn sidebar-collapse" aria-expanded={!collapsed} aria-label={label} title={label} onClick={onToggle}>
+    <button type="button" className="icon-btn sidebar-collapse" aria-expanded={!collapsed} aria-label={label} data-tip={label} onClick={onToggle}>
       <Icon name="sidebar" />
     </button>
+  );
+}
+
+/** While the sidebar is collapsed to icons, a bubble beside the icon under the pointer (or the keyboard's focus) names
+    it, sliding and fading in and gliding from one icon to the next. It is drawn outside the sidebar (position: fixed),
+    which clips anything that sticks out. The names are already in the links for screen readers, so the bubble is
+    hidden from them. Markup: layout.css (sidebar-tip). */
+export function SidebarTips() {
+  const collapsed = useSyncExternalStore(subscribeSidebar, sidebarCollapsed, () => false);
+  const bubble = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState({ text: '', shown: false });
+
+  useEffect(() => {
+    const sidebar = document.querySelector<HTMLElement>('.sidebar');
+    if (!collapsed || !sidebar) return;
+    let current: HTMLElement | null = null;
+    const targetOf = (node: EventTarget | null) =>
+      node instanceof Element ? node.closest<HTMLElement>('.nav-item, [data-tip], .workspace-select, .profile [aria-label]') : null;
+    const show = (target: HTMLElement) => {
+      const text = target.dataset.tip || target.getAttribute('aria-label') || target.textContent?.trim() || '';
+      const box = bubble.current;
+      if (!box || !text || target === current) return;
+      const rect = target.getBoundingClientRect();
+      // Set through the CSS object model: the page's CSP allows no inline style attributes.
+      box.style.setProperty('top', `${Math.round(rect.top + rect.height / 2)}px`);
+      box.style.setProperty('left', `${Math.round(rect.right + 12)}px`);
+      current = target;
+      setTip({ text, shown: true });
+    };
+    const hide = () => {
+      current = null;
+      setTip((t) => (t.shown ? { ...t, shown: false } : t));
+    };
+    const onOver = (event: PointerEvent) => {
+      const target = targetOf(event.target);
+      if (target && sidebar.contains(target)) show(target);
+      else hide();
+    };
+    const onFocus = (event: FocusEvent) => {
+      const target = targetOf(event.target);
+      if (target && target.matches(':focus-visible')) show(target);
+    };
+    sidebar.addEventListener('pointerover', onOver);
+    sidebar.addEventListener('pointerleave', hide);
+    sidebar.addEventListener('focusin', onFocus);
+    sidebar.addEventListener('focusout', hide);
+    sidebar.addEventListener('scroll', hide, true);
+    return () => {
+      sidebar.removeEventListener('pointerover', onOver);
+      sidebar.removeEventListener('pointerleave', hide);
+      sidebar.removeEventListener('focusin', onFocus);
+      sidebar.removeEventListener('focusout', hide);
+      sidebar.removeEventListener('scroll', hide, true);
+    };
+  }, [collapsed]);
+
+  return (
+    <div ref={bubble} className={`sidebar-tip${collapsed && tip.shown ? ' shown' : ''}`} aria-hidden="true">
+      {tip.text}
+    </div>
   );
 }
 

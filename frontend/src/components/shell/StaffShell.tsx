@@ -17,7 +17,7 @@ import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf,
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
 import { SessionGuard } from './SessionGuard';
-import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
+import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarTips, SidebarToggle, useSidebar } from './chrome';
 import { TextSizeMenu } from './TextSize';
 
 /* The frame around every staff screen: sidebar (collapsible), top bar, organization switch and the account menu.
@@ -234,6 +234,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </aside>
+      <SidebarTips />
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (

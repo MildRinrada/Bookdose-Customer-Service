@@ -623,6 +623,57 @@ html.sidebar-collapsed .platform-scope>.grow {
     display: none !important;
   }
 }
+/* The name beside an icon of the collapsed sidebar (chrome.tsx SidebarTips): a light bubble with a pointer that slides
+   in from the icon and glides from one icon to the next. */
+.sidebar-tip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  padding: 7px 13px;
+  border-radius: 9px;
+  background: #d7eafc;
+  color: #0e2c4a;
+  font-size: .9375rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px #0f1f3a26;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-8px,-50%) scale(.96);
+  transform-origin: left center;
+  transition: opacity .16s ease, transform .22s cubic-bezier(.2,.9,.25,1.1), top .2s cubic-bezier(.3,.8,.3,1), visibility 0s linear .16s;
+}
+.sidebar-tip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: inherit;
+  transform: translateY(-50%) rotate(45deg);
+}
+.sidebar-tip.shown {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0,-50%) scale(1);
+  transition: opacity .16s ease, transform .22s cubic-bezier(.2,.9,.25,1.1), top .2s cubic-bezier(.3,.8,.3,1), visibility 0s;
+}
+@media (max-width:760px) {
+  .sidebar-tip {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-tip,
+  .sidebar-tip.shown {
+    transition: opacity .1s linear, visibility 0s;
+  }
+}
 @media (max-width:1250px) {
   .global-search {
     width: 220px;

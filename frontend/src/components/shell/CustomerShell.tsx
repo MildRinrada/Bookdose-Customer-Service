@@ -11,7 +11,7 @@ import { RealtimeProvider } from '@/lib/realtime-provider';
 import { customerAccountPages, customerPageOf, customerServicePages, type CustomerPage } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
-import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarToggle, useSidebar } from './chrome';
+import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarTips, SidebarToggle, useSidebar } from './chrome';
 import { SessionGuard } from './SessionGuard';
 import { TextSizeMenu } from './TextSize';
 
@@ -83,6 +83,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </aside>
+      <SidebarTips />
       <div className="app-main">
         <AnnouncementBar announcement={me.announcement} />
         <header className="topbar">

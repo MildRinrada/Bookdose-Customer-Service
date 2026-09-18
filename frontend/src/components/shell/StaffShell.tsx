@@ -221,18 +221,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
             )}
           </nav>
         )}
-        <div className="sidebar-bottom">
-          <div className="profile flex">
-            {photo}
-            <div className="grow">
-              <strong className="truncate">{user.name}</strong>
-              <div className="tiny muted">{roleLabel}</div>
-            </div>
-            <Link className="icon-btn" href="/account" aria-label="ตั้งค่าบัญชี" title="ตั้งค่าบัญชี">
-              <Icon name="settings" />
-            </Link>
-          </div>
-        </div>
+        {/* Who is signed in, and the account settings, are in the profile menu at the top right. */}
       </aside>
       <SidebarTips />
       <div className="app-main">

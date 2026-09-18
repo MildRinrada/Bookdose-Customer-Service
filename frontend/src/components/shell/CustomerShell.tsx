@@ -68,20 +68,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           <div className="nav-label nav-space">บัญชีของฉัน</div>
           <div id="customer-account-nav">{customerAccountPages.map(nav)}</div>
         </nav>
-        <div className="sidebar-bottom">
-          <div className="profile flex">
-            {photo}
-            <div className="grow">
-              <strong className="truncate">{me.name}</strong>
-              <div className="tiny muted truncate" title={me.email}>
-                {me.email}
-              </div>
-            </div>
-            <Link className="icon-btn" href="/customer/account" aria-label="ตั้งค่าบัญชี" title="ตั้งค่าบัญชี">
-              <Icon name="settings" />
-            </Link>
-          </div>
-        </div>
+        {/* Who is signed in, and the account settings, are in the profile menu at the top right. */}
       </aside>
       <SidebarTips />
       <div className="app-main">

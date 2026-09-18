@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { ChartColumn, ErrorState, PageLoading, StatCard } from '@/components/ui/display';
 import { AuditList } from '@/features/audit';
@@ -45,6 +46,8 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 const pad = (hour: number) => String(hour).padStart(2, '0');
+/* The two log cards show their latest few; the platform's whole history is on จัดการองค์กร → กิจกรรม. */
+const LOG_ROWS = 5;
 
 function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?: HealthPage; onRefresh: () => void }) {
   const s = data.server;
@@ -239,15 +242,15 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
         <section className="card">
           <div className="card-header">
             <div>
-              <h2>Logs · ข้อผิดพลาดล่าสุด</h2>
-              <p>คำขอที่ระบบตอบไม่ได้ และปัญหาของงานเบื้องหลัง</p>
+              <h2>ข้อผิดพลาดล่าสุด</h2>
+              <p>คำขอที่ล้มเหลว และงานเบื้องหลังที่มีปัญหา</p>
             </div>
             <Icon name="bolt" />
           </div>
           <div className="card-body">
             {errors.length ? (
               <ul className="system-log">
-                {errors.map((e, i) => (
+                {errors.slice(0, LOG_ROWS).map((e, i) => (
                   <li key={`${e.at}-${i}`}>
                     <time dateTime={e.at} title={date(e.at, true)}>
                       {relative(e.at)}
@@ -264,7 +267,13 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
                   </li>
                 ))}
               </ul>
-            ) : (
+            ) : null}
+            {errors.length > LOG_ROWS && (
+              <p className="tiny muted">
+                แสดง {LOG_ROWS} จาก {errors.length} รายการล่าสุด
+              </p>
+            )}
+            {!errors.length && (
               <p className="muted">
                 <Icon name="checkCircle" /> ไม่มีข้อผิดพลาดตั้งแต่เปิดโปรแกรม
               </p>
@@ -274,13 +283,15 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
         <section className="card">
           <div className="card-header">
             <div>
-              <h2>Logs · เหตุการณ์ของแพลตฟอร์ม</h2>
-              <p>การสร้างองค์กร Support Access ทีมผู้ดูแล และ FAQ กลาง</p>
+              <h2>กิจกรรมล่าสุด</h2>
+              <p>ใครทำอะไรในคอนโซล</p>
             </div>
-            <Icon name="shield" />
+            <Link className="btn subtle small" href="/platform/organizations?tab=activity">
+              ดูทั้งหมด <Icon name="arrow" />
+            </Link>
           </div>
           <div className="card-body">
-            <AuditList events={data.audit} />
+            <AuditList events={data.audit.slice(0, LOG_ROWS)} />
           </div>
         </section>
       </div>

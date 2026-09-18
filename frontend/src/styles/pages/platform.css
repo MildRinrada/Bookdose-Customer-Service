@@ -193,13 +193,25 @@
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  height: 120px;
+  height: 210px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
 }
+/* Each hour has a pale track, so an hour with no requests reads as zero, not as a gap in the chart. */
 .system-chart .chart-col progress {
-  width: 14px;
+  width: min(22px, 70%);
+  height: 170px;
+  background: #f1f2ef;
+}
+.system-chart .chart-col progress::-webkit-progress-bar {
+  background: #f1f2ef;
+}
+/* Every hour keeps a label line (most are empty), so all the bars stand on one baseline. */
+.system-chart .chart-col small {
+  display: block;
+  min-height: 1.5em;
+  line-height: 1.5;
 }
 .system-tenants {
   display: grid;

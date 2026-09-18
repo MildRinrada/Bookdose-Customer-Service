@@ -462,7 +462,6 @@ html.sidebar-collapsed .platform-scope>.grow {
   scrollbar-width: thin;
   scrollbar-gutter: stable;
   padding-bottom: 16px;
-  border-bottom: 1px solid #c7ccdc;
 }
 .help-card>p,.help-card>.flex {
   display: none;

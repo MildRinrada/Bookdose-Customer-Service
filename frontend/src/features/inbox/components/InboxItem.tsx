@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { Icon } from '@/components/Icon';
+import { Avatar } from '@/components/ui/display';
 import { plainText, relative } from '@/lib/format';
-import { channelIcons, channelNames, priorityLabels } from '@/lib/labels';
+import { channelNames, priorityLabels } from '@/lib/labels';
 import { needsReply } from '../hooks';
 import type { ConversationSummary } from '../types';
 
-/* One conversation in the inbox list: a plain row, not a card of chips. Who (with the channel's icon) and when, the
-   subject, the last message, then one quiet line of what matters: "รอเราตอบ" (the only colour in the row), urgency,
-   the case number and the company. Markup: pages/inbox-calm.css (staff-chat-item). */
+/* One conversation in the inbox list: the customer's avatar, who and when, the subject, the last message, then one
+   line of what matters: "รอเราตอบ", urgency, the channel, the case number and the company. What waits for us is bold.
+   Markup: pages/inbox-fresh.css (inbox-row). */
 
 /** Where a conversation stands, in the team's words (the case page and other lists use the tones). */
 export function inboxState(c: Pick<ConversationSummary, 'status' | 'last_public_kind'>): { label: string; tone: string } {
@@ -17,43 +17,54 @@ export function inboxState(c: Pick<ConversationSummary, 'status' | 'last_public_
   return { label: 'เปิดอยู่', tone: 'received' };
 }
 
+/** The same customer keeps the same avatar colour everywhere in the list. */
+export const avatarIndex = (id: string) => [...id].reduce((n, ch) => n + ch.charCodeAt(0), 0);
+
+export function CustomerAvatar({ name, id }: { name: string; id: string }) {
+  return (
+    <span className="inbox-avatar">
+      <Avatar name={name} index={avatarIndex(id)} />
+    </span>
+  );
+}
+
 export function InboxItem({ c, selected }: { c: ConversationSummary; selected: boolean }) {
   const waiting = needsReply(c);
   const urgent = ['high', 'urgent'].includes(c.ticket_priority ?? '');
   const channelName = channelNames[c.channel] || c.channel;
   const guest = c.guest ? ' · ผู้เยี่ยมชม (ไม่ได้เข้าสู่ระบบ)' : '';
-  const foot = [c.ticket_number ? `BD-${c.ticket_number}` : null, c.company, c.status === 'closed' ? 'ปิดแล้ว' : null].filter((x): x is string => Boolean(x));
+  const foot = [channelName, c.ticket_number ? `BD-${c.ticket_number}` : null, c.company, c.status === 'closed' ? 'ปิดแล้ว' : null].filter((x): x is string => Boolean(x));
   return (
     <Link
-      className={`inbox-item staff-chat-item${selected ? ' selected' : ''}${waiting ? ' needs-reply' : ''}`}
+      className={`inbox-item staff-chat-item inbox-row${selected ? ' selected' : ''}${waiting ? ' needs-reply' : ''}`}
       href={`/inbox/${c.id}`}
       aria-current={selected ? 'true' : undefined}
+      title={`${channelName}${guest}`}
     >
-      <div className="inbox-top">
-        <span className="inbox-channel" title={`${channelName}${guest}`}>
-          <Icon name={channelIcons[c.channel] || 'chat'} />
-          <span className="sr-only">{channelName}: </span>
+      <CustomerAvatar name={c.contact_name} id={c.contact_id} />
+      <span className="inbox-row-body">
+        <span className="inbox-top">
+          <span className="inbox-name">{c.contact_name}</span>
+          <time className="inbox-time" dateTime={c.updated_at}>
+            {relative(c.updated_at)}
+          </time>
         </span>
-        <span className="inbox-name">{c.contact_name}</span>
-        <time className="inbox-time" dateTime={c.updated_at}>
-          {relative(c.updated_at)}
-        </time>
-      </div>
-      <h3>{c.subject}</h3>
-      <p className="inbox-preview">
-        {c.last_kind === 'reply' && 'ทีมงาน: '}
-        {c.last_kind === 'note' && 'บันทึกภายใน: '}
-        {plainText(c.preview || '').slice(0, 90) || 'ยังไม่มีข้อความ'}
-      </p>
-      {(waiting || urgent || foot.length > 0) && (
-        <p className="inbox-foot">
-          {waiting && <span className="inbox-waiting">รอเราตอบ</span>}
-          {urgent && <span className={`inbox-urgent ${c.ticket_priority}`}>{priorityLabels[c.ticket_priority!]}</span>}
-          {foot.map((part) => (
-            <span key={part}>{part}</span>
-          ))}
-        </p>
-      )}
+        <h3>{c.subject}</h3>
+        <span className="inbox-preview">
+          {c.last_kind === 'reply' && <span className="inbox-preview-who">คุณ: </span>}
+          {c.last_kind === 'note' && <span className="inbox-preview-who">บันทึกภายใน: </span>}
+          {plainText(c.preview || '').slice(0, 90) || 'ยังไม่มีข้อความ'}
+        </span>
+        {(waiting || urgent || foot.length > 0) && (
+          <span className="inbox-foot">
+            {waiting && <span className="inbox-waiting">รอเราตอบ</span>}
+            {urgent && <span className={`inbox-urgent ${c.ticket_priority}`}>{priorityLabels[c.ticket_priority!]}</span>}
+            {foot.map((part) => (
+              <span key={part}>{part}</span>
+            ))}
+          </span>
+        )}
+      </span>
     </Link>
   );
 }

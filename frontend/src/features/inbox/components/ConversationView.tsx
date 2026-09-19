@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { Avatar, PrivacyTag } from '@/components/ui/display';
+import { PrivacyTag } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { AiControls } from '@/features/ai/components/AiControls';
 import { ContactHeadsUp } from '@/features/contacts/components/ContactProfileParts';
@@ -16,6 +16,7 @@ import { useWork } from '@/lib/session';
 import { CONVERSATION_PREFIXES, openTicketFromConversation, setConversationStatus } from '../api';
 import type { ConversationDetail } from '../types';
 import { Composer } from './Composer';
+import { CustomerAvatar } from './InboxItem';
 import { MessageThread, ThreadFilter } from './MessageThread';
 
 /* The open conversation beside the inbox list: who and where from, its case, AI state, open/close, the thread and
@@ -39,7 +40,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         <Link className="icon-btn conv-back" href="/inbox" aria-label="กลับไปที่รายการบทสนทนา">
           <Icon name="back" />
         </Link>
-        <Avatar name={contact.name} index={2} />
+        <CustomerAvatar name={contact.name} id={contact.id} />
         <div className="conv-title">
           <h2 title={c.subject}>{c.subject}</h2>
           <p className="conv-meta conv-facts">

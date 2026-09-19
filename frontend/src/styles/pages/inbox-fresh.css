@@ -1,0 +1,297 @@
+/* The team's inbox, easier to scan (loaded after inbox.css and inbox-calm.css, whose rules it settles): rows with the
+   customer's avatar, the list's choices as buttons with counts, and on wide screens a panel of
+   who the customer is beside the conversation (features/inbox/components/ConversationAside). */
+
+/* The list */
+.staff-chats .inbox-list {
+  background: #fafafb;
+}
+.staff-chats .inbox-tools {
+  display: grid;
+  gap: 10px;
+  background: #fafafb;
+}
+.inbox-tabs {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ececf0;
+}
+.inbox-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  white-space: nowrap;
+  color: #1c1c1e;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.inbox-tab:hover {
+  background: #ffffffb3;
+}
+.inbox-tab[aria-pressed="true"] {
+  background: #1c1c1e;
+  color: #fff;
+}
+.inbox-tab-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: #1c1c1e;
+  font-size: .78rem;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.inbox-tab[aria-pressed="true"] .inbox-tab-count {
+  background: #ffffff2e;
+  color: #fff;
+}
+.staff-chats .staff-chat-filters {
+  grid-template-columns: minmax(0,1fr);
+}
+
+.staff-chats .inbox-item.inbox-row {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: start;
+  gap: 12px;
+  width: auto;
+  margin: 4px 8px;
+  padding: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+}
+.staff-chats .inbox-item.inbox-row:first-child {
+  margin-top: 8px;
+}
+.staff-chats .inbox-item.inbox-row:hover {
+  background: #f0f0f3;
+}
+.staff-chats .inbox-item.inbox-row.selected {
+  padding-left: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px #0000000f, 0 0 0 1px #e5e5ea;
+}
+.inbox-row-body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.inbox-row .inbox-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.staff-chats .inbox-row h3 {
+  margin: 1px 0 0;
+  color: #1c1c1e;
+}
+.staff-chats .inbox-row .inbox-preview {
+  display: block;
+  color: #515154;
+}
+.inbox-preview-who {
+  color: #1c1c1e;
+  font-weight: 600;
+}
+.staff-chats .inbox-row .inbox-foot {
+  margin-top: 6px;
+}
+.staff-chats .inbox-item.inbox-row.needs-reply .inbox-time {
+  color: #8a4b06;
+  font-weight: 700;
+}
+.inbox-row .inbox-waiting {
+  padding: 1px 9px 1px 7px;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #7a4507;
+}
+
+/* The customer's avatar */
+.inbox-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.inbox-avatar .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: .9rem;
+}
+/* The open conversation's header uses the same avatar. */
+.staff-chats .conv-header .inbox-avatar .avatar {
+  width: 42px;
+  height: 42px;
+}
+
+/* Who the customer is, beside the conversation (wide screens only) */
+.inbox-aside {
+  display: none;
+}
+@media (min-width: 1680px) {
+  .inbox-layout.has-aside {
+    grid-template-columns: 310px minmax(0,1fr) 280px;
+  }
+  .inbox-aside {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    min-height: 0;
+    padding: 14px;
+    overflow: auto;
+    border-left: 1px solid var(--line);
+    background: #fafafb;
+    scrollbar-width: thin;
+  }
+}
+.aside-card {
+  padding: 16px;
+  border: 1px solid #e5e5ea;
+  border-radius: 16px;
+  background: #fff;
+}
+.aside-card h3 {
+  margin: 0 0 10px;
+  color: #515154;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+.aside-person {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+.aside-person .inbox-avatar .avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 1.1rem;
+}
+.aside-person h2 {
+  margin: 10px 0 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.aside-company {
+  margin: 2px 0 0;
+  color: #515154;
+}
+.aside-person .aside-rows {
+  justify-self: stretch;
+  margin-top: 14px;
+  text-align: left;
+}
+.aside-rows {
+  display: grid;
+  gap: 8px;
+}
+.aside-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  font-size: .92rem;
+}
+.aside-row>.icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  color: #3a3a3c;
+}
+.aside-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.aside-value a {
+  color: #1c1c1e;
+}
+.aside-empty {
+  margin: 8px 0 0;
+  color: #515154;
+  font-size: .9rem;
+}
+.aside-history {
+  justify-self: stretch;
+  justify-content: center;
+  margin-top: 14px;
+}
+.aside-case {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #1c1c1e;
+  color: #fff;
+  text-decoration: none;
+}
+.aside-case>span {
+  display: grid;
+  gap: 6px;
+}
+.aside-case-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.aside-case .icon {
+  flex-shrink: 0;
+}
+.aside-others {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.aside-others a {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-radius: 10px;
+  color: #1c1c1e;
+  text-decoration: none;
+}
+.aside-others a:hover {
+  background: #f0f0f3;
+}
+.aside-other-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.aside-others small {
+  color: #515154;
+}
+.aside-state {
+  font-weight: 700;
+}
+.aside-state.tone-waiting {
+  color: #7a4507;
+}
+.aside-state.tone-done {
+  color: #515154;
+}

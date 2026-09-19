@@ -10,6 +10,7 @@ import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
+import { ConversationAside } from './components/ConversationAside';
 import { ConversationView } from './components/ConversationView';
 import { InboxItem } from './components/InboxItem';
 import { needsReply, useMarkMentionsSeen, useModalOpen, useRefreshFailure, useSinglePane } from './hooks';
@@ -21,7 +22,7 @@ import type { ConversationDetail, ConversationSummary } from './types';
    draft or the reader's place in the thread; a failed refresh says why once and the next round tries again.
    Markup: pages/inbox/inbox. */
 
-const inboxFilters: Record<string, string> = { waiting: 'รอตอบ', open: 'เปิดอยู่', all: 'ทั้งหมด' };
+const inboxFilters: Record<string, string> = { waiting: 'รอเราตอบ', open: 'เปิดอยู่', all: 'ทั้งหมด' };
 const POLL_MS = 12000;
 
 export function InboxScreen({ id }: { id?: string }) {
@@ -129,22 +130,20 @@ export function InboxScreen({ id }: { id?: string }) {
           <p>แชทกับลูกค้าจากทุกช่องทางของ {work.tenant.name} ในที่เดียว และติดตามทุกเรื่องที่ลูกค้าส่งมา</p>
         </div>
       </div>
-      <section className={`card inbox-layout staff-chats${selectedId ? ' show-detail' : ''}`}>
+      <section className={`card inbox-layout staff-chats${selectedId ? ' show-detail' : ''}${detail.data ? ' has-aside' : ''}`}>
         <div className="inbox-list">
           {/* The customer's list has a search box and one choice under it; the team's has two choices side by side. */}
           <div className="inbox-tools customer-chat-tools staff-chat-tools">
             <SearchInput id="inbox-search" label="ค้นหาบทสนทนา" placeholder="ค้นหาชื่อ เรื่อง หรือเลขเคส" value={query} onChange={setQuery} />
+            <div className="inbox-tabs" role="group" aria-label="แสดงบทสนทนา">
+              {Object.entries(inboxFilters).map(([key, label]) => (
+                <button key={key} type="button" className="inbox-tab" aria-pressed={filter === key} onClick={() => setFilter(key)}>
+                  {label}
+                  <span className="inbox-tab-count">{conversations.filter((c) => matches(c, key, '')).length}</span>
+                </button>
+              ))}
+            </div>
             <div className="staff-chat-filters">
-              <FilterSelect
-                id="inbox-filter"
-                label="แสดงบทสนทนา"
-                value={filter}
-                onChange={setFilter}
-                options={Object.entries(inboxFilters).map(([key, label]) => ({
-                  value: key,
-                  label: `${label} (${conversations.filter((c) => matches(c, key, '')).length})`,
-                }))}
-              />
               <FilterSelect
                 id="inbox-channel"
                 label="กรองตามช่องทาง"
@@ -163,6 +162,12 @@ export function InboxScreen({ id }: { id?: string }) {
         <div className="inbox-detail" data-thread-scope="">
           {pane}
         </div>
+        {detail.data && (
+          <ConversationAside
+            data={detail.data}
+            others={conversations.filter((c) => c.contact_id === detail.data!.contact.id && c.id !== detail.data!.conversation.id)}
+          />
+        )}
       </section>
     </>
   );

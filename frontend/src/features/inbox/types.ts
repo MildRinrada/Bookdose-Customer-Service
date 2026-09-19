@@ -68,6 +68,8 @@ export type Conversation = {
   /** LINE only: a one-to-one chat ('user') or a group / room. */
   line: { source_type: string; active: number | boolean } | null;
   category: string | null;
+  /** What the customer gave as a reference when starting the chat (an earlier case, a member number…). */
+  reference?: string;
   /** A web chat without an account (see ConversationSummary.guest). */
   guest?: GuestReach | null;
 };

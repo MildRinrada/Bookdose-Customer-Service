@@ -1,0 +1,167 @@
+/* The account switcher in the avatar menu (features/staff-account/AccountSwitcher), in the dark of the
+   notifications panel on top: the account in use, the others signed in on this browser, then the actions. */
+.profile-menu-panel:has(.account-switcher) {
+  width: 340px;
+  padding: 0;
+  overflow: hidden;
+}
+.account-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px 16px;
+  background: radial-gradient(120% 160% at 100% 0,#3a3a3c 0,#1c1c1e 60%);
+  color: #fff;
+}
+.account-current .avatar {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  font-size: 1.1rem;
+  box-shadow: 0 0 0 3px #ffffff26;
+}
+.account-who {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+.account-current .account-who strong {
+  font-size: 1.05rem;
+}
+.account-current .account-who span {
+  color: #d1d1d6;
+  font-size: .88rem;
+}
+.account-current .account-role {
+  width: fit-content;
+  margin-top: 4px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: #ffffff1f;
+  color: #fff;
+  font-size: .76rem;
+  font-weight: 700;
+}
+.account-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 6px;
+  border-bottom: 1px solid #ececf0;
+  list-style: none;
+}
+.account-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+}
+.account-list li:hover {
+  background: #f4f4f6;
+}
+.account-row {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.account-row .avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.account-row .account-who span {
+  color: #6e6e73;
+  font-size: .85rem;
+}
+.account-busy {
+  margin-left: auto;
+  color: #6e6e73;
+  font-size: .8rem;
+  white-space: nowrap;
+}
+.account-list .account-out {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  margin-right: 4px;
+  color: #6e6e73;
+}
+.account-list .account-out:hover {
+  background: #fde7ea;
+  color: #a3182b;
+}
+.account-out .icon {
+  width: 16px;
+  height: 16px;
+}
+.account-actions {
+  display: grid;
+  padding: 6px;
+}
+.account-actions .menu-item {
+  border-radius: 10px;
+}
+.account-actions .menu-item:disabled {
+  color: #a1a1a6;
+  cursor: not-allowed;
+}
+
+/* เพิ่มบัญชีอื่น (a modal). */
+.add-account-form {
+  display: grid;
+  gap: 4px;
+}
+.add-account-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: .88rem;
+}
+.add-account-note .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+
+/* ตั้งค่าบัญชี → ความปลอดภัย: who shares a signed-in browser with this account. */
+.shared-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.shared-notice .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+.shared-with {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  color: #7a4507;
+  font-size: .85rem;
+  font-weight: 600;
+}
+.shared-with .icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+@media (max-width: 560px) {
+  .profile-menu-panel:has(.account-switcher) {
+    width: calc(100vw - 32px);
+  }
+}

@@ -145,7 +145,7 @@ export function MobileToggle({ onClick }: { onClick: () => void }) {
 
 /** The avatar button in the top bar and its panel. Closes on a click outside, on Escape, on one of its items
     and on moving to another screen. */
-export function ProfileMenu({ photo, label, head, children }: { photo: ReactNode; label: string; head: ReactNode; children: ReactNode }) {
+export function ProfileMenu({ photo, label, head, children }: { photo: ReactNode; label: string; head?: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useOpenOnThisPage();
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -184,7 +184,7 @@ export function ProfileMenu({ photo, label, head, children }: { photo: ReactNode
         <Icon name="down" />
       </button>
       <div className="profile-menu-panel" id="profile-menu" hidden={!open}>
-        <div className="profile-menu-head">{head}</div>
+        {head && <div className="profile-menu-head">{head}</div>}
         {children}
       </div>
     </div>

@@ -15,6 +15,7 @@ from backend.modules.auth.model import RESET_RESEND_SECONDS, RESET_SECONDS
 from backend.modules.organization import repository as memberships
 from backend.modules.platform import repository as tenants, service as platform
 from backend.modules.staff_security import service as staff_security
+from backend.modules.staff_security.model import BROWSER_ACCOUNTS
 from backend.utils.dates import after, now
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import require
@@ -79,8 +80,13 @@ def session_times(db, session):
 
 def touch_session(db, session):
     """Real use (any change, or the page's activity signal): the idle time starts again. Saved at once, so the request
-    holds no write transaction on the control database afterwards."""
+    holds no write transaction on the control database afterwards. The other accounts signed in on the same browser
+    are kept too while they are still valid: the browser is in use, and switching to them asks for nothing more (as
+    Google's account switcher). Their absolute lifetime still ends them."""
     session['last_active_at'] = repository.touch_session(db,session['token'])
+    for row in repository.browser_sessions(db,browser_of(session)):
+        if row['token']!=session['token'] and _live(db,row):
+            repository.touch_session(db,row['token'])
     db.commit()
 
 
@@ -91,10 +97,10 @@ def cookie_max_age(db):
     return max(sessions.seconds_of(values,'staff')[1],sessions.seconds_of(values,'platform')[1])
 
 
-def create_session(db, user_id, client=None):
+def create_session(db, user_id, client=None, browser=None):
     """Store a session on the user's first active organization and return the raw cookie token. It lasts as long as
     the security settings allow for the user (platform admins have shorter limits). `client` (address and browser) is
-    what the account's device list shows for it."""
+    what the account's device list shows for it; `browser` the group of accounts it joins (a new one by default)."""
     from backend.modules.security import sessions
     token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
     tenant_id = memberships.first_active_tenant(db,user_id)
@@ -103,8 +109,80 @@ def create_session(db, user_id, client=None):
     expires = after(seconds=absolute)
     client = client or {}
     repository.delete_expired_sessions(db)
-    repository.insert_session(db,token_hash(token),user_id,tenant_id,csrf,expires,uid(),client.get('ip',''),client.get('user_agent',''))
+    repository.insert_session(db,token_hash(token),user_id,tenant_id,csrf,expires,uid(),client.get('ip',''),client.get('user_agent',''),
+                              browser or '')
     return token
+
+
+# Several accounts on one browser (the account switcher)
+def browser_of(session):
+    return session.get('browser') or session['id']
+
+
+def _live(db, row):
+    from backend.modules.security import sessions
+    return not sessions.expired_reason(row['created_at'],row['last_active_at'],sessions.limits(db,session_actor(row)),row['expires_at'])
+
+
+def _browser_rows(db, session):
+    return [row for row in repository.browser_sessions(db,browser_of(session)) if _live(db,row)]
+
+
+def browser_accounts(db, session):
+    """The accounts signed in on this browser, the one in use first."""
+    found = _browser_rows(db,session)
+    found.sort(key=lambda row:row['token']!=session['token'])
+    return {'accounts':[{'id':row['id'],'name':row['name'],'email':row['email'],'avatar':row['avatar'],
+                         'platform_admin':bool(row['platform_admin']),'active':row['token']==session['token'],
+                         'signed_in_at':row['created_at'],'last_active_at':row['last_active_at']} for row in found],
+            'max':BROWSER_ACCOUNTS}
+
+
+def _promote(db, row):
+    """The parked session `row` becomes the browser's cookie; returns its new raw token."""
+    token,csrf = secrets.token_urlsafe(32),secrets.token_urlsafe(24)
+    require(repository.rotate_token(db,row['token'],token_hash(token),csrf)==1,'บัญชีนี้ออกจากระบบไปแล้ว',409)
+    return token
+
+
+def switch_account(db, session, body, client=None):
+    """Move this browser to another account signed in on it; returns the new session token. The account switched to
+    writes it in its history, so its owner sees who moved into it and from where."""
+    target = schema.account_choice(body)
+    row = next((r for r in _browser_rows(db,session) if r['id']==target and r['token']!=session['token']),None)
+    require(row,'ไม่พบบัญชีนี้ในเบราว์เซอร์นี้ อาจออกจากระบบไปแล้ว กรุณาเพิ่มบัญชีใหม่',404)
+    token = _promote(db,row)
+    staff_security.note(db,row['user_id'],'account_switched',f"จากบัญชี {session['email']}",client=client)
+    db.commit()
+    return token
+
+
+def sign_out_account(db, session, account_id, client=None):
+    """Sign one of the other accounts on this browser out (the one in use signs out with /api/logout)."""
+    row = next((r for r in repository.browser_sessions(db,browser_of(session)) if r['id']==account_id and r['token']!=session['token']),None)
+    require(row,'ไม่พบบัญชีนี้ในเบราว์เซอร์นี้',404)
+    repository.delete_session(db,row['token'])
+    staff_security.note(db,row['user_id'],'logout',f"จากเบราว์เซอร์ที่ใช้ร่วมกับ {session['email']}",client=client)
+    db.commit()
+    return browser_accounts(db,session)
+
+
+def sign_out_browser(db, session, client=None):
+    """Every account on this browser signs out."""
+    for row in repository.browser_sessions(db,browser_of(session)):
+        repository.delete_session(db,row['token'])
+        staff_security.note(db,row['user_id'],'logout','ออกจากระบบทุกบัญชีในเบราว์เซอร์นี้',client=client)
+    db.commit()
+
+
+def _note_linked(db, user_id, others, client=None):
+    """A new account joined a browser where others are signed in: each of them - and the new one - has it in its
+    history (ตั้งค่าบัญชี → ความปลอดภัย), so nobody is linked to another account without knowing."""
+    user = D.one(db,'SELECT email FROM users WHERE id=?',(user_id,))
+    staff_security.note(db,user_id,'account_linked','ใช้ร่วมกับ '+', '.join(r['email'] for r in others),client=client)
+    for row in others:
+        staff_security.note(db,row['user_id'],'account_linked',f"{user['email']} เข้าสู่ระบบในเบราว์เซอร์เดียวกัน",client=client)
+        audit.record(db,user_id,'auth.account_linked',row['user_id'])
 
 
 def workspace_context(db, session):
@@ -133,9 +211,14 @@ def bootstrap_data(db, session):
 
 
 def end_session(db, session, client=None):
+    """Sign the account in use out. When other accounts are signed in on this browser, the most recently used one
+    takes over; its new session token is returned (else None)."""
     repository.delete_session(db,session['token'])
     staff_security.note(db,session['user_id'],'logout',client=client)
+    rest = sorted(_browser_rows(db,session),key=lambda row:row['last_active_at'] or '',reverse=True)
+    token = _promote(db,rest[0]) if rest else None
     db.commit()
+    return token
 
 
 def switch_tenant(db, session, body):
@@ -156,7 +239,7 @@ def change_password(db, session, body, client=None):
     require(password_ok(current,repository.password_of(db,session['user_id'])),'รหัสผ่านเดิมไม่ถูกต้อง',403)
     repository.set_password(db,session['user_id'],encoded)
     repository.delete_user_sessions(db,session['user_id'])
-    token = create_session(db,session['user_id'],client)
+    token = create_session(db,session['user_id'],client,browser_of(session))
     staff_security.note(db,session['user_id'],'password',client=client)
     db.commit()
     return token
@@ -281,13 +364,24 @@ def replace_session(db, cookie_header, user_id, client=None, login='login'):
 
 
 def _replace_session(db, cookie_header, user_id, client=None, login='login'):
+    """The browser's session becomes user_id's. Signed in as someone else already (เพิ่มบัญชีอื่น), that account stays
+    signed in on this browser beside the new one - up to BROWSER_ACCOUNTS - and every account there is told."""
     old = read_session(db,cookie_header,True)
+    browser,others = None,[]
     if old:
-        repository.delete_session(db,old['token'])
-    token = create_session(db,user_id,client)
+        browser = browser_of(old)
+        for row in repository.browser_sessions(db,browser):
+            # The same account signing in again replaces its own session here.
+            if row['user_id']==user_id:
+                repository.delete_session(db,row['token'])
+        others = _browser_rows(db,old)
+        require(len(others)<BROWSER_ACCOUNTS,f'เบราว์เซอร์นี้มีบัญชีเข้าสู่ระบบครบ {BROWSER_ACCOUNTS} บัญชีแล้ว กรุณาออกจากระบบบางบัญชีก่อน',409)
+    token = create_session(db,user_id,client,browser)
     audit.record(db,user_id,'auth.login',user_id)
     if login:
         staff_security.note(db,user_id,login,client=client)
+    if others:
+        _note_linked(db,user_id,others,client)
     db.commit()
     return token
 

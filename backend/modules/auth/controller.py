@@ -117,9 +117,35 @@ def activity(req):
     return req.send(200,service.session_times(req.cd,req.session))
 
 
+CLEAR = {'Set-Cookie':f'{service.SESSION_COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'}
+
+
 def log_out(req):
-    service.end_session(req.cd,req.session,client(req))
-    return req.send(200,{'ok':True},headers={'Set-Cookie':f'{service.SESSION_COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'})
+    """POST /api/logout: this account signs out. {switched: true} when another account signed in on this browser
+    took over (its cookie is set); else the cookie is cleared."""
+    token = service.end_session(req.cd,req.session,client(req))
+    if token:
+        return req.send(200,{'ok':True,'switched':True},headers=session_cookie(req,token))
+    return req.send(200,{'ok':True,'switched':False},headers=CLEAR)
+
+
+# The account switcher: the accounts signed in on this browser.
+def accounts(req):
+    return req.send(200,service.browser_accounts(req.cd,req.session))
+
+
+def switch_account(req):
+    limited(('account-switch',req.session['user_id']),60,900)
+    return req.send(200,{'ok':True},headers=session_cookie(req,service.switch_account(req.cd,req.session,req.body,client(req))))
+
+
+def sign_out_account(req, account_id):
+    return req.send(200,service.sign_out_account(req.cd,req.session,account_id,client(req)))
+
+
+def sign_out_browser(req):
+    service.sign_out_browser(req.cd,req.session,client(req))
+    return req.send(200,{'ok':True},headers=CLEAR)
 
 
 def switch_tenant(req):

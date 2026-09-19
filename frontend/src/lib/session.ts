@@ -96,12 +96,17 @@ export function useStaffSignedIn() {
   }, [client]);
 }
 
-/** Sign out and go to sign-in; `stay` keeps the page (it then shows its signed-out state, e.g. /verify-email). */
+/** Sign out and go to sign-in; `stay` keeps the page (it then shows its signed-out state, e.g. /verify-email). When
+    another account is signed in on this browser (the account switcher) it takes over: a full load as that account. */
 export function useStaffLogout() {
   const signedOut = useStaffSignedOut();
   return useCallback(
     async (options: { stay?: boolean } = {}) => {
-      await api('/api/logout', {});
+      const result = await api<{ switched?: boolean }>('/api/logout', {});
+      if (result?.switched) {
+        window.location.assign('/dashboard');
+        return;
+      }
       signedOut(options);
     },
     [signedOut],

@@ -321,11 +321,19 @@ def sessions(cd, session):
     from backend.modules.auth.service import session_actor
     from backend.modules.security import sessions as limits
     seconds = limits.limits(cd,session_actor(session))
+    from backend.modules.auth import repository as auth_repository, service as auth
     found = [row for row in repository.sessions_of(cd,session['user_id'])
              if not limits.expired_reason(row['created_at'],row['last_active_at'],seconds,row['expires_at'])]
+
+    def shared(row):
+        # The other accounts signed in on that same browser (the account switcher), so the owner sees who shares it.
+        return [{'name':other['name'],'email':other['email'],'since':other['created_at']}
+                for other in auth_repository.browser_sessions(cd,auth.browser_of(row))
+                if other['user_id']!=session['user_id'] and auth._live(cd,other)]
     return {'sessions':[{'id':row['id'],'device':schema.device_name(row['user_agent']),'user_agent':row['user_agent'],
                          'ip':row['ip'],'created_at':row['created_at'],'last_seen_at':row['last_active_at'] or row['created_at'],
-                         'expires_at':row['expires_at'],'current':row['token']==session['token']} for row in found]}
+                         'expires_at':row['expires_at'],'current':row['token']==session['token'],'shared_with':shared(row)}
+                        for row in found]}
 
 
 def revoke_session(req, session_id):

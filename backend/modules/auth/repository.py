@@ -1,5 +1,5 @@
 """User, profile, session and pending-registration queries (control database)."""
-from backend.database.db import one
+from backend.database.db import one, rows
 from backend.utils.dates import now
 
 
@@ -51,9 +51,23 @@ def find_session(db, token_hash):
                JOIN users u ON u.id=s.user_id WHERE s.token=?''',(token_hash,))
 
 
-def insert_session(db, token_hash, user_id, tenant_id, csrf, expires_at, session_id, ip='', user_agent=''):
-    db.execute('''INSERT INTO sessions(token,user_id,tenant_id,csrf,expires_at,created_at,last_active_at,id,ip,user_agent)
-                  VALUES(?,?,?,?,?,?,?,?,?,?)''',(token_hash,user_id,tenant_id,csrf,expires_at,now(),now(),session_id,ip,user_agent))
+def insert_session(db, token_hash, user_id, tenant_id, csrf, expires_at, session_id, ip='', user_agent='', browser=''):
+    db.execute('''INSERT INTO sessions(token,user_id,tenant_id,csrf,expires_at,created_at,last_active_at,id,ip,user_agent,browser)
+                  VALUES(?,?,?,?,?,?,?,?,?,?,?)''',(token_hash,user_id,tenant_id,csrf,expires_at,now(),now(),session_id,ip,user_agent,
+                                                   browser or session_id))
+
+
+def browser_sessions(db, browser):
+    """Every session of one browser (the accounts signed in on it), with its user, oldest first."""
+    return rows(db,'''SELECT s.*,u.name,u.email,u.platform_admin,COALESCE(p.avatar,'') AS avatar FROM sessions s
+                      JOIN users u ON u.id=s.user_id LEFT JOIN user_profiles p ON p.user_id=s.user_id
+                      WHERE s.browser=? ORDER BY s.created_at,s.rowid''',(browser,))
+
+
+def rotate_token(db, token_hash, new_hash, csrf):
+    """A parked session becomes the browser's cookie: a new secret for it (the old one was never in this cookie),
+    its times unchanged."""
+    return db.execute('UPDATE sessions SET token=?,csrf=? WHERE token=?',(new_hash,csrf,token_hash)).rowcount
 
 
 def touch_session(db, token_hash):

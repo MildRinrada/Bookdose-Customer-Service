@@ -16,6 +16,7 @@ import { isDone } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
 import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
+import { AccountSwitcher } from '@/features/staff-account/AccountSwitcher';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
 import { SessionGuard } from './SessionGuard';
@@ -286,24 +287,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
             )}
             {platform && <PlatformBell />}
             <TextSizeMenu />
-            <ProfileMenu
-              photo={photo}
-              label="เมนูโปรไฟล์"
-              head={
-                <>
-                  <strong className="truncate">{user.name}</strong>
-                  <span className="muted">{roleLabel}</span>
-                </>
-              }
-            >
-              <Link className="menu-item" href="/account">
-                <Icon name="settings" />
-                ตั้งค่าบัญชี
-              </Link>
-              <button type="button" className="menu-item danger" onClick={() => void logout().catch((error: Error) => toast(error.message, true))}>
-                <Icon name="logout" />
-                ออกจากระบบ
-              </button>
+            <ProfileMenu photo={photo} label="เมนูโปรไฟล์และสลับบัญชี">
+              <AccountSwitcher roleLabel={roleLabel} onLogout={() => logout()} />
             </ProfileMenu>
           </div>
         </header>

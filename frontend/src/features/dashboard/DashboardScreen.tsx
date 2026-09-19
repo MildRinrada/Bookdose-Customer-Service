@@ -43,6 +43,9 @@ const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
 type Tab = 'all' | 'mine' | 'new';
 
+/** What glides in of the AI และคลังความรู้ section: its head and every card (the right column's two, one by one). */
+const INSIGHT_PARTS = ':scope > .manager-head, .insights-grid > :not(.stack), .insights-grid > .stack > *';
+
 export function DashboardScreen() {
   const [path] = useState(overviewPath);
   const modalOpen = useModalOpen();
@@ -76,6 +79,9 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
   // มุมมองผู้ดูแล glides in as it is scrolled to, so it reads as a board of its own.
   const managerRef = useRef<HTMLElement>(null);
   useScrollReveal(managerRef, Boolean(dash?.manager));
+  // AI และคลังความรู้ the same way: its head, then each card.
+  const insightsRef = useRef<HTMLElement>(null);
+  useScrollReveal(insightsRef, Boolean(dash?.insights), INSIGHT_PARTS);
 
   const active = tickets.filter((t) => !isDone(t));
   const late = tickets.filter(overdue);
@@ -217,7 +223,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         </aside>
       </div>
       {dash?.insights && (
-        <section className="insights-section" aria-labelledby="insights-title">
+        <section className="insights-section" aria-labelledby="insights-title" ref={insightsRef}>
           <div className="manager-head">
             <div>
               <h2 id="insights-title">AI และคลังความรู้</h2>

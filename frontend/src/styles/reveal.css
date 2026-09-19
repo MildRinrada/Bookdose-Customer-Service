@@ -15,7 +15,7 @@
   filter: none;
 }
 /* A card still waiting to the right must never widen the page (no sideways scrollbar): its section clips it. */
-.manager-view {
+.manager-view,.insights-section {
   overflow-x: clip;
 }
 @media (prefers-reduced-motion: reduce) {

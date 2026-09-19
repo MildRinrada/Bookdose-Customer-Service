@@ -46,6 +46,13 @@ def tenant_choice(body):
     return field(body,'tenant_id',32)
 
 
+def account_choice(body):
+    """The session id of the account to switch to (the account switcher)."""
+    value = body.get('id')
+    require(isinstance(value,str) and re.fullmatch(r'[0-9a-f]{32}',value),'กรุณาเลือกบัญชี')
+    return value
+
+
 def password_change_form(body):
     """(new password hash, current password)"""
     return new_password(body),existing_password(body,'current_password')

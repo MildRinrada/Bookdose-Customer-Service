@@ -53,6 +53,8 @@ export type AccountSession = {
   last_seen_at: string;
   expires_at: string;
   current: boolean;
+  /** Staff: the other accounts signed in on that same browser (the account switcher). */
+  shared_with?: { name: string; email: string; since: string }[];
 };
 
 /** GET .../activity: what happened to the account (a customer's also lists what it signed in each organization). */
@@ -118,6 +120,7 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
   const toast = useToast();
   const { confirm } = useDialogs();
   const rows = sessions.data?.sessions ?? [];
+  const sharing = [...new Set(rows.flatMap((row) => (row.shared_with ?? []).map((s) => s.email)))];
 
   const signOutAll = (keepCurrent: boolean) =>
     confirm({
@@ -143,6 +146,15 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
         </div>
       </div>
       <div className="card-body">
+        {sharing.length > 0 && (
+          <p className="notice warning shared-notice" role="status">
+            <Icon name="users" />
+            <span>
+              บัญชีนี้ใช้เบราว์เซอร์ร่วมกับบัญชีอื่น {sharing.length} บัญชี: <strong>{sharing.join(', ')}</strong> · บัญชีเหล่านั้นสลับมาใช้บัญชีนี้ได้โดยไม่ต้องใส่รหัสผ่าน
+              หากไม่ได้ตั้งใจ ให้กดออกจากระบบอุปกรณ์นั้น
+            </span>
+          </p>
+        )}
         <ul className="security-list">
           {rows.map((row) => (
             <li key={row.id}>
@@ -157,6 +169,12 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
                 <span className="muted">
                   {row.ip || 'ไม่ทราบ IP'} · เข้าสู่ระบบ {date(row.created_at, true)} · ใช้งานล่าสุด {date(row.last_seen_at, true)}
                 </span>
+                {row.shared_with && row.shared_with.length > 0 && (
+                  <span className="shared-with">
+                    <Icon name="users" />
+                    ใช้ร่วมกับ {row.shared_with.map((s) => `${s.name} (${s.email}) ตั้งแต่ ${date(s.since, true)}`).join(', ')}
+                  </span>
+                )}
               </span>
               {!row.current && (
                 <button

@@ -106,6 +106,7 @@ def add_session_columns(cd):
         if name not in present:
             cd.execute(f'ALTER TABLE sessions ADD COLUMN {name} {definition}')
     cd.execute("UPDATE sessions SET id=lower(hex(randomblob(16))) WHERE id=''")
+    cd.execute("UPDATE sessions SET browser=id WHERE browser=''")
 
 
 def sessions_of(cd, user_id):

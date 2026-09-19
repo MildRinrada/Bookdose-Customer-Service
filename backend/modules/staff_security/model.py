@@ -30,7 +30,12 @@ CHALLENGE_COOKIE = 'bookdose_staff_2fa'
 
 # Added to auth's sessions table: the id the device list names a session by (the token stays secret), and where it
 # was opened from. Sessions from before the upgrade get an id and show as an unknown device.
-SESSION_COLUMNS = {'id':"TEXT NOT NULL DEFAULT ''",'user_agent':"TEXT NOT NULL DEFAULT ''",'ip':"TEXT NOT NULL DEFAULT ''"}
+SESSION_COLUMNS = {'id':"TEXT NOT NULL DEFAULT ''",'user_agent':"TEXT NOT NULL DEFAULT ''",'ip':"TEXT NOT NULL DEFAULT ''",
+                   'browser':"TEXT NOT NULL DEFAULT ''"}
+# 'browser' groups the accounts signed in on one browser (the account switcher, like Google's): a new sign-in made
+# while another account is signed in joins that account's group, and switching moves the cookie inside the group.
+# A session on its own is a group of one (browser = its id). At most BROWSER_ACCOUNTS accounts share a browser.
+BROWSER_ACCOUNTS = 5
 
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS staff_totp (

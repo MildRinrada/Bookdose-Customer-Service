@@ -34,6 +34,7 @@ import '@/styles/pages/guest-chat.css';
 import '@/styles/pages/inbox-calm.css';
 import '@/styles/pages/ai-assistant.css';
 import '@/styles/pages/celebrations.css';
+import '@/styles/pages/accounts.css';
 import '@/styles/text-size.css';
 import '@/styles/theme.css';
 import '@/styles/refresh.css';

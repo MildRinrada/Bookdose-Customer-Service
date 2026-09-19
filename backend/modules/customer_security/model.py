@@ -38,6 +38,7 @@ ACTIVITY_LABELS = {
     'passkey_refused':'ปฏิเสธ Passkey ที่อาจถูกทำสำเนา','passkeys_cleared':'ลบ Passkey ทั้งหมดเมื่อตั้งรหัสผ่านใหม่',
     'password':'เปลี่ยนรหัสผ่าน','password_reset':'ตั้งรหัสผ่านใหม่จากลิงก์',
     'profile':'แก้ไขข้อมูลส่วนตัว','session_revoked':'ออกจากระบบอุปกรณ์เครื่องหนึ่ง','sessions_revoked':'ออกจากระบบทุกอุปกรณ์',
+    'account_linked':'มีบัญชีอื่นเข้าสู่ระบบร่วมในเบราว์เซอร์เดียวกัน','account_switched':'สลับเข้าบัญชีนี้จากบัญชีอื่น',
 }
 
 CONTROL_TABLES = '''

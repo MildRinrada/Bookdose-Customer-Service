@@ -17,6 +17,7 @@ import '@/styles/pages/inbox.css';
 import '@/styles/pages/contacts.css';
 import '@/styles/pages/knowledge.css';
 import '@/styles/pages/reports.css';
+import '@/styles/pages/report-insights.css';
 import '@/styles/pages/settings.css';
 import '@/styles/pages/audit.css';
 import '@/styles/pages/trash.css';

@@ -175,6 +175,9 @@ class AutomationTests(unittest.TestCase):
         contact = self.ok(self.admin,f'/api/tickets/{tid}')['contact']['id']
         row = next(c for c in self.ok(self.admin,'/api/contacts')['contacts'] if c['id']==contact)
         self.assertEqual((row['satisfaction']['average'],row['satisfaction']['count'],row['main_channel']),(4.0,2,'web'))
+        # The case list (the service report) carries the case's channel and its latest answer.
+        case = next(t for t in self.ok(self.admin,'/api/tickets')['tickets'] if t['id']==tid)
+        self.assertEqual((case['channel'],case['csat_rating']),('web',3));self.assertTrue(case['csat_at'])
 
     def test_no_survey_when_switched_off_or_case_recorded_by_staff(self):
         self.ok(self.admin,'/api/automation/settings',{'escalation_enabled':True,'escalation_minutes':15,'csat_enabled':False,'csat_message':'ให้คะแนน'},'PATCH')

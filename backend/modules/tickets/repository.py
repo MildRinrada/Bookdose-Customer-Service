@@ -14,7 +14,15 @@ def list_with_contacts(db, team_id=None):
                WHERE tc.ticket_id=t.id AND m.kind!='note' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_public_kind,
               (SELECT m.created_at FROM ticket_conversations tc JOIN messages m ON m.conversation_id=tc.conversation_id
                WHERE tc.ticket_id=t.id AND m.kind!='note' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_public_at,
-              e.escalated_at,e.reason AS escalation_reason
+              e.escalated_at,e.reason AS escalation_reason,
+              (SELECT cv.channel FROM ticket_conversations tc JOIN conversations cv ON cv.id=tc.conversation_id
+               WHERE tc.ticket_id=t.id ORDER BY cv.created_at,cv.rowid LIMIT 1) AS channel,
+              (SELECT s.rating FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
+               ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_rating,
+              (SELECT s.answered_at FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
+               ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_at,
+              (SELECT s.comment FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
+               ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_comment
               FROM tickets t LEFT JOIN escalations e ON e.ticket_id=t.id JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.updated_at DESC,t.number DESC''',params)
 
 

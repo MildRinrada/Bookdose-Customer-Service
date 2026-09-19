@@ -1,0 +1,311 @@
+/* The service report's second half (features/reports/components/ReportInsights): time to solve, satisfaction,
+   where the cases come from and how long the open ones have waited. */
+.report-card {
+  margin: 0 0 22px;
+}
+.report-grid>.report-card,.report-stack>.card {
+  margin: 0;
+}
+.report-grid {
+  margin-bottom: 22px;
+}
+.report-grid>*,.report-stack>* {
+  min-width: 0;
+}
+.report-stack {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+.report-card .card-header>.icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #6e6e73;
+}
+
+/* Three big figures in a row. */
+.report-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.report-figures>div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f7f7f9;
+}
+.report-figures span {
+  color: #6e6e73;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.report-figures strong {
+  color: var(--ink-strong,#1c1c1e);
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.report-figures small {
+  color: #6e6e73;
+  font-size: .78rem;
+}
+.report-figures .warn {
+  background: #fff4d6;
+}
+.report-figures .warn strong {
+  color: #7a4507;
+}
+.report-stars {
+  margin-left: 8px;
+  color: #f5b942;
+  font-size: .95rem;
+  font-style: normal;
+  letter-spacing: 1px;
+}
+
+/* Stars: gold for the happy end, red for the unhappy one. */
+.bar-row.stars-5 progress::-webkit-progress-value,.bar-row.stars-4 progress::-webkit-progress-value {
+  background: #f5b942;
+}
+.bar-row.stars-5 progress::-moz-progress-bar,.bar-row.stars-4 progress::-moz-progress-bar {
+  background: #f5b942;
+}
+.bar-row.stars-2 progress::-webkit-progress-value,.bar-row.stars-1 progress::-webkit-progress-value {
+  background: #e5484d;
+}
+.bar-row.stars-2 progress::-moz-progress-bar,.bar-row.stars-1 progress::-moz-progress-bar {
+  background: #e5484d;
+}
+
+/* The score week by week. */
+.report-weeks {
+  display: flex;
+  gap: 6px;
+  margin: 18px 0 4px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+}
+.report-week {
+  display: grid;
+  flex: 1;
+  justify-items: center;
+  gap: 4px;
+  min-width: 56px;
+}
+.report-week-score {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  background: #1c1c1e;
+  color: #fff;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.report-week-score.low {
+  background: #e5484d;
+}
+.report-week-score.none {
+  background: #f0f0f2;
+  color: #a1a1a6;
+}
+.report-week-day {
+  color: #6e6e73;
+  font-size: .75rem;
+  white-space: nowrap;
+}
+.report-subhead {
+  margin: 18px 0 8px;
+  color: #6e6e73;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+.report-comments,.report-oldest {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-comments li {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f7f9;
+}
+.report-comments li.low {
+  background: #fff1f0;
+}
+.report-comment-stars {
+  flex-shrink: 0;
+  min-width: 64px;
+  color: #f5b942;
+  letter-spacing: 1px;
+}
+.report-comments li.low .report-comment-stars {
+  color: #e5484d;
+}
+.report-comment-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.report-comment-body a {
+  color: #6e6e73;
+  font-size: .82rem;
+}
+
+/* Where the cases come from: a table each for channel and category, with each one's share as a thin bar. */
+.report-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 22px 12px;
+}
+.report-hint .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+.report-source+.report-source,.table-scroll+.table-scroll {
+  margin-top: 6px;
+}
+.report-source-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.report-source-name .icon {
+  width: 16px;
+  height: 16px;
+  color: #6e6e73;
+}
+progress.report-share {
+  display: block;
+  width: 140px;
+  max-width: 100%;
+  height: 4px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 4px;
+  appearance: none;
+  background: #ececf0;
+}
+progress.report-share::-webkit-progress-bar {
+  border-radius: 4px;
+  background: #ececf0;
+}
+progress.report-share::-webkit-progress-value {
+  border-radius: 4px;
+  background: #1c1c1e;
+}
+progress.report-share::-moz-progress-bar {
+  background: #1c1c1e;
+}
+.report-low {
+  color: #a3182b;
+  font-weight: 700;
+}
+
+/* The open cases by age: four tiles, calm to alarming. */
+.report-aging {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 8px;
+}
+.report-age {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f7f7f9;
+  text-align: center;
+}
+.report-age strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.report-age span {
+  color: #6e6e73;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.report-age.warn:not(.zero) {
+  background: #fff4d6;
+}
+.report-age.warn:not(.zero) strong {
+  color: #7a4507;
+}
+.report-age.bad:not(.zero) {
+  background: #1c1c1e;
+}
+.report-age.bad:not(.zero) strong,.report-age.bad:not(.zero) span {
+  color: #fff;
+}
+.report-age.zero strong {
+  color: #c7c7cc;
+}
+.report-oldest li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.report-oldest li:hover {
+  background: #f6f6f8;
+}
+.report-oldest a {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.report-oldest .ticket-id {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.report-oldest a:hover .truncate {
+  text-decoration: underline;
+}
+.report-days {
+  flex-shrink: 0;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: #ececf0;
+  color: #3a3a3c;
+  font-size: .82rem;
+  font-weight: 700;
+}
+.report-days.warn {
+  background: #fdf0d5;
+  color: #7a4507;
+}
+.report-days.bad {
+  background: #fde7ea;
+  color: #a3182b;
+}
+@media (max-width: 560px) {
+  .report-aging {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .report-hint {
+    margin: 0 16px 12px;
+  }
+}

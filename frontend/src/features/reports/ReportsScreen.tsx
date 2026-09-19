@@ -12,6 +12,7 @@ import { date, formatDuration } from '@/lib/format';
 import { priorityLabels, statusLabels } from '@/lib/labels';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
+import { BacklogCard, ResolutionCard, SatisfactionCard, SourcesCard } from './components/ReportInsights';
 import { defaultReportFilter, reportMetrics, reportRange, reportRanges, reportTickets, reportTrend } from './labels';
 import type { ReportFilter } from './types';
 
@@ -167,18 +168,26 @@ export function ReportsScreen() {
             </div>
           </section>
           <div className="report-grid">
-            <section className="card">
-              <div className="card-header">
-                <h2>เคสตามสถานะ</h2>
-              </div>
-              <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
-            </section>
-            <section className="card">
-              <div className="card-header">
-                <h2>เคสตามความเร่งด่วน</h2>
-              </div>
-              <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
-            </section>
+            <ResolutionCard all={all} f={f} />
+            <SatisfactionCard all={all} f={f} />
+          </div>
+          <SourcesCard tickets={tickets} />
+          <div className="report-grid">
+            <BacklogCard all={all} f={f} />
+            <div className="report-stack">
+              <section className="card">
+                <div className="card-header">
+                  <h2>เคสตามสถานะ</h2>
+                </div>
+                <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
+              </section>
+              <section className="card">
+                <div className="card-header">
+                  <h2>เคสตามความเร่งด่วน</h2>
+                </div>
+                <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
+              </section>
+            </div>
           </div>
           <section className="card">
             <div className="card-header">
@@ -208,7 +217,8 @@ export function ReportsScreen() {
         <EmptyState title="ไม่มีเคสในช่วงที่เลือก" description="ลองขยายช่วงวันที่ หรือเลือกทีมอื่น" icon="chart" />
       )}
       <p className="muted">
-        SLA และเวลาเฉลี่ยคำนวณจากเคสที่ตอบกลับครั้งแรกแล้ว ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
+        SLA และเวลาเฉลี่ยคำนวณจากเคสที่ตอบกลับครั้งแรกแล้ว · เวลาแก้ไขนับเคสที่แก้ไขเสร็จในช่วงนี้ · CSAT นับคำตอบที่ได้รับในช่วงนี้ · เคสค้างนับเคสที่ยังไม่เสร็จตอนนี้
+        ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
       </p>
     </>
   );

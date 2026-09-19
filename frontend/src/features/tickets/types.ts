@@ -17,6 +17,10 @@ export type TicketRow = TicketSummary & {
   last_public_at?: string | null;
   escalated_at?: string | null;
   escalation_reason?: string | null;
+  /** Its latest satisfaction answer (the service report; `channel` is its first conversation's). */
+  csat_rating?: number | null;
+  csat_at?: string | null;
+  csat_comment?: string | null;
 };
 
 /** The case itself in GET /api/tickets/<id> (a tickets row). */

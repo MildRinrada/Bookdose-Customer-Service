@@ -446,18 +446,6 @@ def _local_day_start(tz):
     return iso(local.replace(hour=0,minute=0,second=0,microsecond=0)+dt.timedelta(minutes=tz))
 
 
-def heatmap(db, tz, weeks=8):
-    """New conversations per weekday (0 = Sunday, as in JavaScript) and hour of the viewer's local time."""
-    grid = [[0]*24 for _ in range(7)]
-    for value in repository.conversation_times(db,after(days=-7*weeks)):
-        try:
-            moment = dt.datetime.fromisoformat(value)-dt.timedelta(minutes=tz)
-        except ValueError:
-            continue
-        grid[(moment.weekday()+1)%7][moment.hour] += 1
-    return {'weeks':weeks,'counts':grid}
-
-
 def csat_summary(db, since):
     counts = repository.rating_counts(db,since)
     total = sum(counts.values())
@@ -477,7 +465,8 @@ def manager_overview(cd, db, ctx, tz):
                'avg_first_response':speed.get(m['id']),'csat':ratings[m['id']]['average'] if m['id'] in ratings else None}
               for m in organization.tenant_members(cd,ctx['tenant_id']) if m['active']]
     cfg = settings(db)
-    return {'agents':agents,'heatmap':heatmap(db,tz),'csat':csat_summary(db,since),
+    # The busy hours and the full satisfaction figures live in the service report (reports/service.py).
+    return {'agents':agents,'csat':csat_summary(db,since),
             'automation':{'rules':repository.enabled_rule_count(db),'macros':len(repository.macros(db)),
                           'escalations_today':repository.escalation_count_since(db,day),'followups_due':repository.due_followup_count(db,now()),
                           'escalation_enabled':cfg['escalation_enabled'],'escalation_minutes':cfg['escalation_minutes'],'csat_enabled':cfg['csat_enabled']},

@@ -134,16 +134,19 @@ export type HeatCell = { level: number; tip: string };
 export type PeakLine = { label: string; detail: string };
 
 /* The week as a grid of hours, darker where more new conversations arrive, plus the three busiest three-hour
-   windows and what that means for the shifts. Every figure is an average per week over the period. */
-export function heatmapParts({ weeks, counts }: Heatmap) {
+   windows and what that means for the shifts. Every figure is an average per week over the period, or with `totals`
+   (the report's chosen dates) the count over the whole period. */
+export function heatmapParts({ weeks, counts }: Heatmap, totals = false) {
   const flat = counts.flat();
   const total = flat.reduce((sum, n) => sum + n, 0);
   const max = Math.max(0, ...flat);
   const level = (n: number) => (n ? Math.min(4, Math.ceil((4 * n) / max)) : 0);
-  const avg = (n: number) => (n / weeks).toFixed(1);
+  const avg = (n: number) => (totals ? String(n) : (n / weeks).toFixed(1));
+  const per = totals ? 'เรื่อง' : 'เรื่อง/สัปดาห์';
+  const amount = (n: number) => (totals ? `${n} เรื่อง` : `เฉลี่ย ${avg(n)} ${per}`);
   const rows = heatDays.map((d) => ({
     day: weekdayShort[d],
-    cells: counts[d].map((n, h): HeatCell => ({ level: level(n), tip: `${weekdayShort[d]} ${hourText(h)}–${hourText(h + 1)} · เฉลี่ย ${avg(n)} เรื่อง/สัปดาห์` })),
+    cells: counts[d].map((n, h): HeatCell => ({ level: level(n), tip: `${weekdayShort[d]} ${hourText(h)}–${hourText(h + 1)} · ${amount(n)}` })),
   }));
   const windows: Array<{ d: number; s: number; n: number }> = [];
   for (const d of heatDays) for (let s = 0; s <= 21; s++) windows.push({ d, s, n: counts[d][s] + counts[d][s + 1] + counts[d][s + 2] });
@@ -156,17 +159,17 @@ export function heatmapParts({ weeks, counts }: Heatmap) {
   const dayTotals = heatDays.map((d) => ({ d, n: counts[d].reduce((sum, x) => sum + x, 0) })).sort((x, y) => y.n - x.n);
   const quiet = windows.filter((w) => w.d >= 1 && w.d <= 5 && w.s >= 8 && w.s <= 17).sort((x, y) => x.n - y.n)[0];
   const advice: PeakLine[] = [];
-  if (total < 20) advice.push({ label: 'ข้อมูลยังน้อย', detail: `มี ${total} เรื่องใน ${weeks} สัปดาห์ ผลวิเคราะห์จะแม่นขึ้นเมื่อมีเรื่องมากขึ้น` });
+  if (total < 20) advice.push({ label: 'ข้อมูลยังน้อย', detail: `มี ${total} เรื่อง${totals ? 'ในช่วงนี้' : `ใน ${weeks} สัปดาห์`} ผลวิเคราะห์จะแม่นขึ้นเมื่อมีเรื่องมากขึ้น` });
   if (peaks.length)
     advice.push({
       label: `เพิ่มคนพร้อมตอบช่วง ${weekdayShort[peaks[0].d]} ${hourText(peaks[0].s)}–${hourText(peaks[0].s + 3)}`,
-      detail: `ช่วงเดียวมีเรื่องเข้า ${share(peaks[0].n)}% ของทั้งสัปดาห์`,
+      detail: `ช่วงเดียวมีเรื่องเข้า ${share(peaks[0].n)}% ของ${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'}`,
     });
   const last = dayTotals[dayTotals.length - 1];
   if (dayTotals[0].n)
     advice.push({
       label: `${weekdayFull[dayTotals[0].d]} งานเข้ามากที่สุด`,
-      detail: `${share(dayTotals[0].n)}% ของเรื่องทั้งสัปดาห์ · ${weekdayFull[last.d]} น้อยที่สุด (${share(last.n)}%)`,
+      detail: `${share(dayTotals[0].n)}% ของเรื่อง${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'} · ${weekdayFull[last.d]} น้อยที่สุด (${share(last.n)}%)`,
     });
   if (quiet && total)
     advice.push({ label: `ช่วงเงียบ: ${weekdayShort[quiet.d]} ${hourText(quiet.s)}–${hourText(quiet.s + 3)}`, detail: 'เหมาะกับพักกะ ประชุมทีม หรือเคลียร์งานหลังบ้าน' });
@@ -178,7 +181,7 @@ export function heatmapParts({ weeks, counts }: Heatmap) {
     total,
     summary,
     rows,
-    peaks: peaks.map((p): PeakLine => ({ label: `${weekdayFull[p.d]} ${hourText(p.s)}–${hourText(p.s + 3)}`, detail: `เฉลี่ย ${avg(p.n)} เรื่อง/สัปดาห์ · ${share(p.n)}% ของทั้งสัปดาห์` })),
+    peaks: peaks.map((p): PeakLine => ({ label: `${weekdayFull[p.d]} ${hourText(p.s)}–${hourText(p.s + 3)}`, detail: `${amount(p.n)} · ${share(p.n)}% ของ${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'}` })),
     advice,
   };
 }

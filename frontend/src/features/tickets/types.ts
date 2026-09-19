@@ -21,6 +21,9 @@ export type TicketRow = TicketSummary & {
   csat_rating?: number | null;
   csat_at?: string | null;
   csat_comment?: string | null;
+  /** How many times it went back to work after being resolved or closed, and the last time. */
+  reopens?: number;
+  reopened_at?: string | null;
 };
 
 /** The case itself in GET /api/tickets/<id> (a tickets row). */

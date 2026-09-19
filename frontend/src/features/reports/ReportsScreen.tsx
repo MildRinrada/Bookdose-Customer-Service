@@ -10,11 +10,14 @@ import { useDownloadTicketsCSV } from '@/features/tickets/csv';
 import type { TicketRow } from '@/features/tickets/types';
 import { date, formatDuration } from '@/lib/format';
 import { priorityLabels, statusLabels } from '@/lib/labels';
+import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
+import { ArticlesCard, BotReportCard } from './components/ReportAi';
 import { BacklogCard, ResolutionCard, SatisfactionCard, SourcesCard } from './components/ReportInsights';
-import { defaultReportFilter, reportMetrics, reportRange, reportRanges, reportTickets, reportTrend } from './labels';
-import type { ReportFilter } from './types';
+import { BusyHoursCard, ReopenCard, WorkloadCard } from './components/ReportTeam';
+import { defaultReportFilter, reportExtrasPath, reportMetrics, reportRange, reportRanges, reportTickets, reportTrend } from './labels';
+import type { ReportExtras, ReportFilter } from './types';
 
 /* Service report: a period to look at, the numbers for it against the period before, the shape of the work
    (per day, by status, by priority) and how the team did. Built from the case list (/api/tickets), which the
@@ -26,6 +29,7 @@ export function ReportsScreen() {
   const saveCSV = useDownloadTicketsCSV();
   const all = (useStaffTickets().data?.tickets ?? []) as TicketRow[];
   const [f, setFilter] = useUiState<ReportFilter>('reports:filter', defaultReportFilter());
+  const extras = useApi<ReportExtras>(reportExtrasPath(f), { keepPrevious: true }).data;
 
   const tickets = reportTickets(all, f);
   const m = reportMetrics(tickets);
@@ -189,6 +193,23 @@ export function ReportsScreen() {
               </section>
             </div>
           </div>
+          <div className="report-grid">
+            <ReopenCard all={all} f={f} />
+            <WorkloadCard all={all} f={f} />
+          </div>
+          <BusyHoursCard hours={extras?.hours} f={f} />
+          {extras?.bot && (
+            <>
+              <div className="report-section-head">
+                <h2>AI และคลังความรู้</h2>
+                <p>เห็นเฉพาะผู้ดูแลองค์กร · ทั้งองค์กร ไม่แยกทีม</p>
+              </div>
+              <div className="report-grid">
+                <BotReportCard extras={extras} from={f.from} to={f.to} />
+                <ArticlesCard extras={extras} />
+              </div>
+            </>
+          )}
           <section className="card">
             <div className="card-header">
               <h2>ผลงานตามผู้รับผิดชอบ</h2>
@@ -217,7 +238,8 @@ export function ReportsScreen() {
         <EmptyState title="ไม่มีเคสในช่วงที่เลือก" description="ลองขยายช่วงวันที่ หรือเลือกทีมอื่น" icon="chart" />
       )}
       <p className="muted">
-        SLA และเวลาเฉลี่ยคำนวณจากเคสที่ตอบกลับครั้งแรกแล้ว · เวลาแก้ไขนับเคสที่แก้ไขเสร็จในช่วงนี้ · CSAT นับคำตอบที่ได้รับในช่วงนี้ · เคสค้างนับเคสที่ยังไม่เสร็จตอนนี้
+        SLA และเวลาเฉลี่ยคำนวณจากเคสที่ตอบกลับครั้งแรกแล้ว · เวลาแก้ไขนับเคสที่แก้ไขเสร็จในช่วงนี้ · CSAT นับคำตอบที่ได้รับในช่วงนี้ · เคสค้างและภาระงานนับเคสที่ยังไม่เสร็จตอนนี้
+        · การเปิดซ้ำโดยลูกค้านับตั้งแต่วันที่ 19 ก.ย. 2569 (ก่อนหน้านั้นนับเฉพาะที่ทีมเปิดเอง)
         ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
       </p>
     </>

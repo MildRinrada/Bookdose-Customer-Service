@@ -10,12 +10,11 @@ import { ArticleForm, type ArticleDraft } from '@/features/knowledge';
 import { clockTime, relative } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
 import { OVERVIEW_PREFIX, requestArticleDraft, requestBrief } from '../api';
-import { botReasonLabels } from '../labels';
-import type { BotPerformance, Brief, Insights, KnowledgeGap } from '../types';
+import type { Brief, Insights, KnowledgeGap } from '../types';
 
-/* The owner's cards about AI and the knowledge base: today's summary (made only when asked: it costs a request),
-   the questions no article answers with an AI draft of the missing article, and how the chatbot did. Markup:
-   dashboard-extras (insights-grid, brief-card, gaps-card, bot-card). */
+/* The owner's cards about AI and the knowledge base: today's summary (made only when asked: it costs a request) and
+   the questions no article answers with an AI draft of the missing article. How the chatbot did is in the service
+   report (/reports). Markup: dashboard-extras (insights-grid, brief-card, gaps-card). */
 
 function useAlive() {
   const alive = useRef(true);
@@ -191,65 +190,6 @@ export function GapsCard({ insights }: { insights: Insights }) {
         )}
         {!(ai.key_configured && ai.drafts_enabled) && gaps.groups.length > 0 && <AiOff ai={ai} />}
         <p className="tiny muted">บทความที่เผยแพร่ให้ลูกค้าช่วยให้ลูกค้าหาคำตอบเองและให้บอตตอบได้ เคสจึงลดลง</p>
-      </div>
-    </section>
-  );
-}
-
-export function BotCard({ bot, ai, days }: { bot: BotPerformance; ai: Insights['ai']; days: number }) {
-  const finished = bot.resolved + bot.handed_off;
-  const share = (n: number) => (finished ? Math.round((100 * n) / finished) : 0);
-  return (
-    <section className="card bot-card" aria-labelledby="bot-title">
-      <div className="card-header">
-        <div>
-          <h2 id="bot-title">ผลงานของบอต AI</h2>
-          <p>
-            {days} วันล่าสุด · {bot.conversations} บทสนทนาที่บอตเริ่มตอบ · {bot.answers} คำตอบ
-          </p>
-        </div>
-        <Icon name="chat" />
-      </div>
-      <div className="card-body">
-        {!bot.conversations ? (
-          <p className="empty-mini">
-            {ai.chatbot_enabled ? 'บอตยังไม่ได้คุยกับลูกค้าในช่วงนี้' : 'ยังไม่ได้เปิดบอต AI ตอบลูกค้า'} ·{' '}
-            <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
-          </p>
-        ) : (
-          <>
-            <div className="bot-score">
-              <span className="bot-big mono">{share(bot.resolved)}%</span>
-              <span className="muted">ตอบจบเองโดยไม่ต้องส่งต่อ</span>
-            </div>
-            <div className="bot-bars">
-              <div className="bot-bar">
-                <span>ตอบจบเอง</span>
-                <progress value={bot.resolved} max={Math.max(1, finished)} aria-label={`ตอบจบเอง ${bot.resolved}`} />
-                <span className="mono">{bot.resolved}</span>
-              </div>
-              <div className="bot-bar handed">
-                <span>ส่งต่อให้คน</span>
-                <progress value={bot.handed_off} max={Math.max(1, finished)} aria-label={`ส่งต่อให้คน ${bot.handed_off}`} />
-                <span className="mono">{bot.handed_off}</span>
-              </div>
-            </div>
-            {bot.reasons.length > 0 && (
-              <>
-                <h3 className="bot-reasons-title">เหตุผลที่ส่งต่อบ่อยที่สุด</h3>
-                <ul className="bot-reasons">
-                  {bot.reasons.slice(0, 4).map((r) => (
-                    <li key={r.reason}>
-                      <span>{botReasonLabels[r.reason] ?? r.reason}</span>
-                      <span className="mono">{r.count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {bot.waiting > 0 && <p className="tiny muted">อีก {bot.waiting} บทสนทนายังคุยกับบอตอยู่หรือบอตยังไม่ได้ตอบ</p>}
-          </>
-        )}
       </div>
     </section>
   );

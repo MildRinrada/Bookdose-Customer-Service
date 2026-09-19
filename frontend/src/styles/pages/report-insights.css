@@ -84,18 +84,16 @@
 
 /* The score week by week. */
 .report-weeks {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(58px,1fr));
+  gap: 8px 6px;
   margin: 18px 0 4px;
-  padding-bottom: 4px;
-  overflow-x: auto;
 }
 .report-week {
   display: grid;
-  flex: 1;
   justify-items: center;
   gap: 4px;
-  min-width: 56px;
+  min-width: 0;
 }
 .report-week-score {
   display: grid;
@@ -308,4 +306,201 @@ progress.report-share::-moz-progress-bar {
   .report-hint {
     margin: 0 16px 12px;
   }
+}
+
+/* Open cases per person: name, a bar, the count and what is urgent or late. */
+.report-load {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-load li {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+.report-load li.heavy {
+  background: #fff4d6;
+}
+.report-load li.unassigned {
+  border-top: 1px solid #ececf0;
+  border-radius: 0 0 12px 12px;
+}
+.report-load-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-weight: 600;
+}
+.report-load-none {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f0f0f2;
+  color: #3a3a3c;
+}
+.report-load-none .icon {
+  width: 16px;
+  height: 16px;
+}
+.report-load progress.report-share {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  max-width: none;
+  height: 6px;
+  margin: 0;
+}
+.report-load-count {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  min-width: 40px;
+}
+.report-load-count strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.report-note {
+  margin: 12px 0 0;
+}
+
+/* The busy hours card is full width: the heatmap needs its room. */
+.report-card .heatmap-scroll {
+  margin-bottom: 4px;
+}
+
+/* A heading between the report's parts. */
+.report-section-head {
+  margin: 34px 0 14px;
+}
+.report-section-head h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.report-section-head p {
+  margin: 2px 0 0;
+  color: #6e6e73;
+  font-size: .86rem;
+}
+
+/* The articles the team used most. */
+.report-subhead-first {
+  margin-top: 0;
+}
+.report-articles {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-articles li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+.report-articles li:hover {
+  background: #f6f6f8;
+}
+.report-rank {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1c1c1e;
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 800;
+}
+.report-articles li:nth-child(n+4) .report-rank {
+  background: #ececf0;
+  color: #3a3a3c;
+}
+.report-article-body {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.report-article-body a,.report-comment-body a.truncate {
+  color: var(--ink-strong,#1c1c1e);
+  font-weight: 700;
+  text-decoration: none;
+}
+.report-article-body a:hover,.report-comment-body a.truncate:hover {
+  text-decoration: underline;
+}
+.report-article-body progress.report-share {
+  width: 100%;
+  max-width: 220px;
+}
+.report-article-count {
+  display: grid;
+  flex-shrink: 0;
+  justify-items: end;
+  gap: 2px;
+}
+.report-article-count strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.report-article-count small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.report-article-count .icon,.report-votes .icon {
+  width: 13px;
+  height: 13px;
+}
+.report-votes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.report-gaps {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f7f7f9;
+  color: #3a3a3c;
+}
+.report-gaps.has {
+  background: #1c1c1e;
+  color: #fff;
+}
+.report-gaps.has a {
+  color: #fff;
+  font-weight: 700;
+}
+.report-gaps .icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+@media (max-width: 560px) {
 }

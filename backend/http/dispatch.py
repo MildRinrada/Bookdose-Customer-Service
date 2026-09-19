@@ -52,6 +52,7 @@ from backend.modules.org_links import routes as org_link_routes
 from backend.modules.organization import routes as organization_routes
 from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
+from backend.modules.reports import routes as report_routes
 from backend.modules.security import blocks, events as security_events, routes as security_routes, traps
 from backend.modules.security.model import TRAP_PATH
 from backend.modules.staff_prefs import routes as staff_prefs_routes
@@ -68,7 +69,7 @@ ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
           *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES, *staff_prefs_routes.ROUTES,
-          *board_routes.ROUTES]
+          *board_routes.ROUTES, *report_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')

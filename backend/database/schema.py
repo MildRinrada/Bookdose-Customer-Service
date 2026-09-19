@@ -85,6 +85,10 @@ def upgrade_tenant(db):
     db.executescript(board.TENANT_TABLES)
     # How the team uses the knowledge base (uses, helpful marks, pins) and each article's earlier versions.
     db.executescript(knowledge.ACTIVITY_TABLES)
+    # When finished cases went back to work (the report's reopen rate); staff changes already audited count too.
+    db.executescript(tickets.REOPENS_TABLE)
+    from backend.modules.tickets import repository as ticket_repository
+    ticket_repository.backfill_reopens(db)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',automation.DEFAULT_SETTINGS)
     db.executescript(customers.TENANT_TABLES)
     db.execute('INSERT OR IGNORE INTO settings VALUES(?,?)',('customer_categories',json.dumps(customers.DEFAULT_CATEGORIES,ensure_ascii=False)))

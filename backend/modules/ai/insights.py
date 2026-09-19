@@ -1,8 +1,8 @@
 """What the overview tells an organization's owner about the chatbot and the knowledge base, and the AI they may ask
 for there:
 
-  bot_performance  of the conversations the chatbot started in the last 30 days: how many it answered without passing
-                   them on, how many went to a person and why
+  bot_performance  of the conversations the chatbot started in a period: how many it answered without passing them
+                   on, how many went to a person and why (the service report and today's summary)
   knowledge_gaps   customers' first questions that no public article answers (or that the chatbot found no article
                    for), grouped when they ask the same thing, most asked first
   request_article  an AI job that drafts an article from one group of those questions (the owner edits and saves it)
@@ -47,18 +47,26 @@ def _plain(text, limit):
 
 
 # The chatbot
-def bot_performance(db, since):
-    """Conversations the chatbot started since then (it was on when they began, or it handed them to a person):
-    resolved = it answered and nobody had to take over; handed_off = a person took over, counted by why."""
-    started = rows(db,'''SELECT a.conversation_id,a.mode,a.reason,
-                         EXISTS(SELECT 1 FROM messages m JOIN ai_message_meta x ON x.message_id=m.id
-                                WHERE m.conversation_id=a.conversation_id AND x.source='ai') AS answered
-                         FROM ai_conversations a JOIN conversations c ON c.id=a.conversation_id
-                         WHERE c.created_at>=? AND (a.mode='bot' OR a.reason!='')''',(since,))
+FAR = '9999'
+
+
+def bot_conversations(db, since, until=FAR):
+    """Conversations the chatbot started between then (it was on when they began, or it handed them to a person),
+    with when they began, whether it answered, and its mode and handoff reason now."""
+    return rows(db,'''SELECT a.conversation_id,a.mode,a.reason,c.created_at,
+                  EXISTS(SELECT 1 FROM messages m JOIN ai_message_meta x ON x.message_id=m.id
+                         WHERE m.conversation_id=a.conversation_id AND x.source='ai') AS answered
+                  FROM ai_conversations a JOIN conversations c ON c.id=a.conversation_id
+                  WHERE c.created_at>=? AND c.created_at<? AND (a.mode='bot' OR a.reason!='')''',(since,until))
+
+
+def bot_performance(db, since, until=FAR):
+    """resolved = the chatbot answered and nobody had to take over; handed_off = a person took over, counted by why."""
+    started = bot_conversations(db,since,until)
     resolved = sum(1 for r in started if r['mode']=='bot' and r['answered'])
     handed = [r for r in started if r['mode']=='human']
     answers = db.execute('''SELECT COUNT(*) FROM messages m JOIN ai_message_meta x ON x.message_id=m.id
-                            WHERE x.source='ai' AND m.created_at>=?''',(since,)).fetchone()[0]
+                            WHERE x.source='ai' AND m.created_at>=? AND m.created_at<?''',(since,until)).fetchone()[0]
     return {'conversations':len(started),'resolved':resolved,'handed_off':len(handed),
             'waiting':len(started)-resolved-len(handed),'answers':answers,
             'reasons':[{'reason':reason,'count':count} for reason,count in Counter(r['reason'] for r in handed).most_common()]}
@@ -78,14 +86,14 @@ def _covered(question, index):
     return False
 
 
-def _questions(db, since, limit=QUESTION_LIMIT):
+def _questions(db, since, limit=QUESTION_LIMIT, until=FAR):
     """Each conversation's first customer message (not a bare "let me talk to a person"), newest first."""
     found = []
     for row in rows(db,'''SELECT c.id,c.created_at,a.reason,
                           (SELECT m.body FROM messages m WHERE m.conversation_id=c.id AND m.kind='customer'
                            ORDER BY m.created_at,m.rowid LIMIT 1) AS question
                           FROM conversations c LEFT JOIN ai_conversations a ON a.conversation_id=c.id
-                          WHERE c.created_at>=? AND c.channel!='manual' ORDER BY c.created_at DESC LIMIT ?''',(since,limit)):
+                          WHERE c.created_at>=? AND c.created_at<? AND c.channel!='manual' ORDER BY c.created_at DESC LIMIT ?''',(since,until,limit)):
         text = _plain(row['question'],500)
         if not text or (service.requests_human(text) and len(text)<40):
             continue
@@ -93,9 +101,9 @@ def _questions(db, since, limit=QUESTION_LIMIT):
     return [q for q in found if len(q['features'])>=4]
 
 
-def knowledge_gaps(db, since):
+def knowledge_gaps(db, since, until=FAR):
     index = _article_index(db)
-    gaps = [q for q in _questions(db,since) if q['reason']=='insufficient_knowledge' or not _covered(q['features'],index)]
+    gaps = [q for q in _questions(db,since,until=until) if q['reason']=='insufficient_knowledge' or not _covered(q['features'],index)]
     groups = []
     for q in gaps:
         home = next((g for g in groups if len(q['features'] & g['features'])/len(q['features'] | g['features'])>=SIMILAR),None)
@@ -121,7 +129,8 @@ def overview(db, tenant_id):
             return cached[1]
     since = after(days=-INSIGHT_DAYS)
     cfg = service.config(db)
-    value = {'days':INSIGHT_DAYS,'bot':bot_performance(db,since),'gaps':knowledge_gaps(db,since),
+    # How the chatbot did is in the service report (reports/service.py); the overview keeps what asks for action.
+    value = {'days':INSIGHT_DAYS,'gaps':knowledge_gaps(db,since),
              'ai':{'drafts_enabled':cfg['drafts_enabled'],'chatbot_enabled':cfg['chatbot_enabled'],'key_configured':service.has_key(tenant_id)}}
     with _cache_lock:
         _cache[tenant_id] = (time.monotonic()+CACHE_SECONDS,value)
@@ -130,8 +139,10 @@ def overview(db, tenant_id):
 
 def forget(tenant_id):
     """A new article may close a gap: the next overview counts again."""
+    from backend.modules.reports import service as reports
     with _cache_lock:
         _cache.pop(tenant_id,None)
+    reports.forget(tenant_id)
 
 
 # The owner's AI

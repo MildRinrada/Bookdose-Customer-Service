@@ -125,7 +125,9 @@ class DashboardExtrasTests(unittest.TestCase):
             AIR.set_human(db,passed,'customer')
             db.commit()
         insights.forget(self.org)
-        bot = self.ok(self.admin,OVERVIEW)['insights']['bot']
+        self.assertNotIn('bot',self.ok(self.admin,OVERVIEW)['insights'])   # it lives in the service report
+        day = utc_now().date()
+        bot = self.ok(self.admin,f'/api/reports/extras?from={day-dt.timedelta(days=1)}&to={day}&tz=0')['bot']
         self.assertEqual((bot['resolved'],bot['handed_off'],bot['answers']),(1,1,1))
         self.assertEqual(bot['reasons'],[{'reason':'customer','count':1}])
 

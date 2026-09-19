@@ -19,3 +19,14 @@ CREATE TABLE ticket_conversations (
 );
 CREATE INDEX tickets_team ON tickets(team_id,status);
 '''
+
+# Each time a resolved or closed case went back to work (the report's reopen rate), and what sent it back: the
+# customer wrote again, a member of staff changed its status, or the chatbot handed its chat to a person. The rows
+# outlive a deleted case, so a case put back from the bin keeps its history.
+REOPEN_CAUSES = ('customer','staff','handoff')
+REOPENS_TABLE = '''
+CREATE TABLE IF NOT EXISTS ticket_reopens (
+    id INTEGER PRIMARY KEY, ticket_id TEXT NOT NULL, cause TEXT NOT NULL, reopened_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ticket_reopens_ticket ON ticket_reopens(ticket_id,reopened_at);
+'''

@@ -22,7 +22,9 @@ def list_with_contacts(db, team_id=None):
               (SELECT s.answered_at FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_at,
               (SELECT s.comment FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
-               ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_comment
+               ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_comment,
+              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,
+              (SELECT MAX(r.reopened_at) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopened_at
               FROM tickets t LEFT JOIN escalations e ON e.ticket_id=t.id JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.updated_at DESC,t.number DESC''',params)
 
 
@@ -117,15 +119,40 @@ def record_first_response_for_message(db, message_id):
         (SELECT ticket_id FROM ticket_conversations WHERE conversation_id=(SELECT conversation_id FROM messages WHERE id=?))''',(now(),now(),message_id))
 
 
+def note_reopen(db, where, params, cause):
+    """Log the finished cases matching `where` that are about to go back to work (before the status changes)."""
+    db.execute(f'''INSERT INTO ticket_reopens(ticket_id,cause,reopened_at)
+        SELECT id,?,? FROM tickets WHERE status IN ('resolved','closed') AND {where}''',(cause,now(),*params))
+
+
 def reopen_for_conversation(db, conversation_id):
     """A customer wrote again: waiting, resolved or closed cases of the conversation go back to open."""
+    note_reopen(db,'id IN (SELECT ticket_id FROM ticket_conversations WHERE conversation_id=?)',(conversation_id,),'customer')
     db.execute('''UPDATE tickets SET status='open',resolved_at=NULL,updated_at=?
         WHERE id IN (SELECT ticket_id FROM ticket_conversations WHERE conversation_id=?)
         AND status IN ('pending_customer','resolved','closed')''',(now(),conversation_id))
 
 
-def reopen(db, ticket_id):
+def reopen(db, ticket_id, cause='handoff'):
+    note_reopen(db,'id=?',(ticket_id,),cause)
     db.execute("UPDATE tickets SET status='open',resolved_at=NULL,updated_at=? WHERE id=? AND status IN ('resolved','closed','pending_customer')",(now(),ticket_id))
+
+
+def backfill_reopens(db):
+    """Once, when the log is new: the staff status changes the audit log already holds (finished → working again).
+    Customers' earlier replies were not logged anywhere, so the rate counts them from now on."""
+    import json
+    if db.execute("SELECT 1 FROM settings WHERE key='reopens_backfilled'").fetchone():
+        return
+    done = ('resolved','closed')
+    for entity,detail,at in db.execute("SELECT entity,detail,created_at FROM audit_logs WHERE action='ticket.updated' ORDER BY id").fetchall():
+        try:
+            status = json.loads(detail or '{}').get('status') or {}
+        except (ValueError,AttributeError):
+            continue
+        if isinstance(status,dict) and status.get('before') in done and status.get('after') not in done:
+            db.execute("INSERT INTO ticket_reopens(ticket_id,cause,reopened_at) VALUES(?,'staff',?)",(entity,at))
+    db.execute("INSERT OR IGNORE INTO settings VALUES('reopens_backfilled','1')")
 
 
 def backdate(db, ticket_id, status, timestamp):

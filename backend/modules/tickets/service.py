@@ -90,6 +90,8 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     validate_team(db,ctx,team_id)
     validate_assignee(cd,ctx,assignee,team_id)
     resolved_at = (ticket['resolved_at'] or now()) if status in ('resolved','closed') else None
+    if status not in ('resolved','closed'):
+        repository.note_reopen(db,'id=?',(ticket['id'],),'staff')
     repository.update(db,ticket['id'],status,priority,team_id,assignee,resolved_at)
     conversations.set_team_for_ticket(db,ticket['id'],team_id)
     automation.after_status_change(db,ctx,ticket,status)

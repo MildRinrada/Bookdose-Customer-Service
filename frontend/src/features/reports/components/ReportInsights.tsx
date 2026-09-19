@@ -107,9 +107,9 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
               <Bar key={x.star} label={`${x.star} ★`} count={x.count} max={most} tone={`stars-${x.star}`} />
             ))}
             {s.weeks.length > 1 && (
-              <div className="report-weeks" aria-label="คะแนนเฉลี่ยรายสัปดาห์">
+              <div className="report-weeks" aria-label="คะแนนเฉลี่ยตามช่วงเวลา">
                 {s.weeks.map((w) => (
-                  <div key={w.start.toISOString()} className="report-week" title={`สัปดาห์เริ่ม ${date(w.start)} · ${w.count} คำตอบ`}>
+                  <div key={w.start.toISOString()} className="report-week" title={`ช่วงเริ่ม ${date(w.start)} · ${w.count} คำตอบ`}>
                     <span className={`report-week-score${w.average == null ? ' none' : w.average < 3 ? ' low' : ''}`}>
                       {w.average == null ? '–' : w.average.toFixed(1)}
                     </span>

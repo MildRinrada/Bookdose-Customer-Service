@@ -1,5 +1,6 @@
 """Routing rules, SLA escalation, macros, CSAT, @mentions, the manager dashboard and Facebook Messenger.
 Each test uses a disposable database; Facebook is mocked, no message leaves the machine."""
+import datetime as dt
 import hashlib
 import hmac
 import json
@@ -11,7 +12,7 @@ from test_app import D
 from backend.extensions import channel_transport as T
 from backend.modules.automation import service as A
 from backend.modules.channels import facebook as F, service as C
-from backend.utils.dates import after
+from backend.utils.dates import after, utc_now
 
 PAGE = '1234567890'
 PSID = '9876543210'
@@ -219,12 +220,14 @@ class AutomationTests(unittest.TestCase):
         self.assertIsNotNone(row['last_seen'])
         self.assertEqual((row['open'],row['replies_today']),(1,1))
         self.assertIsNotNone(row['avg_first_response'])
-        counts = manager['heatmap']['counts']
-        self.assertEqual((len(counts),len(counts[0])),(7,24))
+        # The busy hours moved to the service report: every conversation of the period, by weekday and hour.
+        self.assertNotIn('heatmap',manager)
+        first,last = (utc_now()-dt.timedelta(days=365)).date().isoformat(),utc_now().date().isoformat()
+        hours = self.ok(self.admin,f'/api/reports/extras?from={first}&to={last}&tz=0')['hours']
+        self.assertEqual((len(hours['counts']),len(hours['counts'][0])),(7,24))
         with D.tenant(self.org) as db:
-            total = db.execute('SELECT COUNT(*) FROM conversations').fetchone()[0]
-        self.assertEqual(sum(map(sum,counts)),total)
-        self.assertEqual(self.ok(self.admin,'/api/automation/overview?tz=abc')['manager']['heatmap']['weeks'],8)
+            total = db.execute('SELECT COUNT(*) FROM conversations WHERE created_at>=?',(first,)).fetchone()[0]
+        self.assertEqual((sum(map(sum,hours['counts'])),hours['total']),(total,total))
 
 
 class FacebookTests(unittest.TestCase):

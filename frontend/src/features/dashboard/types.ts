@@ -25,12 +25,12 @@ export type CsatSummary = {
   distribution: Record<string, number>;
 };
 
-/** New conversations per weekday (0 = Sunday) and hour of the viewer's local time, over `weeks` weeks. */
+/** New conversations per weekday (0 = Sunday) and hour of the viewer's local time, over `weeks` weeks (the service
+    report's busy hours; labels.heatmapParts). */
 export type Heatmap = { weeks: number; counts: number[][] };
 
 export type ManagerOverview = {
   agents: AgentActivity[];
-  heatmap: Heatmap;
   csat: CsatSummary;
   automation: {
     rules: number;
@@ -64,16 +64,6 @@ export type SetupChecklist = {
   problems: Array<{ key: string; level: 'critical' | 'warning'; title: string; detail: string; action: SetupAction }>;
 };
 
-/** The chatbot's last 30 days (ai/insights.bot_performance). */
-export type BotPerformance = {
-  conversations: number;
-  resolved: number;
-  handed_off: number;
-  waiting: number;
-  answers: number;
-  reasons: Array<{ reason: string; count: number }>;
-};
-
 /** Questions that ask the same thing and no public article answers (ai/insights.knowledge_gaps). */
 export type KnowledgeGap = {
   label: string;
@@ -90,7 +80,6 @@ export type Brief = { id: string; status: string; lines: string[]; created_at: s
 
 export type Insights = {
   days: number;
-  bot: BotPerformance;
   gaps: { total: number; groups: KnowledgeGap[] };
   ai: { drafts_enabled: boolean; chatbot_enabled: boolean; key_configured: boolean };
   brief: Brief | null;

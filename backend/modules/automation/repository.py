@@ -222,10 +222,5 @@ def replies_since_by_author(db, since):
     return dict(db.execute("SELECT author_id,COUNT(*) FROM messages WHERE kind='reply' AND author_id IS NOT NULL AND created_at>=? GROUP BY author_id",(since,)).fetchall())
 
 
-def conversation_times(db, since):
-    """When each conversation started (every channel, including cases recorded by staff)."""
-    return [row[0] for row in db.execute('SELECT created_at FROM conversations WHERE created_at>=?',(since,))]
-
-
 def enabled_rule_count(db):
     return db.execute('SELECT COUNT(*) FROM automation_rules WHERE enabled=1').fetchone()[0]

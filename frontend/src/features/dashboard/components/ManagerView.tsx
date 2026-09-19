@@ -7,28 +7,19 @@ import { EscalationRow } from '@/features/automation/components/EscalationRow';
 import { clockTime, formatDuration, relative, starsText } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { useTeamName } from '@/lib/session';
-import { heatmapParts, presenceLabels, sortedAgents, type PeakLine } from '../labels';
+import { presenceLabels, sortedAgents } from '../labels';
 import type { ManagerOverview } from '../types';
 
-/* The manager view (admins and team leads): live agent activity, satisfaction, automation and the busy hours of
-   the week. Its head and cards glide in from the right as they are scrolled to (data-reveal, lib/reveal), so it
-   reads as a board of its own below the member's work. Markup: pages/dashboard/manager-view, agent-row, csat-bar, heat-row, heat-cell, peak-item. */
-
-function PeakItem({ line }: { line: PeakLine }) {
-  return (
-    <li>
-      <strong>{line.label}</strong>
-      <span className="tiny muted">{line.detail}</span>
-    </li>
-  );
-}
+/* The manager view (admins and team leads): live agent activity, satisfaction in short and automation. The busy
+   hours and the full satisfaction figures are in the service report (/reports). Its head and cards glide in from the
+   right as they are scrolled to (data-reveal, lib/reveal), so it reads as a board of its own below the member's work.
+   Markup: pages/dashboard/manager-view, agent-row, csat-score. */
 
 export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
   const teamName = useTeamName();
   const agents = sortedAgents(m.agents);
   const c = m.csat;
   const a = m.automation;
-  const heat = heatmapParts(m.heatmap);
   const csatAverage = c.average == null ? '' : c.average.toFixed(1);
 
   return (
@@ -126,19 +117,9 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             ) : (
               <div className="empty-mini">ยังไม่มีคำตอบแบบประเมิน · ระบบส่งให้ลูกค้าเมื่อปิดเคส</div>
             )}
-            <div className="csat-bars">
-              {[5, 4, 3, 2, 1].map((n) => {
-                const label = `${n} ★`;
-                const count = c.distribution[n] ?? 0;
-                return (
-                  <div key={n} className="csat-bar">
-                    <span className="csat-bar-label">{label}</span>
-                    <progress value={count} max={Math.max(1, c.count)} aria-label={`${label} ${count} คำตอบ`} />
-                    <span className="mono">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <Link className="csat-more" href="/reports">
+              ดูคะแนนรายสัปดาห์และความเห็นลูกค้าในรายงาน <Icon name="arrow" />
+            </Link>
           </div>
         </section>
         <section className="card auto-card" data-reveal="">
@@ -149,87 +130,36 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             </div>
             <Icon name="macro" />
           </div>
-          <div className="card-body">
-            <div className="auto-stats">
-              <Link href="/automation" className="auto-stat">
-                <span className="mono">{a.rules}</span>กฎที่เปิดใช้
-              </Link>
-              <Link href="/automation" className="auto-stat">
-                <span className="mono">{a.macros}</span>Macro
-              </Link>
-              <span className={`auto-stat${a.escalations_today ? ' warn' : ''}`}>
-                <span className="mono">{a.escalations_today}</span>ยกระดับวันนี้
-              </span>
-              <span className={`auto-stat${a.followups_due ? ' warn' : ''}`}>
-                <span className="mono">{a.followups_due}</span>ติดตามถึงกำหนด
-              </span>
+          <div className="card-body auto-body">
+            <div className="auto-summary">
+              <div className="auto-stats">
+                <Link href="/automation" className="auto-stat">
+                  <span className="mono">{a.rules}</span>กฎที่เปิดใช้
+                </Link>
+                <Link href="/automation" className="auto-stat">
+                  <span className="mono">{a.macros}</span>Macro
+                </Link>
+                <span className={`auto-stat${a.escalations_today ? ' warn' : ''}`}>
+                  <span className="mono">{a.escalations_today}</span>ยกระดับวันนี้
+                </span>
+                <span className={`auto-stat${a.followups_due ? ' warn' : ''}`}>
+                  <span className="mono">{a.followups_due}</span>ติดตามถึงกำหนด
+                </span>
+              </div>
+              <ul className="auto-status">
+                <li className={a.escalation_enabled ? 'on' : ''}>
+                  {a.escalation_enabled ? `ยกระดับเมื่อไม่มีผู้รับเรื่องใน ${a.escalation_minutes} นาที` : 'ปิดการยกระดับ SLA อัตโนมัติ'}
+                </li>
+                <li className={a.csat_enabled ? 'on' : ''}>{a.csat_enabled ? 'ส่งแบบประเมินความพึงพอใจเมื่อปิดเคส' : 'ปิดการส่งแบบประเมิน'}</li>
+              </ul>
             </div>
-            <ul className="auto-status">
-              <li className={a.escalation_enabled ? 'on' : ''}>
-                {a.escalation_enabled ? `ยกระดับเมื่อไม่มีผู้รับเรื่องใน ${a.escalation_minutes} นาที` : 'ปิดการยกระดับ SLA อัตโนมัติ'}
-              </li>
-              <li className={a.csat_enabled ? 'on' : ''}>{a.csat_enabled ? 'ส่งแบบประเมินความพึงพอใจเมื่อปิดเคส' : 'ปิดการส่งแบบประเมิน'}</li>
-            </ul>
-            {m.escalations.slice(0, 3).map((e) => (
-              <EscalationRow key={`${e.ticket_id}:${e.escalated_at}`} escalation={e} />
-            ))}
-          </div>
-        </section>
-        <section className="card heat-card" data-reveal="">
-          <div className="card-header">
-            <div>
-              <h2>ช่วงเวลาที่เรื่องเข้ามามากที่สุด</h2>
-              <p>
-                Peak Time · เฉลี่ยต่อสัปดาห์จาก {heat.weeks} สัปดาห์ล่าสุด ({heat.total} เรื่อง ทุกช่องทาง) · เวลาตามเครื่องของคุณ
-              </p>
-            </div>
-            <Icon name="calendar" />
-          </div>
-          <div className="card-body">
-            <div className="heatmap-scroll">
-              <div className="heatmap" role="img" aria-label={heat.summary}>
-                <span className="heat-corner" />
-                {Array.from({ length: 24 }, (_, h) => (
-                  <span key={`h${h}`} className="heat-hour">
-                    {h % 3 === 0 ? String(h).padStart(2, '0') : ''}
-                  </span>
+            {m.escalations.length > 0 && (
+              <div className="auto-escalations">
+                {m.escalations.slice(0, 3).map((e) => (
+                  <EscalationRow key={`${e.ticket_id}:${e.escalated_at}`} escalation={e} />
                 ))}
-                {heat.rows.map((row) => [
-                  <span key={`d${row.day}`} className="heat-day">
-                    {row.day}
-                  </span>,
-                  ...row.cells.map((cell, h) => <span key={`${row.day}${h}`} className={`heat-cell lv-${cell.level}`} title={cell.tip} />),
-                ])}
               </div>
-            </div>
-            <div className="heat-legend" aria-hidden="true">
-              <span>น้อย</span>
-              <i className="lv-0" />
-              <i className="lv-1" />
-              <i className="lv-2" />
-              <i className="lv-3" />
-              <i className="lv-4" />
-              <span>มาก</span>
-            </div>
-            <div className="peak-grid">
-              <div>
-                <h3>ช่วงพีค (ช่วงละ 3 ชั่วโมง)</h3>
-                <ol className="peak-list">
-                  {heat.peaks.map((p) => (
-                    <PeakItem key={p.label} line={p} />
-                  ))}
-                </ol>
-                {!heat.peaks.length && <p className="empty-mini">ยังไม่มีเรื่องเข้ามาในช่วงนี้</p>}
-              </div>
-              <div>
-                <h3>คำแนะนำจัดกะ</h3>
-                <ul className="peak-list">
-                  {heat.advice.map((p) => (
-                    <PeakItem key={p.label} line={p} />
-                  ))}
-                </ul>
-              </div>
-            </div>
+            )}
           </div>
         </section>
       </div>

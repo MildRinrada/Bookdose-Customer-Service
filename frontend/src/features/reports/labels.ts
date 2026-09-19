@@ -16,6 +16,10 @@ export function reportRange(days: number): { from: string; to: string } {
   return { from: localDate(from), to: localDate(to) };
 }
 
+/** GET /api/reports/extras for the same dates and team, in the viewer's time zone. */
+export const reportExtrasPath = (f: ReportFilter) =>
+  `/api/reports/extras?from=${f.from}&to=${f.to}&tz=${new Date().getTimezoneOffset()}${f.team ? `&team=${encodeURIComponent(f.team)}` : ''}`;
+
 export const defaultReportFilter = (): ReportFilter => ({ ...reportRange(30), team: '', assignee: '', days: 30 });
 
 /** Cases created in the period (or, with `previous`, in the same-length period just before it), by team and owner. */

@@ -73,9 +73,13 @@ export function resolution(all: TicketRow[], f: ReportFilter, previous = false) 
   };
 }
 
+/** How many days one tile of a trend covers: a day up to two weeks, a week up to four months, then 30 days. */
+export const tileDays = (days: number) => (days <= 14 ? 1 : days <= 120 ? 7 : 30);
+
 export type SurveyAnswer = { ticket: TicketRow; rating: number; at: string; comment: string };
 
-/** Satisfaction answers given in the period: average, how many of each star, the answers week by week, and the
+/** Satisfaction answers given in the period: average, how many of each star, the answers week by week (a tile per
+    tileDays), and the
     comments (the lowest scores first). */
 export function satisfaction(all: TicketRow[], f: ReportFilter, previous = false) {
   const r = periodOf(f, previous);
@@ -84,8 +88,9 @@ export function satisfaction(all: TicketRow[], f: ReportFilter, previous = false
     .map((t) => ({ ticket: t, rating: t.csat_rating as number, at: t.csat_at as string, comment: String(t.csat_comment ?? '').trim() }));
   const total = answers.reduce((n, a) => n + a.rating, 0);
   const weeks: { start: Date; count: number; average: number | null }[] = [];
-  for (let start = new Date(r.from); start <= r.to; start = new Date(start.getTime() + 7 * 86400000)) {
-    const end = new Date(Math.min(start.getTime() + 7 * 86400000 - 1, r.to.getTime()));
+  const step = tileDays((r.to.getTime() - r.from.getTime()) / 86400000) * 86400000;
+  for (let start = new Date(r.from); start <= r.to; start = new Date(start.getTime() + step)) {
+    const end = new Date(Math.min(start.getTime() + step - 1, r.to.getTime()));
     const inWeek = answers.filter((a) => new Date(a.at) >= start && new Date(a.at) <= end);
     weeks.push({ start, count: inWeek.length, average: inWeek.length ? inWeek.reduce((n, a) => n + a.rating, 0) / inWeek.length : null });
   }
@@ -149,4 +154,45 @@ export function backlog(all: TicketRow[], f: ReportFilter, now = Date.now()) {
     })),
     oldest: [...open].sort((a, b) => a.created_at.localeCompare(b.created_at)).slice(0, 5).map((t) => ({ t, days: age(t) })),
   };
+}
+
+/** Cases finished in the period that went back to work: of the cases solved at least once in the period (solved now,
+    or reopened since), how many were reopened, and the ones reopened most. */
+export function reopening(all: TicketRow[], f: ReportFilter, previous = false) {
+  const r = periodOf(f, previous);
+  const reopened = all.filter((t) => inScope(t, f) && (t.reopens ?? 0) > 0 && within(t.reopened_at, r));
+  const finished = all.filter((t) => inScope(t, f) && (within(t.resolved_at, r) || within(t.reopened_at, r)));
+  return {
+    finished: finished.length,
+    reopened: reopened.length,
+    rate: finished.length ? (100 * reopened.length) / finished.length : null,
+    cases: [...reopened].sort((a, b) => (b.reopens ?? 0) - (a.reopens ?? 0) || String(b.reopened_at).localeCompare(String(a.reopened_at))).slice(0, 5),
+  };
+}
+
+export type LoadRow = { id: string; open: number; late: number; urgent: number; oldest: number | null };
+
+/** The cases open now, per person of the team picked (members with none included, so an uneven share shows), plus
+    those nobody has taken. `heavy`: well above the team's average. */
+export function workload(all: TicketRow[], f: ReportFilter, members: Array<{ id: string; team_id: string | null; active: boolean | number }>, now = Date.now()) {
+  const open = all.filter((t) => (!f.team || t.team_id === f.team) && !isDone(t));
+  const rows = new Map<string, LoadRow>();
+  for (const m of members) if (m.active && (!f.team || m.team_id === f.team)) rows.set(m.id, { id: m.id, open: 0, late: 0, urgent: 0, oldest: null });
+  let unassigned = 0;
+  for (const t of open) {
+    if (!t.assignee_id) {
+      unassigned++;
+      continue;
+    }
+    const row = rows.get(t.assignee_id) ?? { id: t.assignee_id, open: 0, late: 0, urgent: 0, oldest: null };
+    const age = (now - new Date(t.created_at).getTime()) / 86400000;
+    row.open++;
+    if (overdue(t)) row.late++;
+    if (t.priority === 'urgent' || t.priority === 'high') row.urgent++;
+    row.oldest = Math.max(row.oldest ?? 0, age);
+    rows.set(t.assignee_id, row);
+  }
+  const people = [...rows.values()].sort((a, b) => b.open - a.open || b.late - a.late);
+  const average = people.length ? people.reduce((n, p) => n + p.open, 0) / people.length : 0;
+  return { people, unassigned, average, heavy: (p: LoadRow) => p.open >= 3 && p.open >= average * 1.5 };
 }

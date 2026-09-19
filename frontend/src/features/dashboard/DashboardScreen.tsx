@@ -16,7 +16,7 @@ import { useScrollReveal } from '@/lib/reveal';
 import { useStaffAlerts, useStaffTickets, useStaffUser, useWork } from '@/lib/session';
 import { overviewPath } from './api';
 import { HandoverCard, TodoCard } from './components/BoardCards';
-import { BotCard, BriefCard, GapsCard } from './components/InsightsCards';
+import { BriefCard, GapsCard } from './components/InsightsCards';
 import { ManagerView } from './components/ManagerView';
 import { MeItems } from './components/MeItems';
 import { MyDay } from './components/MyDay';
@@ -234,7 +234,6 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
             <GapsCard insights={dash.insights} />
             <div className="stack">
               <BriefCard brief={dash.insights.brief} ai={dash.insights.ai} />
-              <BotCard bot={dash.insights.bot} ai={dash.insights.ai} days={dash.insights.days} />
             </div>
           </div>
         </section>

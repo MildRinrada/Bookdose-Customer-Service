@@ -36,7 +36,7 @@ export function Highlighted({ text, words }: { text: string; words: string[] }) 
 
 /** The link a customer opens without signing in (the organization's public FAQ page). */
 export function customerLink(slug: string, id: string) {
-  return `${window.location.origin}/chat/${slug}/faq/${id}`;
+  return `${window.location.origin}/support/${slug}/faq/${id}`;
 }
 
 export function ArticleCard({

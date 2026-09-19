@@ -4,7 +4,7 @@ chat by this browser, a follow link by email or SMS, or LINE notices; the histor
 Rules:
 - A guest is known only by the cookie of its browser (a device). An unknown cookie counts as no guest.
 - A guest reaches only the conversations it started; everything else answers 404.
-- A follow link opens /chat/<org>/resume#t=<token> (the token never travels in a query string): 30 days, 20 uses,
+- A follow link opens /support/<org>/resume#t=<token> (the token never travels in a query string): 30 days, 20 uses,
   revoked by a newer link of the same way or by a merge. Opening it proves the email or phone it was sent to.
 - A team reply that stays unread past the delay of the account notices is told ONCE per conversation per unread spell
   on each channel the guest has proven (a verified email, a verified phone, a linked LINE), each with a fresh link.
@@ -56,6 +56,7 @@ def require_enabled(db):
     require(guest_chat_enabled(db),DISABLED,403)
 
 
+
 def settings_view(db):
     guest_chat,widget = _json_setting(db,'guest_chat',DEFAULT_GUEST_CHAT),_json_setting(db,'widget',DEFAULT_WIDGET)
     return {'guest_chat':{'enabled':guest_chat['enabled'] is True},
@@ -65,7 +66,7 @@ def settings_view(db):
 def settings_page(cd, db, ctx, base):
     """The admin's settings with the public chat link and its QR (the widget snippet is built by the page)."""
     from backend.utils import qrcode
-    url = f"{base}/chat/{ctx['slug']}"
+    url = f"{base}/support/{ctx['slug']}/tickets/new"
     return {**settings_view(db),'chat_url':url,'chat_qr':qrcode.data_url(url,'QR แชทบนเว็บไซต์')}
 
 
@@ -176,10 +177,14 @@ def _rename(db, visitor, name):
         contacts.update(db,contact['id'],name,contact['email'],contact['phone'],contact['company'],contact['notes'])
 
 
-def start(db, org, guest, body, client):
-    """POST /guest/conversations: a new chat, as the browser's guest or as a new one. Returns ({id, csrf}, the new
-    cookie token or None, remember)."""
+def start(cd, db, org, guest, body, client, base):
+    """POST /guest/conversations: a new chat, as the browser's guest or as a new one. An email address and a phone
+    number are optional: the follow link goes to each one given (after the chat is saved; a link that cannot be sent
+    does not undo the chat). A new guest who asks this browser not to remember them must give one of them, or the chat
+    would be lost when the browser closes. Returns ({id, csrf, links}, the new cookie token or None, remember)."""
     name,remember = schema.start_form(body)
+    email,phone,reference = schema.reach_form(body,customers.email_ready(cd),sms.ready(cd))
+    require(guest or remember or email or phone,'เลือก “จำแชทในเครื่องนี้” หรือกรอกอีเมลหรือเบอร์โทรเพื่อรับลิงก์ติดตามแชท')
     request = schema.request_body(body,body.get('body'))
     subject,category = customers.request_form(db,request)
     D.begin(db)
@@ -203,9 +208,18 @@ def start(db, org, guest, body, client):
     conv_id = customers.new_web_conversation(db,org,contact_id,schema.display_name(visitor),subject,category,request)
     repository.add_conversation(db,conv_id,visitor['id'])
     repository.mark_seen(db,visitor['id'],conv_id)
+    if reference:
+        accounts.set_reference(db,conv_id,reference)
     audit.record(db,schema.display_name(visitor),'guest.started',conv_id,'ผู้เยี่ยมชมใหม่' if token else '')
     db.commit()
-    return {'id':conv_id,'csrf':csrf},token,remember
+    links = []
+    for via,target in (('email',email),('sms',phone)):
+        if target:
+            try:
+                links.append({'via':via,'to_masked':_deliver_link(cd,db,org,visitor,via,target,base),'sent':True})
+            except APIError as failure:
+                links.append({'via':via,'to_masked':schema.mask(via,target),'sent':False,'error':failure.message})
+    return {'id':conv_id,'csrf':csrf,'links':links},token,remember
 
 
 def current_conversation(db, guest, conversation_id):
@@ -254,7 +268,7 @@ def forget(db, guest):
 
 # Follow links
 def _follow_url(base, slug, token):
-    return f"{(base or '').rstrip('/')}/chat/{slug}/resume#t={token}"
+    return f"{(base or '').rstrip('/')}/support/{slug}/resume#t={token}"
 
 
 def _notice_base(cd, line_row):
@@ -274,7 +288,11 @@ def send_link(cd, db, org, guest, body, base):
         require(customers.email_ready(cd),'ยังส่งอีเมลไม่ได้ กรุณาเลือกช่องทางอื่น',409)
     else:
         require(sms.ready(cd),'ยังส่ง SMS ไม่ได้ กรุณาเลือกช่องทางอื่น',409)
-    visitor = guest['visitor']
+    return _deliver_link(cd,db,org,guest['visitor'],via,target,base)
+
+
+def _deliver_link(cd, db, org, visitor, via, target, base):
+    """Make a follow link, remember the (unproven) address on the guest and send it; returns the masked address."""
     token = secrets.token_urlsafe(32)
     D.begin(db)
     repository.insert_link(db,token_hash(token),visitor['id'],via,target,after(days=LINK_DAYS))

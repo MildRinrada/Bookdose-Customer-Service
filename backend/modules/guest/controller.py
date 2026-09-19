@@ -52,7 +52,12 @@ def start(req):
     if traps.form_trapped(req.body):
         # The hidden field was filled: recorded here; the form check refuses it with the usual message.
         traps.record_form(client_info(req),'guest_chat',tenant_id=req.org['id'],actor='guest')
-    answer,token,remember = service.start(req.db,req.org,req.guest,req.body,client_info(req))
+    # The follow links asked for with the chat count like ones asked for later (per address, per browser address).
+    for via,key in (('email','email'),('sms','phone')):
+        if isinstance(req.body.get(key),str) and req.body[key].strip():
+            limited(('guest-link-ip',req.ip),LINKS_PER_IP_HOUR,3600)
+            limited(('guest-link-target',req.org['id'],via,req.body[key].strip().lower()),LINKS_PER_TARGET_HOUR,3600)
+    answer,token,remember = service.start(req.cd,req.db,req.org,req.guest,req.body,client_info(req),base_url(req.cd,req))
     return req.send(201,answer,headers=_set(req,token,remember) if token else None)
 
 

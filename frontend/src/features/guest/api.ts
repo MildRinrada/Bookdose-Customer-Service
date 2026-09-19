@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, SmsSettings, SmsSettingsBody } from './types';
+import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, GuestStartLink, SmsSettings, SmsSettingsBody } from './types';
 
 /* Endpoints of the guest web chat (docs/GUEST-CHAT-DESIGN.md §3). The visitor's routes live under
    /api/public/<org>/guest; the chat named by X-Conversation-ID (the `conversation` option of api()) is the one /session, /messages,
@@ -17,12 +17,17 @@ export const guestCasePath = (slug: string, id: string) => `${guestBase(slug)}/c
 /** The organization's public page: its name, welcome and published articles (no sign-in, no guest cookie needed). */
 export const publicOrgPath = (slug: string) => `/api/public/${slug}`;
 
-/** The addresses of a guest's pages. */
+/** The addresses of a guest's pages (/support/…; the older /chat/<org>… links redirect here, next.config.ts). */
 export const guestPages = {
-  chat: (slug: string, conversationId?: string) => `/chat/${slug}${conversationId ? `?c=${conversationId}` : ''}`,
-  faq: (slug: string) => `/chat/${slug}/faq`,
-  article: (slug: string, id: string) => `/chat/${slug}/faq/${id}`,
-  case: (slug: string, id: string) => `/chat/${slug}/cases/${id}`,
+  /** Start a chat: the organization's own link (/support/tickets/new without one asks for its code). */
+  start: (slug: string) => `/support/${slug}/tickets/new`,
+  /** This browser's chats with the organization, or one of them. */
+  chat: (slug: string, conversationId?: string) => `/support/${slug}/tickets${conversationId ? `/${conversationId}` : ''}`,
+  faq: (slug: string) => `/support/${slug}/faq`,
+  article: (slug: string, id: string) => `/support/${slug}/faq/${id}`,
+  case: (slug: string, id: string) => `/support/${slug}/cases/${id}`,
+  resume: (slug: string) => `/support/${slug}/resume`,
+  embed: (slug: string) => `/support/${slug}/embed`,
 };
 
 /** GET: this browser's visitor, its conversations and the ways to follow them. */
@@ -34,7 +39,8 @@ export const guestSessionPath = (slug: string) => `${guestBase(slug)}/session`;
 
 export const widgetPath = (slug: string) => `/api/public/${slug}/widget`;
 
-export const startGuestChat = (slug: string, body: GuestStartBody) => api<{ id: string; csrf: string }>(`${guestBase(slug)}/conversations`, body);
+export const startGuestChat = (slug: string, body: GuestStartBody) =>
+  api<{ id: string; csrf: string; links?: GuestStartLink[] }>(`${guestBase(slug)}/conversations`, body);
 
 export const setGuestName = (slug: string, name: string) => api<{ ok: true }>(`${guestBase(slug)}/name`, { name });
 

@@ -49,6 +49,11 @@ export type GuestStartBody = {
   subject: string;
   category: string;
   name: string;
+  /** Where to send the follow link (either, both or none; only the ways `follow` says are ready). */
+  email: string;
+  phone: string;
+  /** A reference for the team: an earlier case number, a member number… */
+  reference: string;
   remember: boolean;
   /** Honeypot: people never see it, so it stays empty. */
   website: string;
@@ -56,6 +61,9 @@ export type GuestStartBody = {
   started_ms: number;
   attachments: Array<{ name: string; data: string }>;
 };
+
+/** A follow link asked for with the start of a chat: where it went (masked) and whether it went. */
+export type GuestStartLink = { via: 'email' | 'sms'; to_masked: string; sent: boolean; error?: string };
 
 /** POST …/guest/line-code: a 6-digit code to send to the organization's LINE. */
 export type GuestLineCode = { code: string; expires_at: string; oa_name: string; add_url: string };

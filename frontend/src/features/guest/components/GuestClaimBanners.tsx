@@ -9,7 +9,7 @@ import { claimGuestChats, GUEST_CLAIMS_PATH, guestBase, type GuestClaims } from 
 
 /* For a signed-in customer: chats this browser had with an organization before signing in (its g_<org> cookies).
    One banner per organization; moving them is asked first, because a shared computer must not hand someone else's
-   chats to whoever signs in next. `org` limits the banners to one organization (the /chat/<org> page). */
+   chats to whoever signs in next. `org` limits the banners to one organization (the /support/<org> pages). */
 
 export function GuestClaimBanners({ org }: { org?: string }) {
   const { data } = useApi<GuestClaims>(GUEST_CLAIMS_PATH);

@@ -36,7 +36,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
   const copyText = useCopyText();
   const { openModal } = useDialogs();
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  const chatUrl = data.chat_url || `${origin}/chat/${slug}`;
+  const chatUrl = data.chat_url || `${origin}/support/${slug}/tickets/new`;
   const snippet = `<script src="${origin}/widget.js" data-org="${slug}" async></script>`;
   const w = data.widget;
 
@@ -118,7 +118,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
                     ดู QR ขนาดใหญ่
                   </button>
                 )}
-                <a className="btn subtle" href={`/chat/${slug}`} target="_blank" rel="noopener">
+                <a className="btn subtle" href={`/support/${slug}/tickets/new`} target="_blank" rel="noopener">
                   <Icon name="chat" />
                   ทดลองดู
                 </a>

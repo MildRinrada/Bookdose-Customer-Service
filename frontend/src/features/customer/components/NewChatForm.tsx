@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { RequiredStar, SelectField, TextArea, TextField } from '@/components/ui/fields';
+import { RequiredStar, SelectField, TextField } from '@/components/ui/fields';
 import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
+import { RichTextArea } from '@/features/rich/RichTextArea';
 import { readFiles } from '@/lib/files';
 import { useInvalidate } from '@/lib/query';
 import type { CustomerOrg } from '@/lib/types';
@@ -106,12 +107,10 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
           ))}
         </SelectField>
         <TextField label="เรื่องที่ต้องการความช่วยเหลือ" name="subject" max={300} placeholder="สรุปสั้น ๆ ว่าเรื่องอะไร" />
-        <TextArea
+        <RichTextArea
           label="รายละเอียด"
           name="body"
           id="request-body"
-          max={20000}
-          rows={6}
           placeholder="เกิดอะไรขึ้น ทำอะไรอยู่ตอนนั้น และเห็นข้อความอะไรบ้าง ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด"
         />
         <AttachmentsField />

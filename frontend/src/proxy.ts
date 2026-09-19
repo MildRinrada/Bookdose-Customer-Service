@@ -5,7 +5,7 @@ import { FILE_LINK_PATH, isDecoyPagePath, TRAP_API_PATH } from '@/lib/traps';
    - /api/*: forwarded to the Python server by the rewrite in next.config.ts. Here it gets the headers the Python
      server needs to believe the browser's host and address (see backend/middleware/security.py).
    - Pages: a fresh nonce per response, so the Content-Security-Policy allows Next's own scripts and nothing else.
-     No page may be framed ('none'), except /chat/<org>/embed: its frame-ancestors are the organization's allowed
+     No page may be framed ('none'), except /support/<org>/embed (and the older /chat/<org>/embed): its frame-ancestors are the organization's allowed
      websites for the chat widget (GET /api/public/<org>/widget, remembered for a minute), or 'none' when the widget
      is off. next.config.ts leaves X-Frame-Options off that one path for the same reason. connect-src names this
      host's ws:/wss: as well, for the live updates socket (src/lib/realtime.ts); older browsers do not count a
@@ -19,7 +19,7 @@ const DEV = process.env.NODE_ENV === 'development';
 const RAW_API_URL = process.env.BOOKDOSE_API_URL ?? 'http://127.0.0.1:8787';
 const API_URL = (/^https?:\/\//.test(RAW_API_URL) ? RAW_API_URL : `http://${RAW_API_URL}`).replace(/\/$/, '');
 
-const EMBED_PAGE = /^\/chat\/([a-z0-9]+(?:-[a-z0-9]+)*)\/embed\/?$/;
+const EMBED_PAGE = /^\/(?:support|chat)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/embed\/?$/;
 // What may go into the policy: scheme://host[:port] and nothing else (no spaces, quotes or semicolons).
 const ORIGIN = /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?$/;
 // The Host header as it may go into the policy (a name or IPv4/IPv6 address and a port, nothing else).

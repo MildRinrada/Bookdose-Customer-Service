@@ -2,6 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { Brand } from '@/components/shell/chrome';
@@ -24,12 +25,13 @@ import { FollowCard } from './components/FollowCard';
 import { GuestNav, SignedInLink } from './components/GuestFrame';
 import { GuestClaimBanners } from './components/GuestClaimBanners';
 import { GuestMenu } from './components/GuestMenu';
-import { GuestStartForm } from './components/GuestStartForm';
+import { GuestStartForm, linksMessage } from './components/GuestStartForm';
 import { useGuestOverview, useGuestSession } from './hooks';
 import { byNewest, isWidgetTheme, unreadCount } from './labels';
 import type { GuestConversation, GuestOverview, WidgetInfo } from './types';
 
-/* /chat/<org> and /chat/<org>/embed: chatting with an organization without an account (docs/GUEST-CHAT-DESIGN.md §4).
+/* /support/<org>/tickets[/<id>] and /support/<org>/embed: chatting with an organization without an account
+   (docs/GUEST-CHAT-DESIGN.md §4).
    The same pieces as the signed-in customer's chat — the thread with the survey inside it, the AI status with
    "คุยกับเจ้าหน้าที่", the composer — talking to the guest routes. The page has its own slim header; the embedded
    copy (inside a website's iframe, see public/widget.js) has none, sends X-Embed and tells the page around it how
@@ -145,6 +147,7 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
   const toast = useToast();
   const refresh = useInvalidate();
   const client = useQueryClient();
+  const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(initialId || null);
   const [composing, setComposing] = useState(false);
   const [showList, setShowList] = useState(false);
@@ -168,13 +171,19 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
   );
   const session = useGuestSession(slug, panelOpen ? current : null, gone);
 
-  // The open chat is in the address, so a reload (or a link) opens it again.
+  // The open chat is in the address, so a reload (or a link) opens it again: /support/<org>/tickets/<id> on the page,
+  // ?c=<id> inside the website's frame (whose address stays /support/<org>/embed).
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (current) url.searchParams.set('c', current);
-    else url.searchParams.delete('c');
+    if (embed) {
+      if (current) url.searchParams.set('c', current);
+      else url.searchParams.delete('c');
+    } else {
+      url.pathname = guestPages.chat(slug, current ?? undefined);
+      url.searchParams.delete('c');
+    }
     if (url.href !== window.location.href) window.history.replaceState(null, '', url);
-  }, [current]);
+  }, [current, embed, slug]);
 
   // --- The website around the iframe (public/widget.js) ---
   const parentOrigin = useRef<string | null>(null);
@@ -247,13 +256,22 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
     setFollowOpen(true);
     requestAnimationFrame(() => document.getElementById('guest-follow')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
   };
+  // On the page a new chat is started on the start page (/support/<org>/tickets/new); inside a website's frame there
+  // is no room for it, so the form opens in the panel.
   const newChat = () => {
+    if (!embed) return router.push(guestPages.start(slug));
     setComposing(true);
     setShowList(false);
   };
+  const nothingYet = !embed && (!data.guest || list.length === 0);
+  useEffect(() => {
+    if (nothingYet) router.replace(guestPages.start(slug));
+  }, [nothingYet, router, slug]);
 
   let detail;
-  if (!current) {
+  if (nothingYet) {
+    detail = <PageLoading />;
+  } else if (!current) {
     detail = (
       <>
         <div className="card-header conv-header new-chat-header guest-conv-header">
@@ -272,12 +290,12 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
           slug={slug}
           overview={data}
           info={info}
-          onStarted={async (id) => {
+          onStarted={async (id, links) => {
             await refresh(guestPath(slug));
             setOpenId(id);
             setComposing(false);
             setShowList(false);
-            toast('ส่งข้อความถึงทีมงานแล้ว ติดตามคำตอบได้ในแชทนี้');
+            toast(links.length ? linksMessage(data.organization.name, links) : `ส่งข้อความถึงทีมงาน ${data.organization.name} แล้ว ติดตามคำตอบได้ในแชทนี้`, links.some((l) => !l.sent));
           }}
         />
       </>
@@ -440,7 +458,7 @@ function GuestChatView({
           items={[
             { key: 'follow', label: 'ติดตามแชทนี้', icon: 'bell', onSelect: onShowFollow },
             { key: 'new', label: 'เริ่มแชทเรื่องใหม่', icon: 'plus', onSelect: onNewChat },
-            ...(embed ? [{ key: 'window', label: 'เปิดในหน้าต่างใหม่', icon: 'link', onSelect: () => window.open(`/chat/${slug}?c=${id}`, '_blank', 'noopener') }] : []),
+            ...(embed ? [{ key: 'window', label: 'เปิดในหน้าต่างใหม่', icon: 'link', onSelect: () => window.open(guestPages.chat(slug, id), '_blank', 'noopener') }] : []),
           ]}
         />
       </div>

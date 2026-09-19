@@ -1,4 +1,4 @@
-"""Guest web chat: a customer chats with one organization on the web without an account (/chat/<org>, or the widget
+"""Guest web chat: a customer chats with one organization on the web without an account (/support/<org>/…, or the widget
 on the organization's own website), and keeps following the chat by this browser (a cookie), a follow link by email
 or SMS, or LINE notices. Everything a guest is lives in that organization's database.
 
@@ -9,7 +9,7 @@ or SMS, or LINE notices. Everything a guest is lives in that organization's data
                        sends back, and whether the cookie outlives the browser (remember).
   guest_conversations  the conversations a visitor started (only these are theirs, even after staff merge contacts).
   guest_seen           when the visitor last read each conversation (a reply read in time is never notified).
-  guest_links          follow links /chat/<org>/resume#t=<token> (hashed): 30 days, 20 uses, revoked by a newer link
+  guest_links          follow links /support/<org>/resume#t=<token> (hashed): 30 days, 20 uses, revoked by a newer link
                        of the same way or by a merge. 'line' links travel inside LINE notices.
   guest_line_codes     6-digit codes for LINE (hashed, 10 minutes; the same limits as an account's codes).
   guest_line_links     the LINE user of the organization's official account a visitor is linked with.

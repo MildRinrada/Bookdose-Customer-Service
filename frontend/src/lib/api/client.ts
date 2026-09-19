@@ -53,12 +53,12 @@ export function setCustomerCredentials(csrf: string | null | undefined) {
   credentials.customerCsrf = csrf ?? null;
 }
 
-/** A visitor chatting without an account (/chat/<org>): the csrf of this browser's guest cookie (GET …/guest). */
+/** A visitor chatting without an account (/support/<org>/…): the csrf of this browser's guest cookie (GET …/guest). */
 export function setGuestCredentials(csrf: string | null | undefined) {
   credentials.guestCsrf = csrf ?? null;
 }
 
-/** The chat runs inside another website's iframe (/chat/<org>/embed): the server then sends the cookie form a
+/** The chat runs inside another website's iframe (/support/<org>/embed): the server then sends the cookie form a
     third-party frame can keep. */
 export function setEmbedded(embedded: boolean) {
   credentials.embed = embedded;

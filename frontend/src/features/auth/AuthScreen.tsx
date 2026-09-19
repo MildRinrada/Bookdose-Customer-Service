@@ -182,8 +182,11 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
   const signupOrganization = info?.organization ?? boot.home;
   const verifyEmail = Boolean(info?.email_verification);
   const supportName = signupOrganization?.name ?? '';
-  // The support page's organization may let customers chat without an account (GET /api/public/<org>/widget).
-  const guestSlug = login && !setup ? (signupOrganization?.slug ?? '') : '';
+  // Opened from an organization's link (?org=), that organization may let customers chat without an account (GET
+  // /api/public/<org>/widget). Without a link the chat is not assumed to be the platform's own: the visitor is sent
+  // to type the organization's code (/support/tickets/new).
+  const linked = org && info?.organization?.slug === org ? info.organization : null;
+  const guestSlug = login && !setup && linked ? linked.slug : '';
   const guestChat = useApi<WidgetInfo>(guestSlug ? widgetPath(guestSlug) : null);
 
   const switchTab = (value: AuthTab) => {
@@ -313,10 +316,14 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
               </button>
             </div>
           )}
-          {login && !secondStep && guestChat.data?.guest_chat && (
+          {login && !secondStep && (guestSlug ? guestChat.data?.guest_chat : !setup) && (
             <p className="guest-entry">
-              <span>ไม่อยากสมัครสมาชิก? คุยกับทีมงาน {supportName} ได้เลย</span>
-              <Link className="btn" href={`/chat/${guestSlug}`}>
+              <span>
+                {guestSlug
+                  ? `ไม่อยากสมัครสมาชิก? คุยกับทีมงาน ${linked?.name ?? ''} ได้เลย`
+                  : 'ไม่อยากสมัครสมาชิก? ติดต่อทีมงานขององค์กรได้โดยไม่ต้องเข้าสู่ระบบ'}
+              </span>
+              <Link className="btn" href={guestSlug ? `/support/${guestSlug}/tickets/new` : '/support/tickets/new'}>
                 <Icon name="chat" />
                 แชทโดยไม่ต้องเข้าสู่ระบบ
               </Link>

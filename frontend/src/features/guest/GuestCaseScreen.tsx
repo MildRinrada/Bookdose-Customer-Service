@@ -12,7 +12,7 @@ import { guestCasePath, guestPages } from './api';
 import { GuestFrame } from './components/GuestFrame';
 import { useGuestOverview } from './hooks';
 
-/* /chat/<org>/cases/<id>: a visitor without an account follows the case the team opened from their chat - where it
+/* /support/<org>/cases/<id>: a visitor without an account follows the case the team opened from their chat - where it
    stands, what the team did and promised, and the chats in it - like a signed-in customer does. Only a case holding
    one of this browser's chats opens (the guest cookie; GET /api/public/<org>/guest/cases/<id>), and it is read again
    every 30 seconds while open. */

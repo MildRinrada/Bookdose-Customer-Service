@@ -155,7 +155,7 @@ class GuestSmsTests(guest_tests.GuestChatTests):
             self.assertEqual(self.send_link(page,'sms','081-234-5678'),{'sent':True,'to_masked':'+66*****5678'})
         form = provider.form()
         self.assertEqual(form['msisdn'],'0812345678')
-        token = re.search(r'/chat/alpha/resume#t=([A-Za-z0-9_-]{43})',form['message'])[1]
+        token = re.search(r'/support/alpha/resume#t=([A-Za-z0-9_-]{43})',form['message'])[1]
         phone,(status,_) = self.resume(token)
         self.assertEqual(status,200)
         self.assertTrue(self.overview(phone)['guest']['phone_verified'])

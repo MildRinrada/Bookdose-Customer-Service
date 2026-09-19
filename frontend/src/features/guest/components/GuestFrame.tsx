@@ -8,7 +8,7 @@ import { TextSizeMenu } from '@/components/shell/TextSize';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { guestPages } from '../api';
 
-/* The slim page around a visitor's pages of one organization without signing in (/chat/<org>, its FAQ and a case):
+/* The slim page around a visitor's pages of one organization without signing in (/support/<org>/…: its chats, FAQ and a case):
    the brand, the organization, links between the chat and the FAQ, sign-in, and the text size. Markup: guest-page,
    guest-head. */
 

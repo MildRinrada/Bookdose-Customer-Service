@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS customer_notifications (
 CREATE TABLE IF NOT EXISTS conversation_categories (
     conversation_id TEXT PRIMARY KEY, category TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS conversation_references (
+    conversation_id TEXT PRIMARY KEY, reference TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS customer_line_links (
     account_id TEXT PRIMARY KEY, line_user_id TEXT NOT NULL UNIQUE, linked_at TEXT NOT NULL
 );

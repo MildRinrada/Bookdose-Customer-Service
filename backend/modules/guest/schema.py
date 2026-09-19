@@ -26,6 +26,23 @@ def start_form(body):
     return person_name(body,'name',False),remember
 
 
+def reach_form(body, email_ready, sms_ready):
+    """(email, phone, reference) of a new chat, each optional: where to send the follow link (the email address, the
+    phone number as E.164; only the ways the platform can send) and a reference the customer gives the team."""
+    email = body.get('email') or ''
+    phone = body.get('phone') or ''
+    require(isinstance(email,str) and isinstance(phone,str),'ข้อมูลช่องทางติดต่อไม่ถูกต้อง')
+    if email.strip():
+        require(email_ready,'ยังส่งลิงก์ทางอีเมลไม่ได้ กรุณาเว้นช่องอีเมลไว้',409)
+        email = email_field({'email':email})
+    if phone.strip():
+        require(sms_ready,'ยังส่งลิงก์ทาง SMS ไม่ได้ กรุณาเว้นช่องเบอร์โทรไว้',409)
+        phone = phone_e164(phone)
+    reference = field(body,'reference',60,False) if body.get('reference') else ''
+    require(not reference or reference.isprintable(),'เลขอ้างอิงมีตัวอักษรที่ใช้ไม่ได้')
+    return email.strip() and email,phone.strip() and phone,reference
+
+
 def request_body(body, text):
     """The body for the shared start of a chat: a guest may leave the subject out, it then comes from the message."""
     subject = body.get('subject')

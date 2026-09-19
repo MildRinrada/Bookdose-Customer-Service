@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'ติดตามเคส' };
 
 const ID = /^[a-f0-9]{32}$/;
 
-/** /chat/<org>/cases/<id>: a visitor follows the case opened from their chat, without signing in. */
+/** /support/<org>/cases/<id>: a visitor follows the case opened from their chat, without signing in. */
 export default async function GuestCasePage({ params }: { params: Promise<{ org: string; id: string }> }) {
   const { org, id } = await params;
   if (!ORG_CODE.test(org) || !ID.test(id)) notFound();

@@ -127,7 +127,7 @@ class GuestChatTests(unittest.TestCase):
         return data
 
     def emailed_token(self, index=-1):
-        return re.search(r'/chat/alpha/resume#t=([A-Za-z0-9_-]{43})',self.mailer.call_args_list[index].args[3].get_content())[1]
+        return re.search(r'/support/alpha/resume#t=([A-Za-z0-9_-]{43})',self.mailer.call_args_list[index].args[3].get_content())[1]
 
     def resume(self, token, client=None):
         client = client or self.browser()
@@ -142,6 +142,35 @@ class GuestChatTests(unittest.TestCase):
         self.assertTrue(C.process_line(self.org,app.store_message))
 
     # Tests
+    def test_start_with_addresses_and_a_reference(self):
+        page = self.browser()
+        # Not remembered and nowhere to send the link: the chat would be lost, so it is refused.
+        status,data,_ = self.start(page,remember=False)
+        self.assertEqual(status,400);self.assertIn('จำแชท',data['error'])
+        # An address the platform cannot send to yet is refused too (the page hides that field).
+        self.assertEqual(self.start(page,email='somsri@example.com')[0],409)
+        self.assertEqual(self.start(page,phone='0812345678')[0],409)
+        self.customer_mail()
+        self.ok(self.owner,'/api/platform/sms',{'provider':'log'})
+        for bad in ({'email':'not-an-email'},{'phone':'12'},{'reference':'x'*61},{'email':5}):
+            self.assertEqual(self.start(page,**bad)[0],400,bad)
+        # Both given: the follow link goes both ways; the reference reaches the team.
+        with patch.object(sms,'_log') as logged:
+            status,data,_ = self.start(page,remember=False,email='Somsri@Example.com',phone='081-234-5678',reference='BD-1001')
+        self.assertEqual(status,201,data)
+        self.assertEqual([(l['via'],l['sent']) for l in data['links']],[('email',True),('sms',True)])
+        self.assertEqual(self.mailer.call_args.args[2],'somsri@example.com')
+        self.assertIn('/support/alpha/resume#t=',logged.call_args.args[0])
+        self.assertEqual(self.ok(self.admin,f"/api/conversations/{data['id']}")['conversation']['reference'],'BD-1001')
+        other,(status,_) = self.resume(self.emailed_token())
+        self.assertEqual(status,200)
+        self.assertEqual([c['id'] for c in self.overview(other)['conversations']],[data['id']])
+        # Without an address the chat is remembered as before, and no link is sent.
+        status,data,_ = self.start(self.browser())
+        self.assertEqual((status,data['links']),(201,[]))
+        # Which organizations take chats is never listed to the public: a visitor comes in by the organization's link.
+        self.assertIn(self.status(self.browser(),'/api/customer/guest-orgs'),(401,404))
+
     def test_start_without_an_account_then_follow_in_this_browser_and_forget(self):
         page = self.browser()
         first = self.overview(page)
@@ -194,7 +223,9 @@ class GuestChatTests(unittest.TestCase):
 
     def test_remember_switch_embed_cookie_refresh_and_unknown_cookie(self):
         page = self.browser()
-        status,data,headers = self.start(page,remember=False)
+        # Not remembered: a follow link must go somewhere (test_start_with_addresses_…).
+        self.customer_mail()
+        status,data,headers = self.start(page,remember=False,email='somsri@example.com')
         self.assertEqual(status,201)
         self.assertNotIn('Max-Age',headers['Set-Cookie'])
         self.assertFalse(self.overview(page)['guest']['remember'])
@@ -361,7 +392,7 @@ class GuestChatTests(unittest.TestCase):
         line = logged.call_args.args[0]
         self.assertIn('+66812345678',line)
         self.assertIn('องค์กร A',line)
-        token = re.search(r'/chat/alpha/resume#t=([A-Za-z0-9_-]{43})',line)[1]
+        token = re.search(r'/support/alpha/resume#t=([A-Za-z0-9_-]{43})',line)[1]
         phone,(status,_) = self.resume(token)
         self.assertEqual(status,200)
         me = self.overview(phone)['guest']
@@ -456,7 +487,7 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(guest.send_notices(self.org),1)
         text = self.line.call_args.args[2]
         self.assertNotIn('รายละเอียดลับ',text)
-        token = re.search(r'/chat/alpha/resume#t=([A-Za-z0-9_-]{43})',text)[1]
+        token = re.search(r'/support/alpha/resume#t=([A-Za-z0-9_-]{43})',text)[1]
         self.assertEqual(self.resume(token)[1][0],200)
         # A used code is gone; unlinking ends the link.
         with D.tenant(self.org) as db:
@@ -490,9 +521,9 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(self.mailer.call_count,sent+1)
         mail = self.mailer.call_args.args[3]
         self.assertEqual(self.mailer.call_args.args[2],'somsri@example.com')
-        self.assertIn('/chat/alpha/resume#t=',mail.get_content())
+        self.assertIn('/support/alpha/resume#t=',mail.get_content())
         self.assertNotIn('รายละเอียดลับ',mail.get_content()+mail['Subject'])
-        self.assertIn('/chat/alpha/resume#t=',logged.call_args.args[0])
+        self.assertIn('/support/alpha/resume#t=',logged.call_args.args[0])
         self.assertNotIn('รายละเอียดลับ',logged.call_args.args[0])
         # The fresh link works; still unread, a further reply is not told again.
         self.assertEqual(self.resume(self.emailed_token())[1][0],200)
@@ -600,7 +631,7 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(self.status(Client(self.base),'/api/settings/guest-chat'),401)
         current = self.ok(self.admin,'/api/settings/guest-chat')
         self.assertEqual((current['guest_chat'],current['widget']),({'enabled':True},{'enabled':False,'origins':[],'position':'right','theme':'purple','title':''}))
-        self.assertTrue(current['chat_url'].endswith('/chat/alpha'))
+        self.assertTrue(current['chat_url'].endswith('/support/alpha/tickets/new'))
         self.assertTrue(current['chat_qr'].startswith('data:image/svg+xml'))
         self.assertEqual(self.ok(Client(self.base),ORG+'/widget'),
                          {'enabled':False,'guest_chat':True,'position':'right','theme':'purple','title':'','origins':[]})

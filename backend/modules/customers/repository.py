@@ -198,6 +198,16 @@ def category_of(db, conversation_id):
     return row['category'] if row else ''
 
 
+# A reference the customer gave when starting the chat (an earlier case number, a member number…)
+def set_reference(db, conversation_id, reference):
+    db.execute('INSERT OR REPLACE INTO conversation_references VALUES(?,?)',(conversation_id,reference))
+
+
+def reference_of(db, conversation_id):
+    row = one(db,'SELECT reference FROM conversation_references WHERE conversation_id=?',(conversation_id,))
+    return row['reference'] if row else ''
+
+
 # The customer's conversations (tenant)
 def conversations_of(db, account_id, survey_since):
     """survey_pending: a satisfaction survey sent after survey_since is waiting for an answer."""

@@ -14,6 +14,7 @@ import { useMacroMenu } from '@/features/automation';
 import { ArticleRead, useArticleActions, type Article } from '@/features/knowledge';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextField, RichToolbar, useRichEditor, type RichEditor } from '@/features/rich/RichEditor';
+import { CUSTOMER_TOOLS } from '@/features/rich/RichTextArea';
 import { usePreferences, type Snippet } from '@/features/staff-account/prefs';
 import { followThread } from '@/features/rich/thread';
 import { readFiles } from '@/lib/files';
@@ -28,7 +29,7 @@ import { MentionMenu } from './MentionMenu';
 
 /* The reply composer (the old composer()): for the team, reply or internal note, formatting, attachments (also by
    dropping files on it), a canned reply, the knowledge search, macros, @mentions and the AI draft; for a customer
-   (publicView) a plain text box and attachments. Unsent team text is kept per conversation while moving around the
+   (publicView) a text box with simple formatting (CUSTOMER_TOOLS) and attachments. Unsent team text is kept per conversation while moving around the
    app. Markup: pages/inbox/composer, file-pill. While live updates are connected, typing a reply the customer will see
    tells them "กำลังพิมพ์…" (never while writing an internal note). */
 
@@ -198,7 +199,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   const articleLink = (article: Article) => {
     // A link the customer can open without signing in (the organization's public FAQ page); chat channels get the
     // address on its own line.
-    const url = `${window.location.origin}/chat/${work.tenant.slug}/faq/${article.id}`;
+    const url = `${window.location.origin}/support/${work.tenant.slug}/faq/${article.id}`;
     return channel === 'web' ? `แนะนำบทความ: [${article.title}](${url})` : `แนะนำบทความ: ${article.title}\n${url}`;
   };
 
@@ -470,24 +471,17 @@ function QuickReplies({ canned, snippets, onPick }: { canned: string; snippets: 
   );
 }
 
-// The text box grows with what is typed (up to the CSS max-height). Set through the DOM (CSSOM), which the
-// Content-Security-Policy allows, unlike a style attribute.
-function autoGrow(area: HTMLTextAreaElement) {
-  area.style.height = 'auto';
-  area.style.height = `${area.scrollHeight + 2}px`;
-}
-
 function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSent }: ComposerProps) {
   const toast = useToast();
   const refresh = useInvalidate();
+  const editor = useRichEditor();
   const pills = useFilePills();
   const drop = useDrop(pills.add);
-  const area = useRef<HTMLTextAreaElement>(null);
   const notifyTyping = useTypingNotifier(id);
   const placeholder = 'พิมพ์ข้อความของคุณที่นี่…';
   return (
     <Form
-      className={`composer${drop.over ? ' drag-over' : ''}`}
+      className={`composer customer-composer${drop.over ? ' drag-over' : ''}`}
       data-form="customer-message"
       data-conversation={id}
       data-channel={channel}
@@ -498,10 +492,7 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
         // The chat this composer belongs to, even when another one was opened while the files were being read.
         await postPortalMessage(publicSlug, id, { body: values.body ?? '', attachments });
         followThread(form);
-        if (area.current) {
-          area.current.value = '';
-          area.current.style.height = '';
-        }
+        editor.setValue('');
         pills.clear();
         await refresh(`/api/public/${publicSlug}`, '/api/customer/overview');
         followThread(form);
@@ -512,28 +503,23 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
       <label className="sr-only" htmlFor={`compose-${id}`}>
         ข้อความ
       </label>
-      <textarea
-        ref={area}
+      <RichTextField
+        editor={editor}
         id={`compose-${id}`}
         name="body"
         maxLength={channel === 'line' ? 5000 : 20000}
-        aria-keyshortcuts="Control+Enter Meta+Enter"
-        placeholder={placeholder}
-        onInput={(event) => {
-          autoGrow(event.currentTarget);
-          notifyTyping(event.currentTarget.value);
-        }}
-        onKeyDown={(event) => {
-          // Ctrl/⌘+Enter sends.
-          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            event.currentTarget.form?.requestSubmit();
-          }
-        }}
+        label="ข้อความ"
+        placeholder={`${placeholder} (${SEND_SHORTCUT} เพื่อส่ง)`}
+        sourcePlaceholder={placeholder}
+        className="composer-input"
+        keyShortcuts="Control+Enter Meta+Enter"
+        onChange={notifyTyping}
       />
       <FilePills files={pills.files} onRemove={pills.remove} />
       <div className="composer-bottom">
         <div className="composer-actions">
+          <RichToolbar editor={editor} tools={CUSTOMER_TOOLS} label="จัดรูปแบบข้อความ" className="composer-format" role="group" />
+          <span className="tool-divider" aria-hidden="true" />
           <AttachButton id={id} inputRef={pills.inputRef} onChange={pills.onChange} />
           <FileProblem problem={pills.problem} />
         </div>

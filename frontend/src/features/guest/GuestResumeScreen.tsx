@@ -8,10 +8,10 @@ import { CustomerLinkPage } from '@/features/auth/components/Frames';
 import { api, ApiError, setGuestCredentials } from '@/lib/api/client';
 import type { PublicOrgInfo } from '@/features/auth/types';
 import { useApi, useInvalidate } from '@/lib/query';
-import { guestPath, resumeGuest } from './api';
+import { guestPages, guestPath, resumeGuest } from './api';
 import type { GuestOverview } from './types';
 
-/* /chat/<org>/resume#t=<token>: a follow link from email or SMS. The token is in the fragment, so it never reaches a
+/* /support/<org>/resume#t=<token>: a follow link from email or SMS. The token is in the fragment, so it never reaches a
    server log; it is read once, dropped from the address, and exchanged for this browser's own guest cookie. */
 
 export function GuestResumeScreen({ slug }: { slug: string }) {
@@ -41,7 +41,7 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
         // The new cookie's csrf comes with the next GET …/guest (the chat page reads it first).
         setGuestCredentials(null);
         await refresh(guestPath(slug));
-        router.replace(`/chat/${slug}${conversation_id ? `?c=${encodeURIComponent(conversation_id)}` : ''}`);
+        router.replace(guestPages.chat(slug, conversation_id || undefined));
       })
       .catch((error: unknown) => {
         const expired = error instanceof ApiError && [400, 401, 404, 410].includes(error.status);
@@ -59,7 +59,7 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
           <>
             <h1>เปิดแชทไม่ได้</h1>
             <p>{problem}</p>
-            <Link className="btn primary customer-submit" href={`/chat/${slug}`}>
+            <Link className="btn primary customer-submit" href={guestPages.chat(slug)}>
               <Icon name="plus" />
               เริ่มแชทใหม่
             </Link>

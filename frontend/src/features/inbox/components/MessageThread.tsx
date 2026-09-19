@@ -57,8 +57,8 @@ export function Messages({ messages, publicView = false, publicSlug, receipt }: 
 }
 
 function MessageItem({ m, publicView, publicSlug, receipt }: { m: ThreadMessage; publicView: boolean; publicSlug?: string | null; receipt: Receipt | null }) {
-  // What the team writes may carry formatting from the composer tools; what a customer types is shown as typed.
-  const rich = m.kind !== 'customer' && looksLikeMarkdown(m.body);
+  // Both sides may format from their composer tools; a customer's links and images stay plain text (MarkdownBlocks).
+  const rich = looksLikeMarkdown(m.body);
   return (
     <article className={`message ${m.kind}`} data-message-id={m.id}>
       <Avatar name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
@@ -88,7 +88,7 @@ function MessageItem({ m, publicView, publicSlug, receipt }: { m: ThreadMessage;
           </time>
         </div>
         <div className={`bubble${rich ? ' rich' : ''}`}>
-          {rich ? <MarkdownBlocks text={m.body} /> : m.body}
+          {rich ? <MarkdownBlocks text={m.body} plain={m.kind === 'customer'} /> : m.body}
           <MessageFiles files={m.attachments} publicSlug={publicView ? publicSlug : undefined} />
         </div>
         <AiCitations citations={m.citations} />

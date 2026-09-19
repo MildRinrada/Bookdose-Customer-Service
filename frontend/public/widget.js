@@ -2,7 +2,7 @@
 
      <script src="https://<bookdose host>/widget.js" data-org="<organization code>" async></script>
 
-   Adds a floating chat button that opens the organization's chat (/chat/<code>/embed) in a panel. Plain ES2017, no
+   Adds a floating chat button that opens the organization's chat (/support/<code>/embed) in a panel. Plain ES2017, no
    framework, and no <style> element or style attribute: every style is set through element.style, which a host page's
    Content-Security-Policy allows. The chat inside the iframe tells this script, by postMessage, when it is ready (with
    the button's position, colour and title) and how many replies are unread; messages are only accepted from the
@@ -21,7 +21,7 @@
   registry[slug] = true;
 
   const base = new URL(script.src, window.location.href).origin;
-  const chatUrl = base + '/chat/' + slug;
+  const chatUrl = base + '/support/' + slug;
   const THEMES = { purple: '#5835b3', blue: '#1f5f8b', green: '#2f7556', orange: '#b4540a', charcoal: '#26292d' };
   const Z = '2147483000';
   const SVG = 'http://www.w3.org/2000/svg';

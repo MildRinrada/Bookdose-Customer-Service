@@ -1468,3 +1468,13 @@ select:disabled {
   margin: 0 auto;
   padding: 32px 20px 48px;
 }
+
+/* A customer's formatted message box in a form (features/rich/RichTextArea): the toolbar on top, a shorter area. */
+.rich-field .editor-toolbar {
+  margin-top: 6px;
+}
+.richtext.rich-box {
+  height: auto;
+  min-height: 130px;
+  max-height: 340px;
+}

@@ -12,7 +12,7 @@ import { useApi } from '@/lib/query';
 import { guestPages, publicOrgPath } from './api';
 import { GuestFrame } from './components/GuestFrame';
 
-/* /chat/<org>/faq and /chat/<org>/faq/<id>: the organization's published answers for anyone, without signing in -
+/* /support/<org>/faq and /support/<org>/faq/<id>: the organization's published answers for anyone, without signing in -
    its own public articles and the platform's articles for customers (GET /api/public/<org>). The links a team sends
    in a chat ("แนะนำบทความ") open here, so a visitor without an account can read them. Markup: the signed-in
    customer's FAQ pieces (pages/customer/customer-faq.html) inside the guest page. */

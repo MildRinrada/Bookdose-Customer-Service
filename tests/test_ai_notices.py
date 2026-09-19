@@ -123,7 +123,7 @@ class GuestAINoticeTests(guest_tests.GuestChatTests):
         mail = self.mailer.call_args.args[3]
         self.assertIn('ผู้ช่วย AI ของ องค์กร A',mail.get_content())
         self.assertNotIn('เปิดเมนูรายงาน',mail.get_content())
-        self.assertTrue(re.search(r'/chat/alpha/resume#t=[A-Za-z0-9_-]{43}',mail.get_content()))
+        self.assertTrue(re.search(r'/support/alpha/resume#t=[A-Za-z0-9_-]{43}',mail.get_content()))
 
 
 # Only the new tests: the guest chat's own tests run from test_guest_chat.

@@ -21,13 +21,14 @@ import { ChannelField } from '../util';
 
 const origin = () => (typeof window === 'undefined' ? '' : window.location.origin);
 
-export function ChannelSettingsPanel() {
+/** The LINE and email settings, or only one of them (`kind`: its own page in ตั้งค่าองค์กร). */
+export function ChannelSettingsPanel({ kind }: { kind?: ChannelSetting['kind'] }) {
   const channels = useApi<ChannelSetting[]>(CHANNELS_PATH);
   if (channels.error) return <ErrorState error={channels.error} onRetry={() => void channels.refetch()} />;
   if (!channels.data) return <PageLoading />;
   return (
     <>
-      {channels.data.map((c) => (
+      {channels.data.filter((c) => !kind || c.kind === kind).map((c) => (
         <ChannelCard key={c.kind} c={c} />
       ))}
     </>

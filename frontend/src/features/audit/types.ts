@@ -19,4 +19,17 @@ export type AuditPage = { events: AuditEvent[] };
 export type AuditGroup = 'work' | 'ai' | 'security' | 'settings';
 
 /** The activity log's filters, kept while moving between screens. */
-export type AuditFilters = { actor?: string; group?: string; from?: string; to?: string };
+export type AuditFilters = {
+  /** Free text: who, what or the item. */
+  actor?: string;
+  /** A kind (AuditGroup) or 'important'. */
+  group?: string;
+  /** A quick period (auditRanges); 'custom' uses from/to. */
+  range?: string;
+  from?: string;
+  to?: string;
+  /** Who did it (the actor's shown name). */
+  person?: string;
+  /** Show the system's and the AI's own events too. */
+  automated?: boolean;
+};

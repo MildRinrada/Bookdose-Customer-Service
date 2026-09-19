@@ -1,45 +1,78 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useRef, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
 import { AiSettingsPanel } from '@/features/ai';
-import { ChannelSettingsPanel, FacebookSettingsPanel } from '@/features/channels';
+import { ChannelSettingsPanel, CHANNELS_PATH, FACEBOOK_PATH, FacebookSettingsPanel, type ChannelSetting, type FacebookSetting } from '@/features/channels';
 import { roleLabels } from '@/lib/labels';
+import { useApi } from '@/lib/query';
 import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { GuestChatPanel } from './components/GuestChatPanel';
 import { JoinLinksPanel } from './components/JoinLinksPanel';
-import { OverviewPanel } from './components/OverviewPanel';
+import { BackupPanel, CategoriesPanel, ProfilePanel, ServicePanel } from './components/OverviewPanel';
 import { TeamsPanel } from './components/TeamsPanel';
-import { isSettingsTab, settingsTabs, type SettingsTab } from './labels';
+import { partsOf, settingsPlaceOf, settingsParts, settingsTabs, type SettingsPart, type SettingsTab } from './labels';
 
-/* Organization settings, in sections a person can point at: the organization and how it promises to serve, the
-   people who do the work, the links customers join with, the channels customers write from and the AI assistant. Every panel is in the
-   page (the others hidden), like before, so each loads its own data when the screen opens.
-   Markup: old-frontend/pages/settings/settings.html, settings-tab.html. */
+/* Organization settings: the sections in the menu on the left (as before), one open on the right. A section with too
+   many fields for one page (ภาพรวมและบริการ, LINE / Email / Facebook) opens as icons of its parts first; an icon opens
+   that part alone (/settings?tab=<part>), with the way back to the icons above it. Markup: pages/settings.css
+   (settings-frame, settings-nav, settings-tiles, settings-part). */
+
+type Status = { label: string; tone: 'on' | 'off' | 'warn' } | null;
+
+/** Whether each channel is connected, from what its page reads anyway (cached, so opening it is instant). */
+function useChannelStatuses(): Partial<Record<SettingsPart, Status>> {
+  const channels = useApi<ChannelSetting[]>(CHANNELS_PATH).data ?? [];
+  const facebook = useApi<FacebookSetting>(FACEBOOK_PATH).data;
+  const channel = (c: { enabled: boolean; last_error?: string } | undefined): Status =>
+    !c ? null : c.enabled && c.last_error ? { label: 'มีปัญหา', tone: 'warn' } : c.enabled ? { label: 'เชื่อมแล้ว', tone: 'on' } : { label: 'ยังไม่เชื่อม', tone: 'off' };
+  return {
+    line: channel(channels.find((c) => c.kind === 'line')),
+    email: channel(channels.find((c) => c.kind === 'email')),
+    facebook: channel(facebook),
+  };
+}
+
+/** The menu ends at the bottom of the screen, so its lower sections are reached by scrolling the menu, not the page
+    (wide screens; CSSOM, not a style attribute, which the Content-Security-Policy refuses). */
+function useFitToScreen(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const wide = window.matchMedia('(min-width: 1101px)');
+    // Measured from where the menu starts on the page (its frame, which never sticks), so the height stays the same
+    // while the page scrolls: a height that followed the scroll made the page longer as it moved, and slow to scroll.
+    const fit = () => {
+      const el = ref.current;
+      const frame = el?.parentElement;
+      if (!el || !frame) return;
+      if (!wide.matches) return el.style.removeProperty('max-height');
+      const top = frame.getBoundingClientRect().top + window.scrollY;
+      el.style.setProperty('max-height', `${Math.max(200, Math.round(window.innerHeight - top - 12))}px`);
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [ref]);
+}
+
+function StatusChip({ status }: { status: Status | undefined }) {
+  if (!status) return null;
+  return <span className={`settings-status ${status.tone}`}>{status.label}</span>;
+}
 
 export function SettingsScreen({ tab }: { tab?: string }) {
   const work = useWork();
   const [remembered, setRemembered] = useUiState<SettingsTab>('settings:tab', 'overview');
-  const [current, setCurrent] = useState<SettingsTab>(isSettingsTab(tab) ? tab : remembered);
-
-  // A link to /settings?tab=… while already here picks that section.
-  const [seenTab, setSeenTab] = useState(tab);
-  if (tab !== seenTab) {
-    setSeenTab(tab);
-    if (isSettingsTab(tab)) setCurrent(tab);
-  }
-  // The section asked for in the address is remembered for the next visit to /settings.
+  // /settings alone opens the section used last.
+  const place = settingsPlaceOf(tab) ?? { tab: remembered, part: null };
+  const current = place.tab;
   useEffect(() => {
-    if (isSettingsTab(tab)) setRemembered(tab);
-  }, [tab, setRemembered]);
-
-  const select = (key: SettingsTab) => {
-    setCurrent(key);
-    setRemembered(key);
-    // Only the address changes (as history.replaceState did before); the screen is already showing the section.
-    window.history.replaceState(null, '', `/settings?tab=${key}`);
-  };
+    setRemembered(current);
+    document.title = `${place.part ? settingsParts[place.part].label : settingsTabs[current].label} · ตั้งค่าองค์กร`;
+  }, [current, place.part, setRemembered]);
+  const nav = useRef<HTMLElement>(null);
+  useFitToScreen(nav);
 
   return (
     <>
@@ -52,21 +85,18 @@ export function SettingsScreen({ tab }: { tab?: string }) {
         </div>
       </div>
       <div className="settings-frame">
-        <nav className="settings-nav" role="tablist" aria-label="หมวดการตั้งค่า">
+        <nav ref={nav} className="settings-nav" aria-label="หมวดการตั้งค่า">
           {(Object.keys(settingsTabs) as SettingsTab[]).map((key) => {
             const meta = settingsTabs[key];
             const active = key === current;
             return (
-              <button
+              <Link
                 key={key}
-                type="button"
+                href={`/settings?tab=${key}`}
                 className={`settings-nav-item${active ? ' active' : ''}`}
-                role="tab"
-                aria-label={meta.label}
-                aria-selected={active}
-                aria-controls={`settings-${key}`}
+                aria-current={active ? 'page' : undefined}
                 data-tab={key}
-                onClick={() => select(key)}
+                scroll={false}
               >
                 <span className="settings-nav-icon">
                   <Icon name={meta.icon} />
@@ -75,32 +105,96 @@ export function SettingsScreen({ tab }: { tab?: string }) {
                   <strong>{meta.label}</strong>
                   <span className="settings-nav-hint">{meta.hint}</span>
                 </span>
-              </button>
+              </Link>
             );
           })}
         </nav>
-        <div className="settings-panels">
-          <section id="settings-overview" role="tabpanel" aria-label="ภาพรวมและบริการ" hidden={current !== 'overview'}>
-            <OverviewPanel />
-          </section>
-          <section id="settings-teams" role="tabpanel" aria-label="ทีมและสมาชิก" hidden={current !== 'teams'}>
-            <TeamsPanel />
-          </section>
-          <section id="settings-invites" role="tabpanel" aria-label="ลิงก์และ QR สำหรับลูกค้า" hidden={current !== 'invites'}>
-            <JoinLinksPanel />
-          </section>
-          <section id="settings-webchat" role="tabpanel" aria-label="แชทบนเว็บไซต์" hidden={current !== 'webchat'}>
-            <GuestChatPanel />
-          </section>
-          <section id="settings-connections" role="tabpanel" aria-label="LINE / Email / Facebook" hidden={current !== 'connections'}>
-            <ChannelSettingsPanel />
-            <FacebookSettingsPanel />
-          </section>
-          <section id="settings-ai" role="tabpanel" aria-label="AI Assistant" hidden={current !== 'ai'}>
-            <AiSettingsPanel />
-          </section>
+        <div className="settings-panels" id={`settings-${place.part ?? current}`}>
+          <Section tab={current} part={place.part} />
         </div>
       </div>
     </>
   );
+}
+
+function Section({ tab, part }: { tab: SettingsTab; part: SettingsPart | null }) {
+  const statuses = useChannelStatuses();
+  const parts = partsOf(tab);
+  if (parts.length && !part)
+    return (
+      <section className="settings-part-list" aria-labelledby="settings-part-title">
+        <h2 id="settings-part-title">{settingsTabs[tab].label}</h2>
+        <p>เลือกส่วนที่ต้องการตั้งค่า</p>
+        <div className="settings-tiles">
+          {parts.map((key) => {
+            const meta = settingsParts[key];
+            return (
+              <Link key={key} className="settings-tile" href={`/settings?tab=${key}`} scroll={false}>
+                <span className={`settings-tile-icon icon-${key}`}>
+                  <Icon name={meta.icon} />
+                </span>
+                <span className="settings-tile-text">
+                  <strong>{meta.label}</strong>
+                  <small>{meta.hint}</small>
+                </span>
+                <StatusChip status={statuses[key]} />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+    );
+  if (part) {
+    const meta = settingsParts[part];
+    return (
+      <>
+        <Link className="settings-part-back" href={`/settings?tab=${tab}`} scroll={false}>
+          <Icon name="back" />
+          {settingsTabs[tab].label}
+        </Link>
+        <div className="settings-part-head">
+          <span className={`settings-tile-icon icon-${part}`}>
+            <Icon name={meta.icon} />
+          </span>
+          <div>
+            <h2>{meta.label}</h2>
+            <p>{meta.hint}</p>
+          </div>
+          <StatusChip status={statuses[part]} />
+        </div>
+        <Part part={part} />
+      </>
+    );
+  }
+  switch (tab) {
+    case 'teams':
+      return <TeamsPanel />;
+    case 'invites':
+      return <JoinLinksPanel />;
+    case 'webchat':
+      return <GuestChatPanel />;
+    case 'ai':
+      return <AiSettingsPanel />;
+    default:
+      return null;
+  }
+}
+
+function Part({ part }: { part: SettingsPart }) {
+  switch (part) {
+    case 'profile':
+      return <ProfilePanel />;
+    case 'service':
+      return <ServicePanel />;
+    case 'categories':
+      return <CategoriesPanel />;
+    case 'backup':
+      return <BackupPanel />;
+    case 'line':
+      return <ChannelSettingsPanel kind="line" />;
+    case 'email':
+      return <ChannelSettingsPanel kind="email" />;
+    case 'facebook':
+      return <FacebookSettingsPanel />;
+  }
 }

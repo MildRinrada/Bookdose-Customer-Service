@@ -58,7 +58,7 @@ html:has(.composer) .assistant-fab.open {
   display: flex;
   flex-direction: column;
   width: min(400px, calc(100vw - 32px));
-  height: min(600px, calc(100vh - 120px));
+  height: min(520px, calc(100vh - 120px));
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--paper, #fff);
@@ -68,7 +68,7 @@ html:has(.composer) .assistant-fab.open {
 }
 html:has(.composer) .assistant-panel {
   bottom: 22px;
-  height: min(620px, calc(100vh - 110px));
+  height: min(540px, calc(100vh - 110px));
 }
 @keyframes assistant-in {
   from { opacity: 0; transform: translateY(8px) scale(.98); }
@@ -124,25 +124,187 @@ html:has(.composer) .assistant-panel {
 .assistant-empty p {
   margin: 0 0 2px;
 }
-.assistant-suggestion {
-  padding: 8px 12px;
-  border: 1px solid #e4e4e4;
-  border-radius: 12px;
+/* Before the first question (features/ai/components/AiAssistant): a greeting, a one-line question box whose
+   placeholder types examples, the examples as plain lines and one short note, with room around them. Asking (or the
+   tips) fades this up and away and the chat comes in; new messages slide in and an answer's words appear as written. */
+.assistant-welcome {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: 18px;
+  min-height: 0;
+  padding: 22px 26px 18px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: #fafaf8;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.assistant-welcome::-webkit-scrollbar {
+  display: none;
+}
+.assistant-welcome.leaving {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.assistant-hello {
+  text-align: center;
+}
+.assistant-hello h2 {
+  margin: 0;
+  color: #1c1c1e;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.assistant-hello p {
+  margin: 2px 0 0;
+  color: #515154;
+}
+/* The box is the frame: the text and the send button side by side inside it, so the button never crosses its edge. */
+.assistant-ask {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 7px 7px 7px 15px;
+  border: 1px solid #c7c7cc;
+  border-radius: 14px;
   background: #fff;
-  color: #3e3e3e;
+  box-shadow: 0 2px 8px #0000000a;
+  transition: border-color .15s, box-shadow .15s;
+}
+.assistant-ask:focus-within {
+  border-color: #353d40;
+  box-shadow: 0 0 0 3px #b4b4b44d;
+}
+.assistant-ask textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  max-height: 120px;
+  padding: 5px 0;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  border: 0;
+  background: transparent;
+  color: #1c1c1e;
   font: inherit;
-  font-size: .9375rem;
+  line-height: 1.5;
+  resize: none;
+}
+.assistant-ask textarea:focus-visible {
+  outline: none;
+}
+.assistant-ask textarea::-webkit-scrollbar {
+  display: none;
+}
+/* The typed example stays on one line. */
+.assistant-ask textarea::placeholder {
+  overflow: hidden;
+  color: #6e6e73;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assistant-ask-send {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #353d40;
+  color: #fff;
+  cursor: pointer;
+}
+/* Nothing to send yet: only the grey arrow. */
+.assistant-ask-send:disabled {
+  background: transparent;
+  color: #8e8e93;
+  cursor: default;
+}
+.assistant-ask-send .icon {
+  width: 16px;
+  height: 16px;
+}
+.assistant-suggestions {
+  display: grid;
+  gap: 2px;
+}
+.assistant-suggestions-title {
+  margin: 0 0 4px 8px;
+  color: #515154;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.assistant-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #3a3a3c;
+  font: inherit;
+  font-size: .9rem;
+  line-height: 1.5;
   text-align: left;
   cursor: pointer;
 }
-.assistant-suggestion:hover {
-  background: #f8f8f8;
+.assistant-suggestion:hover,.assistant-suggestion:focus-visible {
+  background: #efeff2;
+  color: #1c1c1e;
+  outline: none;
 }
-
+.assistant-suggestion .icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin-top: 3px;
+  color: #6e6e73;
+}
+.assistant-welcome-note {
+  margin: 0;
+  color: #6e6e73;
+  font-size: .8rem;
+  text-align: center;
+}
+.assistant-tips-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1c1c1e;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+/* The chat coming in after the first screen, and each new message. */
+.assistant-log,.assistant-form {
+  animation: assistant-fade .22s ease-out;
+}
+.assistant-turn.fresh {
+  animation: assistant-rise .26s ease-out;
+}
+@keyframes assistant-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes assistant-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
 .assistant-turn {
   display: grid;
   gap: 4px;
   margin-bottom: 12px;
+}
+.assistant-turn.assistant {
+  justify-items: start;
 }
 .assistant-turn.user {
   justify-items: end;
@@ -209,33 +371,11 @@ html:has(.composer) .assistant-panel {
   40% { opacity: 1; transform: translateY(-3px); }
 }
 
+/* In the chat, the question box of the first screen sits at the bottom (.assistant-ask). */
 .assistant-form {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 10px;
-  border-top: 1px solid var(--line);
-  background: #fff;
-}
-.assistant-form textarea {
-  flex: 1;
-  min-width: 0;
-  max-height: 140px;
-  padding: 9px 11px;
-  border: 1px solid var(--control-line, #c8ccd4);
-  border-radius: 10px;
-  font: inherit;
-  resize: none;
-}
-.assistant-form textarea:focus-visible {
-  outline: 2px solid #b4b4b4;
-  outline-offset: 0;
-}
-.assistant-form .btn {
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  justify-content: center;
+  flex-shrink: 0;
+  padding: 10px 14px 14px;
+  background: #fafaf8;
 }
 
 @media (max-width: 600px) {
@@ -253,7 +393,7 @@ html:has(.composer) .assistant-panel {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .assistant-panel,.assistant-typing span,.assistant-fab {
+  .assistant-panel,.assistant-typing span,.assistant-fab,.assistant-log,.assistant-form,.assistant-turn.fresh,.assistant-welcome,.assistant-ask {
     animation: none;
     transition: none;
   }

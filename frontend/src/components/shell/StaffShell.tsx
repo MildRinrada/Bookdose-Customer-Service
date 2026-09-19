@@ -19,6 +19,7 @@ import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf,
 import { AccountSwitcher } from '@/features/staff-account/AccountSwitcher';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
+import { OrgSwitch } from './OrgSwitch';
 import { SessionGuard } from './SessionGuard';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarTips, SidebarToggle, useSidebar } from './chrome';
 import { TextSizeMenu } from './TextSize';
@@ -159,27 +160,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           <Brand />
           <SidebarToggle collapsed={collapsed} onToggle={toggleCollapsed} />
         </div>
-        <div className="workspace-select">
-          <Avatar name={work?.tenant.name || 'B'} />
-          <div className="grow">
-            <select
-              id="tenant-switch"
-              aria-label="เลือกองค์กร"
-              value={boot.tenant_id ?? ''}
-              onChange={(e) => switchTenant(e.target.value).catch((error: Error) => toast(error.message, true))}
-            >
-              {activeMemberships.length ? (
-                activeMemberships.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))
-              ) : (
-                <option value="">ไม่มีองค์กรที่ใช้งานอยู่</option>
-              )}
-            </select>
-          </div>
-        </div>
+        <OrgSwitch memberships={activeMemberships} current={boot.tenant_id ?? null} onSwitch={(id) => switchTenant(id)} />
         {user.platform_admin && (
           <div className="platform-scope" role="note">
             <Icon name="globe" />

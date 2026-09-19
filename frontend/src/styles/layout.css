@@ -973,3 +973,223 @@ html.platform-mode .platform-banner .icon {
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
+
+/* The organization switch (components/shell/OrgSwitch): the whole card is the button, the organization's name with
+   the member's role under it; the menu lists every organization with its role and ticks the open one. */
+.sidebar .workspace-select.org-switch {
+  display: block;
+  padding: 0;
+}
+.org-switch-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 7px 10px 7px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.org-switch-button:focus-visible {
+  outline: none;
+}
+.org-switch .avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: .95rem;
+  font-weight: 800;
+}
+.org-switch-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.org-switch-text strong {
+  overflow: hidden;
+  font-size: .98rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.org-switch-text small {
+  color: #b5c0bc;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.org-switch-button>.icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: #d9e1dd;
+  transition: transform .15s;
+}
+.org-switch-button[aria-expanded=true]>.icon {
+  transform: rotate(180deg);
+}
+.org-menu {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid #e5e5ea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 40px #0000002e, 0 2px 6px #00000014;
+  color: #1c1c1e;
+}
+.org-menu[hidden] {
+  display: none;
+}
+.org-menu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 8px 6px;
+  color: #515154;
+  font-size: .78rem;
+  font-weight: 800;
+}
+.org-menu-title span {
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ececf0;
+  color: #3a3a3c;
+  text-align: center;
+}
+.org-menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 6px;
+  padding: 0 10px;
+  border: 1px solid #c7c7cc;
+  border-radius: 10px;
+}
+.org-menu-search:focus-within {
+  border-color: #1c1c1e;
+}
+.org-menu-search .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: #515154;
+}
+.org-menu-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.org-menu-list {
+  display: grid;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.org-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #1c1c1e;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.org-option:hover,.org-option:focus-visible {
+  background: #f2f2f5;
+  outline: none;
+}
+.org-option[aria-checked=true] {
+  background: #f2f2f5;
+}
+.org-option .avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 800;
+}
+.org-option-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+.org-option-text strong {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.org-option-text small {
+  color: #515154;
+  font-size: .8rem;
+}
+.org-option>.icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.org-menu-empty {
+  margin: 6px 10px;
+  color: #515154;
+  font-size: .88rem;
+}
+.org-menu-more {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 10px;
+  border-top: 1px solid #ececf0;
+  border-radius: 0 0 10px 10px;
+  color: #1c1c1e;
+  font-weight: 600;
+  text-decoration: none;
+}
+.org-menu-more:hover {
+  background: #f2f2f5;
+  text-decoration: none;
+}
+.org-menu-more .icon {
+  width: 16px;
+  height: 16px;
+}
+@media (min-width:761px) {
+  html.sidebar-collapsed .org-switch-text,html.sidebar-collapsed .org-switch-button>.icon {
+    display: none;
+  }
+  html.sidebar-collapsed .org-switch-button {
+    justify-content: center;
+    padding: 8px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .org-switch-button>.icon {
+    transition: none;
+  }
+}
+/* Each organization in the menu keeps its own colour (theme.css paints every avatar in the sidebar card alike). */
+.sidebar .org-switch .org-menu .avatar { background: var(--info-soft); color: var(--link); }
+.sidebar .org-switch .org-menu .avatar.a1 { background: var(--green-soft); color: var(--green); }
+.sidebar .org-switch .org-menu .avatar.a2 { background: #f8ecdf; color: #925c30; }

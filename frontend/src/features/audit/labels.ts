@@ -148,3 +148,26 @@ export const auditFieldLabels: Record<string, string> = {
   team_id: 'ทีม',
   assignee_id: 'ผู้รับผิดชอบ',
 };
+
+/* What an owner looks for first: data removed or put back, exports, who may do what, and how the organization is set
+   up. Such rows carry a "สำคัญ" mark and have their own tab. */
+export function auditImportant(action: string): boolean {
+  return (
+    /\.(deleted|purged|restored|exported|suspended|revoked|merged)$/.test(action) ||
+    /^(member|team|tenant|support_access)\./.test(action) ||
+    /settings/.test(action) ||
+    ['auth.account_linked', 'backup.created', 'tickets.exported'].includes(action)
+  );
+}
+
+/** Done by the system rather than a person: the AI's own work and a channel's delivery reports. Hidden unless asked. */
+export function auditAutomated(event: AuditEvent): boolean {
+  return (
+    (auditEventGroup(event.action) === 'ai' && event.action !== 'ai.settings_updated') ||
+    /^channel\.(accepted|failed|unknown|message_received)$/.test(event.action) ||
+    /^(line\.join|line\.leave)$/.test(event.action)
+  );
+}
+
+/** The periods offered as buttons; '' is every event kept, 'custom' shows the date fields. */
+export const auditRanges: Record<string, string> = { today: 'วันนี้', '7': '7 วัน', '30': '30 วัน', '': 'ทั้งหมด', custom: 'เลือกวันที่' };

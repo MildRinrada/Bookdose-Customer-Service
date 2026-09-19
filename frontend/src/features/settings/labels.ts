@@ -11,8 +11,31 @@ export const settingsTabs = {
 
 export type SettingsTab = keyof typeof settingsTabs;
 
-export const isSettingsTab = (value: string | null | undefined): value is SettingsTab =>
-  typeof value === 'string' && Object.prototype.hasOwnProperty.call(settingsTabs, value);
+/** The sections too full of fields to share one page: their parts, chosen by an icon (?tab=<part>). */
+export const settingsParts = {
+  profile: { tab: 'overview', label: 'ข้อมูลองค์กร', hint: 'ชื่อ รหัสองค์กร และลิงก์หน้าลูกค้า', icon: 'globe' },
+  service: { tab: 'overview', label: 'มาตรฐานบริการ', hint: 'เวลาตอบกลับ (SLA) ข้อความต้อนรับ และคำตอบสำเร็จรูป', icon: 'clock' },
+  categories: { tab: 'overview', label: 'หมวดเรื่อง', hint: 'หมวดที่ลูกค้าเลือกตอนเริ่มแชท และทีมที่ดูแล', icon: 'list' },
+  backup: { tab: 'overview', label: 'ข้อมูลและการสำรอง', hint: 'ดาวน์โหลดไฟล์สำรอง และถังขยะ', icon: 'shield' },
+  line: { tab: 'connections', label: 'LINE', hint: 'LINE Official Account ขององค์กร', icon: 'chat' },
+  email: { tab: 'connections', label: 'อีเมล', hint: 'รับและตอบอีเมลของลูกค้าในกล่องข้อความ', icon: 'mail' },
+  facebook: { tab: 'connections', label: 'Facebook Messenger', hint: 'ข้อความจากเพจ Facebook ขององค์กร', icon: 'facebook' },
+} as const satisfies Record<string, { tab: SettingsTab; label: string; hint: string; icon: string }>;
+
+export type SettingsPart = keyof typeof settingsParts;
+
+const has = (o: object, key: string) => Object.prototype.hasOwnProperty.call(o, key);
+
+export const isSettingsTab = (value: string | null | undefined): value is SettingsTab => typeof value === 'string' && has(settingsTabs, value);
+
+/** Where an address (?tab=) points: a section, and the part of it when it has parts; null when it names nothing. */
+export function settingsPlaceOf(value: string | null | undefined): { tab: SettingsTab; part: SettingsPart | null } | null {
+  if (isSettingsTab(value)) return { tab: value, part: null };
+  if (typeof value === 'string' && has(settingsParts, value)) return { tab: settingsParts[value as SettingsPart].tab, part: value as SettingsPart };
+  return null;
+}
+
+export const partsOf = (tab: SettingsTab) => (Object.keys(settingsParts) as SettingsPart[]).filter((key) => settingsParts[key].tab === tab);
 
 /** Badge words for a member's access (the old badge('active'|'suspended')). */
 export const memberStatusLabels: Record<string, string> = { active: 'เปิดใช้งาน', suspended: 'ระงับใช้งาน' };

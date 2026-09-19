@@ -368,3 +368,183 @@
   color: #9a3412;
   font-weight: 600;
 }
+
+/* A section with many fields (features/settings/SettingsScreen): its parts as icons, then one part at a time under
+   the way back to them. */
+a.settings-nav-item,a.settings-nav-item:hover {
+  text-decoration: none;
+}
+/* ตั้งค่าองค์กร: the menu scrolls by itself (its scrollbar hidden), so scrolling it never moves the page beside it. */
+@media (min-width: 1101px) {
+  .settings-frame:not(.account-frame) .settings-nav {
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .settings-frame:not(.account-frame) .settings-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+.settings-part-list h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.settings-part-list>p {
+  margin: 2px 0 16px;
+  color: #515154;
+}
+.settings-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(260px,1fr));
+  gap: 12px;
+}
+.settings-tile {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 4px 14px;
+  min-height: 96px;
+  padding: 16px 18px;
+  border: 1px solid #e5e5ea;
+  border-radius: 18px;
+  background: #fff;
+  color: #1c1c1e;
+  text-decoration: none;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.settings-tile:hover {
+  border-color: #1c1c1e;
+  box-shadow: 0 8px 22px #0000000f;
+  transform: translateY(-1px);
+}
+.settings-tile:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.settings-tile-icon {
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #1c1c1e;
+  color: #fff;
+}
+.settings-tile-icon .icon {
+  width: 22px;
+  height: 22px;
+}
+/* The channels keep their own colours, so each is found at a glance. */
+.settings-tile-icon.icon-line {
+  background: #06c755;
+}
+.settings-tile-icon.icon-facebook {
+  background: #1877f2;
+}
+.settings-tile-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.settings-tile-text strong {
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+.settings-tile-text small {
+  color: #515154;
+  font-size: .86rem;
+  line-height: 1.5;
+}
+.settings-tile .settings-status {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 6px;
+}
+.settings-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #ececf0;
+  color: #3a3a3c;
+  font-size: .8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.settings-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8e8e93;
+}
+.settings-status.on {
+  background: #e3f5ec;
+  color: #166344;
+}
+.settings-status.on::before {
+  background: #1f9d63;
+}
+.settings-status.warn {
+  background: #fff4d6;
+  color: #7a4507;
+}
+.settings-status.warn::before {
+  background: #d49a2a;
+}
+
+.settings-part-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #1c1c1e;
+  font-weight: 700;
+}
+.settings-part-back .icon {
+  width: 16px;
+  height: 16px;
+}
+.settings-part-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.settings-part-head>div {
+  flex: 1;
+  min-width: 0;
+}
+.settings-part-head h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.settings-part-head p {
+  margin: 2px 0 0;
+  color: #515154;
+}
+.settings-panels>.card+.card,.settings-panels>*+.card,.settings-panels>form+* {
+  margin-top: 18px;
+}
+@media (max-width: 560px) {
+  .settings-tiles {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .settings-part-head {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-tile {
+    transition: none;
+  }
+  .settings-tile:hover {
+    transform: none;
+  }
+}

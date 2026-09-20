@@ -18,7 +18,11 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
   const router = useRouter();
   const refresh = useInvalidate();
   const [problem, setProblem] = useState('');
+  // The browser already follows another guest's chats: the link waits until the person says to open it.
+  const [asking, setAsking] = useState('');
+  const [busy, setBusy] = useState(false);
   const started = useRef(false);
+  const openLink = useRef<(() => Promise<void>) | null>(null);
   const info = useApi<PublicOrgInfo>(`/api/public/${slug}`);
 
   useEffect(() => {
@@ -32,18 +36,33 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
       fail('ลิงก์ไม่ครบ ขอลิงก์ใหม่จากแชทเดิม หรือเริ่มแชทใหม่');
       return;
     }
+    const open = async (replace: boolean) => {
+      const { conversation_id } = await resumeGuest(slug, token, replace);
+      // The new cookie's csrf comes with the next GET …/guest (the chat page reads it first).
+      setGuestCredentials(null);
+      await refresh(guestPath(slug));
+      router.replace(guestPages.chat(slug, conversation_id || undefined));
+    };
+    openLink.current = async () => {
+      setBusy(true);
+      try {
+        await open(true);
+      } catch (error: unknown) {
+        fail(error instanceof Error ? error.message : String(error));
+      } finally {
+        setBusy(false);
+      }
+    };
     // A cookie this browser may already hold for the organization: its csrf goes with the request.
     api<GuestOverview>(guestPath(slug))
       .then((known) => setGuestCredentials(known.guest?.csrf ?? null))
       .catch(() => setGuestCredentials(null))
-      .then(() => resumeGuest(slug, token))
-      .then(async ({ conversation_id }) => {
-        // The new cookie's csrf comes with the next GET …/guest (the chat page reads it first).
-        setGuestCredentials(null);
-        await refresh(guestPath(slug));
-        router.replace(guestPages.chat(slug, conversation_id || undefined));
-      })
+      .then(() => open(false))
       .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 409) {
+          setAsking(error.message);
+          return;
+        }
         const expired = error instanceof ApiError && [400, 401, 404, 410].includes(error.status);
         fail(expired ? 'ลิงก์หมดอายุ ขอลิงก์ใหม่จากแชทเดิม หรือเริ่มแชทใหม่' : error instanceof Error ? error.message : String(error));
       });
@@ -62,6 +81,19 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
             <Link className="btn primary customer-submit" href={guestPages.chat(slug)}>
               <Icon name="plus" />
               เริ่มแชทใหม่
+            </Link>
+          </>
+        ) : asking ? (
+          <>
+            <h1>เปิดแชทจากลิงก์นี้ไหม</h1>
+            <p>{asking}</p>
+            <p>แชทเดิมของเบราว์เซอร์นี้ยังอยู่ เปิดลิงก์นี้แล้วจะสลับมาดูแชทของลิงก์แทน</p>
+            <button type="button" className="btn primary customer-submit" disabled={busy} onClick={() => void openLink.current?.()}>
+              <Icon name="chat" />
+              เปิดแชทจากลิงก์
+            </button>
+            <Link className="btn subtle" href={guestPages.chat(slug)}>
+              กลับไปที่แชทเดิม
             </Link>
           </>
         ) : (

@@ -16,7 +16,7 @@ import test_channels as channel_tests
 from test_app import app, Client, D, rate_limit
 from backend.extensions import channel_transport as T, sms
 from backend.modules.channels import service as C
-from backend.modules.guest import service as guest
+from backend.modules.guest import schema, service as guest
 
 ORG = '/api/public/alpha'
 GUEST = ORG+'/guest'
@@ -129,10 +129,15 @@ class GuestChatTests(unittest.TestCase):
     def emailed_token(self, index=-1):
         return re.search(r'/support/alpha/resume#t=([A-Za-z0-9_-]{43})',self.mailer.call_args_list[index].args[3].get_content())[1]
 
-    def resume(self, token, client=None):
+    def resume(self, token, client=None, **body):
+        """Open a follow link, as the resume page does: a browser that already holds a guest cookie reads its CSRF
+        token from GET /guest first, because opening a link may change what this browser follows."""
         client = client or self.browser()
         rate_limit.RATES.clear()
-        return client,client.call(GUEST+'/resume',{'token':token})
+        if len(client.jar):
+            known = self.ok(client,GUEST)
+            client.guest_csrf = (known.get('guest') or {}).get('csrf') or client.guest_csrf
+        return client,client.call(GUEST+'/resume',{'token':token,**body})
 
     def say(self, text, sender=SENDER):
         self.events += 1
@@ -684,6 +689,37 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(self.ok(self.admin,f'/api/conversations/{self.started(page)}')['contact']['id'],target)
         self.assertEqual(len(self.overview(page)['conversations']),2)
         self.assertNotEqual(other,target)
+
+    def test_a_link_sent_to_someone_elses_address_takes_over_nothing(self):
+        """A visitor may ask for a follow link to any address, so the link must not hand that browser's chats to the
+        sender, throw away the chats it already follows, or make the address a proven address of the sender."""
+        self.customer_mail()
+        sender = self.browser()
+        self.started(sender)
+        self.send_link(sender,to='victim@example.com')
+        token = self.emailed_token()
+        victim = self.browser()
+        victim_conv = self.started(victim)
+        # The browser already follows its own chats: the link is refused until the person says to open it.
+        status,data = self.resume(token,victim)[1]
+        self.assertEqual((status,data.get('code')),(409,'guest_other_chats'))
+        # Its own chats still work, and the address did not become the sender's proven address.
+        self.assertEqual(self.ok(victim,GUEST+'/session')['conversation']['id'],victim_conv)
+        with D.tenant(self.org) as db:
+            rows = D.rows(db,'SELECT email,email_verified_at FROM guest_visitors ORDER BY rowid')
+        self.assertEqual([(r['email'],r['email_verified_at']) for r in rows],[('victim@example.com',None),('',None)])
+        with D.control() as cd:
+            self.assertEqual(D.rows(cd,'SELECT * FROM guest_verified_emails'),[])
+        # Saying so opens the link, and the chats this browser followed before are still reachable from their own link.
+        self.assertEqual(self.resume(token,victim,replace=True)[1][0],200)
+        self.assertEqual(self.ok(victim,GUEST)['conversations'][0]['id'] != victim_conv,True)
+
+    def test_one_recipient_is_one_follow_link_budget_however_the_number_is_typed(self):
+        """The per-recipient limit counts the address the message is sent to, not the characters that were typed."""
+        key = lambda value: schema.link_target('sms',value)
+        self.assertEqual({key('0812345678'),key('081-234-5678'),key('081 234 5678'),key('(081)234-5678'),
+                          key('+66812345678'),key('0066812345678'),key('66812345678')},{'+66812345678'})
+        self.assertEqual(schema.link_target('email','  Somsri@Example.COM '),'somsri@example.com')
 
     def test_existing_databases_upgrade_cleanly(self):
         with D.tenant(self.org) as db:

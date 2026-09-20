@@ -324,31 +324,41 @@ def _deliver_link(cd, db, org, visitor, via, target, base):
 
 
 def resume(cd, db, org, guest, body, client):
-    """POST /guest/resume: open a follow link in this browser; the address it was sent to is proven. Returns (the
-    guest's latest conversation id, the cookie token)."""
+    """POST /guest/resume: open a follow link in this browser; the address it was sent to is proven when the guest
+    asked for the link to its own address. A browser already following another guest's chats keeps them: it is told
+    to say so (replace) before this link takes the browser over. Returns (the guest's latest conversation id, the
+    cookie token)."""
     value = schema.token(body)
     D.begin(db)
     link = repository.live_link(db,token_hash(value))
     visitor = repository.visitor(db,link['visitor_id']) if link else None
     require(link and visitor and not visitor['account_id'],schema.LINK_GONE,410)
+    # This browser is following someone else's chats: they are not thrown away for whoever sent this link.
+    other = bool(guest and guest['visitor']['id']!=visitor['id'])
+    if other and body.get('replace') is not True:
+        db.rollback()
+        raise APIError(409,'เบราว์เซอร์นี้มีแชทของคุณอยู่แล้ว เปิดลิงก์นี้เพื่อดูแชทอีกรายการหรือไม่',extra={'code':'guest_other_chats'})
     repository.use_link(db,link['token_hash'])
-    if link['via']=='email':
+    # Proven only when the address is the one this guest itself gave (_deliver_link recorded it unproven); a link
+    # sent to someone else's address never makes that address the guest's.
+    own_address = ((visitor['email'] or '').lower()==link['target'].lower() if link['via']=='email'
+                   else (visitor['phone'] or '')==link['target'])
+    if own_address and link['via']=='email':
         repository.set_email(db,visitor['id'],link['target'],True)
-    elif link['via']=='sms':
+    elif own_address and link['via']=='sms':
         repository.set_phone(db,visitor['id'],link['target'],True)
     if guest and guest['visitor']['id']==visitor['id']:
         token = guest['token']
         repository.set_remember(db,guest['device']['token_hash'],True)
     else:
-        if guest:
-            repository.delete_device(db,guest['device']['token_hash'])
         token = secrets.token_urlsafe(32)
         repository.insert_device(db,token_hash(token),visitor['id'],secrets.token_urlsafe(24),True,client.get('user_agent',''),client.get('ip',''))
     repository.touch_visitor(db,visitor['id'])
     audit.record(db,schema.display_name(visitor),'guest.resumed',visitor['contact_id'],f"{link['via']} {schema.mask(link['via'],link['target'])}".strip())
     conversation_id = repository.latest_conversation(db,visitor['id'])
     db.commit()
-    if link['via']=='email':
+    # Only a proven address of this guest goes into the index a customer account takes its chats over by.
+    if own_address and link['via']=='email':
         repository.index_email(cd,link['target'],org['id'])
         cd.commit()
     return conversation_id,token

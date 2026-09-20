@@ -49,7 +49,9 @@ export const setGuestRemember = (slug: string, remember: boolean) => api<{ ok: t
 export const sendFollowLink = (slug: string, via: 'email' | 'sms', to: string) =>
   api<{ sent: true; to_masked: string }>(`${guestBase(slug)}/link`, { via, to });
 
-export const resumeGuest = (slug: string, token: string) => api<{ ok: true; conversation_id: string }>(`${guestBase(slug)}/resume`, { token });
+/** `replace`: this browser already follows another guest's chats and the person said to open the link anyway. */
+export const resumeGuest = (slug: string, token: string, replace = false) =>
+  api<{ ok: true; conversation_id: string }>(`${guestBase(slug)}/resume`, replace ? { token, replace: true } : { token });
 
 export const requestGuestLineCode = (slug: string) => api<GuestLineCode>(`${guestBase(slug)}/line-code`, {});
 

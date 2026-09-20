@@ -56,15 +56,18 @@ def start(req):
     for via,key in (('email','email'),('sms','phone')):
         if isinstance(req.body.get(key),str) and req.body[key].strip():
             limited(('guest-link-ip',req.ip),LINKS_PER_IP_HOUR,3600)
-            limited(('guest-link-target',req.org['id'],via,req.body[key].strip().lower()),LINKS_PER_TARGET_HOUR,3600)
+            # The address in the form it will be sent to, so one recipient is one budget here and in send_link below.
+            limited(('guest-link-target',req.org['id'],via,schema.link_target(via,req.body[key])),LINKS_PER_TARGET_HOUR,3600)
     answer,token,remember = service.start(req.cd,req.db,req.org,req.guest,req.body,client_info(req),base_url(req.cd,req))
     return req.send(201,answer,headers=_set(req,token,remember) if token else None)
 
 
 def resume(req):
+    # A cookie sent without its CSRF token must not let a link decide what happens to this browser's chats.
+    refuse_stale_guest(req)
     limited(('guest-resume',req.ip),30,900)
     try:
-        conversation_id,token = service.resume(req.cd,req.db,req.org,req.guest or req.guest_stale or None,req.body,client_info(req))
+        conversation_id,token = service.resume(req.cd,req.db,req.org,req.guest,req.body,client_info(req))
     except APIError as error:
         if error.message==schema.LINK_GONE:
             from backend.modules.security import events

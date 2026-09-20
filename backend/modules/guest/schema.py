@@ -88,9 +88,13 @@ def link_form(body):
     """(via, target): an email address, or a phone number as E.164."""
     via = body.get('via')
     require(via in ('email','sms'),'เลือกส่งลิงก์ทางอีเมลหรือ SMS')
-    if via=='email':
-        return via,email_field({'email':body.get('to','')})
-    return via,phone_e164(body.get('to',''))
+    return via,link_target(via,body.get('to',''))
+
+
+def link_target(via, value):
+    """The address a follow link goes to, in the one form the rest of the code uses: one recipient is one address,
+    however it was typed, so the per-recipient limit counts every spelling of a number as the same number."""
+    return email_field({'email':value}) if via=='email' else phone_e164(value)
 
 
 def token(body):

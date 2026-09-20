@@ -35,12 +35,13 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
         <h2>อีเมลยืนยันการสมัครองค์กร</h2>
       </div>
       <div className="card-body">
-        <p className="small muted">ตั้งค่าอีเมลผู้ส่งของ Bookdose และโดเมนเว็บไซต์ เพื่อให้ลูกค้ายืนยันอีเมลก่อนสร้างองค์กร</p>
+        <p className="small muted">กล่องจดหมายที่ระบบใช้ส่งออกทั้งหมด และโดเมนที่ใช้สร้างลิงก์ในอีเมล · สองสวิตช์ด้านล่างแยกกัน</p>
         <Form
           key={saved?.version ?? 0}
           onSubmit={async (values, form) => {
             const result = await saveRegistrationSettings({
               enabled: (form.elements.namedItem('enabled') as HTMLInputElement).checked,
+              signup_enabled: (form.elements.namedItem('signup_enabled') as HTMLInputElement).checked,
               public_base_url: values.public_base_url ?? '',
               address: values.address ?? '',
               smtp_host: values.smtp_host ?? '',
@@ -56,7 +57,17 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
           <div className="form-grid">
             <label className="check span-2">
               <input type="checkbox" className="switch" name="enabled" defaultChecked={cfg.enabled} />
-              เปิดรับสมัครองค์กรพร้อมยืนยันอีเมล
+              <span className="check-text">
+                <strong>เปิดใช้อีเมลของระบบ</strong>
+                <small>ส่งลิงก์ติดตามแชทให้ลูกค้า ยืนยันอีเมล ลืมรหัสผ่าน คำเชิญสมาชิก และแจ้งเตือนถึงเจ้าหน้าที่</small>
+              </span>
+            </label>
+            <label className="check span-2">
+              <input type="checkbox" className="switch" name="signup_enabled" defaultChecked={cfg.signup_enabled} />
+              <span className="check-text">
+                <strong>เปิดให้สมัครสร้างองค์กรใหม่เองจากหน้าเว็บ</strong>
+                <small>ใครก็ตามที่เข้าถึงหน้าสมัครสร้างองค์กรของตัวเองได้ · ปิดไว้ถ้าต้องการให้ผู้ดูแลแพลตฟอร์มเป็นคนสร้างองค์กรเอง · ต้องเปิดอีเมลของระบบด้วย</small>
+              </span>
             </label>
             <TextField
               label="โดเมนเว็บไซต์"

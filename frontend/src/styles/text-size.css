@@ -8,12 +8,12 @@ html[data-text-size="130"] { font-size:130%; }
 html[data-text-size="140"] { font-size:140%; }
 html[data-text-size="150"] { font-size:150%; }
 .text-size-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0; }
-.text-size-controls label { color:#334155; font-size:1rem; font-weight:600; }
+.text-size-controls label { color:#434343; font-size:1rem; font-weight:600; }
 .text-size-steps { display:flex; align-items:center; gap:4px; }
-.text-size-controls button { min-width:44px; min-height:44px; padding:6px 8px; border:1px solid #8992a5; border-radius:8px; color:#26354a; background:#fff; font-size:1rem; font-weight:700; }
+.text-size-controls button { min-width:44px; min-height:44px; padding:6px 8px; border:1px solid #959595; border-radius:8px; color:#373737; background:#fff; font-size:1rem; font-weight:700; }
 .text-size-controls button:hover:not(:disabled) { background:#f3f3f3; border-color:#868686; }
 .text-size-controls button:disabled { cursor:default; }
-.text-size-controls select { width:auto; min-height:44px; max-width:100%; font-size:1rem; border:1px solid #8992a5; color:#26354a; background:#fff; padding:8px 36px 8px 10px; cursor:pointer; }
+.text-size-controls select { width:auto; min-height:44px; max-width:100%; font-size:1rem; border:1px solid #959595; color:#373737; background:#fff; padding:8px 36px 8px 10px; cursor:pointer; }
 .auth-form>.text-size-controls { justify-content:flex-end; margin-bottom:24px; }
 .single-page>.text-size-controls { justify-content:flex-end; margin-bottom:16px; }
 .top-actions { flex-wrap:wrap; }
@@ -21,10 +21,10 @@ html[data-text-size="150"] { font-size:150%; }
 .customer-link-head>.text-size-controls { margin-right:auto; }
 /* Staff top bar: "Aa" button that opens the control in a small panel. */
 .text-size-menu { position:relative; }
-.text-size-toggle { min-width:44px; min-height:44px; padding:6px 10px; border:1px solid #c7ccdc; border-radius:8px; color:#26354a; background:#fff; font-size:1rem; font-weight:700; cursor:pointer; }
+.text-size-toggle { min-width:44px; min-height:44px; padding:6px 10px; border:1px solid #d0d0d0; border-radius:8px; color:#373737; background:#fff; font-size:1rem; font-weight:700; cursor:pointer; }
 .text-size-toggle:hover,.text-size-toggle[aria-expanded=true] { background:#f3f3f3; border-color:#868686; color:#343434; }
 .text-size-toggle:focus-visible { outline:3px solid #b4b4b4; outline-offset:2px; }
-.text-size-panel { position:absolute; right:0; top:calc(100% + 8px); z-index:30; width:max-content; max-width:calc(100vw - 32px); padding:14px; background:#fff; border:1px solid #c9cfdc; border-radius:10px; box-shadow:0 14px 34px #1e293b29; }
+.text-size-panel { position:absolute; right:0; top:calc(100% + 8px); z-index:30; width:max-content; max-width:calc(100vw - 32px); padding:14px; background:#fff; border:1px solid #d1d1d1; border-radius:10px; box-shadow:0 14px 34px #1e293b29; }
 .text-size-panel .text-size-controls { flex-direction:column; align-items:flex-start; }
 .field,.card-body,.profile>.grow { min-width:0; }
 .field select { min-width:0; max-width:100%; }

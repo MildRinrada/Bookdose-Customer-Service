@@ -213,7 +213,7 @@ class IntegrationTests(unittest.TestCase):
                 'password_confirm':'New-password-123!','organization':'องค์กรใหม่','slug':'new-org',**overrides}
 
     def enable_registration_mail(self):
-        cfg={'enabled':True,'smtp_host':'smtp.example.com','smtp_port':465,'username':'mailer@example.com',
+        cfg={'enabled':True,'signup_enabled':True,'smtp_host':'smtp.example.com','smtp_port':465,'username':'mailer@example.com',
              'address':'mailer@example.com','public_base_url':'https://bookdose.example.com','password':'Secret-smtp-password'}
         self.ok(self.owner,'/api/platform/registration',cfg)
         self.mailer=patch.object(T,'send_email',return_value='message-id').start()
@@ -386,7 +386,8 @@ class IntegrationTests(unittest.TestCase):
 
     def test_verification_settings_permissions_missing_config_and_secret_redaction(self):
         visitor=Client(self.base)
-        self.assertEqual(visitor.call('/api/register',self.registration())[0],503)
+        # Nothing set up yet: the sign-up page is not open, so it is refused before the mailbox is even looked at.
+        self.assertEqual(visitor.call('/api/register',self.registration())[0],403)
         self.assertEqual(visitor.call('/api/platform/registration')[0],401)
         cfg=self.enable_registration_mail()
         public=self.ok(self.owner,'/api/platform/registration')
@@ -401,6 +402,23 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(staff.call('/api/platform/registration')[0],403)
         self.assertEqual(staff.call('/api/platform/registration',cfg)[0],403)
         self.assertIn('secrets/registration-smtp.json',assert_sealed_backup(self,app.make_backup(),'Secret-smtp-password'))
+
+    def test_the_mailbox_and_the_open_sign_up_page_are_two_switches(self):
+        """A platform may send its email without letting anyone on the internet make an organization."""
+        cfg=self.enable_registration_mail()
+        self.assertTrue(Client(self.base).boot()['registration_available'])
+        # The mailbox stays on, the sign-up page closes: the page stops offering it and both endpoints refuse.
+        self.ok(self.owner,'/api/platform/registration',{**cfg,'signup_enabled':False,'password':''})
+        visitor=Client(self.base)
+        self.assertFalse(visitor.boot()['registration_available'])
+        self.assertEqual(visitor.call('/api/register',self.registration())[0],403)
+        self.assertEqual(visitor.call('/api/register/verify',{'token':'A'*43})[0],403)
+        # ...while everything the mailbox is really for goes on: a visitor can still ask for a chat link by email.
+        self.assertTrue(self.ok(Client(self.base),'/api/public/alpha/guest')['follow']['email_ready'])
+        # Closing the mailbox closes the sign-up page too: the sign-up is only finished by a link sent in email.
+        self.ok(self.owner,'/api/platform/registration',{**cfg,'enabled':False,'signup_enabled':True,'password':''})
+        self.assertFalse(Client(self.base).boot()['registration_available'])
+        self.assertFalse(self.ok(Client(self.base),'/api/public/alpha/guest')['follow']['email_ready'])
 
     def test_verification_mail_failure_allows_explicit_resend_and_trusted_link(self):
         self.enable_registration_mail()

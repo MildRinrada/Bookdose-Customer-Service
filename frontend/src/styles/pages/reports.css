@@ -11,7 +11,7 @@
   font-size: 1rem;
   margin: 18px 0;
   grid-template-columns: minmax(160px,1fr) 2fr 36px;
-  color: #334155;
+  color: #434343;
 }
 .bar-row progress {
   width: 100%;
@@ -23,7 +23,7 @@
   height: 12px;
 }
 .bar-row progress::-webkit-progress-bar {
-  background: #e8ecf2;
+  background: #ededed;
 }
 .bar-row progress::-webkit-progress-value {
   border-radius: 5px;
@@ -38,7 +38,7 @@
   }
 }
 .bar-row progress {
-  background: #e8ecf2;
+  background: #ededed;
 }
 @media (max-width:760px) {
   .bar-row {
@@ -112,7 +112,7 @@
   background: #afafaf;
 }
 .status-open {
-  background: #7aa2e8;
+  background: #acacac;
 }
 .status-pending_customer {
   background: #e8b465;
@@ -124,13 +124,13 @@
   background: #6fbf9b;
 }
 .status-closed {
-  background: #9aa5b5;
+  background: #a7a7a7;
 }
 .priority-low {
   background: #92b2aa;
 }
 .priority-normal {
-  background: #8f9ad4;
+  background: #aaaaaa;
 }
 .priority-high {
   background: #e0a34e;

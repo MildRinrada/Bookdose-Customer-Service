@@ -26,7 +26,7 @@
   border: 0;
   border-radius: 10px;
   background: none;
-  color: #26354a;
+  color: #373737;
   text-align: left;
   cursor: pointer;
 }
@@ -44,8 +44,8 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #eef1f7;
-  color: #4c566a;
+  background: #f2f2f2;
+  color: #595959;
 }
 .settings-nav-item.active .settings-nav-icon {
   background: #868686;
@@ -99,7 +99,7 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fbfaff;
+  background: #fcfcfc;
 }
 .portal-link .grow {
   display: flex;
@@ -151,7 +151,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fbfaff;
+  background: #fcfcfc;
 }
 .team-card .grow {
   display: flex;
@@ -318,8 +318,8 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #eef1f7;
-  color: #3d4a5c;
+  background: #f2f2f2;
+  color: #4c4c4c;
 }
 .support-actions {
   display: flex;
@@ -408,7 +408,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
   gap: 4px 14px;
   min-height: 96px;
   padding: 16px 18px;
-  border: 1px solid #e5e5ea;
+  border: 1px solid #e7e7e7;
   border-radius: 18px;
   background: #fff;
   color: #1c1c1e;
@@ -443,7 +443,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
   background: #06c755;
 }
 .settings-tile-icon.icon-facebook {
-  background: #1877f2;
+  background: #808080;
 }
 .settings-tile-text {
   display: grid;
@@ -470,7 +470,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
   gap: 6px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #ececf0;
+  background: #ededed;
   color: #3a3a3c;
   font-size: .8rem;
   font-weight: 700;

@@ -635,11 +635,11 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(self.status(agent,'/api/settings/guest-chat'),403)
         self.assertEqual(self.status(Client(self.base),'/api/settings/guest-chat'),401)
         current = self.ok(self.admin,'/api/settings/guest-chat')
-        self.assertEqual((current['guest_chat'],current['widget']),({'enabled':True},{'enabled':False,'origins':[],'position':'right','theme':'purple','title':''}))
+        self.assertEqual((current['guest_chat'],current['widget']),({'enabled':True},{'enabled':False,'origins':[],'position':'right','theme':'charcoal','title':''}))
         self.assertTrue(current['chat_url'].endswith('/support/alpha/tickets/new'))
         self.assertTrue(current['chat_qr'].startswith('data:image/svg+xml'))
         self.assertEqual(self.ok(Client(self.base),ORG+'/widget'),
-                         {'enabled':False,'guest_chat':True,'position':'right','theme':'purple','title':'','origins':[]})
+                         {'enabled':False,'guest_chat':True,'position':'right','theme':'charcoal','title':'','origins':[]})
         for bad in ({'origins':['http://example.com']},{'origins':['https://example.com/path']},{'origins':['ftp://example.com']},
                     {'origins':['https://user@example.com']},{'origins':['https://exa mple.com']},{'origins':'https://example.com'},
                     {'origins':[f'https://s{n}.example.com' for n in range(11)]},{'theme':'pink'},{'position':'top'},

@@ -42,7 +42,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
 
   const [origins, setOrigins] = useState<string[]>(w.origins ?? []);
   const [position, setPosition] = useState<WidgetPosition>(w.position === 'left' ? 'left' : 'right');
-  const [theme, setTheme] = useState<WidgetTheme>(widgetThemes.some((t) => t.value === w.theme) ? w.theme : 'purple');
+  const [theme, setTheme] = useState<WidgetTheme>(widgetThemes.some((t) => t.value === w.theme) ? w.theme : 'charcoal');
 
   const save = async (patch: Partial<Pick<GuestChatSettings, 'guest_chat' | 'widget'>>, message: string) => {
     await saveGuestSettings({ guest_chat: patch.guest_chat ?? data.guest_chat, widget: patch.widget ?? data.widget });

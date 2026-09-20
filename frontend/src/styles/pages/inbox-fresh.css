@@ -17,7 +17,7 @@
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: #ececf0;
+  background: #ededed;
 }
 .inbox-tab {
   display: inline-flex;
@@ -81,12 +81,12 @@
   margin-top: 8px;
 }
 .staff-chats .inbox-item.inbox-row:hover {
-  background: #f0f0f3;
+  background: #f1f1f1;
 }
 .staff-chats .inbox-item.inbox-row.selected {
   padding-left: 12px;
   background: #fff;
-  box-shadow: 0 1px 2px #0000000f, 0 0 0 1px #e5e5ea;
+  box-shadow: 0 1px 2px #0000000f, 0 0 0 1px #e7e7e7;
 }
 .inbox-row-body {
   display: grid;
@@ -163,7 +163,7 @@
 }
 .aside-card {
   padding: 16px;
-  border: 1px solid #e5e5ea;
+  border: 1px solid #e7e7e7;
   border-radius: 16px;
   background: #fff;
 }
@@ -275,7 +275,7 @@
   text-decoration: none;
 }
 .aside-others a:hover {
-  background: #f0f0f3;
+  background: #f1f1f1;
 }
 .aside-other-subject {
   overflow: hidden;

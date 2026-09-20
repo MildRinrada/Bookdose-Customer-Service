@@ -56,6 +56,19 @@ function writeFold(slug: string, value: 'open' | 'closed') {
   }
 }
 
+/** True while there is room for the third column beside the conversation (the same width the stylesheet folds at). */
+function useWideScreen() {
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1101px)');
+    const read = () => setWide(query.matches);
+    read();
+    query.addEventListener('change', read);
+    return () => query.removeEventListener('change', read);
+  }, []);
+  return wide;
+}
+
 export function GuestChatScreen(props: Props) {
   // Before the first request: every call from the iframe says so.
   useState(() => setEmbedded(Boolean(props.embed)));
@@ -80,8 +93,9 @@ function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
     if (orgName) document.title = `แชทกับ ${orgName}`;
   }, [orgName]);
 
-  const theme = embed && isWidgetTheme(widget.data?.theme) ? widget.data.theme : 'purple';
-  const frameClass = `guest-page${embed ? ' guest-embed' : ''}`;
+  const theme = embed && isWidgetTheme(widget.data?.theme) ? widget.data.theme : 'charcoal';
+  // The chat itself fills the window (a conversation, not a page of prose); the start page keeps its reading width.
+  const frameClass = `guest-page${embed ? ' guest-embed' : ' guest-page-chat'}`;
 
   let body;
   if (overview.error?.status === 403 || info.error?.status === 404) {
@@ -160,6 +174,7 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
   const current = composing || !data.guest ? null : (openId ?? list[0]?.id ?? null);
   const hasList = list.length > 1;
   const portal = guestPortalSlug(slug);
+  const wide = useWideScreen();
 
   const gone = useCallback(
     (message: string) => {
@@ -245,8 +260,12 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
     void refresh(guestPath(slug));
   };
 
-  const proven = Boolean(data.guest && (data.guest.email_verified || data.guest.phone_verified || data.guest.line_linked));
-  const followOpen = fold ? fold === 'open' : !proven;
+  // "ติดตามแชทนี้" lives in the column beside the conversation where there is room for it, open unless the visitor
+  // folded it. Without that column it goes back into the thread, and there it stays folded until asked for: the card
+  // is taller than the thread itself, and a chat whose messages are pushed out of sight by a settings card is worse
+  // than a missed nudge. Its head line says how they can follow this chat either way.
+  const aside = wide && !embed;
+  const followOpen = aside ? fold !== 'closed' : fold === 'open';
   const setFollowOpen = (open: boolean) => {
     const value = open ? 'open' : 'closed';
     setFold(value);
@@ -311,6 +330,7 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
         overview={data}
         hasList={hasList}
         followOpen={followOpen}
+        aside={aside}
         embed={embed}
         onFollowToggle={setFollowOpen}
         onShowFollow={showFollow}
@@ -323,8 +343,12 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
     detail = <ErrorState error={session.error} onRetry={() => void session.refetch()} />;
   } else detail = <PageLoading />;
 
+  const asideShown = aside && Boolean(session.data);
+
   return (
-    <section className={`card guest-chat customer-chats${hasList ? ' has-list' : ''}${showList ? ' show-list' : ''}`}>
+    <section
+      className={`card guest-chat customer-chats${hasList ? ' has-list' : ''}${showList ? ' show-list' : ''}${asideShown ? ' has-aside' : ''}`}
+    >
       {hasList && (
         <nav className="guest-list" aria-label="แชทของคุณกับทีมงาน">
           <div className="guest-list-head">
@@ -352,7 +376,75 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
       <div className="guest-detail" data-thread-scope="">
         {detail}
       </div>
+      {asideShown && (
+        <aside className="guest-aside" aria-label="เครื่องมือและคำตอบที่อาจช่วยได้">
+          <GuestAside
+            slug={slug}
+            overview={data}
+            info={info}
+            ticket={session.data?.ticket ?? null}
+            followOpen={followOpen}
+            onFollowToggle={setFollowOpen}
+            onForgotten={forgotten}
+          />
+        </aside>
+      )}
     </section>
+  );
+}
+
+/** Beside the conversation: where the case stands, the ways to follow this chat, and the answers the organization
+    has published — something to read while the team is writing back. */
+function GuestAside({
+  slug,
+  overview,
+  info,
+  ticket,
+  followOpen,
+  onFollowToggle,
+  onForgotten,
+}: {
+  slug: string;
+  overview: GuestOverview;
+  info: PublicOrgInfo | undefined;
+  ticket: { id: string; number: number | string } | null;
+  followOpen: boolean;
+  onFollowToggle: (open: boolean) => void;
+  onForgotten: () => void;
+}) {
+  const articles = ((info?.articles as { id: string; title: string }[] | undefined) ?? []).slice(0, 6);
+  return (
+    <>
+      {ticket && (
+        <section className="guest-aside-card">
+          <h3>เคส BD-{ticket.number}</h3>
+          <p className="tiny muted">ทีมงานเปิดเคสให้เรื่องนี้แล้ว ดูขั้นตอนที่ทำไปแล้วและกำหนดเวลาได้</p>
+          <Link className="btn sm" href={guestPages.case(slug, ticket.id)}>
+            <Icon name="ticket" />
+            ดูความคืบหน้า
+          </Link>
+        </section>
+      )}
+      {articles.length > 0 && (
+        <section className="guest-aside-card guest-aside-faq">
+          <h3>ลองหาคำตอบระหว่างรอ</h3>
+          <ul>
+            {articles.map((a) => (
+              <li key={a.id}>
+                <Link href={guestPages.article(slug, a.id)}>
+                  <Icon name="book" />
+                  <span>{a.title}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link className="guest-aside-all" href={guestPages.faq(slug)}>
+            ดูคำถามที่พบบ่อยทั้งหมด <Icon name="arrow" />
+          </Link>
+        </section>
+      )}
+      <FollowCard slug={slug} overview={overview} expanded={followOpen} onToggle={onFollowToggle} onForgotten={onForgotten} />
+    </>
   );
 }
 
@@ -399,6 +491,7 @@ function GuestChatView({
   overview,
   hasList,
   followOpen,
+  aside,
   embed,
   onFollowToggle,
   onShowFollow,
@@ -412,6 +505,8 @@ function GuestChatView({
   overview: GuestOverview;
   hasList: boolean;
   followOpen: boolean;
+  /** The column beside the conversation is there: it holds the case, the follow card and the published answers. */
+  aside: boolean;
   embed: boolean;
   onFollowToggle: (open: boolean) => void;
   onShowFollow: () => void;
@@ -439,7 +534,7 @@ function GuestChatView({
             <span className={`customer-state tone-${view.tone}`} id="customer-state-label" data-tone={view.tone}>
               {view.label}
             </span>
-            {data.ticket && (
+            {data.ticket && !aside && (
               // Where the case stands, its progress and deadlines (inside a website's frame: a new window).
               <Link
                 className="conv-case-link"
@@ -473,7 +568,7 @@ function GuestChatView({
         publicView
         publicSlug={portal}
         readAt={data.staff_read_at}
-        afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${JSON.stringify(guest)}`}
+        afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}`}
         after={
           <>
             {survey && (
@@ -481,14 +576,17 @@ function GuestChatView({
                 <CustomerSurvey survey={survey} slug={portal} conversationId={id} org={orgName} />
               </div>
             )}
-            <FollowCard
-              slug={slug}
-              overview={overview}
-              expanded={followOpen}
-              onToggle={onFollowToggle}
-              onForgotten={onForgotten}
-              newWindow={embed}
-            />
+            {/* Without the column beside the conversation, the card belongs at the end of the thread. */}
+            {!aside && (
+              <FollowCard
+                slug={slug}
+                overview={overview}
+                expanded={followOpen}
+                onToggle={onFollowToggle}
+                onForgotten={onForgotten}
+                newWindow={embed}
+              />
+            )}
           </>
         }
       />

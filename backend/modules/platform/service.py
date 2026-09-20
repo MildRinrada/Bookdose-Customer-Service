@@ -352,11 +352,21 @@ def registration_secret():
 
 def registration_config(db):
     value = repository.registration_mail(db)
-    return json.loads(value) if value else {'enabled':False,'smtp_port':465}
+    cfg = json.loads(value) if value else {'enabled':False,'smtp_port':465}
+    # Settings saved before the two switches were told apart keep doing what they did: one switch meant both.
+    cfg.setdefault('signup_enabled',bool(cfg.get('enabled')))
+    return cfg
 
 
 def registration_ready(db):
+    """The system can send email at all (verification links, chat follow links, password resets, invitations)."""
     return bool(registration_config(db).get('enabled') and registration_secret().get('password'))
+
+
+def signup_open(db):
+    """Anyone on the internet may create an organization from the sign-up page. Its own switch, and the mailbox must
+    work as well, because the sign-up is only finished by a link sent in email."""
+    return bool(registration_config(db).get('signup_enabled')) and registration_ready(db)
 
 
 def registration_public_config(db):

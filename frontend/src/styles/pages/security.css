@@ -276,7 +276,7 @@ dialog.idle-dialog {
   align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
-  border: 1px solid #b8c6dd;
+  border: 1px solid #c9c9c9;
   border-left-width: 4px;
   border-radius: 10px;
   background: var(--info-soft);
@@ -353,7 +353,7 @@ dialog.idle-dialog {
   width: 12px;
   height: 12px;
   border-radius: 3px;
-  background: #2a6fa8;
+  background: #6b6b6b;
 }
 .security-swatch.series-rate_limited {
   background: #c0773a;
@@ -401,11 +401,11 @@ dialog.idle-dialog {
   background: transparent;
 }
 .security-bars progress::-webkit-progress-value {
-  background: #2a6fa8;
+  background: #6b6b6b;
   border-radius: 3px 3px 0 0;
 }
 .security-bars progress::-moz-progress-bar {
-  background: #2a6fa8;
+  background: #6b6b6b;
 }
 .security-bars progress.series-rate_limited::-webkit-progress-value {
   background: #c0773a;
@@ -438,7 +438,7 @@ dialog.idle-dialog {
   z-index: 3;
   padding: 4px 10px;
   border-radius: 6px;
-  background: #1f2937;
+  background: #2a2a2a;
   color: #fff;
   line-height: 1.45;
   text-align: left;
@@ -717,14 +717,14 @@ p.card-body.muted .icon {
 .trap-kinds legend {
   margin-bottom: 8px;
   font-weight: 600;
-  color: #334155;
+  color: #434343;
 }
 .trap-kind-option {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid #c7ccdc;
+  border: 1px solid #d0d0d0;
   border-radius: 10px;
   cursor: pointer;
 }

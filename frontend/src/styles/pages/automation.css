@@ -268,7 +268,7 @@
   gap: 10px;
   align-items: flex-start;
   padding: 10px 0 10px 10px;
-  border-bottom: 1px solid #f2f2f7;
+  border-bottom: 1px solid #f4f4f4;
   border-left: 3px solid transparent;
   color: var(--ink);
   text-decoration: none;
@@ -287,7 +287,7 @@
   border-left-color: #c7811a;
 }
 .me-item.info {
-  border-left-color: #6d8fc7;
+  border-left-color: #969696;
 }
 .me-item .grow {
   min-width: 0;
@@ -520,19 +520,19 @@ a.auto-stat:hover {
   display: block;
   min-height: 18px;
   border-radius: 4px;
-  background: #eef1f3;
+  background: #f1f1f1;
 }
 .lv-1 {
-  background: #d3e3ee !important;
+  background: #e1e1e1 !important;
 }
 .lv-2 {
-  background: #a2c3d8 !important;
+  background: #bfbfbf !important;
 }
 .lv-3 {
-  background: #5f94b7 !important;
+  background: #8e8e8e !important;
 }
 .lv-4 {
-  background: #2f6385 !important;
+  background: #5d5d5d !important;
 }
 .heat-legend {
   display: flex;
@@ -700,20 +700,20 @@ a.auto-stat:hover {
   padding: 2px 4px;
   font-size: 2rem;
   line-height: 1;
-  color: #c9ced2;
+  color: #cecece;
   cursor: pointer;
 }
 .star-row:hover .star-btn,.star-row:focus-within .star-btn {
   color: #d59a2a;
 }
 .star-btn:hover~.star-btn,.star-btn:focus-visible~.star-btn {
-  color: #c9ced2;
+  color: #cecece;
 }
 
 /* Facebook Messenger */
 .badge.channel-facebook,.channel-dot.channel-facebook {
-  color: #1b4fb5;
-  background: #e2ebfc;
+  color: #606060;
+  background: #eeeeee;
 }
 
 @media (max-width:1100px) {

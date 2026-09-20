@@ -40,7 +40,8 @@ def global_article(body):
 
 def registration_mail(body):
     """(settings, new SMTP password or '') from the platform admin's form."""
-    cfg = {'enabled':body.get('enabled') is True}
+    # Two separate switches: the system's mailbox works, and the sign-up page is open to anyone.
+    cfg = {'enabled':body.get('enabled') is True,'signup_enabled':body.get('signup_enabled') is True}
     for key in ('smtp_host','username','address','public_base_url'):
         value = body.get(key,'')
         require(isinstance(value,str) and len(value)<=500 and not any(ord(c)<32 for c in value), 'ข้อมูลการส่งอีเมลไม่ถูกต้อง')

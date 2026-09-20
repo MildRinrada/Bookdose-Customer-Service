@@ -198,11 +198,11 @@ progress.report-share {
   border: 0;
   border-radius: 4px;
   appearance: none;
-  background: #ececf0;
+  background: #ededed;
 }
 progress.report-share::-webkit-progress-bar {
   border-radius: 4px;
-  background: #ececf0;
+  background: #ededed;
 }
 progress.report-share::-webkit-progress-value {
   border-radius: 4px;
@@ -286,7 +286,7 @@ progress.report-share::-moz-progress-bar {
   flex-shrink: 0;
   padding: 1px 9px;
   border-radius: 999px;
-  background: #ececf0;
+  background: #ededed;
   color: #3a3a3c;
   font-size: .82rem;
   font-weight: 700;
@@ -328,7 +328,7 @@ progress.report-share::-moz-progress-bar {
   background: #fff4d6;
 }
 .report-load li.unassigned {
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid #ededed;
   border-radius: 0 0 12px 12px;
 }
 .report-load-name {
@@ -430,7 +430,7 @@ progress.report-share::-moz-progress-bar {
   font-weight: 800;
 }
 .report-articles li:nth-child(n+4) .report-rank {
-  background: #ececf0;
+  background: #ededed;
   color: #3a3a3c;
 }
 .report-article-body {

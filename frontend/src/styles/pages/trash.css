@@ -21,13 +21,13 @@
   align-items: center;
   gap: 14px;
   padding: 15px 18px;
-  border-bottom: 1px solid #f2f2f7;
+  border-bottom: 1px solid #f4f4f4;
 }
 .trash-item:last-child {
   border-bottom: 0;
 }
 .trash-item:hover {
-  background: #fbfaff;
+  background: #fcfcfc;
 }
 .trash-icon {
   display: grid;
@@ -35,12 +35,12 @@
   width: 42px;
   height: 42px;
   border-radius: 11px;
-  background: #eef1f7;
-  color: #475569;
+  background: #f2f2f2;
+  color: #575757;
 }
 .trash-ticket .trash-icon {
-  background: #e4edfa;
-  color: #2b5488;
+  background: #eeeeee;
+  color: #585858;
 }
 .trash-contact .trash-icon {
   background: #e9f3ec;
@@ -69,8 +69,8 @@
   gap: 6px;
   padding: 5px 12px;
   border-radius: 20px;
-  background: #eef1f7;
-  color: #475569;
+  background: #f2f2f2;
+  color: #575757;
   white-space: nowrap;
 }
 .trash-left .icon {

@@ -26,6 +26,8 @@ import type { GuestOverview, GuestStartLink } from '../types';
    Markup: pages/guest-chat (start-step, start-topic, start-remember, start-submit). */
 
 const KEEP = 'เลือก “จำแชทไว้ในเครื่องนี้” หรือกรอกอีเมลหรือเบอร์โทรเพื่อรับลิงก์ติดตามแชท';
+/** The same, where no follow link can be sent at all: this browser is the only way back to the chat. */
+const KEEP_ONLY = 'เลือก “จำแชทไว้ในเครื่องนี้” เพื่อกลับมาอ่านคำตอบ ตอนนี้ยังไม่มีช่องทางติดตามอื่น';
 
 /** An icon that suits a category's name; the organization names its categories freely. */
 function topicIcon(name: string): string {
@@ -105,7 +107,10 @@ export function GuestStartForm({
   const { inputRef, files, problem, onChange, remove, clear } = useFilePills();
   const orgName = overview.organization.name;
   const known = overview.guest;
+  // A way to follow the chat away from this browser is offered only where it can really be sent: the email and SMS
+  // boxes are left out until the platform has set its mailbox / SMS provider up.
   const { email_ready: emailReady, sms_ready: smsReady } = overview.follow;
+  const reach = emailReady || smsReady;
   const topics = overview.categories;
   let n = 0;
 
@@ -117,7 +122,7 @@ export function GuestStartForm({
         const keep = (form.elements.namedItem('remember') as HTMLInputElement | null)?.checked ?? true;
         const email = (values.email ?? '').trim();
         const phone = (values.phone ?? '').trim();
-        if (!known && !keep && !email && !phone) throw new Error(KEEP);
+        if (!known && !keep && !email && !phone) throw new Error(reach ? KEEP : KEEP_ONLY);
         const captchaToken = values[CAPTCHA_FIELD] ?? '';
         if (captcha && !captchaToken) throw new Error(CAPTCHA_WAIT);
         const attachments = await readFiles(filesOf(form, 'files'));
@@ -199,43 +204,54 @@ export function GuestStartForm({
           <FileProblem problem={problem} />
         </div>
       </Step>
-      <Step n={++n} title="ติดตามคำตอบ" hint="ไม่ต้องสมัครสมาชิก เลือกทางที่สะดวก">
+      <Step n={++n} title="ติดตามคำตอบ" hint={reach ? 'ไม่ต้องสมัครสมาชิก เลือกทางที่สะดวก' : 'ไม่ต้องสมัครสมาชิก กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้'}>
         {!known && (
           <label className="start-remember">
             <input type="checkbox" name="remember" defaultChecked />
             <span>
               <strong>จำแชทไว้ในเครื่องนี้</strong>
-              <small>กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้โดยไม่ต้องกรอกอีเมล · เอาเครื่องหมายออกถ้าเป็นเครื่องสาธารณะ</small>
+              <small>
+                {reach
+                  ? 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้โดยไม่ต้องกรอกอีเมล · เอาเครื่องหมายออกถ้าเป็นเครื่องสาธารณะ'
+                  : 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้ · ตอนนี้ยังไม่มีช่องทางอื่น ถ้าเอาเครื่องหมายออกจะกลับมาอ่านไม่ได้'}
+              </small>
             </span>
           </label>
         )}
-        <p className="start-reach-title">
-          รับลิงก์ติดตามแชททาง{emailReady && smsReady ? 'อีเมลหรือ SMS (กรอกทั้งสองช่อง ระบบส่งไปทั้งสองทาง)' : 'อีเมลหรือ SMS'}
-        </p>
-        <div className="guest-start-row">
-          <TextField
-            label="อีเมล"
-            name="email"
-            id="guest-email"
-            type="email"
-            max={254}
-            required={false}
-            disabled={!emailReady}
-            autoComplete="email"
-            placeholder={emailReady ? 'name@example.com' : 'ยังไม่เปิดให้ส่งทางอีเมล'}
-          />
-          <TextField
-            label="เบอร์โทรศัพท์ (SMS)"
-            name="phone"
-            id="guest-phone"
-            type="tel"
-            max={30}
-            required={false}
-            disabled={!smsReady}
-            autoComplete="tel"
-            placeholder={smsReady ? '081-234-5678' : 'ยังไม่เปิดให้ส่งทาง SMS'}
-          />
-        </div>
+        {reach && (
+          <>
+            <p className="start-reach-title">
+              รับลิงก์ติดตามแชททาง
+              {emailReady && smsReady ? 'อีเมลหรือ SMS (กรอกทั้งสองช่อง ระบบส่งไปทั้งสองทาง)' : emailReady ? 'อีเมล' : 'SMS'}
+            </p>
+            <div className="guest-start-row">
+              {emailReady && (
+                <TextField
+                  label="อีเมล"
+                  name="email"
+                  id="guest-email"
+                  type="email"
+                  max={254}
+                  required={false}
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                />
+              )}
+              {smsReady && (
+                <TextField
+                  label="เบอร์โทรศัพท์ (SMS)"
+                  name="phone"
+                  id="guest-phone"
+                  type="tel"
+                  max={30}
+                  required={false}
+                  autoComplete="tel"
+                  placeholder="081-234-5678"
+                />
+              )}
+            </div>
+          </>
+        )}
         <div className="guest-start-row">
           <TextField
             label="ชื่อที่ให้ทีมงานเรียก (ไม่บังคับ)"

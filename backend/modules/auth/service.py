@@ -204,7 +204,7 @@ def bootstrap_data(db, session):
     return schema.bootstrap(session,
         setup_required=repository.count_users(db)==0,
         setup_token_required=bool(settings.setup_token()) or settings.on_render(),
-        registration_available=platform.registration_ready(db),
+        registration_available=platform.signup_open(db),
         home=tenants.home_organization(db),
         avatar=repository.avatar_of(db,session['user_id']) if session else '',
         memberships=memberships.user_memberships(db,session['user_id']) if session else [])
@@ -475,6 +475,7 @@ def request_registration(cookie_header, body, resend, client=None):
         _require_registration_open(db,cookie_header)
         if not resend and traps.form_trapped(body):
             trapped = schema.registration_form(body)['email']
+            _require_signup_open(db)
             require(platform.registration_ready(db), 'ยังไม่เปิดรับสมัคร กรุณาให้ผู้ดูแลแพลตฟอร์มตั้งค่าอีเมลยืนยันก่อน',503)
             task = None
         elif resend:
@@ -494,6 +495,8 @@ def verify_registration(cookie_header, body, client=None):
     with SETUP_LOCK, D.control() as db:
         D.begin(db)
         _require_registration_open(db,cookie_header)
+        # A link from before the sign-up page was closed does not finish a sign-up afterwards.
+        _require_signup_open(db)
         user_id = _activate_registration(db,body.get('token'))
         token = create_session(db,user_id,client)
         staff_security.note(db,user_id,'login',client=client)
@@ -507,9 +510,17 @@ def _require_registration_open(db, cookie_header):
     require(not read_session(db,cookie_header,True),'กรุณาออกจากระบบก่อนสมัครหรือยืนยันบัญชีองค์กรใหม่',409)
 
 
+def _require_signup_open(db):
+    """The platform admin's own switch for the sign-up page. The mailbox is a separate switch and is checked on its
+    own, because a working mailbox is not by itself permission for outsiders to make an organization."""
+    require(platform.registration_config(db).get('signup_enabled'),
+            'ระบบนี้ไม่ได้เปิดให้สมัครสร้างองค์กรเอง กรุณาติดต่อผู้ดูแลแพลตฟอร์ม',403)
+
+
 def _prepare_verification(db, applicant=None, email=None):
     """Called inside a write transaction; returns a private mail task (never API data), or None when nothing is sent.
     The answer is the same whether or not the email is known, so sign-up cannot be used to discover accounts."""
+    _require_signup_open(db)
     require(platform.registration_ready(db), 'ยังไม่เปิดรับสมัคร กรุณาให้ผู้ดูแลแพลตฟอร์มตั้งค่าอีเมลยืนยันก่อน',503)
     repository.purge_pending(db,after(seconds=-PENDING_SECONDS))
     email = applicant['email'] if applicant else email

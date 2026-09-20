@@ -41,7 +41,7 @@ THEMES = ('purple','blue','green','orange','charcoal')
 POSITIONS = ('right','left')
 MAX_ORIGINS = 10
 DEFAULT_GUEST_CHAT = {'enabled':True}
-DEFAULT_WIDGET = {'enabled':False,'origins':[],'position':'right','theme':'purple','title':''}
+DEFAULT_WIDGET = {'enabled':False,'origins':[],'position':'right','theme':'charcoal','title':''}
 DEFAULT_SETTINGS = [('guest_chat',json.dumps(DEFAULT_GUEST_CHAT)),('widget',json.dumps(DEFAULT_WIDGET))]
 
 TENANT_TABLES = '''

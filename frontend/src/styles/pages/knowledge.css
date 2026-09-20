@@ -45,7 +45,7 @@
 /* The card shows the start of the article the way the article really reads: headings, bold and bullet lists
    keep their shape, cut off after a few lines instead of being flattened into one run-on line. */
 .article-excerpt {
-  color: #4b5563;
+  color: #565656;
   line-height: 1.75;
   display: -webkit-box;
   -webkit-line-clamp: 5;
@@ -64,7 +64,7 @@
 .article-excerpt h3,.article-excerpt h4 {
   margin: 0 0 4px;
   font-size: 1rem;
-  color: #334155;
+  color: #434343;
 }
 .article-excerpt pre {
   white-space: pre-wrap;
@@ -90,7 +90,7 @@
   box-shadow: 0 4px 14px #2d2d2d20;
 }
 .article-content {
-  color: #26354a;
+  color: #373737;
   font-size: 1rem;
   line-height: 1.75;
   overflow-wrap: anywhere;
@@ -115,7 +115,7 @@
 }
 .article-content pre {
   white-space: pre-wrap;
-  background: #edf1f7;
+  background: #f2f2f2;
   padding: 16px;
   border-radius: 8px;
 }
@@ -152,15 +152,15 @@
   gap: 2px;
   margin: 8px 0 0;
   padding: 5px 6px;
-  border: 1px solid #c7ccdc;
+  border: 1px solid #d0d0d0;
   border-bottom: 0;
   border-radius: 10px 10px 0 0;
-  background: #f7f8fc;
+  background: #f9f9f9;
 }
 /* One editable area under the toolbar: the article is written the way it will be read. */
 .editor-input {
   height: clamp(190px,26vh,400px);
-  border-color: #c7ccdc;
+  border-color: #d0d0d0;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -229,8 +229,8 @@
   font-weight: 700;
 }
 .btn.kb-new:hover {
-  border-color: #e5e5ea;
-  background: #e5e5ea;
+  border-color: #e7e7e7;
+  background: #e7e7e7;
 }
 .kb-search-box .input-wrap {
   min-height: 52px;
@@ -590,7 +590,7 @@
   background: #000;
 }
 .card-copy+.card-copy:hover {
-  background: #e4e4e8;
+  background: #e5e5e5;
 }
 .card-copy.done,.card-copy+.card-copy.done {
   background: #1f7a4d;
@@ -696,7 +696,7 @@
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border: 1px solid #dcdce0;
+  border: 1px solid #dddddd;
   border-radius: 999px;
   background: #fff;
   color: #3a3a3c;
@@ -758,7 +758,7 @@
   bottom: 0;
   left: 10px;
   width: 2px;
-  background: #e5e5ea;
+  background: #e7e7e7;
 }
 .history-dot {
   position: relative;

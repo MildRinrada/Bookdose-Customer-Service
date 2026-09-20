@@ -22,8 +22,8 @@
   align-items: center;
   padding: 2px 10px;
   border-radius: 20px;
-  background: #eef1f7;
-  color: #334155;
+  background: #f2f2f2;
+  color: #434343;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -32,8 +32,8 @@
   color: #353d40;
 }
 .customer-state.tone-working {
-  background: #e6f0fc;
-  color: #1f4f8f;
+  background: #f1f1f1;
+  color: #545454;
 }
 .customer-state.tone-waiting {
   background: #fdf0d5;
@@ -76,7 +76,7 @@
 .customer-chats .inbox-preview,.staff-chats .inbox-preview {
   font-size: .92rem;
   line-height: 1.5;
-  color: #71697d;
+  color: #727272;
 }
 .customer-chat-item .inbox-top,.staff-chat-item .inbox-top {
   display: flex;
@@ -89,7 +89,7 @@
 /* The team's list keeps its bold "waiting for us" rows (pages/inbox.css); a channel sits where the customer's list
    names the organization, and urgency reads as a chip. */
 .staff-chats .inbox-item.needs-reply .inbox-preview {
-  color: #1e293b;
+  color: #2b2b2b;
 }
 /* The team's list: the customer's name where the customer's list names the organization, the channel's icon in it. */
 .staff-contact-badge {
@@ -108,8 +108,8 @@
 }
 .staff-contact-badge.channel-web { background: #f2f2f2; color: #303030; }
 .staff-contact-badge.channel-line { background: #d5f4e1; color: #0b4d2d; }
-.staff-contact-badge.channel-email { background: #dbeafe; color: #123c78; }
-.staff-contact-badge.channel-facebook { background: #e0e9fb; color: #1b3f86; }
+.staff-contact-badge.channel-email { background: #ececec; color: #424242; }
+.staff-contact-badge.channel-facebook { background: #ececec; color: #4b4b4b; }
 .staff-chat-item .inbox-top .customer-org-badge {
   max-width: 70%;
 }
@@ -163,9 +163,9 @@
   margin-right: auto;
 }
 #customer-thread .message.reply .bubble {
-  background: #f1f3f6;
-  border-color: #d5dbe4;
-  color: #1e293b;
+  background: #f3f3f3;
+  border-color: #dcdcdc;
+  color: #2b2b2b;
   border-radius: 4px 14px 14px 14px;
 }
 #customer-thread .message.reply .file-chip {
@@ -183,7 +183,7 @@
 .file-field-title {
   display: block;
   margin-bottom: 8px;
-  color: #334155;
+  color: #434343;
   font-weight: 600;
 }
 .customer-attach {
@@ -235,7 +235,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   color: var(--muted);
 }
 .customer-due,.customer-updated {
-  color: #475569;
+  color: #575757;
   white-space: nowrap;
 }
 .customer-banner {
@@ -256,7 +256,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 }
 .customer-banner p {
   margin: 0;
-  color: #475569;
+  color: #575757;
 }
 .customer-banner .btn {
   margin-top: 14px;
@@ -270,8 +270,8 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   border-color: #d8d8d8;
 }
 .customer-banner.tone-working {
-  background: #eef5fd;
-  border-color: #b3cdf0;
+  background: #f5f5f5;
+  border-color: #d0d0d0;
 }
 .customer-banner.tone-waiting {
   background: #fdf6e7;
@@ -293,13 +293,13 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #64748b;
+  color: #767676;
 }
 .customer-progress-step+.customer-progress-step::before {
   content: "";
   width: 22px;
   height: 2px;
-  background: #cbd5e1;
+  background: #d6d6d6;
 }
 .customer-progress-dot {
   display: grid;
@@ -307,7 +307,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
+  border: 2px solid #d6d6d6;
   background: #fff;
   font-weight: 700;
 }
@@ -358,7 +358,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   top: 30px;
   bottom: 2px;
   width: 2px;
-  background: #dfe3ea;
+  background: #e4e4e4;
 }
 .customer-timeline-dot {
   display: grid;
@@ -367,7 +367,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2px dashed #b8c0cc;
+  border: 2px dashed #c1c1c1;
   background: #fff;
 }
 .customer-timeline-item.done .customer-timeline-dot {
@@ -425,7 +425,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   text-decoration: none;
 }
 .customer-link-row:hover {
-  background: #faf8ff;
+  background: #fbfbfb;
 }
 .customer-link-row:hover strong {
   color: var(--purple);
@@ -475,7 +475,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 .customer-article:hover {
   border-color: #b4b4b4;
   border-radius: 12px;
-  background: #faf8ff;
+  background: #fbfbfb;
 }
 .customer-article:hover+.customer-article {
   border-top-color: transparent;
@@ -504,7 +504,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   gap: 10px;
 }
 .customer-article-text strong {
-  color: #1e293b;
+  color: #2b2b2b;
 }
 .customer-article-excerpt {
   overflow: hidden;
@@ -516,8 +516,8 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   flex-shrink: 0;
   padding: 1px 9px;
   border-radius: 20px;
-  background: #eef1f7;
-  color: #475569;
+  background: #f2f2f2;
+  color: #575757;
 }
 .customer-article-go {
   flex-shrink: 0;
@@ -556,8 +556,8 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   color: #1a6340;
 }
 .note-plan .note-icon {
-  background: #e6f0fc;
-  color: #1f4f8f;
+  background: #f1f1f1;
+  color: #545454;
 }
 
 /* ตั้งค่าบัญชี */
@@ -596,11 +596,11 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 .customer-privacy summary {
   cursor: pointer;
   font-weight: 600;
-  color: #334155;
+  color: #434343;
 }
 .customer-privacy p {
   margin: 8px 0 0;
-  color: #475569;
+  color: #575757;
 }
 
 /* One task on its own page, opened from an email: confirm, reset, ask for a reset link. */
@@ -619,7 +619,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 .customer-link-org {
   padding-left: 14px;
   border-left: 1px solid var(--line);
-  color: #4b5563;
+  color: #565656;
 }
 .customer-center {
   text-align: center;
@@ -632,7 +632,7 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   margin: 12px 0 8px;
 }
 .customer-center p {
-  color: #475569;
+  color: #575757;
 }
 .customer-center .field {
   margin-bottom: 15px;
@@ -720,8 +720,8 @@ main .customer-link-head>.text-size-controls {
   overflow: hidden;
   padding: 1px 8px;
   border-radius: 6px;
-  background: #eef1f7;
-  color: #273142;
+  background: #f2f2f2;
+  color: #333333;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -740,7 +740,7 @@ main .customer-link-head>.text-size-controls {
   padding: 1px 8px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  color: #475569;
+  color: #575757;
 }
 .customer-chat .conv-meta {
   display: flex;
@@ -903,7 +903,7 @@ main .customer-link-head>.text-size-controls {
 .customer-survey-comment {
   flex-basis: 100%;
   margin: 4px 0 0;
-  color: #475569;
+  color: #575757;
 }
 .customer-org-list {
   display: grid;

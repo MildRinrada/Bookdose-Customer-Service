@@ -15,11 +15,11 @@
 .sidebar .nav-item:hover,.sidebar .icon-btn:hover { background: #363f42; color: #fff; }
 .sidebar .nav-item.active { background: #f6f7f3; color: var(--accent); box-shadow: none; }
 .sidebar .nav-item.active:hover { background: #fff; }
-.sidebar .nav-item .nav-count { background: #355f76; color: #fff; }
+.sidebar .nav-item .nav-count { background: #595959; color: #fff; }
 .sidebar .nav-item.active .nav-count { background: var(--info-soft); color: var(--link); }
 .sidebar .workspace-select { background: #30373a; border-color: #505c5c; }
 .sidebar .workspace-select:hover { border-color: #839f9d; }
-.sidebar .workspace-select:focus-within { border-color: #91b9cf; outline-color: #91b9cf; }
+.sidebar .workspace-select:focus-within { border-color: #b3b3b3; outline-color: #b3b3b3; }
 .sidebar .workspace-select select {
   color: #f5f6f2;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d9e1dd' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -28,7 +28,7 @@
   background-size: 18px;
 }
 .sidebar .workspace-select select option { color: var(--ink); background: var(--paper); }
-.sidebar .workspace-select .avatar,.sidebar .profile .avatar { background: #355f76; color: #fff; }
+.sidebar .workspace-select .avatar,.sidebar .profile .avatar { background: #595959; color: #fff; }
 .sidebar .nav-help,.sidebar .profile,.sidebar-bottom { border-color: #454e50; }
 .sidebar .help-card { background: #303d3c; border-color: #4e6460; color: #e4eee8; }
 .sidebar .help-card a { color: #c5e3d5; }
@@ -142,7 +142,7 @@ select:focus-visible,.field input:focus,.field textarea:focus,.combo-control:foc
 /* Inbox: a blue reading accent, with warm notes distinct from customer-visible replies. */
 .inbox-item:hover,.inbox-item.needs-reply:hover { background: var(--surface-hover); }
 .inbox-item.selected,.inbox-item.selected.needs-reply { background: var(--info-soft); border-left-color: var(--link); }
-.message.reply .bubble { background: #315b70; border-color: #315b70; color: #fff; }
+.message.reply .bubble { background: #545454; border-color: #545454; color: #fff; }
 .message.customer .bubble { background: #f0f3ee; border-color: var(--line); color: var(--ink); }
 .message.note .bubble { background: var(--amber-soft); border-color: #bd9860; color: #70501c; }
 .composer { background: #fdfdfa; }
@@ -169,6 +169,6 @@ a.audit-entity:hover { background: var(--info-soft); color: var(--link); }
 .customer-progress-step.done .customer-progress-dot,.customer-progress-step.current .customer-progress-dot {
   background: var(--green); border-color: var(--green); color: #fff;
 }
-#customer-thread .message.customer .bubble { background: #315b70; border-color: #315b70; color: #fff; }
+#customer-thread .message.customer .bubble { background: #545454; border-color: #545454; color: #fff; }
 #customer-thread .message.reply .bubble { background: var(--paper); border-color: var(--line); color: var(--ink); }
 @media (hover:none) { .row-actions { background: none; } }

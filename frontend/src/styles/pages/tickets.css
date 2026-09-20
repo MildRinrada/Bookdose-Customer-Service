@@ -2,7 +2,7 @@
 .ticket-title {
   font-size: 1rem;
   font-weight: 550;
-  color: #555369;
+  color: #5b5b5b;
   display: block;
   max-width: 380px;
   overflow: hidden;
@@ -17,7 +17,7 @@
 }
 .customer-name {
   font-size: 1rem;
-  color: #26354a;
+  color: #373737;
   font-weight: 500;
 }
 .customer-company {
@@ -95,7 +95,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #736680;
+  color: #737373;
   font-size: 1rem;
   margin-bottom: 14px;
 }
@@ -121,7 +121,7 @@
   }
 }
 .muted,.small,.tiny,.ticket-id,.customer-company,.date-label {
-  color: #4b5563;
+  color: #565656;
 }
 .linked-row {
   cursor: pointer;
@@ -135,7 +135,7 @@
   padding-bottom: 16px;
 }
 .ticket-id {
-  color: #374151;
+  color: #434343;
 }
 .quick-cell {
   position: relative;
@@ -151,7 +151,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 4px 4px 28px;
-  background: linear-gradient(90deg,#edf2fc00,#edf2fc 24px);
+  background: linear-gradient(90deg,#edf2fc00,#f4f4f4 24px);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -169,10 +169,10 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   min-height: 40px;
   max-width: 170px;
   padding: 6px 34px 6px 10px;
-  border: 1px solid #8992a5;
+  border: 1px solid #959595;
   border-radius: 8px;
   background-color: #fff;
-  color: #202b3c;
+  color: #2d2d2d;
   font: inherit;
   cursor: pointer;
 }
@@ -212,7 +212,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   gap: 8px;
 }
 #ticket-count {
-  color: #475569;
+  color: #575757;
 }
 .bulk-bar {
   background: #f6f6f6;
@@ -294,7 +294,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   margin: 16px 0 0;
 }
 .preview-meta dt {
-  color: #4b5563;
+  color: #565656;
   margin-bottom: 4px;
 }
 .preview-meta dd {
@@ -362,7 +362,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
 .case-hero .privacy-tag {
   border-color: transparent;
   background: #ffffff14;
-  color: #d1d1d6;
+  color: #d3d3d3;
 }
 .case-hero h1 {
   margin: 10px 0 14px;
@@ -385,7 +385,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   padding: 3px 12px;
   border-radius: 999px;
   background: #ffffff14;
-  color: #e5e5ea;
+  color: #e7e7e7;
 }
 .case-hero-flag {
   display: inline-flex;
@@ -445,7 +445,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   width: 0;
   height: 100%;
   border-radius: 3px;
-  background: #e5e5ea;
+  background: #e7e7e7;
   transition: width .5s ease-out;
 }
 .case-sla-clock.warn .case-sla-bar>span { background: #f5b942; }
@@ -559,7 +559,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   overflow-wrap: anywhere;
 }
 .case-contact-line:hover {
-  background: #ebebef;
+  background: #ececec;
 }
 .case-contact-line .icon {
   flex-shrink: 0;

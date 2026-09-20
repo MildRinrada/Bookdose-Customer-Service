@@ -276,7 +276,7 @@
   padding: 12px 14px;
   border: 1px solid #e8e8e8;
   border-radius: 10px;
-  background: #fbfaff;
+  background: #fcfcfc;
 }
 .ai-result-head {
   display: flex;
@@ -323,7 +323,7 @@
   line-height: 1.55;
 }
 .ai-result-summary span {
-  color: #475569;
+  color: #575757;
   font-weight: 600;
 }
 .ai-result-actions {
@@ -345,7 +345,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  background: #f8f9fb;
+  background: #f9f9f9;
   border-color: var(--line);
 }
 .ai-result-empty>.icon {

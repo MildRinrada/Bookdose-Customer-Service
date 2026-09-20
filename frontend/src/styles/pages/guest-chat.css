@@ -12,6 +12,10 @@
   margin: 0 auto;
   padding: 18px 20px 28px;
 }
+/* The chat page: as wide as the window allows, like any other chat app. */
+.guest-page-chat {
+  max-width: 1680px;
+}
 .guest-head {
   display: flex;
   align-items: center;
@@ -40,9 +44,41 @@
   flex-wrap: wrap;
   gap: 4px;
 }
+/* The page you are on is the filled one; everything else in the row is quiet text of the same height. */
 .guest-nav .btn.active {
-  background: var(--info-soft);
-  color: var(--link);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.guest-head-actions .btn,
+.guest-head-actions .text-size-toggle {
+  min-height: 44px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+.guest-head-actions .btn.subtle {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 550;
+}
+.guest-head-actions .btn.subtle:hover {
+  background: var(--surface-hover);
+}
+/* Said again past .btn.subtle above, which would otherwise wipe the fill off the page you are on. */
+.guest-head-actions .guest-nav .btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.guest-head-actions .guest-nav .btn.active:hover {
+  background: var(--accent-hover);
+}
+.guest-head-actions .text-size-toggle {
+  min-width: 44px;
 }
 .guest-head-actions {
   flex-wrap: wrap;
@@ -69,15 +105,101 @@
 .guest-chat {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  height: min(780px, calc(100dvh - 180px));
+  height: min(880px, calc(100dvh - 148px));
   min-height: 520px;
 }
 .guest-chat.has-list {
-  grid-template-columns: 300px minmax(0, 1fr);
+  /* The list is only a way back to a chat; the conversation gets the rest. */
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+.guest-chat.has-aside {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+.guest-chat.has-list.has-aside {
+  grid-template-columns: 240px minmax(0, 1fr) 320px;
+}
+/* Beside the conversation: the case, the ways to follow this chat, and answers to read while the team writes back. */
+.guest-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-left: 1px solid var(--line);
+  background: #fcfcfc;
+}
+.guest-aside-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.guest-aside-card h3 {
+  font-size: 1rem;
+  font-weight: 650;
+}
+.guest-aside-card .btn {
+  align-self: flex-start;
+}
+.guest-aside-card p {
+  margin: 0;
+}
+.guest-aside-faq ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guest-aside-faq li a {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 8px;
+  margin-inline: -8px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1.55;
+}
+.guest-aside-faq li a:hover {
+  background: var(--surface-hover);
+}
+.guest-aside-faq li .icon {
+  width: 17px;
+  height: 17px;
+  margin-top: 3px;
+  flex: none;
+  color: var(--muted);
+}
+.guest-aside-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 550;
+}
+.guest-aside-all .icon {
+  width: 16px;
+  height: 16px;
+}
+/* The follow card is a panel of the column here, not a card floating in the thread. */
+.guest-aside .guest-follow {
+  margin: 0;
+  max-width: none;
 }
 .guest-list {
+  min-width: 0;
   min-height: 0;
-  overflow: auto;
+  /* Down the list only: a row never pushes the column sideways, it shortens its own chip instead. */
+  overflow-x: hidden;
+  overflow-y: auto;
   border-right: 1px solid var(--line);
 }
 .guest-list-head {
@@ -92,12 +214,29 @@
   border-bottom: 1px solid var(--line);
   background: #fff;
 }
+/* The row is a <button>, and the list gives it 8px of margin on each side (customer.css). Its width is stated with
+   that taken off, so the row always ends inside the column instead of being clipped by it. */
 .guest-list .inbox-item {
-  width: auto;
+  display: block;
+  width: calc(100% - 16px);
+  min-width: 0;
   font: inherit;
 }
+/* One line, like the signed-in customer's own list: the state chip gives way, the time keeps its place at the end. */
 .guest-list .inbox-top {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.guest-list .inbox-top .customer-state {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.guest-list .inbox-time {
+  flex: none;
+  margin-left: auto;
 }
 .guest-list .inbox-item h3 {
   white-space: normal;
@@ -138,6 +277,9 @@
 }
 .guest-detail>.customer-ai-status {
   flex-shrink: 0;
+  /* One line of state, not a paragraph: every pixel here is a pixel the conversation does not get. */
+  padding: 8px 16px;
+  line-height: 1.6;
 }
 .guest-detail>.thread {
   flex: 1;
@@ -147,14 +289,15 @@
   overflow: auto;
   padding: 16px;
 }
+/* The box to write in is kept small on purpose: it grows with what is typed, and until then the conversation keeps
+   the height. (The plain field the form sends stays 1px and out of the way — components.css .rich-source.) */
 .guest-detail>.composer {
   flex-shrink: 0;
-  padding: 10px 16px 12px;
+  padding: 8px 14px 10px;
 }
-.guest-detail .composer textarea {
-  min-height: 56px;
-  height: 64px;
-  margin: 0 0 8px;
+.guest-detail .composer .composer-input {
+  min-height: 54px;
+  margin: 6px 0;
 }
 .guest-detail .composer-tip {
   display: none;
@@ -233,7 +376,7 @@
   gap: 10px;
   min-height: 56px;
   padding: 12px 14px;
-  border: 1.5px solid #d8d8de;
+  border: 1.5px solid #dadada;
   border-radius: 14px;
   background: #fff;
   color: #1c1c1e;
@@ -272,8 +415,8 @@
   text-align: left;
 }
 .guest-start input:disabled {
-  border-color: #e5e5ea;
-  background: #f2f2f5;
+  border-color: #e7e7e7;
+  background: #f3f3f3;
   cursor: not-allowed;
 }
 .start-remember {
@@ -282,7 +425,7 @@
   gap: 12px;
   margin-bottom: 16px;
   padding: 14px 16px;
-  border: 1.5px solid #d8d8de;
+  border: 1.5px solid #dadada;
   border-radius: 14px;
   cursor: pointer;
 }
@@ -339,7 +482,7 @@
 }
 .start-eyebrow {
   margin: 0 0 6px;
-  color: #d1d1d6;
+  color: #d3d3d3;
   font-size: .85rem;
   font-weight: 700;
   letter-spacing: .02em;
@@ -353,7 +496,7 @@
 }
 .start-welcome {
   margin: 10px 0 0;
-  color: #e5e5ea;
+  color: #e7e7e7;
   font-size: 1.02rem;
 }
 .start-promises {
@@ -417,7 +560,7 @@
   gap: 2px;
 }
 .start-mine small {
-  color: #d1d1d6;
+  color: #d3d3d3;
 }
 .start-mine .icon {
   flex-shrink: 0;
@@ -449,7 +592,7 @@
   text-decoration: none;
 }
 .start-faq li a:hover {
-  background: #f2f2f5;
+  background: #f3f3f3;
 }
 .start-faq li .icon {
   flex-shrink: 0;
@@ -550,7 +693,7 @@
 .guest-follow {
   border: 1px solid #e0e0e0;
   border-radius: 12px;
-  background: #faf8ff;
+  background: #fbfbfb;
 }
 .guest-follow-head {
   display: flex;
@@ -611,8 +754,8 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #eef1f7;
-  color: #475569;
+  background: #f2f2f2;
+  color: #575757;
 }
 .guest-follow-icon .icon {
   width: 16px;
@@ -712,7 +855,7 @@
 .guest-claim-text {
   flex: 1;
   min-width: min(14rem, 100%);
-  color: #334155;
+  color: #434343;
 }
 
 /* The sign-in page's way in without an account */
@@ -730,7 +873,7 @@
 .guest-entry span {
   flex: 1;
   min-width: min(12rem, 100%);
-  color: #475569;
+  color: #575757;
 }
 
 /* One column: phones, and always inside a website's iframe */
@@ -837,12 +980,12 @@ body:has(.guest-embed) {
 
 /* The widget's colour inside its iframe (a preset, set on <main data-theme>) */
 .guest-embed[data-theme=purple] {
-  --accent: #5835b3;
-  --accent-hover: #472a93;
+  --accent: #6b6b6b;
+  --accent-hover: #575757;
 }
 .guest-embed[data-theme=blue] {
-  --accent: #1f5f8b;
-  --accent-hover: #184c70;
+  --accent: #585858;
+  --accent-hover: #474747;
 }
 .guest-embed[data-theme=green] {
   --accent: #2f7556;
@@ -884,12 +1027,12 @@ body:has(.guest-embed) {
   flex-wrap: wrap;
   gap: 4px 8px;
   margin: 6px 0 0;
-  color: #475569;
+  color: #575757;
 }
 
 /* ตั้งค่าองค์กร → แชทบนเว็บไซต์ */
 .guest-settings .check {
-  color: #334155;
+  color: #434343;
 }
 .guest-origins {
   display: grid;
@@ -928,7 +1071,7 @@ body:has(.guest-embed) {
   gap: 4px;
   max-width: 100%;
   padding: 3px 4px 3px 10px;
-  border: 1px solid #cfd8e3;
+  border: 1px solid #d9d9d9;
   border-radius: 999px;
   background: var(--info-soft);
   color: var(--link);
@@ -946,7 +1089,7 @@ body:has(.guest-embed) {
   color: inherit;
 }
 .guest-origin-chip button:hover {
-  background: #d6e4ee;
+  background: #e3e3e3;
 }
 .guest-origin-chip .icon {
   width: 14px;
@@ -963,7 +1106,7 @@ body:has(.guest-embed) {
 .guest-choices legend {
   margin-bottom: 8px;
   padding: 0;
-  color: #334155;
+  color: #434343;
   font-weight: 600;
 }
 .guest-choice {

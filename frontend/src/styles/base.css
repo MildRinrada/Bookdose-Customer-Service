@@ -4,8 +4,8 @@
   --paper: #fff;
   --accent: rgb(38, 41, 45);
   --accent-hover: #3a4246;
-  --link: #2f6385;
-  --info-soft: #eaf1f6;
+  --link: #3a4246;
+  --info-soft: #f1f1ee;
   --surface-hover: #eff1ec;
   --control-line: #87928c;
   --focus: #4d8cad;
@@ -165,7 +165,7 @@ p {
   white-space: nowrap;
 }
 input::placeholder,textarea::placeholder {
-  color: #626d7d;
+  color: #6f6f6f;
   opacity: 1;
 }
 textarea {
@@ -179,7 +179,7 @@ textarea {
 .loading-line {
   padding: 45px;
   text-align: center;
-  color: #6e6378;
+  color: #6e6e6e;
   font-size: 1rem;
 }
 @media (max-width:760px) {

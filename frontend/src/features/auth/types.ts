@@ -30,7 +30,10 @@ export type CustomerSignupResult = { ok: true; signed_in?: boolean; verification
 
 /** GET / POST /api/platform/registration: the platform's email for confirming organization sign-ups. */
 export type RegistrationConfig = {
+  /** The system's mailbox works: verification links, chat follow links, password resets and invitations can be sent. */
   enabled: boolean;
+  /** Anyone on the internet may create an organization from the sign-up page (needs `enabled` as well). */
+  signup_enabled: boolean;
   smtp_host?: string;
   smtp_port?: number;
   username?: string;
@@ -42,6 +45,7 @@ export type RegistrationConfig = {
 /** The body of POST /api/platform/registration. */
 export type RegistrationSettingsInput = {
   enabled: boolean;
+  signup_enabled: boolean;
   public_base_url: string;
   address: string;
   smtp_host: string;

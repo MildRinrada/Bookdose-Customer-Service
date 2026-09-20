@@ -60,14 +60,14 @@
 }
 .sla-item {
   padding: 14px 0;
-  border-bottom: 1px solid #f2f2f7;
+  border-bottom: 1px solid #f4f4f4;
 }
 .sla-item:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }
 .sla-item a {
-  color: #656076;
+  color: #696969;
   font-size: 1rem;
   display: block;
   margin: 5px 0 4px;
@@ -216,7 +216,7 @@
 }
 .hero-strip p {
   margin: 4px 0 0;
-  color: #4b5563;
+  color: #565656;
 }
 .hero-art {
   display: none;
@@ -235,7 +235,7 @@
 .dashboard-summary {
   font-size: 1.0625rem;
   font-weight: 500;
-  color: #4b5563;
+  color: #565656;
 }
 .dashboard-summary strong {
   color: #343434;
@@ -330,7 +330,7 @@
   border-left-color: #c7811a;
 }
 .action-needed .sla-item.info {
-  border-left-color: #6d8fc7;
+  border-left-color: #969696;
 }
 .action-needed .sla-item.danger .time {
   color: #a31525;
@@ -341,7 +341,7 @@
   font-weight: 600;
 }
 .action-needed .sla-item.info .time {
-  color: #1f4f8f;
+  color: #545454;
 }
 @media (max-width:1180px) {
   .dashboard-table table {
@@ -361,7 +361,7 @@
   width: 1.75rem;
   height: 110px;
   flex-shrink: 0;
-  color: #4b5563;
+  color: #565656;
   text-align: right;
 }
 .chart-y span {
@@ -386,7 +386,7 @@
   padding: 0;
   align-items: flex-start;
   gap: 4px;
-  background: linear-gradient(#e3e7ef,#e3e7ef) 0 0/100% 1px no-repeat,linear-gradient(#e3e7ef,#e3e7ef) 0 55px/100% 1px no-repeat,linear-gradient(#aeb7c7,#aeb7c7) 0 109px/100% 1px no-repeat;
+  background: linear-gradient(#e8e8e8,#e8e8e8) 0 0/100% 1px no-repeat,linear-gradient(#e8e8e8,#e8e8e8) 0 55px/100% 1px no-repeat,linear-gradient(#b9b9b9,#b9b9b9) 0 109px/100% 1px no-repeat;
 }
 .case-chart .chart-col {
   position: relative;
@@ -419,7 +419,7 @@
   background: #434343;
 }
 .case-chart .chart-col small {
-  color: #4b5563;
+  color: #565656;
 }
 .case-chart .chart-col::after {
   content: attr(data-tip);
@@ -431,7 +431,7 @@
   z-index: 3;
   padding: 4px 10px;
   border-radius: 6px;
-  background: #1f2937;
+  background: #2a2a2a;
   color: #fff;
   font-size: 1rem;
   white-space: nowrap;

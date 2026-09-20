@@ -43,7 +43,7 @@
 .auth-story .story-copy {
   font-size: 1rem;
   line-height: 2;
-  color: #71657e;
+  color: #717171;
   max-width: 420px;
 }
 .auth-story .story-label {
@@ -131,7 +131,7 @@
 }
 .story-footer {
   font-size: 1rem;
-  color: #6e6278;
+  color: #6d6d6d;
 }
 .auth-form-wrap {
   padding: 50px 50px;
@@ -223,8 +223,8 @@
   width: 42px;
   height: 40px;
   padding: 8px;
-  background: #f2f4f8;
-  color: #334155;
+  background: #f5f5f5;
+  color: #434343;
   border: 0;
   border-radius: 6px;
 }
@@ -235,7 +235,7 @@
   max-width: 480px;
 }
 .auth-form>p,.auth-foot {
-  color: #4b5563;
+  color: #565656;
 }
 .auth-form .btn.subtle {
   margin-top: 8px;
@@ -263,7 +263,7 @@
   border: 0;
   border-bottom: 3px solid transparent;
   background: none;
-  color: #4b5563;
+  color: #565656;
   font: inherit;
   font-size: 1.0625rem;
   font-weight: 600;
@@ -290,7 +290,7 @@
 }
 .auth-privacy p {
   margin: 8px 0 0;
-  color: #4b5563;
+  color: #565656;
 }
 .auth-form .check span {
   line-height: 1.6;

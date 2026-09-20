@@ -255,7 +255,7 @@ html:has(.composer) .assistant-panel {
   cursor: pointer;
 }
 .assistant-suggestion:hover,.assistant-suggestion:focus-visible {
-  background: #efeff2;
+  background: #f0f0f0;
   color: #1c1c1e;
   outline: none;
 }

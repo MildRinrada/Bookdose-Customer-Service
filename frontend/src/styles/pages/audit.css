@@ -12,7 +12,7 @@
   gap: 2px;
   min-width: 0;
   padding: 16px 18px;
-  border: 1px solid #e5e5ea;
+  border: 1px solid #e7e7e7;
   border-radius: 18px;
   background: #fff;
   color: #1c1c1e;
@@ -53,7 +53,7 @@
 }
 .audit-stat-important.has span,.audit-stat-important.has small,
 .audit-stat-important[aria-pressed="true"] span,.audit-stat-important[aria-pressed="true"] small {
-  color: #e5e5ea;
+  color: #e7e7e7;
 }
 
 /* The choices: search and person, then the period and the system's own work. */
@@ -84,7 +84,7 @@
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: #ececf0;
+  background: #ededed;
 }
 .audit-range {
   min-height: 32px;
@@ -138,7 +138,7 @@
   gap: 7px;
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid #d8d8de;
+  border: 1px solid #dadada;
   border-radius: 999px;
   background: #fff;
   color: #1c1c1e;
@@ -159,7 +159,7 @@
   min-width: 22px;
   padding: 0 7px;
   border-radius: 999px;
-  background: #ececf0;
+  background: #ededed;
   color: #1c1c1e;
   font-size: .8rem;
   line-height: 22px;
@@ -209,7 +209,7 @@
   padding: 10px 4px;
   background: var(--bg);
   font-size: 1rem;
-  color: #334155;
+  color: #434343;
 }
 .audit-list {
   list-style: none;
@@ -227,13 +227,13 @@
   align-items: start;
   gap: 12px;
   padding: 14px 18px;
-  border-bottom: 1px solid #f2f2f7;
+  border-bottom: 1px solid #f4f4f4;
 }
 .audit-event:last-child {
   border-bottom: 0;
 }
 .audit-event:hover {
-  background: #fbfaff;
+  background: #fcfcfc;
 }
 .audit-event>time {
   color: var(--muted);
@@ -247,8 +247,8 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: #eef1f7;
-  color: #475569;
+  background: #f2f2f2;
+  color: #575757;
 }
 .audit-icon .icon {
   width: 18px;
@@ -264,8 +264,8 @@
   color: #8a4212;
 }
 .tone-settings .audit-icon {
-  background: #e4edfa;
-  color: #2b5488;
+  background: #eeeeee;
+  color: #585858;
 }
 .tone-danger .audit-icon {
   background: #fde7ea;
@@ -281,11 +281,11 @@
 }
 .audit-line {
   margin: 0;
-  color: #334155;
+  color: #434343;
   overflow-wrap: anywhere;
 }
 .audit-line strong {
-  color: #1e293b;
+  color: #2b2b2b;
   font-weight: 650;
 }
 .audit-entity {
@@ -308,8 +308,8 @@ a.audit-entity:hover {
   color: #343434;
 }
 .audit-entity.plain {
-  background: #eef1f7;
-  color: #475569;
+  background: #f2f2f2;
+  color: #575757;
 }
 .audit-changes {
   margin: 4px 0 0;
@@ -431,7 +431,7 @@ a.audit-entity:hover {
 .audit-repeat summary {
   padding: 1px 9px;
   border-radius: 999px;
-  background: #ececf0;
+  background: #ededed;
   color: #1c1c1e;
   font-weight: 700;
   cursor: pointer;

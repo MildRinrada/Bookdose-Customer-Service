@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { TextField } from '@/components/ui/fields';
 import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
+import { CAPTCHA_FIELD, CAPTCHA_WAIT, TurnstileField, type TurnstileHandle } from '@/components/ui/Turnstile';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextArea } from '@/features/rich/RichTextArea';
@@ -19,7 +20,8 @@ import type { GuestOverview, GuestStartLink } from '../types';
    the story (subject, message with simple formatting, files) and how to follow the answer (this browser, a follow link
    by email and/or SMS, a name and a reference for the team). A new visitor who does not want this browser to remember
    them must give an address, or the chat would be lost. The hidden box (HoneypotField) and the time the form appeared
-   keep simple bots out (the server refuses a filled honeypot or a form sent within 2 seconds). `intro`: the team's
+   keep simple bots out (the server refuses a filled honeypot or a form sent within 2 seconds), and when the platform
+   has switched Cloudflare Turnstile on, its widget proves a person is sending. `intro`: the team's
    welcome and reply promise above the steps (the start page shows them in its own head instead).
    Markup: pages/guest-chat (start-step, start-topic, start-remember, start-submit). */
 
@@ -97,6 +99,9 @@ export function GuestStartForm({
   // When the form appeared, for the server's "too fast to be a person" check.
   const [shownAt] = useState(() => Date.now());
   const [category, setCategory] = useState('');
+  // Cloudflare Turnstile, when the platform asks for it: its token is used once, so a refused send asks for another.
+  const captcha = overview.captcha?.site_key ? overview.captcha : null;
+  const captchaRef = useRef<TurnstileHandle | null>(null);
   const { inputRef, files, problem, onChange, remove, clear } = useFilePills();
   const orgName = overview.organization.name;
   const known = overview.guest;
@@ -113,20 +118,29 @@ export function GuestStartForm({
         const email = (values.email ?? '').trim();
         const phone = (values.phone ?? '').trim();
         if (!known && !keep && !email && !phone) throw new Error(KEEP);
+        const captchaToken = values[CAPTCHA_FIELD] ?? '';
+        if (captcha && !captchaToken) throw new Error(CAPTCHA_WAIT);
         const attachments = await readFiles(filesOf(form, 'files'));
-        const result = await startGuestChat(slug, {
-          body: values.body ?? '',
-          subject: values.subject ?? '',
-          category,
-          name: values.name ?? '',
-          email,
-          phone,
-          reference: (values.reference ?? '').trim(),
-          // A visitor this browser already remembers keeps its own choice (changed in "ติดตามแชทนี้").
-          remember: known ? known.remember : keep,
-          website: honeypotValue(values),
-          started_ms: shownAt,
-          attachments,
+        const start = () =>
+          startGuestChat(slug, {
+            body: values.body ?? '',
+            subject: values.subject ?? '',
+            category,
+            name: values.name ?? '',
+            email,
+            phone,
+            reference: (values.reference ?? '').trim(),
+            // A visitor this browser already remembers keeps its own choice (changed in "ติดตามแชทนี้").
+            remember: known ? known.remember : keep,
+            website: honeypotValue(values),
+            started_ms: shownAt,
+            captcha_token: captchaToken,
+            attachments,
+          });
+        const result = await start().catch((reason: unknown) => {
+          // Whatever refused this send, the Turnstile token went with it: the next try needs a fresh one.
+          captchaRef.current?.reset();
+          throw reason;
         });
         setGuestCredentials(result.csrf);
         clear();
@@ -245,6 +259,7 @@ export function GuestStartForm({
         </div>
       </Step>
       <HoneypotField />
+      {captcha && <TurnstileField siteKey={captcha.site_key} action={captcha.action} handleRef={captchaRef} />}
       <div className="start-submit">
         <button className="btn primary guest-send" type="submit">
           <Icon name="send" />

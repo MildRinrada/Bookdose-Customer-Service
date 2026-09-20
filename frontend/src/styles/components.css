@@ -940,6 +940,16 @@ input[type=file]::file-selector-button {
 .field-error:empty {
   display: none;
 }
+/* The bot check on a public form (ui/Turnstile.tsx): Cloudflare draws its own 300x65 frame, so the field only keeps
+   room for it while it loads and never lets it push the form wider than the page. */
+.captcha-field {
+  max-width: 100%;
+}
+.captcha-box {
+  min-height: 65px;
+  max-width: 100%;
+  overflow: hidden;
+}
 /* Why a chosen file was not accepted, right under the field that chose it. */
 .file-error {
   margin: 6px 0 0;

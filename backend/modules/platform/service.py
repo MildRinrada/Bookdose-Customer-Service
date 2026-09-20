@@ -317,6 +317,24 @@ def save_sms_settings(cd, session, body):
     return sms_settings(cd)
 
 
+def turnstile_settings(cd):
+    from backend.extensions import turnstile
+    return turnstile.config(cd)
+
+
+def save_turnstile_settings(cd, session, body):
+    """Switch the bot check on the support form on or off; a secret key typed now is sealed in its own file, an empty
+    one keeps what was saved."""
+    from backend.extensions import turnstile
+    public,secret = turnstile.settings_form(body)
+    D.begin(cd)
+    turnstile.save(cd,public,secret)
+    audit.record(cd,session['user_id'],'turnstile.settings_updated','platform',
+                 ('เปิด' if public['enabled'] else 'ปิด')+(' · secret key' if secret else ''))
+    cd.commit()
+    return turnstile_settings(cd)
+
+
 def send_test_sms(cd, body):
     """A test text to a number the platform admin types, through the provider in use now."""
     from backend.extensions import sms

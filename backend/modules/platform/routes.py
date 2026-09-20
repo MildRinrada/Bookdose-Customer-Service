@@ -7,6 +7,8 @@ ROUTES = [
     ('GET',   '/api/platform/sms',            controller.sms_settings,               'platform'),
     ('POST',  '/api/platform/sms',            controller.save_sms_settings,          'platform'),
     ('POST',  '/api/platform/sms/test',       controller.test_sms,                   'platform'),
+    ('GET',   '/api/platform/turnstile',      controller.turnstile_settings,         'platform'),
+    ('POST',  '/api/platform/turnstile',      controller.save_turnstile_settings,    'platform'),
     ('GET',   '/api/platform/tenants',        controller.list_tenants,               'platform'),
     ('POST',  '/api/platform/tenants',        controller.create_tenant,              'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}',  controller.set_tenant_status,          'platform'),

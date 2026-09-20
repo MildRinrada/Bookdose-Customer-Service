@@ -516,8 +516,9 @@ class SecurityRoundTests(unittest.TestCase):
         # security_settings_changed
         self.ok(self.owner,f'{SEC}/settings',{'alerts':{'locks_1h':20}})
         found = {e['kind']:e for e in self.ok(self.owner,f'{SEC}/events?limit=200')['events']}
-        # The honeypot / honeytoken kinds have their own tests (test_honeypot.py).
-        round_kinds = {k:v for k,v in model.EVENT_KINDS.items() if k not in model.TRAP_EVENT_KINDS}
+        # The honeypot / honeytoken kinds have their own tests (test_honeypot.py), the Turnstile ones test_turnstile.py.
+        own_tests = set(model.TRAP_EVENT_KINDS)|{'captcha_failed','captcha_unavailable'}
+        round_kinds = {k:v for k,v in model.EVENT_KINDS.items() if k not in own_tests}
         self.assertEqual(set(found),set(round_kinds))
         for kind,severity in round_kinds.items():
             self.assertTrue(any(e['severity']==severity for e in self.events_of(kind)),kind)

@@ -52,8 +52,8 @@ absent) and **`guest-open`** (no cookie needed; req.guest set when one is presen
 
 | method path | scope | body → answer |
 |---|---|---|
-| GET `/guest` | guest-open | → `{guest: null \| {name, email_masked, email_verified, phone_masked, phone_verified, line_linked, remember, csrf}, conversations:[{id, subject, status, updated_at, unread, survey_pending}], follow:{email_ready, sms_ready, line_ready, line_oa_name, line_add_url}, categories:[...], organization:{name, slug}}` |
-| POST `/guest/conversations` | guest-open | `{body, subject?, category?, name?, remember:true, website:''(honeypot), started_ms}` (+ attachments like the portal) → 201 `{id, csrf}` + cookie (reuses the visitor when a cookie is present) |
+| GET `/guest` | guest-open | → `{guest: null \| {name, email_masked, email_verified, phone_masked, phone_verified, line_linked, remember, csrf}, conversations:[{id, subject, status, updated_at, unread, survey_pending}], follow:{email_ready, sms_ready, line_ready, line_oa_name, line_add_url}, categories:[...], organization:{name, slug}, captcha:{site_key, action}}` (`site_key:''` = the bot check is off) |
+| POST `/guest/conversations` | guest-open | `{body, subject?, category?, name?, remember:true, website:''(honeypot), started_ms, captcha_token?}` (+ attachments like the portal) → 201 `{id, csrf}` + cookie (reuses the visitor when a cookie is present) |
 | GET `/guest/session` | guest | header X-Conversation-ID → same shape as the signed-in portal `/session` |
 | POST `/guest/messages`, `/guest/handoff`, `/guest/csat`; GET `/guest/attachments/{id}`, `/guest/cases/{id}` | guest | same bodies/answers as the portal routes, limited to this visitor's conversations |
 | POST `/guest/name` | guest | `{name}` |
@@ -90,6 +90,12 @@ Rules:
   POST (a shared computer must not hand chats to whoever signs in next).
 - **Spam:** honeypot `website` must be empty and `started_ms` ≥ 2 s before submit (else 400 with a generic message);
   new conversations: 5 per hour per IP and 10 per day per visitor; messages use the portal's existing limits.
+- **Bot check:** when the platform has saved Cloudflare Turnstile keys and switched them on (คอนโซลระบบกลาง →
+  ตั้งค่าระบบ #turnstile), `GET /guest` carries the public `site_key`, the start form draws the widget and sends its
+  `captcha_token`, and the server verifies it once with Cloudflare (backend/extensions/turnstile.py). A missing, wrong,
+  expired, reused or wrong-action token is a 400 and the security event `captcha_failed`; Cloudflare being unreachable
+  or our own key being refused lets the visitor through and records `captcha_unavailable`. With no keys saved nothing
+  changes anywhere.
 - **Cleanup:** devices unused for 400 days and expired links/codes are deleted by the worker.
 - Staff side: the conversation/contact carry `guest:{follow:['browser','email','sms','line']}` so the inbox shows a
   "ผู้เยี่ยมชม" badge and how they can be reached. Existing contact merge keeps working.

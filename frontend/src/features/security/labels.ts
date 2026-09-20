@@ -23,6 +23,8 @@ export const eventKindLabels: Record<string, string> = {
   admin_unlock: 'ผู้ดูแลปลดล็อกบัญชี',
   admin_ip_block: 'ผู้ดูแลเปลี่ยนรายการบล็อก IP',
   security_settings_changed: 'เปลี่ยนการตั้งค่าความปลอดภัย',
+  captcha_failed: 'ไม่ผ่านการยืนยันว่าไม่ใช่บอท (Turnstile)',
+  captcha_unavailable: 'ตรวจ Turnstile ไม่ได้ ปล่อยคำขอผ่าน',
   honeypot_path: 'เปิดเส้นทางกับดัก',
   honeypot_form: 'กรอกช่องซ่อนในฟอร์ม (บอท)',
   honeytoken_triggered: 'มีการใช้กับดัก (Honeytoken)',

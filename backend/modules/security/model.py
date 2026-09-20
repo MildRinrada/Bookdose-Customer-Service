@@ -93,6 +93,8 @@ EVENT_KINDS = {
     'cross_tenant_denied':'warning','support_access':'info','webhook_signature_failed':'warning',
     'guest_link_invalid':'info','ip_blocked_request':'info','admin_unlock':'warning','admin_ip_block':'warning',
     'security_settings_changed':'critical',
+    # Cloudflare Turnstile (backend/extensions/turnstile.py)
+    'captcha_failed':'warning','captcha_unavailable':'warning',
     # Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md)
     'honeypot_path':'warning','honeypot_form':'warning','honeytoken_triggered':'critical','trap_ip_block':'warning',
 }

@@ -18,6 +18,14 @@ def save_sms_settings(req):
     return req.send(200,service.save_sms_settings(req.cd,req.session,req.body))
 
 
+def turnstile_settings(req):
+    return req.send(200,service.turnstile_settings(req.cd))
+
+
+def save_turnstile_settings(req):
+    return req.send(200,service.save_turnstile_settings(req.cd,req.session,req.body))
+
+
 def test_sms(req):
     from backend.middleware.rate_limit import limited
     limited(('sms-test',req.session['user_id']),5,3600)

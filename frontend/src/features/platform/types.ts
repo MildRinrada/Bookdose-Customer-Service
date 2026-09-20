@@ -186,3 +186,8 @@ export type GlobalFaqPage = { articles: GlobalArticle[] };
 export type GlobalFaqFilters = { q?: string; audience?: string; state?: string };
 
 export type GlobalArticleInput = { title: string; category: string; body: string; audience: string };
+
+/** GET/POST /api/platform/turnstile: the bot check on the public support form (backend/extensions/turnstile.py).
+    `site_key` is the public key the form draws its widget with; `configured` says the secret key is sealed on the
+    server (it never comes back). */
+export type TurnstileSettings = { enabled: boolean; site_key: string; configured: boolean };

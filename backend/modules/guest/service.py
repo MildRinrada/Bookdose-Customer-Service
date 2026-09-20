@@ -140,7 +140,9 @@ def _oa_name(row):
 
 
 def overview(cd, db, org, guest):
-    """GET /guest: the browser's guest (or null), its conversations, how it can follow them, the categories."""
+    """GET /guest: the browser's guest (or null), its conversations, how it can follow them, the categories, and the
+    public key of the bot check the start form must pass."""
+    from backend.extensions import turnstile
     from backend.modules.automation.service import SURVEY_DAYS
     line_row = notify.line_channel(db,org['id'])
     view,conversations = None,[]
@@ -156,7 +158,9 @@ def overview(cd, db, org, guest):
     return {'guest':view,'conversations':conversations,
             'follow':{'email_ready':customers.email_ready(cd),'sms_ready':sms.ready(cd),'line_ready':bool(line_row),
                       'line_oa_name':_oa_name(line_row),'line_add_url':_line_add_url(line_row)},
-            'categories':[c['name'] for c in customers.categories(db)],'organization':{'name':org['name'],'slug':org['slug']}}
+            'categories':[c['name'] for c in customers.categories(db)],'organization':{'name':org['name'],'slug':org['slug']},
+            # The public key of the bot check on the start form ('' when the platform has not switched it on).
+            'captcha':{'site_key':turnstile.site_key(cd),'action':turnstile.START_ACTION}}
 
 
 def _contact_of(db, visitor):

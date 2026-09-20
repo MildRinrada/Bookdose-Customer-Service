@@ -19,6 +19,9 @@ const DEV = process.env.NODE_ENV === 'development';
 const RAW_API_URL = process.env.BOOKDOSE_API_URL ?? 'http://127.0.0.1:8787';
 const API_URL = (/^https?:\/\//.test(RAW_API_URL) ? RAW_API_URL : `http://${RAW_API_URL}`).replace(/\/$/, '');
 
+// Cloudflare Turnstile: its script (which 'strict-dynamic' would allow anyway, for browsers that do not know it) and
+// the frame it draws the challenge in. Named nowhere else: no other outside script or frame may load.
+const TURNSTILE = 'https://challenges.cloudflare.com';
 const EMBED_PAGE = /^\/(?:support|chat)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/embed\/?$/;
 // What may go into the policy: scheme://host[:port] and nothing else (no spaces, quotes or semicolons).
 const ORIGIN = /^https?:\/\/[a-z0-9.-]+(?::\d{1,5})?$/;
@@ -129,13 +132,15 @@ async function page(request: NextRequest) {
   const sockets = HOST.test(host) ? ` ws://${host} wss://${host}` : '';
   const policy = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${DEV ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${TURNSTILE}${DEV ? " 'unsafe-eval'" : ''}`,
     // Development injects styles for hot reload; production only loads stylesheets from this app.
     `style-src 'self' ${DEV ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob:",
     `connect-src 'self'${DEV ? ' ws: wss:' : sockets}`,
     "object-src 'none'",
+    // The bot check on the public support form draws its challenge in a frame of Cloudflare's (ui/Turnstile.tsx).
+    `frame-src 'self' ${TURNSTILE}`,
     `frame-ancestors ${ancestors}`,
     "base-uri 'none'",
     "form-action 'self'",

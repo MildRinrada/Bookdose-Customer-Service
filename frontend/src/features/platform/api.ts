@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, GlobalArticleInput } from './types';
+import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, GlobalArticleInput, TurnstileSettings } from './types';
 
 /* Endpoints of backend/modules/platform/routes.py. Every platform read lives
    under /api/platform, so refreshing PLATFORM_PREFIX after a write also redraws the histories shown on the
@@ -11,6 +11,11 @@ export const TENANTS_PATH = '/api/platform/tenants';
 export const REGISTRATION_PATH = '/api/platform/registration';
 export const ADMINS_PATH = '/api/platform/admins';
 export const GLOBAL_FAQ_PATH = '/api/platform/faq';
+export const TURNSTILE_PATH = '/api/platform/turnstile';
+
+/** The bot check on the public support form (Cloudflare Turnstile). `secret`: '' keeps the saved key. */
+export const saveTurnstileSettings = (body: { enabled: boolean; site_key: string; secret: string }) =>
+  api<TurnstileSettings>(TURNSTILE_PATH, body);
 
 export type NewTenantBody = { name: string; slug: string; admin_name: string; email: string; password: string };
 

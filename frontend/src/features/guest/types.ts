@@ -34,6 +34,9 @@ export type GuestFollow = {
   line_add_url: string;
 };
 
+/** The bot check on the start form: `site_key` is '' while the platform has not switched Cloudflare Turnstile on. */
+export type GuestCaptcha = { site_key: string; action: string };
+
 /** GET /api/public/<org>/guest */
 export type GuestOverview = {
   guest: GuestInfo | null;
@@ -41,6 +44,7 @@ export type GuestOverview = {
   follow: GuestFollow;
   categories: string[];
   organization: { name: string; slug: string };
+  captcha?: GuestCaptcha;
 };
 
 /** POST /api/public/<org>/guest/conversations */
@@ -59,6 +63,8 @@ export type GuestStartBody = {
   website: string;
   /** When the form was shown (epoch ms): a form sent within 2 seconds is refused. */
   started_ms: number;
+  /** The Turnstile token of this send, when the platform asks for one (used once; a retry needs a fresh one). */
+  captcha_token?: string;
   attachments: Array<{ name: string; data: string }>;
 };
 

@@ -7,10 +7,12 @@ import type { RegistrationConfig } from '@/features/auth/types';
 import { useApi } from '@/lib/query';
 import { REGISTRATION_PATH } from './api';
 import { SmsSettingsCard } from './components/SmsSettingsCard';
+import { TurnstileSettingsCard } from './components/TurnstileSettingsCard';
 
 /* Platform console, ตั้งค่าระบบ: how the platform itself sends messages - the email (SMTP) that confirms organization
-   sign-ups and invitations (#email), and the SMS provider for guests' chat links (#sms). Other pages link straight
-   to either section. Markup: pages/platform.css (.platform-settings-section). */
+   sign-ups and invitations (#email), the SMS provider for guests' chat links (#sms) - and the bot check on the public
+   support form (#turnstile). Other pages link straight to any section. Markup: pages/platform.css
+   (.platform-settings-section). */
 
 export function SettingsScreen() {
   const registration = useApi<RegistrationConfig>(REGISTRATION_PATH);
@@ -29,7 +31,7 @@ export function SettingsScreen() {
       <div className="page-heading">
         <div>
           <h1>ตั้งค่าระบบ</h1>
-          <p>อีเมลและ SMS ที่ระบบใช้ส่งถึงทุกองค์กร · มีผลกับทุกองค์กรบนระบบนี้</p>
+          <p>อีเมล SMS และการตรวจบอทที่ระบบใช้ · มีผลกับทุกองค์กรบนระบบนี้</p>
         </div>
       </div>
       <section id="email" className="platform-settings-section" aria-label="อีเมล (SMTP)">
@@ -37,6 +39,9 @@ export function SettingsScreen() {
       </section>
       <section id="sms" className="platform-settings-section" aria-label="SMS">
         <SmsSettingsCard />
+      </section>
+      <section id="turnstile" className="platform-settings-section" aria-label="ตรวจบอทหน้าติดต่อ">
+        <TurnstileSettingsCard />
       </section>
     </>
   );

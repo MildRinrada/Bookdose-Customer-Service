@@ -48,10 +48,13 @@ def start(req):
     # A valid cookie sent without its CSRF token must not end up replaced by a new guest (its chats would be lost).
     refuse_stale_guest(req)
     limited(('guest-start',req.ip),START_PER_IP_HOUR,3600)
+    from backend.extensions import turnstile
     from backend.modules.security import traps
     if traps.form_trapped(req.body):
         # The hidden field was filled: recorded here; the form check refuses it with the usual message.
         traps.record_form(client_info(req),'guest_chat',tenant_id=req.org['id'],actor='guest')
+    # The visitor proved they are a person (does nothing while the platform has no Turnstile keys).
+    turnstile.check(req)
     # The follow links asked for with the chat count like ones asked for later (per address, per browser address).
     for via,key in (('email','email'),('sms','phone')):
         if isinstance(req.body.get(key),str) and req.body[key].strip():

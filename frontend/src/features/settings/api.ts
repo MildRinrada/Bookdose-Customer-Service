@@ -1,4 +1,5 @@
 import { api, download } from '@/lib/api/client';
+import type { TeamSnippet } from '@/lib/types';
 import type { CustomerCategory, InviteBody, MemberBody, SettingsBody } from './types';
 
 /* Endpoints of backend/modules/organization/routes.py used by the settings screen. Everything saved here lives in
@@ -10,7 +11,15 @@ export const saveSettings = (body: SettingsBody) => api('/api/settings', body, '
 
 export const saveCustomerCategories = (categories: CustomerCategory[]) => api('/api/settings/categories', { categories });
 
-export const createTeam = (name: string) => api<{ id: string }>('/api/teams', { name });
+/** คำตอบสำเร็จรูปของทีม: the whole list at once, in the order given (owners only). */
+export const saveTeamSnippets = (snippets: TeamSnippet[]) => api('/api/settings/snippets', { snippets });
+
+export type TeamBody = { name: string; description: string };
+
+export const createTeam = (body: TeamBody) => api<{ id: string }>('/api/teams', body);
+
+/** Change a team's name or what it is for. It keeps its id, so its cases, members and categories stay with it. */
+export const saveTeam = (id: string, body: TeamBody) => api<TeamBody>(`/api/teams/${id}`, body, 'PATCH');
 
 /** A new account when `id` is empty, otherwise a change to that member. */
 export const saveMember = (id: string | null, body: MemberBody) =>

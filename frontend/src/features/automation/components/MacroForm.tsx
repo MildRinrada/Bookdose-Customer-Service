@@ -33,6 +33,11 @@ export function MacroForm({ macro }: { macro?: Macro }) {
         await refresh(AUTOMATION_PATH, '/api/workspace');
       }}
     >
+      <p className="notice" role="note">
+        Macro กดครั้งเดียวแล้ว <strong>ส่งจริงทันที</strong> จึงต้องเดินเคสต่อให้ด้วย คือเปลี่ยนสถานะเคส หรือตั้งเตือนติดตามผล อย่างน้อย 1 อย่าง
+        <br />
+        ถ้าอยากได้แค่ข้อความสำเร็จรูปที่เจ้าหน้าที่ตรวจแก้ก่อนส่ง ให้เพิ่มที่ ตั้งค่าองค์กร → คำตอบสำเร็จรูปของทีม แทน
+      </p>
       <TextField label="ชื่อปุ่ม" name="name" max={100} defaultValue={macro?.name || ''} placeholder="เช่น ขอข้อมูลเพิ่มเติม" />
       <div className="field">
         <label htmlFor="macro-reply">ข้อความแม่แบบที่ส่งหาลูกค้า</label>
@@ -70,7 +75,7 @@ export function MacroForm({ macro }: { macro?: Macro }) {
             {...hours.bind}
           />
           {hours.errorNode}
-          <span className="tiny muted">0 = ไม่ตั้งเตือน · 24 = พรุ่งนี้เวลาเดิม</span>
+          <span className="tiny muted">24 = พรุ่งนี้เวลาเดิม · 0 = ไม่ตั้งเตือน (ต้องเปลี่ยนสถานะเคสแทน)</span>
         </div>
       </div>
       <FormActions label={macro ? 'บันทึก Macro' : 'เพิ่ม Macro'} onCancel={() => closeModal()} />

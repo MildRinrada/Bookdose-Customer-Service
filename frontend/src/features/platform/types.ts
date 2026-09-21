@@ -191,3 +191,23 @@ export type GlobalArticleInput = { title: string; category: string; body: string
     `site_key` is the public key the form draws its widget with; `configured` says the secret key is sealed on the
     server (it never comes back). */
 export type TurnstileSettings = { enabled: boolean; site_key: string; configured: boolean };
+
+/** A row of GET /api/platform/reports: what a member of an organization sent from the ? in their top bar. */
+export type ProblemReport = {
+  id: string;
+  tenant_id: string | null;
+  tenant_name: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  page: string;
+  message: string;
+  browser: string;
+  status: 'open' | 'done';
+  created_at: string;
+  handled_at: string | null;
+  handled_by: string | null;
+};
+
+/** GET /api/platform/reports */
+export type ProblemReportsPage = { reports: ProblemReport[]; open: number };

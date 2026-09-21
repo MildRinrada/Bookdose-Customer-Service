@@ -157,6 +157,70 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
+}
+.team-card .icon-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.team-card {
+  align-items: flex-start;
+}
+.team-about {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+/* ทีมและสมาชิก (features/members): the columns share the width the page gives them, so the list never pushes the
+   page sideways and the จัดการ button is never left outside the edge. Long names and addresses end in "…" with the
+   whole of it in the tooltip. Below 900px the address moves out of the way: it is in จัดการ anyway. */
+.member-table table {
+  table-layout: fixed;
+  min-width: 0;
+}
+.member-table .col-person {
+  width: 26%;
+}
+.member-table .col-email {
+  width: 24%;
+}
+.member-table .col-role {
+  width: 15%;
+}
+.member-table .col-team {
+  width: 15%;
+}
+.member-table .col-state {
+  width: 10%;
+}
+/* Wide enough for the button itself, so it is never the thing that gets cut. */
+.member-table .col-manage {
+  width: 8.5rem;
+}
+.member-table td:not(.member-manage),.member-table th {
+  overflow: hidden;
+}
+.member-table .member-email,.member-table .member-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.member-table .flex {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.member-table .member-manage {
+  text-align: right;
+}
+@media (max-width: 900px) {
+  .member-table .col-email,.member-table th:nth-child(2),.member-table td:nth-child(2) {
+    display: none;
+  }
+  .member-table .col-person {
+    width: 40%;
+  }
+  .member-table .col-role,.member-table .col-team {
+    width: 18%;
+  }
 }
 .team-icon {
   display: grid;
@@ -341,6 +405,12 @@
   cursor: pointer;
   margin-bottom: 10px;
   font-weight: 600;
+}
+/* The same history standing on its own, where the card around it would have been an empty box (features/members). */
+.lone-history {
+  margin: 0;
+  padding: 0 4px;
+  color: var(--muted);
 }
 
 /* ตั้งค่าองค์กร → AI: the n8n webhook, then OpenAI and the limits. */

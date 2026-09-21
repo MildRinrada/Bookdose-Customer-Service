@@ -172,7 +172,13 @@ function AutomationView({ data }: { data: AutomationPage }) {
             <div className="card-header">
               <div>
                 <h2>Macro · ปุ่มลัดทำหลายอย่างในคลิกเดียว</h2>
-                <p>ใช้จากหน้าเคสและกล่องข้อความ · ข้อความแทนค่า {'{customer}'} {'{case}'} {'{agent}'} ได้</p>
+                <p>
+                  กดครั้งเดียวแล้ว <strong>ส่งจริงและเดินเคสต่อให้</strong> · ต้องเปลี่ยนสถานะเคสหรือตั้งเตือนติดตามผลอย่างน้อย 1 อย่าง
+                  <br />
+                  ถ้าต้องการแค่แทรกข้อความให้เจ้าหน้าที่ตรวจแก้ก่อนส่ง ให้ใช้ <Link href="/settings?tab=service">คำตอบสำเร็จรูปของทีม</Link> แทน
+                  <br />
+                  ใช้จากหน้าเคสและกล่องข้อความ · ข้อความแทนค่า {'{customer}'} {'{case}'} {'{agent}'} ได้
+                </p>
               </div>
               <button type="button" className="btn" onClick={() => macroForm()}>
                 <Icon name="plus" />

@@ -60,7 +60,10 @@ def macro_form(body):
               'set_status':body.get('set_status','') or '','followup_hours':hours}
     require(values['set_status'] in MACRO_STATUSES,'สถานะไม่ถูกต้อง')
     require(0<=hours<=720,'ตั้งเตือนติดตามผลได้ 0-720 ชั่วโมง')
-    require(values['reply'] or values['set_status'] or hours,'กรุณาเลือกสิ่งที่ Macro ต้องทำอย่างน้อย 1 อย่าง')
+    # A macro that only sends a text is a canned reply that skips the read-through: that belongs in
+    # คำตอบสำเร็จรูปของทีม (organization/model.py), which writes into the draft instead of sending.
+    require(values['set_status'] or hours,
+            'Macro ต้องเปลี่ยนสถานะเคสหรือตั้งเตือนติดตามผลอย่างน้อย 1 อย่าง · ถ้าต้องการแค่ส่งข้อความสำเร็จรูป ให้เพิ่มที่ ตั้งค่าองค์กร → คำตอบสำเร็จรูปของทีม')
     return values
 
 

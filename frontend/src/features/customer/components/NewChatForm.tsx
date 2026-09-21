@@ -11,11 +11,13 @@ import { useToast } from '@/components/ui/Toast';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextArea } from '@/features/rich/RichTextArea';
 import { readFiles } from '@/lib/files';
-import { useInvalidate } from '@/lib/query';
+import { useApi, useInvalidate } from '@/lib/query';
 import type { CustomerOrg } from '@/lib/types';
-import { openChat, OVERVIEW_PATH } from '../api';
+import { FAQ_PATH, openChat, OVERVIEW_PATH } from '../api';
 import { useOrgFilter, useOrgs } from '../hooks';
 import { replyPromise } from '../labels';
+import type { CustomerArticle } from '../types';
+import { AnswerSuggestions, type PeekArticle } from './ArticlePeek';
 import { OrgPicker } from './OrgPicker';
 
 /* A new chat starts with who it is for: the platform itself (problems with the system) or one of the organizations
@@ -53,6 +55,11 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
   const toast = useToast();
   const refresh = useInvalidate();
   const router = useRouter();
+  // What has been typed so far, searched against the chosen organization's published answers before this is sent.
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const faq = useApi<{ articles: CustomerArticle[] }>(FAQ_PATH);
+  const articles: PeekArticle[] = (faq.data?.articles ?? []).filter((a) => a.org_slug === slug);
 
   return (
     <>
@@ -106,13 +113,22 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
             </option>
           ))}
         </SelectField>
-        <TextField label="เรื่องที่ต้องการความช่วยเหลือ" name="subject" max={300} placeholder="สรุปสั้น ๆ ว่าเรื่องอะไร" />
+        <TextField
+          label="เรื่องที่ต้องการความช่วยเหลือ"
+          name="subject"
+          max={300}
+          placeholder="สรุปสั้น ๆ ว่าเรื่องอะไร"
+          onChange={(event) => setSubject(event.target.value)}
+        />
         <RichTextArea
           label="รายละเอียด"
           name="body"
           id="request-body"
           placeholder="เกิดอะไรขึ้น ทำอะไรอยู่ตอนนั้น และเห็นข้อความอะไรบ้าง ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด"
+          onChange={setBody}
         />
+        {/* Their question may already have an answer: it is offered here, while they write, rather than after a wait. */}
+        <AnswerSuggestions articles={articles} hrefOf={(a) => `/customer/faq/${a.id}`} text={`${subject} ${body}`} />
         <AttachmentsField />
         <p className="tiny muted">เพื่อความปลอดภัย กรุณาอย่าส่งรหัสผ่านหรือข้อมูลส่วนตัวที่สำคัญในแชท</p>
         <button className="btn primary" type="submit">

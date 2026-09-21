@@ -8,7 +8,6 @@ export type SettingsBody = {
   response_hours: string;
   resolution_hours: string;
   welcome: string;
-  canned_reply: string;
 };
 
 /** POST /api/members (new account) or PATCH /api/members/<id> (role, team, active). */

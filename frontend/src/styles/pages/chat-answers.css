@@ -1,0 +1,303 @@
+/* Published answers read inside a chat, without leaving it: the list beside the conversation, the card that opens on
+   resting on a row, the answer opened in place of the messages, and the conversation as something to drop a row on.
+   Used by the visitor's chat (/support/<org>/tickets) and the signed-in customer's (/customer/chats).
+   Components: features/customer/components/ArticlePeek.tsx. */
+
+.qa-hint,
+.qa-none {
+  margin: 0;
+}
+/* The search box sits between the heading and the answers, its own width, never wider than the column. */
+.guest-aside-faq .search-input {
+  width: 100%;
+  min-width: 0;
+}
+.guest-aside-faq .search-input input {
+  min-width: 0;
+}
+/* The rows themselves keep the FAQ list's look (guest-chat.css .guest-aside-faq); only what is new is here. */
+.qa-item {
+  position: relative;
+}
+.qa-item>span {
+  min-width: 0;
+}
+/* The handle says the row can be carried into the conversation; it stays out of the way until the row is pointed at. */
+.qa-grip {
+  flex: none;
+  margin-left: auto;
+  opacity: 0;
+  cursor: grab;
+}
+.qa-item:hover .qa-grip,
+.qa-item:focus-visible .qa-grip {
+  opacity: .55;
+}
+
+/* The card that opens beside a row: the answer itself, and the two ways to carry on reading it. */
+.qa-peek {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--pop, 0 24px 60px -12px #11111140);
+  animation: note-pop .16s ease-out;
+}
+.qa-peek-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.qa-peek-head strong {
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+.qa-peek-body {
+  max-height: min(38vh, 280px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overflow-wrap: anywhere;
+}
+.qa-peek-body>:first-child {
+  margin-top: 0;
+}
+.qa-peek-body>:last-child {
+  margin-bottom: 0;
+}
+.qa-peek-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+/* Offered while the first message is being written: answers that match what is being typed, opened in place. */
+.qa-suggest {
+  display: grid;
+  gap: 8px;
+  margin: -6px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f7f7f4;
+}
+.qa-suggest-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+.qa-suggest-head .icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.qa-suggest ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qa-suggest li {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.qa-suggest-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.qa-suggest-row:hover {
+  background: var(--surface-hover);
+}
+.qa-suggest-row>.icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--muted);
+}
+.qa-suggest-row .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.qa-suggest-row .grow>span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.qa-suggest-caret {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--muted);
+  transition: rotate .15s ease;
+}
+.qa-suggest-row[aria-expanded="true"] .qa-suggest-caret {
+  rotate: 180deg;
+}
+.qa-suggest-body {
+  padding: 2px 14px 12px;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.qa-suggest-foot {
+  margin: 10px 0 0;
+}
+.qa-suggest-else {
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qa-suggest-caret {
+    transition: none;
+  }
+}
+
+/* The answer opened in the conversation: the messages step aside, the box to write in stays where it is. */
+.guest-detail.reading>.thread,
+.inbox-detail.reading>.thread {
+  display: none;
+}
+.qa-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  background: #fcfcfc;
+}
+.qa-panel-head {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.qa-panel-head .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.qa-panel-head strong {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.qa-panel-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #f0f0f0;
+  color: #434343;
+}
+.qa-panel-body {
+  flex: 1;
+  min-height: 0;
+  max-height: 70vh;
+  padding: 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overflow-wrap: anywhere;
+}
+.qa-panel-body>:first-child {
+  margin-top: 0;
+}
+.qa-panel-foot {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+/* Dragging a row over the conversation: the messages go pale behind a dashed frame, so the place it will land is
+   the one thing in focus while the row is being carried. One layer draws both (an outline would end up under it). */
+.qa-over {
+  position: relative;
+}
+.qa-over::after {
+  content: '';
+  position: absolute;
+  z-index: 7;
+  inset: 6px;
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  background: #ffffffd9;
+  pointer-events: none;
+}
+.qa-drop {
+  position: absolute;
+  z-index: 8;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: #1c1c1e;
+  color: #fff;
+  font-weight: 600;
+  pointer-events: none;
+}
+.qa-drop .icon {
+  flex-shrink: 0;
+}
+
+/* The signed-in customer's chat has the side menu as well, so the third column waits for a window wide enough to
+   hold all four. Same column beside the conversation as the visitor's (guest-chat.css .guest-aside). */
+.customer-aside {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  border-left: 1px solid var(--line);
+  background: #fcfcfc;
+}
+@media (min-width: 1520px) {
+  .inbox-layout.customer-chats.has-aside {
+    grid-template-columns: 300px minmax(0, 1fr) 296px;
+  }
+  .customer-chats>.customer-aside {
+    display: flex;
+  }
+}
+/* With the side menu folded to its rail there is room sooner. */
+@media (min-width: 1320px) and (max-width: 1519px) {
+  html.sidebar-collapsed .inbox-layout.customer-chats.has-aside {
+    grid-template-columns: 300px minmax(0, 1fr) 296px;
+  }
+  html.sidebar-collapsed .customer-chats>.customer-aside {
+    display: flex;
+  }
+}

@@ -284,6 +284,7 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
   const [pending, setPending] = useState<TicketChanges>({});
   const canClaim = !isDone(t) && t.assignee_id !== me && work.members.some((m) => m.id === me && m.active && m.team_id === t.team_id);
   const members = work.members.filter((m) => m.active && m.team_id === t.team_id);
+  const owner = pending.assignee_id ?? t.assignee_id ?? '';
 
   useEffect(() => {
     if (busy || refocus.current === null) return;
@@ -358,8 +359,10 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
         data-id={t.id}
         disabled={busy}
         aria-label={`มอบหมาย BD-${t.number}`}
-        title="มอบหมาย (Assign)"
-        value={pending.assignee_id ?? t.assignee_id ?? ''}
+        // The box is too narrow for every name, so the name it is showing is also the tooltip - a cut-off name is
+        // readable in full without changing anything.
+        title={owner ? `มอบหมาย (Assign) · ตอนนี้: ${memberName(owner)}` : 'มอบหมาย (Assign) · ยังไม่มอบหมาย'}
+        value={owner}
         onChange={(e) => {
           const value = e.target.value;
           void run({ assignee_id: value }, value ? `มอบหมายให้ ${memberName(value)} แล้ว` : 'ยกเลิกการมอบหมายแล้ว');

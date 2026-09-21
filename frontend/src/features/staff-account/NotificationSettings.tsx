@@ -161,8 +161,17 @@ function NotifyCard({ view }: { view: PreferencesView }) {
                   throw new Error('เบราว์เซอร์ไม่อนุญาตให้แจ้งเตือนบนหน้าจอ กดอนุญาตที่ไอคอนแม่กุญแจข้างที่อยู่เว็บก่อน');
                 }
                 setPermission('granted');
-                showDesktop('ทดสอบการแจ้งเตือน', 'การแจ้งเตือนบนหน้าจอใช้งานได้แล้ว', '/account?tab=notifications', 'bookdose-test');
-                toast('ส่งการแจ้งเตือนทดสอบแล้ว ดูที่มุมจอ');
+                // A fresh tag every time: one fixed tag replaces the notice already in the system's notification
+                // centre, and a replacement never pops up again - so the second press onwards looked like nothing.
+                const shown = showDesktop(
+                  'ทดสอบการแจ้งเตือน',
+                  'การแจ้งเตือนบนหน้าจอใช้งานได้แล้ว',
+                  '/account?tab=notifications',
+                  `bookdose-test-${Date.now()}`,
+                );
+                // Saying "sent" when the browser refused it is what made this hard to see: it is said only when it worked.
+                if (!shown) throw new Error('เบราว์เซอร์สร้างการแจ้งเตือนไม่สำเร็จ ลองปิดโหมดห้ามรบกวนของเครื่อง แล้วลองใหม่');
+                toast('ส่งการแจ้งเตือนทดสอบแล้ว · ถ้าไม่เห็นที่มุมจอ ให้ดูที่ศูนย์การแจ้งเตือนของเครื่อง และตรวจว่าโหมดห้ามรบกวนปิดอยู่');
               })
             }
           >

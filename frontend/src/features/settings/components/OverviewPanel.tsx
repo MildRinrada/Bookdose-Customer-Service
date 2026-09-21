@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
-import { RequiredStar, TextField } from '@/components/ui/fields';
+import { useDialogs } from '@/components/ui/Dialogs';
+import { Avatar, EmptyState } from '@/components/ui/display';
+import { RequiredStar, TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
 import { useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useWork } from '@/lib/session';
-import { downloadBackup, saveSettings, WORKSPACE_PATH } from '../api';
+import type { TeamSnippet } from '@/lib/types';
+import { downloadBackup, saveSettings, saveTeamSnippets, WORKSPACE_PATH } from '../api';
 import { CategoriesForm } from './CategoriesForm';
 
 /* ตั้งค่า → the organization's own sections, one per page: who it is and its customer link (ProfilePanel), the SLA
@@ -71,13 +73,13 @@ export function ServicePanel() {
   const refresh = useInvalidate();
   const setting = (key: string) => String(work.settings[key] ?? '');
   return (
+    <>
     <Form
       onSubmit={async (values) => {
         await saveSettings({
           response_hours: values.response_hours ?? '',
           resolution_hours: values.resolution_hours ?? '',
           welcome: values.welcome ?? '',
-          canned_reply: values.canned_reply ?? '',
         });
         toast('บันทึกการตั้งค่าแล้ว');
         await refresh(WORKSPACE_PATH);
@@ -124,13 +126,6 @@ export function ServicePanel() {
             </label>
             <textarea id="welcome" name="welcome" maxLength={500} required defaultValue={setting('welcome')} />
           </div>
-          <div className="field">
-            <label htmlFor="canned-reply">
-              คำตอบสำเร็จรูปของทีม
-              <RequiredStar />
-            </label>
-            <textarea id="canned-reply" name="canned_reply" maxLength={3000} required defaultValue={setting('canned_reply')} />
-          </div>
         </div>
       </section>
       <div className="settings-save">
@@ -141,6 +136,124 @@ export function ServicePanel() {
         </button>
       </div>
     </Form>
+    <TeamRepliesCard snippets={work.snippets} />
+    </>
+  );
+}
+
+/* คำตอบสำเร็จรูปของทีม: what the whole organization can put into a reply. Its own card, because each one is added,
+   edited and ordered on its own (the same list the member's own quick replies use, staff-account/RepliesSettings).
+   A prepared text that should also move the case on is a Macro instead (ระบบอัตโนมัติ). */
+function SnippetForm({ snippet, onSave }: { snippet?: TeamSnippet; onSave: (snippet: TeamSnippet) => Promise<void> }) {
+  return (
+    <Form className="dialog-form" onSubmit={async (values) => onSave({ id: snippet?.id, shortcut: values.shortcut ?? '', text: values.text ?? '' })}>
+      <TextField
+        label="คีย์ลัด (พิมพ์ / ตามด้วยคำนี้)"
+        name="shortcut"
+        max={31}
+        defaultValue={snippet ? `/${snippet.shortcut}` : '/'}
+        hint="ตัวอักษรไทย อังกฤษ ตัวเลข _ หรือ - ไม่มีช่องว่าง เช่น /ทักทาย หรือ /thanks"
+      />
+      <TextArea label="ข้อความ" name="text" max={3000} rows={5} defaultValue={snippet?.text} />
+      <button className="btn primary" type="submit">
+        <Icon name="check" />
+        บันทึกคำตอบสำเร็จรูป
+      </button>
+    </Form>
+  );
+}
+
+function TeamRepliesCard({ snippets }: { snippets: TeamSnippet[] }) {
+  const { openModal, closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const run = useRunAction();
+  const store = async (next: TeamSnippet[], message: string) => {
+    await saveTeamSnippets(next);
+    await refresh(WORKSPACE_PATH);
+    toast(message);
+  };
+  const edit = (index?: number) =>
+    openModal(
+      index === undefined ? 'เพิ่มคำตอบสำเร็จรูปของทีม' : 'แก้ไขคำตอบสำเร็จรูปของทีม',
+      <SnippetForm
+        snippet={index === undefined ? undefined : snippets[index]}
+        onSave={async (snippet) => {
+          const next = index === undefined ? [...snippets, snippet] : snippets.map((s, i) => (i === index ? snippet : s));
+          await store(next, index === undefined ? 'เพิ่มคำตอบสำเร็จรูปแล้ว' : 'บันทึกแล้ว');
+          closeModal(true);
+        }}
+      />,
+    );
+  const move = (index: number, by: number) => {
+    const next = [...snippets];
+    const [item] = next.splice(index, 1);
+    next.splice(index + by, 0, item);
+    void run(() => store(next, 'เปลี่ยนลำดับแล้ว'));
+  };
+
+  return (
+    <section className="card">
+      <div className="card-header">
+        <div>
+          <h2>คำตอบสำเร็จรูปของทีม</h2>
+          <p>
+            ทุกคนในองค์กรหยิบไปใช้ได้จากปุ่ม ⚡ ในกล่องข้อความ หรือพิมพ์ /คีย์ลัด แล้วเว้นวรรค · ข้อความจะแทรกในช่องร่าง
+            <strong> แก้ก่อนส่งได้ ยังไม่ส่งออกไป</strong> · ถ้าต้องการให้กดแล้วส่งและเปลี่ยนสถานะเคสด้วย ให้ใช้ Macro ที่ ระบบอัตโนมัติ
+          </p>
+        </div>
+        <button className="btn primary" type="button" onClick={() => edit()}>
+          <Icon name="plus" />
+          เพิ่มคำตอบสำเร็จรูป
+        </button>
+      </div>
+      <div className="card-body">
+        {snippets.length === 0 ? (
+          <EmptyState icon="bolt" title="ยังไม่มีคำตอบสำเร็จรูปของทีม" description="เพิ่มข้อความที่ทั้งทีมพิมพ์บ่อย เช่น คำทักทาย การขอข้อมูลเพิ่ม หรือขั้นตอนที่อธิบายซ้ำ ๆ" />
+        ) : (
+          <ul className="security-list snippet-list">
+            {snippets.map((snippet, index) => (
+              <li key={snippet.id ?? snippet.shortcut}>
+                <span className="security-list-icon">
+                  <Icon name="bolt" />
+                </span>
+                <span className="grow">
+                  <strong>
+                    <code>/{snippet.shortcut}</code>
+                  </strong>
+                  <span className="muted snippet-text">{snippet.text}</span>
+                </span>
+                <button className="btn sm" type="button" disabled={index === 0} aria-label="เลื่อนขึ้น" title="เลื่อนขึ้น" onClick={() => move(index, -1)}>
+                  ↑
+                </button>
+                <button
+                  className="btn sm"
+                  type="button"
+                  disabled={index === snippets.length - 1}
+                  aria-label="เลื่อนลง"
+                  title="เลื่อนลง"
+                  onClick={() => move(index, 1)}
+                >
+                  ↓
+                </button>
+                <button className="btn sm" type="button" onClick={() => edit(index)}>
+                  <Icon name="edit" />
+                  แก้ไข
+                </button>
+                <button
+                  className="btn sm danger"
+                  type="button"
+                  onClick={() => void run(() => store(snippets.filter((_, i) => i !== index), `ลบ /${snippet.shortcut} แล้ว`))}
+                >
+                  <Icon name="trash" />
+                  ลบ
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
 

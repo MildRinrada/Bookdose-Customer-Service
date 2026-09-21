@@ -176,9 +176,13 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
 .row-actions .btn:has(>.icon:only-child) {
   padding-inline: 10px;
 }
+/* A long name - "แอดมินองค์กรทดสอบ" - used to run straight through the arrow and out over the border: it was held to
+   170px while the new customizable select (appearance: base-select, components.css) lays its chosen value out in a
+   slot that does not clip. The control is now as wide as the name it is showing, so there is nothing to cut off;
+   the row of actions does not grow, because the others give up the width. */
 .quick-select {
   min-height: 40px;
-  max-width: 170px;
+  width: auto;
   padding: 6px 34px 6px 11px;
   border: 1px solid var(--control-line);
   border-radius: 12px;
@@ -186,6 +190,12 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   color: var(--ink);
   font: inherit;
   cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.row-actions .quick-select {
+  flex: 0 0 auto;
 }
 .quick-select:focus-visible,.row-actions .btn:focus-visible {
   outline: 3px solid #b4b4b4;
@@ -232,10 +242,11 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   color: #343434;
   margin-right: 6px;
 }
-/* Full case list: fixed-width status columns, the rest goes to subject and customer. */
+/* Full case list: fixed-width status columns, the rest goes to subject and customer. The floor is low enough that a
+   window with the menu open does not start scrolling sideways over a dozen pixels. */
 .ticket-list table {
   table-layout: fixed;
-  min-width: 64rem;
+  min-width: 61rem;
 }
 .ticket-list th,.ticket-list td {
   padding-left: 12px;
@@ -248,10 +259,10 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   width: 3rem;
 }
 .ticket-list .col-customer {
-  width: 13rem;
+  width: 12rem;
 }
 .ticket-list .col-status {
-  width: 10.5rem;
+  width: 10rem;
 }
 .ticket-list .col-priority {
   width: 7.5rem;
@@ -261,6 +272,25 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
 }
 .ticket-list .col-updated {
   width: 7.5rem;
+}
+/* The quick actions hang off the right edge of the last cell. Whenever the table is wider than its scroll box that
+   edge is outside the box, so the last control came out sliced down the middle - a name to read with its end cut
+   off. Pinning the last column to the visible edge keeps every control whole at any width. It carries its own
+   background because a see-through pinned cell would show the columns sliding underneath it. */
+.ticket-list thead th:last-child,
+.ticket-list .quick-cell {
+  position: sticky;
+  right: 0;
+}
+.ticket-list thead th:last-child {
+  background-color: #f7f7f9;
+}
+.ticket-list .quick-cell {
+  background-color: #fff;
+}
+.ticket-list tbody tr:hover .quick-cell,
+.ticket-list tbody tr:focus-within .quick-cell {
+  background-color: #f6f6f8;
 }
 .ticket-list .ticket-title {
   max-width: 100%;

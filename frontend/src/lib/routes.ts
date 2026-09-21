@@ -25,6 +25,7 @@ export const workspacePages: StaffPage[] = [
 ];
 
 export const managePages: StaffPage[] = [
+  { key: 'members', href: '/members', label: 'ทีมและสมาชิก', icon: 'users', roles: ['admin'] },
   { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin'] },
   { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin'] },
   { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin'] },
@@ -45,6 +46,7 @@ export const platformPages: StaffPage[] = [
   { key: 'system', href: '/platform/system', label: 'ภาพรวมระบบ', icon: 'chart' },
   { key: 'platform', href: '/platform/organizations', label: 'จัดการองค์กร', icon: 'globe' },
   { key: 'global-faq', href: '/platform/faq', label: 'FAQ กลาง', icon: 'book' },
+  { key: 'platform-reports', href: '/platform/reports', label: 'รายงานปัญหา', icon: 'help' },
   { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield' },
   { key: 'platform-security', href: '/platform/security', label: 'ความปลอดภัย', icon: 'lock' },
   { key: 'platform-settings', href: '/platform/settings', label: 'ตั้งค่าระบบ', icon: 'settings' },
@@ -96,6 +98,7 @@ const legacyStaff: Record<string, string> = {
   knowledge: '/knowledge',
   reports: '/reports',
   automation: '/automation',
+  members: '/members',
   settings: '/settings',
   audit: '/audit',
   trash: '/trash',
@@ -104,6 +107,7 @@ const legacyStaff: Record<string, string> = {
   system: '/platform/system',
   platform: '/platform/organizations',
   'global-faq': '/platform/faq',
+  'platform-reports': '/platform/reports',
   'platform-team': '/platform/team',
   'platform-security': '/platform/security',
   'platform-settings': '/platform/settings',

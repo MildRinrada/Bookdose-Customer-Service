@@ -19,13 +19,29 @@ import type { SupportRequest } from '../types';
 
 const REFRESH = [SUPPORT_PATH, WORKSPACE_PATH, '/api/audit'];
 
-export function SupportRequestsPanel() {
+/** `quiet`: nothing is drawn while no platform admin is asking or already inside, beyond one line for the ones that
+    are over. It is rare, and a card explaining it is not what a screen about the organization's own people opens with. */
+export function SupportRequestsPanel({ quiet = false }: { quiet?: boolean } = {}) {
   const work = useWork();
   const requests = useApi<{ requests: SupportRequest[] }>(work.role === 'admin' ? SUPPORT_PATH : null);
   if (work.role !== 'admin') return null;
   const rows = requests.data?.requests ?? [];
   const open = rows.filter((r) => r.status === 'pending' || (r.status === 'approved' && r.expires_at && r.expires_at > new Date().toISOString()));
   const past = rows.filter((r) => !open.includes(r)).slice(0, 10);
+
+  if (quiet && requests.data && open.length === 0) {
+    if (!past.length) return null;
+    return (
+      <details className="support-history lone-history">
+        <summary>คำขอเข้าช่วยเหลือที่ผ่านมา ({past.length})</summary>
+        <ul className="support-list">
+          {past.map((r) => (
+            <SupportRow key={r.id} request={r} />
+          ))}
+        </ul>
+      </details>
+    );
+  }
   return (
     <section className="card support-requests" id="support-requests">
       <div className="card-header">

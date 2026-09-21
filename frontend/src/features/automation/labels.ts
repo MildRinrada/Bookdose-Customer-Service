@@ -58,7 +58,9 @@ export function ruleActions(
 ): string {
   return [
     rule.set_priority && `ความเร่งด่วน${priorityLabels[rule.set_priority]}`,
-    rule.set_team_id && `ส่งให้${teamName(rule.set_team_id)}`,
+    // A space before the name, as "มอบหมาย" has: a team called "Customer Success" would otherwise run straight
+    // into the Thai word before it ("ส่งให้Customer Success").
+    rule.set_team_id && `ส่งให้ ${teamName(rule.set_team_id)}`,
     rule.set_assignee_id && `มอบหมาย ${memberName(rule.set_assignee_id)}`,
   ]
     .filter(Boolean)

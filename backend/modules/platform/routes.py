@@ -35,5 +35,8 @@ ROUTES = [
     ('POST',  f'/api/platform/faq/{ID}/publish',   controller.publish_global_article,   'platform'),
     ('POST',  f'/api/platform/faq/{ID}/unpublish', controller.unpublish_global_article, 'platform'),
     ('DELETE',f'/api/platform/faq/{ID}/changes',   controller.discard_global_changes,   'platform'),
+    ('GET',   '/api/platform/reports',        controller.problem_reports,            'platform'),
+    ('PATCH', f'/api/platform/reports/{ID}',  controller.set_report_status,          'platform'),
     ('GET',   '/api/guides',                  controller.guides,                     'account'),
+    ('POST',  '/api/problem-reports',         controller.report_problem,             'account'),
 ]

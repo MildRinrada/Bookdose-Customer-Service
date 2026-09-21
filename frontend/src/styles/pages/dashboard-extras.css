@@ -128,11 +128,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The figure and what it is counted over. The note goes onto its own line when the figure is long, instead of being
+   cut in half ("30 …"): both halves are the answer, neither is decoration. */
 .myday-cell dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
   margin: 2px 0 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
 }
 .myday-cell dd .mono {
   font-size: 1.1875rem;

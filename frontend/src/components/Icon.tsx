@@ -20,6 +20,8 @@ const paths = {
   clock: 'M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
   check: 'M5 12l4 4L19 6',
   checkCircle: 'M9 12l2 2 4-4 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  // The dot of the question mark is a stroke that goes nowhere, so it reads as a dot at every size.
+  help: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M9.2 9.3a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.2 M12 17.2v.01',
   arrow: 'M5 12h14 M14 7l5 5-5 5',
   back: 'M19 12H5 M10 7l-5 5 5 5',
   down: 'M6 9l6 6 6-6',

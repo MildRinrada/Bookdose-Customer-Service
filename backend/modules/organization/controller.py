@@ -24,6 +24,12 @@ def update_settings(req):
 
 
 @require_role('admin')
+def save_team_snippets(req):
+    service.save_team_snippets(req.db,req.ctx,req.body)
+    return req.send(200,{'ok':True})
+
+
+@require_role('admin')
 def save_customer_categories(req):
     service.save_customer_categories(req.db,req.ctx,req.body)
     return req.send(200,{'ok':True})
@@ -32,6 +38,11 @@ def save_customer_categories(req):
 @require_role('admin')
 def create_team(req):
     return req.send(201,{'id':service.create_team(req.db,req.ctx,req.body)})
+
+
+@require_role('admin')
+def save_team(req, team_id):
+    return req.send(200,service.save_team(req.db,req.ctx,team_id,req.body))
 
 
 @require_role('admin')

@@ -3,7 +3,7 @@ import re
 from urllib.parse import urlsplit
 
 from backend.exceptions.errors import APIError
-from backend.modules.platform.model import GLOBAL_AUDIENCES, TENANT_STATUSES
+from backend.modules.platform.model import GLOBAL_AUDIENCES, REPORT_MAX, REPORT_STATUSES, TENANT_STATUSES
 from backend.utils.validation import require, field, email_field, slug_field, new_password
 
 
@@ -36,6 +36,20 @@ def global_article(body):
     audience = body.get('audience')
     require(audience in GLOBAL_AUDIENCES,'กรุณาเลือกผู้อ่านบทความ')
     return field(body,'title',200),field(body,'category',80),field(body,'body',50000),audience
+
+
+def problem_report(body):
+    """(message, page) of a report sent from the ? in the top bar. The page is whatever address the reporter was on,
+    kept short and free of control characters; it is a hint for reproducing, not something to trust."""
+    page = body.get('page','')
+    require(isinstance(page,str) and len(page)<=300 and not any(ord(c)<32 for c in page),'หน้าที่แจ้งไม่ถูกต้อง')
+    return field(body,'message',REPORT_MAX),page.strip()
+
+
+def report_status(body):
+    status = body.get('status')
+    require(status in REPORT_STATUSES,'สถานะไม่ถูกต้อง')
+    return status
 
 
 def registration_mail(body):

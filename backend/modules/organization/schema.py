@@ -1,7 +1,14 @@
 """Organization settings, team and member form validation."""
+import re
+
 from backend.exceptions.errors import APIError
-from backend.modules.organization.model import ROLES
+from backend.modules.organization.model import MAX_TEAM_SNIPPETS, ROLES, TEAM_SNIPPET_MAX
+from backend.utils.security import uid
 from backend.utils.validation import require, field, email_field, new_password
+
+# The same shape as a member's own quick reply (staff_prefs/schema.py): Thai or Latin letters, digits, _ and -.
+SHORTCUT = re.compile(r'[a-z0-9ก-๙][a-z0-9ก-๙_-]{0,29}')
+ID = re.compile(r'[a-f0-9]{32}')
 
 
 def customer_categories(body, team_ids):
@@ -31,13 +38,38 @@ def settings_form(body):
             raise APIError(400,'กรุณาระบุชั่วโมง SLA เป็นตัวเลข')
         require(0.25<=value<=8760,'SLA ต้องอยู่ระหว่าง 0.25-8,760 ชั่วโมง')
         values.append((key,str(value)))
-    for key,maximum in [('welcome',500),('canned_reply',3000)]:
-        values.append((key,field(body,key,maximum)))
+    values.append(('welcome',field(body,'welcome',500)))
     return values
 
 
-def team_name(body):
-    return field(body,'name',100)
+def team_snippets(body):
+    """[{'id','shortcut','text'}] the whole organization can put into a reply, in the order given."""
+    items = body.get('snippets')
+    require(isinstance(items,list) and len(items)<=MAX_TEAM_SNIPPETS,f'บันทึกคำตอบสำเร็จรูปของทีมได้ไม่เกิน {MAX_TEAM_SNIPPETS} รายการ')
+    found,seen = [],set()
+    for item in items:
+        require(isinstance(item,dict),'ข้อมูลคำตอบสำเร็จรูปไม่ถูกต้อง')
+        shortcut = item.get('shortcut','')
+        require(isinstance(shortcut,str),'คีย์ลัดไม่ถูกต้อง')
+        shortcut = shortcut.strip().lstrip('/').lower()
+        require(SHORTCUT.fullmatch(shortcut),'คีย์ลัดใช้ตัวอักษร ตัวเลข _ และ - ไม่เกิน 30 ตัว เช่น ขอบคุณ หรือ thanks')
+        require(shortcut not in seen,f'คีย์ลัด /{shortcut} ซ้ำกัน')
+        seen.add(shortcut)
+        text = item.get('text','')
+        require(isinstance(text,str),'ข้อความคำตอบสำเร็จรูปไม่ถูกต้อง')
+        text = text.strip()
+        require(text,f'กรุณาพิมพ์ข้อความของ /{shortcut}')
+        require(len(text)<=TEAM_SNIPPET_MAX,f'ข้อความคำตอบสำเร็จรูปยาวได้ไม่เกิน {TEAM_SNIPPET_MAX} ตัวอักษร')
+        given = item.get('id')
+        found.append({'id':given if isinstance(given,str) and ID.fullmatch(given) else uid(),'shortcut':shortcut,'text':text})
+    return found
+
+
+def team_form(body):
+    """(name, description) of a team. The description says what the team is for, and may be left out."""
+    text = body.get('description','') or ''
+    require(isinstance(text,str) and len(text)<=300,'รายละเอียดทีมยาวเกินไป')
+    return field(body,'name',100),text.strip()
 
 
 def role_and_team(body):

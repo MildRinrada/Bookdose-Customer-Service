@@ -1307,13 +1307,16 @@ input[type=file].attach-input {
 .conv-title h2 {
   -webkit-line-clamp: 1;
 }
+/* Who it is and where the case stands. It wraps to a second line rather than running off the edge: a line that ends
+   mid-word ("BD-1006 · ระ") tells the reader less than a header one line taller. */
 .conv-meta {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
-  white-space: nowrap;
+  white-space: normal;
 }
 .conv-meta>* {
   flex-shrink: 0;
+  min-width: 0;
 }
 /* The text gives way first (with an ellipsis) so the channel badge and the buttons never end up on top of each other. */
 .conv-meta strong,.conv-meta .conv-email {

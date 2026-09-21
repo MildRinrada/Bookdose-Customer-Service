@@ -116,6 +116,31 @@ def find_global_article(db, article_id):
     return one(db,'SELECT * FROM global_articles WHERE id=?',(article_id,))
 
 
+def insert_problem_report(db, report_id, org, user, page, message, browser):
+    db.execute('''INSERT INTO problem_reports(id,tenant_id,tenant_name,user_id,user_name,user_email,page,message,browser,created_at)
+                  VALUES(?,?,?,?,?,?,?,?,?,?)''',
+               (report_id,org and org['id'],(org or {}).get('name',''),user['user_id'],user.get('name',''),
+                user.get('email',''),page,message,browser,now()))
+
+
+def problem_reports(db, limit=200):
+    """Newest first, the ones still to look at before the ones already dealt with."""
+    return rows(db,"SELECT * FROM problem_reports ORDER BY status='done',created_at DESC LIMIT ?",(limit,))
+
+
+def find_problem_report(db, report_id):
+    return one(db,'SELECT * FROM problem_reports WHERE id=?',(report_id,))
+
+
+def set_report_status(db, report_id, status, handler):
+    db.execute('UPDATE problem_reports SET status=?,handled_at=?,handled_by=? WHERE id=?',
+               (status,now() if status=='done' else None,handler if status=='done' else None,report_id))
+
+
+def open_report_count(db):
+    return db.execute("SELECT COUNT(*) FROM problem_reports WHERE status='open'").fetchone()[0]
+
+
 def insert_global_article(db, article_id, title, category, body, audience, author, published=False):
     moment = now()
     db.execute('''INSERT INTO global_articles(id,title,category,body,audience,author,updated_at,published_at)

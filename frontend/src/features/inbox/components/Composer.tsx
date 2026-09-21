@@ -13,7 +13,7 @@ import type { AiConversation } from '@/features/ai/types';
 import { useMacroMenu } from '@/features/automation';
 import { ArticleRead, useArticleActions, type Article } from '@/features/knowledge';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
-import { RichTextField, RichToolbar, useRichEditor, type RichEditor } from '@/features/rich/RichEditor';
+import { RichTextField, RichToolbar, useRichEditor } from '@/features/rich/RichEditor';
 import { CUSTOMER_TOOLS } from '@/features/rich/RichTextArea';
 import { usePreferences, type Snippet } from '@/features/staff-account/prefs';
 import { followThread } from '@/features/rich/thread';
@@ -21,11 +21,13 @@ import { readFiles } from '@/lib/files';
 import { useInvalidate } from '@/lib/query';
 import { useTypingNotifier } from '@/lib/realtime-provider';
 import { useWork } from '@/lib/session';
+import type { TeamSnippet } from '@/lib/types';
 import { useUiState } from '@/lib/ui-state';
 import { CONVERSATION_PREFIXES, postMessage, postPortalMessage } from '../api';
 import { SEND_SHORTCUT } from '../hooks';
 import { KnowledgeSearch } from './KnowledgeSearch';
 import { MentionMenu } from './MentionMenu';
+import { useSnippets } from './SnippetSuggest';
 
 /* The reply composer (the old composer()): for the team, reply or internal note, formatting, attachments (also by
    dropping files on it), a canned reply, the knowledge search, macros, @mentions and the AI draft; for a customer
@@ -49,6 +51,9 @@ export type ComposerProps = {
   publicSlug?: string;
   /** The conversation, for the AI controls in the composer's head (not compact). */
   conversation?: AiConversation | null;
+  /** publicView: filled with a way to put text into the draft, so the page around the box can hand it something
+      (the answer a customer was reading beside the chat). Empty while no composer is on the screen. */
+  insertRef?: RefObject<((text: string) => void) | null>;
   /** After a message was sent and the conversation refreshed (e.g. the customer chat refreshes its own session). */
   onSent?: () => unknown | Promise<unknown>;
 };
@@ -262,14 +267,17 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       />,
     );
 
-  // The member's own quick replies (ตั้งค่าบัญชี → คำตอบด่วน): "/คีย์ลัด" then a space or Tab, Alt+1 … Alt+9, or the list.
+  // Prepared replies: the team's (ตั้งค่าองค์กร) and the member's own (ตั้งค่าบัญชี → คำตอบด่วน). Both are reached by
+  // typing "/คีย์ลัด" then a space or Tab, or from the ⚡ list; Alt+1 … Alt+9 stay the member's own first nine, which
+  // is what ตั้งค่าบัญชี promises. A member's own shortcut wins over a team one of the same name: their own choice.
   const snippets = usePreferences().data?.preferences.snippets;
-  useSnippetKeys(editor, snippets);
+  const team = work.snippets ?? [];
+  const { menu: snippetMenu } = useSnippets(editor, snippets ?? [], team);
   const openReplies = () =>
     openModal(
       'คำตอบสำเร็จรูป',
       <QuickReplies
-        canned={String(work.settings.canned_reply ?? '')}
+        team={team}
         snippets={snippets ?? []}
         onPick={(text) => {
           closeModal(true);
@@ -347,6 +355,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
         keyShortcuts="Control+Enter Meta+Enter"
         onChange={onText}
       />
+      {snippetMenu}
       <FilePills files={pills.files} onRemove={pills.remove} />
       <div className="composer-bottom">
         <div className="composer-tabs composer-mode" role="radiogroup" aria-label="ประเภทข้อความ">
@@ -406,53 +415,22 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   );
 }
 
-/** "/คีย์ลัด" then a space or Tab turns into the quick reply; Alt+1 … Alt+9 put in the first nine where the cursor is. */
-function useSnippetKeys(editor: RichEditor, snippets: Snippet[] | undefined) {
-  useEffect(() => {
-    const area = editor.element();
-    if (!area || !snippets?.length) return;
-    const onKey = (event: KeyboardEvent) => {
-      const digit = /^Digit([1-9])$/.exec(event.code);
-      if (event.altKey && !event.ctrlKey && !event.metaKey && digit) {
-        const snippet = snippets[Number(digit[1]) - 1];
-        if (!snippet) return;
-        event.preventDefault();
-        document.execCommand('insertText', false, snippet.text);
-        editor.sync();
-        return;
-      }
-      if ((event.key !== ' ' && event.key !== 'Tab') || event.altKey || event.ctrlKey || event.metaKey) return;
-      const selection = getSelection();
-      const node = selection?.anchorNode;
-      if (!selection?.isCollapsed || !node || node.nodeType !== Node.TEXT_NODE || !area.contains(node)) return;
-      const before = (node.textContent ?? '').slice(0, selection.anchorOffset);
-      const typed = /(?:^|\s)\/([^\s/]+)$/.exec(before);
-      const snippet = typed && snippets.find((s) => s.shortcut === typed[1].toLowerCase());
-      if (!typed || !snippet) return;
-      event.preventDefault();
-      const range = document.createRange();
-      range.setStart(node, selection.anchorOffset - typed[1].length - 1);
-      range.setEnd(node, selection.anchorOffset);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      document.execCommand('insertText', false, snippet.text);
-      editor.sync();
-    };
-    area.addEventListener('keydown', onKey);
-    return () => area.removeEventListener('keydown', onKey);
-  }, [editor, snippets]);
-}
-
-/** The ⚡ list: the organization's canned reply, then the member's own quick replies. */
-function QuickReplies({ canned, snippets, onPick }: { canned: string; snippets: Snippet[]; onPick: (text: string) => void }) {
+/** The ⚡ list: the team's prepared replies, then the member's own. Either is put into the draft to read over and
+    change before sending; a Macro is what sends and moves the case on. */
+function QuickReplies({ team, snippets, onPick }: { team: TeamSnippet[]; snippets: Snippet[]; onPick: (text: string) => void }) {
   return (
     <div className="quick-replies">
-      {canned && (
-        <button type="button" className="quick-reply" onClick={() => onPick(canned)}>
-          <strong>คำตอบสำเร็จรูปขององค์กร</strong>
-          <span className="muted">{canned}</span>
+      <p className="tiny muted quick-replies-note">ข้อความจะแทรกในช่องร่าง ตรวจแก้ไขได้ก่อนส่ง</p>
+      {team.length > 0 && <p className="quick-replies-head">ของทีม</p>}
+      {team.map((snippet) => (
+        <button key={snippet.id ?? snippet.shortcut} type="button" className="quick-reply" onClick={() => onPick(snippet.text)}>
+          <strong>
+            <code>/{snippet.shortcut}</code>
+          </strong>
+          <span className="muted">{snippet.text}</span>
         </button>
-      )}
+      ))}
+      {snippets.length > 0 && <p className="quick-replies-head">ของฉัน</p>}
       {snippets.map((snippet, index) => (
         <button key={snippet.id ?? snippet.shortcut} type="button" className="quick-reply" onClick={() => onPick(snippet.text)}>
           <strong>
@@ -471,7 +449,7 @@ function QuickReplies({ canned, snippets, onPick }: { canned: string; snippets: 
   );
 }
 
-function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSent }: ComposerProps) {
+function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSent, insertRef }: ComposerProps) {
   const toast = useToast();
   const refresh = useInvalidate();
   const editor = useRichEditor();
@@ -479,6 +457,20 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
   const drop = useDrop(pills.add);
   const notifyTyping = useTypingNotifier(id);
   const placeholder = 'พิมพ์ข้อความของคุณที่นี่…';
+
+  // Text handed in from outside joins what is already written, a blank line apart, and the cursor goes there.
+  useEffect(() => {
+    if (!insertRef) return;
+    insertRef.current = (text: string) => {
+      const value = editor.getValue();
+      editor.setValue((value.trim() ? value.replace(/\s+$/, '') + '\n\n' : '') + text);
+      void nextFrame().then(() => editor.focus());
+    };
+    return () => {
+      insertRef.current = null;
+    };
+  }, [editor, insertRef]);
+
   return (
     <Form
       className={`composer customer-composer${drop.over ? ' drag-over' : ''}`}

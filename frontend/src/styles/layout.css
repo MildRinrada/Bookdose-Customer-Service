@@ -774,6 +774,47 @@ html.sidebar-collapsed .platform-scope>.grow {
 .avatar-btn[aria-expanded=true] .icon {
   transform: rotate(180deg);
 }
+/* The ? in the top bar. Its icon already draws the ring, so the button itself is round to match it and nothing more. */
+.help-btn {
+  border-radius: 50%;
+}
+.help-btn .icon {
+  width: 21px;
+  height: 21px;
+}
+.help-menu .profile-menu-panel {
+  min-width: 232px;
+}
+/* The keys, one row each: the key on the left in its own column so the descriptions line up under each other. */
+.shortcut-list {
+  margin: 0 0 14px;
+  display: grid;
+  gap: 2px;
+}
+.shortcut-row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.shortcut-row:first-child {
+  border-top: 0;
+}
+.shortcut-row dt {
+  min-width: 0;
+}
+.shortcut-row dd {
+  margin: 0;
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .shortcut-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
 .profile-menu-panel {
   position: absolute;
   right: 0;

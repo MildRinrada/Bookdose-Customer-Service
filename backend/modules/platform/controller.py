@@ -1,4 +1,5 @@
-"""HTTP handlers for platform administrators (every route here requires a platform admin)."""
+"""HTTP handlers for platform administrators, and the two that are not: the guides and the problem report any
+signed-in member of an organization may send."""
 from backend.modules.platform import service
 
 
@@ -195,3 +196,19 @@ def delete_global_article(req, article_id):
 def guides(req):
     """The global articles written for the admins and staff of organizations (any signed-in staff account)."""
     return req.send(200,{'articles':service.staff_guides(req.cd)})
+
+
+def report_problem(req):
+    """A member reports a problem from the ? in the top bar (any signed-in staff account)."""
+    from backend.middleware.rate_limit import limited
+    limited(('problem-report',req.session['user_id']),5,600)
+    return req.send(201,{'id':service.report_problem(req.cd,req.session,req.body,req.headers.get('User-Agent',''))})
+
+
+def problem_reports(req):
+    return req.send(200,service.problem_reports(req.cd))
+
+
+def set_report_status(req, report_id):
+    service.set_report_status(req.cd,req.session,report_id,req.body)
+    return req.send(200,{'ok':True})

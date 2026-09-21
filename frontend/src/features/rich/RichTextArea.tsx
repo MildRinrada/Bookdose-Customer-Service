@@ -19,6 +19,7 @@ export function RichTextArea({
   maxLength = 20000,
   required = true,
   hint,
+  onChange,
 }: {
   id: string;
   name: string;
@@ -27,6 +28,8 @@ export function RichTextArea({
   maxLength?: number;
   required?: boolean;
   hint?: string;
+  /** The Markdown as it is written, for a form that answers what is being typed (the answers offered before sending). */
+  onChange?: (value: string) => void;
 }) {
   const editor = useRichEditor();
   return (
@@ -46,6 +49,7 @@ export function RichTextArea({
         sourcePlaceholder={placeholder}
         className="editor-input rich-box"
         keyShortcuts="Control+Enter Meta+Enter"
+        onChange={onChange}
       />
       {hint && <p className="tiny muted">{hint}</p>}
     </div>

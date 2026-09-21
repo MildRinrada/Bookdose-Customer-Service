@@ -60,7 +60,17 @@ export function plainText(text: string | null | undefined): string {
 export function formatDuration(minutes: number | null | undefined): string {
   if (minutes == null || !Number.isFinite(minutes)) return '-';
   const n = Math.round(minutes);
-  return n >= 60 ? `${Math.floor(n / 60)} ชม. ${n % 60} นาที` : `${n} นาที`;
+  if (n < 60) return `${n} นาที`;
+  if (n < 1440) return `${Math.floor(n / 60)} ชม. ${n % 60} นาที`;
+  // A day and over: "24 ชม. 7 นาที" is a figure nobody reads as a day. Minutes stop mattering at this scale, so the
+  // remainder is rounded to hours (and a remainder that rounds to a full day becomes one).
+  let days = Math.floor(n / 1440);
+  let hours = Math.round((n % 1440) / 60);
+  if (hours === 24) {
+    days += 1;
+    hours = 0;
+  }
+  return hours ? `${days} วัน ${hours} ชม.` : `${days} วัน`;
 }
 
 /** 1,234 */

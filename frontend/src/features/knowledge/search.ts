@@ -74,20 +74,24 @@ export function queryIdeas(query: string): Idea[] {
   return ideas;
 }
 
-export type SearchHit = { article: Article; score: number; words: string[]; passage: string };
+/** Anything with the three fields the search reads: the team's own articles, and the shorter shape the customer's
+    pages carry (features/customer/components/ArticlePeek). */
+export type Searchable = { title: string; category?: string; body: string };
+
+export type SearchHit<T extends Searchable = Article> = { article: T; score: number; words: string[]; passage: string };
 
 const WEIGHT = { title: 4, category: 2, body: 1 };
 
 /** The articles matching `query`, best first, each with the words that matched and its best sentence. An empty
     query (or only question words) answers null: show everything. */
-export function searchArticles(articles: Article[], query: string): SearchHit[] | null {
+export function searchArticles<T extends Searchable>(articles: T[], query: string): SearchHit<T>[] | null {
   const ideas = queryIdeas(query);
   if (!ideas.length) return null;
   const phrase = query.trim().toLowerCase();
-  const hits: SearchHit[] = [];
+  const hits: SearchHit<T>[] = [];
   for (const article of articles) {
     const title = article.title.toLowerCase();
-    const category = article.category.toLowerCase();
+    const category = (article.category ?? '').toLowerCase();
     const body = plainText(article.body).toLowerCase();
     let score = 0;
     let met = 0;

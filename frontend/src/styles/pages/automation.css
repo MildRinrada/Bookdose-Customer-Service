@@ -42,16 +42,23 @@
   gap: 6px;
   flex-shrink: 0;
 }
+/* "ถ้า … / ให้ …" as two lines that line up: the label in its own narrow column, the sentence beside it. A wrapping
+   row would leave a label stranded at the end of a line with its sentence starting under it, which is where the rule
+   stops being one thing you can read at a glance. */
 .auto-flow {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: baseline;
-  gap: 4px 8px;
+  gap: 6px 10px;
   margin: 6px 0 0;
   color: var(--ink);
 }
+/* A macro's steps are one sentence with no label: it takes the whole width. */
+.auto-flow>span:only-child {
+  grid-column: 1 / -1;
+}
 .auto-chip {
-  display: inline-block;
+  justify-self: start;
   padding: 1px 9px;
   border-radius: 999px;
   font-weight: 600;

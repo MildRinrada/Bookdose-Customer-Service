@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
+import { staffAccountTabPath } from '@/features/staff-account/tabs';
 import { useStaffAlerts, useStaffTickets } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { filterItems, NotificationGroups, NotificationSummary, NotificationTabs, type NotificationFilter } from './components/NotificationList';
@@ -40,6 +42,12 @@ export function NotificationsScreen() {
             <Icon name="clock" />
             รีเฟรช
           </button>
+          {/* What decides which of these ever reach you - screen, sound, email - is set in the account, so it is one
+              click from the list itself instead of a hunt through ตั้งค่าบัญชี. */}
+          <Link className="btn" href={staffAccountTabPath('notifications')}>
+            <Icon name="settings" />
+            ตั้งค่าการแจ้งเตือน
+          </Link>
         </div>
       </div>
       <div className="note-page">

@@ -20,7 +20,10 @@ import { MemberForm } from './MemberForm';
 // The rows share the look of the support-request list above them (settings.css .support-*).
 const REFRESH = [INVITATIONS_PATH, WORKSPACE_PATH, '/api/audit'];
 
-export function InvitationsPanel() {
+/** `quiet`: nothing is drawn while there is nothing waiting for an answer, beyond one line for the ones that are over.
+    Inviting is a button on the screen that holds this, so a whole card explaining it would be louder than the list of
+    people it sits next to. */
+export function InvitationsPanel({ quiet = false }: { quiet?: boolean } = {}) {
   const work = useWork();
   const { openModal } = useDialogs();
   const page = useApi<InvitationsPage>(work.role === 'admin' ? INVITATIONS_PATH : null);
@@ -29,6 +32,20 @@ export function InvitationsPanel() {
   const open = rows.filter((r) => r.state === 'pending');
   const past = rows.filter((r) => r.state !== 'pending').slice(0, 10);
   const canInvite = page.data?.can_invite ?? false;
+
+  if (quiet && page.data && canInvite && open.length === 0) {
+    if (!past.length) return null;
+    return (
+      <details className="support-history lone-history">
+        <summary>คำเชิญที่ผ่านมา ({past.length})</summary>
+        <ul className="support-list">
+          {past.map((r) => (
+            <InviteRow key={r.id} invitation={r} />
+          ))}
+        </ul>
+      </details>
+    );
+  }
 
   return (
     <section className="card invitations" id="invitations">

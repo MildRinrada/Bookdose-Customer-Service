@@ -49,7 +49,7 @@ export type Availability = { available: boolean; status: WorkStatus; label: stri
 
 export type WorkStatus = 'online' | 'break' | 'busy' | 'offline';
 
-export type Team = { id: string; name: string } & Record<string, unknown>;
+export type Team = { id: string; name: string; description?: string } & Record<string, unknown>;
 
 /** GET /api/workspace: the selected organization as the signed-in member sees it. */
 export type Workspace = {
@@ -62,12 +62,17 @@ export type Workspace = {
   teams: Team[];
   settings: Record<string, unknown>;
   channels: unknown;
+  /** คำตอบสำเร็จรูปของทีม: prepared texts anyone may put into a reply and edit before sending (owners maintain them). */
+  snippets: TeamSnippet[];
   macros: Macro[];
   customer_email: boolean;
   ai: Record<string, unknown> & { key_configured: boolean };
   /** Support access requests waiting for this organization's admins (always 0 for other roles). */
   support_pending?: number;
 };
+
+/** One of the team's prepared replies. The click writes it into the draft; a Macro is the one that sends. */
+export type TeamSnippet = { id?: string; shortcut: string; text: string };
 
 /** A macro: one click, several steps (Workspace.macros, GET /api/automation). */
 export type Macro = {

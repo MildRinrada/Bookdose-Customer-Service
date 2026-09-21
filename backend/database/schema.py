@@ -112,3 +112,10 @@ def upgrade_tenant(db):
     db.execute(conversations.READS_TABLE)
     # Emails members asked for about their own work (ตั้งค่าบัญชี → การแจ้งเตือน), sent by the automation worker.
     db.executescript(staff_prefs.TENANT_TABLES)
+    # คำตอบสำเร็จรูปของทีม: a list, where the organization used to have one prepared reply. The saved one moves in.
+    db.executescript(organization.TEAM_SNIPPETS_TABLE)
+    from backend.modules.organization import repository as organization_repository
+    organization_repository.move_canned_reply(db)
+    # A team can say what it is for, beside what it is called (ทีมและสมาชิก). Teams made before this have no words yet.
+    if 'description' not in {row[1] for row in db.execute('PRAGMA table_info(teams)')}:
+        db.execute("ALTER TABLE teams ADD COLUMN description TEXT NOT NULL DEFAULT ''")

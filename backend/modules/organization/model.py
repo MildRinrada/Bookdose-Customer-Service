@@ -16,10 +16,23 @@ CREATE TABLE IF NOT EXISTS memberships (
 '''
 
 # Settings are key/value rows; the defaults below are inserted for every new organization.
+# 'canned_reply' held the organization's one prepared reply. It is now the first row of team_snippets below, and
+# database/schema.py moves a saved one across on start-up; the setting is kept (emptied) so older backups still read.
 TENANT_TABLES = '''
-CREATE TABLE teams(id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE teams(id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL DEFAULT '');
 CREATE TABLE settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
 INSERT INTO settings VALUES('response_hours','4'),('resolution_hours','24'),
     ('welcome','ยินดีต้อนรับ ทีมงานพร้อมช่วยเหลือคุณ'),
     ('canned_reply','สวัสดีค่ะ ขอบคุณที่ติดต่อเข้ามา ทีมงานรับเรื่องและกำลังตรวจสอบให้นะคะ');
+'''
+
+# คำตอบสำเร็จรูปของทีม: prepared texts anyone in the organization can put into a reply and then edit before sending.
+# The line between these and a Macro is what happens on the click: a snippet writes into the draft, a macro sends and
+# moves the case on (backend/modules/automation). Each has a shortcut, typed as /<shortcut> in the reply box.
+MAX_TEAM_SNIPPETS = 50
+TEAM_SNIPPET_MAX = 3000
+TEAM_SNIPPETS_TABLE = '''
+CREATE TABLE IF NOT EXISTS team_snippets(
+    id TEXT PRIMARY KEY, shortcut TEXT NOT NULL UNIQUE, text TEXT NOT NULL, position INTEGER NOT NULL DEFAULT 0
+);
 '''

@@ -85,6 +85,29 @@ def update_setting(db, key, value):
     db.execute('UPDATE settings SET value=? WHERE key=?',(value,key))
 
 
+# คำตอบสำเร็จรูปของทีม
+def team_snippets(db):
+    return rows(db,'SELECT id,shortcut,text FROM team_snippets ORDER BY position,rowid')
+
+
+def replace_team_snippets(db, items):
+    """The whole list at once, in the order given (as the member's own quick replies are saved)."""
+    db.execute('DELETE FROM team_snippets')
+    db.executemany('INSERT INTO team_snippets VALUES(?,?,?,?)',
+                   [(item['id'],item['shortcut'],item['text'],index) for index,item in enumerate(items)])
+
+
+def move_canned_reply(db):
+    """The one prepared reply older organizations had becomes the first of the team's list. Emptying the setting is
+    what makes this run once, so a team that later deletes the snippet does not get it back on the next start."""
+    from backend.utils.security import uid
+    row = db.execute("SELECT value FROM settings WHERE key='canned_reply'").fetchone()
+    if not row or not row[0].strip():
+        return
+    db.execute('INSERT OR IGNORE INTO team_snippets VALUES(?,?,?,?)',(uid(),'ทักทาย',row[0].strip(),0))
+    db.execute("UPDATE settings SET value='' WHERE key='canned_reply'")
+
+
 # Teams
 def teams(db):
     return rows(db,'SELECT * FROM teams ORDER BY name')
@@ -94,8 +117,16 @@ def team_exists(db, team_id):
     return bool(one(db,'SELECT id FROM teams WHERE id=?',(team_id,)))
 
 
-def insert_team(db, team_id, name):
-    db.execute('INSERT INTO teams VALUES(?,?)',(team_id,name))
+def insert_team(db, team_id, name, description=''):
+    db.execute('INSERT INTO teams(id,name,description) VALUES(?,?,?)',(team_id,name,description))
+
+
+def find_team(db, team_id):
+    return one(db,'SELECT * FROM teams WHERE id=?',(team_id,))
+
+
+def save_team(db, team_id, name, description):
+    db.execute('UPDATE teams SET name=?,description=? WHERE id=?',(name,description,team_id))
 
 
 def first_team_id(db):

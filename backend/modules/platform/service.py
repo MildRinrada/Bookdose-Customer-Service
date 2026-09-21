@@ -388,3 +388,29 @@ def save_registration_settings(cd, session, body):
     audit.record(cd,session['user_id'],'registration.settings_updated','platform')
     cd.commit()
     return registration_public_config(cd)
+
+
+# --- Problem reports (the ? in the top bar of every organization's frame) ---
+
+def report_problem(cd, session, body, browser=''):
+    """A member of any organization tells the platform something is wrong. Nothing here belongs to the organization:
+    the report is answered by whoever keeps the product working, so it is kept in the control database and read in
+    the platform console. Returns the new report's id."""
+    message,page = schema.problem_report(body)
+    org = repository.find_tenant(cd,session['tenant_id']) if session.get('tenant_id') else None
+    report_id = uid()
+    repository.insert_problem_report(cd,report_id,org,session,page,message,(browser or '')[:300])
+    cd.commit()
+    return report_id
+
+
+def problem_reports(cd):
+    return {'reports':repository.problem_reports(cd),'open':repository.open_report_count(cd)}
+
+
+def set_report_status(cd, session, report_id, body):
+    status = schema.report_status(body)
+    require(repository.find_problem_report(cd,report_id),'ไม่พบรายงาน',404)
+    repository.set_report_status(cd,report_id,status,session['name'])
+    audit.record(cd,session['user_id'],'report.status_changed',report_id,status)
+    cd.commit()

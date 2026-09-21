@@ -3,7 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
 import { Brand } from '@/components/shell/chrome';
 import { TextSizeMenu } from '@/components/shell/TextSize';
@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, InitialLoading, PageLoading } from '@/component
 import { useToast } from '@/components/ui/Toast';
 import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import type { PublicOrgInfo } from '@/features/auth/types';
+import { AnswerList, ArticleReadPanel, DropHint, askLine, useArticleDrop, type PeekArticle } from '@/features/customer/components/ArticlePeek';
 import { CustomerSurvey } from '@/features/customer/components/ChatView';
 import { chatState, chatView } from '@/features/customer/labels';
 import type { PortalSession } from '@/features/customer/types';
@@ -176,6 +177,15 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
   const portal = guestPortalSlug(slug);
   const wide = useWideScreen();
 
+  // An answer read inside the conversation: dropped on it, or asked for from the card that opens on resting.
+  const articles = useMemo(() => (info?.articles as PeekArticle[] | undefined) ?? [], [info]);
+  // An answer belongs to the chat it was opened in, so opening another chat shows the messages again by itself.
+  const [open, setOpen] = useState<{ chat: string; article: PeekArticle } | null>(null);
+  const reading = open && open.chat === current ? open.article : null;
+  const read = (article: PeekArticle) => setOpen(current ? { chat: current, article } : null);
+  const insertRef = useRef<((text: string) => void) | null>(null);
+  const drop = useArticleDrop((id) => articles.find((a) => a.id === id), read);
+
   const gone = useCallback(
     (message: string) => {
       toast(message, true);
@@ -332,6 +342,13 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
         followOpen={followOpen}
         aside={aside}
         embed={embed}
+        reading={reading}
+        insertRef={insertRef}
+        onCloseReading={() => setOpen(null)}
+        onAsk={(article) => {
+          insertRef.current?.(askLine(article, guestPages.article(slug, article.id)));
+          setOpen(null);
+        }}
         onFollowToggle={setFollowOpen}
         onShowFollow={showFollow}
         onShowList={() => setShowList(true)}
@@ -373,17 +390,19 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
           ))}
         </nav>
       )}
-      <div className="guest-detail" data-thread-scope="">
+      <div className={`guest-detail${reading ? ' reading' : ''}${drop.over ? ' qa-over' : ''}`} data-thread-scope="" {...drop.handlers}>
         {detail}
+        {drop.over && <DropHint />}
       </div>
       {asideShown && (
         <aside className="guest-aside" aria-label="เครื่องมือและคำตอบที่อาจช่วยได้">
           <GuestAside
             slug={slug}
             overview={data}
-            info={info}
+            articles={articles}
             ticket={session.data?.ticket ?? null}
             followOpen={followOpen}
+            onRead={read}
             onFollowToggle={setFollowOpen}
             onForgotten={forgotten}
           />
@@ -398,21 +417,22 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
 function GuestAside({
   slug,
   overview,
-  info,
+  articles,
   ticket,
   followOpen,
+  onRead,
   onFollowToggle,
   onForgotten,
 }: {
   slug: string;
   overview: GuestOverview;
-  info: PublicOrgInfo | undefined;
+  articles: PeekArticle[];
   ticket: { id: string; number: number | string } | null;
   followOpen: boolean;
+  onRead: (article: PeekArticle) => void;
   onFollowToggle: (open: boolean) => void;
   onForgotten: () => void;
 }) {
-  const articles = ((info?.articles as { id: string; title: string }[] | undefined) ?? []).slice(0, 6);
   return (
     <>
       {ticket && (
@@ -425,24 +445,7 @@ function GuestAside({
           </Link>
         </section>
       )}
-      {articles.length > 0 && (
-        <section className="guest-aside-card guest-aside-faq">
-          <h3>ลองหาคำตอบระหว่างรอ</h3>
-          <ul>
-            {articles.map((a) => (
-              <li key={a.id}>
-                <Link href={guestPages.article(slug, a.id)}>
-                  <Icon name="book" />
-                  <span>{a.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Link className="guest-aside-all" href={guestPages.faq(slug)}>
-            ดูคำถามที่พบบ่อยทั้งหมด <Icon name="arrow" />
-          </Link>
-        </section>
-      )}
+      <AnswerList articles={articles} hrefOf={(a) => guestPages.article(slug, a.id)} allHref={guestPages.faq(slug)} onRead={onRead} />
       <FollowCard slug={slug} overview={overview} expanded={followOpen} onToggle={onFollowToggle} onForgotten={onForgotten} />
     </>
   );
@@ -493,6 +496,10 @@ function GuestChatView({
   followOpen,
   aside,
   embed,
+  reading,
+  insertRef,
+  onCloseReading,
+  onAsk,
   onFollowToggle,
   onShowFollow,
   onShowList,
@@ -508,6 +515,11 @@ function GuestChatView({
   /** The column beside the conversation is there: it holds the case, the follow card and the published answers. */
   aside: boolean;
   embed: boolean;
+  /** An answer being read in place of the messages (dropped on the conversation, or opened from its card). */
+  reading: PeekArticle | null;
+  insertRef: RefObject<((text: string) => void) | null>;
+  onCloseReading: () => void;
+  onAsk: (article: PeekArticle) => void;
   onFollowToggle: (open: boolean) => void;
   onShowFollow: () => void;
   onShowList: () => void;
@@ -590,7 +602,10 @@ function GuestChatView({
           </>
         }
       />
-      <Composer key={id} conversationId={id} publicView publicSlug={portal} />
+      {reading && (
+        <ArticleReadPanel article={reading} href={guestPages.article(slug, reading.id)} onClose={onCloseReading} onAsk={onAsk} />
+      )}
+      <Composer key={id} conversationId={id} publicView publicSlug={portal} insertRef={insertRef} />
     </>
   );
 }

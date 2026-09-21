@@ -845,7 +845,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.admin.call('/api/conversations/'+conv+'/messages',{'kind':'reply','body':'cannot deliver'})[0],400)
         self.ok(self.admin,'/api/conversations/'+conv+'/messages',{'kind':'note','body':'internal is fine'})
         self.assertEqual(self.admin.call('/api/tickets/'+ticket,{'status':'hacked'},'PATCH')[0],400)
-        self.assertEqual(self.admin.call('/api/settings',{'response_hours':'nan','resolution_hours':'24','welcome':'a','canned_reply':'b'},'PATCH')[0],400)
+        self.assertEqual(self.admin.call('/api/settings',{'response_hours':'nan','resolution_hours':'24','welcome':'a'},'PATCH')[0],400)
 
     def test_csv_formula_escaping_and_concurrent_ticket_numbers(self):
         contact=self.ok(self.admin,'/api/contacts',{'name':'Formula customer'})['id']

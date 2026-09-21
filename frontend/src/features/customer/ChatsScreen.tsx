@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { customerUnread } from '@/components/shell/CustomerShell';
 import { CustomerNone, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -10,13 +10,19 @@ import { SearchInput } from '@/components/ui/filters';
 import { GuestClaimBanners } from '@/features/guest/components/GuestClaimBanners';
 import { useSinglePane } from '@/features/inbox';
 import { plainText, relative } from '@/lib/format';
+import { useApi } from '@/lib/query';
 import { useUiState } from '@/lib/ui-state';
+import { FAQ_PATH } from './api';
+import { AnswerList, DropHint, askLine, useArticleDrop, type PeekArticle } from './components/ArticlePeek';
 import { ChatView } from './components/ChatView';
 import { OrgFilter } from './components/common';
 import { NewChatForm } from './components/NewChatForm';
 import { useChatSession, useOrgFilter, useOrgs, useOverview } from './hooks';
 import { chatState, chatView } from './labels';
-import type { CustomerChat } from './types';
+import type { CustomerArticle, CustomerChat } from './types';
+
+/** Where an answer of this organization is read in full. */
+const articleHref = (article: PeekArticle) => `/customer/faq/${article.id}`;
 
 /* แชทของฉัน: the list on the left, the open chat (or a new one) on the right. Wide screens open the newest chat
    beside the list, the way the team's inbox does (pages/customer/customer-chats.html). */
@@ -75,6 +81,17 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
   const openState = session.data ? chatView(session.data) : undefined;
   const hasDetail = newChat || Boolean(openId);
 
+  // The organization's own published answers beside the open chat: read on resting, or dragged into the conversation
+  // (features/customer/components/ArticlePeek). Asked for only once a chat is open, never on the new-chat form.
+  const faq = useApi<{ articles: CustomerArticle[] }>(openSlug && openId && !newChat ? FAQ_PATH : null);
+  const articles: PeekArticle[] = (faq.data?.articles ?? []).filter((a) => a.org_slug === openSlug && !a.global);
+  // An answer belongs to the chat it was opened in, so opening another chat shows the messages again by itself.
+  const [open, setOpen] = useState<{ chat: string; article: PeekArticle } | null>(null);
+  const reading = open && open.chat === openId ? open.article : null;
+  const read = (article: PeekArticle) => setOpen(openId ? { chat: openId, article } : null);
+  const insertRef = useRef<((text: string) => void) | null>(null);
+  const drop = useArticleDrop((id) => articles.find((a) => a.id === id), read);
+
   let detail;
   if (newChat || (!list.length && !openId)) detail = <NewChatForm key={preselect} preselect={preselect} hasChats={list.length > 0} />;
   else if (openId && openSlug) {
@@ -85,6 +102,13 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
           slug={openSlug}
           orgName={orgs.find((o) => o.slug === openSlug)?.name || listed?.org_name || ''}
           category={listed?.category || ''}
+          reading={reading}
+          insertRef={insertRef}
+          onCloseReading={() => setOpen(null)}
+          onAsk={(article) => {
+            insertRef.current?.(askLine(article, articleHref(article)));
+            setOpen(null);
+          }}
         />
       );
     else if (session.error) detail = session.error.status === 404 ? <PageLoading /> : <ErrorState error={session.error} onRetry={() => void session.refetch()} />;
@@ -101,7 +125,7 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
         </div>
       </div>
       <GuestClaimBanners />
-      <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}`}>
+      <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}${articles.length ? ' has-aside' : ''}`}>
         <div className="inbox-list" ref={listRef}>
           <div className="inbox-tools customer-chat-tools">
             <SearchInput id="customer-chat-search" label="ค้นหาแชท" placeholder="ค้นหาแชทของฉัน" value={query} onChange={setQuery} />
@@ -124,9 +148,15 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
             )}
           </div>
         </div>
-        <div className="inbox-detail" data-thread-scope="">
+        <div className={`inbox-detail${reading ? ' reading' : ''}${drop.over ? ' qa-over' : ''}`} data-thread-scope="" {...drop.handlers}>
           {detail}
+          {drop.over && <DropHint />}
         </div>
+        {articles.length > 0 && (
+          <aside className="customer-aside" aria-label="คำตอบที่อาจช่วยได้">
+            <AnswerList articles={articles} hrefOf={articleHref} allHref="/customer/faq" onRead={read} />
+          </aside>
+        )}
       </section>
     </>
   );

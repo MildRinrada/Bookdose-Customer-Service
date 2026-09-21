@@ -32,6 +32,8 @@ def workspace_overview(cd, db, ctx):
             'read_only':bool(ctx.get('read_only')),
             'teams':repository.teams(db),
             'settings':repository.settings(db),
+            # คำตอบสำเร็จรูปของทีม: everyone may use them in a reply; only an owner may change them.
+            'snippets':repository.team_snippets(db),
             'channels':channels.workspace_summary(db),
             'macros':automation.macro_list(db),
             # Without the platform's email, customer sign-ups work but are not verified and get no email.
@@ -53,6 +55,13 @@ def update_settings(db, ctx, body):
     db.commit()
 
 
+def save_team_snippets(db, ctx, body):
+    items = schema.team_snippets(body)
+    repository.replace_team_snippets(db,items)
+    audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],f'คำตอบสำเร็จรูปของทีม {len(items)} รายการ')
+    db.commit()
+
+
 def save_customer_categories(db, ctx, body):
     items = schema.customer_categories(body,{t['id'] for t in repository.teams(db)})
     repository.update_setting(db,'customer_categories',json.dumps(items,ensure_ascii=False))
@@ -62,10 +71,22 @@ def save_customer_categories(db, ctx, body):
 
 def create_team(db, ctx, body):
     team_id = uid()
-    repository.insert_team(db,team_id,schema.team_name(body))
+    repository.insert_team(db,team_id,*schema.team_form(body))
     audit.record(db,ctx['name'],'team.created',team_id)
     db.commit()
     return team_id
+
+
+def save_team(db, ctx, team_id, body):
+    """A team keeps its id, so nothing it owns moves: the cases, the members and the customers' categories all stay
+    where they are and only the words on them change."""
+    team = repository.find_team(db,team_id)
+    require(team,'ไม่พบทีม',404)
+    name,description = schema.team_form(body)
+    repository.save_team(db,team_id,name,description)
+    audit.record(db,ctx['name'],'team.updated',team_id,f"{team['name']} → {name}")
+    db.commit()
+    return {'name':name,'description':description}
 
 
 def save_member(cd, db, ctx, member_id, body, creating):

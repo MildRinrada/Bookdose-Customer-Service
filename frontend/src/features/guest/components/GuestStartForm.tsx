@@ -7,13 +7,14 @@ import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { CAPTCHA_FIELD, CAPTCHA_WAIT, TurnstileField, type TurnstileHandle } from '@/components/ui/Turnstile';
+import { AnswerSuggestions, type PeekArticle } from '@/features/customer/components/ArticlePeek';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextArea } from '@/features/rich/RichTextArea';
 import { setGuestCredentials } from '@/lib/api/client';
 import { readFiles } from '@/lib/files';
 import type { PublicOrgInfo } from '@/features/auth/types';
-import { startGuestChat } from '../api';
+import { guestPages, startGuestChat } from '../api';
 import type { GuestOverview, GuestStartLink } from '../types';
 
 /* Starting a chat without an account, in three steps: what it is about (the organization's categories as tiles),
@@ -101,6 +102,10 @@ export function GuestStartForm({
   // When the form appeared, for the server's "too fast to be a person" check.
   const [shownAt] = useState(() => Date.now());
   const [category, setCategory] = useState('');
+  // What has been typed so far, so the organization's published answers can be offered before this is sent.
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const articles = (info?.articles as PeekArticle[] | undefined) ?? [];
   // Cloudflare Turnstile, when the platform asks for it: its token is used once, so a refused send asks for another.
   const captcha = overview.captcha?.site_key ? overview.captcha : null;
   const captchaRef = useRef<TurnstileHandle | null>(null);
@@ -172,13 +177,24 @@ export function GuestStartForm({
         </Step>
       )}
       <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง" hint="ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด แนบภาพหน้าจอได้">
-        <TextField label="หัวข้อ (ไม่บังคับ)" name="subject" id="guest-subject" max={300} required={false} placeholder="สรุปสั้น ๆ ว่าเรื่องอะไร" />
+        <TextField
+          label="หัวข้อ (ไม่บังคับ)"
+          name="subject"
+          id="guest-subject"
+          max={300}
+          required={false}
+          placeholder="สรุปสั้น ๆ ว่าเรื่องอะไร"
+          onChange={(event) => setSubject(event.target.value)}
+        />
         <RichTextArea
           label="ข้อความถึงทีมงาน"
           name="body"
           id="guest-body"
           placeholder="เกิดอะไรขึ้น ทำอะไรอยู่ตอนนั้น และเห็นข้อความอะไรบ้าง"
+          onChange={setBody}
         />
+        {/* Their question may already have an answer: it is offered here, while they write, rather than after a wait. */}
+        <AnswerSuggestions articles={articles} hrefOf={(a) => guestPages.article(slug, a.id)} text={`${subject} ${body}`} />
         <div className="field start-files">
           <input
             ref={inputRef}

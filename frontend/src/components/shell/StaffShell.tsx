@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { AiAssistant } from '@/features/ai/components/AiAssistant';
+import { HelpMenu } from '@/features/help/HelpMenu';
 import { Celebrations } from '@/features/staff-account/Celebrations';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { PlatformBell } from '@/features/platform/components/PlatformBell';
@@ -267,6 +268,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
               </>
             )}
             {platform && <PlatformBell />}
+            {work && <HelpMenu />}
             <TextSizeMenu />
             <ProfileMenu photo={photo} label="เมนูโปรไฟล์และสลับบัญชี">
               <AccountSwitcher roleLabel={roleLabel} onLogout={() => logout()} />

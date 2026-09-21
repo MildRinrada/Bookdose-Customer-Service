@@ -244,6 +244,12 @@ def notifications(cd, session, snapshot):
                       'at':row['ended_at'] or row['decided_at'] or row['created_at'],
                       'until':row['expires_at'] if row['status']=='approved' else None,
                       'notify':row['status'] in ('approved','denied')})
+    # Problem reports sent from the ? in the top bar of the organizations: one line while any are still open.
+    waiting = repository.open_report_count(cd)
+    if waiting:
+        found.append({'key':'problem-reports','kind':'report','level':'warning','icon':'bell',
+                      'title':f'มีรายงานปัญหารอดู {waiting} เรื่อง','detail':'ส่งมาจากทีมงานขององค์กรผ่านปุ่ม ? บนแถบบน',
+                      'href':'/platform/reports','at':None,'until':None,'notify':True})
     return found
 
 

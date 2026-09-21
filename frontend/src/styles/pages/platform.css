@@ -503,3 +503,34 @@
 #platform-organizations .org-status-action .org-access {
   justify-content: flex-end;
 }
+
+/* รายงานปัญหา: one card per report, the member's own words first and the facts for reproducing it underneath.
+   A report already dealt with stays on the list, quieter, so the same thing is not looked into twice. */
+.report-stack {
+  display: grid;
+  gap: 14px;
+}
+.report-card.handled {
+  opacity: .72;
+}
+.report-message {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.report-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px 20px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.report-facts dt {
+  color: var(--muted);
+  font-size: 1rem;
+}
+.report-facts dd {
+  margin: 2px 0 0;
+  min-width: 0;
+}

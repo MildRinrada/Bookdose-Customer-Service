@@ -71,3 +71,10 @@ export const unpublishGlobalArticle = (id: string) => api<{ ok: true }>(`${GLOBA
 
 /** Throw away the waiting changes; the published words stay. */
 export const discardGlobalChanges = (id: string) => api<{ ok: true }>(`${GLOBAL_FAQ_PATH}/${id}/changes`, undefined, 'DELETE');
+
+/* รายงานปัญหา: what members of the organizations send from the ? in their top bar (backend platform/routes.py). */
+export const REPORTS_PATH = '/api/platform/reports';
+
+/** Mark a report as dealt with, or put it back on the list. */
+export const setReportStatus = (id: string, status: 'open' | 'done') =>
+  api<{ ok: true }>(`${REPORTS_PATH}/${id}`, { status }, 'PATCH');

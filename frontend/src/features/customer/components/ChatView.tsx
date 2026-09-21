@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
@@ -12,6 +12,7 @@ import { useInvalidate } from '@/lib/query';
 import { OVERVIEW_PATH, rateService } from '../api';
 import { chatView, ratingLabels } from '../labels';
 import type { PortalSession, PortalSurvey } from '../types';
+import { ArticleReadPanel, type PeekArticle } from './ArticlePeek';
 
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
    person serving it, the messages, the satisfaction survey once the case is closed, and the reply box. */
@@ -77,11 +78,20 @@ export function ChatView({
   slug,
   orgName,
   category,
+  reading = null,
+  insertRef,
+  onCloseReading,
+  onAsk,
 }: {
   data: PortalSession;
   slug: string;
   orgName: string;
   category: string;
+  /** An answer being read in place of the messages (dropped on the conversation, or opened from its card). */
+  reading?: PeekArticle | null;
+  insertRef?: RefObject<((text: string) => void) | null>;
+  onCloseReading?: () => void;
+  onAsk?: (article: PeekArticle) => void;
 }) {
   const view = chatView(data);
   const id = data.conversation.id;
@@ -132,7 +142,10 @@ export function ChatView({
           )
         }
       />
-      <Composer key={id} conversationId={id} publicView publicSlug={slug} />
+      {reading && onCloseReading && (
+        <ArticleReadPanel article={reading} href={`/customer/faq/${reading.id}`} onClose={onCloseReading} onAsk={onAsk} />
+      )}
+      <Composer key={id} conversationId={id} publicView publicSlug={slug} insertRef={insertRef} />
     </>
   );
 }

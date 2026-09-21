@@ -78,6 +78,10 @@ class AutomationTests(unittest.TestCase):
                      {'name':'ทีมผิด','set_team_id':'0'*32}):
             self.assertIn(self.admin.call('/api/automation/rules',body)[0],(400,404),body)
         self.assertEqual(self.admin.call('/api/automation/macros',{'name':'ว่าง'})[0],400)
+        # A macro that only sends a text is a canned reply; that belongs in คำตอบสำเร็จรูปของทีม, which the
+        # team reads over before sending. A macro must also move the case on.
+        self.assertEqual(self.admin.call('/api/automation/macros',{'name':'ทักทาย','reply':'สวัสดีค่ะ'})[0],400)
+        self.ok(self.admin,'/api/automation/macros',{'name':'ทักทายแล้วรอ','reply':'สวัสดีค่ะ','set_status':'pending_customer'})
 
     # SLA escalation
     def test_unclaimed_case_moves_to_team_lead_once(self):

@@ -19,7 +19,7 @@
   --purple: var(--accent);
   --purple-light: var(--surface-hover);
   --shadow: 0 3px 14px #26292d04;
-  --font: -apple-system,BlinkMacSystemFont,'Thonburi','Leelawadee UI',sans-serif;
+  --font: 'Sarabun',-apple-system,BlinkMacSystemFont,'Thonburi','Leelawadee UI',sans-serif;
   --ink: rgb(38, 41, 45);
   --muted: #65716b;
   --line: rgb(227, 227, 222);
@@ -60,9 +60,6 @@ button:disabled {
 a {
   color: var(--link);
   text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
 }
 /* A whole row, card or button that happens to be a link is not an inline link: it marks itself with its own hover
    (background, border, colour) and never with an underline — the inbox and chat lists, the alerts, the menu, the

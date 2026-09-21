@@ -7,6 +7,16 @@ def workspace(req):
     return req.send(200,service.workspace_overview(req.cd,req.db,req.ctx))
 
 
+def member_photo(req, user_id):
+    """A colleague's photo, shown beside what they wrote. The browser fetches it with <img>, which carries cookies
+    but no header of ours, so the organization comes from the session rather than from X-Tenant-ID; nothing is
+    written and the photo still only reaches a member of that same organization. Kept by the browser for an hour:
+    it changes rarely and the pages ask for it on every conversation."""
+    from backend.modules.auth.service import workspace_context
+    png = service.member_photo(req.cd,workspace_context(req.cd,req.session),user_id)
+    return req.send(200,png,'image/png',{'Cache-Control':'private, max-age=3600'})
+
+
 @require_role('admin')
 def update_settings(req):
     service.update_settings(req.db,req.ctx,req.body)

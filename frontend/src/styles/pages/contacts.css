@@ -114,7 +114,6 @@
 }
 .contact-line a:hover {
   color: var(--purple);
-  text-decoration: underline;
 }
 /* The count and the badge sit side by side, and drop to a second line only when the column is too narrow for both. */
 .case-cell {
@@ -132,12 +131,6 @@
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-}
-.case-count:hover {
-  text-decoration: underline;
-}
-.badge-link:hover {
-  text-decoration: underline;
 }
 .case-count:focus-visible,.badge-link:focus-visible {
   outline: 3px solid #b4b4b4;
@@ -537,9 +530,6 @@ tbody tr:hover .contact-actions .btn,tbody tr:focus-within .contact-actions .btn
   flex-direction: column;
   color: inherit;
   text-decoration: none;
-}
-.contact-peek-timeline a:hover .contact-peek-subject {
-  text-decoration: underline;
 }
 .contact-peek-subject {
   font-weight: 600;

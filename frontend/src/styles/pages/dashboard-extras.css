@@ -159,9 +159,6 @@
   border-bottom: 1px solid var(--line);
   color: inherit;
 }
-.waiting-row:hover strong {
-  text-decoration: underline;
-}
 .waiting-row .icon {
   width: 16px;
   height: 16px;

@@ -40,6 +40,8 @@ export type Member = {
   expires_at?: string | null;
   /** Whether routing may give them a new case now (ตั้งค่าบัญชี → สถานะการทำงาน). */
   availability?: Availability;
+  /** They chose a photo: GET /api/members/<id>/photo has it (1 from the server, so a number). */
+  has_photo?: number | boolean;
 };
 
 /** A member's work status: available for new cases, or why not (a break, busy, away, off shift, on leave). */

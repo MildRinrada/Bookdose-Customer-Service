@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState } from '@/components/ui/display';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AiCitations } from '@/features/ai/components/AiCitations';
 import { ChannelDelivery } from '@/features/channels/components/ChannelDelivery';
 import { MarkdownBlocks } from '@/features/rich/Markdown';
@@ -19,7 +20,7 @@ import type { Message } from '../types';
    customer's chat (publicView). With live updates (lib/realtime-provider) the thread also shows the other side typing
    and "อ่านแล้ว" under the reader's own latest message once the other side has read it. */
 
-type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'kind' | 'body' | 'created_at' | 'attachments'> &
+type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'author_id' | 'kind' | 'body' | 'created_at' | 'attachments'> &
   Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey'>>;
 
 type MessagesProps = {
@@ -61,7 +62,7 @@ function MessageItem({ m, publicView, publicSlug, receipt }: { m: ThreadMessage;
   const rich = looksLikeMarkdown(m.body);
   return (
     <article className={`message ${m.kind}`} data-message-id={m.id}>
-      <Avatar name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
+      <UserAvatar id={m.author_id} name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
       <div className="grow">
         <div className="message-header">
           <strong>{m.author_name}</strong>

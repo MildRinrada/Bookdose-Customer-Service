@@ -61,7 +61,10 @@ def set_team_for_ticket(db, ticket_id, team_id):
 # Messages
 def list_messages(db, conversation_id, public=False):
     extra = " AND kind!='note'" if public else ''
-    return rows(db,'SELECT id,author_name,kind,body,delivery,created_at FROM messages WHERE conversation_id=?'+extra+' ORDER BY created_at,rowid',(conversation_id,))
+    # The writer's id is what the team's screens show their photo by; a customer's copy never carries it.
+    who = '' if public else ',author_id'
+    return rows(db,f'SELECT id,author_name{who},kind,body,delivery,created_at FROM messages WHERE conversation_id=?'
+                +extra+' ORDER BY created_at,rowid',(conversation_id,))
 
 
 def find_message(db, message_id):

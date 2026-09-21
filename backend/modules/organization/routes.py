@@ -6,6 +6,8 @@ MEMBER = f'/api/members(?:/{ID})?'
 
 ROUTES = [
     ('GET',   '/api/workspace', controller.workspace,       'workspace'),
+    # 'account', not 'workspace': an <img> sends no X-Tenant-ID header (see controller.member_photo).
+    ('GET',   f'/api/members/{ID}/photo', controller.member_photo, 'account'),
     ('PATCH', '/api/settings',  controller.update_settings, 'workspace'),
     ('POST',  '/api/settings/categories', controller.save_customer_categories, 'workspace'),
     ('POST',  '/api/teams',     controller.create_team,     'workspace'),

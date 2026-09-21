@@ -5,6 +5,7 @@ import { EARLY_PREFERENCES_SCRIPT } from '@/components/shell/TextSize';
 import { Providers } from './providers';
 
 // The stylesheets of the app, in their cascade order: structure first, then pages, text size and the color theme.
+import '@/styles/fonts.css';
 import '@/styles/base.css';
 import '@/styles/components.css';
 import '@/styles/layout.css';

@@ -279,8 +279,6 @@ html:has(.composer) .assistant-panel {
   color: #1c1c1e;
   font: inherit;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
   cursor: pointer;
 }
 /* The chat coming in after the first screen, and each new message. */

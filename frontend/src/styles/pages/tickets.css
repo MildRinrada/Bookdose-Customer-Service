@@ -161,18 +161,29 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   opacity: 1;
   pointer-events: auto;
 }
-.row-actions .btn {
+/* One row of equals: same height, same corner, same edge. Only "รับเคส" is filled, because it is the one action
+   the row is really offering; the rest are ways to change a value. */
+.row-actions .btn,
+.row-actions .quick-select {
   min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--control-line);
+}
+.row-actions .btn {
   padding: 6px 12px;
+}
+/* The preview button carries an icon and nothing else, so it stays square instead of a wide empty rectangle. */
+.row-actions .btn:has(>.icon:only-child) {
+  padding-inline: 10px;
 }
 .quick-select {
   min-height: 40px;
   max-width: 170px;
-  padding: 6px 34px 6px 10px;
-  border: 1px solid #959595;
-  border-radius: 8px;
+  padding: 6px 34px 6px 11px;
+  border: 1px solid var(--control-line);
+  border-radius: 12px;
   background-color: #fff;
-  color: #2d2d2d;
+  color: var(--ink);
   font: inherit;
   cursor: pointer;
 }

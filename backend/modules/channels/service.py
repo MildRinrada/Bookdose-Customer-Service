@@ -13,6 +13,7 @@ from backend.extensions import monitor
 from backend.database import audit, db as D
 from backend.exceptions.errors import ChannelError, CHANNEL_ERRORS
 from backend.extensions import channel_transport as T
+from backend.modules.platform import repository as platform_repository, service as platform_service
 from backend.middleware.access import get_scoped
 from backend.modules.ai import service as ai
 from backend.modules.channels import email_oauth as O, facebook, file_links as F, repository, schema
@@ -579,7 +580,14 @@ def process_outbox(tenant_id):
             secret = O.access_secret(tenant_id,row['config'],secret)
             for file in attachments:
                 file['content'] = conversations.attachment_path(tenant_id,file['storage_key']).read_bytes()
-            mail = T.build_email(row['config'],link['recipient'],conv['subject'],message['body'],job['provider_id'],reference,attachments)
+            # The reply carries the organization's name and the site's address, for the frame around it and for any
+            # relative link the writer used.
+            with D.control() as cd:
+                org = platform_repository.tenant_summary(cd,tenant_id) or {}
+                site = (platform_service.registration_config(cd).get('public_base_url') or '').strip()
+            mail = T.build_email(row['config'],link['recipient'],conv['subject'],message['body'],job['provider_id'],
+                                 reference,attachments,brand=org.get('name',''),base=site,
+                                 author=message['author_name'],slug=org.get('slug',''))
             provider_id = T.send_email(row['config'],secret,link['recipient'],mail)
     except ChannelError as failure:
         error = failure

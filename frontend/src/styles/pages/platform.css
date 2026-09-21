@@ -397,7 +397,7 @@
   border: 0;
   background: none;
   color: var(--link);
-  text-decoration: underline;
+  font-weight: 600;
   cursor: pointer;
   font: inherit;
 }

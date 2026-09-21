@@ -1,7 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { roleLabels } from '@/lib/labels';
 import { useStaffUser, useTeamName, useWork } from '@/lib/session';
 
@@ -25,7 +25,7 @@ export function MentionMenu({ onPick }: { onPick: (name: string) => void }) {
         </button>
         {people.map((m, i) => (
           <button key={m.id} type="button" className="mention-item" data-name={m.name} onClick={() => onPick(m.name)}>
-            <Avatar name={m.name} index={i} />
+            <UserAvatar id={m.id} name={m.name} index={i} />
             <span>
               <strong>{m.name}</strong>
               <span className="tiny muted">

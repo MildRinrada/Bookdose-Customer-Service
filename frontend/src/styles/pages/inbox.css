@@ -46,11 +46,10 @@
   margin: 4px 0 6px;
   font-size: 1.0625rem;
 }
-/* Links stay readable on the coloured reply bubble. */
+/* A link inside a message still has to look like one, and nothing in this app underlines: weight marks it instead. */
 .bubble.rich a {
   color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  font-weight: 650;
 }
 .bubble.rich code {
   padding: 1px 5px;
@@ -1350,9 +1349,6 @@ input[type=file].attach-input {
   color: var(--purple);
   font-weight: 650;
   text-decoration: none;
-}
-.conv-meta .conv-case-link:hover {
-  text-decoration: underline;
 }
 .conv-meta .conv-case-link:focus-visible {
   outline: 3px solid #b4b4b4;

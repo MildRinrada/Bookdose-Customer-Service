@@ -40,6 +40,8 @@ export type MessageKind = 'customer' | 'reply' | 'note';
 export type Message = {
   id: string;
   author_name: string;
+  /** The team member who wrote it (staff screens only; a customer's copy never carries it). */
+  author_id?: string | null;
   kind: MessageKind | string;
   body: string;
   /** 'stored' for messages read on the support page; the outbox state for LINE / Email / Facebook replies. */

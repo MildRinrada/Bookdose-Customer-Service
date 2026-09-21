@@ -89,9 +89,6 @@
   font-weight: 600;
   text-decoration: none;
 }
-.sla-watch-body a:hover {
-  text-decoration: underline;
-}
 .sla-watch-reason {
   color: var(--muted);
   font-size: .85rem;

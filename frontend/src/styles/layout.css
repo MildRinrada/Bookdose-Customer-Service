@@ -749,7 +749,6 @@ html.sidebar-collapsed .platform-scope>.grow {
 }
 .breadcrumb .crumb-root:hover {
   color: #434343;
-  text-decoration: underline;
 }
 .breadcrumb b {
   color: #2b2b2b;

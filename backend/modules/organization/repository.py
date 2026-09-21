@@ -37,9 +37,12 @@ def user_memberships(db, user_id):
 
 
 def tenant_members(db, tenant_id):
+    # has_photo, not the photo: one is up to 128 KB, and a team of twenty would be megabytes in every answer.
     return rows(db,f'''SELECT u.id,u.name,u.email,m.role,m.team_id,
-                    CASE WHEN m.active=1 AND {LIVE} THEN 1 ELSE 0 END AS active,m.expires_at FROM memberships m
-                    JOIN users u ON u.id=m.user_id WHERE m.tenant_id=? AND u.platform_admin=0 ORDER BY u.name''',(now(),tenant_id))
+                    CASE WHEN m.active=1 AND {LIVE} THEN 1 ELSE 0 END AS active,m.expires_at,
+                    CASE WHEN COALESCE(p.avatar,'')='' THEN 0 ELSE 1 END AS has_photo FROM memberships m
+                    JOIN users u ON u.id=m.user_id LEFT JOIN user_profiles p ON p.user_id=u.id
+                    WHERE m.tenant_id=? AND u.platform_admin=0 ORDER BY u.name''',(now(),tenant_id))
 
 
 def find_membership(db, tenant_id, user_id):

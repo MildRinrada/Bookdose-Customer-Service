@@ -25,6 +25,9 @@ import type { ConversationDetail, ConversationSummary } from './types';
 const inboxFilters: Record<string, string> = { waiting: 'รอเราตอบ', open: 'เปิดอยู่', all: 'ทั้งหมด' };
 const POLL_MS = 12000;
 
+/** Where the list was left, kept across the address changes that rebuild it (reset by a full page load). */
+let listScroll = 0;
+
 export function InboxScreen({ id }: { id?: string }) {
   const router = useRouter();
   const work = useWork();
@@ -64,9 +67,32 @@ export function InboxScreen({ id }: { id?: string }) {
     if (!id && fallback) router.replace(`/inbox/${fallback}`);
   }, [id, fallback, router]);
 
+  // Opening another conversation is a change of address, so the list is built again and starts at the top. Putting it
+  // back where it was keeps the row that was just clicked under the pointer; without this, the "scroll the least"
+  // below would drag it down to the bottom edge of the box every single time.
+  const listBox = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = listBox.current;
+    if (!el) return;
+    if (listScroll) el.scrollTop = listScroll;
+    const remember = () => {
+      listScroll = el.scrollTop;
+    };
+    el.addEventListener('scroll', remember, { passive: true });
+    return () => el.removeEventListener('scroll', remember);
+  }, []);
+
+  // Only when the open conversation is out of sight (a link opened from elsewhere, or the keyboard moved past the
+  // edge): bring it to the middle, not flush against an edge.
   const listReady = Boolean(list.data);
   useEffect(() => {
-    if (listReady) document.querySelector('.inbox-item.selected')?.scrollIntoView({ block: 'nearest' });
+    if (!listReady) return;
+    const row = document.querySelector('.inbox-item.selected');
+    const box = listBox.current;
+    if (!row || !box) return;
+    const seen = row.getBoundingClientRect();
+    const frame = box.getBoundingClientRect();
+    if (seen.top < frame.top || seen.bottom > frame.bottom) row.scrollIntoView({ block: 'center' });
   }, [listReady, selectedId]);
 
   // One pane at a time: the open conversation is read from its newest message, at the bottom of the page.
@@ -131,7 +157,7 @@ export function InboxScreen({ id }: { id?: string }) {
         </div>
       </div>
       <section className={`card inbox-layout staff-chats${selectedId ? ' show-detail' : ''}${detail.data ? ' has-aside' : ''}`}>
-        <div className="inbox-list">
+        <div className="inbox-list" ref={listBox}>
           {/* The customer's list has a search box and one choice under it; the team's has two choices side by side. */}
           <div className="inbox-tools customer-chat-tools staff-chat-tools">
             <SearchInput id="inbox-search" label="ค้นหาบทสนทนา" placeholder="ค้นหาชื่อ เรื่อง หรือเลขเคส" value={query} onChange={setQuery} />

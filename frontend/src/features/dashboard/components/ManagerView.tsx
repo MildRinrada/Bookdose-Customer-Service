@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { EscalationRow } from '@/features/automation/components/EscalationRow';
 import { clockTime, formatDuration, relative, starsText } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
@@ -58,7 +58,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             {agents.map((x, i) => (
               <div key={x.id} className="agent-row" role="row">
                 <span className="agent-who" role="cell">
-                  <Avatar name={x.name} index={i} />
+                  <UserAvatar id={x.id} name={x.name} index={i} />
                   <span className="agent-name">
                     <strong className="truncate">{x.name}</strong>
                     <span className="tiny muted truncate">

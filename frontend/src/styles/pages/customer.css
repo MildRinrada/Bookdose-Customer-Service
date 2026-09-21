@@ -228,7 +228,6 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 }
 .customer-case-title:hover {
   color: var(--purple);
-  text-decoration: underline;
 }
 .customer-case-id {
   display: block;
@@ -429,7 +428,6 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 }
 .customer-link-row:hover strong {
   color: var(--purple);
-  text-decoration: underline;
 }
 .customer-link-icon {
   display: grid;

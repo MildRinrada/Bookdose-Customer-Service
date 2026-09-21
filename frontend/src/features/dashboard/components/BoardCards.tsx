@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useToast } from '@/components/ui/Toast';
 import { clockTime, shortAgo } from '@/lib/format';
 import { useApi } from '@/lib/query';
@@ -95,7 +95,7 @@ export function HandoverCard({ interval, readOnly }: { interval: number | false;
           <ul className="handover-list">
             {notes.map((n) => (
               <li key={n.id} className={n.mine ? 'mine' : ''}>
-                <Avatar name={n.author_name} index={n.mine ? 0 : 3} />
+                <UserAvatar id={n.user_id} name={n.author_name} index={n.mine ? 0 : 3} />
                 <div className="handover-body">
                   <div className="handover-meta">
                     <strong>{n.mine ? 'คุณ' : n.author_name}</strong>

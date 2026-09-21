@@ -279,9 +279,6 @@ progress.report-share::-moz-progress-bar {
   flex-shrink: 0;
   white-space: nowrap;
 }
-.report-oldest a:hover .truncate {
-  text-decoration: underline;
-}
 .report-days {
   flex-shrink: 0;
   padding: 1px 9px;
@@ -443,9 +440,6 @@ progress.report-share::-moz-progress-bar {
   color: var(--ink-strong,#1c1c1e);
   font-weight: 700;
   text-decoration: none;
-}
-.report-article-body a:hover,.report-comment-body a.truncate:hover {
-  text-decoration: underline;
 }
 .report-article-body progress.report-share {
   width: 100%;

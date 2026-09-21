@@ -1,4 +1,6 @@
 """Organization administration: workspace overview, SLA and support-page settings, teams, members, audit log and backup."""
+import base64
+import binascii
 import json
 from backend.database import audit
 from backend.database.backup import make_backup
@@ -112,3 +114,14 @@ def tenant_backup(db, ctx):
     audit.record(db,ctx['name'],'backup.created',ctx['tenant_id'])
     db.commit()
     return make_backup(ctx['tenant_id'])
+
+def member_photo(cd, ctx, user_id):
+    """The PNG a colleague chose as their photo (auth/schema.profile_form keeps it to 128 KB). Only for a member of
+    the same organization, so a photo never leaves the team that shares a workspace."""
+    require(repository.find_membership(cd,ctx['tenant_id'],user_id),'ไม่พบสมาชิก',404)
+    stored = users.avatar_of(cd,user_id)
+    require(stored.startswith('data:image/png;base64,'),'สมาชิกคนนี้ยังไม่ได้ตั้งรูปโปรไฟล์',404)
+    try:
+        return base64.b64decode(stored.split(',',1)[1],validate=True)
+    except (ValueError,binascii.Error):
+        raise APIError(404,'รูปโปรไฟล์เสียหาย') from None

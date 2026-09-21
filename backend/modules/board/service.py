@@ -12,7 +12,8 @@ def view(db, ctx):
     notes = repository.handover(db,after(days=-HANDOVER_DAYS),HANDOVER_SHOWN)
     # Anyone removes their own note; the organization's owners tidy the board.
     for note in notes:
-        note['mine'] = note.pop('user_id')==ctx['id']
+        # The writer's id stays: the board shows their photo beside the note, as the inbox does.
+        note['mine'] = note['user_id']==ctx['id']
         note['removable'] = note['mine'] or ctx['role']=='admin'
     return {'handover':notes,'todos':repository.todos(db,ctx['id'],after(hours=-DONE_HOURS)),'handover_days':HANDOVER_DAYS}
 

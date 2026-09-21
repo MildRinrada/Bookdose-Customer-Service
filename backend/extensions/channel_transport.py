@@ -260,7 +260,29 @@ def parse_email(raw,own_address):
             'references':references,'message_id':message_id}
 
 
-def build_email(cfg,recipient,subject,text,message_id,reference,attachments):
+# The reply as the reader's mail client shows it (the frame itself lives in mail_style.py).
+REPLY_TITLE = 'ทีมงานตอบกลับเรื่องของคุณแล้ว'
+REPLY_KICKER = 'ตอบกลับอีเมลฉบับนี้ได้เลย ข้อความจะเข้าไปในเรื่องเดิม'
+REPLY_NOTE = 'อีเมลฉบับนี้ส่งถึงคุณเพราะคุณติดต่อทีมงานไว้ ตอบกลับได้ตามปกติ'
+REPLY_SIGN = 'ส่งผ่านระบบบริการลูกค้า Bookdose'
+REPLY_ROLE = 'ทีมดูแลลูกค้า'
+
+
+def reply_html(text,brand='',base='',author='',slug=''):
+    """A team reply as HTML: the stored Markdown rendered the way the pages render it, inside the mail frame."""
+    from backend.extensions import mail_style
+    from backend.utils import markdown
+    body = markdown.to_html(text,base or markdown.DEFAULT_BASE) or f'<p>{markdown.esc(text)}</p>'
+    home = f'{base.rstrip(chr(47))}/support/{slug}' if base and slug else ''
+    return mail_style.frame(
+        body,brand=brand,title=REPLY_TITLE if brand else '',line=REPLY_KICKER if brand else '',
+        author=author,role=f'{REPLY_ROLE} · {brand}' if brand else REPLY_ROLE,
+        button=('ดูเรื่องของคุณ',f'{home}/tickets') if home else None,
+        links=[('คำถามที่พบบ่อย',f'{home}/faq'),('เริ่มเรื่องใหม่',f'{home}/tickets/new')] if home else [],
+        note=REPLY_NOTE,sign=REPLY_SIGN,preview=' '.join(str(text or '').split())[:120])
+
+
+def build_email(cfg,recipient,subject,text,message_id,reference,attachments,brand='',base='',author='',slug=''):
     mail=EmailMessage()
     mail['From']=cfg['address'];mail['To']=recipient
     mail['Subject']=subject if subject.lower().startswith('re:') else 'Re: '+subject
@@ -268,7 +290,10 @@ def build_email(cfg,recipient,subject,text,message_id,reference,attachments):
     mail['Auto-Submitted']='auto-generated'
     if reference:
         mail['In-Reply-To']=reference;mail['References']=reference
+    # Both forms travel together: the reader's client picks the HTML, a text-only reader still gets the words, and a
+    # message that is HTML alone scores worse with spam filters.
     mail.set_content(text)
+    mail.add_alternative(reply_html(text,brand,base,author,slug),subtype='html')
     for file in attachments:
         major,minor=file['mime'].split('/',1)
         mail.add_attachment(file['content'],maintype=major,subtype=minor,filename=file['name'])

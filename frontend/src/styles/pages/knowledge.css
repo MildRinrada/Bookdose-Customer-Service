@@ -315,9 +315,6 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.kb-hero-top button:hover {
-  text-decoration: underline;
-}
 .kb-relevance {
   display: inline-flex;
   align-items: center;

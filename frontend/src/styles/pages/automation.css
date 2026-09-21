@@ -250,9 +250,6 @@
   font-weight: 700;
   text-decoration: none;
 }
-.csat-more:hover {
-  text-decoration: underline;
-}
 .csat-more .icon {
   width: 15px;
   height: 15px;
@@ -278,7 +275,6 @@
 }
 .me-item:hover strong {
   color: var(--link);
-  text-decoration: underline;
 }
 .me-item.danger {
   border-left-color: #c51c31;

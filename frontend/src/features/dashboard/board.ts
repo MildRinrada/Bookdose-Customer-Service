@@ -5,7 +5,7 @@ import { api } from '@/lib/api/client';
 
 export const BOARD_PATH = '/api/board';
 
-export type HandoverNote = { id: string; author_name: string; body: string; created_at: string; mine: boolean; removable: boolean };
+export type HandoverNote = { id: string; user_id: string; author_name: string; body: string; created_at: string; mine: boolean; removable: boolean };
 export type Todo = { id: string; body: string; due_at: string | null; done_at: string | null; created_at: string };
 export type Board = { handover: HandoverNote[]; todos: Todo[]; handover_days: number };
 

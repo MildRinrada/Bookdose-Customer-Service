@@ -285,6 +285,9 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
             return mid
         repository.reopen(db,conversation_id)
         tickets.reopen_for_conversation(db,conversation_id)
+        # A case paused waiting for the customer is unpaused by the customer: the thing it was waiting for is here.
+        from backend.modules.tickets import service as ticket_service
+        ticket_service.wake_for_customer_reply(db,conversation_id)
         if repository.customer_message_count(db,conversation_id)==1:
             automation.on_new_conversation(db,conversation_id)
         else:

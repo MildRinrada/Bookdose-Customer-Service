@@ -696,3 +696,98 @@
   margin: 4px 0;
   overflow-wrap: anywhere;
 }
+
+/* สุขภาพองค์กร: one row per organization, built for a console with a hundred of them. The columns share the width
+   the page gives them, so a long list never pushes the page sideways; below 1100px the least useful column goes
+   first rather than everything getting narrower. */
+.health-table table {
+  table-layout: fixed;
+  min-width: 0;
+}
+.health-table .col-org { width: 22%; }
+.health-table .col-score { width: 11%; }
+.health-table .col-signal { width: 14%; }
+.health-table .col-seen { width: 11%; }
+.health-table td,.health-table th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  overflow: hidden;
+  vertical-align: top;
+}
+.health-table .org-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* The score and what it is called, as one mark the eye can find down a long column. */
+.health-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f2f2ef;
+  color: #4a4a4a;
+  white-space: nowrap;
+}
+.health-chip strong {
+  font-size: 1.15rem;
+}
+.health-chip.tone-ok { background: #eaf3ed; color: #2f6b47; }
+.health-chip.tone-watch { background: #fdf8e8; color: #7a5c06; }
+.health-chip.tone-risk { background: #fdf0f2; color: #a31525; }
+/* Each signal: the number, and under it the count it came from. */
+.health-cell {
+  line-height: 1.35;
+}
+.health-cell strong {
+  display: block;
+  font-size: 1.1rem;
+}
+.health-cell span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.health-cell.tone-ok strong { color: #3f7a55; }
+.health-cell.tone-watch strong { color: #8a6508; }
+.health-cell.tone-risk strong { color: #a31525; }
+.health-cell.tone-none strong { color: #9a9a95; }
+@media (max-width: 1100px) {
+  .health-table .col-seen,.health-table th:nth-child(7),.health-table td:nth-child(7) {
+    display: none;
+  }
+  .health-table .col-org { width: 26%; }
+  .health-table .col-signal { width: 15%; }
+}
+
+/* ประกาศ: the two kinds side by side. Stacked full width they ran off the screen and the second was never seen; one
+   at a time behind tabs left half the screen blank. Two columns use the width for something and show the difference
+   between the two without a word of explanation. */
+.announce-split {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 18px;
+  align-items: start;
+}
+.announce-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.announce-column>.card {
+  margin: 0;
+}
+.announce-quiet {
+  display: block;
+  margin: 0;
+}
+/* Four short fields in a narrow column read better two by two than in one long row. */
+.announce-column .announcement-options {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+@media (max-width: 1000px) {
+  .announce-split {
+    grid-template-columns: 1fr;
+  }
+}

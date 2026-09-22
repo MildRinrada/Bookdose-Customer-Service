@@ -24,6 +24,15 @@ def update_ticket(req, ticket_id):
     return req.send(200,{'ok':True})
 
 
+def snooze_ticket(req, ticket_id):
+    return req.send(200,{'snoozed_until':service.snooze_ticket(req.db,req.ctx,ticket_id,req.body)})
+
+
+def wake_ticket(req, ticket_id):
+    service.wake_ticket(req.db,req.ctx,ticket_id)
+    return req.send(200,{'ok':True})
+
+
 def export_tickets(req):
     return req.send(200,service.export_tickets_csv(req.db,req.ctx),'text/csv; charset=utf-8',
                     {'Content-Disposition':'attachment; filename="bookdose-tickets.csv"'})

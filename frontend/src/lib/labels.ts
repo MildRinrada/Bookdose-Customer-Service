@@ -34,6 +34,8 @@ export const eventLabels: Record<string, string> = {
   'organization.created': 'สร้างองค์กร',
   'ticket.created': 'เปิดเคสใหม่',
   'ticket.updated': 'อัปเดตเคส',
+  'ticket.snoozed': 'พักเคสไว้ก่อน',
+  'ticket.woken': 'เคสกลับมาในคิว',
   'message.reply': 'ตอบกลับลูกค้า',
   'message.note': 'เพิ่มบันทึกภายใน',
   'conversation.created': 'รับเรื่องใหม่ผ่านเว็บ',

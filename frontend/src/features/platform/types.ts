@@ -78,6 +78,9 @@ export type OrgUsage = {
   quota_mb: number;
   /** used_bytes / quota, 0 when there is no ceiling. */
   share: number;
+  /** How this organization is doing (backend platform/orghealth.py). `score` is null and `level` is 'new' when
+      nothing has happened yet: a quiet organization is not a failing one. */
+  health: OrgHealth | null;
   last_active: string | null;
 };
 
@@ -238,4 +241,28 @@ export type ArticleTemplate = {
   published: number;
   author: string;
   updated_at: string;
+};
+
+/** One of the four things an organization is judged on; `score` null means there is not enough to go on yet. */
+export type HealthSignal = {
+  key: string;
+  score: number | null;
+  /** response */
+  total?: number;
+  in_time?: number;
+  /** csat */
+  answers?: number;
+  average?: number | null;
+  /** backlog */
+  open_cases?: number;
+  overdue?: number;
+  /** channels */
+  failing?: string[];
+  connected?: number;
+};
+
+export type OrgHealth = {
+  score: number | null;
+  level: 'ok' | 'watch' | 'risk' | 'new';
+  signals: Record<string, HealthSignal>;
 };

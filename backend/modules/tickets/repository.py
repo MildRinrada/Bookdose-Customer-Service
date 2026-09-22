@@ -31,18 +31,47 @@ def list_with_contacts(db, team_id=None):
 WORKING = "('new','open','pending_internal')"   # a case waiting for the customer is not the member's move
 
 
+# A paused case is not work anybody can pick up now, so รับงานถัดไป walks past it until it comes back by itself.
+AWAKE = 'snoozed_until IS NULL'
+
+
 def my_most_urgent(db, user_id):
     """The member's working case whose SLA ends first, with `due`: its first-response deadline while nobody has
     answered, otherwise its resolution deadline (whichever comes first)."""
     return one(db,f'''SELECT t.*,MIN(CASE WHEN t.first_response_at IS NULL THEN t.first_response_due_at ELSE t.resolution_due_at END,
-                      t.resolution_due_at) AS due FROM tickets t WHERE t.assignee_id=? AND t.status IN {WORKING}
+                      t.resolution_due_at) AS due FROM tickets t WHERE t.assignee_id=? AND t.status IN {WORKING} AND t.{AWAKE}
                       ORDER BY due,t.number LIMIT 1''',(user_id,))
 
 
 def oldest_unassigned(db, team_id):
     """The team's case that has waited longest for someone to take it."""
-    return one(db,f'''SELECT * FROM tickets WHERE assignee_id IS NULL AND team_id=? AND status IN {WORKING}
+    return one(db,f'''SELECT * FROM tickets WHERE assignee_id IS NULL AND team_id=? AND status IN {WORKING} AND {AWAKE}
                       ORDER BY created_at,number LIMIT 1''',(team_id,))
+
+
+# พักเคส
+def snooze(db, ticket_id, until, note, by):
+    db.execute('UPDATE tickets SET snoozed_until=?,snooze_note=?,snoozed_by=?,updated_at=? WHERE id=?',
+               (until,note,by,now(),ticket_id))
+
+
+def wake(db, ticket_id):
+    """Back in the queue. What it was paused for stays in the activity log, not on the case."""
+    db.execute("UPDATE tickets SET snoozed_until=NULL,snooze_note='',snoozed_by='',updated_at=? WHERE id=?",(now(),ticket_id))
+
+
+def due_snoozes(db, moment):
+    """Paused cases whose moment has come, oldest pause first."""
+    return rows(db,'SELECT * FROM tickets WHERE snoozed_until IS NOT NULL AND snoozed_until<=? ORDER BY snoozed_until',(moment,))
+
+
+def wake_for_conversation(db, conversation_id):
+    """The customer wrote: whatever the case was waiting for, this is worth reading now. Returns the cases woken."""
+    woken = rows(db,'''SELECT t.* FROM tickets t JOIN ticket_conversations tc ON tc.ticket_id=t.id
+                       WHERE tc.conversation_id=? AND t.snoozed_until IS NOT NULL''',(conversation_id,))
+    for ticket in woken:
+        wake(db,ticket['id'])
+    return woken
 
 
 def take(db, ticket_id, user_id):

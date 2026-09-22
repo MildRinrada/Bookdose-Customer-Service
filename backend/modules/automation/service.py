@@ -546,6 +546,9 @@ class Worker:
                     try:
                         with D.control() as cd, D.tenant(tenant_id) as db:
                             escalate_due(cd,db,tenant_id)
+                            # พักเคส: the ones whose moment has come go back to the queue and their owners hear.
+                            from backend.modules.tickets import service as ticket_service
+                            ticket_service.wake_due(db)
                     except Exception as error:
                         print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation',type(error).__name__)

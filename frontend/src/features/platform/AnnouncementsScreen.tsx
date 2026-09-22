@@ -56,10 +56,12 @@ export function AnnouncementsScreen() {
       <div className="page-heading">
         <div>
           <h1>ประกาศ</h1>
-          <p>สิ่งที่ระบบประกาศออกไป · เหตุขัดข้องที่เกิดขึ้นตอนนี้ และเรื่องที่นัดไว้ล่วงหน้า</p>
+          <p>สิ่งที่ระบบประกาศออกไป · ซ้ายคือเหตุที่เกิดอยู่ตอนนี้ ขวาคือเรื่องที่นัดไว้ล่วงหน้า</p>
         </div>
       </div>
 
+      <div className="announce-split">
+        <div className="announce-column">
       {loaded && current ? (
         <section className="card status-live">
           <div className="card-body">
@@ -88,21 +90,19 @@ export function AnnouncementsScreen() {
           </div>
         </section>
       ) : (
-        <p className="notice">
-          ตอนนี้ไม่มีประกาศ · หน้าสถานะระบบกำลังบอกเฉพาะผลตรวจอัตโนมัติ (เว็บและระบบหลัก · งานเบื้องหลัง · พื้นที่จัดเก็บ · อีเมลของระบบ)
-        </p>
+        <p className="tiny muted announce-quiet">ตอนนี้ไม่มีประกาศ หน้าสถานะระบบบอกเฉพาะผลตรวจอัตโนมัติ</p>
       )}
 
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>ประกาศสถานะระบบ (เหตุขัดข้องตอนนี้)</h2>
+            <h2>เหตุขัดข้องตอนนี้</h2>
             <p>
               ขึ้นบนหน้า{' '}
               <a href="/status" target="_blank" rel="noopener">
                 สถานะระบบ
               </a>{' '}
-              ที่ทุกคนเปิดดูได้โดยไม่ต้องเข้าสู่ระบบ · เขียนเมื่อรู้ปัญหาแล้ว องค์กรจะได้ไม่โทรเข้ามาพร้อมกันเพื่อถามเรื่องเดียวกัน
+              ที่เปิดดูได้โดยไม่ต้องเข้าสู่ระบบ
             </p>
           </div>
           <Icon name="bolt" />
@@ -138,9 +138,7 @@ export function AnnouncementsScreen() {
                 defaultValue={current?.text ?? ''}
                 placeholder="เช่น ข้อความที่ส่งออกทาง LINE ล่าช้าประมาณ 10 นาที ทีมงานกำลังแก้ไข ไม่มีข้อความสูญหาย"
               />
-              <span className="tiny muted">
-                เขียนด้วยภาษาที่ลูกค้าขององค์กรอ่านรู้เรื่อง บอกว่ากระทบอะไร และข้อมูลหายหรือไม่ · สูงสุด 500 ตัวอักษร
-              </span>
+              <span className="tiny muted">บอกว่ากระทบอะไร และข้อมูลหายหรือไม่ · สูงสุด 500 ตัวอักษร</span>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn primary">
@@ -151,8 +149,11 @@ export function AnnouncementsScreen() {
           </Form>
         </div>
       </section>
-
-      <AnnouncementCard current={announcement.data?.announcement ?? null} />
+        </div>
+        <div className="announce-column">
+          <AnnouncementCard current={announcement.data?.announcement ?? null} />
+        </div>
+      </div>
     </>
   );
 }

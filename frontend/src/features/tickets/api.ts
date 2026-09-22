@@ -26,6 +26,16 @@ export async function updateTicket(id: string, changes: TicketChanges, before?: 
   return saved;
 }
 
+/** พักเคส: `until` is an absolute moment (an ISO string), worked out from the member's own clock. */
+export function snoozeTicket(id: string, until: string, note: string) {
+  return api<{ snoozed_until: string }>(`${ticketPath(id)}/snooze`, { until, note });
+}
+
+/** Back into the queue now, before the pause is over. */
+export function wakeTicket(id: string) {
+  return api<{ ok: true }>(`${ticketPath(id)}/snooze`, undefined, 'DELETE');
+}
+
 /** Moves the case to the recycle bin (admins only). */
 export function deleteTicket(id: string) {
   return api<{ deleted: string }>(ticketPath(id), undefined, 'DELETE');

@@ -92,12 +92,14 @@ def due_followup_count(db, before):
 def unclaimed_before(db, created_before):
     """Open cases nobody has taken or answered since before the given time, not yet escalated."""
     return rows(db,f'''SELECT * FROM tickets WHERE status NOT IN {DONE} AND assignee_id IS NULL AND first_response_at IS NULL
+                     AND snoozed_until IS NULL
                      AND created_at<=? AND id NOT IN (SELECT ticket_id FROM escalations) ORDER BY created_at''',(created_before,))
 
 
 def unanswered_due_before(db, due_before):
     """Owned cases still waiting for their first reply whose deadline falls before the given time, not yet escalated."""
     return rows(db,f'''SELECT * FROM tickets WHERE status NOT IN {DONE} AND assignee_id IS NOT NULL AND first_response_at IS NULL
+                     AND snoozed_until IS NULL
                      AND first_response_due_at<=? AND id NOT IN (SELECT ticket_id FROM escalations) ORDER BY first_response_due_at''',(due_before,))
 
 

@@ -13,8 +13,9 @@ import { useMemberName, useStaffUser, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { claimSound } from '@/features/staff-account/celebrate';
 import { TICKET_PREFIXES, updateTicket } from '../api';
-import { lateBy } from '../labels';
+import { isSnoozed, lateBy, snoozeUntilText } from '../labels';
 import type { TicketChanges, TicketRow } from '../types';
+import { SnoozeChip, useWakeTicket } from './SnoozeCard';
 import { useTicketPreview } from './TicketPreview';
 
 /* The case table (the old ticketTable): the full list pages through 25 at a time with row selection and quick
@@ -144,8 +145,9 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
   const late = lateBy(t);
   const escalated = t.escalated_at && !isDone(t) ? escalationReasons[t.escalation_reason ?? ''] || 'ยกระดับแล้ว' : '';
   const assignee = memberName(t.assignee_id);
+  const paused = isSnoozed(t);
   return (
-    <tr>
+    <tr className={paused ? 'snoozed-row' : undefined}>
       {selection && (
         <td>
           <input
@@ -170,6 +172,7 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
             ยกระดับ
           </span>
         )}
+        {paused && <SnoozeChip until={t.snoozed_until as string} note={t.snooze_note} />}
       </td>
       <td className="customer-col">
         <div className="flex">
@@ -277,9 +280,11 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
   const toast = useToast();
   const refresh = useInvalidate();
   const preview = useTicketPreview();
+  const wake = useWakeTicket();
   const root = useRef<HTMLDivElement>(null);
   const refocus = useRef<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [waking, setWaking] = useState(false);
   // The value just picked stays in the dropdown until the list has been read again.
   const [pending, setPending] = useState<TicketChanges>({});
   const canClaim = !isDone(t) && t.assignee_id !== me && work.members.some((m) => m.id === me && m.active && m.team_id === t.team_id);
@@ -331,6 +336,25 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
         <Icon name="eye" />
         {menu && 'ดูตัวอย่างเคส'}
       </button>
+      {/* A paused case is back in the list only to be looked at: the one thing to offer is taking the pause off. */}
+      {isSnoozed(t) && (
+        <button
+          type="button"
+          className="btn sm"
+          data-quick="wake"
+          data-id={t.id}
+          disabled={busy || waking}
+          aria-label={`เอา BD-${t.number} กลับเข้าคิว`}
+          title={`พักถึง ${snoozeUntilText(t.snoozed_until)} · กดเพื่อเอากลับเข้าคิวเลย`}
+          onClick={async () => {
+            setWaking(true);
+            if (!(await wake(t.id, t.number))) setWaking(false);
+          }}
+        >
+          <Icon name="restore" />
+          {menu && 'เอากลับเข้าคิว'}
+        </button>
+      )}
       {canClaim && (
         <button type="button" className="btn sm primary" data-id={t.id} disabled={busy} onClick={() => void run({ assignee_id: me }, 'รับเคสแล้ว')}>
           <Icon name="check" />

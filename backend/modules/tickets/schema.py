@@ -1,8 +1,10 @@
 """Case form validation and the CSV export format."""
 import csv
+import datetime as dt
 import io
 
-from backend.modules.tickets.model import PRIORITIES, STATUSES
+from backend.modules.tickets.model import PRIORITIES, SNOOZE_MAX_DAYS, SNOOZE_NOTE_MAX, STATUSES
+from backend.utils.dates import iso, utc_now
 from backend.utils.validation import require, field
 
 EXCEL_UTF8_BOM = '\ufeff'
@@ -32,6 +34,22 @@ def ticket_update(body, ticket):
     assignee = body.get('assignee_id',ticket['assignee_id']) or None
     require(status in STATUSES and priority_value in PRIORITIES,'สถานะหรือความเร่งด่วนไม่ถูกต้อง')
     return status,priority_value,team_id,assignee
+
+
+def snooze_form(body):
+    """(when it comes back as a UTC timestamp, why). The browser sends the moment it worked out from the member's own
+    clock - "พรุ่งนี้ 9 โมง" is nine in the morning where they are, and only their browser knows where that is."""
+    text = field(body,'until',40)
+    try:
+        moment = dt.datetime.fromisoformat(text.replace('Z','+00:00'))
+    except ValueError:
+        moment = None
+    require(moment is not None and moment.tzinfo is not None,'เวลาที่เลือกไม่ถูกต้อง')
+    moment = moment.astimezone(dt.timezone.utc)
+    now = utc_now()
+    require(moment>now,'เวลาที่เลือกผ่านไปแล้ว กรุณาเลือกเวลาข้างหน้า')
+    require(moment<=now+dt.timedelta(days=SNOOZE_MAX_DAYS),f'พักเคสได้ไม่เกิน {SNOOZE_MAX_DAYS} วัน')
+    return iso(moment),field(body,'note',SNOOZE_NOTE_MAX,False)
 
 
 def tickets_csv(records):

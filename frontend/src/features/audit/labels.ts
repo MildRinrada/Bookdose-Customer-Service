@@ -51,6 +51,8 @@ const auditIcons: Record<string, string> = {
   'conversation.linked': 'ticket',
   'ticket.created': 'plus',
   'ticket.updated': 'edit',
+  'ticket.snoozed': 'clock',
+  'ticket.woken': 'bell',
   'ticket.deleted': 'close',
   'tickets.exported': 'download',
   'contact.created': 'users',

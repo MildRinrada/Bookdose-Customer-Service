@@ -608,6 +608,85 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   height: 16px;
   color: #6e6e73;
 }
+/* พักเคสไว้ก่อน (components/SnoozeCard): the card on the case screen, and the mark a paused case carries in lists.
+   The list keeps the row where it is and only turns its words down: a paused case is still a case, and a row that
+   disappears into the background is a row nobody notices has been parked for three weeks. */
+.snooze-card > * + * {
+  margin-top: 10px;
+}
+.snooze-card p {
+  margin: 0;
+}
+.snooze-card input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--control-line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font: inherit;
+  background: var(--paper);
+}
+.snooze-choices {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 6px;
+}
+/* The aside is narrow and these words are long: a choice that runs past its own button is a choice nobody can read. */
+.snooze-choices .btn {
+  justify-content: center;
+  padding-inline: 8px;
+  text-align: center;
+  white-space: normal;
+}
+.snooze-custom {
+  display: grid;
+  gap: 6px;
+}
+.snooze-custom .btn {
+  justify-content: center;
+}
+.snooze-card.paused {
+  background: var(--amber-soft);
+}
+.snooze-card.paused .btn {
+  width: 100%;
+  justify-content: center;
+  background: var(--paper);
+}
+.snooze-until {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.snooze-until .icon {
+  width: 16px;
+  height: 16px;
+}
+.snooze-note {
+  overflow-wrap: anywhere;
+}
+.snooze-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: .75rem;
+  white-space: nowrap;
+}
+.snooze-chip .icon {
+  width: 13px;
+  height: 13px;
+}
+.snoozed-row .ticket-title,.snoozed-row .customer-name {
+  color: var(--muted);
+}
+
 @media (max-width:950px) {
   .detail-layout,.case-hero {
     grid-template-columns: 1fr;

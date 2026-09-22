@@ -45,6 +45,7 @@ export const isAccountPath = (pathname: string) => pathname === '/account' || pa
 export const platformPages: StaffPage[] = [
   { key: 'system', href: '/platform/system', label: 'ภาพรวมระบบ', icon: 'chart' },
   { key: 'platform', href: '/platform/organizations', label: 'จัดการองค์กร', icon: 'globe' },
+  { key: 'platform-org-health', href: '/platform/org-health', label: 'สุขภาพองค์กร', icon: 'thumbUp' },
   { key: 'global-faq', href: '/platform/faq', label: 'FAQ กลาง', icon: 'book' },
   { key: 'platform-templates', href: '/platform/templates', label: 'คลังบทความแม่แบบ', icon: 'copy' },
   { key: 'platform-announcements', href: '/platform/announcements', label: 'ประกาศ', icon: 'bolt' },
@@ -110,6 +111,7 @@ const legacyStaff: Record<string, string> = {
   platform: '/platform/organizations',
   'global-faq': '/platform/faq',
   'platform-templates': '/platform/templates',
+  'platform-org-health': '/platform/org-health',
   'platform-announcements': '/platform/announcements',
   'platform-reports': '/platform/reports',
   'platform-team': '/platform/team',

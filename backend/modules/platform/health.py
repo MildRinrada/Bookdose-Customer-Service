@@ -2,7 +2,8 @@
 
   checklist        what is missing or broken now, most urgent first, each with where to fix it (ต้องจัดการ)
   channel_health   which organization's LINE / Email / Facebook is failing and why, and sending its failed replies again
-  org_usage        how busy each organization is: open cases, messages in 7 days, attachment storage, last activity
+  org_usage        how each organization is doing: its health score and the four signals behind it (orghealth.py),
+                   plus how busy it is - open cases, messages in 7 days, storage against its quota, last activity
   security_summary failed sign-ins, locked accounts, blocked addresses, trap hits and open alerts at a glance
   announcement     one message every organization's staff (and, when chosen, customers) see until it ends
 
@@ -14,7 +15,7 @@ import json
 from backend.database import audit, db as D
 from backend.database.db import one, rows
 from backend.exceptions.errors import APIError, ChannelError, CHANNEL_ERRORS
-from backend.modules.platform import model, repository
+from backend.modules.platform import model, orghealth, repository
 from backend.utils.dates import after, now, utc_now
 from backend.utils.validation import require
 
@@ -119,6 +120,9 @@ def org_usage(cd):
                  'open_cases':0,'messages_7d':0,'storage_bytes':files,'database_bytes':database,
                  'used_bytes':files+database,'quota_mb':int(org['quota_mb'] or 0),
                  'share':round((files+database)/quota,4) if quota else 0,'last_active':None}
+        # How this organization is actually doing: answering time, what customers said, the backlog and the channels
+        # (platform/orghealth.py). Without it a list of organizations says who is busy, never who is in trouble.
+        entry['health'] = orghealth.of_tenant(org['id'],now())
         if _tenant_exists(org['id']):
             with D.tenant(org['id']) as db:
                 entry['open_cases'] = db.execute("SELECT COUNT(*) FROM tickets WHERE status NOT IN ('resolved','closed')").fetchone()[0]

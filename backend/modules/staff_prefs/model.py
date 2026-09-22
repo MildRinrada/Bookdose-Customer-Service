@@ -18,7 +18,8 @@ import datetime as dt
 WORK_TZ = dt.timezone(dt.timedelta(hours=7))
 
 STATUSES = {'online':'พร้อมรับเรื่อง','break':'พักเบรก / ทานข้าว','busy':'ยุ่งอยู่','offline':'ไม่อยู่'}
-EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าตอบกลับในเคสของฉัน','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA'}
+EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าตอบกลับในเคสของฉัน','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA',
+          'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว'}
 DAYS = ('จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.')            # Monday first, as datetime.weekday()
 
 MAX_LEAVE = 20

@@ -8,5 +8,7 @@ ROUTES = [
     ('GET',   f'/api/tickets/{ID}',      controller.show_ticket,    'workspace'),
     ('PATCH', f'/api/tickets/{ID}',      controller.update_ticket,  'workspace'),
     ('DELETE',f'/api/tickets/{ID}',      controller.delete_ticket,  'workspace'),
+    ('POST',  f'/api/tickets/{ID}/snooze',controller.snooze_ticket, 'workspace'),
+    ('DELETE',f'/api/tickets/{ID}/snooze',controller.wake_ticket,   'workspace'),
     ('GET',   '/api/export/tickets.csv', controller.export_tickets, 'workspace'),
 ]

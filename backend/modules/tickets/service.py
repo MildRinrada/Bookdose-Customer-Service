@@ -6,6 +6,7 @@ from backend.database import audit, db as D
 from backend.middleware.access import visible_team, get_scoped, validate_team, validate_assignee
 from backend.modules.ai import service as ai
 from backend.modules.automation import service as automation
+from backend.modules.automation.service import SYSTEM_ACTOR
 from backend.modules.contacts import repository as contacts, service as contact_service
 from backend.modules.conversations import repository as conversations, service as conversation_service
 from backend.modules.organization import repository as organization
@@ -134,6 +135,56 @@ def next_task(cd, db, ctx):
     if mine:
         return {'ticket':{'id':mine['id'],'number':mine['number'],'subject':mine['subject']},'reason':'mine','taken':False}
     return {'ticket':None,'reason':'none','taken':False}
+
+
+# พักเคสไว้ก่อน
+def snooze_ticket(db, ctx, ticket_id, body):
+    """Take a case out of the working lists until a moment the member picks, then hand it back by itself.
+    Its SLA clocks keep running: pausing is the team stepping away from a case, not the customer agreeing to wait."""
+    ticket = get_scoped(db,'tickets',ticket_id,ctx)
+    require(ticket['status'] not in ('resolved','closed'),'เคสที่จบแล้วไม่ต้องพัก')
+    until,note = schema.snooze_form(body)
+    repository.snooze(db,ticket['id'],until,note,ctx['name'])
+    audit.record(db,ctx['name'],'ticket.snoozed',ticket['id'],json.dumps({'until':until,'note':note},ensure_ascii=False))
+    realtime.ticket(db,ticket['id'],teams=(ticket['team_id'],),conversations_listed=True)
+    db.commit()
+    return until
+
+
+def wake_ticket(db, ctx, ticket_id):
+    """Back into the queue before its time, because whatever it was waiting for arrived."""
+    ticket = get_scoped(db,'tickets',ticket_id,ctx)
+    require(ticket['snoozed_until'],'เคสนี้ไม่ได้พักอยู่',404)
+    repository.wake(db,ticket['id'])
+    audit.record(db,ctx['name'],'ticket.woken',ticket['id'],ticket['snooze_note'])
+    realtime.ticket(db,ticket['id'],teams=(ticket['team_id'],),conversations_listed=True)
+    db.commit()
+
+
+def wake_due(db):
+    """The automation worker's round: every paused case whose moment has come goes back to the queue, and whoever
+    owns it hears about it - a case that comes back silently is a case that was never really put down."""
+    from backend.modules.staff_prefs import service as staff_prefs
+    D.begin(db)
+    due = repository.due_snoozes(db,now())
+    if not due:
+        db.commit()
+        return 0
+    for ticket in due:
+        repository.wake(db,ticket['id'])
+        audit.record(db,SYSTEM_ACTOR,'ticket.woken',ticket['id'],ticket['snooze_note'])
+        staff_prefs.queue(db,ticket['assignee_id'],'snoozed',f"เคส BD-{ticket['number']} กลับมาแล้ว",
+                          f"{ticket['subject']}\n{ticket['snooze_note'] or 'ครบเวลาที่พักไว้'}",f"/tickets/{ticket['id']}")
+        realtime.ticket(db,ticket['id'],teams=(ticket['team_id'],),conversations_listed=True)
+    db.commit()
+    return len(due)
+
+
+def wake_for_customer_reply(db, conversation_id):
+    """Called where a customer's message reopens a case: a paused case is unpaused by the very thing it was waiting
+    for. Runs inside the caller's transaction."""
+    for ticket in repository.wake_for_conversation(db,conversation_id):
+        audit.record(db,SYSTEM_ACTOR,'ticket.woken',ticket['id'],'ลูกค้าตอบกลับ')
 
 
 def notify_assigned(db, ticket, assignee, ctx=None):

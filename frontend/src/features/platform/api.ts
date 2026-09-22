@@ -82,3 +82,7 @@ export const setReportStatus = (id: string, status: 'open' | 'done') =>
 /** โควตาพื้นที่ต่อองค์กร: how much of the shared disk one organization may take. 0 removes the ceiling. */
 export const setTenantQuota = (tenantId: string, quotaMb: number) =>
   api<{ quota_mb: number }>(`${TENANTS_PATH}/${tenantId}/quota`, { quota_mb: quotaMb }, 'PATCH');
+
+/** เปิด/ปิดฟีเจอร์รายองค์กร: try something new with one organization before it reaches the rest. */
+export const setTenantFeature = (tenantId: string, feature: string, enabled: boolean) =>
+  api<{ features: Record<string, boolean> }>(`${TENANTS_PATH}/${tenantId}/features`, { feature, enabled }, 'PATCH');

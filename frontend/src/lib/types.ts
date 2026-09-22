@@ -72,6 +72,9 @@ export type Workspace = {
   /** How full this organization's share of the shared disk is. `quota` 0 means the platform gave it no ceiling;
       `full` means new uploads are refused (answering and reading never are). Bytes. */
   storage: { used: number; quota: number; share: number; warn: boolean; full: boolean };
+  /** Which features this organization has. Something new can be on for one organization before the rest, so read
+      this rather than assuming (backend platform/model.py FEATURES). */
+  features: Record<string, boolean>;
 };
 
 /** One of the team's prepared replies. The click writes it into the draft; a Macro is the one that sends. */

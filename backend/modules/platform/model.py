@@ -32,6 +32,15 @@ QUOTA_FULL = 1.0
 QUOTA_MESSAGE = ('พื้นที่จัดเก็บขององค์กรเต็ม (ใช้ไป {used} จาก {quota}) ลบไฟล์แนบเก่าที่ไม่ใช้แล้ว '
                  'หรือติดต่อผู้ดูแลระบบเพื่อขอเพิ่มพื้นที่ · ข้อความที่ไม่มีไฟล์แนบยังส่งได้ตามปกติ')
 
+# Features that can be switched on for one organization at a time (tenant_features). Something new is added here
+# with default False and tried with one organization before it reaches the rest; something already everywhere is
+# added with default True, so nothing changes until a platform admin turns it off for someone.
+#   key: (what it is called, what it does, on unless said otherwise)
+FEATURES = {
+    'help_menu':    ('ปุ่มช่วยเหลือ (?) บนแถบบน','คีย์ลัดทั้งหมด คู่มือ และการรายงานปัญหาถึงผู้ดูแลแพลตฟอร์ม',True),
+    'snippet_menu': ('เมนูคำตอบสำเร็จรูปขณะพิมพ์','พิมพ์ / ในช่องตอบแล้วขึ้นรายการให้เลือก ค้นหาต่อได้ทันที',True),
+}
+
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS tenants (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE,
@@ -47,6 +56,11 @@ CREATE TABLE IF NOT EXISTS global_articles (
     audience TEXT NOT NULL CHECK(audience IN ('platform','staff','customer')),
     author TEXT NOT NULL, updated_at TEXT NOT NULL,
     published_at TEXT, draft TEXT
+);
+CREATE TABLE IF NOT EXISTS tenant_features (
+    tenant_id TEXT NOT NULL, feature TEXT NOT NULL, enabled INTEGER NOT NULL,
+    changed_by TEXT NOT NULL DEFAULT '', changed_at TEXT NOT NULL,
+    PRIMARY KEY (tenant_id, feature)
 );
 CREATE TABLE IF NOT EXISTS problem_reports (
     id TEXT PRIMARY KEY,

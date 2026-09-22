@@ -21,6 +21,27 @@ def find_tenant(db, tenant_id):
     return one(db,'SELECT id,name FROM tenants WHERE id=?',(tenant_id,))
 
 
+def tenant_features(db, tenant_id):
+    """{feature: bool} for the ones this organization was given an answer for; the rest keep their default."""
+    return {row['feature']:bool(row['enabled'])
+            for row in rows(db,'SELECT feature,enabled FROM tenant_features WHERE tenant_id=?',(tenant_id,))}
+
+
+def all_tenant_features(db):
+    """{tenant_id: {feature: bool}} in one query, for the console's list of organizations."""
+    found = {}
+    for row in rows(db,'SELECT tenant_id,feature,enabled FROM tenant_features'):
+        found.setdefault(row['tenant_id'],{})[row['feature']] = bool(row['enabled'])
+    return found
+
+
+def set_tenant_feature(db, tenant_id, feature, enabled, who):
+    db.execute('''INSERT INTO tenant_features(tenant_id,feature,enabled,changed_by,changed_at) VALUES(?,?,?,?,?)
+                  ON CONFLICT(tenant_id,feature) DO UPDATE SET enabled=excluded.enabled,
+                      changed_by=excluded.changed_by,changed_at=excluded.changed_at''',
+               (tenant_id,feature,int(enabled),who,now()))
+
+
 def find_tenant_quota(db, tenant_id):
     """Only the ceiling, asked on every upload."""
     return one(db,'SELECT quota_mb FROM tenants WHERE id=?',(tenant_id,))

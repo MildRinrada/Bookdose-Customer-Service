@@ -272,7 +272,9 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   // is what ตั้งค่าบัญชี promises. A member's own shortcut wins over a team one of the same name: their own choice.
   const snippets = usePreferences().data?.preferences.snippets;
   const team = work.snippets ?? [];
-  const { menu: snippetMenu } = useSnippets(editor, snippets ?? [], team);
+  // The menu that appears while "/" is being typed is switched per organization in the platform console
+  // (platform/model.py FEATURES). Off, the ⚡ list and typing the whole shortcut then a space still work.
+  const { menu: snippetMenu } = useSnippets(editor, snippets ?? [], team, work.features?.snippet_menu !== false);
   const openReplies = () =>
     openModal(
       'คำตอบสำเร็จรูป',

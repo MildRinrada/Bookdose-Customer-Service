@@ -14,13 +14,18 @@ export type Tenant = {
   admins: { name: string; email: string }[];
   /** Emails invited as its admin, not answered yet. */
   admin_invites: string[];
+  /** Which features are on for this organization: its own answers over each feature's default. */
+  features: Record<string, boolean>;
 };
+
+/** One switchable feature, as the console lists them (backend platform/model.py FEATURES). */
+export type FeatureInfo = { key: string; label: string; detail: string; default: boolean };
 
 /** The platform admin's own support request for an organization, while it waits or is in force. */
 export type SupportSummary = { id: string; status: 'pending' | 'approved'; hours: number; reason: string; created_at: string; expires_at: string | null };
 
 /** GET /api/platform/tenants (support: by organization id). */
-export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[]; support: Record<string, SupportSummary>; can_invite: boolean };
+export type TenantsPage = { tenants: Tenant[]; audit: AuditEvent[]; support: Record<string, SupportSummary>; can_invite: boolean; feature_catalogue: FeatureInfo[] };
 
 export type TenantFilters = { q?: string; status?: string };
 

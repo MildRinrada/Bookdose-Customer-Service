@@ -40,10 +40,14 @@ def list_tenants(cd):
     """The organizations with who runs each (its own admins, never a platform admin) and the admin invitations waiting."""
     from backend.modules.invitations import service as invitations
     found = repository.list_with_member_count(cd)
+    chosen = repository.all_tenant_features(cd)
     for org in found:
         org['admins'] = [{'name':a['name'],'email':a['email']} for a in organization.organization_admins(cd,org['id'])]
         org['admin_invites'] = invitations.open_admin_invites(cd,org['id'])
-    return {'tenants':found,'audit':audit.with_names(cd,audit.latest(cd,100)),'can_invite':invitations.ready(cd)}
+        # Which features are on for this one: the answers it was given, over each feature's default.
+        org['features'] = feature_state(cd,org['id'],chosen.get(org['id'],{}))
+    return {'tenants':found,'audit':audit.with_names(cd,audit.latest(cd,100)),'can_invite':invitations.ready(cd),
+            'feature_catalogue':feature_catalogue()}
 
 
 def add_admin(cd, session, tenant_id, body):
@@ -118,6 +122,31 @@ def set_tenant_status(cd, session, tenant_id, body):
     repository.set_status(cd,tenant_id,status)
     audit.record(cd,session['name'],'tenant.'+status,tenant_id)
     cd.commit()
+
+
+def feature_state(cd, tenant_id, chosen=None):
+    """{key: bool} for every feature in the registry: what this organization was given, else the feature's default.
+    `chosen` is that organization's row from all_tenant_features(), for lists that read them all at once."""
+    from backend.modules.platform.model import FEATURES
+    given = repository.tenant_features(cd,tenant_id) if chosen is None else chosen
+    return {key:given.get(key,default) for key,(_,_,default) in FEATURES.items()}
+
+
+def feature_catalogue():
+    """What each feature is called and does, for the console's switches."""
+    from backend.modules.platform.model import FEATURES
+    return [{'key':key,'label':label,'detail':detail,'default':default} for key,(label,detail,default) in FEATURES.items()]
+
+
+def set_tenant_feature(cd, session, tenant_id, body):
+    """Turn one feature on or off for one organization. It takes effect the next time that organization's pages ask
+    for their workspace, which is every time a page opens: nothing is restarted and no other organization changes."""
+    feature,enabled = schema.tenant_feature(body)
+    require(repository.find_tenant(cd,tenant_id),'ไม่พบองค์กร',404)
+    repository.set_tenant_feature(cd,tenant_id,feature,enabled,session['name'])
+    audit.record(cd,session['name'],'tenant.feature',tenant_id,f"{feature} = {'เปิด' if enabled else 'ปิด'}")
+    cd.commit()
+    return {'features':feature_state(cd,tenant_id)}
 
 
 def set_tenant_quota(cd, session, tenant_id, body):

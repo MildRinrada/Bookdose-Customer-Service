@@ -17,9 +17,9 @@ import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
-import { PLATFORM_PREFIX, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { PLATFORM_PREFIX, setTenantFeature, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
 import { SupportAccessForm, SuspendTenantForm, TenantAdminForm, TenantForm } from './components/TenantForms';
-import type { SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
+import type { FeatureInfo, SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
 /* Platform console, จัดการองค์กร: every organization on this installation - who is running, how many people are
    inside, the link to its customer side, and suspending or reopening it. Two tabs: the list (search, pills and the
@@ -206,6 +206,7 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
                       <th>หน้าลูกค้า</th>
                       <th>ผู้ดูแลองค์กร</th>
                       <th>สมาชิก</th>
+                      <th>ฟีเจอร์</th>
                       <th>สถานะ</th>
                       <th>สิทธิ์เข้าช่วยเหลือ</th>
                       <th>
@@ -215,7 +216,14 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
                   </thead>
                   <tbody>
                     {slice.shown.map((t, i) => (
-                      <TenantRow key={t.id} tenant={t} index={slice.start + i} support={data.support?.[t.id]} canInvite={data.can_invite} />
+                      <TenantRow
+                        key={t.id}
+                        tenant={t}
+                        index={slice.start + i}
+                        support={data.support?.[t.id]}
+                        canInvite={data.can_invite}
+                        catalogue={data.feature_catalogue ?? []}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -243,7 +251,19 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
   );
 }
 
-function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; index: number; support?: SupportSummary; canInvite: boolean }) {
+function TenantRow({
+  tenant: t,
+  index,
+  support,
+  canInvite,
+  catalogue,
+}: {
+  tenant: Tenant;
+  index: number;
+  support?: SupportSummary;
+  canInvite: boolean;
+  catalogue: FeatureInfo[];
+}) {
   const boot = useBoot().data!;
   const { data: work } = useWorkspace();
   const switchTenant = useSwitchTenant();
@@ -317,6 +337,9 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
         </button>
       </td>
       <td className="org-members">{t.member_count}</td>
+      <td>
+        <FeatureCell tenant={t} catalogue={catalogue} />
+      </td>
       <td>
         <Badge status={t.status} />
       </td>
@@ -415,5 +438,73 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
         )}
       </td>
     </tr>
+  );
+}
+
+/* Which features this organization has, and the way to change them. Something new is added to the registry
+   (backend platform/model.py FEATURES) switched off, turned on for one organization here, and only made everyone's
+   default once it has been lived with. */
+function FeatureCell({ tenant: t, catalogue }: { tenant: Tenant; catalogue: FeatureInfo[] }) {
+  const { openModal } = useDialogs();
+  if (!catalogue.length) return <span className="muted">-</span>;
+  const on = catalogue.filter((f) => t.features?.[f.key] ?? f.default).length;
+  const changed = catalogue.filter((f) => (t.features?.[f.key] ?? f.default) !== f.default).length;
+  return (
+    <button
+      type="button"
+      className="btn sm subtle feature-cell"
+      title={`เปิด ${on} จาก ${catalogue.length} ฟีเจอร์ · กดเพื่อเปิดหรือปิดให้ ${t.name}`}
+      onClick={() => openModal(`ฟีเจอร์ของ ${t.name}`, <FeatureForm tenant={t} catalogue={catalogue} />)}
+    >
+      <Icon name="bolt" />
+      {on}/{catalogue.length}
+      {changed > 0 && <span className="feature-changed">·</span>}
+    </button>
+  );
+}
+
+function FeatureForm({ tenant: t, catalogue }: { tenant: Tenant; catalogue: FeatureInfo[] }) {
+  const toast = useToast();
+  const refresh = useInvalidate();
+  // The switches answer one at a time: each is its own decision, and a half-saved form would be worse than none.
+  const [busy, setBusy] = useState('');
+  const [state, setState] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(catalogue.map((f) => [f.key, t.features?.[f.key] ?? f.default])),
+  );
+  const flip = async (feature: FeatureInfo, next: boolean) => {
+    setBusy(feature.key);
+    try {
+      const answer = await setTenantFeature(t.id, feature.key, next);
+      setState((current) => ({ ...current, ...answer.features }));
+      toast(`${next ? 'เปิด' : 'ปิด'} “${feature.label}” ให้ ${t.name} แล้ว`);
+      await refresh(PLATFORM_PREFIX);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : String(error), true);
+    } finally {
+      setBusy('');
+    }
+  };
+  return (
+    <>
+      <p className="notice">
+        เปิดหรือปิดได้ทีละองค์กร ใช้ลองฟีเจอร์ใหม่กับบางองค์กรก่อนแล้วค่อยเปิดให้ทุกที่ · มีผลกับหน้าจอของทีมงานองค์กรนี้ตั้งแต่โหลดหน้าถัดไป
+        องค์กรอื่นไม่เปลี่ยน
+      </p>
+      <div className="feature-list">
+        {catalogue.map((f) => {
+          const on = state[f.key];
+          return (
+            <label className="check feature-row" key={f.key}>
+              <input type="checkbox" className="switch" checked={on} disabled={busy === f.key} onChange={(e) => void flip(f, e.target.checked)} />
+              <span>
+                {f.label}
+                <span className="tiny muted block">{f.detail}</span>
+                {on !== f.default && <span className="tiny muted block">ต่างจากค่าเริ่มต้น (ปกติ{f.default ? 'เปิด' : 'ปิด'})</span>}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </>
   );
 }

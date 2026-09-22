@@ -268,7 +268,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
               </>
             )}
             {platform && <PlatformBell />}
-            {work && <HelpMenu />}
+            {/* Switched per organization in the platform console (platform/model.py FEATURES). */}
+            {work && work.features?.help_menu !== false && <HelpMenu />}
             <TextSizeMenu />
             <ProfileMenu photo={photo} label="เมนูโปรไฟล์และสลับบัญชี">
               <AccountSwitcher roleLabel={roleLabel} onLogout={() => logout()} />

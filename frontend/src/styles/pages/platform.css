@@ -595,3 +595,20 @@
   gap: 8px;
   margin: -4px 0 16px;
 }
+
+/* เปิด/ปิดฟีเจอร์รายองค์กร (จัดการองค์กร): how many are on, and the switches behind it. */
+.feature-cell {
+  white-space: nowrap;
+}
+.feature-changed {
+  color: #b8860b;
+  font-weight: 700;
+}
+.feature-list {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.feature-row {
+  align-items: flex-start;
+}

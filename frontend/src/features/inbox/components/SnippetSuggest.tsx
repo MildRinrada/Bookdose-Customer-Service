@@ -36,7 +36,10 @@ function typedAt(area: HTMLElement): Spot | null {
   };
 }
 
-export function useSnippets(editor: RichEditor, mine: Prepared[], team: Prepared[]) {
+/** `suggest`: false leaves the list off the screen for this organization (switched in the platform console). The keys
+    that need no menu - the whole shortcut then a space, and Alt+1 … Alt+9 - keep working, which is what ตั้งค่าบัญชี
+    promises whatever the organization has been given. */
+export function useSnippets(editor: RichEditor, mine: Prepared[], team: Prepared[], suggest = true) {
   const [word, setWord] = useState<string | null>(null);
   const [active, setActive] = useState(0);
   const card = useRef<HTMLDivElement>(null);
@@ -44,7 +47,7 @@ export function useSnippets(editor: RichEditor, mine: Prepared[], team: Prepared
   // The team's first: they are the organization's own words, and a member's own shortcut of the same name wins
   // below by being searched after (the find takes the first match).
   const all = [...mine, ...team.map((snippet) => ({ ...snippet, team: true }))];
-  const found = word === null ? [] : all.filter((snippet) => snippet.shortcut.startsWith(word)).slice(0, SHOWN);
+  const found = word === null || !suggest ? [] : all.filter((snippet) => snippet.shortcut.startsWith(word)).slice(0, SHOWN);
   const chosen = Math.min(active, Math.max(0, found.length - 1));
 
   // What the key handler reads, kept current without rebuilding the handler on every keystroke.

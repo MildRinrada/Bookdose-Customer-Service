@@ -38,6 +38,16 @@ def global_article(body):
     return field(body,'title',200),field(body,'category',80),field(body,'body',50000),audience
 
 
+def tenant_feature(body):
+    """(feature key, on) from the console's switch. An unknown key is refused, so a typo never becomes a setting
+    that quietly does nothing."""
+    from backend.modules.platform.model import FEATURES
+    feature,enabled = body.get('feature'),body.get('enabled')
+    require(feature in FEATURES,'ไม่รู้จักฟีเจอร์นี้')
+    require(enabled is True or enabled is False,'ค่าเปิด/ปิดไม่ถูกต้อง')
+    return feature,enabled
+
+
 def tenant_quota(body):
     """How many MB of the shared disk this organization may take; 0 removes the ceiling."""
     from backend.modules.platform.model import NO_QUOTA, QUOTA_BOUNDS

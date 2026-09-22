@@ -43,12 +43,20 @@ def workspace_overview(cd, db, ctx):
             # How full the organization's share of the disk is, so running out is said before it happens rather
             # than as an upload failing (platform/storage.py).
             'storage':_storage(cd,db,ctx),
+            # Which features this organization has, so something new can be tried with one organization before it
+            # reaches the rest (platform/model.py FEATURES, switched per organization in the console).
+            'features':_features(cd,ctx),
             'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id'])}}
 
 
 def _support_pending(cd, ctx):
     from backend.modules.support_access import service as support
     return support.pending_for(cd,ctx)
+
+
+def _features(cd, ctx):
+    from backend.modules.platform import service as platform
+    return platform.feature_state(cd,ctx['tenant_id'])
 
 
 def _storage(cd, db, ctx):

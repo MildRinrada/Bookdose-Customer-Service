@@ -202,6 +202,28 @@ def set_tenant_quota(req, tenant_id):
     return req.send(200,service.set_tenant_quota(req.cd,req.session,tenant_id,req.body))
 
 
+def article_templates(req):
+    return req.send(200,service.article_templates(req.cd))
+
+
+def create_article_template(req):
+    return req.send(201,{'id':service.save_article_template(req.cd,req.session,None,req.body)})
+
+
+def update_article_template(req, template_id):
+    return req.send(200,{'id':service.save_article_template(req.cd,req.session,template_id,req.body)})
+
+
+def publish_article_template(req, template_id):
+    service.publish_article_template(req.cd,req.session,template_id,req.body.get('published') is not False)
+    return req.send(200,{'ok':True})
+
+
+def delete_article_template(req, template_id):
+    service.delete_article_template(req.cd,req.session,template_id)
+    return req.send(200,{'ok':True})
+
+
 def status(req):
     """GET /api/status: the public status page. No sign-in, on purpose - somebody who cannot sign in is exactly the
     person who needs it."""

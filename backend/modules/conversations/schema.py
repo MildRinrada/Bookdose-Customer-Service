@@ -44,6 +44,13 @@ def _attachments(uploads):
     return validated
 
 
+def edited_body(body):
+    """The corrected words of a message already in the thread. A correction is words only: files stay as they were,
+    because taking a file back is deleting the message, not editing it."""
+    text = field(body,'body',20000)
+    return text
+
+
 def staff_message_kind(body):
     kind = body.get('kind','reply')
     require(kind in ('reply','note'),'ชนิดข้อความไม่ถูกต้อง')

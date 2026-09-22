@@ -96,3 +96,12 @@ export const STATUS_PATH = '/api/status';
 export const saveStatusNotice = (state: string, text: string) =>
   api<{ state: string; text: string; updated_at: string; updated_by: string }>(`${PLATFORM_PREFIX}/status`, { state, text });
 export const clearStatusNotice = () => api<{ ok: true }>(`${PLATFORM_PREFIX}/status`, undefined, 'DELETE');
+
+/* คลังบทความแม่แบบ: answers the platform team writes once; an organization takes a copy and owns it from then on. */
+export const TEMPLATES_PATH = `${PLATFORM_PREFIX}/templates`;
+export type ArticleTemplateBody = { title: string; category: string; body: string };
+export const saveArticleTemplate = (id: string | null, body: ArticleTemplateBody) =>
+  api<{ id: string }>(id ? `${TEMPLATES_PATH}/${id}` : TEMPLATES_PATH, body, id ? 'PATCH' : 'POST');
+export const publishArticleTemplate = (id: string, published: boolean) =>
+  api<{ ok: true }>(`${TEMPLATES_PATH}/${id}/publish`, { published });
+export const deleteArticleTemplate = (id: string) => api<{ ok: true }>(`${TEMPLATES_PATH}/${id}`, undefined, 'DELETE');

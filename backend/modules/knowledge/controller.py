@@ -45,3 +45,13 @@ def set_pins(req):
 
 def revisions(req, article_id):
     return req.send(200,service.revisions(req.db,article_id))
+
+
+def article_templates(req):
+    """คลังบทความแม่แบบ: what the platform team has written that this organization may take a copy of."""
+    return req.send(200,service.templates(req.cd,req.db))
+
+
+@require_role('admin','manager',message=MANAGERS_ONLY)
+def use_template(req, template_id):
+    return req.send(201,service.use_template(req.cd,req.db,req.ctx,template_id,req.body))

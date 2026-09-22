@@ -38,6 +38,11 @@ def global_article(body):
     return field(body,'title',200),field(body,'category',80),field(body,'body',50000),audience
 
 
+def article_template(body):
+    """(title, category, body) of a ready-made answer in the template library."""
+    return field(body,'title',200),field(body,'category',80),field(body,'body',50000)
+
+
 def tenant_feature(body):
     """(feature key, on) from the console's switch. An unknown key is refused, so a typo never becomes a setting
     that quietly does nothing."""

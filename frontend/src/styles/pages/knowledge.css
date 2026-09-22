@@ -876,3 +876,44 @@
     flex-direction: column;
   }
 }
+
+/* คลังบทความแม่แบบ, as an organization sees it: a row per ready-made answer, its text folded away until asked for. */
+.kb-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.template-list {
+  display: grid;
+  gap: 10px;
+}
+.template-row {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fcfcfc;
+}
+.template-row.taken {
+  background: #f6f8f6;
+}
+.template-row-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.template-row-head .grow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.template-row-body {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
+import { TemplateLibraryButton } from './components/TemplateLibrary';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { FilterPill, FilterSelect, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
@@ -208,10 +209,15 @@ function KnowledgeList({ openId }: { openId?: string }) {
               <p>คู่มือที่ทีมใช้ตอบคำถามและช่วยเหลือลูกค้า</p>
             </div>
             {canWrite && (
-              <button type="button" className="btn kb-new" onClick={() => edit()}>
-                <Icon name="plus" />
-                เขียนบทความใหม่
-              </button>
+              <div className="kb-hero-actions">
+                {/* The answers every organization needs anyway, written once by the Bookdose team: taking one is a
+                    copy this organization owns and edits (features/knowledge/components/TemplateLibrary). */}
+                <TemplateLibraryButton />
+                <button type="button" className="btn kb-new primary" onClick={() => edit()}>
+                  <Icon name="plus" />
+                  เขียนบทความใหม่
+                </button>
+              </div>
             )}
           </div>
           <div className="kb-search-box">

@@ -1508,3 +1508,55 @@ input[type=file].attach-input {
 .read-receipt[data-read="no"] {
   visibility: hidden;
 }
+
+/* Correcting or taking back a message of a web chat: the ⋯ appears on the message it belongs to (features/inbox). */
+.message-menu {
+  position: relative;
+  margin-left: auto;
+}
+.message:not(:hover):not(:focus-within) .message-menu .icon-btn:not([aria-expanded='true']) {
+  opacity: 0;
+}
+.message-menu .icon-btn {
+  transition: opacity .12s;
+}
+.message-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 34px #1e293b29;
+}
+.message-menu-panel[hidden] {
+  display: none;
+}
+.message-edited {
+  color: var(--muted);
+  font-size: 1rem;
+}
+.message-removed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--control-line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+.message-removed .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+/* No pointer to hover with: the ⋯ is simply there, as the case list's quick actions are. */
+@media (hover: none) {
+  .message-menu .icon-btn {
+    opacity: 1;
+  }
+}

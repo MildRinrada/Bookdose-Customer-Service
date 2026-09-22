@@ -124,3 +124,17 @@ def upgrade_tenant(db):
     # A team can say what it is for, beside what it is called (ทีมและสมาชิก). Teams made before this have no words yet.
     if 'description' not in {row[1] for row in db.execute('PRAGMA table_info(teams)')}:
         db.execute("ALTER TABLE teams ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+    # Editing or taking back a message sent to the wrong place (แก้ไข/ลบข้อความ). A deleted message is kept as a
+    # marker rather than removed: the team needs to see that something was there and is gone, and the history has to
+    # keep saying who wrote it.
+    columns = {row[1] for row in db.execute('PRAGMA table_info(messages)')}
+    if 'edited_at' not in columns:
+        db.execute('ALTER TABLE messages ADD COLUMN edited_at TEXT')
+    if 'deleted_at' not in columns:
+        db.execute('ALTER TABLE messages ADD COLUMN deleted_at TEXT')
+    if 'deleted_by' not in columns:
+        db.execute("ALTER TABLE messages ADD COLUMN deleted_by TEXT NOT NULL DEFAULT ''")
+    # Which template an article was taken from (คลังบทความแม่แบบ), so the library can show what has been taken
+    # already. The article itself belongs to the organization from that moment and is edited like any other.
+    if 'from_template' not in {row[1] for row in db.execute('PRAGMA table_info(knowledge_articles)')}:
+        db.execute("ALTER TABLE knowledge_articles ADD COLUMN from_template TEXT NOT NULL DEFAULT ''")

@@ -60,11 +60,22 @@ def set_team_for_ticket(db, ticket_id, team_id):
 
 # Messages
 def list_messages(db, conversation_id, public=False):
-    extra = " AND kind!='note'" if public else ''
+    # A deleted message leaves the customer's copy entirely - taking one back is the point of deleting it - while the
+    # team still sees that something was there and who took it back.
+    extra = " AND kind!='note' AND deleted_at IS NULL" if public else ''
     # The writer's id is what the team's screens show their photo by; a customer's copy never carries it.
-    who = '' if public else ',author_id'
-    return rows(db,f'SELECT id,author_name{who},kind,body,delivery,created_at FROM messages WHERE conversation_id=?'
+    who = '' if public else ',author_id,deleted_at,deleted_by'
+    return rows(db,f'SELECT id,author_name{who},kind,body,delivery,created_at,edited_at FROM messages WHERE conversation_id=?'
                 +extra+' ORDER BY created_at,rowid',(conversation_id,))
+
+
+def edit_message(db, message_id, body):
+    db.execute('UPDATE messages SET body=?,edited_at=? WHERE id=?',(body,now(),message_id))
+
+
+def mark_message_deleted(db, message_id, who):
+    """The words go, the marker stays: the thread must not silently lose a message the team remembers seeing."""
+    db.execute("UPDATE messages SET body='',deleted_at=?,deleted_by=? WHERE id=?",(now(),who,message_id))
 
 
 def find_message(db, message_id):
@@ -72,7 +83,9 @@ def find_message(db, message_id):
 
 
 def insert_message(db, message_id, conversation_id, author_id, author_name, kind, body, created_at=None):
-    db.execute('INSERT INTO messages VALUES(?,?,?,?,?,?,?,?)',(message_id,conversation_id,author_id,author_name,kind,body,'stored',created_at or now()))
+    # Named columns, not positional: the table gained edited_at / deleted_at and will gain more.
+    db.execute('''INSERT INTO messages(id,conversation_id,author_id,author_name,kind,body,delivery,created_at)
+                  VALUES(?,?,?,?,?,?,?,?)''',(message_id,conversation_id,author_id,author_name,kind,body,'stored',created_at or now()))
 
 
 def customer_message_count(db, conversation_id):

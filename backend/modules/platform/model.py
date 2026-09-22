@@ -11,6 +11,12 @@ work, something missing. It belongs to the platform, not to an organization - th
 fix the product - so it is kept here and read in the platform console. The message is the member's own words; the
 page and the browser are recorded with it so the report can be reproduced.
 
+article_templates is the library of ready-made answers the platform team writes once: the questions every
+organization is asked anyway (opening hours, how to contact us, how long a reply takes). An organization takes a
+copy and owns it from that moment - it edits, publishes or deletes it like anything it wrote itself. That is what
+separates a template from the global FAQ above it: a global article is the platform's and every organization reads
+the same one, a template stops being the platform's the moment it is taken.
+
 tenant_slugs holds the codes an organization used to have. The code is in every link a customer was ever given - the
 help centre, the follow links in emails and SMS, the widget on the organization's own website - so a code that
 changes must keep working, not break every one of them. A former code leads to the same organization for good, and
@@ -61,6 +67,11 @@ CREATE TABLE IF NOT EXISTS global_articles (
     audience TEXT NOT NULL CHECK(audience IN ('platform','staff','customer')),
     author TEXT NOT NULL, updated_at TEXT NOT NULL,
     published_at TEXT, draft TEXT
+);
+CREATE TABLE IF NOT EXISTS article_templates (
+    id TEXT PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL, body TEXT NOT NULL,
+    published INTEGER NOT NULL DEFAULT 0, position INTEGER NOT NULL DEFAULT 0,
+    author TEXT NOT NULL, updated_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tenant_slugs (
     slug TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, changed_at TEXT NOT NULL

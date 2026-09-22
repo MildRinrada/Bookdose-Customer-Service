@@ -38,6 +38,8 @@ const paths = {
   sparkle: 'M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z',
   lock: 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4',
   menu: 'M3 6h18 M3 12h18 M3 18h18',
+  // Three dots stacked: each is a stroke that goes nowhere, so it stays round at every size.
+  kebab: 'M12 5.5v.01 M12 12v.01 M12 18.5v.01',
   calendar: 'M4 5h16v16H4z M8 3v4 M16 3v4 M4 10h16',
   edit: 'M15 5l4 4 M3 21l5-1L21 7l-5-5L3 15z',
   file: 'M5 2h9l5 5v15H5z M14 2v6h5 M8 13h8 M8 17h6',

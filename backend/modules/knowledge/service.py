@@ -23,6 +23,32 @@ def list_articles(db, ctx):
     return articles
 
 
+def templates(cd, db):
+    """The published templates, each marked with whether this organization has already taken a copy. Having taken
+    one is not a bar to taking another - an organization may want the same answer twice, worded differently."""
+    from backend.modules.platform import repository as platform
+    taken = {row[0] for row in db.execute("SELECT DISTINCT from_template FROM knowledge_articles WHERE from_template<>''")}
+    found = [{'id':t['id'],'title':t['title'],'category':t['category'],'body':t['body'],'taken':t['id'] in taken}
+             for t in platform.article_templates(cd,published_only=True)]
+    return {'templates':found}
+
+
+def use_template(cd, db, ctx, template_id, body):
+    """Copy a template into this organization's own knowledge base. From this moment the article is the
+    organization's: it edits, publishes or deletes it like anything it wrote, and a later change to the template
+    never touches it."""
+    from backend.modules.platform import repository as platform
+    template = platform.find_article_template(cd,template_id)
+    require(template and template['published'],'ไม่พบแม่แบบนี้',404)
+    visibility = schema.visibility(body)
+    article_id = uid()
+    repository.insert(db,article_id,template['title'],template['category'],template['body'],visibility,ctx['name'])
+    db.execute('UPDATE knowledge_articles SET from_template=? WHERE id=?',(template_id,article_id))
+    audit.record(db,ctx['name'],'article.from_template',article_id,template['title'])
+    db.commit()
+    return {'id':article_id}
+
+
 def save_article(db, ctx, article_id, body, creating):
     """Create (no id in the URL) or update (id in the URL) an article; returns its id. An update that changes the
     article keeps the version before it (knowledge_revisions)."""

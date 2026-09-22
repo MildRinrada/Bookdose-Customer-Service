@@ -21,7 +21,9 @@ def find(db, article_id):
 
 
 def insert(db, article_id, title, category, body, visibility, author):
-    db.execute('INSERT INTO knowledge_articles VALUES(?,?,?,?,?,?,?)',(article_id,title,category,body,visibility,author,now()))
+    # Named columns, not positional: the table gained from_template (คลังบทความแม่แบบ) and will gain more.
+    db.execute('''INSERT INTO knowledge_articles(id,title,category,body,visibility,author,updated_at)
+                  VALUES(?,?,?,?,?,?,?)''',(article_id,title,category,body,visibility,author,now()))
 
 
 def update(db, article_id, title, category, body, visibility, author):

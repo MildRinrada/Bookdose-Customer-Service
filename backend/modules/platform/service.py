@@ -144,6 +144,41 @@ def rename_tenant_slug(cd, session, tenant_id, body, actor=None):
     return {'slug':slug,'former_slugs':repository.former_slugs(cd,tenant_id)}
 
 
+# คลังบทความแม่แบบ: the answers every organization ends up writing anyway, written once here.
+def article_templates(cd, published_only=False):
+    return {'templates':repository.article_templates(cd,published_only)}
+
+
+def save_article_template(cd, session, template_id, body):
+    """Write a new template, or change one. A change never reaches the copies organizations already took: those are
+    theirs now, and rewriting somebody's published article from here would be the platform editing their words."""
+    title,category,text = schema.article_template(body)
+    if template_id is None:
+        template_id = uid()
+        repository.insert_article_template(cd,template_id,title,category,text,session['name'])
+    else:
+        require(repository.find_article_template(cd,template_id),'ไม่พบแม่แบบ',404)
+        repository.update_article_template(cd,template_id,title,category,text,session['name'])
+    audit.record(cd,session['name'],'template.saved',template_id,title)
+    cd.commit()
+    return template_id
+
+
+def publish_article_template(cd, session, template_id, published):
+    require(repository.find_article_template(cd,template_id),'ไม่พบแม่แบบ',404)
+    repository.publish_article_template(cd,template_id,published)
+    audit.record(cd,session['name'],'template.published' if published else 'template.unpublished',template_id)
+    cd.commit()
+
+
+def delete_article_template(cd, session, template_id):
+    """Only the template goes. Copies organizations already took are their own articles and stay exactly as they are."""
+    require(repository.find_article_template(cd,template_id),'ไม่พบแม่แบบ',404)
+    repository.delete_article_template(cd,template_id)
+    audit.record(cd,session['name'],'template.deleted',template_id)
+    cd.commit()
+
+
 def feature_state(cd, tenant_id, chosen=None):
     """{key: bool} for every feature in the registry: what this organization was given, else the feature's default.
     `chosen` is that organization's row from all_tenant_features(), for lists that read them all at once."""

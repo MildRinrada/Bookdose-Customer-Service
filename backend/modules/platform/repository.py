@@ -61,6 +61,35 @@ def set_tenant_feature(db, tenant_id, feature, enabled, who):
                (tenant_id,feature,int(enabled),who,now()))
 
 
+# คลังบทความแม่แบบ: ready-made answers the platform team writes once and any organization may take a copy of.
+def article_templates(db, published_only=False):
+    where = ' WHERE published=1' if published_only else ''
+    return rows(db,f'SELECT * FROM article_templates{where} ORDER BY position,category,title')
+
+
+def find_article_template(db, template_id):
+    return one(db,'SELECT * FROM article_templates WHERE id=?',(template_id,))
+
+
+def insert_article_template(db, template_id, title, category, body, author):
+    place = (one(db,'SELECT MAX(position) AS top FROM article_templates') or {}).get('top') or 0
+    db.execute("""INSERT INTO article_templates(id,title,category,body,published,position,author,updated_at)
+                  VALUES(?,?,?,?,0,?,?,?)""",(template_id,title,category,body,place+1,author,now()))
+
+
+def update_article_template(db, template_id, title, category, body, author):
+    db.execute('UPDATE article_templates SET title=?,category=?,body=?,author=?,updated_at=? WHERE id=?',
+               (title,category,body,author,now(),template_id))
+
+
+def publish_article_template(db, template_id, published):
+    db.execute('UPDATE article_templates SET published=?,updated_at=? WHERE id=?',(int(published),now(),template_id))
+
+
+def delete_article_template(db, template_id):
+    db.execute('DELETE FROM article_templates WHERE id=?',(template_id,))
+
+
 def find_tenant_quota(db, tenant_id):
     """Only the ceiling, asked on every upload."""
     return one(db,'SELECT quota_mb FROM tenants WHERE id=?',(tenant_id,))

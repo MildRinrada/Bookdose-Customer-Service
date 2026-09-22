@@ -40,6 +40,11 @@ ROUTES = [
     ('DELETE',f'/api/platform/faq/{ID}/changes',   controller.discard_global_changes,   'platform'),
     ('GET',   '/api/platform/reports',        controller.problem_reports,            'platform'),
     ('PATCH', f'/api/platform/reports/{ID}',  controller.set_report_status,          'platform'),
+    ('GET',   '/api/platform/templates',      controller.article_templates,          'platform'),
+    ('POST',  '/api/platform/templates',      controller.create_article_template,    'platform'),
+    ('PATCH', f'/api/platform/templates/{ID}', controller.update_article_template,   'platform'),
+    ('POST',  f'/api/platform/templates/{ID}/publish', controller.publish_article_template, 'platform'),
+    ('DELETE',f'/api/platform/templates/{ID}', controller.delete_article_template,   'platform'),
     # The status page: no sign-in, because somebody who cannot sign in is exactly who needs to read it.
     ('GET',   '/api/status',                  controller.status,                     'public'),
     ('POST',  '/api/platform/status',         controller.save_status_notice,         'platform'),

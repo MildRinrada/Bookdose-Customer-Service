@@ -285,3 +285,35 @@
     width: 90px;
   }
 }
+
+/* เริ่มต้นใช้งาน: a step already done stays on the list, ticked and quiet - three ticks beside one blank is what
+   makes the last step feel worth doing. */
+.setup-item.is-done {
+  color: var(--muted);
+}
+.setup-item.is-done .icon {
+  color: #4c8a63;
+}
+.setup-item.is-done strong {
+  font-weight: 500;
+}
+.setup-tag {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #f2f2ef;
+  color: #5c6063;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.setup-later-head {
+  margin: 0;
+  padding: 14px 22px 0;
+  border-top: 1px solid var(--line);
+}
+.setup-later {
+  padding-bottom: 8px;
+}
+.setup-later .setup-item:first-child {
+  border-top: 0;
+}

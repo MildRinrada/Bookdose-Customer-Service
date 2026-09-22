@@ -30,3 +30,11 @@ export function postPortalMessage(slug: string, conversationId: string, body: { 
 export function markMentionsRead(conversationId: string) {
   return api<{ ok: true }>('/api/mentions/read', { conversation_id: conversationId });
 }
+
+/* Correcting or taking back a message of a web chat (backend conversations/service.py). A reply already delivered by
+   LINE, email or Facebook is refused by the server: the customer has the original and our copy must keep matching. */
+export const editMessage = (conversationId: string, messageId: string, body: string) =>
+  api<{ id: string }>(`/api/conversations/${conversationId}/messages/${messageId}`, { body }, 'PATCH');
+
+export const deleteMessage = (conversationId: string, messageId: string) =>
+  api<{ id: string }>(`/api/conversations/${conversationId}/messages/${messageId}`, undefined, 'DELETE');

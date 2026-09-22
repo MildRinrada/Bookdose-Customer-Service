@@ -192,6 +192,67 @@ def message_list(db, conversation_id, public=False):
     return result
 
 
+# --- Taking back or correcting a message already in the thread ---
+
+# A reply that went out through a provider is in the customer's own LINE, inbox or Messenger. Editing our copy
+# would not change theirs, and deleting it would only hide from the team what the customer can still read - the
+# thread would stop matching what happened. So it is refused and says why.
+CANNOT_RECALL = ('ข้อความที่ส่งออกทาง {channel} เรียกคืนไม่ได้ ลูกค้าได้รับฉบับเดิมไปแล้ว '
+                 'แก้ไขหรือลบที่นี่จะทำให้สิ่งที่ทีมเห็นไม่ตรงกับสิ่งที่ลูกค้าเห็น · ส่งข้อความใหม่เพื่อแก้ความเข้าใจแทน')
+CHANNEL_NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook'}
+
+
+def _own_message(db, ctx, conversation_id, message_id, action):
+    """The message this member may act on, with what will really happen when they do."""
+    message = repository.find_message(db,message_id)
+    require(message and message['conversation_id']==conversation_id,'ไม่พบข้อความ',404)
+    require(not message['deleted_at'],'ข้อความนี้ถูกลบไปแล้ว',409)
+    # A customer's own words are never rewritten or removed by the team: the thread is evidence of what was said.
+    require(message['kind'] in ('reply','note'),'แก้ไขหรือลบได้เฉพาะข้อความที่ทีมงานเขียนเอง')
+    # The writer may correct their own; an owner may take any of the team's back, which is what an owner is for when
+    # something went to the wrong place and the writer has gone home.
+    mine = message['author_id']==ctx['id']
+    require(mine or (ctx['role']=='admin' and action=='delete'),
+            'แก้ไขได้เฉพาะข้อความของตัวเอง' if action=='edit' else 'ลบได้เฉพาะข้อความของตัวเอง หรือโดยเจ้าขององค์กร',403)
+    return message
+
+
+def _can_still_be_taken_back(db, conversation_id, message):
+    """Only what the customer reads from our own pages: a web chat, or an internal note that never left at all.
+    Anything a provider delivered is in the customer's hands and is refused rather than quietly changed here."""
+    conv = repository.find(db,conversation_id)
+    if message['kind']=='note' or conv['channel'] not in EXTERNAL:
+        return
+    require(False,CANNOT_RECALL.format(channel=CHANNEL_NAMES.get(conv['channel'],conv['channel'])),409)
+
+
+def edit_message(db, ctx, conversation_id, message_id, body):
+    """Correct a message already in the thread. It is marked as edited from then on: a thread that can change
+    silently is a thread nobody can rely on."""
+    message = _own_message(db,ctx,conversation_id,message_id,'edit')
+    _can_still_be_taken_back(db,conversation_id,message)
+    text = schema.edited_body(body)
+    require(text!=message['body'],'ข้อความยังเหมือนเดิม')
+    repository.edit_message(db,message_id,text)
+    audit.record(db,ctx['name'],'message.edited',message_id,message['body'][:200])
+    realtime.conversation(db,conversation_id,public=message['kind']!='note')
+    db.commit()
+    return {'id':message_id}
+
+
+def delete_message(db, ctx, conversation_id, message_id):
+    """Take a message out of the thread. The words go and the customer stops seeing it; the team keeps a marker that
+    something was here and who took it back, because a thread that quietly loses a message is worse than one that
+    says it lost it."""
+    message = _own_message(db,ctx,conversation_id,message_id,'delete')
+    _can_still_be_taken_back(db,conversation_id,message)
+    repository.mark_message_deleted(db,message_id,ctx['name'])
+    audit.record(db,ctx['name'],'message.deleted',message_id,message['body'][:200])
+    realtime.conversation(db,conversation_id,public=message['kind']!='note')
+    db.commit()
+    return {'id':message_id}
+
+
 def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, body):
     """Save a message with up to 3 attachments and update the conversation and its case (first response, reopening).
     A customer's answer to the satisfaction survey is recorded as the rating and reopens nothing; the first customer

@@ -59,8 +59,15 @@ export type MyDay = {
 type SetupAction = { label: string; href: string };
 
 /** ตั้งค่าองค์กรให้ครบ (automation/setup.py): the steps, and what is broken now. */
+/** A step of เริ่มต้นใช้งาน. `count`/`target` are there when a step can be partly done (the articles): "2 จาก 5" is
+    a reason to carry on, "ยังไม่เสร็จ" is not. */
+export type SetupStep = { key: string; done: boolean; title: string; detail: string; action: SetupAction; count?: number; target?: number };
+
 export type SetupChecklist = {
-  steps: Array<{ key: string; done: boolean; title: string; detail: string; action: SetupAction }>;
+  /** The four that make a new organization work at all. */
+  steps: SetupStep[];
+  /** Worth doing once it works: rules and AI. */
+  later?: SetupStep[];
   problems: Array<{ key: string; level: 'critical' | 'warning'; title: string; detail: string; action: SetupAction }>;
 };
 

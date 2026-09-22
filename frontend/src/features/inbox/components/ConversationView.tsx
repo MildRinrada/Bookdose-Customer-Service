@@ -18,6 +18,7 @@ import type { ConversationDetail } from '../types';
 import { Composer } from './Composer';
 import { CustomerAvatar } from './InboxItem';
 import { MessageThread, ThreadFilter } from './MessageThread';
+import { useManageMessages } from './useManageMessages';
 
 /* The open conversation beside the inbox list: who and where from, its case, AI state, open/close, the thread and
    the composer. Markup: pages/inbox/conversation-view. Key it by the conversation id. */
@@ -25,6 +26,8 @@ import { MessageThread, ThreadFilter } from './MessageThread';
 export function ConversationView({ data }: { data: ConversationDetail }) {
   const { conversation: c, ticket: t, contact, messages } = data;
   const work = useWork();
+  // Correcting or taking back a message of this conversation (web chat and internal notes only).
+  const manage = useManageMessages(c, work);
   const router = useRouter();
   const toast = useToast();
   const refresh = useInvalidate();
@@ -121,7 +124,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
       {c.channel === 'facebook' && (
         <div className="notice">Facebook Messenger: ตอบได้เฉพาะข้อความ ไม่เกิน 2,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
       )}
-      <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} />
+      <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
       <Composer conversationId={c.id} channel={c.channel} manual={c.channel === 'manual'} compact conversation={c} />
     </>
   );

@@ -43,3 +43,15 @@ def set_ai_mode(req, conversation_id):
 
 def download_attachment(req, file_id):
     return req.send_download(*service.staff_attachment(req.db,req.ctx,file_id))
+
+
+def edit_message(req, conversation_id, message_id):
+    """Correct a message already in the thread (its writer only)."""
+    conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    return req.send(200,service.edit_message(req.db,req.ctx,conv['id'],message_id,req.body))
+
+
+def delete_message(req, conversation_id, message_id):
+    """Take a message out of the thread (its writer, or the organization's owner)."""
+    conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    return req.send(200,service.delete_message(req.db,req.ctx,conv['id'],message_id))

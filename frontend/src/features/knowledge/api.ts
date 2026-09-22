@@ -58,3 +58,10 @@ export async function savePins(client: QueryClient, ids: string[]) {
     throw error;
   }
 }
+
+/* คลังบทความแม่แบบ: what the Bookdose team has already written, and taking a copy of one. The copy is this
+   organization's own article from that moment (backend knowledge/service.py use_template). */
+export const TEMPLATES_PATH = '/api/article-templates';
+
+export const useTemplate = (id: string, visibility: 'public' | 'internal') =>
+  api<{ id: string }>(`${TEMPLATES_PATH}/${id}/use`, { visibility });

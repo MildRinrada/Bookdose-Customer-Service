@@ -11,11 +11,16 @@ import { useApi, useInvalidate } from '@/lib/query';
 import { addPlatformAdmin, ADMINS_PATH, PLATFORM_PREFIX, removePlatformAdmin } from './api';
 import type { PlatformTeam } from './types';
 
-/* Platform console, ทีมผู้ดูแลระบบ: who may use the console. The platform's owner (the account made at first-run
-   setup) adds and removes the platform admins; the admins look after the server and the organizations like the owner,
-   but the list is read-only for them. The people who answer Bookdose's own customers are members of the Bookdose
-   organization, run by its own owners like any other organization.
-   Markup: pages/platform/platform-team.html, platform-admin-row.html, platform-admin-form.html. */
+/* Platform console, ทีมผู้ดูแลระบบ: who may use the console.
+
+   The people come first. This page used to open with two paragraphs explaining the difference between this team and
+   the one that answers Bookdose's own customers - six lines of prose before a list of three names. The distinction
+   still matters and is still here, but as short lines at the foot of the page, where somebody who needs it will
+   look, rather than as a wall in front of what everybody came for.
+
+   The platform's owner (the account made at first-run setup) adds and removes the platform admins; the admins look
+   after the server and the organizations like the owner, but the list is read-only for them.
+   Markup: pages/platform.css (role-note). */
 
 export function TeamScreen() {
   const team = useApi<PlatformTeam>(ADMINS_PATH);
@@ -34,7 +39,10 @@ function TeamView({ data }: { data: PlatformTeam }) {
       <div className="page-heading">
         <div>
           <h1>ทีมผู้ดูแลระบบ</h1>
-          <p>บัญชีที่เข้าคอนโซลระบบกลางได้ · {data.admins.length} คน</p>
+          <p>
+            {data.admins.length} บัญชีที่เข้าคอนโซลระบบกลางได้ ·{' '}
+            {owner ? 'คุณเป็นเจ้าของแพลตฟอร์ม เพิ่มหรือถอดผู้ดูแลได้' : 'เฉพาะเจ้าของแพลตฟอร์มเพิ่มหรือถอดผู้ดูแลได้'}
+          </p>
         </div>
         {owner && (
           <div className="flex">
@@ -45,46 +53,16 @@ function TeamView({ data }: { data: PlatformTeam }) {
           </div>
         )}
       </div>
-      <div className="role-split">
-        <section className="card role-card">
-          <div className="card-body">
-            <span className="role-icon">
-              <Icon name="shield" />
-            </span>
-            <div>
-              <h2>ทีมจัดการระบบ (หน้านี้)</h2>
-              <p>
-                เจ้าของแพลตฟอร์มเพิ่มและถอดผู้ดูแลได้ ผู้ดูแลดูแลเซิร์ฟเวอร์ องค์กรลูกค้า และ FAQ กลาง แต่ไม่รับเคสหรือตอบลูกค้า
-                ดูข้อมูลขององค์กรได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
-              </p>
-            </div>
-          </div>
-        </section>
-        <section className="card role-card">
-          <div className="card-body">
-            <span className="role-icon">
-              <Icon name="chat" />
-            </span>
-            <div>
-              <h2>ทีมติดต่อลูกค้า Bookdose</h2>
-              <p>
-                เป็นทีมงานขององค์กร Bookdose เหมือนองค์กรอื่น มีเจ้าขององค์กรและเจ้าหน้าที่ เชิญเจ้าขององค์กรได้จาก จัดการองค์กร
-                แล้วเจ้าขององค์กรเพิ่มเจ้าหน้าที่เองที่ ตั้งค่าองค์กร → ทีมและสมาชิก
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
+
       <section className="card">
-        <div className="card-header">
-          <div>
-            <h2>ผู้ดูแลระบบกลาง</h2>
-            <p>{owner ? 'คุณเป็นเจ้าของแพลตฟอร์ม เพิ่มหรือถอดผู้ดูแลได้ สิทธิ์ของเจ้าของไม่ถูกถอด' : 'เฉพาะเจ้าของแพลตฟอร์มเพิ่มหรือถอดผู้ดูแลได้'}</p>
-          </div>
-          <Icon name="shield" />
-        </div>
-        <div className="table-scroll">
+        <div className="table-scroll admin-table">
           <table>
+            <colgroup>
+              <col className="col-person" />
+              <col className="col-email" />
+              <col className="col-since" />
+              <col className="col-manage" />
+            </colgroup>
             <thead>
               <tr>
                 <th>ชื่อ</th>
@@ -104,39 +82,48 @@ function TeamView({ data }: { data: PlatformTeam }) {
                       <div className="org-cell">
                         <Avatar name={a.name} index={i} />
                         <div className="org-text">
-                          <strong className="truncate">{a.name}</strong>
-                          <span className="muted">
-                            {a.owner ? 'เจ้าของแพลตฟอร์ม' : 'ผู้ดูแลแพลตฟอร์ม'}
-                            {me ? ' · บัญชีของคุณ' : ''}
-                          </span>
+                          <strong className="truncate" title={a.name}>
+                            {a.name}
+                          </strong>
+                          {me && <span className="tiny muted">บัญชีของคุณ</span>}
                         </div>
                       </div>
                     </td>
-                    <td>{a.email}</td>
+                    <td className="truncate" title={a.email}>
+                      {a.email}
+                    </td>
                     <td>{date(a.created_at)}</td>
-                    <td>
-                      {owner && !a.owner && (
-                        <button
-                          type="button"
-                          className="btn sm subtle"
-                          onClick={() =>
-                            confirm({
-                              title: 'ถอดสิทธิ์ผู้ดูแลระบบกลาง',
-                              message: `${a.name} จะเข้าคอนโซลระบบกลางไม่ได้ตั้งแต่คำขอถัดไป`,
-                              cancelLabel: 'ยกเลิก',
-                              confirmLabel: 'ถอดสิทธิ์',
-                              tone: 'danger',
-                              run: async () => {
-                                await removePlatformAdmin(a.id);
-                                toast('ถอดสิทธิ์แล้ว');
-                                await refresh(PLATFORM_PREFIX);
-                              },
-                            })
-                          }
-                        >
-                          <Icon name="close" />
-                          ถอดสิทธิ์
-                        </button>
+                    <td className="admin-manage">
+                      {/* The owner is the one account nobody can remove, so it says so instead of leaving a blank. */}
+                      {a.owner ? (
+                        <span className="admin-owner">
+                          <Icon name="shield" />
+                          เจ้าของแพลตฟอร์ม
+                        </span>
+                      ) : (
+                        owner && (
+                          <button
+                            type="button"
+                            className="btn sm subtle"
+                            onClick={() =>
+                              confirm({
+                                title: 'ถอดสิทธิ์ผู้ดูแลระบบกลาง',
+                                message: `${a.name} จะเข้าคอนโซลระบบกลางไม่ได้ตั้งแต่คำขอถัดไป`,
+                                cancelLabel: 'ยกเลิก',
+                                confirmLabel: 'ถอดสิทธิ์',
+                                tone: 'danger',
+                                run: async () => {
+                                  await removePlatformAdmin(a.id);
+                                  toast('ถอดสิทธิ์แล้ว');
+                                  await refresh(PLATFORM_PREFIX);
+                                },
+                              })
+                            }
+                          >
+                            <Icon name="close" />
+                            ถอดสิทธิ์
+                          </button>
+                        )
                       )}
                     </td>
                   </tr>
@@ -144,6 +131,35 @@ function TeamView({ data }: { data: PlatformTeam }) {
               })}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* The distinction that used to open the page, as lines that can be scanned instead of read. */}
+      <section className="role-note">
+        <h2>ทีมนี้ต่างจากทีมที่ตอบลูกค้าของ Bookdose อย่างไร</h2>
+        <div className="role-note-split">
+          <div>
+            <h3>
+              <Icon name="shield" />
+              ผู้ดูแลระบบกลาง (หน้านี้)
+            </h3>
+            <ul>
+              <li>ดูแลเซิร์ฟเวอร์ องค์กรลูกค้า และ FAQ กลาง</li>
+              <li>ไม่รับเคสและไม่ตอบลูกค้า</li>
+              <li>เห็นข้อมูลขององค์กรได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว</li>
+            </ul>
+          </div>
+          <div>
+            <h3>
+              <Icon name="chat" />
+              ทีมติดต่อลูกค้า Bookdose
+            </h3>
+            <ul>
+              <li>เป็นทีมงานขององค์กร Bookdose เหมือนองค์กรอื่น</li>
+              <li>เชิญเจ้าขององค์กรได้ที่ จัดการองค์กร</li>
+              <li>เจ้าขององค์กรเพิ่มเจ้าหน้าที่เองที่ ทีมและสมาชิก</li>
+            </ul>
+          </div>
         </div>
       </section>
     </>
@@ -168,7 +184,7 @@ function PlatformAdminForm() {
       }}
     >
       <div className="notice">
-        ใช้อีเมลใหม่พร้อมชื่อและรหัสผ่านเริ่มต้น (อีเมลที่เป็นทีมงานขององค์กรใช้ไม่ได้ เพราะผู้ดูแลแพลตฟอร์มไม่รับเคส) ผู้ดูแลแพลตฟอร์มดูข้อมูลขององค์กรได้เฉพาะเมื่อได้รับสิทธิ์เข้าช่วยเหลือ
+        ใช้อีเมลใหม่พร้อมชื่อและรหัสผ่านเริ่มต้น · อีเมลที่เป็นทีมงานขององค์กรใช้ไม่ได้ เพราะผู้ดูแลแพลตฟอร์มไม่รับเคส
       </div>
       <TextField label="อีเมล" name="email" type="email" max={254} />
       <div className="form-grid">

@@ -45,3 +45,6 @@ export type ArticleRevision = {
   replaced_by: string;
   replaced_at: string;
 };
+
+/** A ready-made answer in คลังบทความแม่แบบ, as an organization sees it (GET /api/article-templates). */
+export type ArticleTemplate = { id: string; title: string; category: string; body: string; taken: boolean };

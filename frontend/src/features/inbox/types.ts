@@ -54,6 +54,11 @@ export type Message = {
   citations: AiCitation[];
   /** The satisfaction survey message. */
   survey: boolean;
+  /** When the writer last corrected it; the thread says "แก้ไขแล้ว" from then on. */
+  edited_at?: string | null;
+  /** Set when the message was taken back: the words are gone, the marker stays for the team (never sent to a customer). */
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 };
 
 /** The conversation itself in GET /api/conversations/<id>. */

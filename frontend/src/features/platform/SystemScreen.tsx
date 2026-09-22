@@ -7,13 +7,13 @@ import { AuditList } from '@/features/audit';
 import { date, number, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { HEALTH_PATH, SYSTEM_PATH } from './api';
-import { AnnouncementCard, BackupsCard, ChannelsCard, SecurityCard, StatusNoticeCard, TodoCard, UsageCard } from './components/HealthCards';
+import { BackupsCard, ChannelsCard, SecurityCard, TodoCard, UsageCard } from './components/HealthCards';
 import { apiAreaLabels, bytesText, durationText, logSourceLabels, workerLabels, workerStatus } from './labels';
 import type { HealthPage, SystemOverview } from './types';
 
 /* Platform console, ภาพรวมระบบ: what needs doing first (ต้องจัดการ), then is the server healthy, are the backups and
    every organization's channels fine, how busy each organization is, security at a glance, how much the API is used,
-   what went wrong lately, and the announcement to every organization. The server's numbers come from the running
+   and what went wrong lately. Announcements live on their own screen (ประกาศ). The server's numbers come from the running
    server and start again when it restarts; the page refreshes itself (30 seconds; the cross-organization checks every
    minute). Markup: pages/platform.css (.system-page). */
 
@@ -88,7 +88,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           </button>
         </div>
       </div>
-      <StatusNoticeCard />
       {health && <TodoCard items={health.todo} />}
       <div className="stats-grid">
         <StatCard
@@ -298,7 +297,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
       </div>
       {health && (
         <div className="system-section">
-          <AnnouncementCard current={health.announcement} />
         </div>
       )}
     </div>

@@ -227,3 +227,15 @@ export type ProblemReport = {
 
 /** GET /api/platform/reports */
 export type ProblemReportsPage = { reports: ProblemReport[]; open: number };
+
+/** A ready-made answer in คลังบทความแม่แบบ (backend platform article_templates). */
+export type ArticleTemplate = {
+  id: string;
+  title: string;
+  category: string;
+  body: string;
+  /** 0 until the platform team publishes it; organizations only ever see published ones. */
+  published: number;
+  author: string;
+  updated_at: string;
+};

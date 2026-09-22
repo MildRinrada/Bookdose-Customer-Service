@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useRef, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState } from '@/components/ui/display';
 import { UserAvatar } from '@/components/ui/UserAvatar';
@@ -14,6 +14,15 @@ import { clockTime, date, dayLabel } from '@/lib/format';
 import { useReadAt, useRealtime, useTyping } from '@/lib/realtime-provider';
 import type { Message } from '../types';
 
+/** What the thread may do with a message of this conversation; absent on the customer's view and wherever the
+    conversation cannot be corrected (only a web chat can: a reply a provider delivered is already read). */
+export type ManageMessage = {
+  canEdit: (m: ThreadMessage) => boolean;
+  canDelete: (m: ThreadMessage) => boolean;
+  onEdit: (m: ThreadMessage) => void;
+  onDelete: (m: ThreadMessage) => void;
+};
+
 /* A conversation's messages (the old messagesHTML): only the time on each message and a divider at each new day,
    internal notes, AI and survey tags, formatted team replies, attachments, AI sources and, for the team, where a
    reply's delivery stands. Markup: pages/inbox/message, thread-day. Used by the inbox, the case screen and the
@@ -21,7 +30,7 @@ import type { Message } from '../types';
    and "อ่านแล้ว" under the reader's own latest message once the other side has read it. */
 
 type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'author_id' | 'kind' | 'body' | 'created_at' | 'attachments'> &
-  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey'>>;
+  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by'>>;
 
 type MessagesProps = {
   messages: ThreadMessage[];
@@ -35,7 +44,13 @@ type MessagesProps = {
 type Receipt = { id: string; read: boolean };
 
 /** The messages themselves, without the scrolling .thread around them. */
-export function Messages({ messages, publicView = false, publicSlug, receipt }: MessagesProps & { receipt?: Receipt | null }) {
+export function Messages({
+  messages,
+  publicView = false,
+  publicSlug,
+  receipt,
+  manage,
+}: MessagesProps & { receipt?: Receipt | null; manage?: ManageMessage }) {
   if (!messages.length) return <EmptyState title="ยังไม่มีข้อความ" description="เริ่มบันทึกรายละเอียดการดูแลในเคสนี้" icon="chat" />;
   return (
     <>
@@ -49,7 +64,13 @@ export function Messages({ messages, publicView = false, publicSlug, receipt }: 
                 <span>{dayLabel(when)}</span>
               </div>
             )}
-            <MessageItem m={m} publicView={publicView} publicSlug={publicSlug} receipt={receipt?.id === m.id ? receipt : null} />
+            <MessageItem
+              m={m}
+              publicView={publicView}
+              publicSlug={publicSlug}
+              receipt={receipt?.id === m.id ? receipt : null}
+              manage={manage}
+            />
           </Fragment>
         );
       })}
@@ -57,9 +78,42 @@ export function Messages({ messages, publicView = false, publicSlug, receipt }: 
   );
 }
 
-function MessageItem({ m, publicView, publicSlug, receipt }: { m: ThreadMessage; publicView: boolean; publicSlug?: string | null; receipt: Receipt | null }) {
+function MessageItem({
+  m,
+  publicView,
+  publicSlug,
+  receipt,
+  manage,
+}: {
+  m: ThreadMessage;
+  publicView: boolean;
+  publicSlug?: string | null;
+  receipt: Receipt | null;
+  manage?: ManageMessage;
+}) {
   // Both sides may format from their composer tools; a customer's links and images stay plain text (MarkdownBlocks).
   const rich = looksLikeMarkdown(m.body);
+  const gone = Boolean(m.deleted_at);
+  if (gone)
+    return (
+      <article className={`message ${m.kind} removed`} data-message-id={m.id}>
+        <UserAvatar id={m.author_id} name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
+        <div className="grow">
+          <div className="message-header">
+            <strong>{m.author_name}</strong>
+            <time dateTime={m.created_at} title={date(m.created_at, true)}>
+              {clockTime(m.created_at)}
+            </time>
+          </div>
+          {/* The words are gone and the customer no longer sees this at all; the team keeps the marker, because a
+              thread that quietly loses a message is worse than one that says it lost it. */}
+          <p className="message-removed">
+            <Icon name="trash" />
+            ข้อความนี้ถูกลบแล้ว{m.deleted_by ? ` โดย ${m.deleted_by}` : ''} · ลูกค้าไม่เห็นข้อความนี้แล้ว
+          </p>
+        </div>
+      </article>
+    );
   return (
     <article className={`message ${m.kind}`} data-message-id={m.id}>
       <UserAvatar id={m.author_id} name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
@@ -87,6 +141,12 @@ function MessageItem({ m, publicView, publicSlug, receipt }: { m: ThreadMessage;
           <time dateTime={m.created_at} title={date(m.created_at, true)}>
             {clockTime(m.created_at)}
           </time>
+          {m.edited_at && (
+            <span className="message-edited" title={`แก้ไขเมื่อ ${date(m.edited_at, true)}`}>
+              แก้ไขแล้ว
+            </span>
+          )}
+          {manage && <MessageMenu m={m} manage={manage} />}
         </div>
         <div className={`bubble${rich ? ' rich' : ''}`}>
           {rich ? <MarkdownBlocks text={m.body} plain={m.kind === 'customer'} /> : m.body}
@@ -120,6 +180,7 @@ export function MessageThread({
   after,
   afterKey = '',
   readAt: knownReadAt = null,
+  manage,
 }: MessagesProps & {
   /** data-thread: the conversation's id. */
   threadId: string;
@@ -132,6 +193,8 @@ export function MessageThread({
   afterKey?: string;
   /** When the other side last read the conversation, as the page last loaded it (read events may be newer). */
   readAt?: string | null;
+  /** What the team may do with a message here; absent on the customer's view. */
+  manage?: ManageMessage;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // The other side: the customer for the team, the team for the customer (or guest).
@@ -151,7 +214,7 @@ export function MessageThread({
   }, [notesOnly]);
   return (
     <div ref={ref} className={`thread${notesOnly ? ' notes-only' : ''}`} id={id} data-thread={threadId}>
-      <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} receipt={receipt} />
+      <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} receipt={receipt} manage={manage} />
       <div className="typing-status" role="status">
         {typing !== null && <TypingBubble name={typing || (other === 'staff' ? 'ทีมงาน' : 'ลูกค้า')} side={other} />}
       </div>
@@ -195,5 +258,71 @@ export function ThreadFilter({
       <span className="notes-switch-track" aria-hidden="true" />
       เฉพาะบันทึกภายใน ({messages.filter((m) => m.kind === 'note').length})
     </button>
+  );
+}
+
+/* The ⋯ beside a message the team may still correct. A message sent to the wrong chat is the reason this exists, so
+   it is on each message rather than in a screen of its own, and it opens on click, closes on Escape, on a click
+   somewhere else and once something is chosen. */
+function MessageMenu({ m, manage }: { m: ThreadMessage; manage: ManageMessage }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const editable = manage.canEdit(m);
+  const removable = manage.canDelete(m);
+  useEffect(() => {
+    if (!open) return;
+    const away = (event: MouseEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const key = (event: KeyboardEvent) => event.key === 'Escape' && setOpen(false);
+    document.addEventListener('click', away);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('click', away);
+      document.removeEventListener('keydown', key);
+    };
+  }, [open]);
+  if (!editable && !removable) return null;
+  return (
+    <div className="message-menu" ref={root}>
+      <button
+        type="button"
+        className="icon-btn sm"
+        aria-expanded={open}
+        aria-label={`จัดการข้อความของ ${m.author_name}`}
+        title="จัดการข้อความ"
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name="kebab" />
+      </button>
+      <div className="message-menu-panel" hidden={!open}>
+        {editable && (
+          <button
+            type="button"
+            className="menu-item"
+            onClick={() => {
+              setOpen(false);
+              manage.onEdit(m);
+            }}
+          >
+            <Icon name="edit" />
+            แก้ไขข้อความ
+          </button>
+        )}
+        {removable && (
+          <button
+            type="button"
+            className="menu-item danger"
+            onClick={() => {
+              setOpen(false);
+              manage.onDelete(m);
+            }}
+          >
+            <Icon name="trash" />
+            ลบข้อความ
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

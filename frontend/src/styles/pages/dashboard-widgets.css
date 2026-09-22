@@ -1,21 +1,276 @@
-/* Overview widgets: SLA Watch, คำตอบด่วน, ส่งต่อกะ and สิ่งที่ต้องทำของฉัน (features/dashboard/components). */
+/* Overview widgets: SLA Watch, คำตอบด่วน, ส่งต่อกะ and สิ่งที่ต้องทำของฉัน (features/dashboard/components).
 
-/* A long quick reply or name is cut with "…", never widens its column (dashboard.css: .dashboard-aside). */
-.dashboard-main>*,.dashboard-aside>*,.board-grid>* {
+   The overview is a board: twelve columns and rows 40px tall, and every card holds a rectangle of it, written onto
+   the element as --x --y --w --h (features/dashboard/layout.ts). Nothing here flows or packs - a card stays on the
+   squares it was put on and the space beside it stays empty until something is put there, which is what makes
+   arranging a page a choice rather than a queue. A card shorter than what it holds scrolls inside itself.
+
+   Below 950px there is no board: the grid becomes one column and the cards come down it in the order they were laid
+   out, because a fifth of a phone is not a card. */
+.widget-board {
+  display: grid;
+  grid-template-columns: repeat(12,minmax(0,1fr));
+  grid-auto-rows: 40px;
+  grid-template-rows: repeat(var(--rows,8),40px);
+  gap: 22px;
+  position: relative;
+}
+.widget {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  grid-column: calc(var(--x,0) + 1) / span var(--w,12);
+  grid-row: calc(var(--y,0) + 1) / span var(--h,4);
+}
+/* A card sits at the height its contents ask for and the board gives it the rows to match, so nothing is clipped
+   and the shadow that draws a card's edge is not cut off by a scrolling box. Only a card the member has sized
+   themselves is held to that size, and only then does what does not fit scroll inside it. */
+.widget>.widget-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+/* The card keeps the height its own contents ask for. Letting it shrink to the box is what hid the last line of a
+   card and, worse, what a measurement of it then read back: a card squeezed to fit always looks like it fits. */
+.widget-body>* {
+  flex: 0 0 auto;
+  margin: 0;
   min-width: 0;
 }
-/* Both columns end on one line whatever the data: the last card of each takes the height that is left. */
-@media (min-width: 951px) {
-  .dashboard-grid {
-    align-items: stretch;
+/* A card's edge is drawn by a 1px ring in its shadow, outside its own box, so nothing around it may clip: the
+   scrolling belongs inside the card, where its rounded corners already cut the content.
+
+   And only a card the member has sized themselves scrolls at all. A card nobody has touched is given the rows its
+   contents ask for, so at the arrangement the page ships with there is no scrollbar anywhere - which is how the
+   overview has always read, and a bar down the side of a card that fits is a bar that says something is wrong. */
+.widget.sized>.widget-body>* {
+  height: 100%;
+  overflow: auto;
+}
+/* Where the card being carried or pulled would land; red where something is already there. */
+.board-ghost {
+  grid-column: calc(var(--x,0) + 1) / span var(--w,3);
+  grid-row: calc(var(--y,0) + 1) / span var(--h,3);
+  border: 2px dashed var(--focus);
+  border-radius: 18px;
+  background: #4d8cad14;
+  pointer-events: none;
+}
+@media (max-width:950px) {
+  .widget-board {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: none;
+    grid-auto-rows: min-content;
+    gap: 20px;
   }
-  .dashboard-main,.dashboard-aside {
-    display: flex;
-    flex-direction: column;
+  .widget {
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
-  .dashboard-main>:last-child,.dashboard-aside>:last-child {
-    flex: 1;
+  /* Nothing is being held to a height here, so a card is as tall as what it holds. */
+  .widget>.widget-body {
+    overflow: visible;
   }
+  .board-ghost {
+    display: none;
+  }
+}
+
+/* จัดหน้า. The bar and the corner appear on each card only while the page is being arranged, so the page being
+   arranged is the page that will be read - not a preview of it. While they are up the cards themselves take no
+   clicks: carrying a card should not also press what is drawn on it. */
+.arrange-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.arrange-bar .grow {
+  flex: 1;
+  min-width: 180px;
+}
+.widget-board.arranging {
+  user-select: none;
+}
+/* The squares underneath, so the board reads as a board and a gap reads as a gap. */
+.widget-board.arranging::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 18px;
+  background-image: radial-gradient(circle,var(--line) 1.5px,transparent 1.5px);
+  background-size: calc((100% + 22px) / 12) 62px;
+  background-position: 6px 14px;
+  pointer-events: none;
+}
+.widget-board.arranging .widget-body {
+  pointer-events: none;
+  opacity: .72;
+}
+.widget-board.arranging .widget {
+  border-radius: 18px;
+  outline: 1px dashed var(--control-line);
+  outline-offset: 3px;
+  background: var(--paper);
+}
+.widget.carried {
+  opacity: .5;
+}
+.widget-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 12px 12px 0 0;
+  background: var(--info-soft);
+  font-size: .85rem;
+  cursor: grab;
+  touch-action: none;
+}
+.widget.carried .widget-bar {
+  cursor: grabbing;
+}
+.widget-bar .grow {
+  flex: 1 1 96px;
+  min-width: 0;
+}
+.widget-size {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.widget-grip {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+}
+/* The eight edges. Which one is nearest is not something the person arranging the page should have to work around,
+   so a card can be pulled from any side or corner; the side opposite the one held stays where it is. They sit half
+   on the card and half off it, and only the corners are marked, because eight marked edges would be a drawing of
+   handles rather than a page. */
+.widget-edge {
+  position: absolute;
+  z-index: 3;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  touch-action: none;
+}
+.widget-edge.at-n,.widget-edge.at-s {
+  left: 18px;
+  right: 18px;
+  height: 20px;
+  cursor: ns-resize;
+}
+.widget-edge.at-e,.widget-edge.at-w {
+  top: 18px;
+  bottom: 18px;
+  width: 20px;
+  cursor: ew-resize;
+}
+.widget-edge.at-n {
+  top: -10px;
+}
+.widget-edge.at-s {
+  bottom: -10px;
+}
+.widget-edge.at-e {
+  right: -10px;
+}
+.widget-edge.at-w {
+  left: -10px;
+}
+.widget-edge.at-ne,.widget-edge.at-nw,.widget-edge.at-se,.widget-edge.at-sw {
+  width: 24px;
+  height: 24px;
+  z-index: 4;
+}
+.widget-edge.at-ne {
+  top: -10px;
+  right: -10px;
+  cursor: nesw-resize;
+}
+.widget-edge.at-nw {
+  top: -10px;
+  left: -10px;
+  cursor: nwse-resize;
+}
+.widget-edge.at-se {
+  bottom: -10px;
+  right: -10px;
+  cursor: nwse-resize;
+}
+.widget-edge.at-sw {
+  bottom: -10px;
+  left: -10px;
+  cursor: nesw-resize;
+}
+.widget-edge.at-ne::before,.widget-edge.at-nw::before,.widget-edge.at-se::before,.widget-edge.at-sw::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 3px solid var(--control-line);
+  opacity: .6;
+}
+.widget-edge.at-nw::before {
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 4px 0 0 0;
+}
+.widget-edge.at-ne::before {
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 0 4px 0 0;
+}
+.widget-edge.at-sw::before {
+  border-right: 0;
+  border-top: 0;
+  border-radius: 0 0 0 4px;
+}
+.widget-edge.at-se::before {
+  border-left: 0;
+  border-top: 0;
+  border-radius: 0 0 4px 0;
+}
+.widget-edge:hover::before,.widget-edge:focus-visible::before {
+  border-color: var(--focus);
+  opacity: 1;
+}
+.widget-edge:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+@media (max-width:950px) {
+  .widget-edge {
+    display: none;
+  }
+}
+.widget-grip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.put-away {
+  margin-top: 22px;
+  padding: 16px 20px;
+}
+.put-away h2 {
+  margin: 0 0 10px;
+  font-size: .95rem;
+}
+.put-away-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* SLA Watch: a ticking clock on the left of each case, red once late, amber in the last two hours. */

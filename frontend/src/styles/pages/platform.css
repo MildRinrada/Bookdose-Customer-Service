@@ -639,12 +639,84 @@
 }
 
 /* เปิด/ปิดฟีเจอร์รายองค์กร (จัดการองค์กร): how many are on, and the switches behind it. */
+/* In the list, what is switched off for an organization - which is the only part of it anybody acts on - and the way
+   through to that organization's own page, where it is switched. */
 .feature-cell {
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: .85rem;
+  text-decoration: none;
 }
-.feature-changed {
+.feature-cell .icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+.feature-off {
   color: #b8860b;
+  font-weight: 600;
+}
+
+/* One organization's own page: everything about it, each setting with room to say what it does. */
+.org-page {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(320px,100%),1fr));
+  gap: 18px;
+  align-items: start;
+}
+.org-page-wide {
+  grid-column: 1 / -1;
+}
+.org-page .info-block {
+  padding: 18px 20px;
+}
+.org-page .info-block h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+.org-page .info-block>*+* {
+  margin-top: 10px;
+}
+.org-page .btn {
+  align-self: start;
+}
+.org-page-heading {
+  align-items: flex-start;
+}
+.org-page-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.org-page-title h1 {
+  margin: 0;
+}
+.org-page-title p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.org-page-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.org-page-figure {
+  font-size: 1.15rem;
   font-weight: 700;
+}
+.org-page-admins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .feature-list {
   display: grid;

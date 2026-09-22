@@ -400,7 +400,7 @@ function QuotaCell({ org }: { org: OrgUsage }) {
 
 const QUOTA_STEPS = [512, 1024, 2048, 5120, 10240, 20480];
 
-function QuotaForm({ org }: { org: OrgUsage }) {
+export function QuotaForm({ org }: { org: OrgUsage }) {
   const { closeModal } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();

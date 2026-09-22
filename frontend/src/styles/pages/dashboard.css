@@ -44,16 +44,6 @@
   height: 36px;
   margin-top: 24px;
 }
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) 300px;
-  gap: 22px;
-  align-items: start;
-}
-/* Its own track shrinks to the column: an automatic one would grow to the longest line and widen the page. */
-.dashboard-aside {
-  grid-template-columns: minmax(0,1fr);
-}
 /* On a narrow screen the recent cases scroll inside their card instead of widening the page. */
 #dashboard-tickets {
   overflow-x: auto;
@@ -164,31 +154,12 @@
   background: #aeaeae;
   border-radius: 2px;
 }
-@media (min-width:1550px) {
-  .dashboard-grid {
-    grid-template-columns: minmax(0,1fr) 340px;
-  }
-}
 @media (max-width:1180px) {
-  .dashboard-grid {
-    grid-template-columns: minmax(0,1fr) 260px;
-  }
   .dashboard-table .customer-col {
     display: none;
   }
 }
 @media (max-width:950px) {
-  .dashboard-grid {
-    grid-template-columns: minmax(0,1fr);
-  }
-  .dashboard-aside {
-    display: grid;
-    grid-template-columns: repeat(2,minmax(0,1fr));
-    gap: 20px;
-  }
-  .dashboard-aside>.card {
-    margin: 0;
-  }
   .hero-art {
     display: none;
   }
@@ -201,9 +172,6 @@
   }
   .hero-strip h2 {
     font-size: 1rem;
-  }
-  .dashboard-aside {
-    grid-template-columns: minmax(0,1fr);
   }
 }
 .hero-strip {
@@ -451,9 +419,4 @@
 }
 .case-chart+.chart-legend::before {
   display: none;
-}
-@media (max-width:1250px) {
-  .dashboard-grid {
-    grid-template-columns: minmax(0,1fr);
-  }
 }

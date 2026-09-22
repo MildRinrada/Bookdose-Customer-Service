@@ -143,13 +143,7 @@
   font-weight: 700;
 }
 
-/* The cases column: recent cases, then the 7-day chart; it never grows wider than its share of the page. */
-.dashboard-main {
-  grid-template-columns: minmax(0,1fr);
-  align-content: start;
-}
-
-/* แชทรอตอบ: first card of the side column */
+/* แชทรอตอบ */
 .waiting-list {
   list-style: none;
   margin: 0 0 12px;

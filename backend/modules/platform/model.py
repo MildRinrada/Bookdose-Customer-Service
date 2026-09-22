@@ -50,6 +50,9 @@ QUOTA_MESSAGE = ('พื้นที่จัดเก็บขององค�
 FEATURES = {
     'help_menu':    ('ปุ่มช่วยเหลือ (?) บนแถบบน','คีย์ลัดทั้งหมด คู่มือ และการรายงานปัญหาถึงผู้ดูแลแพลตฟอร์ม',True),
     'snippet_menu': ('เมนูคำตอบสำเร็จรูปขณะพิมพ์','พิมพ์ / ในช่องตอบแล้วขึ้นรายการให้เลือก ค้นหาต่อได้ทันที',True),
+    # Switched off, the overview goes back to the arrangement it ships with for everybody in that organization. What
+    # each member had arranged is kept, not thrown away, and comes back the moment it is switched on again.
+    'dashboard_layout': ('จัดหน้าภาพรวมเองได้','ย้าย ย่อ-ขยาย และซ่อนการ์ดบนหน้าภาพรวม แยกของใครของมัน · ปิดแล้วทุกคนกลับไปใช้หน้าตามค่าเริ่มต้น',True),
 }
 
 CONTROL_TABLES = '''

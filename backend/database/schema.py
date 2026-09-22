@@ -138,6 +138,8 @@ def upgrade_tenant(db):
     # already. The article itself belongs to the organization from that moment and is edited like any other.
     if 'from_template' not in {row[1] for row in db.execute('PRAGMA table_info(knowledge_articles)')}:
         db.execute("ALTER TABLE knowledge_articles ADD COLUMN from_template TEXT NOT NULL DEFAULT ''")
+    # The arrangement of the overview new members start from (ภาพรวม → จัดหน้า); empty = as the screen ships.
+    db.execute("INSERT OR IGNORE INTO settings VALUES('dashboard_layout','')")
     # พักเคส: when a paused case comes back, why it was paused and who paused it (tickets/model.py).
     columns = {row[1] for row in db.execute('PRAGMA table_info(tickets)')}
     for name,declaration in tickets.SNOOZE_COLUMNS:

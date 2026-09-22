@@ -86,10 +86,13 @@ class DashboardExtrasTests(unittest.TestCase):
         self.assertEqual((mine['manager'],mine['setup'],mine['insights']),(None,None,None))
         owner = self.ok(self.admin,OVERVIEW)
         steps = {s['key']:s for s in owner['setup']['steps']}
-        self.assertEqual(set(steps),{'channels','agents','articles','rules','ai'})
+        later = {s['key']:s for s in owner['setup']['later']}
+        # The four steps of เช็กลิสต์เริ่มต้นใช้งาน, and the two that an organization works without.
+        self.assertEqual(set(steps),{'channels','agents','articles','chat'})
+        self.assertEqual(set(later),{'rules','ai'})
         self.assertTrue(steps['agents']['done'])
         self.assertFalse(steps['channels']['done'])
-        self.assertFalse(steps['ai']['done'])
+        self.assertFalse(later['ai']['done'])
         self.assertEqual(steps['channels']['action']['href'],'/settings?tab=connections')
         self.assertEqual(owner['setup']['problems'],[])
         # A channel whose replies fail is the owner's to fix.

@@ -1,3 +1,4 @@
+import type { DashboardLayout } from '@/features/dashboard/layout';
 import { api } from '@/lib/api/client';
 import { useApi } from '@/lib/query';
 import type { Availability, WorkStatus } from '@/lib/types';
@@ -8,7 +9,7 @@ import type { Availability, WorkStatus } from '@/lib/types';
 
 export const PREFS_PATH = '/api/account/preferences';
 
-export type NotifyEvent = 'assigned' | 'customer_reply' | 'sla';
+export type NotifyEvent = 'assigned' | 'customer_reply' | 'sla' | 'snoozed';
 
 export type Snippet = { id?: string; shortcut: string; text: string };
 
@@ -21,6 +22,8 @@ export type StaffPreferences = {
   signature: { enabled: boolean; text: string };
   alias: string;
   snippets: Snippet[];
+  /** How this member arranged their overview (features/dashboard/layout.ts); empty = as the organization arranged it. */
+  dashboard: DashboardLayout;
 };
 
 /** GET /api/account/preferences */

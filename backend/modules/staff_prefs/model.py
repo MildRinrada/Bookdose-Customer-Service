@@ -22,6 +22,27 @@ EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','c
           'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว'}
 DAYS = ('จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.')            # Monday first, as datetime.weekday()
 
+# หน้าภาพรวมของฉัน: which cards a member keeps on their overview, in what order and how wide.
+#
+# A support overview has to hold everything somebody might need, and nobody needs all of it: an agent works from the
+# chats waiting and what is about to break its SLA, an owner from the team's load and the figures. One fixed page can
+# only be a compromise between them, so the page is fixed and the arrangement is the member's.
+#
+# What a card is called belongs to the screen, not here. The server keeps the names that were chosen and the page
+# decides what they mean, so a card added, renamed or dropped in a release needs no migration: the page shows what it
+# knows and ignores the rest, and a name the member never touched simply keeps its own place.
+#
+# The page is a board of squares and each card holds a rectangle of it: where it starts (x, y) and how many columns
+# and rows it covers (w, h). Nothing flows, so the member can leave a gap where they want one. The bounds are here
+# because a rectangle off the board, or one square wide, is a card nobody can read - not because the server has any
+# opinion about where a card belongs.
+DASHBOARD_COLUMNS = 12
+DASHBOARD_MAX_ROWS = 400
+DASHBOARD_MIN_W = 3
+DASHBOARD_MIN_H = 3
+DASHBOARD_MAX_CARDS = 40
+EMPTY_DASHBOARD = {'hidden':[],'box':{}}
+
 MAX_LEAVE = 20
 MAX_SNIPPETS = 50
 SIGNATURE_MAX = 500
@@ -39,6 +60,8 @@ DEFAULTS = {
     'signature':{'enabled':False,'text':''},
     'alias':'',
     'snippets':[],
+    # Empty means "as the organization arranged it", which in turn means "as the screen ships".
+    'dashboard':{'hidden':[],'box':{}},
 }
 
 CONTROL_TABLES = '''

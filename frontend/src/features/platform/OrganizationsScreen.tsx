@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
@@ -42,7 +43,7 @@ export function OrganizationsScreen({ tab, admin }: { tab?: string; admin?: stri
   return <PageLoading />;
 }
 
-type Access =
+export type Access =
   | { current: true }
   | { canOpen: true }
   | { pending: SupportSummary }
@@ -50,7 +51,7 @@ type Access =
 
 /* Platform rights manage organizations, never their work: a platform admin sees an organization's cases only on a
    support access the organization approved (with an end time), and only to look. Each row says where you stand. */
-function tenantAccess(t: Tenant, boot: Boot, hasWorkspace: boolean, support: SupportSummary | undefined): Access {
+export function tenantAccess(t: Tenant, boot: Boot, hasWorkspace: boolean, support: SupportSummary | undefined): Access {
   const membership = boot.memberships.find((m) => m.id === t.id);
   if (membership?.status === 'active' && t.status === 'active') return t.id === boot.tenant_id && hasWorkspace ? { current: true } : { canOpen: true };
   if (t.status !== 'active') return { noAccess: 'เปิดไม่ได้ขณะองค์กรถูกระงับ', canRequest: false };
@@ -295,7 +296,10 @@ function TenantRow({
         <div className="org-cell">
           <Avatar name={t.name} index={index} />
           <div className="org-text">
-            <strong className="truncate">{t.name}</strong>
+            {/* The name is the way in: everything about one organization is on its own page, not in these cells. */}
+            <Link className="truncate" href={`${BASE}/${t.id}`} title={`ตั้งค่า ${t.name}`}>
+              <strong>{t.name}</strong>
+            </Link>
             <span className="muted">สร้าง {date(t.created_at)}</span>
           </div>
         </div>
@@ -463,25 +467,19 @@ function TenantRow({
    (backend platform/model.py FEATURES) switched off, turned on for one organization here, and only made everyone's
    default once it has been lived with. */
 function FeatureCell({ tenant: t, catalogue }: { tenant: Tenant; catalogue: FeatureInfo[] }) {
-  const { openModal } = useDialogs();
   if (!catalogue.length) return <span className="muted">-</span>;
   const on = catalogue.filter((f) => t.features?.[f.key] ?? f.default).length;
-  const changed = catalogue.filter((f) => (t.features?.[f.key] ?? f.default) !== f.default).length;
+  const off = catalogue.filter((f) => !(t.features?.[f.key] ?? f.default));
   return (
-    <button
-      type="button"
-      className="btn sm subtle feature-cell"
-      title={`เปิด ${on} จาก ${catalogue.length} ฟีเจอร์ · กดเพื่อเปิดหรือปิดให้ ${t.name}`}
-      onClick={() => openModal(`ฟีเจอร์ของ ${t.name}`, <FeatureForm tenant={t} catalogue={catalogue} />)}
-    >
+    <Link className="feature-cell" href={`${BASE}/${t.id}`} title={`เปิด ${on} จาก ${catalogue.length} ฟีเจอร์ · เปิดหน้าตั้งค่าของ ${t.name}`}>
       <Icon name="bolt" />
-      {on}/{catalogue.length}
-      {changed > 0 && <span className="feature-changed">·</span>}
-    </button>
+      {/* What is off is the news; a count on its own says nothing anybody acts on. */}
+      {off.length ? <span className="feature-off">ปิด {off.map((f) => f.label).join(', ')}</span> : `ครบทั้ง ${catalogue.length}`}
+    </Link>
   );
 }
 
-function FeatureForm({ tenant: t, catalogue }: { tenant: Tenant; catalogue: FeatureInfo[] }) {
+export function FeatureForm({ tenant: t, catalogue }: { tenant: Tenant; catalogue: FeatureInfo[] }) {
   const toast = useToast();
   const refresh = useInvalidate();
   // The switches answer one at a time: each is its own decision, and a half-saved form would be worse than none.
@@ -530,7 +528,7 @@ function FeatureForm({ tenant: t, catalogue }: { tenant: Tenant; catalogue: Feat
 /* Correcting the code an organization is reached by. The code sits in the help-centre address, in every follow link
    already emailed or texted, and in the widget on the organization's own website, so the old one keeps leading here
    for good and is never handed to anyone else. What changes is the address given out from now on. */
-function SlugForm({ tenant: t }: { tenant: Tenant }) {
+export function SlugForm({ tenant: t }: { tenant: Tenant }) {
   const { closeModal } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();

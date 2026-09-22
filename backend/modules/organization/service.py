@@ -94,6 +94,19 @@ def save_team_snippets(db, ctx, body):
     db.commit()
 
 
+def save_dashboard_layout(db, ctx, body):
+    """The arrangement of the overview a member starts from before they change anything of their own (ภาพรวม →
+    จัดหน้า → ตั้งเป็นค่าเริ่มต้นขององค์กร). Saving an empty one puts everybody back on the screen's own arrangement.
+    It is a starting point, never a rule: a member who has arranged their own page keeps it."""
+    from backend.modules.staff_prefs import schema as prefs
+    layout = prefs.dashboard(body.get('dashboard') or {})
+    empty = not (layout['hidden'] or layout['box'])
+    repository.update_setting(db,'dashboard_layout','' if empty else json.dumps(layout,ensure_ascii=False))
+    audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],
+                 'ล้างค่าเริ่มต้นหน้าภาพรวม' if empty else 'ค่าเริ่มต้นหน้าภาพรวมขององค์กร')
+    db.commit()
+
+
 def save_customer_categories(db, ctx, body):
     items = schema.customer_categories(body,{t['id'] for t in repository.teams(db)})
     repository.update_setting(db,'customer_categories',json.dumps(items,ensure_ascii=False))

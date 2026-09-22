@@ -35,6 +35,12 @@ def save_team_snippets(req):
 
 
 @require_role('admin')
+def save_dashboard_layout(req):
+    service.save_dashboard_layout(req.db,req.ctx,req.body)
+    return req.send(200,{'ok':True})
+
+
+@require_role('admin')
 def save_customer_categories(req):
     service.save_customer_categories(req.db,req.ctx,req.body)
     return req.send(200,{'ok':True})

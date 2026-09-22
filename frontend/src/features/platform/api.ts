@@ -78,3 +78,7 @@ export const REPORTS_PATH = '/api/platform/reports';
 /** Mark a report as dealt with, or put it back on the list. */
 export const setReportStatus = (id: string, status: 'open' | 'done') =>
   api<{ ok: true }>(`${REPORTS_PATH}/${id}`, { status }, 'PATCH');
+
+/** โควตาพื้นที่ต่อองค์กร: how much of the shared disk one organization may take. 0 removes the ceiling. */
+export const setTenantQuota = (tenantId: string, quotaMb: number) =>
+  api<{ quota_mb: number }>(`${TENANTS_PATH}/${tenantId}/quota`, { quota_mb: quotaMb }, 'PATCH');

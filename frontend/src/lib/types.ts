@@ -69,6 +69,9 @@ export type Workspace = {
   ai: Record<string, unknown> & { key_configured: boolean };
   /** Support access requests waiting for this organization's admins (always 0 for other roles). */
   support_pending?: number;
+  /** How full this organization's share of the shared disk is. `quota` 0 means the platform gave it no ceiling;
+      `full` means new uploads are refused (answering and reading never are). Bytes. */
+  storage: { used: number; quota: number; share: number; warn: boolean; full: boolean };
 };
 
 /** One of the team's prepared replies. The click writes it into the draft; a Macro is the one that sends. */

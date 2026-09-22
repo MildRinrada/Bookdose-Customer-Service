@@ -197,6 +197,11 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
     A customer's answer to the satisfaction survey is recorded as the rating and reopens nothing; the first customer
     message of a conversation goes through the routing rules, which may open its case."""
     text,uploads = schema.message_content(body)
+    # Every organization's files sit on one disk: an organization at its ceiling stores no more (platform/storage.py).
+    # Checked before the message is written, so nothing half-saved is left behind when there is no room.
+    if uploads:
+        from backend.modules.platform import storage
+        storage.check_room(db,tenant_id,sum(len(content) for _,_,content in uploads))
     mid = uid()
     repository.insert_message(db,mid,conversation_id,author_id,author_name,kind,text)
     for name,mime,content in uploads:

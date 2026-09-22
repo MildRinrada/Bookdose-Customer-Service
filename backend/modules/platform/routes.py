@@ -12,6 +12,7 @@ ROUTES = [
     ('GET',   '/api/platform/tenants',        controller.list_tenants,               'platform'),
     ('POST',  '/api/platform/tenants',        controller.create_tenant,              'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}',  controller.set_tenant_status,          'platform'),
+    ('PATCH', f'/api/platform/tenants/{ID}/quota', controller.set_tenant_quota,      'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/admins', controller.add_admin,          'platform'),
     ('GET',   '/api/platform/system',         controller.system,                     'platform'),
     ('GET',   '/api/platform/health',         controller.health,                     'platform'),

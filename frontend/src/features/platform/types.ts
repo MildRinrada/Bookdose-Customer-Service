@@ -61,7 +61,16 @@ export type OrgUsage = {
   members: number;
   open_cases: number;
   messages_7d: number;
+  /** Its attachment files. */
   storage_bytes: number;
+  /** Its own database file. */
+  database_bytes: number;
+  /** The two together: what it takes on the shared disk. */
+  used_bytes: number;
+  /** Its ceiling in MB; 0 means it has none. */
+  quota_mb: number;
+  /** used_bytes / quota, 0 when there is no ceiling. */
+  share: number;
   last_active: string | null;
 };
 

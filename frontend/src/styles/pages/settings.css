@@ -618,3 +618,21 @@ a.settings-nav-item,a.settings-nav-item:hover {
     transform: none;
   }
 }
+
+/* ตั้งค่าองค์กร → ภาพรวม: the line about running out of storage, shown only from 80% (features/settings). */
+.storage-notice .card-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.storage-notice .icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #b8860b;
+}
+.storage-notice.full .icon {
+  color: #a31525;
+}
+.storage-notice p {
+  margin: 4px 0 0;
+}

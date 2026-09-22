@@ -67,6 +67,34 @@ export function ProfilePanel() {
   );
 }
 
+/* How full the organization's share of the shared disk is, but only once it is worth saying (80%). Running out is
+   then something the owner saw coming, instead of an upload that suddenly fails. Nothing shows while there is room,
+   and nothing shows at all when the platform gave this organization no ceiling. */
+function StorageNotice() {
+  const work = useWork();
+  const storage = work.storage;
+  if (!storage?.quota || !storage.warn) return null;
+  const mb = (bytes: number) => (bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : `${Math.round(bytes / 1024 ** 2)} MB`);
+  return (
+    <section className={`card storage-notice${storage.full ? ' full' : ''}`}>
+      <div className="card-body">
+        <Icon name={storage.full ? 'bolt' : 'chart'} />
+        <div>
+          <strong>
+            {storage.full ? 'พื้นที่จัดเก็บเต็มแล้ว' : `ใช้พื้นที่ไปแล้ว ${Math.round(storage.share * 100)}%`} · {mb(storage.used)} จาก {mb(storage.quota)}
+          </strong>
+          <p className="muted">
+            {storage.full
+              ? 'อัปโหลดไฟล์ใหม่ไม่ได้จนกว่าจะมีที่ว่าง การตอบลูกค้าและการเปิดไฟล์เดิมยังทำได้ตามปกติ'
+              : 'เมื่อเต็มจะอัปโหลดไฟล์ใหม่ไม่ได้ แต่ยังตอบลูกค้าได้ตามปกติ'}{' '}
+            ลบไฟล์แนบเก่าที่ไม่ใช้แล้ว หรือติดต่อผู้ดูแลระบบเพื่อขอเพิ่มพื้นที่
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ServicePanel() {
   const work = useWork();
   const toast = useToast();
@@ -74,6 +102,7 @@ export function ServicePanel() {
   const setting = (key: string) => String(work.settings[key] ?? '');
   return (
     <>
+    <StorageNotice />
     <Form
       onSubmit={async (values) => {
         await saveSettings({

@@ -120,6 +120,19 @@ def set_tenant_status(cd, session, tenant_id, body):
     cd.commit()
 
 
+def set_tenant_quota(cd, session, tenant_id, body):
+    """How much of the shared disk this organization may take. Raising it is all it takes to give an organization
+    that asked for more room its room: nothing else about the organization changes, and it takes effect on its very
+    next upload."""
+    quota = schema.tenant_quota(body)
+    org = repository.find_tenant(cd,tenant_id)
+    require(org,'ไม่พบองค์กร',404)
+    repository.set_tenant_quota(cd,tenant_id,quota)
+    audit.record(cd,session['name'],'tenant.quota_set',tenant_id,f'{quota} MB' if quota else 'ไม่จำกัด')
+    cd.commit()
+    return {'quota_mb':quota}
+
+
 # System overview
 def _bytes(path):
     """Size of a SQLite file with its journal files, or of every file in a folder."""

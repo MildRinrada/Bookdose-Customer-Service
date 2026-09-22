@@ -40,12 +40,21 @@ def workspace_overview(cd, db, ctx):
             'customer_email':customers.email_ready(cd),
             # Support access requests waiting for this organization's admins (0 for everyone else).
             'support_pending':_support_pending(cd,ctx),
+            # How full the organization's share of the disk is, so running out is said before it happens rather
+            # than as an upload failing (platform/storage.py).
+            'storage':_storage(cd,db,ctx),
             'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id'])}}
 
 
 def _support_pending(cd, ctx):
     from backend.modules.support_access import service as support
     return support.pending_for(cd,ctx)
+
+
+def _storage(cd, db, ctx):
+    from backend.modules.platform import repository as platform, storage
+    org = platform.find_tenant_quota(cd,ctx['tenant_id'])
+    return storage.state(db,ctx['tenant_id'],org['quota_mb'] if org else 0)
 
 
 def update_settings(db, ctx, body):

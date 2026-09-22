@@ -9,7 +9,7 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { date, number, relative } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { backupFileUrl, clearAnnouncement, HEALTH_PATH, markKeySaved, PLATFORM_PREFIX, retryChannels, runBackup, saveAnnouncement, saveBackupSettings } from '../api';
+import { backupFileUrl, clearAnnouncement, HEALTH_PATH, markKeySaved, PLATFORM_PREFIX, retryChannels, runBackup, saveAnnouncement, saveBackupSettings, setTenantQuota } from '../api';
 import { bytesText } from '../labels';
 import type { Announcement, BackupsView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
 
@@ -310,19 +310,32 @@ export function ChannelsCard({ orgs }: { orgs: OrgChannels[] }) {
   );
 }
 
-/* How busy each organization is. */
+/* How busy each organization is, and how much of the shared disk it takes.
+
+   The disk is one disk: an organization filling it stops every organization from writing, and the platform-wide
+   "less than 10% left" warning comes far too late to do anything about it. Each organization therefore has a
+   ceiling of its own, changed right here - an organization that asks for more room gets it the moment the number
+   is saved, and only its uploads were ever refused meanwhile. */
 export function UsageCard({ orgs }: { orgs: OrgUsage[] }) {
   // No activity for a week reads as quiet (the moment the card was opened is close enough).
   const [weekAgo] = useState(() => new Date(Date.now() - 7 * 864e5).toISOString());
+  const noCeiling = orgs.filter((o) => !o.quota_mb && o.status === 'active').length;
   return (
     <section className="card" id="usage">
       <div className="card-header">
         <div>
           <h2>การใช้งานของแต่ละองค์กร</h2>
-          <p>เรียงจากองค์กรที่มีข้อความมากที่สุดใน 7 วัน · ใช้หาองค์กรที่เงียบหรือใช้งานหนัก</p>
+          <p>เรียงจากองค์กรที่มีข้อความมากที่สุดใน 7 วัน · กดที่พื้นที่เพื่อตั้งหรือเพิ่มโควตาให้องค์กรนั้น</p>
         </div>
         <Icon name="chart" />
       </div>
+      {noCeiling > 0 && (
+        <div className="card-body">
+          <p className="notice warning">
+            ยังไม่ได้กำหนดโควตา {noCeiling} องค์กร · องค์กรที่ไม่มีโควตาใช้ดิสก์ได้ไม่จำกัด และทำให้ทุกองค์กรเขียนข้อมูลไม่ได้เมื่อดิสก์เต็ม
+          </p>
+        </div>
+      )}
       <div className="table-scroll">
         <table className="health-table usage-table">
           <thead>
@@ -330,7 +343,7 @@ export function UsageCard({ orgs }: { orgs: OrgUsage[] }) {
               <th>องค์กร</th>
               <th>เคสที่เปิดอยู่</th>
               <th>ข้อความ 7 วัน</th>
-              <th>ไฟล์แนบ</th>
+              <th>พื้นที่ที่ใช้ / โควตา</th>
               <th>สมาชิก</th>
               <th>ใช้งานล่าสุด</th>
             </tr>
@@ -344,7 +357,9 @@ export function UsageCard({ orgs }: { orgs: OrgUsage[] }) {
                 </td>
                 <td>{number(o.open_cases)}</td>
                 <td>{number(o.messages_7d)}</td>
-                <td>{bytesText(o.storage_bytes)}</td>
+                <td>
+                  <QuotaCell org={o} />
+                </td>
                 <td>{number(o.members)}</td>
                 <td className={o.last_active && o.last_active > weekAgo ? '' : 'usage-quiet'}>
                   {o.last_active ? relative(o.last_active) : 'ยังไม่มีการใช้งาน'}
@@ -355,6 +370,85 @@ export function UsageCard({ orgs }: { orgs: OrgUsage[] }) {
         </table>
       </div>
     </section>
+  );
+}
+
+/* What one organization takes, against what it is allowed, as a button: the number and the way to change it are the
+   same thing, so nobody has to go looking for where quotas are set. */
+function QuotaCell({ org }: { org: OrgUsage }) {
+  const { openModal } = useDialogs();
+  const percent = Math.round(org.share * 100);
+  const tone = !org.quota_mb ? 'none' : org.share >= 1 ? 'full' : org.share >= 0.8 ? 'tight' : 'fine';
+  return (
+    <button
+      type="button"
+      className={`quota-cell ${tone}`}
+      title={`ไฟล์แนบ ${bytesText(org.storage_bytes)} · ฐานข้อมูล ${bytesText(org.database_bytes)} · กดเพื่อตั้งโควตา`}
+      onClick={() => openModal(`โควตาพื้นที่ของ ${org.name}`, <QuotaForm org={org} />)}
+    >
+      <span className="quota-figures">
+        {bytesText(org.used_bytes)}
+        <span className="muted"> / {org.quota_mb ? `${org.quota_mb >= 1024 ? `${(org.quota_mb / 1024).toFixed(0)} GB` : `${org.quota_mb} MB`}` : 'ไม่จำกัด'}</span>
+      </span>
+      {/* The width is set through the CSSOM by the class alone would not do; a fixed set of steps keeps the policy
+          happy (no inline style attribute) and is precise enough to read at a glance. */}
+      <span className={`quota-bar step-${Math.min(10, Math.max(0, Math.round(org.share * 10)))}`} aria-hidden="true" />
+      <span className="tiny muted">{org.quota_mb ? `${percent}%` : 'ยังไม่ได้กำหนด'}</span>
+    </button>
+  );
+}
+
+const QUOTA_STEPS = [512, 1024, 2048, 5120, 10240, 20480];
+
+function QuotaForm({ org }: { org: OrgUsage }) {
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  return (
+    <Form
+      data-form="tenant-quota"
+      onSubmit={async (values) => {
+        const quota = Number(values.quota_mb ?? 0);
+        await setTenantQuota(org.id, quota);
+        closeModal();
+        toast(quota ? `ตั้งโควตาของ ${org.name} เป็น ${quota} MB แล้ว` : `เอาโควตาของ ${org.name} ออกแล้ว`);
+        await refresh(PLATFORM_PREFIX);
+      }}
+    >
+      <p className="notice">
+        ตอนนี้ใช้ไป <strong>{bytesText(org.used_bytes)}</strong> (ไฟล์แนบ {bytesText(org.storage_bytes)} · ฐานข้อมูล {bytesText(org.database_bytes)}) ·
+        เมื่อเต็ม องค์กรนี้จะอัปโหลดไฟล์ใหม่ไม่ได้ แต่ยังตอบลูกค้าและอ่านของเดิมได้ตามปกติ
+      </p>
+      <div className="field">
+        <label htmlFor="quota-mb">โควตา (MB)</label>
+        <input id="quota-mb" name="quota_mb" type="number" min={0} max={1048576} step={256} defaultValue={org.quota_mb} required />
+        <span className="tiny muted">ต่ำสุด 100 MB สูงสุด 1 TB · ใส่ 0 เพื่อไม่จำกัด (ไม่แนะนำ เพราะดิสก์เป็นก้อนเดียวกับทุกองค์กร)</span>
+      </div>
+      <div className="quota-presets">
+        {QUOTA_STEPS.map((mb) => (
+          <button
+            key={mb}
+            type="button"
+            className="btn sm"
+            onClick={(event) => {
+              const input = event.currentTarget.form?.elements.namedItem('quota_mb') as HTMLInputElement | null;
+              if (input) input.value = String(mb);
+            }}
+          >
+            {mb >= 1024 ? `${mb / 1024} GB` : `${mb} MB`}
+          </button>
+        ))}
+      </div>
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={() => closeModal()}>
+          ยกเลิก
+        </button>
+        <button type="submit" className="btn primary">
+          <Icon name="check" />
+          บันทึกโควตา
+        </button>
+      </div>
+    </Form>
   );
 }
 

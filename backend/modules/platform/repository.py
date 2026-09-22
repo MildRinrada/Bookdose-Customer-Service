@@ -8,7 +8,9 @@ from backend.utils import secret_box
 
 
 def insert_tenant(db, tenant_id, name, slug):
-    db.execute('INSERT INTO tenants(id,name,slug,created_at) VALUES(?,?,?,?)',(tenant_id,name,slug,now()))
+    from backend.modules.platform.model import NEW_TENANT_QUOTA_MB
+    db.execute('INSERT INTO tenants(id,name,slug,created_at,quota_mb) VALUES(?,?,?,?,?)',
+               (tenant_id,name,slug,now(),NEW_TENANT_QUOTA_MB))
 
 
 def slug_taken(db, slug):
@@ -17,6 +19,15 @@ def slug_taken(db, slug):
 
 def find_tenant(db, tenant_id):
     return one(db,'SELECT id,name FROM tenants WHERE id=?',(tenant_id,))
+
+
+def find_tenant_quota(db, tenant_id):
+    """Only the ceiling, asked on every upload."""
+    return one(db,'SELECT quota_mb FROM tenants WHERE id=?',(tenant_id,))
+
+
+def set_tenant_quota(db, tenant_id, quota_mb):
+    db.execute('UPDATE tenants SET quota_mb=? WHERE id=?',(quota_mb,tenant_id))
 
 
 def single_active_organization(db):

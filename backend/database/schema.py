@@ -60,6 +60,11 @@ def create_control_tables(db):
     # The devices a staff account is signed in on (ตั้งค่าบัญชี → ความปลอดภัย): an id and where each was opened.
     from backend.modules.staff_security import repository as staff_security_repository
     staff_security_repository.add_session_columns(db)
+    # How much of the shared disk each organization may take. The ones made before quotas existed keep no ceiling
+    # (0) until a platform admin gives them one: a ceiling appearing under a working organization would refuse
+    # uploads it was making yesterday.
+    if 'quota_mb' not in {row[1] for row in db.execute('PRAGMA table_info(tenants)')}:
+        db.execute('ALTER TABLE tenants ADD COLUMN quota_mb INTEGER NOT NULL DEFAULT 0')
 
 
 def create_tenant_tables(db):

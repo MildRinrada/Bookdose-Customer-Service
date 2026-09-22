@@ -38,6 +38,16 @@ def global_article(body):
     return field(body,'title',200),field(body,'category',80),field(body,'body',50000),audience
 
 
+def tenant_quota(body):
+    """How many MB of the shared disk this organization may take; 0 removes the ceiling."""
+    from backend.modules.platform.model import NO_QUOTA, QUOTA_BOUNDS
+    value = body.get('quota_mb')
+    low,high = QUOTA_BOUNDS
+    require(type(value) is int and (value==NO_QUOTA or low<=value<=high),
+            f'โควตาต้องอยู่ระหว่าง {low} MB ถึง {high//1024} GB หรือ 0 เพื่อไม่จำกัด')
+    return value
+
+
 def problem_report(body):
     """(message, page) of a report sent from the ? in the top bar. The page is whatever address the reporter was on,
     kept short and free of control characters; it is a hint for reproducing, not something to trust."""

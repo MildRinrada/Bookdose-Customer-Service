@@ -9,18 +9,35 @@ and audience) while readers keep the published version, until the admin publishe
 problem_reports is what a member of any organization sends from the ? in the top bar: a bug, something that does not
 work, something missing. It belongs to the platform, not to an organization - the organization's own admins cannot
 fix the product - so it is kept here and read in the platform console. The message is the member's own words; the
-page and the browser are recorded with it so the report can be reproduced."""
+page and the browser are recorded with it so the report can be reproduced.
+
+tenants.quota_mb is how much of the shared disk one organization may take (its attachment files plus its own
+database file). Every organization's data sits on one disk, so without a ceiling one organization uploading until
+the disk is full stops every organization from writing at once. Only new uploads are refused when the ceiling is
+reached: reading, answering and everything already stored keep working."""
 
 TENANT_STATUSES = ('active','suspended')
 GLOBAL_AUDIENCES = ('platform','staff','customer')
 REPORT_STATUSES = ('open','done')
 REPORT_MAX = 4000
 
+# Storage quota per organization (tenants.quota_mb). Every organization shares one disk: without a ceiling, one of
+# them filling it stops every organization's database from being written. 0 means no ceiling, which is what the
+# organizations made before quotas existed keep until a platform admin gives them one.
+NO_QUOTA = 0
+NEW_TENANT_QUOTA_MB = 2048
+QUOTA_BOUNDS = (100, 1024*1024)          # 100 MB … 1 TB
+QUOTA_WARN = 0.8                          # the organization is told from here
+QUOTA_FULL = 1.0
+QUOTA_MESSAGE = ('พื้นที่จัดเก็บขององค์กรเต็ม (ใช้ไป {used} จาก {quota}) ลบไฟล์แนบเก่าที่ไม่ใช้แล้ว '
+                 'หรือติดต่อผู้ดูแลระบบเพื่อขอเพิ่มพื้นที่ · ข้อความที่ไม่มีไฟล์แนบยังส่งได้ตามปกติ')
+
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS tenants (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE,
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','suspended')),
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    quota_mb INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS platform_settings (
     key TEXT PRIMARY KEY, value TEXT NOT NULL

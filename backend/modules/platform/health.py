@@ -14,7 +14,7 @@ import json
 from backend.database import audit, db as D
 from backend.database.db import one, rows
 from backend.exceptions.errors import APIError, ChannelError, CHANNEL_ERRORS
-from backend.modules.platform import repository
+from backend.modules.platform import model, repository
 from backend.utils.dates import after, now, utc_now
 from backend.utils.validation import require
 
@@ -109,8 +109,16 @@ def org_usage(cd):
     moment = after(days=-7)
     found = []
     for org in repository.list_with_member_count(cd):
+        # What this organization takes on the shared disk, against the ceiling it was given (platform/storage.py).
+        # The folder is walked here rather than summed from the database: a person is looking, and the disk is what
+        # matters. quota_mb 0 means no ceiling, and share stays 0.
+        files = _folder_bytes(D.DATA/'files'/org['id'])
+        database = _tenant_bytes(org['id'])
+        quota = int(org['quota_mb'] or 0)*1024*1024
         entry = {'id':org['id'],'name':org['name'],'slug':org['slug'],'status':org['status'],'members':org['member_count'],
-                 'open_cases':0,'messages_7d':0,'storage_bytes':_folder_bytes(D.DATA/'files'/org['id']),'last_active':None}
+                 'open_cases':0,'messages_7d':0,'storage_bytes':files,'database_bytes':database,
+                 'used_bytes':files+database,'quota_mb':int(org['quota_mb'] or 0),
+                 'share':round((files+database)/quota,4) if quota else 0,'last_active':None}
         if _tenant_exists(org['id']):
             with D.tenant(org['id']) as db:
                 entry['open_cases'] = db.execute("SELECT COUNT(*) FROM tickets WHERE status NOT IN ('resolved','closed')").fetchone()[0]
@@ -126,6 +134,15 @@ def _folder_bytes(path):
     try:
         return sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
     except OSError:
+        return 0
+
+
+def _tenant_bytes(tenant_id):
+    """The organization's own database file, with the journal files SQLite keeps beside it."""
+    try:
+        path = D.tenant_path(tenant_id)
+        return sum(p.stat().st_size for p in path.parent.glob(path.name+'*') if p.is_file())
+    except (OSError, ValueError):
         return 0
 
 
@@ -244,6 +261,24 @@ def notifications(cd, session, snapshot):
                       'at':row['ended_at'] or row['decided_at'] or row['created_at'],
                       'until':row['expires_at'] if row['status']=='approved' else None,
                       'notify':row['status'] in ('approved','denied')})
+    # Storage: an organization close to its ceiling, and organizations that have none. The disk-wide "less than 10%
+    # left" line below is the last warning there is, and by then every organization is already about to stop writing;
+    # these two come early enough to do something about.
+    usage = org_usage(cd)
+    tight = [o for o in usage if o['quota_mb'] and o['share']>=model.QUOTA_WARN and o['status']=='active']
+    for org in sorted(tight,key=lambda o:-o['share'])[:5]:
+        full = org['share']>=model.QUOTA_FULL
+        found.append({'key':f"quota-{org['id']}",'kind':'storage','level':'critical' if full else 'warning','icon':'chart',
+                      'title':f"{org['name']} ใช้พื้นที่ {round(org['share']*100)}% ของโควตา",
+                      'detail':'อัปโหลดไฟล์ใหม่ไม่ได้แล้ว กดที่พื้นที่ของ องค์กรนี้ในตารางการใช้งาน เพื่อเพิ่มโควตา' if full
+                               else 'ใกล้เต็ม ถ้าไม่เพิ่มโควตา องค์กรนี้จะอัปโหลดไฟล์ใหม่ไม่ได้',
+                      'href':'/platform/system#usage','at':None,'until':None,'notify':True})
+    unlimited = [o for o in usage if not o['quota_mb'] and o['status']=='active']
+    if unlimited:
+        found.append({'key':'quota-missing','kind':'storage','level':'warning','icon':'shield',
+                      'title':f'ยังไม่ได้กำหนดโควตาพื้นที่ {len(unlimited)} องค์กร',
+                      'detail':'องค์กรที่ไม่มีโควตาใช้ดิสก์ได้ไม่จำกัด และทำให้ทุกองค์กรเขียนข้อมูลไม่ได้เมื่อดิสก์เต็ม',
+                      'href':'/platform/system#usage','at':None,'until':None,'notify':True})
     # Problem reports sent from the ? in the top bar of the organizations: one line while any are still open.
     waiting = repository.open_report_count(cd)
     if waiting:

@@ -534,3 +534,64 @@
   margin: 2px 0 0;
   min-width: 0;
 }
+
+/* โควตาพื้นที่ต่อองค์กร (UsageCard): the number an organization takes, its ceiling, and the way to change it, as one
+   button. The bar's width comes from a fixed set of steps rather than an inline style, which the policy refuses. */
+.quota-cell {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.quota-cell:hover,.quota-cell:focus-visible {
+  border-color: var(--line);
+  background: #fafafa;
+}
+.quota-figures {
+  white-space: nowrap;
+}
+.quota-bar {
+  position: relative;
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: #ececec;
+  overflow: hidden;
+}
+.quota-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: #4c8a63;
+}
+.quota-bar.step-0::before { width: 0; }
+.quota-bar.step-1::before { width: 10%; }
+.quota-bar.step-2::before { width: 20%; }
+.quota-bar.step-3::before { width: 30%; }
+.quota-bar.step-4::before { width: 40%; }
+.quota-bar.step-5::before { width: 50%; }
+.quota-bar.step-6::before { width: 60%; }
+.quota-bar.step-7::before { width: 70%; }
+.quota-bar.step-8::before { width: 80%; }
+.quota-bar.step-9::before { width: 90%; }
+.quota-bar.step-10::before { width: 100%; }
+.quota-cell.tight .quota-bar::before { background: #b8860b; }
+.quota-cell.full .quota-bar::before { background: #a31525; }
+.quota-cell.none .quota-bar {
+  background: repeating-linear-gradient(90deg,#e4e4e4 0 6px,transparent 6px 12px);
+}
+.quota-cell.none .quota-bar::before { width: 0; }
+.quota-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 16px;
+}

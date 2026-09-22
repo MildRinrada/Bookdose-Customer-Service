@@ -347,6 +347,54 @@ class RealtimeTests(unittest.TestCase):
             self.joined(agent).send(json.dumps({'type':'typing','conversation_id':own}))
             self.assertEqual([f for f in self.quiet(staff,0.6)+self.quiet(ws,0.1) if f['type']=='typing'],[])
 
+    # Who on the team has the conversation open ("มีคนกำลังตอบแชทนี้อยู่")
+    def test_the_team_hears_who_has_the_conversation_open(self):
+        customer = self.customer()
+        conv = self.chat(customer)
+        colleague,colleague_id = self.create_member(email='colleague@example.com')
+        owner_ws,colleague_ws = self.joined(self.admin),self.joined(colleague)
+        page_ws = self.joined(customer,CUSTOMER)
+        with patch.object(S,'TYPING_EVERY_SECONDS',1.0):
+            colleague_ws.send(json.dumps({'type':'viewing','conversation_id':conv}))
+            here = self.until(owner_ws,lambda f:f['type']=='here')
+            self.assertEqual(here,{'type':'here','conversation_id':conv,'org':'alpha','user_id':colleague_id,
+                                   'name':'เจ้าหน้าที่ทดสอบ','typing':False,'ttl_ms':25000,'typing_ms':6000})
+            # The customer is never told who on the team is looking at their chat.
+            self.assertEqual(self.quiet(page_ws,0.6),[])
+            # Writing says so at once, and is the same signal with typing set.
+            time.sleep(0.3)
+            colleague_ws.send(json.dumps({'type':'typing','conversation_id':conv}))
+            self.assertTrue(self.until(owner_ws,lambda f:f['type']=='here')['typing'])
+
+    def test_viewing_follows_the_same_rules_as_replying(self):
+        customer = self.customer()
+        conv = self.chat(customer)
+        stranger = self.customer(email='other@example.com')
+        foreign = self.chat(stranger)
+        owner_ws = self.joined(self.admin)
+        with patch.object(S,'TYPING_EVERY_SECONDS',1.0):
+            # An agent of another team cannot see the conversation, so cannot say they are in it.
+            other_team = self.ok(self.admin,'/api/teams',{'name':'ทีมเทคนิค'})['id']
+            agent,_ = self.create_member(team=other_team,email='agent2@example.com')
+            self.joined(agent).send(json.dumps({'type':'viewing','conversation_id':conv}))
+            # A customer's page has no such signal to send at all; neither has a guest's.
+            page_ws = self.joined(customer,CUSTOMER)
+            page_ws.send(json.dumps({'type':'viewing','conversation_id':conv}))
+            guest_page = self.guest('สมศรี')
+            self.joined(guest_page,GUEST).send(json.dumps({'type':'viewing','conversation_id':guest_page.conversation}))
+            self.assertEqual([f for f in self.quiet(owner_ws,1) if f['type']=='here'],[])
+            # The owner may see every team, so another customer's chat is theirs to be in; then a second beat too
+            # soon, a mangled id and a frame with no id at all are all refused.
+            owner_ws.send(json.dumps({'type':'viewing','conversation_id':foreign}))
+            self.assertEqual(self.until(owner_ws,lambda f:f['type']=='here')['conversation_id'],foreign)
+            owner_ws.send(json.dumps({'type':'viewing','conversation_id':foreign}))
+            owner_ws.send(json.dumps({'type':'viewing','conversation_id':'../x'}))
+            owner_ws.send(json.dumps({'type':'viewing'}))
+            self.assertEqual([f for f in self.quiet(owner_ws,0.8) if f['type']=='here'],[])
+            # Refusing a frame is not a reason to drop the connection: the next good one still works.
+            owner_ws.send(json.dumps({'type':'viewing','conversation_id':conv}))
+            self.assertEqual(self.until(owner_ws,lambda f:f['type']=='here')['conversation_id'],conv)
+
     # Read receipts
     def test_read_receipts_both_ways(self):
         customer = self.customer()

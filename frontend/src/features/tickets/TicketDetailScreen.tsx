@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ChannelBadge, ErrorState, PageLoading } from '@/components/ui/display';
 import { AuditList } from '@/features/audit/components/AuditList';
+import { ColleaguesHere } from '@/features/inbox/components/ColleaguesHere';
 import { Composer } from '@/features/inbox/components/Composer';
 import { MessageThread, ThreadFilter } from '@/features/inbox/components/MessageThread';
 import { useMarkMentionsSeen, useModalOpen, useRefreshFailure } from '@/features/inbox/hooks';
@@ -89,6 +90,7 @@ function TicketConversationCard({ conv, contactName }: { conv: TicketConversatio
         </div>
       </div>
       <MessageThread messages={conv.messages} threadId={conv.id} notesOnly={notesOnly} readAt={conv.customer_read_at} />
+      <ColleaguesHere conversationId={conv.id} />
       <Composer conversationId={conv.id} channel={conv.channel} manual={conv.channel === 'manual'} conversation={conv} />
     </section>
   );

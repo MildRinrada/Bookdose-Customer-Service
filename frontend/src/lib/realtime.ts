@@ -14,11 +14,13 @@ export type RealtimeEvent =
   | { type: 'hello'; poll_ms?: number }
   | { type: 'changed'; scope: ChangedScope; id?: string; org?: string }
   | { type: 'typing'; conversation_id: string; org?: string; who: 'staff' | 'customer'; name?: string; ttl_ms?: number }
+  /** Staff only: a member of the team has this conversation open (typing: and is writing in it). */
+  | { type: 'here'; conversation_id: string; org?: string; user_id: string; name?: string; typing?: boolean; ttl_ms?: number; typing_ms?: number }
   | { type: 'read'; conversation_id: string; org?: string; by: 'staff' | 'customer'; at: string }
   | { type: 'ping' };
 
-/** Client → server frames. */
-export type RealtimeFrame = { type: 'typing'; conversation_id: string } | { type: 'pong' };
+/** Client → server frames. `viewing` is the staff pages' heartbeat: "I have this conversation open". */
+export type RealtimeFrame = { type: 'typing' | 'viewing'; conversation_id: string } | { type: 'pong' };
 
 export const realtimePath = (kind: RealtimeKind, org?: string) =>
   kind === 'staff' ? '/api/realtime/staff' : kind === 'customer' ? '/api/realtime/customer' : `/api/public/${org}/guest/realtime`;

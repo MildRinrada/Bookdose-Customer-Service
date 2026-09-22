@@ -15,6 +15,7 @@ import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
 import { CONVERSATION_PREFIXES, openTicketFromConversation, setConversationStatus } from '../api';
 import type { ConversationDetail } from '../types';
+import { ColleaguesHere } from './ColleaguesHere';
 import { Composer } from './Composer';
 import { CustomerAvatar } from './InboxItem';
 import { MessageThread, ThreadFilter } from './MessageThread';
@@ -125,6 +126,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         <div className="notice">Facebook Messenger: ตอบได้เฉพาะข้อความ ไม่เกิน 2,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
       )}
       <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
+      <ColleaguesHere conversationId={c.id} />
       <Composer conversationId={c.id} channel={c.channel} manual={c.channel === 'manual'} compact conversation={c} />
     </>
   );

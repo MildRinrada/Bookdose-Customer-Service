@@ -198,3 +198,23 @@ def customer_typing(db, conv, name):
     """Deliveries of a customer's or guest's typing: staff who may see the conversation."""
     tenant_id = tenant_of(db)
     return [(staff(tenant_id,conv['team_id']),typing(conv,slug_of(tenant_id),'customer',name))]
+
+
+# Who on the team has the conversation open (socket.py checks that the sender may reply in it first)
+#
+# Two members answering the same customer at the same time is not a data problem - both replies are valid and both
+# are sent - so nothing here blocks anything. It is a knowing problem: the second member never learns that the first
+# one is already on it. The page that has the conversation open says so every 15 seconds, and writing in it says so
+# at once, so the other side of the room can see it before typing the same answer.
+#
+# The sender's own socket hears its own event: the hub delivers to an audience, not to particular sockets. The page
+# leaves itself out by user_id, which is also what makes one member with two browsers open count as one person.
+PRESENCE_TTL_MS = 25000
+
+
+def staff_here(db, conv, user_id, name, writing):
+    """A member has this conversation open (writing: and is writing in it). Every member who may see it hears."""
+    tenant_id = tenant_of(db)
+    return [(staff(tenant_id,conv['team_id']),
+             {'type':'here','conversation_id':conv['id'],'org':slug_of(tenant_id),'user_id':user_id,'name':name,
+              'typing':bool(writing),'ttl_ms':PRESENCE_TTL_MS,'typing_ms':TYPING_TTL_MS})]

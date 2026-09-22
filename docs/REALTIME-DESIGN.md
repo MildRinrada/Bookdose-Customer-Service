@@ -36,17 +36,24 @@ Server → client (JSON text frames):
 {"type":"changed","scope":"tickets","org":"<slug>"}                                 # staff
 {"type":"changed","scope":"alerts"}                                                 # customer overview / bell
 {"type":"typing","conversation_id":"<id>","org":"<slug>","who":"staff"|"customer","name":"<display name>","ttl_ms":6000}
+{"type":"here","conversation_id":"<id>","org":"<slug>","user_id":"<member id>","name":"<name>","typing":false,"ttl_ms":25000,"typing_ms":6000}
 {"type":"read","conversation_id":"<id>","org":"<slug>","by":"staff"|"customer","at":"<ISO time>"}
 {"type":"ping"}
 ```
 Client → server: `{"type":"typing","conversation_id":"<id>"}` (client throttles to one per 3 s while the composer has
-text; server ignores it unless the sender may reply in that conversation) and `{"type":"pong"}`.
+text), `{"type":"viewing","conversation_id":"<id>"}` (staff pages only, every 15 s while the conversation is open and
+the tab is in front) and `{"type":"pong"}`. The server ignores either unless the sender may reply in that conversation,
+and passes at most one of each per conversation per 2.5 s.
 
 ## 3. Who receives what (backend)
 - Staff events go to members of that tenant who may see the conversation/ticket under the existing visibility rules.
 - Customer/guest events go only to the accounts/visitors that own that conversation (customer contacts, `guest_conversations`).
 - **Internal notes, staff-only status fields and staff typing in the note box never produce customer/guest events.**
   Staff typing name shown to customers = the name the customer already sees on staff replies.
+- `here`: to the rest of the team only, never to the customer or a guest. It answers "somebody is already on this one"
+  so two members do not reply to the same customer at once; it locks nothing and only lives in the open sockets, so a
+  closed tab stops saying it within `ttl_ms`. A member's own `here` comes back to them and their page ignores it,
+  which is also how one member with two browsers counts as one person.
 - `read`: to staff when the customer/guest opens the conversation (existing `mark_seen` / `guest_seen`); to the customer/
   guest when a staff member opens the conversation after the customer's last message (add an additive staff-read record
   if none exists).
@@ -72,6 +79,9 @@ text; server ignores it unless the sender may reply in that conversation) and `{
   current intervals. No behaviour change when WebSocket is unavailable.
 - **Typing indicator** in `MessageThread`: "กำลังพิมพ์…" bubble (animated dots via CSS classes) on the other side for
   `ttl_ms`; composer sends throttled `typing` frames only for public replies (never from the staff internal-note mode).
+- **Who else is here** (`features/inbox/components/ColleaguesHere`): a strip between the thread and the composer on the
+  staff inbox and case screens — "ณัฐ เปิดแชทนี้อยู่", or amber "ณัฐ กำลังพิมพ์ตอบอยู่" — and nothing at all when the
+  member is alone or the connection is down.
 - **Read receipt**: small "อ่านแล้ว" under the sender's latest message once the other side has read it (customer/guest
   see staff read; staff see customer read). Accessible text, no layout jump.
 - **Widget unread** keeps working through the embed page (update the badge from events instead of polling).

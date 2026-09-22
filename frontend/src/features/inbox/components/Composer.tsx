@@ -189,8 +189,9 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   const notifyTyping = useTypingNotifier(id);
   const onText = (value: string) => {
     keepDraft(value);
-    // Only a reply in a web chat reaches the customer's screen; an internal note never says anything to them.
-    if (kind === 'reply' && !manual && channel === 'web') notifyTyping(value);
+    // Writing an answer, on any channel: the team hears it so two members do not answer the same customer, and the
+    // server passes it on to the customer only where they could see it (a web chat). An internal note is neither.
+    if (kind === 'reply' && !manual) notifyTyping(value);
   };
 
   // Text put into the composer by a tool (an article) appears in the editor and is kept as the draft.

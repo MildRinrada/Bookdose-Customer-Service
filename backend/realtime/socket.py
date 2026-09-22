@@ -13,9 +13,11 @@ switched or suspended: 4401); the server sends {"type":"ping"} every 25 s and cl
 70 s (4408); at most 5 sockets per session or guest browser, frames up to 2 KB and 20 frames per 10 s (else 4429);
 a socket that cannot keep up with its events is closed 1013 (the page reconnects and fetches again).
 
-From the browser: {"type":"pong"} and {"type":"typing","conversation_id":"<id>"}. A typing frame is passed on only
-when the sender may reply in that conversation (staff: a conversation their team may see; customer and guest: their
-own), at most once per 2.5 s per conversation per socket, to the other side only."""
+From the browser: {"type":"pong"}, {"type":"typing","conversation_id":"<id>"} and, from staff only,
+{"type":"viewing","conversation_id":"<id>"}. Both are passed on only when the sender may reply in that conversation
+(staff: a conversation their team may see; customer and guest: their own), at most once per 2.5 s per conversation
+per socket. Typing goes to the other side; both also tell the rest of the team who has the conversation open, so two
+members do not answer the same customer at once (realtime/events.py staff_here)."""
 import asyncio
 import collections
 import json
@@ -53,6 +55,8 @@ CLOSE_IDLE = 4408
 CLOSE_LIMIT = 4429
 
 REPLY_CHANNELS = ('web','line','email','facebook')
+# What a browser may signal about a conversation; each is a method name on the identity.
+SIGNALS = ('typing','viewing')
 ID = re.compile(r'[a-f0-9]{32}')
 SLUG = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*')
 PING = json.dumps({'type':'ping'})
@@ -130,12 +134,24 @@ class StaffIdentity:
         return (audience[0]=='staff' and audience[1]==self.tenant_id
                 and (self.role!='agent' or audience[2] is None or self.team_id in audience[2]))
 
+    def _repliable(self, db, conversation_id):
+        """The conversation when this member may reply in it, else None."""
+        conv = D.find_in_team(db,'conversations',conversation_id,self.team_id if self.role=='agent' else None)
+        return conv if conv and conv['channel'] in REPLY_CHANNELS else None
+
     def typing(self, conversation_id):
         with D.tenant(self.tenant_id) as db:
-            conv = D.find_in_team(db,'conversations',conversation_id,self.team_id if self.role=='agent' else None)
-            if not conv or conv['channel'] not in REPLY_CHANNELS:
+            conv = self._repliable(db,conversation_id)
+            if not conv:
                 return None
-            return events.staff_typing(db,conv,self.name)
+            # The customer sees "กำลังพิมพ์" on their own page; the team sees who is already writing the answer.
+            return events.staff_typing(db,conv,self.name)+events.staff_here(db,conv,self.user_id,self.name,True)
+
+    def viewing(self, conversation_id):
+        """The member has the conversation open: the rest of the team hears, the customer does not."""
+        with D.tenant(self.tenant_id) as db:
+            conv = self._repliable(db,conversation_id)
+            return events.staff_here(db,conv,self.user_id,self.name,False) if conv else None
 
 
 class CustomerIdentity:
@@ -238,7 +254,8 @@ class Socket:
         self.done = asyncio.Event()
         self.code = None
         self.frames = collections.deque()
-        self.typed = {}
+        # The last time each signal was passed on, per conversation: {'typing': {...}, 'viewing': {...}}.
+        self.signalled = {kind:{} for kind in SIGNALS}
 
     # Called by the hub on the loop
     def wants(self, audience):
@@ -318,26 +335,30 @@ class Socket:
                     frame = json.loads(text) if text is not None else None
                 except ValueError:
                     continue
-                if isinstance(frame,dict) and frame.get('type')=='typing':
-                    await self._typing(frame.get('conversation_id'))
+                if isinstance(frame,dict) and frame.get('type') in SIGNALS:
+                    await self._signal(frame['type'],frame.get('conversation_id'))
         except asyncio.CancelledError:
             raise
         except Exception:
             self.finish('gone')
 
-    async def _typing(self, conversation_id):
-        if not isinstance(conversation_id,str) or not ID.fullmatch(conversation_id):
+    async def _signal(self, kind, conversation_id):
+        """A typing or viewing frame: rate-limited per conversation, then whatever the identity says it means.
+        An identity that does not know the signal (a customer has no 'viewing') simply says nothing."""
+        handler = getattr(self.identity,kind,None)
+        if handler is None or not isinstance(conversation_id,str) or not ID.fullmatch(conversation_id):
             return
+        seen = self.signalled[kind]
         moment = time.monotonic()
-        if moment-self.typed.get(conversation_id,float('-inf'))<TYPING_EVERY_SECONDS:
+        if moment-seen.get(conversation_id,float('-inf'))<TYPING_EVERY_SECONDS:
             return
-        if len(self.typed)>100:
-            self.typed.clear()
-        self.typed[conversation_id] = moment
+        if len(seen)>100:
+            seen.clear()
+        seen[conversation_id] = moment
         try:
-            deliveries = await anyio.to_thread.run_sync(self.identity.typing,conversation_id)
+            deliveries = await anyio.to_thread.run_sync(handler,conversation_id)
         except Exception as error:
-            print(f'[{now()}] Realtime typing: {type(error).__name__}',file=sys.stderr,flush=True)
+            print(f'[{now()}] Realtime {kind}: {type(error).__name__}',file=sys.stderr,flush=True)
             return
         hub.send(deliveries or [])
 

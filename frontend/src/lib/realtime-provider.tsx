@@ -16,10 +16,23 @@ const TYPING_THROTTLE_MS = 3000;
 
 type Side = 'staff' | 'customer';
 
-/** Typing and read state from events, read with useSyncExternalStore. */
+/** A colleague who has a conversation open (`typing` while they are writing in it). */
+export type Colleague = { id: string; name: string; typing: boolean };
+
+type HereEntry = { name: string; typing: boolean; timer: ReturnType<typeof setTimeout>; typingTimer?: ReturnType<typeof setTimeout> };
+
+const NOBODY: Colleague[] = [];
+
+const same = (a: Colleague[], b: Colleague[]) =>
+  a.length === b.length && a.every((x, i) => x.id === b[i].id && x.name === b[i].name && x.typing === b[i].typing);
+
+/** Typing, read and who-is-here state from events, read with useSyncExternalStore. */
 class LiveStore {
   private typing = new Map<string, { who: Side; name: string; timer: ReturnType<typeof setTimeout> }>();
   private reads = new Map<string, string>();
+  /** conversation id → member id → their presence, and the array the hooks hand out (kept stable between changes). */
+  private here = new Map<string, Map<string, HereEntry>>();
+  private hereShown = new Map<string, Colleague[]>();
   private listeners = new Set<() => void>();
 
   subscribe = (listener: () => void) => {
@@ -58,6 +71,54 @@ class LiveStore {
     this.notify();
   }
 
+  /* Who else has this conversation open. Every member's page says so every 15 seconds and whenever they write, so an
+     entry that stops arriving simply expires: nothing has to be told when a browser is closed or a laptop is shut. */
+
+  hereIn(conversationId: string): Colleague[] {
+    return this.hereShown.get(conversationId) ?? NOBODY;
+  }
+
+  setHere(conversationId: string, userId: string, name: string, typing: boolean, ttl: number, typingTtl: number) {
+    const room = this.here.get(conversationId) ?? new Map<string, HereEntry>();
+    this.here.set(conversationId, room);
+    const before = room.get(userId);
+    if (before) {
+      clearTimeout(before.timer);
+      clearTimeout(before.typingTimer);
+    }
+    const entry: HereEntry = {
+      name,
+      typing,
+      timer: setTimeout(() => {
+        room.delete(userId);
+        this.showHere(conversationId);
+      }, ttl),
+    };
+    // Writing stops long before the page does: the typing mark fades on its own, the presence stays.
+    if (typing)
+      entry.typingTimer = setTimeout(() => {
+        entry.typing = false;
+        this.showHere(conversationId);
+      }, typingTtl);
+    room.set(userId, entry);
+    this.showHere(conversationId);
+  }
+
+  private showHere(conversationId: string) {
+    const room = this.here.get(conversationId);
+    if (!room?.size) {
+      this.here.delete(conversationId);
+      this.hereShown.delete(conversationId);
+      this.notify();
+      return;
+    }
+    const next = [...room].map(([id, entry]) => ({ id, name: entry.name, typing: entry.typing }));
+    // A heartbeat that says what the screen already shows must not redraw it.
+    if (same(this.hereIn(conversationId), next)) return;
+    this.hereShown.set(conversationId, next);
+    this.notify();
+  }
+
   setRead(conversationId: string, by: Side, at: string) {
     const key = `${conversationId}|${by}`;
     const before = this.reads.get(key);
@@ -69,6 +130,14 @@ class LiveStore {
   clear() {
     this.typing.forEach((entry) => clearTimeout(entry.timer));
     this.typing.clear();
+    this.here.forEach((room) =>
+      room.forEach((entry) => {
+        clearTimeout(entry.timer);
+        clearTimeout(entry.typingTimer);
+      }),
+    );
+    this.here.clear();
+    this.hereShown.clear();
     this.reads.clear();
     this.notify();
   }
@@ -239,6 +308,14 @@ export function RealtimeProvider({ kind, org, enabled = true, identity = '', chi
             store.setTyping(event.conversation_id, event.who, String(event.name ?? '').slice(0, 80), ttl);
             break;
           }
+          case 'here': {
+            // Staff only: nobody else is ever sent one, and no other frame has a use for it.
+            if (kind !== 'staff' || otherOrg(event.org) || typeof event.conversation_id !== 'string' || typeof event.user_id !== 'string') break;
+            const ttl = typeof event.ttl_ms === 'number' ? Math.min(Math.max(event.ttl_ms, 5000), 120000) : 25000;
+            const typingTtl = typeof event.typing_ms === 'number' ? Math.min(Math.max(event.typing_ms, 1000), 15000) : 6000;
+            store.setHere(event.conversation_id, event.user_id, String(event.name ?? '').slice(0, 80), Boolean(event.typing), ttl, typingTtl);
+            break;
+          }
           case 'read':
             if (otherOrg(event.org) || typeof event.conversation_id !== 'string' || Number.isNaN(Date.parse(event.at))) break;
             if (event.by !== 'staff' && event.by !== 'customer') break;
@@ -310,6 +387,47 @@ export function useReadAt(conversationId: string, by: Side): string | null {
     () => store?.readAt(conversationId, by) ?? null,
     () => null,
   );
+}
+
+/* Two members answering the same customer at once (the team's side only).
+
+   Every staff screen that has a conversation open says so every 15 seconds, and writing in it says so at once. What
+   comes back is the rest of the team doing the same, so a member about to answer can see that somebody is already on
+   it. Nothing is blocked and nothing is claimed: this is a room people can see into, not a lock. Presence lives only
+   in the open sockets, so a shut laptop stops saying it within half a minute without having to tell anybody. */
+
+const HERE_BEAT_MS = 15000;
+
+/** Says "I have this conversation open" while the tab is in front. Staff pages only. */
+export function useViewing(conversationId: string) {
+  const { connected, send } = useRealtime();
+  useEffect(() => {
+    if (!connected || !conversationId) return;
+    const beat = () => {
+      if (document.visibilityState === 'visible') send({ type: 'viewing', conversation_id: conversationId });
+    };
+    beat();
+    const timer = setInterval(beat, HERE_BEAT_MS);
+    document.addEventListener('visibilitychange', beat);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', beat);
+    };
+  }, [connected, send, conversationId]);
+}
+
+/** The colleagues who have this conversation open, never the reader themselves. */
+export function useHere(conversationId: string, meId: string): Colleague[] {
+  const { store } = useRealtime();
+  const all = useSyncExternalStore(
+    store?.subscribe ?? noSubscribe,
+    () => store?.hereIn(conversationId) ?? NOBODY,
+    () => NOBODY,
+  );
+  return useMemo(() => {
+    const others = all.filter((c) => c.id !== meId);
+    return others.length ? others : NOBODY;
+  }, [all, meId]);
 }
 
 /** Call with the composer's text as it changes: tells the other side "typing", at most once every 3 seconds, and only

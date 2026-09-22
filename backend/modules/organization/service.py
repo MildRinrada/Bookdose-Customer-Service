@@ -26,7 +26,10 @@ def workspace_overview(cd, db, ctx):
     # Whether each member takes new cases now (ตั้งค่าบัญชี → สถานะการทำงาน), for the owner picker and the team list.
     states = staff_prefs.availability_of(cd,[m['id'] for m in team_members])
     team_members = [{**m,'availability':states[m['id']]} for m in team_members]
-    return {'tenant':{'id':ctx['tenant_id'],'name':ctx['tenant_name'],'slug':ctx['slug']},
+    from backend.modules.platform import repository as tenants
+    return {'tenant':{'id':ctx['tenant_id'],'name':ctx['tenant_name'],'slug':ctx['slug'],
+                      # Codes this organization used to have: the links customers were given with them still work.
+                      'former_slugs':tenants.former_slugs(cd,ctx['tenant_id'])},
             'role':ctx['role'],'team_id':ctx['team_id'],'members':team_members,
             # A platform admin on a support access: the pages show everything and offer no change.
             'read_only':bool(ctx.get('read_only')),
@@ -63,6 +66,18 @@ def _storage(cd, db, ctx):
     from backend.modules.platform import repository as platform, storage
     org = platform.find_tenant_quota(cd,ctx['tenant_id'])
     return storage.state(db,ctx['tenant_id'],org['quota_mb'] if org else 0)
+
+
+def change_slug(cd, db, ctx, body):
+    """The organization corrects its own code (ตั้งค่าองค์กร → ภาพรวม, owners only). The same rules as from the
+    platform console: the old code keeps leading here, so no link already given to a customer breaks, and a code
+    another organization once had is refused. Written to both histories - the organization's own and the
+    platform's - because it changes what the public sees."""
+    from backend.modules.platform import service as platform
+    result = platform.rename_tenant_slug(cd,None,ctx['tenant_id'],body,actor=f"{ctx['name']} (ผู้ดูแลองค์กร)")
+    audit.record(db,ctx['name'],'settings.slug_changed',ctx['tenant_id'],f"{ctx['slug']} → {result['slug']}")
+    db.commit()
+    return result
 
 
 def update_settings(db, ctx, body):

@@ -87,7 +87,20 @@ def guest_session(req):
     the device's X-Guest-CSRF; without it the guest is not used and req.guest_stale holds it instead (a 'guest' route
     then answers 403; opening a follow link, which proves itself, still replaces that browser's device). A remembered cookie is sent again when the browser was last seen more than a day ago."""
     from backend.modules.guest import controller, service
-    token,present = service.cookie_token(req.headers.get('Cookie',''),req.org['slug'])
+    cookies = req.headers.get('Cookie','')
+    token,present = service.cookie_token(cookies,req.org['slug'])
+    # An organization's code can be corrected, and the browser then still holds g_<the old code>. The chat is the
+    # organization's either way (the token is looked up in its own database), so the old cookie is accepted and the
+    # browser is given one under the new code on the way out.
+    renamed = False
+    if not token:
+        from backend.modules.platform import repository as tenants
+        for old in tenants.former_slugs(req.cd,req.org['id']):
+            token,present_old = service.cookie_token(cookies,old)
+            present = present or present_old
+            if token:
+                renamed = True
+                break
     found = service.read_guest(req.db,token) if token else None
     if not found:
         if present:
@@ -96,8 +109,9 @@ def guest_session(req):
     if req.command!='GET' and not secrets.compare_digest(req.headers.get('X-Guest-CSRF','').encode(),found['device']['csrf'].encode()):
         req.guest_stale = found
         return None
-    if service.touch(req.db,found) and found['device']['remember']:
-        req.response_headers.update(controller.cookie_header(req,req.org['slug'],token,True))
+    seen_again = service.touch(req.db,found)
+    if renamed or (seen_again and found['device']['remember']):
+        req.response_headers.update(controller.cookie_header(req,req.org['slug'],token,bool(found['device']['remember'])))
     return found
 
 

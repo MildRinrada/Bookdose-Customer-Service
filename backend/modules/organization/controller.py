@@ -18,6 +18,11 @@ def member_photo(req, user_id):
 
 
 @require_role('admin')
+def change_slug(req):
+    return req.send(200,service.change_slug(req.cd,req.db,req.ctx,req.body))
+
+
+@require_role('admin')
 def update_settings(req):
     service.update_settings(req.db,req.ctx,req.body)
     return req.send(200,{'ok':True})

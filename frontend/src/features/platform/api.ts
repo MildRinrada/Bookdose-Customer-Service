@@ -86,3 +86,7 @@ export const setTenantQuota = (tenantId: string, quotaMb: number) =>
 /** เปิด/ปิดฟีเจอร์รายองค์กร: try something new with one organization before it reaches the rest. */
 export const setTenantFeature = (tenantId: string, feature: string, enabled: boolean) =>
   api<{ features: Record<string, boolean> }>(`${TENANTS_PATH}/${tenantId}/features`, { feature, enabled }, 'PATCH');
+
+/** Correct an organization's code. The old one keeps leading to it, so links already sent out do not break. */
+export const renameTenantSlug = (tenantId: string, slug: string) =>
+  api<{ slug: string; former_slugs: string[] }>(`${TENANTS_PATH}/${tenantId}/slug`, { slug }, 'PATCH');

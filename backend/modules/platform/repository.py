@@ -13,8 +13,27 @@ def insert_tenant(db, tenant_id, name, slug):
                (tenant_id,name,slug,now(),NEW_TENANT_QUOTA_MB))
 
 
-def slug_taken(db, slug):
-    return bool(one(db,'SELECT id FROM tenants WHERE slug=?',(slug,)))
+def slug_taken(db, slug, except_tenant=None):
+    """Whether a code is spoken for - by an organization using it now, or by one that used to and whose old links
+    still lead there. `except_tenant` lets an organization take back a code it used to have itself."""
+    used = one(db,'SELECT id FROM tenants WHERE slug=?',(slug,))
+    if used:
+        return used['id']!=except_tenant
+    former = one(db,'SELECT tenant_id FROM tenant_slugs WHERE slug=?',(slug,))
+    return bool(former) and former['tenant_id']!=except_tenant
+
+
+def former_slugs(db, tenant_id):
+    """The codes this organization used to have, newest first."""
+    return [row['slug'] for row in rows(db,'SELECT slug FROM tenant_slugs WHERE tenant_id=? ORDER BY changed_at DESC',(tenant_id,))]
+
+
+def rename_tenant(db, tenant_id, old_slug, new_slug):
+    """Give the organization a new code and keep the old one leading here. Taking back a code this organization used
+    to have simply removes it from the old ones."""
+    db.execute('INSERT OR REPLACE INTO tenant_slugs(slug,tenant_id,changed_at) VALUES(?,?,?)',(old_slug,tenant_id,now()))
+    db.execute('DELETE FROM tenant_slugs WHERE slug=? AND tenant_id=?',(new_slug,tenant_id))
+    db.execute('UPDATE tenants SET slug=? WHERE id=?',(new_slug,tenant_id))
 
 
 def find_tenant(db, tenant_id):
@@ -75,7 +94,13 @@ def tenant_summary(db, tenant_id):
 
 
 def find_active_by_slug(db, slug):
-    return one(db,"SELECT * FROM tenants WHERE slug=? AND status='active'",(slug,))
+    """The organization a code leads to: the one using it now, or the one that used to (tenant_slugs), so that every
+    link a customer was ever given keeps working after a code is corrected."""
+    org = one(db,"SELECT * FROM tenants WHERE slug=? AND status='active'",(slug,))
+    if org:
+        return org
+    return one(db,"""SELECT t.* FROM tenants t JOIN tenant_slugs s ON s.tenant_id=t.id
+                     WHERE s.slug=? AND t.status='active'""",(slug,))
 
 
 def is_active(db, tenant_id):

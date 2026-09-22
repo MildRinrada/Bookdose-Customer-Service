@@ -46,6 +46,8 @@ def list_tenants(cd):
         org['admin_invites'] = invitations.open_admin_invites(cd,org['id'])
         # Which features are on for this one: the answers it was given, over each feature's default.
         org['features'] = feature_state(cd,org['id'],chosen.get(org['id'],{}))
+        # Codes it used to have; the links customers were given with them still lead here.
+        org['former_slugs'] = repository.former_slugs(cd,org['id'])
     return {'tenants':found,'audit':audit.with_names(cd,audit.latest(cd,100)),'can_invite':invitations.ready(cd),
             'feature_catalogue':feature_catalogue()}
 
@@ -122,6 +124,24 @@ def set_tenant_status(cd, session, tenant_id, body):
     repository.set_status(cd,tenant_id,status)
     audit.record(cd,session['name'],'tenant.'+status,tenant_id)
     cd.commit()
+
+
+def rename_tenant_slug(cd, session, tenant_id, body, actor=None):
+    """Correct an organization's code. The code is in every link its customers were ever given, so the old one keeps
+    leading here for good (tenant_slugs) instead of turning those links into a 404, and is never handed to another
+    organization. What changes is the code the organization is given from now on.
+
+    `actor` names who did it when the caller is not a platform admin: the organization's own owner may correct their
+    own code from ตั้งค่าองค์กร, and the platform's history should say which of them it was."""
+    slug = schema.slug_field(body)
+    org = repository.tenant_summary(cd,tenant_id)
+    require(org,'ไม่พบองค์กร',404)
+    require(slug!=org['slug'],'รหัสองค์กรนี้เป็นรหัสเดิมอยู่แล้ว')
+    require(not repository.slug_taken(cd,slug,except_tenant=tenant_id),'รหัสองค์กรนี้ถูกใช้แล้ว หรือเคยเป็นของอีกองค์กร',409)
+    repository.rename_tenant(cd,tenant_id,org['slug'],slug)
+    audit.record(cd,actor or session['name'],'tenant.slug_changed',tenant_id,f"{org['slug']} → {slug}")
+    cd.commit()
+    return {'slug':slug,'former_slugs':repository.former_slugs(cd,tenant_id)}
 
 
 def feature_state(cd, tenant_id, chosen=None):

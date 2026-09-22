@@ -38,3 +38,7 @@ export const INVITATIONS_PATH = '/api/invitations';
 export const inviteMember = (body: InviteBody) => api(INVITATIONS_PATH, body);
 export const resendInvitation = (id: string) => api(`${INVITATIONS_PATH}/${id}/resend`, {});
 export const cancelInvitation = (id: string) => api(`${INVITATIONS_PATH}/${id}`, undefined, 'DELETE');
+
+/** Correct the organization's own code (owners only). The old one keeps working, so links already sent do not break. */
+export const changeOrgSlug = (slug: string) =>
+  api<{ slug: string; former_slugs: string[] }>('/api/settings/slug', { slug }, 'PATCH');

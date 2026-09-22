@@ -4,7 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
+import { Form } from '@/components/ui/Form';
 import { Avatar, Badge, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
+import { FormActions, TextField } from '@/components/ui/fields';
 import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
 import { useToast } from '@/components/ui/Toast';
@@ -17,7 +19,7 @@ import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
-import { PLATFORM_PREFIX, setTenantFeature, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { PLATFORM_PREFIX, renameTenantSlug, setTenantFeature, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
 import { SupportAccessForm, SuspendTenantForm, TenantAdminForm, TenantForm } from './components/TenantForms';
 import type { FeatureInfo, SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
@@ -312,7 +314,23 @@ function TenantRow({
           >
             <Icon name="link" />
           </button>
+          {/* The code is in every link this organization's customers were given; a typo at creation used to be for
+              good. Changing it keeps the old code leading here, so nothing already sent out breaks. */}
+          <button
+            type="button"
+            className="icon-btn sm"
+            aria-label={`แก้ไขรหัสองค์กรของ ${t.name}`}
+            title="แก้ไขรหัสองค์กร"
+            onClick={() => openModal(`รหัสองค์กรของ ${t.name}`, <SlugForm tenant={t} />)}
+          >
+            <Icon name="edit" />
+          </button>
         </div>
+        {t.former_slugs?.length > 0 && (
+          <span className="tiny muted org-former" title="รหัสเดิมที่ยังใช้เปิดหน้านี้ได้">
+            เดิม: {t.former_slugs.join(', ')}
+          </span>
+        )}
       </td>
       <td className="org-admins">
         {t.admins.map((a) => (
@@ -506,5 +524,33 @@ function FeatureForm({ tenant: t, catalogue }: { tenant: Tenant; catalogue: Feat
         })}
       </div>
     </>
+  );
+}
+
+/* Correcting the code an organization is reached by. The code sits in the help-centre address, in every follow link
+   already emailed or texted, and in the widget on the organization's own website, so the old one keeps leading here
+   for good and is never handed to anyone else. What changes is the address given out from now on. */
+function SlugForm({ tenant: t }: { tenant: Tenant }) {
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  return (
+    <Form
+      data-form="tenant-slug"
+      onSubmit={async (values) => {
+        const answer = await renameTenantSlug(t.id, (values.slug ?? '').trim());
+        closeModal();
+        toast(`เปลี่ยนรหัสองค์กรของ ${t.name} เป็น ${answer.slug} แล้ว`);
+        await refresh(PLATFORM_PREFIX, '/api/bootstrap');
+      }}
+    >
+      <p className="notice">
+        รหัสเดิม <strong>{t.slug}</strong> จะยังเปิดหน้าลูกค้าขององค์กรนี้ได้ตลอดไป ลิงก์ที่ส่งไปแล้วทางอีเมลหรือ SMS และวิดเจ็ตที่ฝังบนเว็บไซต์ขององค์กร
+        จึงไม่พัง · รหัสที่เคยใช้จะไม่ถูกยกให้องค์กรอื่นเด็ดขาด
+      </p>
+      <TextField label="รหัสองค์กรใหม่" name="slug" defaultValue={t.slug} max={60} hint="a-z, 0-9 และขีดกลาง เช่น bookdose-support" />
+      {t.former_slugs?.length > 0 && <p className="tiny muted">รหัสเดิมที่ยังใช้ได้อยู่: {t.former_slugs.join(', ')}</p>}
+      <FormActions label="เปลี่ยนรหัสองค์กร" onCancel={() => closeModal()} />
+    </Form>
   );
 }

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Avatar, EmptyState } from '@/components/ui/display';
-import { RequiredStar, TextArea, TextField } from '@/components/ui/fields';
+import { FormActions, RequiredStar, TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
@@ -13,7 +13,7 @@ import { useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useWork } from '@/lib/session';
 import type { TeamSnippet } from '@/lib/types';
-import { downloadBackup, saveSettings, saveTeamSnippets, WORKSPACE_PATH } from '../api';
+import { changeOrgSlug, downloadBackup, saveSettings, saveTeamSnippets, WORKSPACE_PATH } from '../api';
 import { CategoriesForm } from './CategoriesForm';
 
 /* ตั้งค่า → the organization's own sections, one per page: who it is and its customer link (ProfilePanel), the SLA
@@ -24,6 +24,7 @@ export function ProfilePanel() {
   const work = useWork();
   const { data: boot } = useBoot();
   const copyText = useCopyText();
+  const { openModal } = useDialogs();
   // The screen only renders in the browser (the staff layout waits for the workspace), so window is there.
   const customerUrl = typeof window === 'undefined' ? '' : customerHomeUrl(work.tenant.slug, boot?.home?.slug);
   return (
@@ -37,8 +38,23 @@ export function ProfilePanel() {
           <div className="org-facts">
             <strong className="org-name">{work.tenant.name}</strong>
             <span className="muted">
-              รหัสองค์กร <code>{work.tenant.slug}</code> · สมาชิกที่ใช้งาน {work.members.filter((m) => m.active).length} คน · {work.teams.length} ทีม
+              รหัสองค์กร <code>{work.tenant.slug}</code>
+              {work.role === 'admin' && (
+                <button
+                  type="button"
+                  className="icon-btn sm"
+                  aria-label="แก้ไขรหัสองค์กร"
+                  title="แก้ไขรหัสองค์กร"
+                  onClick={() => openModal('รหัสองค์กร', <SlugForm />)}
+                >
+                  <Icon name="edit" />
+                </button>
+              )}{' '}
+              · สมาชิกที่ใช้งาน {work.members.filter((m) => m.active).length} คน · {work.teams.length} ทีม
             </span>
+            {(work.tenant.former_slugs?.length ?? 0) > 0 && (
+              <span className="tiny muted">รหัสเดิมที่ยังใช้เปิดลิงก์เก่าได้: {work.tenant.former_slugs?.join(', ')}</span>
+            )}
           </div>
         </div>
         <div className="portal-link">
@@ -331,5 +347,33 @@ export function BackupPanel() {
         <p className="tiny muted mt">รายการที่ลบจะอยู่ในถังขยะ 30 วันก่อนถูกลบถาวร · การสำรองทั้งระบบและกู้คืนทำผ่านคำสั่งที่อธิบายใน README.md</p>
       </div>
     </section>
+  );
+}
+
+/* Correcting the organization's own code. It sits in the help-centre address, in every follow link already emailed
+   or texted to a customer, and in the widget on the organization's own website, so the old code keeps leading here
+   for good instead of turning all of those into a dead end. A code another organization once used is refused. */
+function SlugForm() {
+  const work = useWork();
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  return (
+    <Form
+      data-form="org-slug"
+      onSubmit={async (values) => {
+        const answer = await changeOrgSlug((values.slug ?? '').trim());
+        closeModal();
+        toast(`เปลี่ยนรหัสองค์กรเป็น ${answer.slug} แล้ว`);
+        await refresh(WORKSPACE_PATH, '/api/bootstrap');
+      }}
+    >
+      <p className="notice">
+        รหัสเดิม <strong>{work.tenant.slug}</strong> จะยังเปิดหน้าลูกค้าขององค์กรได้ตลอดไป ลิงก์ที่ส่งไปแล้วทางอีเมลหรือ SMS และวิดเจ็ตที่ฝังบนเว็บไซต์ของคุณจึงไม่พัง
+        · แต่ลิงก์ที่แจกใหม่ควรใช้รหัสใหม่
+      </p>
+      <TextField label="รหัสองค์กรใหม่" name="slug" defaultValue={work.tenant.slug} max={60} hint="a-z, 0-9 และขีดกลาง เช่น bookdose-support" />
+      <FormActions label="เปลี่ยนรหัสองค์กร" onCancel={() => closeModal()} />
+    </Form>
   );
 }

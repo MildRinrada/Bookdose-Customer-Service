@@ -11,6 +11,11 @@ work, something missing. It belongs to the platform, not to an organization - th
 fix the product - so it is kept here and read in the platform console. The message is the member's own words; the
 page and the browser are recorded with it so the report can be reproduced.
 
+tenant_slugs holds the codes an organization used to have. The code is in every link a customer was ever given - the
+help centre, the follow links in emails and SMS, the widget on the organization's own website - so a code that
+changes must keep working, not break every one of them. A former code leads to the same organization for good, and
+is never given to another organization, or an old link would quietly open somebody else's help centre.
+
 tenants.quota_mb is how much of the shared disk one organization may take (its attachment files plus its own
 database file). Every organization's data sits on one disk, so without a ceiling one organization uploading until
 the disk is full stops every organization from writing at once. Only new uploads are refused when the ceiling is
@@ -56,6 +61,9 @@ CREATE TABLE IF NOT EXISTS global_articles (
     audience TEXT NOT NULL CHECK(audience IN ('platform','staff','customer')),
     author TEXT NOT NULL, updated_at TEXT NOT NULL,
     published_at TEXT, draft TEXT
+);
+CREATE TABLE IF NOT EXISTS tenant_slugs (
+    slug TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, changed_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tenant_features (
     tenant_id TEXT NOT NULL, feature TEXT NOT NULL, enabled INTEGER NOT NULL,

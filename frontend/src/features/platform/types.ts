@@ -16,6 +16,8 @@ export type Tenant = {
   admin_invites: string[];
   /** Which features are on for this organization: its own answers over each feature's default. */
   features: Record<string, boolean>;
+  /** Codes it used to have. Links customers were given with them still lead here. */
+  former_slugs: string[];
 };
 
 /** One switchable feature, as the console lists them (backend platform/model.py FEATURES). */

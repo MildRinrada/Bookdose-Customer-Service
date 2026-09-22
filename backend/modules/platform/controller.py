@@ -202,6 +202,10 @@ def set_tenant_quota(req, tenant_id):
     return req.send(200,service.set_tenant_quota(req.cd,req.session,tenant_id,req.body))
 
 
+def rename_tenant_slug(req, tenant_id):
+    return req.send(200,service.rename_tenant_slug(req.cd,req.session,tenant_id,req.body))
+
+
 def set_tenant_feature(req, tenant_id):
     return req.send(200,service.set_tenant_feature(req.cd,req.session,tenant_id,req.body))
 

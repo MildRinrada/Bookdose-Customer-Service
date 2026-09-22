@@ -612,3 +612,10 @@
 .feature-row {
   align-items: flex-start;
 }
+
+/* The codes an organization used to be reached by, under its current help-centre address. */
+.org-former {
+  display: block;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}

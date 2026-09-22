@@ -13,6 +13,11 @@ def organization_info(req):
     return req.send(200,service.portal_info(req.cd,req.db,req.org))
 
 
+def canonical_code(req):
+    """The code this organization goes by now (a former code leads here too: platform/model.py tenant_slugs)."""
+    return req.send(200,{'slug':req.org['slug']})
+
+
 def open_conversation(req):
     return req.send(201,{'id':customers.open_conversation(req.cd,req.db,req.org,req.customer,req.body)})
 

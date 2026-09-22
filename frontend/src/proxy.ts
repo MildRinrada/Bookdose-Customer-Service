@@ -31,11 +31,20 @@ const ANCESTORS_TTL_MS = 60_000;
 const ANCESTORS_FAILED_TTL_MS = 10_000;
 const ancestorsCache = new Map<string, { value: string; until: number }>();
 
+// A help-centre address and the code in it. /support/tickets/new belongs to nobody, so it is left alone.
+const SUPPORT_PAGE = /^\/(?:support|chat)\/([a-z0-9]+(?:-[a-z0-9]+)*)(\/.*)?$/;
+const NOT_A_CODE = new Set(['tickets']);
+const CODE_TTL_MS = 300_000;
+const CODE_FAILED_TTL_MS = 10_000;
+const codeCache = new Map<string, { value: string; until: number }>();
+
 // Marks the web app's own trap report; a browser's request never carries it past this proxy.
 const TRAP_HEADER = 'x-bookdose-trap';
 
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   if (request.nextUrl.pathname.startsWith('/api/')) return toApi(request);
+  const moved = await movedCode(request);
+  if (moved) return moved;
   const response = await page(request);
   if (trapVisit(request)) event.waitUntil(reportTrap(request));
   return response;
@@ -122,6 +131,47 @@ async function frameAncestors(slug: string, request: NextRequest): Promise<strin
   if (ancestorsCache.size > 500) ancestorsCache.clear();
   ancestorsCache.set(slug, { value, until: now + ttl });
   return value;
+}
+
+/** The code this organization goes by now. A code that was corrected keeps leading to the organization, so a link
+    made with the old one still works; this is what lets the address bar catch up with it instead of showing a code
+    the organization no longer uses. Returns the code unchanged when nothing says otherwise. */
+async function canonicalCode(slug: string, request: NextRequest): Promise<string> {
+  const now = Date.now();
+  const cached = codeCache.get(slug);
+  if (cached && cached.until > now) return cached.value;
+  let value = slug;
+  let ttl = CODE_TTL_MS;
+  try {
+    const headers: Record<string, string> = { accept: 'application/json', 'x-forwarded-host': request.headers.get('host') ?? request.nextUrl.host };
+    const secret = process.env.BOOKDOSE_PROXY_SECRET;
+    if (secret) headers['x-bookdose-proxy'] = secret;
+    const response = await fetch(`${API_URL}/api/public/${slug}/code`, { headers, cache: 'no-store', signal: AbortSignal.timeout(3000) });
+    if (response.ok) {
+      const answer = (await response.json()) as { slug?: unknown };
+      if (typeof answer.slug === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(answer.slug)) value = answer.slug;
+    } else if (response.status >= 500 || response.status === 429) ttl = CODE_FAILED_TTL_MS;
+  } catch {
+    // The API did not answer: leave the address alone and ask again soon.
+    ttl = CODE_FAILED_TTL_MS;
+  }
+  if (codeCache.size > 500) codeCache.clear();
+  codeCache.set(slug, { value, until: now + ttl });
+  return value;
+}
+
+/** A help-centre link made with a code that has since been corrected: send the browser to the current address, so
+    what is copied out of the address bar from here on is the code the organization actually uses. The fragment of
+    the original address (a follow link's #t=…) rides along, which is what browsers do when the new address has
+    none of its own. */
+async function movedCode(request: NextRequest): Promise<NextResponse | null> {
+  const match = SUPPORT_PAGE.exec(request.nextUrl.pathname);
+  if (!match || NOT_A_CODE.has(match[1])) return null;
+  const current = await canonicalCode(match[1], request);
+  if (current === match[1]) return null;
+  const moved = request.nextUrl.clone();
+  moved.pathname = request.nextUrl.pathname.replace(`/${match[1]}`, `/${current}`);
+  return NextResponse.redirect(moved, 308);
 }
 
 async function page(request: NextRequest) {

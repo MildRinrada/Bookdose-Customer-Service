@@ -53,7 +53,7 @@ export type Team = { id: string; name: string; description?: string } & Record<s
 
 /** GET /api/workspace: the selected organization as the signed-in member sees it. */
 export type Workspace = {
-  tenant: { id: string; name: string; slug: string };
+  tenant: { id: string; name: string; slug: string; former_slugs?: string[] };
   role: Role;
   /** A platform admin on a support access: they may look, never reply, take a case or change anything. */
   read_only?: boolean;

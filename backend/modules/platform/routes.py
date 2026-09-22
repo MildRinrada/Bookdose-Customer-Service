@@ -14,6 +14,7 @@ ROUTES = [
     ('PATCH', f'/api/platform/tenants/{ID}',  controller.set_tenant_status,          'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/quota', controller.set_tenant_quota,      'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/features', controller.set_tenant_feature, 'platform'),
+    ('PATCH', f'/api/platform/tenants/{ID}/slug', controller.rename_tenant_slug,     'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/admins', controller.add_admin,          'platform'),
     ('GET',   '/api/platform/system',         controller.system,                     'platform'),
     ('GET',   '/api/platform/health',         controller.health,                     'platform'),

@@ -90,3 +90,9 @@ export const setTenantFeature = (tenantId: string, feature: string, enabled: boo
 /** Correct an organization's code. The old one keeps leading to it, so links already sent out do not break. */
 export const renameTenantSlug = (tenantId: string, slug: string) =>
   api<{ slug: string; former_slugs: string[] }>(`${TENANTS_PATH}/${tenantId}/slug`, { slug }, 'PATCH');
+
+/* สถานะระบบ: the public page at /status, and the note the platform team writes on it during an incident. */
+export const STATUS_PATH = '/api/status';
+export const saveStatusNotice = (state: string, text: string) =>
+  api<{ state: string; text: string; updated_at: string; updated_by: string }>(`${PLATFORM_PREFIX}/status`, { state, text });
+export const clearStatusNotice = () => api<{ ok: true }>(`${PLATFORM_PREFIX}/status`, undefined, 'DELETE');

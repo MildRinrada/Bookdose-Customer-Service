@@ -202,6 +202,28 @@ def set_tenant_quota(req, tenant_id):
     return req.send(200,service.set_tenant_quota(req.cd,req.session,tenant_id,req.body))
 
 
+def status(req):
+    """GET /api/status: the public status page. No sign-in, on purpose - somebody who cannot sign in is exactly the
+    person who needs it."""
+    from backend.database import db as D
+    from backend.modules.platform import status as status_service
+    # A 'public' route runs before the dispatcher opens the control database, so this one opens its own; the answer
+    # is cached for a few seconds, so an outage everybody checks at once is a handful of reads, not thousands.
+    with D.control() as cd:
+        return req.send(200,status_service.public_status(cd))
+
+
+def save_status_notice(req):
+    from backend.modules.platform import status as status_service
+    return req.send(200,status_service.save_notice(req.cd,req.session,req.body))
+
+
+def clear_status_notice(req):
+    from backend.modules.platform import status as status_service
+    status_service.clear_notice(req.cd,req.session)
+    return req.send(200,{'ok':True})
+
+
 def rename_tenant_slug(req, tenant_id):
     return req.send(200,service.rename_tenant_slug(req.cd,req.session,tenant_id,req.body))
 

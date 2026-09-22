@@ -7,7 +7,7 @@ import { AuditList } from '@/features/audit';
 import { date, number, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { HEALTH_PATH, SYSTEM_PATH } from './api';
-import { AnnouncementCard, BackupsCard, ChannelsCard, SecurityCard, TodoCard, UsageCard } from './components/HealthCards';
+import { AnnouncementCard, BackupsCard, ChannelsCard, SecurityCard, StatusNoticeCard, TodoCard, UsageCard } from './components/HealthCards';
 import { apiAreaLabels, bytesText, durationText, logSourceLabels, workerLabels, workerStatus } from './labels';
 import type { HealthPage, SystemOverview } from './types';
 
@@ -88,6 +88,7 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           </button>
         </div>
       </div>
+      <StatusNoticeCard />
       {health && <TodoCard items={health.todo} />}
       <div className="stats-grid">
         <StatCard

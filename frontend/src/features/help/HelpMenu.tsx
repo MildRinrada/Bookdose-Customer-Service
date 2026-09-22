@@ -82,6 +82,11 @@ export function HelpMenu() {
           <Icon name="book" />
           คู่มือจาก Bookdose
         </Link>
+        {/* Opens in its own tab: when something is broken, the page you are on is the one you want to keep. */}
+        <a className="menu-item" href="/status" target="_blank" rel="noopener">
+          <Icon name="chart" />
+          สถานะระบบ
+        </a>
         <button type="button" className="menu-item" onClick={() => openModal('รายงานปัญหา', <ReportForm page={pathname} />)}>
           <Icon name="bell" />
           รายงานปัญหา

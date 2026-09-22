@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
@@ -9,7 +9,7 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { date, number, relative } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { backupFileUrl, clearAnnouncement, HEALTH_PATH, markKeySaved, PLATFORM_PREFIX, retryChannels, runBackup, saveAnnouncement, saveBackupSettings, setTenantQuota } from '../api';
+import { backupFileUrl, clearAnnouncement, HEALTH_PATH, markKeySaved, PLATFORM_PREFIX, retryChannels, runBackup, saveAnnouncement, saveBackupSettings, saveStatusNotice, clearStatusNotice, setTenantQuota } from '../api';
 import { bytesText } from '../labels';
 import type { Announcement, BackupsView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
 
@@ -580,6 +580,121 @@ export function AnnouncementCard({ current }: { current: Announcement | null }) 
           )}
         </div>
       </Form>
+    </section>
+  );
+}
+
+/* สถานะระบบ: what the public page at /status says during an incident.
+
+   The page checks itself and reports what it finds, but "the system knows it is broken and someone is on it" is the
+   part that stops every organization phoning at once, and only a person can write that. Posted here, it shows at
+   the top of /status within seconds, to anyone, signed in or not. */
+const NOTICE_STATES: [string, string][] = [
+  ['watching', 'กำลังตรวจสอบ'],
+  ['partial', 'ใช้งานได้บางส่วน'],
+  ['down', 'ขัดข้อง'],
+  ['maintenance', 'ปิดปรับปรุงตามแผน'],
+];
+
+export function StatusNoticeCard() {
+  const toast = useToast();
+  const run = useRunAction();
+  const [current, setCurrent] = useState<{ state: string; text: string; updated_at: string; updated_by: string } | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void fetch('/api/status', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((answer) => {
+        if (!alive) return;
+        setCurrent((answer as { notice?: typeof current })?.notice ?? null);
+        setLoaded(true);
+      })
+      .catch(() => alive && setLoaded(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const reload = async () => {
+    const answer = await fetch('/api/status', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null));
+    setCurrent((answer as { notice?: typeof current })?.notice ?? null);
+  };
+
+  return (
+    <section className="card" id="status-notice">
+      <div className="card-header">
+        <div>
+          <h2>ประกาศสถานะระบบ</h2>
+          <p>
+            แสดงบนหน้า <a href="/status" target="_blank" rel="noopener">สถานะระบบ</a> ที่ทุกคนเปิดดูได้โดยไม่ต้องเข้าสู่ระบบ ·
+            เขียนไว้เมื่อรู้ปัญหาแล้ว องค์กรจะได้ไม่โทรเข้ามาพร้อมกัน
+          </p>
+        </div>
+        <Icon name="chart" />
+      </div>
+      <div className="card-body">
+        {loaded && current && (
+          <p className="notice warning">
+            ประกาศอยู่ตอนนี้: <strong>{current.text}</strong> · โดย {current.updated_by} เมื่อ {date(current.updated_at, true)}
+          </p>
+        )}
+        <Form
+          key={current?.updated_at ?? 'none'}
+          data-form="status-notice"
+          onSubmit={async (values) => {
+            await saveStatusNotice(values.state ?? 'watching', values.text ?? '');
+            toast('ประกาศสถานะแล้ว · หน้าสถานะระบบจะขึ้นภายในไม่กี่วินาที');
+            await reload();
+          }}
+        >
+          <div className="field">
+            <label htmlFor="status-state">สถานะ</label>
+            <select id="status-state" name="state" defaultValue={current?.state ?? 'watching'}>
+              {NOTICE_STATES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="status-text">สิ่งที่เกิดขึ้น (ภาษาที่ลูกค้าอ่านรู้เรื่อง)</label>
+            <textarea
+              id="status-text"
+              name="text"
+              rows={3}
+              maxLength={500}
+              required
+              defaultValue={current?.text ?? ''}
+              placeholder="เช่น ข้อความที่ส่งออกทาง LINE ล่าช้าประมาณ 10 นาที ทีมงานกำลังแก้ไข ไม่มีข้อความสูญหาย"
+            />
+          </div>
+          <div className="form-actions">
+            {current && (
+              <button
+                type="button"
+                className="btn"
+                onClick={() =>
+                  void run(async () => {
+                    await clearStatusNotice();
+                    toast('เอาประกาศออกแล้ว');
+                    await reload();
+                  })
+                }
+              >
+                <Icon name="close" />
+                เอาประกาศออก
+              </button>
+            )}
+            <button type="submit" className="btn primary">
+              <Icon name="send" />
+              {current ? 'อัปเดตประกาศ' : 'ประกาศสถานะ'}
+            </button>
+          </div>
+        </Form>
+      </div>
     </section>
   );
 }

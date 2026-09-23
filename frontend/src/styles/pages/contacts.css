@@ -444,10 +444,14 @@ tbody tr:hover .contact-actions .btn,tbody tr:focus-within .contact-actions .btn
 .contact-person .contact-name strong[tabindex] {
   cursor: default;
 }
+/* minmax(0,1fr): a grid track is at least as wide as its widest child wants to be, and a case subject on one line
+   (contact-peek-subject) wants the whole sentence - so without this the row pushed the track past the card and the
+   text ran out over the table behind it. Bounded, the subject cuts itself off with an ellipsis as it was meant to. */
 .contact-peek {
   position: fixed;
   z-index: 60;
   display: grid;
+  grid-template-columns: minmax(0,1fr);
   gap: 10px;
   width: min(360px,calc(100vw - 32px));
   padding: 16px;
@@ -494,6 +498,8 @@ tbody tr:hover .contact-actions .btn,tbody tr:focus-within .contact-actions .btn
   color: #6b5310;
   font-size: .88rem;
   white-space: pre-line;
+  /* A note is whatever the team typed, and a pasted link has nowhere to break: without this it runs out of the card. */
+  overflow-wrap: anywhere;
 }
 .contact-peek-note .icon {
   flex-shrink: 0;

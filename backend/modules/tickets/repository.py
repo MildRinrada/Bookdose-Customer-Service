@@ -104,8 +104,16 @@ def update(db, ticket_id, status, priority, team_id, assignee_id, resolved_at):
         (status,priority,team_id,assignee_id,resolved_at,now(),ticket_id))
 
 
+# A case somebody has answered is a case somebody has started. Nothing moved a case out of 'new' by itself, so one
+# sat there while it was owned, answered and half solved, until a member remembered the dropdown - and the reports
+# counted week-old work as new arrivals. The team's first reply is the moment the work began, so that is where it
+# moves. Only 'new' moves: every other status is one a person chose, and a reply is no reason to undo the choice.
+# Replies from the chatbot and the system never reach here (they are not the team's first response either).
+STARTED = "status=CASE WHEN status='new' THEN 'open' ELSE status END"
+
+
 def set_first_response(db, ticket_id, responded_at):
-    db.execute('UPDATE tickets SET first_response_at=? WHERE id=?',(responded_at,ticket_id))
+    db.execute(f'UPDATE tickets SET first_response_at=?,{STARTED} WHERE id=?',(responded_at,ticket_id))
 
 
 def link_conversation(db, ticket_id, conversation_id):
@@ -139,12 +147,12 @@ def first_staff_reply_time(db, conversation_id):
 
 
 def record_first_response(db, conversation_id):
-    db.execute('''UPDATE tickets SET first_response_at=COALESCE(first_response_at,?),updated_at=?
+    db.execute(f'''UPDATE tickets SET first_response_at=COALESCE(first_response_at,?),{STARTED},updated_at=?
        WHERE id IN (SELECT ticket_id FROM ticket_conversations WHERE conversation_id=?)''',(now(),now(),conversation_id))
 
 
 def record_first_response_for_message(db, message_id):
-    db.execute('''UPDATE tickets SET first_response_at=COALESCE(first_response_at,?),updated_at=? WHERE id IN
+    db.execute(f'''UPDATE tickets SET first_response_at=COALESCE(first_response_at,?),{STARTED},updated_at=? WHERE id IN
         (SELECT ticket_id FROM ticket_conversations WHERE conversation_id=(SELECT conversation_id FROM messages WHERE id=?))''',(now(),now(),message_id))
 
 

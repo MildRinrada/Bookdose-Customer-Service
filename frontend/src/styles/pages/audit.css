@@ -63,11 +63,14 @@
   margin-bottom: 14px;
   padding: 14px 16px;
 }
+/* "ล้างตัวกรอง" is only there while a filter is on, and a button is taller than the checkbox beside it: without a
+   floor the row grew the moment a filter was chosen and pushed the whole list below it down. */
 .audit-toolbar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 14px;
+  min-height: 44px;
 }
 .audit-toolbar-row>.search-input {
   flex: 1 1 280px;
@@ -155,8 +158,11 @@
   background: #1c1c1e;
   color: #fff;
 }
+/* Wide enough for three digits at any text size (the log keeps at most 300 events), so the pill never changes size.
+   Every filter changes every count, and a pill that grows by a digit shoves every tab after it sideways - the tabs
+   are what the eye is aiming at, so they have to stay where they were. */
 .audit-tab-count {
-  min-width: 22px;
+  min-width: calc(3ch + 14px);
   padding: 0 7px;
   border-radius: 999px;
   background: #ededed;

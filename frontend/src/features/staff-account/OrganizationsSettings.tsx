@@ -1,7 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
@@ -41,7 +41,7 @@ export function OrganizationsSettings() {
                 return (
                   <li key={m.id} className="org-role">
                     <div className="org-role-head">
-                      <Avatar name={m.name} index={m.slug === home ? 1 : index + 2} />
+                      <OrgLogo slug={m.slug} name={m.name} index={m.slug === home ? 1 : index + 2} hasLogo={m.has_logo} />
                       <span className="grow">
                         <strong>{m.name}</strong>
                         <span className="muted">

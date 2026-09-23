@@ -3,7 +3,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
-import { Avatar } from '@/components/ui/display';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
@@ -48,7 +48,7 @@ export function OrganizationsSettings() {
             {orgs.map((org) => (
               <li key={org.slug} className="org-role">
                 <div className="org-role-head">
-                  <Avatar name={org.name} index={org.home ? 1 : 3} />
+                  <OrgLogo slug={org.slug} name={org.name} index={org.home ? 1 : 3} hasLogo={org.has_logo} />
                   <span className="grow">
                     <strong>{org.name}</strong>
                     <span className="muted">

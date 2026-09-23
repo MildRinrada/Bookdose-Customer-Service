@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { useCopyText } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
-import { Avatar, Badge, ErrorState, PageLoading } from '@/components/ui/display';
+import { Badge, ErrorState, PageLoading } from '@/components/ui/display';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
@@ -79,7 +80,7 @@ function OrganizationView({
     <>
       <div className="page-heading org-page-heading">
         <div className="org-page-title">
-          <Avatar name={t.name} index={0} />
+          <OrgLogo slug={t.slug} name={t.name} index={0} hasLogo={t.has_logo} />
           <div>
             <h1>{t.name}</h1>
             <p>

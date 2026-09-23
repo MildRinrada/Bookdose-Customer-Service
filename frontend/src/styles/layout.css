@@ -72,7 +72,6 @@
   background: #fff;
 }
 .workspace-select .avatar {
-  border-radius: 8px;
   font-size: 1rem;
 }
 .workspace-select select {
@@ -879,7 +878,6 @@ html.sidebar-collapsed .platform-scope>.grow {
 .workspace-select .avatar {
   width: 28px;
   height: 28px;
-  border-radius: 7px;
 }
 .workspace-select select {
   min-height: 40px;
@@ -1042,7 +1040,6 @@ html.platform-mode .platform-banner .icon {
   flex-shrink: 0;
   width: 34px;
   height: 34px;
-  border-radius: 9px;
   font-size: .95rem;
   font-weight: 800;
 }
@@ -1167,7 +1164,6 @@ html.platform-mode .platform-banner .icon {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
   font-size: .9rem;
   font-weight: 800;
 }

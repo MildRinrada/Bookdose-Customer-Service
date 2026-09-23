@@ -23,6 +23,11 @@ def change_slug(req):
 
 
 @require_role('admin')
+def save_profile(req):
+    return req.send(200,service.save_profile(req.cd,req.db,req.ctx,req.body))
+
+
+@require_role('admin')
 def update_settings(req):
     service.update_settings(req.db,req.ctx,req.body)
     return req.send(200,{'ok':True})

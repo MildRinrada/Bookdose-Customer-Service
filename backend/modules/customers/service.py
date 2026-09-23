@@ -147,7 +147,8 @@ def _connected(cd, session):
 def _org_view(org, home):
     from backend.modules.ai import service as ai
     with D.tenant(org['id']) as db:
-        return {'slug':org['slug'],'name':org['name'],'home':bool(home) and org['id']==home['id'],
+        # has_logo, not the picture: a customer with ten organizations would carry a megabyte of them in every answer.
+        return {'slug':org['slug'],'name':org['name'],'home':bool(home) and org['id']==home['id'],'has_logo':bool(org['logo']),
                 'welcome':organization.setting(db,'welcome'),'response_hours':organization.setting(db,'response_hours'),
                 'ai_enabled':ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
                 'categories':[c['name'] for c in categories(db)]}

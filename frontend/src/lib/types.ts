@@ -5,7 +5,7 @@
 export type Role = 'admin' | 'agent';
 
 /** expires_at: when a support access approved by the organization ends (null for a permanent membership). */
-export type Membership = { id: string; name: string; slug: string; status: string; role: Role; expires_at?: string | null };
+export type Membership = { id: string; name: string; slug: string; status: string; role: Role; has_logo?: boolean; expires_at?: string | null };
 
 /** GET /api/bootstrap: who is signed in (user is null when signed out) and how this copy is set up. */
 export type Boot = {
@@ -53,7 +53,7 @@ export type Team = { id: string; name: string; description?: string } & Record<s
 
 /** GET /api/workspace: the selected organization as the signed-in member sees it. */
 export type Workspace = {
-  tenant: { id: string; name: string; slug: string; former_slugs?: string[] };
+  tenant: { id: string; name: string; slug: string; logo?: string; former_slugs?: string[] };
   role: Role;
   /** A platform admin on a support access: they may look, never reply, take a case or change anything. */
   read_only?: boolean;
@@ -168,6 +168,8 @@ export type CustomerOrg = {
   name: string;
   /** The platform's own organization (always first). */
   home: boolean;
+  /** Whether it set a picture of its own; the picture itself is fetched from /api/public/<slug>/logo. */
+  has_logo?: boolean;
   welcome?: string;
   response_hours?: number;
   categories?: string[];

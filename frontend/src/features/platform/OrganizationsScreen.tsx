@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
-import { Avatar, Badge, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
+import { Badge, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 import { FormActions, TextField } from '@/components/ui/fields';
 import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
@@ -294,7 +295,7 @@ function TenantRow({
     <tr className={t.status === 'active' ? '' : 'org-suspended'}>
       <td>
         <div className="org-cell">
-          <Avatar name={t.name} index={index} />
+          <OrgLogo slug={t.slug} name={t.name} index={index} hasLogo={t.has_logo} />
           <div className="org-text">
             {/* The name is the way in: everything about one organization is on its own page, not in these cells. */}
             <Link className="truncate" href={`${BASE}/${t.id}`} title={`ตั้งค่า ${t.name}`}>

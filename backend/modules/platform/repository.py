@@ -40,6 +40,15 @@ def find_tenant(db, tenant_id):
     return one(db,'SELECT id,name FROM tenants WHERE id=?',(tenant_id,))
 
 
+def save_tenant_profile(db, tenant_id, name, logo):
+    """What the organization calls itself and the picture it shows, set by its own owners."""
+    db.execute('UPDATE tenants SET name=?,logo=? WHERE id=?',(name,logo,tenant_id))
+
+
+def tenant_logo(db, tenant_id):
+    return (one(db,'SELECT logo FROM tenants WHERE id=?',(tenant_id,)) or {}).get('logo','')
+
+
 def tenant_features(db, tenant_id):
     """{feature: bool} for the ones this organization was given an answer for; the rest keep their default."""
     return {row['feature']:bool(row['enabled'])
@@ -142,7 +151,11 @@ def active_tenant_ids(db):
 
 def list_with_member_count(db):
     """Each organization with how many of its own members are active (platform admins are never counted)."""
-    return rows(db,'''SELECT t.*,(SELECT COUNT(*) FROM memberships m WHERE m.tenant_id=t.id AND m.active=1 AND m.expires_at IS NULL
+    # Every column but the logo, which is a picture of up to 128 KB: a console listing a hundred organizations would
+    # carry megabytes of them. has_logo says whether there is one; the picture itself is fetched as an image.
+    return rows(db,'''SELECT t.id,t.name,t.slug,t.status,t.created_at,t.quota_mb,
+                      CASE WHEN t.logo='' THEN 0 ELSE 1 END AS has_logo,
+                      (SELECT COUNT(*) FROM memberships m WHERE m.tenant_id=t.id AND m.active=1 AND m.expires_at IS NULL
                       AND m.user_id NOT IN (SELECT id FROM users WHERE platform_admin=1)) AS member_count FROM tenants t ORDER BY t.created_at''')
 
 

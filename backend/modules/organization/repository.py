@@ -32,7 +32,9 @@ def can_enter_tenant(db, user_id, tenant_id):
 
 
 def user_memberships(db, user_id):
-    return rows(db,f'''SELECT t.id,t.name,t.slug,t.status,m.role,m.expires_at FROM memberships m JOIN tenants t ON t.id=m.tenant_id
+    # has_logo, not the picture (as with a member's photo below): it is read on every page and fetched as an image.
+    return rows(db,f'''SELECT t.id,t.name,t.slug,t.status,m.role,m.expires_at,
+                CASE WHEN t.logo='' THEN 0 ELSE 1 END AS has_logo FROM memberships m JOIN tenants t ON t.id=m.tenant_id
                 WHERE m.user_id=? AND m.active=1 AND {LIVE} AND {WORKS} ORDER BY t.name''',(user_id,now()))
 
 

@@ -110,7 +110,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
             <div className="card-header">
               <div>
                 <h2>กฎรับเรื่องและส่งต่อ</h2>
-                <p>Trigger &amp; Ticket Routing · เปิดใช้ {ruleCount} กฎ · เรื่องใหม่ที่ตรงเงื่อนไขจะเปิดเคสและตั้งค่าตามกฎทันที</p>
+                <p>เปิดใช้ {ruleCount} กฎ · เรื่องใหม่ที่ตรงเงื่อนไขจะเปิดเคสและตั้งค่าให้ทันที</p>
               </div>
               <button type="button" className="btn" onClick={() => ruleForm()}>
                 <Icon name="plus" />
@@ -164,20 +164,14 @@ function AutomationView({ data }: { data: AutomationPage }) {
                 />
               )}
             </div>
-            <p className="auto-foot tiny muted">
-              กฎทำงานตามลำดับที่สร้าง ถ้าหลายกฎตรงกัน กฎที่สร้างทีหลังเขียนทับค่าเดียวกันได้ · ผู้รับผิดชอบต้องอยู่ในทีมของเคส
-            </p>
+            <p className="auto-foot tiny muted">หลายกฎตรงกัน กฎที่สร้างทีหลังชนะ · ผู้รับผิดชอบต้องอยู่ในทีมของเคส</p>
           </section>
           <section className="card" id="automation-macros">
             <div className="card-header">
               <div>
                 <h2>Macro · ปุ่มลัดทำหลายอย่างในคลิกเดียว</h2>
                 <p>
-                  กดครั้งเดียวแล้ว <strong>ส่งจริงและเดินเคสต่อให้</strong> · ต้องเปลี่ยนสถานะเคสหรือตั้งเตือนติดตามผลอย่างน้อย 1 อย่าง
-                  <br />
-                  ถ้าต้องการแค่แทรกข้อความให้เจ้าหน้าที่ตรวจแก้ก่อนส่ง ให้ใช้ <Link href="/settings?tab=service">คำตอบสำเร็จรูปของทีม</Link> แทน
-                  <br />
-                  ใช้จากหน้าเคสและกล่องข้อความ · ข้อความแทนค่า {'{customer}'} {'{case}'} {'{agent}'} ได้
+                  กดครั้งเดียวแล้ว <strong>ส่งจริงและเดินเคสต่อให้</strong>
                 </p>
               </div>
               <button type="button" className="btn" onClick={() => macroForm()}>
@@ -185,6 +179,18 @@ function AutomationView({ data }: { data: AutomationPage }) {
                 เพิ่ม Macro
               </button>
             </div>
+            {/* The rules of the thing, for whoever is setting one up - not for everyone who opens the page. Below the
+                header rather than inside it, so opening it does not wrap the text around the button. */}
+            <details className="auto-more">
+              <summary>Macro ทำงานยังไง</summary>
+              <p>ต้องเปลี่ยนสถานะเคสหรือตั้งเตือนติดตามผลอย่างน้อย 1 อย่าง</p>
+              <p>
+                ใช้จากหน้าเคสและกล่องข้อความ · แทนค่า {'{customer}'} {'{case}'} {'{agent}'} ในข้อความได้
+              </p>
+              <p>
+                อยากแค่แทรกข้อความให้เจ้าหน้าที่ตรวจแก้ก่อนส่ง ใช้ <Link href="/settings?tab=service">คำตอบสำเร็จรูปของทีม</Link> แทน
+              </p>
+            </details>
             <div className="card-body auto-list">
               {data.macros.length ? (
                 data.macros.map((m) => {
@@ -231,24 +237,24 @@ function AutomationView({ data }: { data: AutomationPage }) {
             </div>
           </section>
         </div>
-        <div className="stack">
-          <SettingsForm settings={s} />
-          <section className="card">
-            <div className="card-header">
-              <div>
-                <h2>เคสที่ถูกยกระดับล่าสุด</h2>
-                <p>20 รายการล่าสุด</p>
-              </div>
+        <SettingsForm settings={s} />
+        {/* Across both columns: a log reads better on one long line than wrapped into three in a narrow column, and
+            the settings beside the rules are nowhere near the same height - this closes the page level. */}
+        <section className="card automation-wide">
+          <div className="card-header">
+            <div>
+              <h2>เคสที่ถูกยกระดับล่าสุด</h2>
+              <p>20 รายการล่าสุด</p>
             </div>
-            <div className="card-body">
-              {data.escalations.length ? (
-                data.escalations.map((e) => <EscalationRow key={e.ticket_id} escalation={e} />)
-              ) : (
-                <div className="empty-mini">ยังไม่มีเคสที่ถูกยกระดับ</div>
-              )}
-            </div>
-          </section>
-        </div>
+          </div>
+          <div className="card-body">
+            {data.escalations.length ? (
+              data.escalations.map((e) => <EscalationRow key={e.ticket_id} escalation={e} />)
+            ) : (
+              <div className="empty-mini">ยังไม่มีเคสที่ถูกยกระดับ</div>
+            )}
+          </div>
+        </section>
       </div>
     </>
   );
@@ -276,7 +282,7 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
       <div className="card-header">
         <div>
           <h2>ยกระดับ SLA อัตโนมัติ</h2>
-          <p>SLA Auto-Escalation · ระบบตรวจทุก 30 วินาที</p>
+          <p>ระบบตรวจทุก 30 วินาที</p>
         </div>
       </div>
       <div className="card-body stack">
@@ -294,15 +300,15 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
           defaultValue={s.escalation_minutes}
         />
         <ul className="auto-notes">
-          <li>เคสที่ยังไม่มีผู้รับผิดชอบและยังไม่ได้ตอบ จะย้ายให้เจ้าขององค์กร (คนที่อยู่ทีมเดียวกับเคสก่อน)</li>
-          <li>เคสที่มีผู้รับผิดชอบแต่ยังไม่ตอบ และเหลือเวลาตอบกลับครั้งแรกไม่ถึงจำนวนนาทีนี้ จะแจ้งเจ้าขององค์กรโดยไม่ย้ายเคส</li>
-          <li>แต่ละเคสยกระดับครั้งเดียว และบันทึกในประวัติเคส</li>
+          <li>ไม่มีใครรับและไม่มีใครตอบ · ย้ายให้เจ้าขององค์กรในทีมนั้น</li>
+          <li>มีคนรับแล้วแต่ยังไม่ตอบ และใกล้ครบกำหนด · แจ้งเตือน ไม่ย้ายเคส</li>
+          <li>ยกระดับเคสละครั้งเดียว และบันทึกในประวัติเคส</li>
         </ul>
       </div>
       <div className="card-header auto-subhead">
         <div>
           <h2>แบบประเมินความพึงพอใจ</h2>
-          <p>Automated CSAT · ส่งเมื่อเปลี่ยนเคสเป็นแก้ไขแล้วหรือปิดเคส</p>
+          <p>ส่งเมื่อเปลี่ยนเคสเป็นแก้ไขแล้วหรือปิดเคส</p>
         </div>
       </div>
       <div className="card-body stack">
@@ -311,10 +317,7 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
           ส่งแบบประเมินให้ลูกค้าอัตโนมัติ
         </label>
         <TextArea id="csat-message" label="ข้อความแบบประเมิน" name="csat_message" max={1000} rows={4} defaultValue={s.csat_message} />
-        <p className="tiny muted">
-          แชทบนหน้าลูกค้าแสดงปุ่มดาว 1-5 ส่วน LINE / Email / Facebook ให้ลูกค้าตอบเป็นตัวเลข 1-5 ภายใน 7 วัน คำตอบคะแนนไม่เปิดเคสกลับ
-          เคสที่เจ้าหน้าที่บันทึกเองไม่มีช่องทางส่งแบบประเมิน
-        </p>
+        <p className="tiny muted">หน้าลูกค้าแสดงปุ่มดาว 1-5 · ช่องทางอื่นตอบเป็นตัวเลขภายใน 7 วัน · คะแนนไม่เปิดเคสกลับ · เคสที่บันทึกเองส่งไม่ได้</p>
         <div className="settings-save">
           <span className="muted">มีผลทันทีหลังบันทึก</span>
           <button className="btn primary" type="submit">

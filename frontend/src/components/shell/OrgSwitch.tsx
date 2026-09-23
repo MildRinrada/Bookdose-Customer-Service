@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 import { useToast } from '@/components/ui/Toast';
 import { roleLabels } from '@/lib/labels';
 import type { Membership } from '@/lib/types';
@@ -97,7 +97,7 @@ export function OrgSwitch({ memberships, current, onSwitch }: { memberships: Mem
         aria-label={here ? `องค์กร: ${here.name} · เปลี่ยนองค์กร` : 'เลือกองค์กร'}
         onClick={() => setOpen((o) => !o)}
       >
-        <Avatar name={here?.name || 'B'} />
+        <OrgLogo slug={here?.slug} name={here?.name || 'B'} hasLogo={here?.has_logo} />
         <span className="org-switch-text">
           <strong>{here?.name ?? 'ไม่มีองค์กรที่ใช้งานอยู่'}</strong>
           <small>{here ? roleLabels[here.role] : 'เลือกองค์กร'}</small>
@@ -124,7 +124,7 @@ export function OrgSwitch({ memberships, current, onSwitch }: { memberships: Mem
               className="org-option"
               onClick={() => choose(m.id)}
             >
-              <Avatar name={m.name} index={i + 1} />
+              <OrgLogo slug={m.slug} name={m.name} index={i + 1} hasLogo={m.has_logo} />
               <span className="org-option-text">
                 <strong>{m.name}</strong>
                 <small>{roleLabels[m.role]}</small>

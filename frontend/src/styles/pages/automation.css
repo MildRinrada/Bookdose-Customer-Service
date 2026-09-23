@@ -8,6 +8,26 @@
   gap: 22px;
   align-items: start;
 }
+/* The list of escalated cases sits under both columns: what the team keeps (rules, macros) and what it sets once
+   (SLA, the survey) are nowhere near the same height, so stacking the log under the shorter one left the page with
+   a column of nothing beside it. A log is also the one thing here that reads better wide than narrow. */
+.automation-wide {
+  grid-column: 1 / -1;
+}
+.auto-more {
+  padding: 0 20px 14px;
+  margin-top: -6px;
+  font-size: .9rem;
+  color: var(--muted);
+}
+.auto-more summary {
+  cursor: pointer;
+  color: var(--link);
+  font-weight: 600;
+}
+.auto-more p {
+  margin: 6px 0 0;
+}
 .auto-list {
   padding-top: 4px;
   padding-bottom: 4px;

@@ -13,7 +13,7 @@ export type SettingsTab = keyof typeof settingsTabs;
 
 /** The sections too full of fields to share one page: their parts, chosen by an icon (?tab=<part>). */
 export const settingsParts = {
-  profile: { tab: 'overview', label: 'ข้อมูลองค์กร', hint: 'ชื่อ รหัสองค์กร และลิงก์หน้าลูกค้า', icon: 'globe' },
+  profile: { tab: 'overview', label: 'ข้อมูลองค์กร', hint: 'ชื่อ โลโก้ รหัสองค์กร และลิงก์หน้าลูกค้า', icon: 'globe' },
   service: { tab: 'overview', label: 'มาตรฐานบริการ', hint: 'เวลาตอบกลับ (SLA) ข้อความต้อนรับ และคำตอบสำเร็จรูป', icon: 'clock' },
   categories: { tab: 'overview', label: 'หมวดเรื่อง', hint: 'หมวดที่ลูกค้าเลือกตอนเริ่มแชท และทีมที่ดูแล', icon: 'list' },
   backup: { tab: 'overview', label: 'ข้อมูลและการสำรอง', hint: 'ดาวน์โหลดไฟล์สำรอง และถังขยะ', icon: 'shield' },

@@ -1,9 +1,7 @@
 """Sign-in, first-run setup, self-registration and account form validation, and the bootstrap response."""
-import base64
 import re
-import struct
 
-from backend.exceptions.errors import APIError
+from backend.utils.files import PICTURE_FIELD_MAX, png_data_url
 from backend.utils.validation import require, field, email_field, person_name, slug_field, new_password, existing_password
 
 
@@ -61,16 +59,9 @@ def password_change_form(body):
 def profile_form(body):
     """(display name, avatar): the avatar is empty or a PNG data URL up to 512 × 512 and 128 KB."""
     name = person_name(body)
-    avatar = field(body,'avatar',180000,False)
-    if avatar:
-        require(avatar.startswith('data:image/png;base64,'),'รูปโปรไฟล์ต้องเป็น PNG')
-        try:
-            raw = base64.b64decode(avatar.split(',',1)[1],validate=True)
-            require(len(raw)>=33 and raw.startswith(b'\x89PNG\r\n\x1a\n') and raw[12:16]==b'IHDR','รูปโปรไฟล์ไม่ถูกต้อง')
-            width,height=struct.unpack('>II',raw[16:24])
-            require(0<width<=512 and 0<height<=512 and len(raw)<=128*1024,'รูปโปรไฟล์ต้องไม่เกิน 512 × 512 และ 128 KB')
-        except (ValueError,struct.error):
-            raise APIError(400,'รูปโปรไฟล์ไม่ถูกต้อง')
+    avatar = field(body,'avatar',PICTURE_FIELD_MAX,False)
+    ok,problem = png_data_url(avatar,'รูปโปรไฟล์')
+    require(ok,problem)
     return name,avatar
 
 

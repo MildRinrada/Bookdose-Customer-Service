@@ -2,7 +2,8 @@
 import re
 
 from backend.exceptions.errors import APIError
-from backend.modules.organization.model import MAX_TEAM_SNIPPETS, ROLES, TEAM_SNIPPET_MAX
+from backend.modules.organization.model import MAX_TEAM_SNIPPETS, ORG_NAME_MAX, ROLES, TEAM_SNIPPET_MAX
+from backend.utils.files import PICTURE_FIELD_MAX, png_data_url
 from backend.utils.security import uid
 from backend.utils.validation import require, field, email_field, new_password
 
@@ -26,6 +27,15 @@ def customer_categories(body, team_ids):
         names.add(name)
         found.append({'name':name,'team_id':team})
     return found
+
+
+def profile_form(body):
+    """(name, logo) of the organization itself. The logo is empty or a square PNG from the picture cropper."""
+    name = field(body,'name',ORG_NAME_MAX)
+    logo = field(body,'logo',PICTURE_FIELD_MAX,False)
+    ok,problem = png_data_url(logo,'โลโก้องค์กร')
+    require(ok,problem)
+    return name,logo
 
 
 def settings_form(body):

@@ -9,6 +9,7 @@ ROUTES = [
     # 'account', not 'workspace': an <img> sends no X-Tenant-ID header (see controller.member_photo).
     ('GET',   f'/api/members/{ID}/photo', controller.member_photo, 'account'),
     ('PATCH', '/api/settings',  controller.update_settings, 'workspace'),
+    ('PATCH', '/api/settings/profile', controller.save_profile, 'workspace'),
     ('PATCH', '/api/settings/slug', controller.change_slug, 'workspace'),
     ('POST',  '/api/settings/categories', controller.save_customer_categories, 'workspace'),
     ('POST',  '/api/settings/snippets', controller.save_team_snippets, 'workspace'),

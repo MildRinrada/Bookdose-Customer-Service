@@ -10,9 +10,22 @@ import { useToast } from './Toast';
 /* The profile picture in the account dialog (ported from old-frontend/ui/photo.js): the picture is the button, with a
    camera badge; choosing a file opens the cropper in the sheet (drag to move, slide to zoom) and the finished square
    goes into a hidden "avatar" field as a data: URL ('' removes the picture). Nothing is uploaded until the form
-   around it is saved. */
+   around it is saved. `title` names what the picture is of, so an organization's logo reads as its own thing rather
+   than as somebody's profile picture. */
 
-export function PhotoPicker({ name = 'avatar', value, personName }: { name?: string; value: string; personName: string }) {
+export function PhotoPicker({
+  name = 'avatar',
+  value,
+  personName,
+  title = 'รูปโปรไฟล์',
+  hint = 'คลิกที่รูปเพื่อเลือกภาพใหม่ แล้วเลื่อนและย่อ-ขยายให้พอดีวงกลม · PNG หรือ JPG ไม่เกิน 5 MB',
+}: {
+  name?: string;
+  value: string;
+  personName: string;
+  title?: string;
+  hint?: string;
+}) {
   const [photo, setPhoto] = useState(value);
   const fileRef = useRef<HTMLInputElement>(null);
   const { openSheet, closeSheet } = useDialogs();
@@ -21,17 +34,17 @@ export function PhotoPicker({ name = 'avatar', value, personName }: { name?: str
 
   return (
     <div className="photo-picker">
-      <button type="button" className="photo-button" onClick={pick} aria-label="เปลี่ยนรูปโปรไฟล์" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
+      <button type="button" className="photo-button" onClick={pick} aria-label={`เปลี่ยน${title}`} title={`คลิกเพื่อเปลี่ยน${title}`}>
         <span className="photo-frame" data-photo-preview="">
-          {photo ? <ProfilePhoto src={photo} /> : <Avatar name={personName} index={2} />}
+          {photo ? <ProfilePhoto src={photo} alt={title} /> : <Avatar name={personName} index={2} />}
         </span>
         <span className="photo-camera" aria-hidden="true">
           <Icon name="camera" />
         </span>
       </button>
       <div className="photo-side">
-        <strong>รูปโปรไฟล์</strong>
-        <p className="photo-hint muted">คลิกที่รูปเพื่อเลือกภาพใหม่ แล้วเลื่อนและย่อ-ขยายให้พอดีวงกลม · PNG หรือ JPG ไม่เกิน 5 MB</p>
+        <strong>{title}</strong>
+        <p className="photo-hint muted">{hint}</p>
         <div className="photo-actions">
           <button type="button" className="btn sm" onClick={pick}>
             <Icon name="image" />
@@ -43,7 +56,7 @@ export function PhotoPicker({ name = 'avatar', value, personName }: { name?: str
             hidden={!photo}
             onClick={() => {
               setPhoto('');
-              toast('รูปจะถูกลบเมื่อกดบันทึกโปรไฟล์');
+              toast('รูปจะถูกลบเมื่อกดบันทึก');
             }}
           >
             <Icon name="close" />
@@ -75,7 +88,7 @@ export function PhotoPicker({ name = 'avatar', value, personName }: { name?: str
                   onApply={(url) => {
                     setPhoto(url);
                     closeSheet();
-                    toast('ปรับรูปแล้ว · กดบันทึกโปรไฟล์เพื่อใช้รูปนี้');
+                    toast('ปรับรูปแล้ว · กดบันทึกเพื่อใช้รูปนี้');
                   }}
                 />,
               ),

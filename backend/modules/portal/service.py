@@ -1,7 +1,11 @@
 """Customer support page: organization info, and what a signed-in customer does in their own conversations.
 The accounts themselves (sign-up with a confirmed email, sign-in, password reset) are in backend/modules/customers.
 The portal has no tables of its own; it works on conversations, public articles and customer accounts."""
+import base64
+import binascii
+
 from backend.database import db as D
+from backend.exceptions.errors import APIError
 from backend.modules.ai import service as ai
 from backend.modules.automation import service as automation
 from backend.modules.channels import repository as channel_settings
@@ -32,6 +36,17 @@ def contact_channels(db):
     if page and page['enabled']:
         found.append({'kind':'facebook','label':page['config'].get('page_name','')})
     return found
+
+
+def organization_logo(org):
+    """The organization's own picture as a PNG. Public, like its name: it heads the pages its customers open, and the
+    lists that show many organizations at once fetch it as an image rather than carrying it in every answer."""
+    stored = org.get('logo','')
+    require(stored.startswith('data:image/png;base64,'),'องค์กรนี้ยังไม่ได้ตั้งโลโก้',404)
+    try:
+        return base64.b64decode(stored.split(',',1)[1],validate=True)
+    except (ValueError,binascii.Error):
+        raise APIError(404,'โลโก้เสียหาย') from None
 
 
 def portal_info(cd, db, org):

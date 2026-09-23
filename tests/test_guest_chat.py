@@ -180,7 +180,7 @@ class GuestChatTests(unittest.TestCase):
         page = self.browser()
         first = self.overview(page)
         self.assertIsNone(first['guest'])
-        self.assertEqual((first['conversations'],first['organization']),([],{'name':'องค์กร A','slug':'alpha'}))
+        self.assertEqual((first['conversations'],first['organization']),([],{'name':'องค์กร A','slug':'alpha','logo':''}))
         self.assertEqual(first['follow'],{'email_ready':False,'sms_ready':False,'line_ready':False,'line_oa_name':'','line_add_url':''})
         self.assertIn('สอบถามบริการ',first['categories'])
         status,data,headers = self.start(page,name='สมศรี',category='สอบถามบริการ')

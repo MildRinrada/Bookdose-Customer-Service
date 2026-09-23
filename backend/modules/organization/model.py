@@ -7,6 +7,11 @@ word so old rows can be read, and start-up turns them into agents (database/sche
 
 ROLES = ('admin','agent')
 
+# The organization's own name, which it may correct itself (ตั้งค่าองค์กร → ภาพรวม). It was set once at sign-up and
+# then nothing in the system could change it - not the organization, not a platform admin - so a typo or a rebrand
+# followed the organization everywhere it appeared, including on the pages its customers open.
+ORG_NAME_MAX = 100
+
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS memberships (
     tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT NOT NULL REFERENCES users(id),

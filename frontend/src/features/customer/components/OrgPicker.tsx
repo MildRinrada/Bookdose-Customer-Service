@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { OrgLogo } from '@/components/ui/OrgLogo';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { ORG_CODE } from '@/lib/routes';
@@ -78,7 +78,7 @@ export function OrgPicker({
       <div className="combo-control org-picker-control" onClick={() => input.current?.focus()}>
         {selected && (
           <span className="org-chip">
-            <Avatar name={selected.name} index={selected.home ? 1 : 3} />
+            <OrgLogo slug={selected.slug} name={selected.name} index={selected.home ? 1 : 3} hasLogo={selected.has_logo} />
             <span className="org-chip-name">{selected.name}</span>
             {selected.home && <span className="org-chip-tag">ผู้ให้บริการระบบ</span>}
             <button
@@ -156,7 +156,7 @@ export function OrgPicker({
               choose(o);
             }}
           >
-            <Avatar name={o.name} index={o.home ? 1 : 3} />
+            <OrgLogo slug={o.slug} name={o.name} index={o.home ? 1 : 3} hasLogo={o.has_logo} />
             <span>
               {o.name}
               <small>{o.home ? 'ผู้ให้บริการระบบ · ปัญหาระบบ แจ้ง Bug' : `องค์กรคู่ค้า · ${o.slug}`}</small>

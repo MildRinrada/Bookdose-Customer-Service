@@ -76,6 +76,10 @@
   height: 58px;
   font-size: 1.3rem;
 }
+.org-identity-edit {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 .org-facts {
   display: flex;
   flex-direction: column;

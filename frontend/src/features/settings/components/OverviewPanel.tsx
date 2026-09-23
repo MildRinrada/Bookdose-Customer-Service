@@ -4,16 +4,17 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
-import { Avatar, EmptyState } from '@/components/ui/display';
+import { Avatar, EmptyState, ProfilePhoto } from '@/components/ui/display';
 import { FormActions, RequiredStar, TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { useToast } from '@/components/ui/Toast';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
 import { useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useWork } from '@/lib/session';
 import type { TeamSnippet } from '@/lib/types';
-import { changeOrgSlug, downloadBackup, saveSettings, saveTeamSnippets, WORKSPACE_PATH } from '../api';
+import { changeOrgSlug, downloadBackup, saveOrgProfile, saveSettings, saveTeamSnippets, WORKSPACE_PATH } from '../api';
 import { CategoriesForm } from './CategoriesForm';
 
 /* ตั้งค่า → the organization's own sections, one per page: who it is and its customer link (ProfilePanel), the SLA
@@ -34,7 +35,7 @@ export function ProfilePanel() {
       </div>
       <div className="card-body">
         <div className="org-identity">
-          <Avatar name={work.tenant.name} index={1} />
+          {work.tenant.logo ? <ProfilePhoto src={work.tenant.logo} alt={`โลโก้ของ ${work.tenant.name}`} /> : <Avatar name={work.tenant.name} index={1} />}
           <div className="org-facts">
             <strong className="org-name">{work.tenant.name}</strong>
             <span className="muted">
@@ -56,6 +57,12 @@ export function ProfilePanel() {
               <span className="tiny muted">รหัสเดิมที่ยังใช้เปิดลิงก์เก่าได้: {work.tenant.former_slugs?.join(', ')}</span>
             )}
           </div>
+          {work.role === 'admin' && (
+            <button type="button" className="btn sm subtle org-identity-edit" onClick={() => openModal('ชื่อและโลโก้องค์กร', <OrgProfileForm />)}>
+              <Icon name="edit" />
+              แก้ไขชื่อและโลโก้
+            </button>
+          )}
         </div>
         <div className="portal-link">
           <div className="grow">
@@ -353,6 +360,36 @@ export function BackupPanel() {
 /* Correcting the organization's own code. It sits in the help-centre address, in every follow link already emailed
    or texted to a customer, and in the widget on the organization's own website, so the old code keeps leading here
    for good instead of turning all of those into a dead end. A code another organization once used is refused. */
+/* The organization's own name and picture. Both are what its customers see - the name heads every page they open and
+   every notice they are sent - so this is the one place that changes them, and only an owner reaches it. */
+function OrgProfileForm() {
+  const work = useWork();
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  return (
+    <Form
+      data-form="org-profile"
+      onSubmit={async (values) => {
+        await saveOrgProfile({ name: (values.name ?? '').trim(), logo: values.logo ?? '' });
+        closeModal();
+        toast('บันทึกข้อมูลองค์กรแล้ว');
+        await refresh(WORKSPACE_PATH, '/api/bootstrap');
+      }}
+    >
+      <PhotoPicker
+        name="logo"
+        value={work.tenant.logo ?? ''}
+        personName={work.tenant.name}
+        title="โลโก้องค์กร"
+        hint="ลูกค้าเห็นรูปนี้ที่หน้าช่วยเหลือและหน้าต่างแชท · คลิกที่รูปเพื่อเลือกภาพใหม่ แล้วเลื่อนและย่อ-ขยายให้พอดี · PNG หรือ JPG ไม่เกิน 5 MB"
+      />
+      <TextField label="ชื่อองค์กร" name="name" defaultValue={work.tenant.name} max={100} required hint="ชื่อนี้ขึ้นบนหน้าที่ลูกค้าเปิดและในอีเมลที่ระบบส่งถึงลูกค้า" />
+      <FormActions label="บันทึก" onCancel={() => closeModal()} />
+    </Form>
+  );
+}
+
 function SlugForm() {
   const work = useWork();
   const { closeModal } = useDialogs();

@@ -65,6 +65,10 @@ def create_control_tables(db):
     # uploads it was making yesterday.
     if 'quota_mb' not in {row[1] for row in db.execute('PRAGMA table_info(tenants)')}:
         db.execute('ALTER TABLE tenants ADD COLUMN quota_mb INTEGER NOT NULL DEFAULT 0')
+    # The organization's own picture, shown wherever its customers meet it. Empty means the letters of its name, which
+    # is what every organization had until now, so nothing changes for one that never sets a picture.
+    if 'logo' not in {row[1] for row in db.execute('PRAGMA table_info(tenants)')}:
+        db.execute("ALTER TABLE tenants ADD COLUMN logo TEXT NOT NULL DEFAULT ''")
 
 
 def create_tenant_tables(db):

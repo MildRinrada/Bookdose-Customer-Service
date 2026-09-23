@@ -13,6 +13,12 @@ def organization_info(req):
     return req.send(200,service.portal_info(req.cd,req.db,req.org))
 
 
+def organization_logo(req):
+    """The organization's picture, fetched with <img> wherever its name is listed. Kept by the browser for an hour:
+    it changes rarely and the switcher, the console and the customer's own list all ask for it on every page."""
+    return req.send(200,service.organization_logo(req.org),'image/png',{'Cache-Control':'public, max-age=3600'})
+
+
 def canonical_code(req):
     """The code this organization goes by now (a former code leads here too: platform/model.py tenant_slugs)."""
     return req.send(200,{'slug':req.org['slug']})

@@ -1,6 +1,34 @@
 """File checks shared by staff/portal uploads and channel imports, and private credential files."""
+import base64
 import os
 import secrets
+import struct
+
+# A picture a person or an organization sets as its own: the browser crops it to a square PNG and sends it as a data
+# URL, which is stored as text beside the row it belongs to. The ceiling is what a page can carry inline without
+# being slow, not what a picture needs: 512 pixels is already more than any avatar is drawn at.
+PICTURE_MAX_SIDE = 512
+PICTURE_MAX_BYTES = 128*1024
+PICTURE_PREFIX = 'data:image/png;base64,'
+PICTURE_FIELD_MAX = 180000        # the data URL itself, base64 being a third longer than the bytes
+
+
+def png_data_url(value, label):
+    """Check a square-ish PNG data URL from the picture cropper; returns (ok, message). '' is "no picture"."""
+    if not value:
+        return True,''
+    if not value.startswith(PICTURE_PREFIX):
+        return False,f'{label}ต้องเป็น PNG'
+    try:
+        raw = base64.b64decode(value.split(',',1)[1],validate=True)
+        if not (len(raw)>=33 and raw.startswith(b'\x89PNG\r\n\x1a\n') and raw[12:16]==b'IHDR'):
+            return False,f'{label}ไม่ถูกต้อง'
+        width,height = struct.unpack('>II',raw[16:24])
+    except (ValueError,struct.error):
+        return False,f'{label}ไม่ถูกต้อง'
+    if not (0<width<=PICTURE_MAX_SIDE and 0<height<=PICTURE_MAX_SIDE and len(raw)<=PICTURE_MAX_BYTES):
+        return False,f'{label}ต้องไม่เกิน {PICTURE_MAX_SIDE} × {PICTURE_MAX_SIDE} และ {PICTURE_MAX_BYTES//1024} KB'
+    return True,''
 
 
 def matches_file_type(extension, content):

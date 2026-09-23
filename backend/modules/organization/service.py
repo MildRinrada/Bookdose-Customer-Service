@@ -28,6 +28,7 @@ def workspace_overview(cd, db, ctx):
     team_members = [{**m,'availability':states[m['id']]} for m in team_members]
     from backend.modules.platform import repository as tenants
     return {'tenant':{'id':ctx['tenant_id'],'name':ctx['tenant_name'],'slug':ctx['slug'],
+                      'logo':tenants.tenant_logo(cd,ctx['tenant_id']),
                       # Codes this organization used to have: the links customers were given with them still work.
                       'former_slugs':tenants.former_slugs(cd,ctx['tenant_id'])},
             'role':ctx['role'],'team_id':ctx['team_id'],'members':team_members,
@@ -78,6 +79,27 @@ def change_slug(cd, db, ctx, body):
     audit.record(db,ctx['name'],'settings.slug_changed',ctx['tenant_id'],f"{ctx['slug']} → {result['slug']}")
     db.commit()
     return result
+
+
+def save_profile(cd, db, ctx, body):
+    """What the organization calls itself and the picture it shows (ตั้งค่าองค์กร → ภาพรวม, owners only). Both reach
+    the organization's customers - the name heads every page they open and the notices they are sent - so the change
+    is written to the organization's own history. The code (slug) is changed separately: it is in links already given
+    out, and those must keep working."""
+    from backend.modules.platform import repository as tenants
+    name,logo = schema.profile_form(body)
+    had = tenants.tenant_logo(cd,ctx['tenant_id'])
+    tenants.save_tenant_profile(cd,ctx['tenant_id'],name,logo)
+    cd.commit()
+    changes = [f"ชื่อ {ctx['tenant_name']} → {name}"] if name!=ctx['tenant_name'] else []
+    if bool(logo)!=bool(had):
+        changes.append('เพิ่มโลโก้' if logo else 'ลบโลโก้')
+    elif logo and logo!=had:
+        changes.append('เปลี่ยนโลโก้')
+    if changes:
+        audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],' · '.join(changes))
+        db.commit()
+    return {'name':name,'logo':logo}
 
 
 def update_settings(db, ctx, body):

@@ -21,6 +21,7 @@ import { ColleaguesHere } from './ColleaguesHere';
 import { Composer } from './Composer';
 import { CustomerAvatar } from './InboxItem';
 import { MessageThread, ThreadFilter } from './MessageThread';
+import { translateTo } from './MessageTranslation';
 import { useManageMessages } from './useManageMessages';
 
 /* The open conversation beside the inbox list: who and where from, its case, AI state, open/close, the thread and
@@ -133,7 +134,15 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
       )}
       <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
       <ColleaguesHere conversationId={c.id} />
-      <Composer conversationId={c.id} channel={c.channel} manual={c.channel === 'manual'} compact conversation={c} recipient={contact.name} caseNumber={t?.number} />
+      <Composer
+        conversationId={c.id}
+        channel={c.channel}
+        manual={c.channel === 'manual'}
+        compact
+        conversation={c} recipient={contact.name}
+        caseNumber={t?.number}
+        translateTo={translateTo(c.translation)}
+      />
     </>
   );
 }

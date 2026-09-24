@@ -5,8 +5,9 @@ DEFAULT_MODEL = 'gpt-4.1-mini'
 # draft: a reply for staff; bot: the chatbot's answer; test: the connection check; article: an article drafted from
 # questions no article answers; brief: the overview's summary of today (the last two for an organization's owner);
 # ask: a question to the staff's AI assistant (ai/assistant.py); mood: how a customer's latest message reads (ai/mood.py);
-# summary: a conversation in a few points for the member taking it over (ai/summary.py).
-JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary')
+# summary: a conversation in a few points for the member taking it over (ai/summary.py); translate: a customer's message
+# into Thai or the team's reply into the customer's language (ai/translate.py).
+JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary','translate')
 OWNER_MODES = ('article','brief')
 # Jobs whose input was built when they were asked (the payload column), not read from a conversation.
 PAYLOAD_MODES = (*OWNER_MODES,'ask')
@@ -14,7 +15,7 @@ PAYLOAD_MODES = (*OWNER_MODES,'ask')
 JOBS_TABLE = '''CREATE TABLE IF NOT EXISTS {name} (
     id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
     trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
-    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask','mood','summary')),
+    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask','mood','summary','translate')),
     status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
     result TEXT NOT NULL DEFAULT '{{}}', error TEXT NOT NULL DEFAULT '',
     lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,
@@ -42,6 +43,18 @@ CREATE TABLE IF NOT EXISTS conversation_summaries (
     last_rowid INTEGER NOT NULL DEFAULT 0, message_count INTEGER NOT NULL DEFAULT 0, skipped INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
+-- แปลภาษาอัตโนมัติ (ai/translate.py): the language replies go out in, as the customer last wrote; and per message its
+-- Thai side - the translation of a customer's message, or the Thai a member wrote before it went out translated.
+CREATE TABLE IF NOT EXISTS conversation_languages (
+    conversation_id TEXT PRIMARY KEY, language TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS message_translations (
+    message_id TEXT PRIMARY KEY, direction TEXT NOT NULL CHECK(direction IN ('in','out')), language TEXT NOT NULL DEFAULT '',
+    thai TEXT NOT NULL DEFAULT '', status TEXT NOT NULL CHECK(status IN ('pending','done','failed')), job_id TEXT,
+    error TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS message_translations_job ON message_translations(job_id);
+CREATE INDEX IF NOT EXISTS message_translations_status ON message_translations(status);
 CREATE TABLE IF NOT EXISTS ai_message_meta (
     message_id TEXT PRIMARY KEY REFERENCES messages(id),
     source TEXT NOT NULL CHECK(source IN ('ai','system')), citations TEXT NOT NULL DEFAULT '[]'
@@ -53,4 +66,6 @@ DEFAULT_SETTINGS = [
     ('ai_daily_limit','100'),('ai_conversation_limit','20'),('ai_max_output_tokens','1000'),
     ('ai_version','0'),
     # Read how customers feel with the AI (ai/mood.py) once it is connected; the words' reading runs regardless.
-    ('ai_mood','1')]
+    ('ai_mood','1'),
+    # Two-way translation for customers who do not write Thai (ai/translate.py): off until the owner turns it on.
+    ('ai_translate','0')]

@@ -213,7 +213,8 @@
 }
 .qa-panel-body {
   flex: 1;
-  min-height: 0;
+  /* Always a few lines of the answer, however short the window: a panel with one line showing reads as broken. */
+  min-height: 9em;
   max-height: 70vh;
   padding: 16px;
   overflow-y: auto;
@@ -300,4 +301,68 @@
   html.sidebar-collapsed .customer-chats>.customer-aside {
     display: flex;
   }
+}
+
+/* Answers offered above the box while typing in an open chat (TypingAnswers): a short row of titles, each opening
+   the answer inside the conversation. */
+.qa-typing {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--info-soft);
+}
+.qa-typing-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: .9rem;
+}
+.qa-typing-head>span {
+  flex: 1;
+  min-width: 0;
+}
+.qa-typing-head .icon {
+  width: 16px;
+  height: 16px;
+}
+.qa-typing-close {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+}
+.qa-typing ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qa-typing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.qa-typing-row:hover,.qa-typing-row:focus-visible {
+  background: var(--paper);
+}
+.qa-typing-row .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.qa-typing-read {
+  color: var(--link);
+  font-size: .85rem;
+  font-weight: 700;
 }

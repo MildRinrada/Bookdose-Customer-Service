@@ -42,6 +42,9 @@ def conversation_detail(db, conv):
     # How the customer's latest message reads (ai/mood.py), for the header.
     from backend.modules.ai import mood
     conv['mood'] = mood.of(db,conv['id'])
+    # Two-way translation (ai/translate.py): whether it is on and the language a reply goes out in, for the composer.
+    from backend.modules.ai import translate
+    conv['translation'] = translate.state(db,conv['id'])
     # A guest of guest web chat: the inbox shows a badge and how the team's reply can reach them.
     from backend.modules.guest import service as guest
     conv['guest'] = guest.reach(db,[conv['contact_id']]).get(conv['contact_id'])
@@ -109,7 +112,12 @@ def store_staff_message(db, ctx, conv, kind, body, cd=None):
     if external:
         provider.check_reply(db,ctx['tenant_id'],conv,body)
     mid = store_message(db,ctx['tenant_id'],conv['id'],ctx['id'],author,kind,body)
-    if external:
+    # Written in Thai to a customer who writes another language: held while the AI translates it, then sent
+    # (ai/translate.py). The member may send it as typed (translate: false).
+    from backend.modules.ai import translate
+    held = kind=='reply' and translate.outgoing(db,ctx['tenant_id'],conv['id'],mid,str(body.get('body') or ''),
+                                                 wanted=body.get('translate') is not False)
+    if external and not held:
         provider.enqueue_reply(db,ctx,conv,mid)
     if kind=='reply':
         ai.stop_bot(db,conv['id'])
@@ -185,6 +193,9 @@ def message_list(db, conversation_id, public=False):
     message is the satisfaction survey."""
     result = repository.list_messages(db,conversation_id,public)
     surveys = automation.survey_message_ids(db,conversation_id)
+    # The team's copy: each translated message's Thai side (ai/translate.py). The customer's copy is what they got.
+    from backend.modules.ai import translate
+    translations = {} if public else translate.of_conversation(db,conversation_id)
     for message in result:
         message['attachments'] = repository.attachments_of(db,message['id'])
         meta = repository.ai_meta(db,message['id'])
@@ -192,6 +203,8 @@ def message_list(db, conversation_id, public=False):
         message['source'] = meta['source'] if meta else 'human'
         message['citations'] = json.loads(meta['citations']) if meta else []
         message['survey'] = message['id'] in surveys
+        if not public:
+            message['translation'] = translations.get(message['id'])
     return result
 
 
@@ -234,9 +247,15 @@ def edit_message(db, ctx, conversation_id, message_id, body):
     silently is a thread nobody can rely on."""
     message = _own_message(db,ctx,conversation_id,message_id,'edit')
     _can_still_be_taken_back(db,conversation_id,message)
+    from backend.modules.ai import translate
+    require(not translate.is_held(db,message_id),'กำลังแปลข้อความนี้ รอสักครู่แล้วค่อยแก้ไข',409)
     text = schema.edited_body(body)
     require(text!=message['body'],'ข้อความยังเหมือนเดิม')
     repository.edit_message(db,message_id,text)
+    # The corrected text is translated again for the customer, like a new reply (ai/translate.py).
+    translate.forget(db,message_id)
+    if message['kind']=='reply':
+        translate.outgoing(db,ctx['tenant_id'],conversation_id,message_id,text)
     audit.record(db,ctx['name'],'message.edited',message_id,message['body'][:200])
     realtime.conversation(db,conversation_id,public=message['kind']!='note')
     db.commit()
@@ -272,6 +291,10 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
         file_id = uid()
         repository.save_attachment_file(tenant_id,file_id,content)
         repository.insert_attachment(db,file_id,mid,name,mime,len(content),file_id)
+    if kind=='customer':
+        # Not in Thai: the team reads it in Thai once the AI has translated it (ai/translate.py), on every channel.
+        from backend.modules.ai import translate
+        translate.on_customer_message(db,tenant_id,conversation_id,mid,text)
     repository.touch(db,conversation_id)
     channel = repository.find(db,conversation_id)['channel']
     # LINE / Email / Facebook replies count as the first response only once the provider accepts them.

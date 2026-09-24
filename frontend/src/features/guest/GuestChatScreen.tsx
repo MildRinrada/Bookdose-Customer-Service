@@ -11,8 +11,11 @@ import { EmptyState, ErrorState, InitialLoading, PageLoading } from '@/component
 import { useToast } from '@/components/ui/Toast';
 import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import type { PublicOrgInfo } from '@/features/auth/types';
-import { AnswerList, ArticleReadPanel, DropHint, askLine, useArticleDrop, type PeekArticle } from '@/features/customer/components/ArticlePeek';
+import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
+import { AnswerList, ArticleReadPanel, DropHint, TypingAnswers, askLine, useArticleDrop, type PeekArticle } from '@/features/customer/components/ArticlePeek';
 import { CustomerSurvey } from '@/features/customer/components/ChatView';
+import { WaitQueue } from '@/features/customer/components/WaitQueue';
+import { ContinueOnLinePanel, MovedToLine } from '@/features/customer/components/ContinueOnLine';
 import { chatState, chatView } from '@/features/customer/labels';
 import type { PortalSession } from '@/features/customer/types';
 import { Composer, MessageThread } from '@/features/inbox';
@@ -21,7 +24,7 @@ import { useCustomerAccount } from '@/lib/customer-session';
 import { relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { RealtimeProvider } from '@/lib/realtime-provider';
-import { guestBase, guestPages, guestPath, guestPortalSlug, widgetPath } from './api';
+import { continueGuestOnLine, guestBase, guestPages, guestPath, guestPortalSlug, guestSessionPath, widgetPath } from './api';
 import { FollowCard } from './components/FollowCard';
 import { GuestNav, SignedInLink } from './components/GuestFrame';
 import { GuestClaimBanners } from './components/GuestClaimBanners';
@@ -344,6 +347,8 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
         embed={embed}
         reading={reading}
         insertRef={insertRef}
+        articles={articles}
+        onRead={read}
         onCloseReading={() => setOpen(null)}
         onAsk={(article) => {
           insertRef.current?.(askLine(article, guestPages.article(slug, article.id)));
@@ -498,6 +503,8 @@ function GuestChatView({
   embed,
   reading,
   insertRef,
+  articles,
+  onRead,
   onCloseReading,
   onAsk,
   onFollowToggle,
@@ -518,6 +525,9 @@ function GuestChatView({
   /** An answer being read in place of the messages (dropped on the conversation, or opened from its card). */
   reading: PeekArticle | null;
   insertRef: RefObject<((text: string) => void) | null>;
+  /** The organization's published answers, offered above the box as they match what is typed; onRead opens one. */
+  articles: PeekArticle[];
+  onRead: (article: PeekArticle) => void;
   onCloseReading: () => void;
   onAsk: (article: PeekArticle) => void;
   onFollowToggle: (open: boolean) => void;
@@ -531,6 +541,9 @@ function GuestChatView({
   const survey = data.survey && (data.survey.pending || data.survey.rating) ? data.survey : null;
   const orgName = overview.organization.name;
   const guest = overview.guest;
+  const [lineOpen, setLineOpen] = useState(false);
+  const refresh = useInvalidate();
+  const canMove = Boolean(data.line && !data.line.moved);
   return (
     <>
       <div className="card-header conv-header guest-conv-header">
@@ -564,11 +577,21 @@ function GuestChatView({
         <GuestMenu
           items={[
             { key: 'follow', label: 'ติดตามแชทนี้', icon: 'bell', onSelect: onShowFollow },
+            ...(canMove ? [{ key: 'line', label: 'คุยต่อใน LINE', icon: 'chat', onSelect: () => setLineOpen(true) }] : []),
             { key: 'new', label: 'เริ่มแชทเรื่องใหม่', icon: 'plus', onSelect: onNewChat },
             ...(embed ? [{ key: 'window', label: 'เปิดในหน้าต่างใหม่', icon: 'link', onSelect: () => window.open(guestPages.chat(slug, id), '_blank', 'noopener') }] : []),
           ]}
         />
       </div>
+      {lineOpen && canMove && data.line && (
+        <ContinueOnLinePanel
+          line={data.line}
+          request={() => continueGuestOnLine(slug, id)}
+          refresh={() => refresh(guestSessionPath(slug))}
+          onClose={() => setLineOpen(false)}
+        />
+      )}
+      <KnownIssuesBar slug={portal} />
       <div className="notice customer-ai-status" id="customer-ai-status">
         <AiPortalStatus ai={data.ai} slug={portal} conversationId={id} />
       </div>
@@ -580,9 +603,10 @@ function GuestChatView({
         publicView
         publicSlug={portal}
         readAt={data.staff_read_at}
-        afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}`}
+        afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}|${JSON.stringify(data.queue)}`}
         after={
           <>
+            <WaitQueue queue={data.queue} />
             {survey && (
               <div id="customer-survey">
                 <CustomerSurvey survey={survey} slug={portal} conversationId={id} org={orgName} />
@@ -605,7 +629,20 @@ function GuestChatView({
       {reading && (
         <ArticleReadPanel article={reading} href={guestPages.article(slug, reading.id)} onClose={onCloseReading} onAsk={onAsk} />
       )}
-      <Composer key={id} conversationId={id} publicView publicSlug={portal} insertRef={insertRef} />
+      {/* Carried to LINE: the conversation goes on there, and the web keeps it to read. */}
+      {data.line?.moved ? (
+        <MovedToLine line={data.line} />
+      ) : (
+        <Composer
+          key={id}
+          conversationId={id}
+          publicView
+          publicSlug={portal}
+          insertRef={insertRef}
+          // While an answer is open it has the room: the offers step aside until it is closed.
+          suggest={reading ? undefined : (text) => <TypingAnswers articles={articles} text={text} onRead={onRead} />}
+        />
+      )}
     </>
   );
 }

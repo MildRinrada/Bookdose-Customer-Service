@@ -8,6 +8,7 @@ import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { AiControls } from '@/features/ai/components/AiControls';
+import { languageName } from '@/features/ai/languages';
 import { AiDraftButton, AiDraftPanel, useAiDraft } from '@/features/ai/components/AiDraft';
 import type { AiConversation } from '@/features/ai/types';
 import { useMacroMenu } from '@/features/automation';
@@ -53,11 +54,16 @@ export type ComposerProps = {
   /** The team's composer: who the reply goes to and the case it belongs to, for the bar above the box. */
   recipient?: string;
   caseNumber?: number | null;
+  /** The team's composer: the customer's language (ISO 639-1) when a Thai reply is translated into it before it goes
+      (ai/translate.py); absent when replies go as typed. */
+  translateTo?: string | null;
   /** The conversation, for the AI controls in the composer's head (not compact). */
   conversation?: AiConversation | null;
   /** publicView: filled with a way to put text into the draft, so the page around the box can hand it something
       (the answer a customer was reading beside the chat). Empty while no composer is on the screen. */
   insertRef?: RefObject<((text: string) => void) | null>;
+  /** publicView: what to show above the box for what is being typed (the customer chats offer matching answers). */
+  suggest?: (text: string) => ReactNode;
   /** After a message was sent and the conversation refreshed (e.g. the customer chat refreshes its own session). */
   onSent?: () => unknown | Promise<unknown>;
 };
@@ -155,7 +161,20 @@ const MENTIONS_FILE = /แนบ|ตามเอกสาร|(?<!โปร)ไ�
 
 /** Where this message goes, above the box and big enough to read without looking up at the heading: the customer,
     the channel and the case for a reply; for an internal note, that the customer will not see it. */
-function Destination({ kind, recipient, channel, caseNumber }: { kind: 'reply' | 'note'; recipient?: string; channel: string; caseNumber?: number | null }) {
+function Destination({
+  kind,
+  recipient,
+  channel,
+  caseNumber,
+  translate,
+}: {
+  kind: 'reply' | 'note';
+  recipient?: string;
+  channel: string;
+  caseNumber?: number | null;
+  /** The customer's language and whether this reply is translated into it (the member may send it as typed). */
+  translate?: { language: string; on: boolean; set: (on: boolean) => void } | null;
+}) {
   const sep = (
     <span className="composer-to-sep" aria-hidden="true">
       |
@@ -191,13 +210,39 @@ function Destination({ kind, recipient, channel, caseNumber }: { kind: 'reply' |
           </span>
         </>
       )}
+      {kind === 'reply' && translate && (
+        <>
+          {sep}
+          <label className="composer-translate" title="พิมพ์ภาษาไทยได้เลย AI แปลก่อนถึงลูกค้า ปิดเพื่อส่งตามที่พิมพ์">
+            <input type="checkbox" className="switch" checked={translate.on} onChange={(e) => translate.set(e.target.checked)} />
+            <Icon name="translate" />
+            {translate.on ? (
+              <span>
+                แปลเป็น<strong>{languageName(translate.language)}</strong>ก่อนส่ง
+              </span>
+            ) : (
+              <span>ส่งตามที่พิมพ์ ไม่แปล</span>
+            )}
+          </label>
+        </>
+      )}
     </div>
   );
 }
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
-function StaffComposer({ conversationId: id, channel = 'web', manual = false, compact = false, conversation, recipient, caseNumber, onSent }: ComposerProps) {
+function StaffComposer({
+  conversationId: id,
+  channel = 'web',
+  manual = false,
+  compact = false,
+  conversation,
+  recipient,
+  caseNumber,
+  translateTo,
+  onSent,
+}: ComposerProps) {
   const work = useWork();
   const toast = useToast();
   const refresh = useInvalidate();
@@ -216,6 +261,9 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   // What is in the box now, for the warning that a file was promised and none is attached.
   const [text, setText] = useState(initialDraft);
   const forgotFile = MENTIONS_FILE.test(text) && pills.files.length === 0;
+  // A Thai reply to a customer who writes another language goes out translated, unless the member turns it off for
+  // what they are writing now (back on for the next conversation).
+  const [translateOn, setTranslateOn] = useState(true);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -359,7 +407,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       onSubmit={async (values, form) => {
         const attachments = await readFiles(filesOf(form));
         const sent = (values.kind as 'reply' | 'note') || 'reply';
-        await postMessage(id, { kind: sent, body: values.body ?? '', attachments });
+        await postMessage(id, { kind: sent, body: values.body ?? '', attachments, ...(translateTo ? { translate: translateOn } : {}) });
         followThread(form);
         editor.setValue('');
         setDrafts((all) => {
@@ -395,7 +443,13 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
           if (!manual) chooseKind('reply');
         }}
       />
-      <Destination kind={kind} recipient={recipient} channel={channel} caseNumber={caseNumber} />
+      <Destination
+        kind={kind}
+        recipient={recipient}
+        channel={channel}
+        caseNumber={caseNumber}
+        translate={translateTo ? { language: translateTo, on: translateOn, set: setTranslateOn } : null}
+      />
       <label className="sr-only" htmlFor={`compose-${id}`}>
         ข้อความ
       </label>
@@ -513,7 +567,7 @@ function QuickReplies({ team, snippets, onPick }: { team: TeamSnippet[]; snippet
   );
 }
 
-function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSent, insertRef }: ComposerProps) {
+function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSent, insertRef, suggest }: ComposerProps) {
   const toast = useToast();
   const refresh = useInvalidate();
   const editor = useRichEditor();
@@ -521,6 +575,8 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
   const drop = useDrop(pills.add);
   const notifyTyping = useTypingNotifier(id);
   const placeholder = 'พิมพ์ข้อความของคุณที่นี่…';
+  // What is in the box now, for the answers offered above it.
+  const [text, setText] = useState('');
 
   // Text handed in from outside joins what is already written, a blank line apart, and the cursor goes there.
   useEffect(() => {
@@ -556,6 +612,7 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
         toast('ส่งข้อความแล้ว');
       }}
     >
+      {suggest?.(text)}
       <label className="sr-only" htmlFor={`compose-${id}`}>
         ข้อความ
       </label>
@@ -569,7 +626,10 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
         sourcePlaceholder={placeholder}
         className="composer-input"
         keyShortcuts="Control+Enter Meta+Enter"
-        onChange={notifyTyping}
+        onChange={(value) => {
+          notifyTyping(value);
+          setText(value);
+        }}
       />
       <FilePills files={pills.files} onRemove={pills.remove} />
       <div className="composer-bottom">

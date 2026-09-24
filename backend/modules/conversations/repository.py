@@ -64,7 +64,8 @@ def set_team_for_ticket(db, ticket_id, team_id):
 def list_messages(db, conversation_id, public=False):
     # A deleted message leaves the customer's copy entirely - taking one back is the point of deleting it - while the
     # team still sees that something was there and who took it back.
-    extra = " AND kind!='note' AND deleted_at IS NULL" if public else ''
+    # A reply held while it is translated (ai/translate.py) reaches the customer once it is.
+    extra = " AND kind!='note' AND deleted_at IS NULL AND delivery!='translating'" if public else ''
     # The writer's id is what the team's screens show their photo by; a customer's copy never carries it.
     who = '' if public else ',author_id,deleted_at,deleted_by'
     return rows(db,f'SELECT id,author_name{who},kind,body,delivery,created_at,edited_at FROM messages WHERE conversation_id=?'

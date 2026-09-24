@@ -18,7 +18,7 @@ TIMEOUT_SECONDS = 300
 # Which part of the workflow answers: the staff's reply drafts, the connection test and the staff's AI assistant
 # (ask), the chatbot, the owner's overview (an article from unanswered questions, today's summary); reading how a
 # customer feels (mood) goes to the assist part too.
-FEATURES = {'draft':'assist','test':'assist','ask':'assist','bot':'chatbot','article':'insights','brief':'insights','mood':'assist','summary':'assist'}
+FEATURES = {'draft':'assist','test':'assist','ask':'assist','bot':'chatbot','article':'insights','brief':'insights','mood':'assist','summary':'assist','translate':'assist'}
 LOOPBACK_NAMES = ('localhost','127.0.0.1','::1')
 
 

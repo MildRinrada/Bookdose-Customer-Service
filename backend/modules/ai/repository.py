@@ -60,7 +60,7 @@ def widen_jobs(db):
     every column it already had. Runs once per new mode list."""
     from backend.modules.ai.model import JOBS_TABLE
     row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_jobs'").fetchone()
-    if not row or "'summary'" in row[0]:
+    if not row or "'translate'" in row[0]:
         return
     columns = ','.join(r[1] for r in db.execute('PRAGMA table_info(ai_jobs)').fetchall())
     db.commit()
@@ -153,10 +153,16 @@ def pending_draft(db, conversation_id, user_id):
     return row['id'] if row else None
 
 
-def jobs_since(db, day, mood=False):
-    """Jobs queued since `day` against the daily limit. Mood readings (ai/mood.py) count on their own, against the
-    same number: reading every customer message must never use up what the chatbot and the team's drafts need."""
-    return db.execute(f"SELECT COUNT(*) FROM ai_jobs WHERE created_at>=? AND mode{'=' if mood else '!='}'mood'",(day,)).fetchone()[0]
+# Work done on every message counts on its own against the daily limit (ai/mood.py, ai/translate.py): reading and
+# translating a busy day's messages must never use up what the chatbot and the team's drafts need.
+OWN_COUNT_MODES = ('mood','translate')
+
+
+def jobs_since(db, day, mode=None):
+    """Jobs queued since `day` against the daily limit: of `mode` when it counts on its own, else all the others."""
+    if mode in OWN_COUNT_MODES:
+        return db.execute('SELECT COUNT(*) FROM ai_jobs WHERE created_at>=? AND mode=?',(day,mode)).fetchone()[0]
+    return db.execute(f"SELECT COUNT(*) FROM ai_jobs WHERE created_at>=? AND mode NOT IN {OWN_COUNT_MODES}",(day,)).fetchone()[0]
 
 
 def bot_jobs_for_conversation(db, conversation_id):
@@ -197,10 +203,11 @@ def any_running(db):
 
 
 def next_pending(db):
-    """The oldest waiting job that somebody is waiting for; a summary written ahead of time (ai/summary.py), then a mood
-    reading (ai/mood.py), only once none is left."""
+    """The oldest waiting job that somebody is waiting for - a translation first (a reply is held for it, or a member is
+    reading); a summary written ahead of time (ai/summary.py), then a mood reading (ai/mood.py), only once none is left."""
     return one(db,"""SELECT * FROM ai_jobs WHERE status='pending'
-                     ORDER BY CASE WHEN mode='mood' THEN 2 WHEN mode='summary' AND requested_by IS NULL THEN 1 ELSE 0 END,created_at,rowid
+                     ORDER BY CASE WHEN mode='translate' THEN -1 WHEN mode='mood' THEN 2 WHEN mode='summary' AND requested_by IS NULL THEN 1 ELSE 0 END,
+                     created_at,rowid
                      LIMIT 1""")
 
 

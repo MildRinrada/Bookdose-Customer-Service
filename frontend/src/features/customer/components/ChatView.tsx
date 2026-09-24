@@ -9,10 +9,13 @@ import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import { Composer, MessageThread } from '@/features/inbox';
 import { starsText } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { OVERVIEW_PATH, rateService } from '../api';
+import { OVERVIEW_PATH, continueOnLine, rateService, sessionPath } from '../api';
 import { chatView, ratingLabels } from '../labels';
 import type { PortalSession, PortalSurvey } from '../types';
-import { ArticleReadPanel, type PeekArticle } from './ArticlePeek';
+import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
+import { WaitQueue } from './WaitQueue';
+import { ContinueOnLineButton, ContinueOnLinePanel, MovedToLine } from './ContinueOnLine';
+import { ArticleReadPanel, TypingAnswers, type PeekArticle } from './ArticlePeek';
 
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
    person serving it, the messages, the satisfaction survey once the case is closed, and the reply box. */
@@ -82,6 +85,8 @@ export function ChatView({
   insertRef,
   onCloseReading,
   onAsk,
+  articles = [],
+  onRead,
 }: {
   data: PortalSession;
   slug: string;
@@ -92,11 +97,16 @@ export function ChatView({
   insertRef?: RefObject<((text: string) => void) | null>;
   onCloseReading?: () => void;
   onAsk?: (article: PeekArticle) => void;
+  /** The organization's published answers, offered above the box as they match what is typed; onRead opens one. */
+  articles?: PeekArticle[];
+  onRead?: (article: PeekArticle) => void;
 }) {
   const view = chatView(data);
   const id = data.conversation.id;
   const reference = data.ticket ? `BD-${data.ticket.number}` : '';
   const survey = data.survey && (data.survey.pending || data.survey.rating) ? data.survey : null;
+  const [lineOpen, setLineOpen] = useState(false);
+  const refresh = useInvalidate();
   return (
     <>
       <div className="card-header conv-header">
@@ -121,7 +131,17 @@ export function ChatView({
             </span>
           </p>
         </div>
+        <ContinueOnLineButton line={data.line} open={lineOpen} onToggle={() => setLineOpen(!lineOpen)} />
       </div>
+      {lineOpen && data.line && !data.line.moved && (
+        <ContinueOnLinePanel
+          line={data.line}
+          request={() => continueOnLine(slug, id)}
+          refresh={() => refresh(sessionPath(slug))}
+          onClose={() => setLineOpen(false)}
+        />
+      )}
+      <KnownIssuesBar slug={slug} />
       <div className="notice customer-ai-status" id="customer-ai-status">
         <AiPortalStatus ai={data.ai} slug={slug} conversationId={id} />
       </div>
@@ -133,19 +153,35 @@ export function ChatView({
         publicView
         publicSlug={slug}
         readAt={data.staff_read_at}
-        afterKey={JSON.stringify(data.survey)}
+        afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}`}
         after={
-          survey && (
-            <div id="customer-survey">
-              <CustomerSurvey survey={survey} slug={slug} conversationId={id} org={orgName} />
-            </div>
-          )
+          <>
+            <WaitQueue queue={data.queue} />
+            {survey && (
+              <div id="customer-survey">
+                <CustomerSurvey survey={survey} slug={slug} conversationId={id} org={orgName} />
+              </div>
+            )}
+          </>
         }
       />
       {reading && onCloseReading && (
         <ArticleReadPanel article={reading} href={`/customer/faq/${reading.id}`} onClose={onCloseReading} onAsk={onAsk} />
       )}
-      <Composer key={id} conversationId={id} publicView publicSlug={slug} insertRef={insertRef} />
+      {/* Carried to LINE: the conversation goes on there, and the web keeps it to read. */}
+      {data.line?.moved ? (
+        <MovedToLine line={data.line} />
+      ) : (
+        <Composer
+          key={id}
+          conversationId={id}
+          publicView
+          publicSlug={slug}
+          insertRef={insertRef}
+          // While an answer is open it has the room: the offers step aside until it is closed.
+          suggest={onRead && !reading ? (text) => <TypingAnswers articles={articles} text={text} onRead={onRead} /> : undefined}
+        />
+      )}
     </>
   );
 }

@@ -7,7 +7,8 @@ from backend.modules.guest.model import LINK_USES
 from backend.utils.dates import now
 
 # A visitor's own conversations: the web conversations it started.
-OWNED = "c.channel='web' AND c.id IN (SELECT conversation_id FROM guest_conversations WHERE visitor_id=?)"
+# A web chat carried to LINE (channels/move.py) stays readable on the web.
+OWNED = "(c.channel='web' OR c.id IN (SELECT conversation_id FROM conversation_moves)) AND c.id IN (SELECT conversation_id FROM guest_conversations WHERE visitor_id=?)"
 
 
 # Visitors
@@ -127,7 +128,7 @@ def conversation_count(db, visitor_id):
 def conversations_of(db, visitor_id, survey_since):
     """Newest first; unread: the last message the guest can see is the team's and came after the guest last read it."""
     return rows(db,f'''SELECT c.id,c.subject,c.status,c.updated_at,
-        (SELECT m.kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_kind,
+        (SELECT m.kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' AND m.delivery!='translating' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_kind,
         (SELECT s.seen_at FROM guest_seen s WHERE s.visitor_id=? AND s.conversation_id=c.id) AS seen_at,
         EXISTS(SELECT 1 FROM csat_surveys cs WHERE cs.conversation_id=c.id AND cs.answered_at IS NULL AND cs.sent_at>=?) AS survey_pending
         FROM conversations c WHERE {OWNED} ORDER BY c.updated_at DESC LIMIT 100''',(visitor_id,survey_since,visitor_id))

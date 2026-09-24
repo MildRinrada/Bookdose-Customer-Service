@@ -1,7 +1,7 @@
 import { api } from '@/lib/api/client';
 import type { Upload } from '@/lib/files';
 import type { CustomerOrg } from '@/lib/types';
-import type { LineCode, NotificationSettings } from './types';
+import type { LineCode, LineMoveCode, NotificationSettings } from './types';
 
 /* Endpoints of backend/modules/customers (/api/customer/...) and portal (/api/public/<org>/...) used by the signed-in
    customer. */
@@ -27,6 +27,10 @@ export const openChat = (slug: string, body: { subject: string; body: string; ca
 /** Answer the satisfaction survey of a chat (X-Conversation-ID). */
 export const rateService = (slug: string, conversationId: string, body: { rating: number; comment: string }) =>
   api<{ ok: true }>(`/api/public/${slug}/csat`, body, 'POST', { conversation: conversationId });
+
+/** A code that carries the chat (X-Conversation-ID) to the organization's LINE. */
+export const continueOnLine = (slug: string, conversationId: string) =>
+  api<LineMoveCode>(`/api/public/${slug}/line/continue`, {}, 'POST', { conversation: conversationId });
 
 export const joinOrganization = (slug: string) => api<{ organization: CustomerOrg }>(ORGS_PATH, { slug });
 

@@ -64,6 +64,18 @@ export type Message = {
   /** Set when the message was taken back: the words are gone, the marker stays for the team (never sent to a customer). */
   deleted_at?: string | null;
   deleted_by?: string | null;
+  /** Staff only: the message's Thai side when it was translated (ai/translate.py) - a customer's message in Thai, or
+      the Thai a member wrote before it went out in the customer's language (the body is what the customer got). */
+  translation?: MessageTranslation | null;
+};
+
+export type MessageTranslation = {
+  direction: 'in' | 'out';
+  /** The customer's language (ISO 639-1), '' while not known yet. */
+  language: string;
+  thai: string;
+  status: 'pending' | 'done' | 'failed';
+  error: string;
 };
 
 /** The conversation itself in GET /api/conversations/<id>. */
@@ -86,6 +98,8 @@ export type Conversation = {
   reference?: string;
   /** A web chat without an account (see ConversationSummary.guest). */
   guest?: GuestReach | null;
+  /** Two-way translation: on for the organization, and the language replies go out in ('' when not known). */
+  translation?: { enabled: boolean; language: string };
 };
 
 export type ConversationContact = {

@@ -7,6 +7,7 @@ import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { CAPTCHA_FIELD, CAPTCHA_WAIT, TurnstileField, type TurnstileHandle } from '@/components/ui/Turnstile';
+import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from '@/features/customer/components/ArticlePeek';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
@@ -157,6 +158,7 @@ export function GuestStartForm({
         await onStarted(result.id, result.links ?? []);
       }}
     >
+      <KnownIssuesBar slug={slug} />
       {intro && <Intro info={info} orgName={orgName} />}
       {topics.length > 0 && (
         <Step n={++n} title="เรื่องที่ต้องการติดต่อ" hint="เลือกเรื่องที่ใกล้ที่สุด ทีมที่ดูแลเรื่องนั้นจะได้รับทันที (ไม่บังคับ)">

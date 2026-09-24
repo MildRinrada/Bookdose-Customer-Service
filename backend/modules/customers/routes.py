@@ -2,6 +2,7 @@
 sign-in (sign-up, sign-in, links from emails); 'customer-account' routes need the session cookie, and a changing
 request also its X-Customer-CSRF. The LINE linking of one organization is under /api/public/<code>/line."""
 from backend.modules.customers import controller
+from backend.modules.portal import controller as portal
 
 LINE = '/api/public/[a-z0-9-]+/line'
 
@@ -24,6 +25,8 @@ ROUTES = [
     ('GET',    LINE,                        controller.line_status,          'customer'),
     ('POST',   LINE,                        controller.line_code,            'customer'),
     ('DELETE', LINE,                        controller.line_unlink,          'customer'),
+    # Carry the open chat (X-Conversation-ID) to the organization's LINE (channels/move.py).
+    ('POST',   LINE+'/continue',            portal.continue_on_line,         'customer'),
     ('GET',  '/api/customer/organizations', controller.my_organizations,     'customer-account'),
     ('POST', '/api/customer/organizations', controller.join_organization,    'customer-account'),
     ('GET',  '/api/customer/overview',      controller.overview,             'customer-account'),

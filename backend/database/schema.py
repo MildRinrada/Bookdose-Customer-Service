@@ -95,6 +95,9 @@ def upgrade_tenant(db):
     db.executescript(automation.TENANT_TABLES)
     # The overview's handover notes and to-dos.
     db.executescript(board.TENANT_TABLES)
+    # ประกาศปัญหาที่รู้แล้ว: what is down, shown to customers on the chat pages.
+    from backend.modules.incidents import model as incidents
+    db.executescript(incidents.TENANT_TABLES)
     # How the team uses the knowledge base (uses, helpful marks, pins) and each article's earlier versions.
     db.executescript(knowledge.ACTIVITY_TABLES)
     # When finished cases went back to work (the report's reopen rate); staff changes already audited count too.

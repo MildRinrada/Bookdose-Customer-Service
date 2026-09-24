@@ -104,6 +104,8 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
           category={listed?.category || ''}
           reading={reading}
           insertRef={insertRef}
+          articles={articles}
+          onRead={read}
           onCloseReading={() => setOpen(null)}
           onAsk={(article) => {
             insertRef.current?.(askLine(article, articleHref(article)));

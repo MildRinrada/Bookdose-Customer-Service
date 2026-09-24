@@ -88,6 +88,9 @@ def ticket_detail(db, ctx, ticket_id):
         conv['line'] = conversations.line_thread(db,conv['id'])
         # How the customer's latest message in it reads (ai/mood.py): the heading shows the most upset of them.
         conv['mood'] = mood.of(db,conv['id'])
+        # Two-way translation (ai/translate.py): the composer under it translates a Thai reply into this language.
+        from backend.modules.ai import translate
+        conv['translation'] = translate.state(db,conv['id'])
         conv.pop('portal_token',None)
     return {'ticket':ticket,'contact':contacts.find(db,ticket['contact_id']),
             'conversations':convs,'events':audit.for_entity(db,ticket['id']),

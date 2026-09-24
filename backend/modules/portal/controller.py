@@ -19,6 +19,11 @@ def organization_logo(req):
     return req.send(200,service.organization_logo(req.org),'image/png',{'Cache-Control':'public, max-age=3600'})
 
 
+def known_issues(req):
+    from backend.modules.incidents import service as incidents
+    return req.send(200,{'issues':incidents.public(req.db)},headers={'Cache-Control':'no-store'})
+
+
 def canonical_code(req):
     """The code this organization goes by now (a former code leads here too: platform/model.py tenant_slugs)."""
     return req.send(200,{'slug':req.org['slug']})
@@ -39,6 +44,12 @@ def conversation(req):
 def hand_off(req):
     service.hand_off_to_staff(req.db,_current(req))
     return req.send(200,{'ok':True})
+
+
+def continue_on_line(req):
+    """POST /api/public/<org>/line/continue: a code that carries this chat to the organization's LINE."""
+    from backend.modules.channels import move
+    return req.send(200,move.new_code(req.db,req.org['id'],_current(req)))
 
 
 def post_message(req):

@@ -83,6 +83,12 @@ def conversation(req):
     return req.send(200,portal.conversation_view(req.db,_current(req),req.guest))
 
 
+def continue_on_line(req):
+    """POST /guest/line-continue: a code that carries this chat to the organization's LINE (channels/move.py)."""
+    from backend.modules.channels import move
+    return req.send(200,move.new_code(req.db,req.org['id'],_current(req)))
+
+
 def post_message(req):
     return req.send(201,{'id':portal.post_customer_message(req.db,req.org['id'],_current(req),req.guest,req.body)})
 

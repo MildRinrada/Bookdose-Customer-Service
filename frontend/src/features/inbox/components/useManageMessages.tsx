@@ -10,6 +10,7 @@ import type { Workspace } from '@/lib/types';
 import { CONVERSATION_PREFIXES, deleteMessage, editMessage } from '../api';
 import type { Conversation } from '../types';
 import type { ManageMessage } from './MessageThread';
+import { thaiSide } from './MessageTranslation';
 
 /** What the thread hands the menu: a message as the thread knows it. */
 type Item = Parameters<ManageMessage['canEdit']>[0];
@@ -41,7 +42,8 @@ export function useManageMessages(conversation: Conversation, work: Workspace): 
   const ok = (m: Item) => staffWrote(m) && reachable(m) && !m.deleted_at;
 
   return {
-    canEdit: (m) => ok(m) && mine(m),
+    // A reply held while it is translated (ai/translate.py) is corrected once it has gone.
+    canEdit: (m) => ok(m) && mine(m) && !(m.translation?.direction === 'out' && m.translation.status === 'pending'),
     canDelete: (m) => ok(m) && (mine(m) || work.role === 'admin'),
     onEdit: (m) =>
       openModal(
@@ -61,7 +63,7 @@ export function useManageMessages(conversation: Conversation, work: Workspace): 
           </p>
           <div className="field">
             <label htmlFor="edit-body">ข้อความ</label>
-            <textarea id="edit-body" name="body" rows={6} maxLength={20000} required autoFocus defaultValue={m.body} />
+            <textarea id="edit-body" name="body" rows={6} maxLength={20000} required autoFocus defaultValue={thaiSide(m.translation) ?? m.body} />
           </div>
           <FormActions label="บันทึกการแก้ไข" onCancel={() => closeModal()} />
         </Form>,

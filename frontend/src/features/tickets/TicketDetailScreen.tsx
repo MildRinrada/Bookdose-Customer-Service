@@ -17,6 +17,7 @@ import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useMemberName, useWork } from '@/lib/session';
 import { ticketPath } from './api';
 import { CaseHero } from './components/CaseHero';
+import { translateTo } from '@/features/inbox/components/MessageTranslation';
 import { TicketSidebar } from './components/TicketSidebar';
 import { escalationText } from './labels';
 import type { TicketConversation, TicketDetail } from './types';
@@ -104,7 +105,15 @@ function TicketConversationCard({ conv, contactName, caseNumber }: { conv: Ticke
       <ConversationSummary conversationId={conv.id} messageCount={conv.messages.length} />
       <MessageThread messages={conv.messages} threadId={conv.id} notesOnly={notesOnly} readAt={conv.customer_read_at} />
       <ColleaguesHere conversationId={conv.id} />
-      <Composer conversationId={conv.id} channel={conv.channel} manual={conv.channel === 'manual'} conversation={conv} recipient={contactName} caseNumber={caseNumber} />
+      <Composer
+        conversationId={conv.id}
+        channel={conv.channel}
+        manual={conv.channel === 'manual'}
+        conversation={conv}
+        recipient={contactName}
+        caseNumber={caseNumber}
+        translateTo={translateTo(conv.translation)}
+      />
     </section>
   );
 }

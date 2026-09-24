@@ -47,29 +47,62 @@ const SYNONYMS = [
   ['เอกสาร', 'ไฟล์', 'file'],
   ['เบอร์โทร', 'โทรศัพท์', 'phone', 'เบอร์'],
   ['เปลี่ยน', 'แก้ไข', 'แก้', 'edit'],
-  ['ใช้ไม่ได้', 'ผิดพลาด', 'ขัดข้อง', 'error', 'ไม่ได้'],
   ['รูปภาพ', 'รูป', 'ภาพ', 'image'],
+  ['ติดตามสถานะ', 'ติดตาม', 'สถานะ', 'ความคืบหน้า', 'คืบหน้า', 'ถึงไหน', 'track', 'status'],
+  ['ส่งเรื่อง', 'แจ้งปัญหา', 'แจ้งเรื่อง', 'ร้องเรียน', 'ขอความช่วยเหลือ', 'ติดต่อทีมงาน', 'แจ้ง', 'ติดต่อ'],
+  ['ตอบกลับ', 'ไม่มีใครตอบ', 'ไม่ตอบ', 'ตอบ', 'reply'],
 ];
 
-type Idea = { words: string[] };
+/* Words that say something is wrong without saying what: they add to an article that has them, but an article is
+   never left out for not having them - "เข้าระบบไม่ได้" is about signing in, whether or not the article says ไม่ได้. */
+const SOFT = [['ใช้ไม่ได้', 'ผิดพลาด', 'ขัดข้อง', 'error', 'ไม่ได้', 'ไม่ได้รับ', 'ไม่ขึ้น', 'ไม่เข้า']];
+
+/** Words that only hold a sentence together; what is left of a Thai phrase after the known words is cut into words
+    (the browser's own Thai word breaker) and these are dropped. */
+const STOP = new Set(
+  (
+    'ที่ ไป แล้ว เลย ว่า ของ ให้ ด้วย จะ ได้ การ และ หรือ กับ ใน มี เป็น อยู่ ยัง นี้ นั้น ก็ แต่ คือ ทำ ผม ฉัน หนู ' +
+    'เรา คุณ ช่วย ขอ มา เอง กัน อะไร ตอนนี้ เพิ่ง เมื่อ ทำไม the to a an is are my i how do can'
+  ).split(' '),
+);
+
+const segmenter = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('th', { granularity: 'word' }) : null;
+
+/** The words of what is left of a chunk: split by the browser's Thai word breaker where there is one. */
+function leftWords(rest: string): string[] {
+  const pieces = segmenter
+    ? [...segmenter.segment(rest)].filter((s) => s.isWordLike).map((s) => s.segment)
+    : rest.split(/\s+/);
+  return pieces.filter((w) => w.length >= 2 && !STOP.has(w));
+}
+
+/** soft: counts when found, never required (SOFT). */
+type Idea = { words: string[]; soft?: boolean };
 
 /** The ideas asked about: each a list of words any of which finds it. */
 export function queryIdeas(query: string): Idea[] {
   const text = query
     .toLowerCase()
     .replace(/[?？!.,]/g, ' ')
-    .replace(/\bhow (to|do i|can i)\b/g, ' ');
+    .replace(/\bhow (to|do i|can i)\b/g, ' ')
+    // "จำรหัสผ่านไม่ได้" is ลืมรหัสผ่าน.
+    .replace(/จำ(\S{0,24}?)ไม่ได้/g, 'ลืม$1');
   const ideas: Idea[] = [];
   for (const chunk of text.split(/\s+/).filter(Boolean)) {
-    // Thai is written without spaces: take the known words out of the chunk, the rest stays an idea of its own.
+    // Thai is written without spaces: take the known words out of the chunk, then cut what is left into words.
     let rest = trimAsking(chunk);
-    for (const group of SYNONYMS) {
-      const found = group.find((w) => rest.includes(w));
-      if (!found) continue;
-      ideas.push({ words: group });
-      rest = rest.split(found).join(' ');
+    for (const [groups, soft] of [
+      [SYNONYMS, false],
+      [SOFT, true],
+    ] as const) {
+      for (const group of groups) {
+        const found = group.find((w) => rest.includes(w));
+        if (!found) continue;
+        ideas.push(soft ? { words: group, soft } : { words: group });
+        rest = rest.split(found).join(' ');
+      }
     }
-    for (const left of rest.split(/\s+/)) if (left.length >= 2) ideas.push({ words: [left] });
+    for (const left of rest.split(/\s+/)) for (const word of leftWords(left)) ideas.push({ words: [word] });
   }
   return ideas;
 }
@@ -95,6 +128,7 @@ export function searchArticles<T extends Searchable>(articles: T[], query: strin
     const body = plainText(article.body).toLowerCase();
     let score = 0;
     let met = 0;
+    let metRequired = 0;
     const words: string[] = [];
     for (const idea of ideas) {
       let best = 0;
@@ -106,11 +140,15 @@ export function searchArticles<T extends Searchable>(articles: T[], query: strin
       // A longer phrase of its own ("ชื่อบัญชี") also matches when most of its letters in a row are there
       // ("ชื่อในบัญชี").
       if (!best && idea.words.length === 1 && idea.words[0].length >= 4 && closeness(idea.words[0], `${title} ${body}`) >= 0.6) best = 0.5;
-      if (best) met += 1;
+      if (best) {
+        met += 1;
+        if (!idea.soft) metRequired += 1;
+      }
       score += best;
     }
-    // Most of the ideas (all of one or two) must be there.
-    if (met < Math.max(1, Math.ceil(ideas.length * 0.6))) continue;
+    // Most of the ideas (all of one or two) must be there; the soft ones only add to the score.
+    const required = ideas.filter((idea) => !idea.soft).length;
+    if (required ? metRequired < Math.ceil(required * 0.6) : !met) continue;
     if (title.includes(phrase)) score += 6;
     hits.push({ article, score: score + (met / ideas.length) * 10, words, passage: bestPassage(article.body, words) });
   }

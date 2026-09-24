@@ -1593,6 +1593,85 @@ input[type=file].attach-input {
   width: 16px;
   height: 16px;
 }
+/* Under a translated message (MessageTranslation): which way it went, and the other side on a click. */
+.message-translation {
+  margin-top: 4px;
+  font-size: 1rem;
+  color: var(--muted);
+}
+.message-translation p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+}
+.message.reply .message-translation p {
+  justify-content: flex-end;
+}
+.message-translation .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.message-translation.is-pending {
+  color: var(--ink);
+  font-weight: 600;
+}
+.message-translation.is-pending .icon {
+  animation: translating 1.4s ease-in-out infinite;
+}
+@keyframes translating {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .message-translation.is-pending .icon {
+    animation: none;
+  }
+}
+.message-translation.is-failed {
+  color: var(--amber);
+  font-weight: 600;
+}
+.translation-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.translation-toggle:hover,
+.translation-toggle:focus-visible {
+  text-decoration: none;
+  color: var(--ink);
+}
+.translation-other {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* In the bar above the box: the customer's language, and the switch to send a reply as typed. */
+.composer-to .composer-translate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  cursor: pointer;
+}
+.composer-to .composer-translate .switch {
+  margin: 0;
+}
+
 /* No pointer to hover with: the ⋯ is simply there, as the case list's quick actions are. */
 @media (hover: none) {
   .message-menu .icon-btn {

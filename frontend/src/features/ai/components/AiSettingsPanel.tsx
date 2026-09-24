@@ -87,7 +87,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
         onSubmit={async (values, form) => {
           const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
           const body: Record<string, unknown> = { ...values };
-          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'remove_key']) body[key] = checked(key);
+          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'remove_key']) body[key] = checked(key);
           body.remove_webhook = n8n && checked('remove_webhook');
           for (const key of ['daily_limit', 'conversation_limit', 'max_output_tokens']) body[key] = Number(values[key]);
           await saveAiSettings(body);
@@ -191,6 +191,15 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
               อ่านอารมณ์ลูกค้าด้วย AI
               <small className="tiny muted">
                 ส่งข้อความล่าสุดของลูกค้าให้ AI อ่านว่าไม่พอใจหรือเร่งด่วนไหม เพื่อดันเคสขึ้นก่อน (นับโควตาแยกจากงานอื่น) ปิดแล้วยังอ่านจากคำในข้อความเหมือนเดิม
+              </small>
+            </span>
+          </label>
+          <label className="check ai-mood-switch">
+            <input type="checkbox" className="switch" name="translate_enabled" defaultChecked={a.translate_enabled} />
+            <span>
+              แปลภาษาอัตโนมัติสองทาง
+              <small className="tiny muted">
+                ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยแปลเป็นภาษาของลูกค้าก่อนส่ง ส่งไปแค่ตัวข้อความ ไม่มีชื่อหรือข้อมูลติดต่อ (นับโควตาแยกจากงานอื่น)
               </small>
             </span>
           </label>

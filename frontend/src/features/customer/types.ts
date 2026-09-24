@@ -108,7 +108,21 @@ export type PortalSession = {
   survey: PortalSurvey | null;
   /** When the team last opened the chat after the customer wrote, for "อ่านแล้ว". */
   staff_read_at?: string | null;
+  /** While the customer waits for the team: their place and the expected wait (conversations/queue.py). */
+  queue?: PortalQueue | null;
+  line?: PortalLine | null;
 };
+
+/** The customer's place in the team's queue; wait_minutes null when there is nothing to go by, away when nobody who
+    could answer is available now. */
+export type PortalQueue = { position: number; wait_minutes: number | null; away: boolean };
+
+/** Whether the chat can go on in the organization's LINE, or went there (channels/move.py). open_url opens the chat
+    with the organization's LINE ('' when it has not set its LINE ID). */
+export type PortalLine = { moved: boolean; oa_name: string; open_url: string; code_expires_at?: string | null };
+
+/** POST .../line/continue: the code to send, and links that open LINE with it typed in / add the account. */
+export type LineMoveCode = { code: string; expires_at: string; oa_name: string; send_url: string; add_url: string };
 
 /** GET /api/public/<org>/cases/<id> */
 export type CaseDetail = {

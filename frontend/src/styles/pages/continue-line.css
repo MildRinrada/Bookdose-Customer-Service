@@ -1,0 +1,65 @@
+/* คุยต่อใน LINE (features/customer/components/ContinueOnLine): the header's button, the steps under the header, and the
+   line that takes the place of the box once the chat went to LINE. The code box itself is alerts-customer.css's. */
+.continue-line-btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+.continue-line {
+  display: grid;
+  gap: 12px;
+  margin: 8px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.continue-line-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.continue-line-head p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.continue-line-head strong {
+  display: block;
+}
+.continue-line>.btn {
+  justify-self: start;
+}
+.continue-line a:not(.btn) {
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: none;
+}
+.moved-to-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 8px 16px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.moved-to-line>.icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+.moved-to-line p {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  line-height: 1.5;
+}
+.moved-to-line strong {
+  display: block;
+}

@@ -25,6 +25,8 @@ export type AiSettings = {
   chatbot_enabled: boolean;
   /** Read how customers feel with the AI (ai/mood.py); the reading by words runs either way. */
   mood_enabled: boolean;
+  /** Two-way translation for customers who do not write Thai (ai/translate.py). */
+  translate_enabled: boolean;
   model: string;
   daily_limit: number;
   conversation_limit: number;

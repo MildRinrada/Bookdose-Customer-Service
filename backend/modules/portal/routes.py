@@ -7,7 +7,7 @@ from backend.modules.portal import controller
 from backend.utils.routing import ID
 
 # Every URL here; anything else under /api/public/ is answered "not found".
-PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo)(?:/[a-z0-9-]+){0,6})?')
+PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues)(?:/[a-z0-9-]+){0,6})?')
 PORTAL = '/api/public/[a-z0-9-]+'
 
 ROUTES = [
@@ -17,6 +17,9 @@ ROUTES = [
     ('GET',  PORTAL+'/code',                controller.canonical_code,      'portal'),
     # The organization's picture, for every page and list that shows it beside its name.
     ('GET',  PORTAL+'/logo',                controller.organization_logo,   'portal'),
+    # What of the organization's is down right now (incidents/model.py): every chat page shows it, so nobody has
+    # to ask. Asked again every minute by an open page.
+    ('GET',  PORTAL+'/issues',              controller.known_issues,        'portal'),
     ('POST', PORTAL+'/conversations',       controller.open_conversation,   'customer'),
     ('GET',  PORTAL+f'/cases/{ID}',         controller.case_detail,         'customer'),
     ('GET',  PORTAL+'/session',             controller.conversation,        'customer'),

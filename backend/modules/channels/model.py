@@ -18,6 +18,15 @@ CREATE TABLE IF NOT EXISTS facebook_routes (
 
 TENANT_TABLES = '''
 CREATE TABLE IF NOT EXISTS oauth_refresh (kind TEXT PRIMARY KEY,lease TEXT NOT NULL,expires_at REAL NOT NULL);
+-- คุยต่อใน LINE (channels/move.py): a 6-digit code a customer sends to the organization's LINE to carry a web chat
+-- there (hashed, 10 minutes, the same limits as the notice codes), and the chats that went.
+CREATE TABLE IF NOT EXISTS line_move_codes (
+    code_hash TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, expires_at TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS conversation_moves (
+    conversation_id TEXT PRIMARY KEY, line_user_id TEXT NOT NULL, moved_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS line_threads (
     conversation_id TEXT PRIMARY KEY REFERENCES conversations(id), source_type TEXT NOT NULL,
     source_id TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, last_event_time TEXT

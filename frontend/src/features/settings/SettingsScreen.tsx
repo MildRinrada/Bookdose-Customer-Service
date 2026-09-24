@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { IssuesPanel } from '@/features/incidents/IssuesPanel';
 import { useEffect, useRef, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
 import { AiSettingsPanel } from '@/features/ai';
@@ -175,6 +176,8 @@ function Section({ tab, part }: { tab: SettingsTab; part: SettingsPart | null })
       return <GuestChatPanel />;
     case 'ai':
       return <AiSettingsPanel />;
+    case 'issues':
+      return <IssuesPanel />;
     default:
       return null;
   }

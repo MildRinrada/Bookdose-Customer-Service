@@ -8,7 +8,8 @@ export const CONVERSATION_PREFIXES = ['/api/conversations', '/api/tickets'];
 
 export const conversationPath = (id: string) => `/api/conversations/${id}`;
 
-export function postMessage(conversationId: string, body: { kind: 'reply' | 'note'; body: string; attachments?: Upload[] }) {
+/** translate: false sends a Thai reply as typed where it would be translated for the customer (ai/translate.py). */
+export function postMessage(conversationId: string, body: { kind: 'reply' | 'note'; body: string; attachments?: Upload[]; translate?: boolean }) {
   return api<{ id: string }>(`/api/conversations/${conversationId}/messages`, body);
 }
 

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { moodHeat } from '@/components/ui/MoodTag';
+import { StaffIssuesBanner } from '@/features/incidents/KnownIssues';
 import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
@@ -159,6 +160,7 @@ export function InboxScreen({ id }: { id?: string }) {
           <p>แชทกับลูกค้าจากทุกช่องทางของ {work.tenant.name} ในที่เดียว และติดตามทุกเรื่องที่ลูกค้าส่งมา</p>
         </div>
       </div>
+      <StaffIssuesBanner />
       <section className={`card inbox-layout staff-chats${selectedId ? ' show-detail' : ''}${detail.data ? ' has-aside' : ''}`}>
         <div className="inbox-list" ref={listBox}>
           {/* The customer's list has a search box and one choice under it; the team's has two choices side by side. */}

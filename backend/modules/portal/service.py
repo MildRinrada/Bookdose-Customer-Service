@@ -94,9 +94,20 @@ def case_detail(db, viewer, case_id):
 def conversation_view(db, conv, viewer):
     """Opening the conversation counts as reading the team's replies (no notice for them)."""
     _mark_seen(db,viewer,conv['id'])
+    # Where they stand while they wait for the team, so they do not write again only to ask. A guide only: should it
+    # fail, the chat opens without it rather than not at all.
+    from backend.database import db as D
+    from backend.modules.channels import move
+    from backend.modules.conversations import queue
+    try:
+        place = queue.of(db,D.tenant_id_of(db),conv)
+    except Exception as error:
+        print(f'Wait queue: {type(error).__name__}',flush=True)
+        place = None
     return schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
                                     tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
-                                    automation.portal_survey(db,conv['id']),conversations.staff_read_at(db,conv['id']))
+                                    automation.portal_survey(db,conv['id']),conversations.staff_read_at(db,conv['id']),
+                                    place,move.offer(db,D.tenant_id_of(db),conv))
 
 
 def hand_off_to_staff(db, conv):
@@ -106,6 +117,9 @@ def hand_off_to_staff(db, conv):
 
 
 def post_customer_message(db, tenant_id, conv, viewer, body):
+    # A chat carried to LINE goes on there: the team's replies go to LINE, so the web page only reads it now.
+    from backend.modules.channels import move
+    require(not move.moved(db,conv['id']),'แชทนี้ย้ายไปคุยต่อใน LINE แล้ว กรุณาพิมพ์ต่อใน LINE',409)
     D.begin(db)
     mid = conversation_service.store_message(db,tenant_id,conv['id'],None,_author(viewer),'customer',body)
     ai.on_customer_message(db,tenant_id,conv['id'],body.get('body',''))

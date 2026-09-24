@@ -5,7 +5,8 @@ from backend.database.db import one, rows
 from backend.utils.dates import now
 
 # The customer's own conversations in an organization: web conversations of the contacts their account owns there.
-OWNED = "c.channel='web' AND c.contact_id IN (SELECT contact_id FROM customer_contacts WHERE account_id=?)"
+# A web chat carried to LINE (channels/move.py) stays readable on the web.
+OWNED = "(c.channel='web' OR c.id IN (SELECT conversation_id FROM conversation_moves)) AND c.contact_id IN (SELECT contact_id FROM customer_contacts WHERE account_id=?)"
 
 
 # Sign-ups waiting for the email to be confirmed (control)
@@ -213,8 +214,8 @@ def conversations_of(db, account_id, survey_since):
     """survey_pending: a satisfaction survey sent after survey_since is waiting for an answer."""
     return rows(db,f'''SELECT c.id,c.subject,c.status,c.created_at,c.updated_at,t.id AS ticket_id,t.number AS ticket_number,t.status AS ticket_status,
         (SELECT cc.category FROM conversation_categories cc WHERE cc.conversation_id=c.id) AS category,
-        (SELECT m.kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_kind,
-        (SELECT m.body FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_body,
+        (SELECT m.kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' AND m.delivery!='translating' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_kind,
+        (SELECT m.body FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' AND m.delivery!='translating' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_body,
         EXISTS(SELECT 1 FROM csat_surveys cs WHERE cs.conversation_id=c.id AND cs.answered_at IS NULL AND cs.sent_at>=?) AS survey_pending,
         (SELECT s.seen_at FROM customer_seen s WHERE s.account_id=? AND s.conversation_id=c.id) AS seen_at
         FROM conversations c LEFT JOIN ticket_conversations tc ON tc.conversation_id=c.id LEFT JOIN tickets t ON t.id=tc.ticket_id

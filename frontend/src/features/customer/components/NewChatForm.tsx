@@ -17,6 +17,7 @@ import { FAQ_PATH, openChat, OVERVIEW_PATH } from '../api';
 import { useOrgFilter, useOrgs } from '../hooks';
 import { replyPromise } from '../labels';
 import type { CustomerArticle } from '../types';
+import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from './ArticlePeek';
 import { OrgPicker } from './OrgPicker';
 
@@ -97,6 +98,7 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
             <RequiredStar />
           </label>
           <OrgPicker id="request-org" orgs={orgs} value={slug} onChange={setSlug} />
+          <KnownIssuesBar slug={slug} />
           <small className="muted">
             ตัวระบบค้าง หน้าเว็บผิดปกติ หรือพบ Bug ติดต่อผู้ให้บริการระบบได้เสมอ · เรื่องบริการ สินค้า หรือเคสขององค์กรใด ให้เลือกองค์กรนั้น
           </small>

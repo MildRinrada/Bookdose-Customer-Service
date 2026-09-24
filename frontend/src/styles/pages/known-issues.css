@@ -1,0 +1,108 @@
+/* ประกาศปัญหาที่รู้แล้ว (features/incidents): the bar over the customers' chat pages and the team's inbox, and the
+   settings panel that posts it. Amber while something is down, green once it is back. */
+.known-issues {
+  display: grid;
+  gap: 6px;
+  margin: 8px 16px;
+}
+.known-issues.staff {
+  margin: 0 0 12px;
+}
+.known-issue {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  line-height: 1.5;
+}
+.known-issue>.icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+}
+.known-issue>span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.known-issue.active {
+  border-color: #e7c27a;
+  background: var(--amber-soft);
+  color: var(--ink);
+}
+.known-issue.active>.icon {
+  color: var(--amber);
+}
+.known-issue.resolved {
+  border-color: #a9d4bb;
+  background: var(--green-soft);
+  color: var(--ink);
+}
+.known-issue.resolved>.icon {
+  color: var(--green);
+}
+.known-issue-detail {
+  display: block;
+  color: var(--muted);
+  font-size: .92rem;
+}
+.known-issue-manage {
+  flex-shrink: 0;
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: none;
+}
+/* The settings panel */
+.issues-panel {
+  display: grid;
+  gap: 14px;
+}
+.issues-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+}
+.issues-form .btn {
+  justify-self: start;
+}
+.issues-preview {
+  display: grid;
+  gap: 4px;
+}
+.issues-heading {
+  margin: 6px 0 0;
+  font-size: 1rem;
+}
+.issues-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.issues-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.issues-list .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.content>.known-issues {
+  flex-shrink: 0;
+}

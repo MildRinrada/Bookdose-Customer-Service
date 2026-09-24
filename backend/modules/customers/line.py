@@ -54,19 +54,27 @@ def unused_code(db):
 
 
 def _live_code(db, code_hash):
-    """('account', row) or ('guest', row) of a live code, else (None, None)."""
+    """('account', row), ('guest', row) or ('move', row) - a chat going to LINE (channels/move.py) - of a live code,
+    else (None, None)."""
+    from backend.modules.channels import move
     from backend.modules.guest import repository as guests
     code = repository.live_line_code(db,code_hash)
     if code:
         return 'account',code
     code = guests.live_line_code(db,code_hash)
-    return ('guest',code) if code else (None,None)
+    if code:
+        return 'guest',code
+    code = move.live_line_code(db,code_hash)
+    return ('move',code) if code else (None,None)
 
 
 def _drop_code(db, owner, code):
+    from backend.modules.channels import move
     from backend.modules.guest import repository as guests
     if owner=='account':
         repository.delete_line_codes(db,code['account_id'])
+    elif owner=='move':
+        move.delete_code(db,code['conversation_id'])
     else:
         guests.delete_line_codes(db,code['visitor_id'])
 
@@ -92,9 +100,10 @@ def unlink(db, session):
 
 
 def _wrong_code(db, sender, window):
+    from backend.modules.channels import move
     from backend.modules.guest import repository as guests
     repository.record_line_guess(db,sender,window)
-    for table in (repository,guests):
+    for table in (repository,guests,move):
         table.count_wrong_code(db,now())
         table.drop_worn_codes(db,MAX_CODE_ATTEMPTS)
 
@@ -121,6 +130,10 @@ def take_code(db, tenant_id, line_user_id, text):
     if owner=='guest':
         from backend.modules.guest import service as guests
         guests.link_line(db,code['visitor_id'],line_user_id)
+        return True
+    if owner=='move':
+        from backend.modules.channels import move
+        move.take(db,tenant_id,code,line_user_id)
         return True
     repository.set_line_link(db,code['account_id'],line_user_id)
     repository.delete_line_codes(db,code['account_id'])

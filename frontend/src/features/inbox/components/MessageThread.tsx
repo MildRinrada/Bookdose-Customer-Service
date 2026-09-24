@@ -13,6 +13,7 @@ import { scrollThreadToEnd, useThreadPin } from '@/features/rich/thread';
 import { clockTime, date, dayLabel } from '@/lib/format';
 import { useReadAt, useRealtime, useTyping } from '@/lib/realtime-provider';
 import type { Message } from '../types';
+import { MessageTranslation, thaiSide } from './MessageTranslation';
 
 /** What the thread may do with a message of this conversation; absent on the customer's view and wherever the
     conversation cannot be corrected (only a web chat can: a reply a provider delivered is already read). */
@@ -30,7 +31,7 @@ export type ManageMessage = {
    and "อ่านแล้ว" under the reader's own latest message once the other side has read it. */
 
 type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'author_id' | 'kind' | 'body' | 'created_at' | 'attachments'> &
-  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by'>>;
+  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation'>>;
 
 type MessagesProps = {
   messages: ThreadMessage[];
@@ -91,8 +92,11 @@ function MessageItem({
   receipt: Receipt | null;
   manage?: ManageMessage;
 }) {
+  // A translated message (ai/translate.py) reads in Thai on the team's screens, the other side under it.
+  const translation = publicView ? null : m.translation;
+  const body = thaiSide(translation) ?? m.body;
   // Both sides may format from their composer tools; a customer's links and images stay plain text (MarkdownBlocks).
-  const rich = looksLikeMarkdown(m.body);
+  const rich = looksLikeMarkdown(body);
   const gone = Boolean(m.deleted_at);
   if (gone)
     return (
@@ -149,11 +153,13 @@ function MessageItem({
           {manage && <MessageMenu m={m} manage={manage} />}
         </div>
         <div className={`bubble${rich ? ' rich' : ''}`}>
-          {rich ? <MarkdownBlocks text={m.body} plain={m.kind === 'customer'} /> : m.body}
+          {rich ? <MarkdownBlocks text={body} plain={m.kind === 'customer'} /> : body}
           <MessageFiles files={m.attachments} publicSlug={publicView ? publicSlug : undefined} />
         </div>
         <AiCitations citations={m.citations} />
-        {m.kind === 'reply' && !publicView && (
+        {translation && <MessageTranslation translation={translation} body={m.body} />}
+        {/* A reply held while it is translated has not gone anywhere yet: the line above says so. */}
+        {m.kind === 'reply' && !publicView && !(translation?.direction === 'out' && translation.status === 'pending') && (
           <ChannelDelivery message={{ id: m.id, delivery: m.delivery ?? '', channel_delivery: m.channel_delivery ?? null }} />
         )}
         {/* The line is there (empty) before the other side reads, so the mark appearing does not move the thread. */}
@@ -203,7 +209,8 @@ export function MessageThread({
   const { connected } = useRealtime();
   const typing = useTyping(threadId, other);
   const liveReadAt = useReadAt(threadId, other);
-  const lastPublic = [...messages].reverse().find((m) => m.kind !== 'note');
+  // A reply held while it is translated has not reached the customer: no read mark on it.
+  const lastPublic = [...messages].reverse().find((m) => m.kind !== 'note' && !(m.translation?.direction === 'out' && m.translation.status === 'pending'));
   const readTimes = [liveReadAt, knownReadAt].filter((at): at is string => Boolean(at)).map((at) => Date.parse(at));
   const read = Boolean(lastPublic && readTimes.some((at) => at >= Date.parse(lastPublic.created_at)));
   const receipt: Receipt | null = lastPublic?.kind === own && (connected || read) ? { id: lastPublic.id, read } : null;

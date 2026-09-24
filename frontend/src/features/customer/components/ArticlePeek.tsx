@@ -276,6 +276,54 @@ export function AnswerSuggestions({
   );
 }
 
+/* While writing in an open chat: the same search over what is being typed, as a short row of titles just above the
+   box. A title opens the answer inside the conversation (onRead) and what was typed stays in the box, so somebody
+   whose question is answered can read it and not send at all. A link to an article the customer is asking about is
+   not searched: it would only offer them the article they just linked. */
+
+/** What is typed, without the links in it (the askLine that "ถามทีมงานเรื่องนี้" puts in). */
+const typedWords = (text: string) => text.replace(/\[[^\]]*\]\([^)]*\)/g, ' ').replace(/https?:\/\/\S+/g, ' ');
+
+export function TypingAnswers({ articles, text, onRead }: { articles: PeekArticle[]; text: string; onRead: (article: PeekArticle) => void }) {
+  const [asked, setAsked] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setAsked(typedWords(text)), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [text]);
+  // Closed for these answers; a different set of answers (the question changed) shows again.
+  const [closed, setClosed] = useState('');
+  const query = asked.trim();
+  const hits = articles.length && query.length >= ENOUGH ? (searchArticles(articles, query) ?? []).slice(0, OFFERED) : [];
+  const key = hits.map((h) => h.article.id).join(',');
+  if (!hits.length || closed === key) return null;
+  return (
+    <div className="qa-typing" role="status" aria-live="polite">
+      <p className="qa-typing-head">
+        <Icon name="sparkle" />
+        <span>
+          <strong>อาจมีคำตอบอยู่แล้ว</strong> · กดอ่านก่อนส่งได้ ข้อความที่พิมพ์ยังอยู่
+        </span>
+        <button type="button" className="icon-btn qa-typing-close" aria-label="ซ่อนคำแนะนำนี้" title="ซ่อนคำแนะนำนี้" onClick={() => setClosed(key)}>
+          <Icon name="close" />
+        </button>
+      </p>
+      <ul>
+        {hits.map(({ article, words }) => (
+          <li key={article.id}>
+            <button type="button" className="qa-typing-row" onClick={() => onRead(article)}>
+              <Icon name="book" />
+              <span className="grow">
+                <Highlighted text={article.title} words={words} />
+              </span>
+              <span className="qa-typing-read">อ่าน</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** The answer opened inside the conversation: the messages step aside, the box to write in stays where it is. */
 export function ArticleReadPanel({
   article,

@@ -14,7 +14,7 @@ from backend.database import audit, db as D
 from backend.exceptions.errors import AIError
 from backend.extensions import ai_webhook, openai_client
 from backend.middleware.access import get_scoped
-from backend.modules.ai import mood, repository, schema, summary
+from backend.modules.ai import mood, repository, schema, summary, translate
 from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
 from backend.modules.channels import service as channels
 from backend.modules.conversations import repository as conversations
@@ -39,7 +39,8 @@ def config(db):
             'model':values.get('ai_model',DEFAULT_MODEL),'daily_limit':int(values.get('ai_daily_limit',100)),
             'conversation_limit':int(values.get('ai_conversation_limit',20)),
             'max_output_tokens':int(values.get('ai_max_output_tokens',1000)),
-            'version':values.get('ai_version','0'),'mood_enabled':values.get('ai_mood','1')=='1'}
+            'version':values.get('ai_version','0'),'mood_enabled':values.get('ai_mood','1')=='1',
+            'translate_enabled':values.get('ai_translate','0')=='1'}
 
 
 def has_key(tenant_id):
@@ -140,7 +141,7 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
     The owner's jobs (article, brief) and the assistant's (ask) carry their input in `payload` and count like a staff
     draft."""
     cfg = config(db)
-    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary',*PAYLOAD_MODES) and not cfg['drafts_enabled']):
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary',*PAYLOAD_MODES) and not cfg['drafts_enabled'])             or (mode=='translate' and not cfg['translate_enabled']):
         raise AIError('disabled')
     if not has_key(tenant_id):
         raise AIError('not_configured')
@@ -157,7 +158,7 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
         old = repository.pending_owner_job(db,requested_by,mode)
         if old:
             return old
-    if repository.jobs_since(db,today(),mode=='mood')>=cfg['daily_limit']:
+    if repository.jobs_since(db,today(),mode)>=cfg['daily_limit']:
         raise AIError('quota')
     if conversation_id and repository.bot_jobs_for_conversation(db,conversation_id)>=cfg['conversation_limit'] and mode=='bot':
         raise AIError('quota')
@@ -166,8 +167,8 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
                           json.dumps(payload or {},ensure_ascii=False))
     # Reading a customer's mood happens on every message they send: a row in the activity log each time would bury
     # everything else in it.
-    # A summary written ahead of time (nobody asked) is the same kind of background work.
-    if mode!='mood' and not (mode=='summary' and not requested_by):
+    # A summary written ahead of time (nobody asked) and a message's translation are the same kind of background work.
+    if mode not in ('mood','translate') and not (mode=='summary' and not requested_by):
         audit.record(db,requested_by or 'Bookdose AI','ai.queued',conversation_id or job_id,mode)
     return job_id
 
@@ -297,7 +298,7 @@ def permitted(cd, tenant_id, job, db):
     """The job may still run: organization active, bot still on, or the requester still has access."""
     if not tenants.is_active(cd,tenant_id):
         return False
-    if job['mode']=='mood' or (job['mode']=='summary' and not job['requested_by']):
+    if job['mode'] in ('mood','translate') or (job['mode']=='summary' and not job['requested_by']):
         return conversations.find(db,job['conversation_id']) is not None
     if job['mode']=='bot':
         return bot_enabled(db,job['conversation_id']) and conversation_state(db,job['conversation_id'])['mode']=='bot'
@@ -320,6 +321,9 @@ def process_one(tenant_id):
             repository.set_job_state(db,old['id'],'failed','timeout')
             if old['mode']=='bot':
                 handoff(db,old['conversation_id'],'timeout')
+        # A reply held for its translation never waits for good (ai/translate.py).
+        for conversation_id in translate.sweep(db):
+            realtime.conversation(db,conversation_id)
         # Only one in-flight provider call per tenant, even with multiple app processes.
         if repository.any_running(db):
             return False
@@ -327,14 +331,14 @@ def process_one(tenant_id):
         if not job:
             return False
         cfg = config(db)
-        enabled = job['mode']=='test' or (cfg['mood_enabled'] if job['mode']=='mood' else
+        enabled = job['mode']=='test' or (cfg['mood_enabled'] if job['mode']=='mood' else cfg['translate_enabled'] if job['mode']=='translate' else
                                           bot_enabled(db,job['conversation_id']) if job['mode']=='bot' else cfg['drafts_enabled'])
         if not permitted(cd,tenant_id,job,db) or cfg['version']!=job['config_version'] or not enabled:
             repository.set_job_state(db,job['id'],'cancelled','stale')
             return True
         lease = uid()
         repository.claim(db,job['id'],lease)
-        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in ('mood','summary')
+        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in ('mood','summary','translate')
         if job['mode']=='test':
             payload,articles,signature = {'test':'Bookdose connection check'},[],None
         elif owner:
@@ -361,6 +365,9 @@ def process_one(tenant_id):
         elif job['mode']=='summary':
             raw,usage = ask()
             result = summary.validate(raw)
+        elif job['mode']=='translate':
+            raw,usage = ask()
+            result = translate.validate(raw,payload)
         elif owner:
             raw,usage = ask()
             result = validate_owner_result(raw,job['mode'],payload)
@@ -400,6 +407,13 @@ def process_one(tenant_id):
             if changed:
                 realtime.conversation(db,job['conversation_id'],public=False)
             return True
+        if job['mode']=='translate':
+            repository.finish_job(db,job['id'],'failed' if error else 'done','{}',error or '')
+            # The text is kept on its message only (a job row outlives nothing it needs to).
+            conversation_id = translate.finish(db,job['id'],result if not error else None,error or '')
+            if conversation_id:
+                realtime.conversation(db,conversation_id)
+            return True
         if job['mode']=='summary':
             if not error:
                 summary.apply(db,job,result)
@@ -430,7 +444,7 @@ def save_settings(db, ctx, body):
     webhook = None if change is False else saved if change is None else \
         {'url':change['url'] or saved['url'],'secret':change['secret'] or (saved or {}).get('secret','')}
     require(not webhook or webhook['secret'],'กรุณาตั้งรหัสลับของ Webhook (ใส่ค่าเดียวกันใน Header Auth ของ n8n)')
-    require(effective_key or webhook or not (cfg['drafts_enabled'] or cfg['chatbot_enabled']),
+    require(effective_key or webhook or not (cfg['drafts_enabled'] or cfg['chatbot_enabled'] or cfg['translate_enabled']),
             'ต้องเชื่อม AI (OpenAI API Key หรือ n8n Webhook) ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบการเชื่อมต่อ')
     D.begin(db)
     if key or remove:
@@ -439,10 +453,13 @@ def save_settings(db, ctx, body):
         repository.write_webhook(ctx['tenant_id'],webhook)
     repository.save_settings(db,[('ai_drafts',str(int(cfg['drafts_enabled']))),('ai_chatbot',str(int(cfg['chatbot_enabled']))),
         ('ai_model',model),('ai_daily_limit',str(cfg['daily_limit'])),('ai_conversation_limit',str(cfg['conversation_limit'])),
-        ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_mood',str(int(cfg['mood_enabled']))),('ai_version',uid())])
+        ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_mood',str(int(cfg['mood_enabled']))),
+        ('ai_translate',str(int(cfg['translate_enabled']))),('ai_version',uid())])
     # An edit invalidates in-flight work, including key/model changes.
     waiting = repository.waiting_bot_conversations(db)
     repository.cancel_all_in_flight(db)
+    # Replies held for a translation that will not come now go out as written.
+    translate.sweep(db)
     for conversation_id in waiting:
         handoff(db,conversation_id,'settings_changed')
     if not cfg['chatbot_enabled']:

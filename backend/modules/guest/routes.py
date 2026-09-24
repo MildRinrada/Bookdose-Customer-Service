@@ -22,6 +22,7 @@ ROUTES = [
     ('POST',   GUEST+'/link',                 controller.send_link,           'guest'),
     ('POST',   GUEST+'/line-code',            controller.line_code,           'guest'),
     ('DELETE', GUEST+'/line',                 controller.line_unlink,         'guest'),
+    ('POST',   GUEST+'/line-continue',        controller.continue_on_line,    'guest'),
     ('POST',   GUEST+'/forget',               controller.forget,              'guest'),
     ('GET',    '/api/public/[a-z0-9-]+/widget', controller.widget,            'portal'),
     ('GET',    '/api/settings/guest-chat',    controller.settings,            'workspace'),

@@ -518,6 +518,10 @@ def file_link_download(tenant_id, token):
 
 def sender_permitted(cd, tenant_id, job, conv, db):
     """The author may still send: an active member with access to the team, or a still-valid chatbot answer."""
+    from backend.modules.channels.move import SYSTEM_ACTOR
+    if job['actor_id']==SYSTEM_ACTOR:
+        # A notice the system wrote (a chat moved to LINE, channels/move.py): as long as the organization is active.
+        return active(cd,tenant_id)
     member = organization.find_active_membership(cd,tenant_id,job['actor_id'])
     if job['actor_id']==AI_ACTOR:
         return active(cd,tenant_id) and ai_send_allowed(db,tenant_id,job,conv)

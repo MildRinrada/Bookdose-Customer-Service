@@ -14,7 +14,7 @@ from backend.database import audit, db as D
 from backend.exceptions.errors import AIError
 from backend.extensions import ai_webhook, openai_client
 from backend.middleware.access import get_scoped
-from backend.modules.ai import repository, schema
+from backend.modules.ai import mood, repository, schema, summary
 from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
 from backend.modules.channels import service as channels
 from backend.modules.conversations import repository as conversations
@@ -39,7 +39,7 @@ def config(db):
             'model':values.get('ai_model',DEFAULT_MODEL),'daily_limit':int(values.get('ai_daily_limit',100)),
             'conversation_limit':int(values.get('ai_conversation_limit',20)),
             'max_output_tokens':int(values.get('ai_max_output_tokens',1000)),
-            'version':values.get('ai_version','0')}
+            'version':values.get('ai_version','0'),'mood_enabled':values.get('ai_mood','1')=='1'}
 
 
 def has_key(tenant_id):
@@ -113,6 +113,9 @@ def handoff(db, conversation_id, reason='customer'):
         system_message(db,conversation_id,HANDOFF_MESSAGE if conv['channel']=='web' else CHANNEL_HANDOFF_MESSAGE,
                        notice=None if reason in ('customer','staff') else 'handoff')
         audit.record(db,'Bookdose AI','ai.handoff',conversation_id,reason)
+    if previous['mode']=='bot':
+        # Whoever takes it over from the chatbot finds the summary ready (ai/summary.py).
+        summary.ahead(db,D.tenant_id_of(db),conversation_id)
     realtime.conversation(db,conversation_id)
     return tid
 
@@ -137,7 +140,7 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
     The owner's jobs (article, brief) and the assistant's (ask) carry their input in `payload` and count like a staff
     draft."""
     cfg = config(db)
-    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft',*PAYLOAD_MODES) and not cfg['drafts_enabled']):
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary',*PAYLOAD_MODES) and not cfg['drafts_enabled']):
         raise AIError('disabled')
     if not has_key(tenant_id):
         raise AIError('not_configured')
@@ -154,20 +157,26 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
         old = repository.pending_owner_job(db,requested_by,mode)
         if old:
             return old
-    if repository.jobs_since(db,today())>=cfg['daily_limit']:
+    if repository.jobs_since(db,today(),mode=='mood')>=cfg['daily_limit']:
         raise AIError('quota')
     if conversation_id and repository.bot_jobs_for_conversation(db,conversation_id)>=cfg['conversation_limit'] and mode=='bot':
         raise AIError('quota')
     job_id = uid()
     repository.insert_job(db,job_id,conversation_id,trigger_id,requested_by,mode,cfg['version'],
                           json.dumps(payload or {},ensure_ascii=False))
-    audit.record(db,requested_by or 'Bookdose AI','ai.queued',conversation_id or job_id,mode)
+    # Reading a customer's mood happens on every message they send: a row in the activity log each time would bury
+    # everything else in it.
+    # A summary written ahead of time (nobody asked) is the same kind of background work.
+    if mode!='mood' and not (mode=='summary' and not requested_by):
+        audit.record(db,requested_by or 'Bookdose AI','ai.queued',conversation_id or job_id,mode)
     return job_id
 
 
 def on_customer_message(db, tenant_id, conversation_id, body, is_new=False):
     if is_new:
         set_initial_mode(db,conversation_id,bot_enabled(db,conversation_id) and has_key(tenant_id))
+    # How the customer feels, for the queue: by the words now, by the AI when there is one (ai/mood.py).
+    mood.on_customer_message(db,tenant_id,conversation_id,body)
     if requests_human(body):
         handoff(db,conversation_id)
         return
@@ -288,6 +297,8 @@ def permitted(cd, tenant_id, job, db):
     """The job may still run: organization active, bot still on, or the requester still has access."""
     if not tenants.is_active(cd,tenant_id):
         return False
+    if job['mode']=='mood' or (job['mode']=='summary' and not job['requested_by']):
+        return conversations.find(db,job['conversation_id']) is not None
     if job['mode']=='bot':
         return bot_enabled(db,job['conversation_id']) and conversation_state(db,job['conversation_id'])['mode']=='bot'
     membership = memberships.find_active_membership(cd,tenant_id,job['requested_by'])
@@ -316,13 +327,14 @@ def process_one(tenant_id):
         if not job:
             return False
         cfg = config(db)
-        enabled = job['mode']=='test' or (bot_enabled(db,job['conversation_id']) if job['mode']=='bot' else cfg['drafts_enabled'])
+        enabled = job['mode']=='test' or (cfg['mood_enabled'] if job['mode']=='mood' else
+                                          bot_enabled(db,job['conversation_id']) if job['mode']=='bot' else cfg['drafts_enabled'])
         if not permitted(cd,tenant_id,job,db) or cfg['version']!=job['config_version'] or not enabled:
             repository.set_job_state(db,job['id'],'cancelled','stale')
             return True
         lease = uid()
         repository.claim(db,job['id'],lease)
-        owner = job['mode'] in PAYLOAD_MODES
+        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in ('mood','summary')
         if job['mode']=='test':
             payload,articles,signature = {'test':'Bookdose connection check'},[],None
         elif owner:
@@ -343,7 +355,13 @@ def process_one(tenant_id):
     try:
         if not webhook and not key:
             raise AIError('not_configured')
-        if owner:
+        if job['mode']=='mood':
+            raw,usage = ask()
+            result = mood.validate(raw)
+        elif job['mode']=='summary':
+            raw,usage = ask()
+            result = summary.validate(raw)
+        elif owner:
             raw,usage = ask()
             result = validate_owner_result(raw,job['mode'],payload)
         elif job['mode']!='test' and not articles:
@@ -375,6 +393,19 @@ def process_one(tenant_id):
             return True
         if job['mode']=='draft' and not error:
             result['_context_hash'] = signature
+        if job['mode']=='mood':
+            # A new reading moves the case in the lists; a failed one leaves the words' reading as it was.
+            changed = not error and mood.apply_ai(db,job,result)
+            repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            if changed:
+                realtime.conversation(db,job['conversation_id'],public=False)
+            return True
+        if job['mode']=='summary':
+            if not error:
+                summary.apply(db,job,result)
+            repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            realtime.conversation(db,job['conversation_id'],public=False,listed=False)
+            return True
         if job['conversation_id']:
             # A finished draft is for staff; a chatbot job also changes what the customer sees (pending answer).
             realtime.conversation(db,job['conversation_id'],public=job['mode']=='bot',listed=False)
@@ -408,7 +439,7 @@ def save_settings(db, ctx, body):
         repository.write_webhook(ctx['tenant_id'],webhook)
     repository.save_settings(db,[('ai_drafts',str(int(cfg['drafts_enabled']))),('ai_chatbot',str(int(cfg['chatbot_enabled']))),
         ('ai_model',model),('ai_daily_limit',str(cfg['daily_limit'])),('ai_conversation_limit',str(cfg['conversation_limit'])),
-        ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_version',uid())])
+        ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_mood',str(int(cfg['mood_enabled']))),('ai_version',uid())])
     # An edit invalidates in-flight work, including key/model changes.
     waiting = repository.waiting_bot_conversations(db)
     repository.cancel_all_in_flight(db)

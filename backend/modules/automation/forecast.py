@@ -96,6 +96,37 @@ def team_pace(db, moment):
     return response,resolution
 
 
+def alert_new(cd, db, tenant_id):
+    """Tell someone about each case newly forecast to miss a deadline, once per deadline: its owner, or, while
+    nobody owns it, the organization owner who would take an escalation (service.team_lead). In the app (the bell,
+    ถึงคุณ) and by email for those who chose 'sla' emails. Returns how many were told."""
+    from backend.database import db as D
+    from backend.modules.automation import repository
+    from backend.modules.automation.service import team_lead
+    from backend.modules.organization import repository as organization
+    from backend.modules.staff_prefs import service as staff_prefs
+    from backend.realtime import events as realtime
+    D.begin(db)
+    fresh = [f for f in sla_forecast(db)['cases'] if not repository.forecast_alerted(db,f['id'],f['kind'],f['due'])]
+    if not fresh:
+        db.commit()
+        return 0
+    members = organization.tenant_members(cd,tenant_id)
+    available = {user_id for user_id,state in staff_prefs.availability_of(cd,[m['id'] for m in members]).items() if state['available']}
+    load = repository.open_count_by_assignee(db)
+    what = {'response':'ตอบกลับครั้งแรก','resolution':'แก้ไขเคส'}
+    for f in fresh:
+        lead = None if f['assignee_id'] else team_lead(members,load,f['team_id'],available)
+        to = f['assignee_id'] or (lead['id'] if lead else None)
+        repository.insert_forecast_alert(db,f,to)
+        staff_prefs.queue(db,to,'sla',f"เคส BD-{f['number']} น่าจะเกิน SLA",
+                          f"{f['subject']}\nคาดว่าจะ{what[f['kind']]}ช้ากว่ากำหนดราว {f['late_minutes']} นาที "
+                          f"(คิวก่อนหน้า {f['ahead']} เคส ตามความเร็วทีมตอนนี้)",f"/tickets/{f['id']}")
+        realtime.ticket(db,f['id'])
+    db.commit()
+    return len(fresh)
+
+
 def sla_forecast(db, team_id=None):
     """The dashboard's forecast. The queues and the pace are the whole organization's - a team's queue is shared by
     everyone in it - and the list is cut to the team an agent may see (team_id) afterwards."""

@@ -39,6 +39,9 @@ def conversation_detail(db, conv):
     conv['line'] = repository.line_thread(db,conv['id'])
     conv['category'] = customer_repository.category_of(db,conv['id'])
     conv['reference'] = customer_repository.reference_of(db,conv['id'])
+    # How the customer's latest message reads (ai/mood.py), for the header.
+    from backend.modules.ai import mood
+    conv['mood'] = mood.of(db,conv['id'])
     # A guest of guest web chat: the inbox shows a badge and how the team's reply can reach them.
     from backend.modules.guest import service as guest
     conv['guest'] = guest.reach(db,[conv['contact_id']]).get(conv['contact_id'])

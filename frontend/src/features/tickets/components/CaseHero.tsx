@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Icon } from '@/components/Icon';
 import { Badge, PriorityTag, PrivacyTag } from '@/components/ui/display';
+import { MoodTag, type Mood } from '@/components/ui/MoodTag';
 import { date, isDone } from '@/lib/format';
 import type { Ticket } from '../types';
 
@@ -54,7 +55,19 @@ function SlaClock({ label, value }: { label: string; value: Clock }) {
   );
 }
 
-export function CaseHero({ ticket: t, org, escalation, late }: { ticket: Ticket; org: string; escalation: string; late: boolean }) {
+export function CaseHero({
+  ticket: t,
+  org,
+  escalation,
+  late,
+  mood,
+}: {
+  ticket: Ticket;
+  org: string;
+  escalation: string;
+  late: boolean;
+  mood?: Mood | null;
+}) {
   // A closed case stops both clocks (overdue() in lib/format does not count a done case either).
   const resolved = t.resolved_at ?? (isDone(t) ? t.updated_at : null);
   const first = t.first_response_at
@@ -80,6 +93,7 @@ export function CaseHero({ ticket: t, org, escalation, late }: { ticket: Ticket;
               เกินกำหนด SLA
             </span>
           )}
+          {mood && <MoodTag mood={mood} className="case-hero-mood" />}
           {escalation && (
             <span className="case-hero-flag">
               <Icon name="bolt" />

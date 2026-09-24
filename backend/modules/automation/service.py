@@ -432,7 +432,8 @@ def my_alerts(db, ctx):
     return {'mentions':repository.unread_mentions(db,ctx['id'],team),
             'followups':repository.open_followups_for(db,ctx['id'],team),
             'escalations':repository.escalations_to(db,ctx['id']),
-            'praise':repository.praise_for(db,ctx['id'],after(days=-7))}
+            'praise':repository.praise_for(db,ctx['id'],after(days=-7)),
+            'forecasts':repository.forecasts_to(db,ctx['id'],now())}
 
 
 def ticket_extras(db, ticket_id):
@@ -547,6 +548,9 @@ class Worker:
                     try:
                         with D.control() as cd, D.tenant(tenant_id) as db:
                             escalate_due(cd,db,tenant_id)
+                            # A case the queue will not reach in time: its owner hears before the deadline passes.
+                            from backend.modules.automation import forecast
+                            forecast.alert_new(cd,db,tenant_id)
                             # พักเคส: the ones whose moment has come go back to the queue and their owners hear.
                             from backend.modules.tickets import service as ticket_service
                             ticket_service.wake_due(db)

@@ -39,8 +39,9 @@ export function createQueryClient() {
 }
 
 export type ApiQueryOptions = {
-  /** Ask again every n milliseconds while the screen is open (e.g. a live conversation). */
-  refetchInterval?: number | false;
+  /** Ask again every n milliseconds while the screen is open (e.g. a live conversation); or decide from the last
+      answer (e.g. ask again only while a job is still working). */
+  refetchInterval?: number | false | ((data: unknown) => number | false);
   enabled?: boolean;
   /** Keep showing the previous answer while a new path loads (e.g. paging through a list). */
   keepPrevious?: boolean;
@@ -52,7 +53,10 @@ export function useApi<T>(path: string | null, options: ApiQueryOptions = {}) {
     queryKey: [path],
     queryFn: () => api<T>(path as string),
     enabled: path !== null && options.enabled !== false,
-    refetchInterval: options.refetchInterval,
+    refetchInterval:
+      typeof options.refetchInterval === 'function'
+        ? ((interval) => (query: { state: { data: unknown } }) => interval(query.state.data))(options.refetchInterval)
+        : options.refetchInterval,
     refetchIntervalInBackground: false,
     placeholderData: options.keepPrevious ? (previous) => previous : undefined,
   });

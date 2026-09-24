@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, Badge, EmptyState, PriorityTag } from '@/components/ui/display';
+import { MoodTag } from '@/components/ui/MoodTag';
 import { Pager, usePager } from '@/components/ui/Pager';
 import { useToast } from '@/components/ui/Toast';
-import { date, isDone } from '@/lib/format';
+import { date, formatDuration, isDone } from '@/lib/format';
 import { escalationReasons, statusLabels } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
 import { useMemberName, useStaffUser, useWork } from '@/lib/session';
@@ -144,6 +145,8 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
   const memberName = useMemberName();
   const late = lateBy(t);
   const escalated = t.escalated_at && !isDone(t) ? escalationReasons[t.escalation_reason ?? ''] || 'ยกระดับแล้ว' : '';
+  // Not late yet, but the queue in front of it will not reach it in time at the team's pace now.
+  const forecast = !late && !isDone(t) ? t.forecast : null;
   const assignee = memberName(t.assignee_id);
   const paused = isSnoozed(t);
   return (
@@ -172,6 +175,16 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
             ยกระดับ
           </span>
         )}
+        {forecast && (
+          <span
+            className="badge forecast-tag"
+            title={`คาดว่า${forecast.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้ากว่ากำหนดราว ${formatDuration(forecast.late_minutes)} · คิวก่อนหน้า ${forecast.ahead} เคส · กำหนด ${date(forecast.due, true)}`}
+          >
+            <Icon name="clock" />
+            น่าจะเกิน · ช้าราว {formatDuration(forecast.late_minutes)}
+          </span>
+        )}
+        {!isDone(t) && <MoodTag mood={t} className="ticket-mood" />}
         {paused && <SnoozeChip until={t.snoozed_until as string} note={t.snooze_note} />}
       </td>
       <td className="customer-col">

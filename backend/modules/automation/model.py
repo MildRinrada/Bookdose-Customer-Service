@@ -34,6 +34,12 @@ CREATE TABLE IF NOT EXISTS mentions (
     author_name TEXT NOT NULL, created_at TEXT NOT NULL, read_at TEXT
 );
 CREATE TABLE IF NOT EXISTS agent_activity (user_id TEXT PRIMARY KEY, last_seen TEXT NOT NULL);
+-- A case forecast to miss a deadline (forecast.py), told once per deadline: to whom, and what was expected then.
+CREATE TABLE IF NOT EXISTS sla_forecast_alerts (
+    ticket_id TEXT NOT NULL, kind TEXT NOT NULL, due_at TEXT NOT NULL, to_user_id TEXT, expected_at TEXT NOT NULL,
+    late_minutes INTEGER NOT NULL, alerted_at TEXT NOT NULL, PRIMARY KEY(ticket_id,kind,due_at)
+);
+CREATE INDEX IF NOT EXISTS sla_forecast_to ON sla_forecast_alerts(to_user_id,due_at);
 CREATE INDEX IF NOT EXISTS followups_open ON followups(done_at,due_at);
 CREATE INDEX IF NOT EXISTS csat_conversation ON csat_surveys(conversation_id,answered_at);
 CREATE INDEX IF NOT EXISTS mentions_user ON mentions(user_id,read_at);

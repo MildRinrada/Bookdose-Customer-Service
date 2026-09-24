@@ -122,6 +122,24 @@ def escalations_to(db, user_id):
                     WHERE e.to_user_id=? AND t.status NOT IN {DONE} ORDER BY e.escalated_at DESC LIMIT 20''',(user_id,))
 
 
+def forecast_alerted(db, ticket_id, kind, due_at):
+    return db.execute('SELECT 1 FROM sla_forecast_alerts WHERE ticket_id=? AND kind=? AND due_at=?',(ticket_id,kind,due_at)).fetchone() is not None
+
+
+def insert_forecast_alert(db, f, to_user_id):
+    db.execute('INSERT OR IGNORE INTO sla_forecast_alerts VALUES(?,?,?,?,?,?,?)',
+               (f['id'],f['kind'],f['due'],to_user_id,f['expected'],f['late_minutes'],now()))
+
+
+def forecasts_to(db, user_id, moment):
+    """The forecast warnings sent to the member that still stand: the deadline is ahead, the case is not finished,
+    and a first-reply warning goes once somebody has replied."""
+    return rows(db,f'''SELECT a.ticket_id,a.kind,a.due_at,a.expected_at,a.late_minutes,a.alerted_at,t.number,t.subject,t.priority
+                    FROM sla_forecast_alerts a JOIN tickets t ON t.id=a.ticket_id
+                    WHERE a.to_user_id=? AND a.due_at>? AND t.status NOT IN {DONE}
+                      AND (a.kind!='response' OR t.first_response_at IS NULL) ORDER BY a.due_at LIMIT 20''',(user_id,moment))
+
+
 def praise_for(db, user_id, since):
     """5-star answers since `since` to the surveys of cases the member now owns (the staff frame celebrates new ones)."""
     return rows(db,'''SELECT s.id,s.answered_at,s.comment,t.id AS ticket_id,t.number,t.subject FROM csat_surveys s

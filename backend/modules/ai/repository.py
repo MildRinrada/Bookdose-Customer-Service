@@ -60,7 +60,7 @@ def widen_jobs(db):
     every column it already had. Runs once per new mode list."""
     from backend.modules.ai.model import JOBS_TABLE
     row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_jobs'").fetchone()
-    if not row or "'ask'" in row[0]:
+    if not row or "'summary'" in row[0]:
         return
     columns = ','.join(r[1] for r in db.execute('PRAGMA table_info(ai_jobs)').fetchall())
     db.commit()
@@ -153,8 +153,10 @@ def pending_draft(db, conversation_id, user_id):
     return row['id'] if row else None
 
 
-def jobs_since(db, day):
-    return db.execute('SELECT COUNT(*) FROM ai_jobs WHERE created_at>=?',(day,)).fetchone()[0]
+def jobs_since(db, day, mood=False):
+    """Jobs queued since `day` against the daily limit. Mood readings (ai/mood.py) count on their own, against the
+    same number: reading every customer message must never use up what the chatbot and the team's drafts need."""
+    return db.execute(f"SELECT COUNT(*) FROM ai_jobs WHERE created_at>=? AND mode{'=' if mood else '!='}'mood'",(day,)).fetchone()[0]
 
 
 def bot_jobs_for_conversation(db, conversation_id):
@@ -195,7 +197,11 @@ def any_running(db):
 
 
 def next_pending(db):
-    return one(db,"SELECT * FROM ai_jobs WHERE status='pending' ORDER BY created_at,rowid LIMIT 1")
+    """The oldest waiting job that somebody is waiting for; a summary written ahead of time (ai/summary.py), then a mood
+    reading (ai/mood.py), only once none is left."""
+    return one(db,"""SELECT * FROM ai_jobs WHERE status='pending'
+                     ORDER BY CASE WHEN mode='mood' THEN 2 WHEN mode='summary' AND requested_by IS NULL THEN 1 ELSE 0 END,created_at,rowid
+                     LIMIT 1""")
 
 
 def set_job_state(db, job_id, status, error):

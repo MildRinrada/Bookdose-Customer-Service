@@ -23,6 +23,8 @@ export type AiJob = {
 export type AiSettings = {
   drafts_enabled: boolean;
   chatbot_enabled: boolean;
+  /** Read how customers feel with the AI (ai/mood.py); the reading by words runs either way. */
+  mood_enabled: boolean;
   model: string;
   daily_limit: number;
   conversation_limit: number;

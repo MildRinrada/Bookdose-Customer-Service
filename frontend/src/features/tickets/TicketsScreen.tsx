@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
+import { moodHeat } from '@/components/ui/MoodTag';
+import { isDone } from '@/lib/format';
 import { FilterLink, FilterSelect, SearchInput } from '@/components/ui/filters';
 import { usePager } from '@/components/ui/Pager';
 import { useToast } from '@/components/ui/Toast';
@@ -54,7 +56,9 @@ export function TicketsScreen() {
   const [bulkBusy, setBulkBusy] = useState(false);
 
   const matching = all.filter((t) => matchesTicketFilters(t, filter));
-  const visible = matching.filter((t) => inScope(t, filter.filter, me));
+  // A case whose customer is upset comes first (ai/mood.py): most upset first, the rest in the order they were.
+  const heat = (t: TicketRow) => (isDone(t) ? 0 : moodHeat(t));
+  const visible = matching.filter((t) => inScope(t, filter.filter, me)).sort((a, b) => heat(b) - heat(a));
   const pager = usePager('tickets', visible, { size: 25 });
 
   // Selected cases that the filters hide are let go (the old refreshTicketFilter).

@@ -87,7 +87,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
         onSubmit={async (values, form) => {
           const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
           const body: Record<string, unknown> = { ...values };
-          for (const key of ['drafts_enabled', 'chatbot_enabled', 'remove_key']) body[key] = checked(key);
+          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'remove_key']) body[key] = checked(key);
           body.remove_webhook = n8n && checked('remove_webhook');
           for (const key of ['daily_limit', 'conversation_limit', 'max_output_tokens']) body[key] = Number(values[key]);
           await saveAiSettings(body);
@@ -184,6 +184,15 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           <label className="check">
             <input type="checkbox" className="switch" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />
             เปิด Chatbot ตอบลูกค้าในแชทบนเว็บ
+          </label>
+          <label className="check ai-mood-switch">
+            <input type="checkbox" className="switch" name="mood_enabled" defaultChecked={a.mood_enabled} />
+            <span>
+              อ่านอารมณ์ลูกค้าด้วย AI
+              <small className="tiny muted">
+                ส่งข้อความล่าสุดของลูกค้าให้ AI อ่านว่าไม่พอใจหรือเร่งด่วนไหม เพื่อดันเคสขึ้นก่อน (นับโควตาแยกจากงานอื่น) ปิดแล้วยังอ่านจากคำในข้อความเหมือนเดิม
+              </small>
+            </span>
           </label>
           <NumberField id="ai-daily" label="เพดานคำขอ AI ต่อวัน / องค์กร (UTC)" name="daily_limit" min={1} max={10000} defaultValue={a.daily_limit} />
           <NumberField id="ai-conversation" label="เพดานคำตอบ Chatbot ต่อบทสนทนา" name="conversation_limit" min={1} max={100} defaultValue={a.conversation_limit} />

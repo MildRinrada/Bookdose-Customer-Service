@@ -67,6 +67,8 @@ const paths = {
   // Six dots big enough to read as dots: a ring this small under the 1.7 stroke draws as a filled circle.
   grip: 'M7.9 6a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0 M13.9 6a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0 M7.9 12a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0 M13.9 12a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0 M7.9 18a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0 M13.9 18a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0',
   history: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2',
+  // A customer who is not happy (the mood tag on cases and conversations)
+  frown: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M8 16.5s1.5-2 4-2 4 2 4 2 M9 9.5h.01 M15 9.5h.01',
   facebook:
     'M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.3S17.5 2 12 2z M6.5 13.5l3.8-4 2 2 3.7-4-3.8 4-2-2z',
 } as const;

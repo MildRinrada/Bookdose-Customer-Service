@@ -4,7 +4,7 @@ import json
 
 from backend.database import audit, db as D
 from backend.middleware.access import visible_team, get_scoped, validate_team, validate_assignee
-from backend.modules.ai import service as ai
+from backend.modules.ai import mood, service as ai
 from backend.modules.automation import service as automation
 from backend.modules.automation.service import SYSTEM_ACTOR
 from backend.modules.contacts import repository as contacts, service as contact_service
@@ -42,7 +42,16 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
 
 
 def list_tickets(db, ctx):
-    return repository.list_with_contacts(db,visible_team(ctx))
+    """The cases the member may see; one the queue will not reach in time carries `forecast` (automation/forecast.py:
+    which deadline, when it is due and expected, how late) for the list's น่าจะเกิน tag."""
+    from backend.modules.automation import forecast
+    team = visible_team(ctx)
+    found = {f['id']:f for f in forecast.sla_forecast(db,team)['cases']}
+    cases = repository.list_with_contacts(db,team)
+    for t in cases:
+        f = found.get(t['id'])
+        t['forecast'] = {k:f[k] for k in ('kind','due','expected','late_minutes','ahead')} if f else None
+    return cases
 
 
 def create_ticket(cd, db, ctx, body):
@@ -77,6 +86,8 @@ def ticket_detail(db, ctx, ticket_id):
         conv['messages'] = conversation_service.message_list(db,conv['id'])
         conv['ai'] = ai.conversation_state(db,conv['id'])
         conv['line'] = conversations.line_thread(db,conv['id'])
+        # How the customer's latest message in it reads (ai/mood.py): the heading shows the most upset of them.
+        conv['mood'] = mood.of(db,conv['id'])
         conv.pop('portal_token',None)
     return {'ticket':ticket,'contact':contacts.find(db,ticket['contact_id']),
             'conversations':convs,'events':audit.for_entity(db,ticket['id']),
@@ -105,6 +116,10 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     audit.record(db,ctx['name'],'ticket.updated',ticket['id'],json.dumps(changes,ensure_ascii=False))
     if assignee and assignee!=ticket['assignee_id']:
         notify_assigned(db,ticket,assignee,ctx)
+        # The new owner finds each conversation summarized (ai/summary.py) instead of reading it from the start.
+        from backend.modules.ai import summary
+        for conv in conversations.for_ticket(db,ticket['id']):
+            summary.ahead(db,ctx['tenant_id'],conv['id'])
     db.commit()
 
 
@@ -112,29 +127,51 @@ NEXT_SOON_HOURS = 2   # "ใกล้เกิน": the same window as ต้อ
 
 
 def next_task(cd, db, ctx):
-    """รับงานถัดไป: the one case the member should open now - their own past its SLA, then their own due within two
-    hours, then the case of their team that has waited longest for anyone, which becomes theirs. Returns the case and
-    why, or None when there is nothing to do."""
+    """รับงานถัดไป: the one case the member should open now - their own past its SLA; then the case whose customer
+    is upset (ai/mood.py), their own before one of their team nobody has taken (which becomes theirs); then their own
+    due within two hours; then the case of their team that has waited longest for anyone. Returns the case and why, or
+    None when there is nothing to do.
+
+    An upset customer comes before a deadline that has not passed yet: a case that only waited longer can wait a
+    little more, a customer at the end of their patience cannot."""
     D.begin(db)
+    brief = lambda t: {'id':t['id'],'number':t['number'],'subject':t['subject']}
     mine = repository.my_most_urgent(db,ctx['id'])
+    if mine and mine['due']<now():
+        db.commit()
+        return {'ticket':brief(mine),'reason':'overdue','taken':False}
+    upset = repository.my_most_upset(db,ctx['id'])
+    if upset:
+        db.commit()
+        return {'ticket':brief(upset),'reason':'upset','taken':False}
+    team = ctx['team_id']
+    upset = repository.most_upset_unassigned(db,team) if team else None
+    if upset and _take(cd,db,ctx,upset):
+        return {'ticket':brief(upset),'reason':'upset','taken':True}
     if mine and mine['due']<=iso(utc_now()+dt.timedelta(hours=NEXT_SOON_HOURS)):
         db.commit()
-        return {'ticket':{'id':mine['id'],'number':mine['number'],'subject':mine['subject']},
-                'reason':'overdue' if mine['due']<now() else 'due_soon','taken':False}
-    waiting = repository.oldest_unassigned(db,ctx['team_id']) if ctx['team_id'] else None
-    if waiting and organization.is_active_team_member(cd,ctx['tenant_id'],ctx['id'],waiting['team_id']) and repository.take(db,waiting['id'],ctx['id']):
-        audit.record(db,ctx['name'],'ticket.updated',waiting['id'],
-                     json.dumps({'assignee_id':{'before':None,'after':ctx['id']}},ensure_ascii=False))
-        realtime.ticket(db,waiting['id'],public=False,teams=(waiting['team_id'],),conversations_listed=True)
-        for conv in conversations.for_ticket(db,waiting['id']):
-            realtime.conversation(db,conv['id'],public=False)
-        db.commit()
-        return {'ticket':{'id':waiting['id'],'number':waiting['number'],'subject':waiting['subject']},'reason':'unassigned','taken':True}
+        return {'ticket':brief(mine),'reason':'due_soon','taken':False}
+    waiting = repository.oldest_unassigned(db,team) if team else None
+    if waiting and _take(cd,db,ctx,waiting):
+        return {'ticket':brief(waiting),'reason':'unassigned','taken':True}
     db.commit()
     # Nothing urgent and nobody waiting: the member's own next case, if any, is still the best thing to open.
     if mine:
         return {'ticket':{'id':mine['id'],'number':mine['number'],'subject':mine['subject']},'reason':'mine','taken':False}
     return {'ticket':None,'reason':'none','taken':False}
+
+
+def _take(cd, db, ctx, ticket):
+    """Make a case nobody has taken the member's, and commit; False when someone took it first or the member is not in
+    its team any more."""
+    if not organization.is_active_team_member(cd,ctx['tenant_id'],ctx['id'],ticket['team_id']) or not repository.take(db,ticket['id'],ctx['id']):
+        return False
+    audit.record(db,ctx['name'],'ticket.updated',ticket['id'],json.dumps({'assignee_id':{'before':None,'after':ctx['id']}},ensure_ascii=False))
+    realtime.ticket(db,ticket['id'],public=False,teams=(ticket['team_id'],),conversations_listed=True)
+    for conv in conversations.for_ticket(db,ticket['id']):
+        realtime.conversation(db,conv['id'],public=False)
+    db.commit()
+    return True
 
 
 # พักเคสไว้ก่อน

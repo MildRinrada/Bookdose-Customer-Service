@@ -16,8 +16,9 @@ from backend.utils.http import open_without_redirects
 # A local model on a laptop is slow: an article of 2,500 tokens takes minutes. The job's own time limit is longer.
 TIMEOUT_SECONDS = 300
 # Which part of the workflow answers: the staff's reply drafts, the connection test and the staff's AI assistant
-# (ask), the chatbot, the owner's overview (an article from unanswered questions, today's summary).
-FEATURES = {'draft':'assist','test':'assist','ask':'assist','bot':'chatbot','article':'insights','brief':'insights'}
+# (ask), the chatbot, the owner's overview (an article from unanswered questions, today's summary); reading how a
+# customer feels (mood) goes to the assist part too.
+FEATURES = {'draft':'assist','test':'assist','ask':'assist','bot':'chatbot','article':'insights','brief':'insights','mood':'assist','summary':'assist'}
 LOOPBACK_NAMES = ('localhost','127.0.0.1','::1')
 
 

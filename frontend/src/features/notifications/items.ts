@@ -2,7 +2,7 @@
 
 import type { ConversationSummary } from '@/features/inbox/types';
 import { needsReply } from '@/features/inbox/hooks';
-import { overdue, plainText } from '@/lib/format';
+import { formatDuration, overdue, plainText } from '@/lib/format';
 import { channelIcons } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useStaffAlerts, useStaffTickets } from '@/lib/session';
@@ -29,6 +29,16 @@ export function notificationItems({ alerts, tickets, conversations }: Notificati
   const now = Date.now();
   for (const e of alerts?.escalations ?? [])
     items.push({ kind: 'me', tone: 'late', icon: 'bolt', title: `BD-${e.number} ยกระดับมาหาคุณ`, detail: e.subject, at: e.escalated_at, href: `/tickets/${e.ticket_id}` });
+  for (const f of alerts?.forecasts ?? [])
+    items.push({
+      kind: 'me',
+      tone: 'waiting',
+      icon: 'clock',
+      title: `BD-${f.number} น่าจะเกิน SLA`,
+      detail: `คาดว่า${f.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้าราว ${formatDuration(f.late_minutes)} · ${f.subject}`,
+      at: f.alerted_at,
+      href: `/tickets/${f.ticket_id}`,
+    });
   for (const f of alerts?.followups ?? [])
     if (new Date(f.due_at).getTime() <= now)
       items.push({ kind: 'me', tone: 'waiting', icon: 'clock', title: `ถึงเวลาติดตาม BD-${f.number}`, detail: f.note, at: f.due_at, href: `/tickets/${f.ticket_id}` });

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
+import { moodHeat } from '@/components/ui/MoodTag';
 import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
@@ -51,7 +52,9 @@ export function InboxScreen({ id }: { id?: string }) {
         ))
     );
   };
-  const shown = conversations.filter((c) => matches(c));
+  // An upset customer waiting for us comes first (ai/mood.py): most upset first, the rest in the order they came.
+  const heat = (c: ConversationSummary) => (c.status !== 'closed' && needsReply(c) ? moodHeat(c) : 0);
+  const shown = conversations.filter((c) => matches(c)).sort((a, b) => heat(b) - heat(a));
 
   // Wide screens open a conversation from the current tab beside the list.
   const fallback = !id && !singlePane && list.data ? (conversations.find((c) => matches(c)) ?? conversations[0])?.id : undefined;

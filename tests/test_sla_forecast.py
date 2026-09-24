@@ -5,7 +5,10 @@ import datetime as dt
 import unittest
 
 import test_app as base
+from backend.database import db as D
+from backend.modules.automation import forecast
 from backend.modules.automation.forecast import predict
+from backend.utils.dates import after
 
 NOW = dt.datetime(2026,9,24,9,0,tzinfo=dt.timezone.utc)
 
@@ -70,6 +73,37 @@ class ForecastOnDashboardTests(unittest.TestCase):
         self.assertIsInstance(forecast['cases'],list)
         self.assertIn('unknown',forecast)
         self.assertIn('response_per_hour',forecast)
+
+    def slow_case(self):
+        """A new case due for a first reply in ten minutes, in a team that has answered one case in the past week:
+        at that pace the queue reaches it in days."""
+        _,conversation = self.visitor()
+        ticket = self.ok(self.admin,f'/api/conversations/{conversation}/ticket',{})['id']
+        with D.tenant(self.org) as db:
+            team = db.execute('SELECT team_id FROM tickets WHERE id=?',(ticket,)).fetchone()[0]
+            db.execute('UPDATE tickets SET first_response_at=NULL,first_response_due_at=? WHERE first_response_at IS NULL',(after(days=-1),))
+            db.execute('UPDATE tickets SET first_response_due_at=? WHERE id=?',(after(minutes=10),ticket))
+            db.execute('UPDATE tickets SET first_response_at=NULL WHERE team_id=? AND id!=?',(team,ticket))
+            db.execute('UPDATE tickets SET first_response_at=? WHERE id=(SELECT id FROM tickets WHERE id!=? LIMIT 1)',(after(days=-3),ticket))
+            db.execute('UPDATE tickets SET team_id=? WHERE first_response_at IS NOT NULL',(team,))
+            db.commit()
+        return conversation,ticket
+
+    def test_a_case_forecast_late_is_told_once_and_tagged_in_the_list(self):
+        conversation,ticket = self.slow_case()
+        with D.control() as cd, D.tenant(self.org) as db:
+            self.assertGreaterEqual(forecast.alert_new(cd,db,self.org),1)
+            self.assertEqual(forecast.alert_new(cd,db,self.org),0)   # once per deadline
+            notice = db.execute("SELECT subject FROM staff_notices WHERE event='sla' ORDER BY created_at DESC LIMIT 1").fetchone()
+        self.assertIn('น่าจะเกิน SLA',notice[0])
+        told = self.ok(self.admin,'/api/automation/alerts')['forecasts']
+        self.assertIn(ticket,[f['ticket_id'] for f in told])
+        listed = next(t for t in self.ok(self.admin,'/api/tickets')['tickets'] if t['id']==ticket)
+        self.assertEqual(listed['forecast']['kind'],'response')
+        self.assertGreater(listed['forecast']['late_minutes'],0)
+        # Answered: the first-reply warning no longer stands, and the list no longer tags it for that deadline.
+        self.ok(self.admin,f'/api/conversations/{conversation}/messages',{'kind':'reply','body':'รับเรื่องแล้วค่ะ'})
+        self.assertNotIn(ticket,[f['ticket_id'] for f in self.ok(self.admin,'/api/automation/alerts')['forecasts']])
 
 
 # The setUp, the sign-ins and the helpers of the main integration test, without its tests.

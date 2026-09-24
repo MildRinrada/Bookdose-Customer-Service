@@ -1696,3 +1696,95 @@ input[type=file].attach-input {
     overflow-y: auto;
   }
 }
+
+/* สรุปบทสนทนา (ConversationSummary): a band above the thread - its head always, the three parts when opened. */
+.conv-summary {
+  flex-shrink: 0;
+  margin: 8px 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--info-soft);
+}
+.conv-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+.conv-summary-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.conv-summary-toggle:disabled {
+  cursor: default;
+}
+.conv-summary-toggle .icon,.conv-summary-part h4 .icon {
+  width: 16px;
+  height: 16px;
+}
+.conv-summary-working {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.conv-summary-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--link);
+  animation: conv-summary-pulse 1.2s ease-in-out infinite;
+}
+@keyframes conv-summary-pulse {
+  50% { opacity: .25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conv-summary-pulse { animation: none; }
+}
+.conv-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap: 10px 16px;
+  margin-top: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.conv-summary-part h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: .9rem;
+}
+.conv-summary-part.pending h4 {
+  color: var(--amber);
+}
+.conv-summary-part ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.conv-summary-part li {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.conv-summary-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.conv-summary-error {
+  margin: 8px 0 0;
+  color: var(--red);
+  font-size: .9rem;
+}

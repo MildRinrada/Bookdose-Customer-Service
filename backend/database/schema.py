@@ -81,6 +81,9 @@ def upgrade_tenant(db):
     """Tables added after the first release; safe to run on every start. Existing rows are left intact."""
     db.executescript(ai.TENANT_TABLES)
     db.executemany('INSERT OR IGNORE INTO settings VALUES(?,?)',ai.DEFAULT_SETTINGS)
+    # How customers of open conversations feel, read once by the words of their latest message (ai/mood.py).
+    from backend.modules.ai import mood
+    mood.backfill(db)
     # The owner's AI on the overview (an article from unanswered questions, today's summary): wider job modes.
     from backend.modules.ai import repository as ai_repository
     ai_repository.widen_jobs(db)

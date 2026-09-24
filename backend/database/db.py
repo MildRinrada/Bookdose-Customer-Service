@@ -1,5 +1,6 @@
 """SQLite connections: a control database for the platform and one physically separate database per organization."""
 import contextlib
+import os
 import sqlite3
 
 from config import settings
@@ -77,6 +78,11 @@ def tenant(tenant_id):
     if not path.is_file():
         raise ValueError('Unknown tenant')
     return connect(path)
+
+
+def tenant_id_of(db):
+    """The organization a tenant connection belongs to: its file is named after it (tenant_path)."""
+    return os.path.splitext(os.path.basename(db.execute('PRAGMA database_list').fetchone()[2]))[0]
 
 
 def create_tenant_database(tenant_id):

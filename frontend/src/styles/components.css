@@ -1505,3 +1505,40 @@ select:disabled {
   min-height: 130px;
   max-height: 340px;
 }
+
+/* How the customer feels (MoodTag): red for โกรธมาก, amber for ไม่พอใจ, and ด่วน on its own in red too. */
+.mood-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.mood-tag .icon {
+  width: 13px;
+  height: 13px;
+}
+.mood-tag.angry,.mood-tag.urgent {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.mood-tag.upset {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.ticket-title~.mood-tag.ticket-mood {
+  margin-top: 4px;
+  margin-right: 4px;
+}
+/* ตั้งค่า AI: the mood switch's line of explanation under its label. */
+.ai-mood-switch>span {
+  display: grid;
+  gap: 2px;
+}
+.ai-mood-switch small {
+  font-weight: 400;
+}

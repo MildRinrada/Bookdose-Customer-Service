@@ -28,6 +28,12 @@ def fake_provider(key,cfg,payload,mode):
             'citations':[{'article_id':article['id'],'quote':article['text'][:40]}]}, {'input_tokens':250,'output_tokens':90}
 
 
+def answered(mock):
+    """The provider was asked for an answer or a draft - not only to read a customer's mood (ai/mood.py), which runs on
+    every customer message of an organization with an AI."""
+    return any(call.args[3]!='mood' for call in mock.call_args_list)
+
+
 class AITests(unittest.TestCase):
     setUp = base.IntegrationTests.setUp
     tearDown = base.IntegrationTests.tearDown
@@ -141,7 +147,7 @@ class AITests(unittest.TestCase):
         self.assertEqual(result['ai']['mode'],'human');self.assertIsNotNone(result['ticket'])
         self.assertFalse(any(m['source']=='ai' for m in result['messages']))
         self.ok(visitor,'/api/public/alpha/messages',{'body':'ดาวน์โหลดรายงานการอ่าน'})
-        self.assertFalse(self.run_job().called)
+        self.assertFalse(answered(self.run_job()))
 
     def test_staff_reply_takes_over_and_new_message_supersedes_old_job(self):
         self.enable();self.article();visitor,conv=self.visitor()
@@ -207,13 +213,14 @@ class AITests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as pool:
             visitors=list(pool.map(ask,customers))
         with D.tenant(self.org) as db:
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM ai_jobs').fetchone()[0],1)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM ai_jobs WHERE mode!='mood'").fetchone()[0],1)
         self.assertEqual(sum(self.ok(v,'/api/public/alpha/session')['ai']['mode']=='human' for v,_ in visitors),1)
         self.run_job()
-        self.assertEqual(self.ok(self.admin,'/api/ai/settings')['usage']['requests'],1)
+        # The one answer, and one mood reading: mood readings have a daily limit of their own, the same 1.
+        self.assertEqual(self.ok(self.admin,'/api/ai/settings')['usage']['requests'],1+1)
         human,c=self.visitor(body='ขอคุยกับเจ้าหน้าที่')
         self.assertEqual(self.ok(human,'/api/public/alpha/session')['ai']['mode'],'human')
-        self.assertFalse(self.run_job().called)
+        self.assertFalse(answered(self.run_job()))
 
     def test_malformed_and_fabricated_citations_are_not_published(self):
         self.enable();self.article();visitor,conv=self.visitor()
@@ -263,14 +270,14 @@ class AITests(unittest.TestCase):
         self.enable();self.article();visitor,conv=self.visitor()
         with D.tenant(self.org) as db:
             db.execute("UPDATE ai_jobs SET status='running',updated_at='2000-01-01T00:00:00+00:00'")
-        self.assertFalse(self.run_job().called)
+        self.assertFalse(answered(self.run_job()))
         self.assertEqual(self.ok(visitor,'/api/public/alpha/session')['ai']['mode'],'human')
 
     def test_attachment_handoff_keeps_file_and_does_not_send_it_to_ai(self):
         self.enable();self.article();visitor,conv=self.visitor()
         self.ok(visitor,'/api/public/alpha/messages',{'body':'ดาวน์โหลดรายงานการอ่านแล้วติดปัญหาตามไฟล์',
             'attachments':[{'name':'problem.txt','data':base64.b64encode(b'private attachment').decode()}]})
-        self.assertFalse(self.run_job().called)
+        self.assertFalse(answered(self.run_job()))
         result=self.ok(visitor,'/api/public/alpha/session')
         self.assertEqual(result['ai']['mode'],'human')
         self.assertEqual(result['messages'][1]['attachments'][0]['name'],'problem.txt')
@@ -301,7 +308,7 @@ class AITests(unittest.TestCase):
         self.enable(conversation_limit=1);self.article();visitor,conv=self.visitor()
         self.run_job()
         self.ok(visitor,'/api/public/alpha/messages',{'body':'ดาวน์โหลดรายงานการอ่านอีกเดือน'})
-        self.assertFalse(self.run_job().called)
+        self.assertFalse(answered(self.run_job()))
         result=self.ok(visitor,'/api/public/alpha/session')
         self.assertEqual(result['ai']['mode'],'human')
         self.assertEqual(len([m for m in result['messages'] if m['source']=='ai']),1)

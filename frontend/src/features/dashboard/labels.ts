@@ -1,5 +1,5 @@
 import type { TicketRow } from '@/features/tickets/types';
-import { formatDuration, isDone, plainText, relative, shortAgo } from '@/lib/format';
+import { date, formatDuration, isDone, plainText, relative, shortAgo } from '@/lib/format';
 import { escalationReasons } from '@/lib/labels';
 import type { StaffAlerts } from '@/lib/types';
 import type { AgentActivity, Heatmap } from './types';
@@ -56,6 +56,17 @@ export function meItems(alerts: StaffAlerts | null | undefined): MeItem[] {
       detail: `${escalationReasons[e.reason ?? ''] || ''} · ${e.subject}`,
       href: `/tickets/${e.ticket_id}`,
       when: shortAgo(e.escalated_at),
+    });
+  for (const f of alerts.forecasts ?? [])
+    items.push({
+      rank: 0,
+      at: f.alerted_at,
+      tone: 'warn',
+      icon: 'clock',
+      title: `BD-${f.number} น่าจะเกิน SLA`,
+      detail: `คาดว่า${f.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้าราว ${formatDuration(f.late_minutes)} · ${f.subject}`,
+      href: `/tickets/${f.ticket_id}`,
+      when: `กำหนด ${date(f.due_at, true)}`,
     });
   for (const f of alerts.followups ?? []) {
     const due = new Date(f.due_at).getTime();

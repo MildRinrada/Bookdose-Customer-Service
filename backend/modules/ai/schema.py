@@ -29,7 +29,7 @@ def webhook_form(body):
 def settings_form(body, current):
     """(settings, model, new API key or '', remove key?) from the admin's form; fields left out keep `current`."""
     cfg = dict(current)
-    for key in ('drafts_enabled','chatbot_enabled'):
+    for key in ('drafts_enabled','chatbot_enabled','mood_enabled'):
         value = body.get(key,cfg[key])
         require(type(value) is bool,'สถานะ AI ไม่ถูกต้อง')
         cfg[key] = value

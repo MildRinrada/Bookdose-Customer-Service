@@ -12,9 +12,11 @@ def list_with_previews(db, team_id=None):
         (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS preview,
         (SELECT kind FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_kind,
         (SELECT kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_kind,
-        (SELECT created_at FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_at
+        (SELECT created_at FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_public_at,
+        mo.level AS mood_level,mo.urgent AS mood_urgent,mo.reason AS mood_reason,mo.source AS mood_source
         FROM conversations c JOIN contacts p ON p.id=c.contact_id LEFT JOIN ticket_conversations tc ON tc.conversation_id=c.id
-        LEFT JOIN tickets t ON t.id=tc.ticket_id WHERE {where} ORDER BY c.updated_at DESC''',params)
+        LEFT JOIN tickets t ON t.id=tc.ticket_id LEFT JOIN conversation_moods mo ON mo.conversation_id=c.id
+        WHERE {where} ORDER BY c.updated_at DESC''',params)
 
 
 def move_contact(db, from_contact_id, to_contact_id):

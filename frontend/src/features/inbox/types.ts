@@ -32,6 +32,11 @@ export type ConversationSummary = {
   last_public_at?: string | null;
   /** Set when the customer chatted on the web without an account: how they can be reached again. */
   guest?: GuestReach | null;
+  /** How the customer's latest message reads (ai/mood.py): 0 ปกติ, 1 ไม่พอใจ, 2 โกรธมาก; urgent; by the AI or the words. */
+  mood_level?: number | null;
+  mood_urgent?: number | null;
+  mood_reason?: string | null;
+  mood_source?: string | null;
 };
 
 export type MessageKind = 'customer' | 'reply' | 'note';
@@ -64,6 +69,8 @@ export type Message = {
 /** The conversation itself in GET /api/conversations/<id>. */
 export type Conversation = {
   id: string;
+  /** How the customer's latest message reads (ai/mood.py); null before they have written. */
+  mood?: { level: number; urgent: number; reason: string; source: string; updated_at: string } | null;
   contact_id: string;
   subject: string;
   channel: string;

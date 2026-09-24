@@ -124,7 +124,7 @@ export type Overview = {
 /** POST /api/tickets/next: the case to open now and why (none: nothing waits for the member). */
 export type NextTask = {
   ticket: { id: string; number: number; subject: string } | null;
-  reason: 'overdue' | 'due_soon' | 'unassigned' | 'mine' | 'none';
+  reason: 'overdue' | 'upset' | 'due_soon' | 'unassigned' | 'mine' | 'none';
   taken: boolean;
 };
 

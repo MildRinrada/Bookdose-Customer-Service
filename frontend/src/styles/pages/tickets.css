@@ -703,3 +703,31 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
     grid-template-columns: 1fr;
   }
 }
+
+/* น่าจะเกิน: a case not late yet that the queue will not reach in time (automation/forecast.py). Amber, a step
+   below the red of a case already late. */
+.badge.forecast-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge.forecast-tag .icon {
+  width: 12px;
+  height: 12px;
+}
+/* The customer's mood on the case's heading, the size of the flags beside it. */
+.case-hero .mood-tag.case-hero-mood {
+  padding: 3px 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: inherit;
+}
+.case-hero .mood-tag.case-hero-mood .icon {
+  width: 16px;
+  height: 16px;
+}

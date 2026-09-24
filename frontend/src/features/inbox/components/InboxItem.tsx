@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/display';
+import { MoodTag } from '@/components/ui/MoodTag';
 import { plainText, relative } from '@/lib/format';
 import { channelNames, priorityLabels } from '@/lib/labels';
 import { needsReply } from '../hooks';
@@ -31,6 +32,8 @@ export function CustomerAvatar({ name, id }: { name: string; id: string }) {
 export function InboxItem({ c, selected }: { c: ConversationSummary; selected: boolean }) {
   const waiting = needsReply(c);
   const urgent = ['high', 'urgent'].includes(c.ticket_priority ?? '');
+  // How the customer feels only matters while the conversation is open.
+  const upset = c.status !== 'closed' && Boolean(c.mood_level || c.mood_urgent);
   const channelName = channelNames[c.channel] || c.channel;
   const guest = c.guest ? ' · ผู้เยี่ยมชม (ไม่ได้เข้าสู่ระบบ)' : '';
   const foot = [channelName, c.ticket_number ? `BD-${c.ticket_number}` : null, c.company, c.status === 'closed' ? 'ปิดแล้ว' : null].filter((x): x is string => Boolean(x));
@@ -55,9 +58,10 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
           {c.last_kind === 'note' && <span className="inbox-preview-who">บันทึกภายใน: </span>}
           {plainText(c.preview || '').slice(0, 90) || 'ยังไม่มีข้อความ'}
         </span>
-        {(waiting || urgent || foot.length > 0) && (
+        {(waiting || urgent || upset || foot.length > 0) && (
           <span className="inbox-foot">
             {waiting && <span className="inbox-waiting">รอเราตอบ</span>}
+            {upset && <MoodTag mood={c} />}
             {urgent && <span className={`inbox-urgent ${c.ticket_priority}`}>{priorityLabels[c.ticket_priority!]}</span>}
             {foot.map((part) => (
               <span key={part}>{part}</span>

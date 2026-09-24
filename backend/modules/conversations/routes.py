@@ -13,6 +13,9 @@ ROUTES = [
     ('DELETE',CONVERSATION+f'/messages/{ID}', controller.delete_message,  'workspace'),
     ('POST',  CONVERSATION+'/ticket',      controller.link_ticket,         'workspace'),
     ('POST',  CONVERSATION+'/ai-draft',    controller.request_ai_draft,    'workspace'),
+    # สรุปบทสนทนา: the kept summary, and asking for it to be brought up to date.
+    ('GET',   CONVERSATION+'/summary',     controller.summary,             'workspace'),
+    ('POST',  CONVERSATION+'/summary',     controller.request_summary,     'workspace'),
     ('POST',  CONVERSATION+'/ai-mode',     controller.set_ai_mode,         'workspace'),
     ('GET',   f'/api/attachments/{ID}',    controller.download_attachment, 'workspace'),
 ]

@@ -23,7 +23,7 @@ def list_with_contacts(db, team_id=None):
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_at,
               (SELECT s.comment FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_comment,
-              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,
+              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,{MOOD_COLUMNS},
               (SELECT MAX(r.reopened_at) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopened_at
               FROM tickets t LEFT JOIN escalations e ON e.ticket_id=t.id JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.updated_at DESC,t.number DESC''',params)
 
@@ -34,6 +34,14 @@ WORKING = "('new','open','pending_internal')"   # a case waiting for the custome
 # A paused case is not work anybody can pick up now, so รับงานถัดไป walks past it until it comes back by itself.
 AWAKE = 'snoozed_until IS NULL'
 
+# How upset the customer of a case is (ai/mood.py), from the most upset of its conversations: the level counts
+# twice and "it cannot wait" once, so an angry customer comes before an urgent calm one. 0 when nobody is upset.
+_HOTTEST = '''FROM ticket_conversations tc JOIN conversation_moods m ON m.conversation_id=tc.conversation_id
+              WHERE tc.ticket_id=t.id ORDER BY m.level*2+m.urgent DESC,m.updated_at DESC LIMIT 1'''
+HEAT = f'COALESCE((SELECT m.level*2+m.urgent {_HOTTEST}),0)'
+MOOD_COLUMNS = f'''(SELECT m.level {_HOTTEST}) AS mood_level,(SELECT m.urgent {_HOTTEST}) AS mood_urgent,
+    (SELECT m.reason {_HOTTEST}) AS mood_reason,(SELECT m.source {_HOTTEST}) AS mood_source'''
+
 
 def my_most_urgent(db, user_id):
     """The member's working case whose SLA ends first, with `due`: its first-response deadline while nobody has
@@ -41,6 +49,18 @@ def my_most_urgent(db, user_id):
     return one(db,f'''SELECT t.*,MIN(CASE WHEN t.first_response_at IS NULL THEN t.first_response_due_at ELSE t.resolution_due_at END,
                       t.resolution_due_at) AS due FROM tickets t WHERE t.assignee_id=? AND t.status IN {WORKING} AND t.{AWAKE}
                       ORDER BY due,t.number LIMIT 1''',(user_id,))
+
+
+def my_most_upset(db, user_id):
+    """The member's working case whose customer is most upset (then whose deadline is nearest), or None."""
+    return one(db,f'''SELECT t.*,{HEAT} AS heat FROM tickets t WHERE t.assignee_id=? AND t.status IN {WORKING} AND t.{AWAKE}
+                      AND {HEAT}>0 ORDER BY heat DESC,t.first_response_at IS NOT NULL,t.resolution_due_at,t.number LIMIT 1''',(user_id,))
+
+
+def most_upset_unassigned(db, team_id):
+    """The team's case nobody has taken whose customer is most upset (then the one waiting longest), or None."""
+    return one(db,f'''SELECT t.*,{HEAT} AS heat FROM tickets t WHERE t.assignee_id IS NULL AND t.team_id=? AND t.status IN {WORKING}
+                      AND t.{AWAKE} AND {HEAT}>0 ORDER BY heat DESC,t.created_at,t.number LIMIT 1''',(team_id,))
 
 
 def oldest_unassigned(db, team_id):

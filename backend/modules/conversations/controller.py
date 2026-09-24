@@ -35,6 +35,24 @@ def request_ai_draft(req, conversation_id):
     return req.send(201,{'id':service.request_ai_draft(req.db,req.ctx,conv),'status':'pending'})
 
 
+def summary(req, conversation_id):
+    from backend.modules.ai import summary
+    conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    return req.send(200,summary.state(req.db,conv['id']))
+
+
+def request_summary(req, conversation_id):
+    """สรุปด้วย AI: no call when nothing new was written since the kept summary."""
+    from backend.database import db as D
+    from backend.modules.ai import summary
+    conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    limited(('ai-summary',req.ctx['tenant_id'],req.ctx['id']),10,60)
+    D.begin(req.db)
+    found = summary.request(req.db,req.ctx['tenant_id'],req.ctx,conv)
+    req.db.commit()
+    return req.send(201 if found['working'] else 200,found)
+
+
 def set_ai_mode(req, conversation_id):
     conv = service.visible_conversation(req.db,req.ctx,conversation_id)
     service.set_ai_mode(req.db,req.ctx,conv,req.body)

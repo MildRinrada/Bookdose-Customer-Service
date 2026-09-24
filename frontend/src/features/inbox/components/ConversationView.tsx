@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { PrivacyTag } from '@/components/ui/display';
+import { MoodTag } from '@/components/ui/MoodTag';
 import { useToast } from '@/components/ui/Toast';
 import { AiControls } from '@/features/ai/components/AiControls';
+import { ConversationSummary } from '@/features/ai/components/ConversationSummary';
 import { ContactHeadsUp } from '@/features/contacts/components/ContactProfileParts';
 import { reachText } from '@/features/guest/labels';
 import { useRunAction } from '@/components/ui/actions';
@@ -74,6 +76,9 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
                 {['high', 'urgent'].includes(t.priority) && <span className="conv-urgent"> · {priorityLabels[t.priority]}</span>}
               </Link>
             )}
+            {open && c.mood && (
+              <MoodTag mood={{ mood_level: c.mood.level, mood_urgent: c.mood.urgent, mood_reason: c.mood.reason, mood_source: c.mood.source }} />
+            )}
             {!open && <span className="conv-fact">ปิดบทสนทนาแล้ว</span>}
           </p>
         </div>
@@ -119,6 +124,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         <ThreadFilter messages={messages} notesOnly={notesOnly} onChange={setNotesOnly} />
       </div>
       <ContactHeadsUp contactId={contact.id} className="conv-headsup" />
+      <ConversationSummary conversationId={c.id} messageCount={messages.length} />
       {c.line && c.line.source_type !== 'user' && (
         <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม · เรียก AI ด้วย /bookdose หรือเมนชันบอต</div>
       )}

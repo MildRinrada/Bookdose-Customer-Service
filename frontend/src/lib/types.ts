@@ -94,8 +94,29 @@ export type Macro = {
 /** A file attached to a message, as the conversation and portal APIs send it (`message.attachments[]`). */
 export type MessageFile = { id: string; name: string; mime: string; size: number };
 
+/** A warning that a case is likely to miss a deadline: first reply or resolution, when it is due and expected. */
+export type SlaForecastAlert = {
+  ticket_id: string;
+  number: number;
+  subject: string;
+  kind: 'response' | 'resolution';
+  due_at: string;
+  expected_at: string;
+  late_minutes: number;
+  alerted_at: string;
+};
+
+/** A case the queue will not reach before a deadline, at the team's pace now (GET /api/tickets). */
+export type TicketForecast = { kind: 'response' | 'resolution'; due: string; expected: string; late_minutes: number; ahead: number };
+
 /** A row of GET /api/tickets. */
 export type TicketSummary = {
+  forecast?: TicketForecast | null;
+  /** How the customer's most upset conversation reads (ai/mood.py): 0 ปกติ, 1 ไม่พอใจ, 2 โกรธมาก; urgent; by the AI or the words. */
+  mood_level?: number | null;
+  mood_urgent?: number | null;
+  mood_reason?: string | null;
+  mood_source?: string | null;
   id: string;
   number: number;
   subject: string;
@@ -124,6 +145,8 @@ export type StaffAlerts = {
     >
   >;
   followups: Array<{ ticket_id: string; number: number; note: string; due_at: string; subject: string; status?: string } & Record<string, unknown>>;
+  /** Cases the member was told are likely to miss a deadline (automation/forecast.py), while that still stands. */
+  forecasts?: SlaForecastAlert[];
   /** Five-star answers of the last 7 days on the member's own cases (celebrated once each). */
   praise?: Array<{ id: string; ticket_id: string; number: number; subject: string; comment: string; answered_at: string }>;
   mentions: Array<

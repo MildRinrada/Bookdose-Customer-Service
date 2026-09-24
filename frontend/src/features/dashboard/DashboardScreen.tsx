@@ -24,13 +24,14 @@ import { MyDay } from './components/MyDay';
 import { NextTaskButton } from './components/NextTaskButton';
 import { QuickReplies } from './components/QuickReplies';
 import { SetupCard } from './components/SetupCard';
+import { SlaForecast } from './components/SlaForecast';
 import { SlaWatch } from './components/SlaWatch';
 import { WaitingChats } from './components/WaitingChats';
 import { actionNeeded, meItems } from './labels';
 import type { Overview } from './types';
 
 /* Overview: greeting with รับงานถัดไป, the owner's setup checklist, stat cards, วันนี้ของฉัน and แชทรอตอบ, recent cases,
-   คำตอบด่วน, "ถึงคุณ" (mentions, follow-ups, escalations), SLA Watch, the new-cases chart, ส่งต่อกะ and the member's
+   คำตอบด่วน, "ถึงคุณ" (mentions, follow-ups, escalations), คาดว่าจะเกิน SLA, SLA Watch, the new-cases chart, ส่งต่อกะ and the member's
    to-dos and, for the organization's
    owners, the AI and knowledge cards and the manager view. The overview's own data
    (/api/automation/overview) refreshes every 30 seconds (every minute while live updates are connected, which refresh it on changes)
@@ -205,6 +206,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
       </section>
     ),
     sla: <SlaWatch needed={needed} shown={ASIDE_ITEMS} />,
+    forecast: <SlaForecast forecast={dash?.forecast} shown={ASIDE_ITEMS} />,
   };
   if (dash?.setup) cards.setup = <SetupCard setup={dash.setup} />;
   if (dash?.today && !readOnly) cards.today = <MyDay day={dash.today} />;

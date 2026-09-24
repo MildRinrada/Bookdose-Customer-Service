@@ -54,7 +54,7 @@ function TicketDetailView({ data }: { data: TicketDetail }) {
       <div className="detail-layout">
         <div className="stack">
           {data.conversations.map((conv) => (
-            <TicketConversationCard key={conv.id} conv={conv} contactName={c.name} />
+            <TicketConversationCard key={conv.id} conv={conv} contactName={c.name} caseNumber={t.number} />
           ))}
           <section className="card case-history">
             <div className="card-header">
@@ -72,7 +72,7 @@ function TicketDetailView({ data }: { data: TicketDetail }) {
 }
 
 /** One conversation of the case: its channel, the thread (all messages or internal notes only) and the composer. */
-function TicketConversationCard({ conv, contactName }: { conv: TicketConversation; contactName: string }) {
+function TicketConversationCard({ conv, contactName, caseNumber }: { conv: TicketConversation; contactName: string; caseNumber: number }) {
   const [notesOnly, setNotesOnly] = useState(false);
   return (
     <section className="card case-conversation" data-thread-scope="">
@@ -91,7 +91,7 @@ function TicketConversationCard({ conv, contactName }: { conv: TicketConversatio
       </div>
       <MessageThread messages={conv.messages} threadId={conv.id} notesOnly={notesOnly} readAt={conv.customer_read_at} />
       <ColleaguesHere conversationId={conv.id} />
-      <Composer conversationId={conv.id} channel={conv.channel} manual={conv.channel === 'manual'} conversation={conv} />
+      <Composer conversationId={conv.id} channel={conv.channel} manual={conv.channel === 'manual'} conversation={conv} recipient={contactName} caseNumber={caseNumber} />
     </section>
   );
 }

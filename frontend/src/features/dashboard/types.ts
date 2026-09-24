@@ -93,7 +93,33 @@ export type Insights = {
 };
 
 /** setup and insights: the organization's owners only. */
-export type Overview = { me: StaffAlerts; today?: MyDay; manager: ManagerOverview | null; setup?: SetupChecklist | null; insights?: Insights | null };
+/** One case forecast to break its SLA (backend/modules/automation/forecast.py): which deadline, when it is due, when
+    the queue in front of it would reach it, and the pace that estimate comes from. */
+export type ForecastCase = {
+  id: string;
+  number: number;
+  subject: string;
+  priority: string;
+  assignee_id: string | null;
+  team_id: string | null;
+  kind: 'response' | 'resolution';
+  due: string;
+  expected: string;
+  late_minutes: number;
+  ahead: number;
+  per_hour: number;
+};
+/** unknown: cases in a queue with no pace to go by (nothing answered or closed in seven days). */
+export type SlaForecast = { cases: ForecastCase[]; unknown: number; response_per_hour: number | null; generated_at: string };
+
+export type Overview = {
+  me: StaffAlerts;
+  today?: MyDay;
+  forecast?: SlaForecast;
+  manager: ManagerOverview | null;
+  setup?: SetupChecklist | null;
+  insights?: Insights | null;
+};
 
 /** POST /api/tickets/next: the case to open now and why (none: nothing waits for the member). */
 export type NextTask = {

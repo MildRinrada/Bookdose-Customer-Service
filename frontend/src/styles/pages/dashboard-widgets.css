@@ -491,6 +491,23 @@
   display: inline-block;
   margin-top: 10px;
 }
+/* คาดว่าจะเกิน SLA: the same rows as SLA Watch, amber (not late yet), with the estimate's working on two lines. */
+.sla-forecast .sla-timer {
+  min-width: 92px;
+}
+.sla-forecast .forecast-clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sla-forecast .forecast-clear .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--green);
+}
+.sla-forecast .forecast-more {
+  margin-top: 10px;
+}
 
 /* คำตอบด่วน: one row per reply, the shortcut as a dark key; a click copies it. */
 .quick-reply-list {

@@ -127,7 +127,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
       )}
       <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
       <ColleaguesHere conversationId={c.id} />
-      <Composer conversationId={c.id} channel={c.channel} manual={c.channel === 'manual'} compact conversation={c} />
+      <Composer conversationId={c.id} channel={c.channel} manual={c.channel === 'manual'} compact conversation={c} recipient={contact.name} caseNumber={t?.number} />
     </>
   );
 }

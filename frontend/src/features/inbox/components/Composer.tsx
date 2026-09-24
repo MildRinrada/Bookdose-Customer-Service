@@ -18,6 +18,7 @@ import { CUSTOMER_TOOLS } from '@/features/rich/RichTextArea';
 import { usePreferences, type Snippet } from '@/features/staff-account/prefs';
 import { followThread } from '@/features/rich/thread';
 import { readFiles } from '@/lib/files';
+import { channelIcons, channelNames } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
 import { useTypingNotifier } from '@/lib/realtime-provider';
 import { useWork } from '@/lib/session';
@@ -49,6 +50,9 @@ export type ComposerProps = {
   publicView?: boolean;
   /** publicView: the organization whose portal receives the message. */
   publicSlug?: string;
+  /** The team's composer: who the reply goes to and the case it belongs to, for the bar above the box. */
+  recipient?: string;
+  caseNumber?: number | null;
   /** The conversation, for the AI controls in the composer's head (not compact). */
   conversation?: AiConversation | null;
   /** publicView: filled with a way to put text into the draft, so the page around the box can hand it something
@@ -146,9 +150,54 @@ function SendButton({ manual }: { manual: boolean }) {
   );
 }
 
+/* Words that promise a file. "ไฟล์" inside "โปรไฟล์" is not one. */
+const MENTIONS_FILE = /แนบ|ตามเอกสาร|(?<!โปร)ไฟล์|attach/i;
+
+/** Where this message goes, above the box and big enough to read without looking up at the heading: the customer,
+    the channel and the case for a reply; for an internal note, that the customer will not see it. */
+function Destination({ kind, recipient, channel, caseNumber }: { kind: 'reply' | 'note'; recipient?: string; channel: string; caseNumber?: number | null }) {
+  const sep = (
+    <span className="composer-to-sep" aria-hidden="true">
+      |
+    </span>
+  );
+  return (
+    <div className={`composer-to${kind === 'note' ? ' is-note' : ''}`}>
+      {kind === 'note' ? (
+        <span>
+          <Icon name="lock" />
+          <strong>บันทึกภายใน</strong> ลูกค้าไม่เห็น
+        </span>
+      ) : (
+        <>
+          {recipient && (
+            <span>
+              <Icon name="send" />
+              ตอบถึง <strong>{recipient}</strong>
+            </span>
+          )}
+          {recipient && sep}
+          <span>
+            <Icon name={channelIcons[channel] ?? 'chat'} />
+            ทาง <strong>{channelNames[channel] ?? channel}</strong>
+          </span>
+        </>
+      )}
+      {caseNumber != null && (
+        <>
+          {sep}
+          <span>
+            เคส <strong>BD-{caseNumber}</strong>
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
-function StaffComposer({ conversationId: id, channel = 'web', manual = false, compact = false, conversation, onSent }: ComposerProps) {
+function StaffComposer({ conversationId: id, channel = 'web', manual = false, compact = false, conversation, recipient, caseNumber, onSent }: ComposerProps) {
   const work = useWork();
   const toast = useToast();
   const refresh = useInvalidate();
@@ -164,6 +213,9 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   const [initialDraft] = useState(() => drafts[id] || '');
   const [kind, setKind] = useState<'reply' | 'note'>(manual ? 'note' : 'reply');
   const [kindChanged, setKindChanged] = useState(false);
+  // What is in the box now, for the warning that a file was promised and none is attached.
+  const [text, setText] = useState(initialDraft);
+  const forgotFile = MENTIONS_FILE.test(text) && pills.files.length === 0;
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -189,6 +241,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
   const notifyTyping = useTypingNotifier(id);
   const onText = (value: string) => {
     keepDraft(value);
+    setText(value);
     // Writing an answer, on any channel: the team hears it so two members do not answer the same customer, and the
     // server passes it on to the customer only where they could see it (a web chat). An internal note is neither.
     if (kind === 'reply' && !manual) notifyTyping(value);
@@ -342,6 +395,7 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
           if (!manual) chooseKind('reply');
         }}
       />
+      <Destination kind={kind} recipient={recipient} channel={channel} caseNumber={caseNumber} />
       <label className="sr-only" htmlFor={`compose-${id}`}>
         ข้อความ
       </label>
@@ -360,6 +414,13 @@ function StaffComposer({ conversationId: id, channel = 'web', manual = false, co
       />
       {snippetMenu}
       <FilePills files={pills.files} onRemove={pills.remove} />
+      {forgotFile && (
+        <p className="composer-warn" role="status">
+          <Icon name="paperclip" />
+          ข้อความพูดถึงไฟล์แนบ แต่ยังไม่ได้แนบไฟล์
+          <label htmlFor={`files-${id}`}>แนบไฟล์</label>
+        </p>
+      )}
       <div className="composer-bottom">
         <div className="composer-tabs composer-mode" role="radiogroup" aria-label="ประเภทข้อความ">
           <label>

@@ -484,12 +484,13 @@ def my_today(db, ctx, tz):
 
 
 def overview(cd, db, ctx, tz):
-    """The dashboard's own data: everyone's reminders, mentions and own day; for the organization's owners also the
-    manager view, what is left to set up, the chatbot and the knowledge gaps, and today's AI summary."""
+    """The dashboard's own data: everyone's reminders, mentions, own day and the cases likely to break their SLA; for
+    the organization's owners also the manager view, what is left to set up, the chatbot and the knowledge gaps, and
+    today's AI summary."""
     from backend.modules.ai import insights
-    from backend.modules.automation import setup
+    from backend.modules.automation import forecast, setup
     owner = ctx['role']=='admin' and not ctx.get('read_only')
-    return {'me':my_alerts(db,ctx),'today':my_today(db,ctx,tz),
+    return {'me':my_alerts(db,ctx),'today':my_today(db,ctx,tz),'forecast':forecast.sla_forecast(db,visible_team(ctx)),
             'manager':manager_overview(cd,db,ctx,tz) if ctx['role']!='agent' else None,
             'setup':setup.checklist(cd,db,ctx) if owner else None,
             'insights':{**insights.overview(db,ctx['tenant_id']),'brief':insights.latest_brief(db,ctx,_local_day_start(tz))} if owner else None}

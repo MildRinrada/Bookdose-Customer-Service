@@ -28,6 +28,10 @@ def merged(saved):
             found[key].update({k:v for k,v in value.items() if k in found[key]})
             if key=='notify':
                 found[key]['events'] = {**DEFAULTS['notify']['events'],**{k:bool(v) for k,v in (value.get('events') or {}).items() if k in EVENTS}}
+            # The board's base is not in the defaults (no base means "follow the organization"), so it is carried
+            # across by name rather than dropped with the keys the defaults do not know.
+            if key=='dashboard' and value.get('base')=='page':
+                found[key]['base'] = 'page'
         else:
             found[key] = value
     return found
@@ -161,8 +165,15 @@ def dashboard(value):
     require(isinstance(boxes,dict) and len(boxes)<=DASHBOARD_MAX_CARDS,'ตำแหน่งการ์ดไม่ถูกต้อง')
     for card in boxes:
         require(isinstance(card,str) and CARD.fullmatch(card),'ตำแหน่งการ์ดไม่ถูกต้อง')
-    return {'hidden':_card_ids(value.get('hidden',[]),'การ์ดที่ซ่อนไว้'),
-            'box':{card:_box(box) for card,box in boxes.items()}}
+    found = {'hidden':_card_ids(value.get('hidden',[]),'การ์ดที่ซ่อนไว้'),
+             'box':{card:_box(box) for card,box in boxes.items()}}
+    # base 'page': the member chose the screen's own arrangement over the organization's default. Without it, a
+    # board with nothing laid out follows the organization; with it, it is the page as it ships.
+    base = value.get('base')
+    require(base in (None,'','page'),'ข้อมูลการจัดหน้าไม่ถูกต้อง')
+    if base:
+        found['base'] = base
+    return found
 
 
 SECTIONS = {'status':lambda v:status({'status':v}),'hours':hours,'leave':leave,'notify':notify,'signature':signature,

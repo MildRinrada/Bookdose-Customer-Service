@@ -30,8 +30,8 @@
   gap: 8px;
 }
 .article-category {
-  background: #f4f4f4;
-  color: #3f3f3f;
+  background: var(--soft);
+  color: var(--muted);
 }
 .article-card h3 {
   margin: 0;
@@ -45,7 +45,7 @@
 /* The card shows the start of the article the way the article really reads: headings, bold and bullet lists
    keep their shape, cut off after a few lines instead of being flattened into one run-on line. */
 .article-excerpt {
-  color: #565656;
+  color: var(--muted);
   line-height: 1.75;
   display: -webkit-box;
   -webkit-line-clamp: 5;
@@ -64,7 +64,7 @@
 .article-excerpt h3,.article-excerpt h4 {
   margin: 0 0 4px;
   font-size: 1rem;
-  color: #434343;
+  color: var(--muted);
 }
 .article-excerpt pre {
   white-space: pre-wrap;
@@ -90,7 +90,7 @@
   box-shadow: 0 4px 14px #2d2d2d20;
 }
 .article-content {
-  color: #373737;
+  color: var(--ink);
   font-size: 1rem;
   line-height: 1.75;
   overflow-wrap: anywhere;
@@ -115,7 +115,7 @@
 }
 .article-content pre {
   white-space: pre-wrap;
-  background: #f2f2f2;
+  background: var(--soft);
   padding: 16px;
   border-radius: 8px;
 }
@@ -155,7 +155,7 @@
   border: 1px solid #d0d0d0;
   border-bottom: 0;
   border-radius: 10px 10px 0 0;
-  background: #f9f9f9;
+  background: var(--paper);
 }
 /* One editable area under the toolbar: the article is written the way it will be read. */
 .editor-input {
@@ -224,8 +224,8 @@
 .btn.kb-new {
   flex-shrink: 0;
   border-color: #fff;
-  background: #fff;
-  color: #1c1c1e;
+  background: var(--paper);
+  color: var(--ink);
   font-weight: 700;
 }
 .btn.kb-new:hover {
@@ -242,7 +242,7 @@
 .kb-search-box .input-wrap .icon {
   width: 20px;
   height: 20px;
-  color: #1c1c1e;
+  color: var(--ink);
 }
 .kb-search-box .input-wrap input {
   flex: 1;
@@ -321,8 +321,8 @@
   gap: 6px;
   padding: 7px 12px;
   border-radius: 12px;
-  background: #f4f4f6;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
   font-size: .9rem;
   font-weight: 600;
 }
@@ -331,10 +331,10 @@
   height: 14px;
 }
 .knowledge-tags .filter-pill.warning {
-  color: #7a4507;
+  color: var(--amber);
 }
 .knowledge-tags .filter-pill.warning[aria-pressed=true] {
-  background: #fff4d6;
+  background: var(--amber-soft);
 }
 
 /* ปักหมุดของฉัน: a row of small dark cards to drag into order (PinnedShelf). */
@@ -374,7 +374,7 @@
   min-width: 0;
   padding: 6px 6px 6px 4px;
   border-radius: 14px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   box-shadow: 0 8px 20px -14px #000000c0;
   cursor: grab;
@@ -468,19 +468,19 @@
   height: 16px;
 }
 .article-card .pin-btn:hover {
-  background: #f0f0f2;
-  color: #1c1c1e;
+  background: var(--soft);
+  color: var(--ink);
 }
 .article-card .pin-btn.on {
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .review-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #fff4d6;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .review-badge .icon {
   width: 12px;
@@ -495,14 +495,14 @@
 .article-answer {
   padding: 10px 12px;
   border-radius: 12px;
-  background: #f7f7f9;
+  background: var(--soft);
   box-shadow: inset 3px 0 0 #1c1c1e;
 }
 .article-answer-label {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .78rem;
   font-weight: 700;
 }
@@ -512,7 +512,7 @@
 }
 .article-answer p {
   margin: 4px 0 0;
-  color: #3a3a3c;
+  color: var(--ink);
   line-height: 1.7;
   display: -webkit-box;
   -webkit-line-clamp: 4;
@@ -530,7 +530,7 @@
   gap: 5px;
 }
 .article-stat {
-  color: #3a3a3c;
+  color: var(--ink);
   font-weight: 600;
 }
 .article-stat .icon {
@@ -538,10 +538,10 @@
   height: 13px;
 }
 .article-stat.rate {
-  color: #1f7a4d;
+  color: var(--green);
 }
 .article-stat.rate.low {
-  color: #a3182b;
+  color: var(--red);
 }
 /* Floats over the end of the preview, so the foot's numbers stay readable. */
 .article-card-actions {
@@ -552,7 +552,7 @@
   gap: 6px;
   padding: 4px;
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--pop);
   opacity: 0;
   transform: translateY(4px);
@@ -571,7 +571,7 @@
   padding: 6px 10px;
   border: 0;
   border-radius: 9px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font: inherit;
   font-size: .82rem;
@@ -580,8 +580,8 @@
   white-space: nowrap;
 }
 .card-copy+.card-copy {
-  background: #f0f0f2;
-  color: #1c1c1e;
+  background: var(--soft);
+  color: var(--ink);
 }
 .card-copy:hover {
   background: #000;
@@ -619,8 +619,8 @@
   margin-left: auto;
 }
 .btn.pin-toggle.on {
-  border-color: #1c1c1e;
-  background: #1c1c1e;
+  border-color: var(--invert);
+  background: var(--invert);
   color: #fff;
 }
 /* Pinned stays dark under the pointer (the plain .btn hover is a light grey that would hide the white text). */
@@ -641,8 +641,8 @@
   margin: -6px 0 18px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: #fff4d6;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .article-review-note .icon {
   flex-shrink: 0;
@@ -659,12 +659,12 @@
   margin-top: 18px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: #f7f7f9;
+  background: var(--soft);
 }
 .article-feedback-stats {
   display: grid;
   gap: 4px;
-  color: #3a3a3c;
+  color: var(--ink);
   font-size: .9rem;
 }
 .article-feedback-stats span {
@@ -675,7 +675,7 @@
 .article-feedback-stats .icon {
   width: 14px;
   height: 14px;
-  color: #6e6e73;
+  color: var(--muted);
 }
 .article-vote {
   display: flex;
@@ -685,7 +685,7 @@
 }
 .article-vote>span {
   margin-right: 4px;
-  color: #3a3a3c;
+  color: var(--ink);
   font-weight: 700;
 }
 .vote-btn {
@@ -695,15 +695,15 @@
   padding: 7px 12px;
   border: 1px solid #dddddd;
   border-radius: 999px;
-  background: #fff;
-  color: #3a3a3c;
+  background: var(--paper);
+  color: var(--ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   transition: background .15s, border-color .15s, transform .15s;
 }
 .vote-btn:hover {
-  border-color: #1c1c1e;
+  border-color: var(--invert);
 }
 .vote-btn:active {
   transform: scale(.94);
@@ -765,12 +765,12 @@
   margin: 15px 0 0 5px;
   border: 2px solid #aeaeb2;
   border-radius: 50%;
-  background: #fff;
+  background: var(--paper);
 }
 .history-dot.now {
   margin-top: 0;
-  border-color: #1c1c1e;
-  background: #1c1c1e;
+  border-color: var(--invert);
+  background: var(--invert);
 }
 .history-entry {
   min-width: 0;
@@ -795,7 +795,7 @@
   min-width: 0;
 }
 .history-head:hover,.history-list li.open .history-head {
-  background: #f4f4f6;
+  background: var(--soft);
 }
 .history-head .icon {
   flex-shrink: 0;
@@ -816,7 +816,7 @@
   padding: 10px 0;
   overflow: auto;
   border-radius: 12px;
-  background: #f7f7f9;
+  background: var(--soft);
   font-family: inherit;
   font-size: .9rem;
   line-height: 1.6;
@@ -827,17 +827,17 @@
   padding: 1px 14px;
 }
 .history-diff .add {
-  background: #e3f4ea;
+  background: var(--green-soft);
   color: #14532d;
 }
 .history-diff .del {
-  background: #fde7ea;
+  background: var(--red-soft);
   color: #7f1d1d;
   text-decoration: line-through;
   text-decoration-color: #7f1d1d66;
 }
 .history-diff .same {
-  color: #6e6e73;
+  color: var(--muted);
 }
 .history-diff .fold {
   color: #8e8e93;
@@ -854,7 +854,7 @@
 .kb-stats {
   display: block;
   margin-top: 2px;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .8rem;
   font-weight: 600;
 }
@@ -891,7 +891,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .template-row.taken {
   background: #f6f8f6;

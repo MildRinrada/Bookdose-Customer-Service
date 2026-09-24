@@ -4,7 +4,7 @@
   min-height: 280px;
   max-height: 570px;
   overflow: auto;
-  background: #fff;
+  background: var(--paper);
 }
 .message {
   margin-bottom: 23px;
@@ -14,8 +14,8 @@
   max-width: 95%;
 }
 .message .bubble {
-  background: #f7f7f7;
-  border: 1px solid #f0f0f0;
+  background: var(--soft);
+  border: 1px solid var(--line);
   border-radius: 0 10px 10px;
   padding: 12px 15px;
   font-size: 1rem;
@@ -64,8 +64,8 @@
   white-space: pre-wrap;
 }
 .message.reply .bubble {
-  background: #f4f4f4;
-  border-color: #ececec;
+  background: var(--soft);
+  border-color: var(--line);
   border-radius: 10px 0 10px 10px;
 }
 .message.note .bubble {
@@ -82,7 +82,7 @@
 }
 .message-header strong {
   font-weight: 550;
-  color: #717171;
+  color: var(--muted);
 }
 .message-footer {
   font-size: 1rem;
@@ -101,9 +101,9 @@
   gap: 5px;
   font-size: 1rem;
   border: 1px solid #e8e8e8;
-  color: #494949;
+  color: var(--muted);
   border-radius: 5px;
-  background: #fff;
+  background: var(--paper);
   padding: 4px 8px;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -124,10 +124,10 @@
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  border: 1px solid #dcdcdc;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f7f7f7;
-  color: #373737;
+  background: var(--soft);
+  color: var(--ink);
   white-space: normal;
 }
 .media-image-button {
@@ -143,7 +143,7 @@
   width: 100%;
   height: 240px;
   object-fit: contain;
-  background: #f1f1f1;
+  background: var(--soft);
 }
 .message-media video {
   background: #1b1b1b;
@@ -157,7 +157,7 @@
   justify-content: center;
   gap: 12px;
   text-align: center;
-  color: #575757;
+  color: var(--muted);
 }
 .message-media:not([data-media-state="loading"]) .media-placeholder,
 .message-media:not([data-media-state="error"]) .media-error,
@@ -172,7 +172,7 @@
   padding: 4px 8px 4px 12px;
   font-size: .875rem;
   line-height: 1.4;
-  background: #fff;
+  background: var(--paper);
 }
 .media-filename {
   flex: 1;
@@ -240,7 +240,7 @@
   border: 0;
   box-shadow: none;
   font-size: 1rem;
-  background: white;
+  background: var(--paper);
   margin: 10px 0;
   padding: 12px;
   min-height: 90px;
@@ -270,8 +270,8 @@
 }
 .composer-tabs label:has(input:checked) {
   font-weight: 600;
-  color: #343434;
-  background: #eeeeee;
+  color: var(--ink);
+  background: var(--soft);
   border-color: #7c7c7c;
 }
 .composer-tabs input {
@@ -287,7 +287,7 @@
 }
 .composer-tip {
   font-size: 1rem;
-  color: #565656;
+  color: var(--muted);
   margin-top: 4px;
 }
 .inbox-layout {
@@ -306,13 +306,13 @@
   text-align: left;
   border: 0;
   border-bottom: 1px solid var(--line);
-  background: white;
+  background: var(--paper);
   padding: 19px;
   color: inherit;
   border-left: 4px solid transparent;
 }
 .inbox-item:hover,.inbox-item.selected {
-  background: #f9f9f9;
+  background: var(--paper);
 }
 .inbox-item.selected {
   border-left: 3px solid var(--purple);
@@ -435,14 +435,14 @@
 }
 .ai-draft-btn {
   border-color: #bfbfbf;
-  background: white;
-  color: #434343;
+  background: var(--paper);
+  color: var(--muted);
 }
 .ai-result {
   padding: 16px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fbfbfb;
+  background: var(--paper);
   margin: 13px 0;
 }
 .ai-citations {
@@ -473,14 +473,14 @@
 }
 .inbox-item.needs-reply strong,.inbox-item.needs-reply h3,.inbox-item.needs-reply p {
   font-weight: 700;
-  color: #383838;
+  color: var(--ink);
 }
 .inbox-item.selected {
-  background: #f2f2f2;
+  background: var(--soft);
   border-left: 4px solid #777777;
 }
 .inbox-item p,.inbox-item .small,.message-header,.message-header strong {
-  color: #575757;
+  color: var(--muted);
 }
 .inbox-item .flex.between {
   flex-wrap: wrap;
@@ -492,18 +492,18 @@
   margin-right: auto;
 }
 .message.customer .bubble {
-  background: #f2f2f2;
+  background: var(--soft);
   border: 1px solid #c2c2c2;
-  color: #2b2b2b;
+  color: var(--ink);
 }
 .message.reply {
   margin-left: auto;
   max-width: 88%;
 }
 .message.reply .bubble {
-  background: #eeeeee;
+  background: var(--soft);
   border: 1px solid #a6a6a6;
-  color: #222222;
+  color: var(--ink);
 }
 .message.note {
   margin-inline: 4%;
@@ -518,7 +518,7 @@
   gap: 8px;
 }
 .composer-tabs label {
-  color: #434343;
+  color: var(--muted);
 }
 .composer-tabs label:has(input[value=note]:checked) {
   color: #684107;
@@ -526,14 +526,14 @@
   border-color: #9a630c;
 }
 .composer:has(input[value=note]:checked) {
-  background: #fffaf0;
+  background: var(--amber-soft);
   border-top: 3px solid #bd801e;
 }
 .composer textarea {
   border: 1px solid #a6a6a6;
 }
 .composer-bottom>.btn.primary {
-  background: #484848;
+  background: var(--invert);
   font-weight: 700;
 }
 .composer-tip {
@@ -552,7 +552,7 @@
   padding: 3px;
   border: 1px solid #c3cad6;
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
 }
 .composer-mode label {
   display: inline-flex;
@@ -618,8 +618,8 @@
   white-space: nowrap;
 }
 .tool-btn:hover:not(:disabled) {
-  background: #f3f3f3;
-  border-color: #e0e0e0;
+  background: var(--soft);
+  border-color: var(--line);
 }
 .tool-btn:disabled {
   color: #848484;
@@ -662,8 +662,8 @@ input[type=file].attach-input {
   padding: 2px 2px 2px 10px;
   border: 1px solid #d2d2d2;
   border-radius: 999px;
-  background: #f8f8f8;
-  color: #303030;
+  background: var(--paper);
+  color: var(--ink);
 }
 .file-pill .icon {
   width: 14px;
@@ -688,12 +688,12 @@ input[type=file].attach-input {
   cursor: pointer;
 }
 .file-pill button:hover {
-  background: #eeeeee;
+  background: var(--soft);
 }
 .composer.drag-over {
   outline: 3px dashed #7c7c7c;
   outline-offset: -6px;
-  background: #f8f8f8;
+  background: var(--paper);
 }
 .inbox-detail .composer-compact textarea {
   min-height: 56px;
@@ -746,19 +746,19 @@ input[type=file].attach-input {
 }
 .channel-dot.channel-web {
   color: #3c3c3c;
-  background: #f2f2f2;
+  background: var(--soft);
 }
 .channel-dot.channel-line {
   color: #095e35;
   background: #d5f4e1;
 }
 .channel-dot.channel-email {
-  color: #505050;
-  background: #ececec;
+  color: var(--muted);
+  background: var(--soft);
 }
 .channel-dot.channel-manual {
-  color: #525252;
-  background: #ededed;
+  color: var(--muted);
+  background: var(--soft);
 }
 .priority-dot {
   width: 10px;
@@ -782,15 +782,15 @@ input[type=file].attach-input {
 }
 .inbox-meta {
   flex-shrink: 0;
-  color: #565656;
+  color: var(--muted);
   white-space: nowrap;
 }
 .inbox-item.needs-reply .inbox-name,.inbox-item.needs-reply h3 {
   font-weight: 800;
-  color: #2b2b2b;
+  color: var(--ink);
 }
 .inbox-item.needs-reply .inbox-preview {
-  color: #2b2b2b;
+  color: var(--ink);
   font-weight: 600;
 }
 .conv-header {
@@ -813,11 +813,11 @@ input[type=file].attach-input {
 }
 .conv-contact {
   margin: 2px 0 6px;
-  color: #565656;
+  color: var(--muted);
   overflow-wrap: anywhere;
 }
 .conv-contact strong {
-  color: #373737;
+  color: var(--ink);
 }
 .conv-actions {
   display: flex;
@@ -833,14 +833,14 @@ input[type=file].attach-input {
   flex-wrap: wrap;
 }
 .message.customer .bubble {
-  background: #f3f3f3;
-  border: 1px solid #dcdcdc;
-  color: #2b2b2b;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  color: var(--ink);
   border-radius: 4px 14px 14px 14px;
 }
 .message.reply .bubble {
-  background: #484848;
-  border: 1px solid #484848;
+  background: var(--invert);
+  border: 1px solid var(--invert);
   color: #fff;
   border-radius: 14px 4px 14px 14px;
 }
@@ -998,7 +998,7 @@ input[type=file].attach-input {
   gap: 10px;
   padding: 12px;
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--paper);
 }
 .inbox-tools .input-wrap input {
   width: 100%;
@@ -1021,27 +1021,27 @@ input[type=file].attach-input {
 }
 .inbox-tabs .filter-pill[data-value=waiting] .tag-count {
   background: #fde3b0;
-  color: #7a4507;
+  color: var(--amber);
 }
 .inbox-tabs .filter-pill[aria-pressed=true] .tag-count {
-  background: #fff;
+  background: var(--paper);
 }
 /* List items: one "waiting for reply" signal (bold text, dot, time colour); purple only marks the open conversation. */
 .inbox-item.needs-reply {
-  background: #fff;
+  background: var(--paper);
   border-left-color: transparent;
 }
 .inbox-item.needs-reply:hover {
-  background: #f9f9f9;
+  background: var(--paper);
 }
 .inbox-item.selected,.inbox-item.selected.needs-reply {
-  background: #f2f2f2;
+  background: var(--soft);
   border-left: 4px solid #777777;
 }
 .inbox-time {
   margin-left: auto;
   flex-shrink: 0;
-  color: #767676;
+  color: var(--muted);
   white-space: nowrap;
 }
 .inbox-item.needs-reply .inbox-time {
@@ -1050,7 +1050,7 @@ input[type=file].attach-input {
 }
 .inbox-case {
   flex-shrink: 0;
-  color: #575757;
+  color: var(--muted);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1102,10 +1102,10 @@ input[type=file].attach-input {
   flex-wrap: wrap;
   gap: 2px 10px;
   margin: 2px 0 0;
-  color: #575757;
+  color: var(--muted);
 }
 .conv-meta strong {
-  color: #2b2b2b;
+  color: var(--ink);
 }
 .conv-meta .badge {
   padding: 1px 8px;
@@ -1139,7 +1139,7 @@ input[type=file].attach-input {
   gap: 4px 8px;
 }
 .message-header time {
-  color: #767676;
+  color: var(--muted);
 }
 .message.reply .message-header {
   justify-content: flex-end;
@@ -1153,8 +1153,8 @@ input[type=file].attach-input {
   gap: 4px;
   padding: 0 8px;
   border-radius: 999px;
-  background: #f2f2f2;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
   font-weight: 600;
 }
 .message-tag .icon {
@@ -1170,7 +1170,7 @@ input[type=file].attach-input {
   align-items: center;
   gap: 12px;
   margin: 0 0 18px;
-  color: #767676;
+  color: var(--muted);
   font-weight: 600;
 }
 .thread-day::before,.thread-day::after {
@@ -1312,7 +1312,7 @@ input[type=file].attach-input {
     position: sticky;
     top: 0;
     z-index: 3;
-    background: #fff;
+    background: var(--paper);
   }
 }
 @media (max-width:760px) {
@@ -1401,7 +1401,7 @@ input[type=file].attach-input {
   padding: 0 8px;
 }
 .ai-handoff {
-  color: #434343;
+  color: var(--muted);
 }
 .ai-handoff .icon {
   width: 16px;
@@ -1502,7 +1502,7 @@ input[type=file].attach-input {
   white-space: normal;
 }
 .typing-label {
-  color: #767676;
+  color: var(--muted);
   font-size: .875rem;
   font-weight: 400;
 }
@@ -1536,7 +1536,7 @@ input[type=file].attach-input {
   gap: 4px;
   min-height: 1.5em;
   margin-top: 2px;
-  color: #575757;
+  color: var(--muted);
   font-size: .8125rem;
   line-height: 1.5;
 }
@@ -1568,7 +1568,7 @@ input[type=file].attach-input {
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: 0 14px 34px #1e293b29;
 }
 .message-menu-panel[hidden] {

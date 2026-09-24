@@ -14,13 +14,13 @@
   padding: 16px 18px;
   border: 1px solid #e7e7e7;
   border-radius: 18px;
-  background: #fff;
-  color: #1c1c1e;
+  background: var(--paper);
+  color: var(--ink);
   font: inherit;
   text-align: left;
 }
 .audit-stat span {
-  color: #515154;
+  color: var(--muted);
   font-size: .86rem;
   font-weight: 700;
 }
@@ -38,17 +38,17 @@
   line-height: 1.6;
 }
 .audit-stat small {
-  color: #515154;
+  color: var(--muted);
 }
 .audit-stat-important {
   cursor: pointer;
 }
 .audit-stat-important:hover {
-  border-color: #1c1c1e;
+  border-color: var(--invert);
 }
 .audit-stat-important.has,.audit-stat-important[aria-pressed="true"] {
-  border-color: #1c1c1e;
-  background: #1c1c1e;
+  border-color: var(--invert);
+  background: var(--invert);
   color: #fff;
 }
 .audit-stat-important.has span,.audit-stat-important.has small,
@@ -87,7 +87,7 @@
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: #ededed;
+  background: var(--soft);
 }
 .audit-range {
   min-height: 32px;
@@ -95,7 +95,7 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #1c1c1e;
+  color: var(--ink);
   font: inherit;
   font-size: .9rem;
   font-weight: 700;
@@ -105,14 +105,14 @@
   background: #ffffffb3;
 }
 .audit-range[aria-pressed="true"] {
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .audit-auto {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #1c1c1e;
+  color: var(--ink);
   font-weight: 600;
   cursor: pointer;
 }
@@ -141,21 +141,21 @@
   gap: 7px;
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid #dadada;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
-  color: #1c1c1e;
+  background: var(--paper);
+  color: var(--ink);
   font: inherit;
   font-size: .92rem;
   font-weight: 700;
   cursor: pointer;
 }
 .audit-tab:hover {
-  border-color: #1c1c1e;
+  border-color: var(--invert);
 }
 .audit-tab[aria-pressed="true"] {
-  border-color: #1c1c1e;
-  background: #1c1c1e;
+  border-color: var(--invert);
+  background: var(--invert);
   color: #fff;
 }
 /* Wide enough for three digits at any text size (the log keeps at most 300 events), so the pill never changes size.
@@ -165,8 +165,8 @@
   min-width: calc(3ch + 14px);
   padding: 0 7px;
   border-radius: 999px;
-  background: #ededed;
-  color: #1c1c1e;
+  background: var(--soft);
+  color: var(--ink);
   font-size: .8rem;
   line-height: 22px;
   text-align: center;
@@ -177,8 +177,8 @@
   color: #fff;
 }
 .audit-tab.important:not([aria-pressed="true"]) .audit-tab-count {
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
 }
 @media (max-width: 760px) {
   .audit-summary {
@@ -215,7 +215,7 @@
   padding: 10px 4px;
   background: var(--bg);
   font-size: 1rem;
-  color: #434343;
+  color: var(--muted);
 }
 .audit-list {
   list-style: none;
@@ -223,7 +223,7 @@
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -233,13 +233,13 @@
   align-items: start;
   gap: 12px;
   padding: 14px 18px;
-  border-bottom: 1px solid #f4f4f4;
+  border-bottom: 1px solid var(--line);
 }
 .audit-event:last-child {
   border-bottom: 0;
 }
 .audit-event:hover {
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .audit-event>time {
   color: var(--muted);
@@ -253,8 +253,8 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: #f2f2f2;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
 }
 .audit-icon .icon {
   width: 18px;
@@ -262,23 +262,23 @@
 }
 /* Each kind of activity keeps its colour, and anything that removes data stands out. */
 .tone-ai .audit-icon {
-  background: #f2f2f2;
-  color: #474747;
+  background: var(--soft);
+  color: var(--muted);
 }
 .tone-security .audit-icon {
-  background: #fdeade;
-  color: #8a4212;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .tone-settings .audit-icon {
-  background: #eeeeee;
-  color: #585858;
+  background: var(--soft);
+  color: var(--muted);
 }
 .tone-danger .audit-icon {
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
 }
 .tone-danger .audit-label {
-  color: #a3182b;
+  color: var(--red);
   font-weight: 650;
 }
 .audit-body {
@@ -287,11 +287,11 @@
 }
 .audit-line {
   margin: 0;
-  color: #434343;
+  color: var(--muted);
   overflow-wrap: anywhere;
 }
 .audit-line strong {
-  color: #2b2b2b;
+  color: var(--ink);
   font-weight: 650;
 }
 .audit-entity {
@@ -301,8 +301,8 @@
   max-width: 100%;
   padding: 1px 9px;
   border-radius: 20px;
-  background: #f4f4f4;
-  color: #3f3f3f;
+  background: var(--soft);
+  color: var(--muted);
   text-decoration: none;
 }
 .audit-entity .icon {
@@ -310,12 +310,12 @@
   height: 14px;
 }
 a.audit-entity:hover {
-  background: #eeeeee;
-  color: #343434;
+  background: var(--soft);
+  color: var(--ink);
 }
 .audit-entity.plain {
-  background: #f2f2f2;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
 }
 .audit-changes {
   margin: 4px 0 0;
@@ -325,7 +325,7 @@ a.audit-entity:hover {
   padding: 40px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   text-align: center;
   color: var(--muted);
 }
@@ -356,7 +356,7 @@ a.audit-entity:hover {
   border-radius: 0;
 }
 .card-body .audit-day-head {
-  background: #fff;
+  background: var(--paper);
   padding: 4px 0 8px;
   border-bottom: 1px solid var(--line);
 }
@@ -383,7 +383,7 @@ a.audit-entity:hover {
   margin-top: 2px;
   padding: 0;
   border-radius: 50%;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .audit-avatar-system .icon {
@@ -412,7 +412,7 @@ a.audit-entity:hover {
   align-items: center;
   gap: 6px 10px;
   margin: 6px 0 0;
-  color: #515154;
+  color: var(--muted);
   font-size: .84rem;
 }
 .audit-kind {
@@ -427,18 +427,19 @@ a.audit-entity:hover {
 .audit-important {
   padding: 1px 9px;
   border-radius: 999px;
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
   font-weight: 700;
 }
+/* #fffafa is the named colour 'snow': the faintest red, which on a dark paper has to come from the theme. */
 .audit-event.important {
-  background: #fffafa;
+  background: var(--red-soft);
 }
 .audit-repeat summary {
   padding: 1px 9px;
   border-radius: 999px;
-  background: #ededed;
-  color: #1c1c1e;
+  background: var(--soft);
+  color: var(--ink);
   font-weight: 700;
   cursor: pointer;
   list-style: none;
@@ -447,7 +448,7 @@ a.audit-entity:hover {
   display: none;
 }
 .audit-repeat[open] summary {
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .audit-repeat-times {

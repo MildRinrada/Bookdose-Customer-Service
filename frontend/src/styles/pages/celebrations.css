@@ -41,7 +41,7 @@
 }
 .celebration-card.praise .celebration-icon {
   background: #f5b942;
-  color: #1c1c1e;
+  color: var(--ink);
 }
 .celebration-icon .icon {
   width: 24px;

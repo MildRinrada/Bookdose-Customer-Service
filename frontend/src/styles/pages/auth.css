@@ -10,10 +10,10 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: #fff;
+  background: var(--paper);
 }
 .auth-story {
-  background: #f0f0f0;
+  background: var(--soft);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -43,7 +43,7 @@
 .auth-story .story-copy {
   font-size: 1rem;
   line-height: 2;
-  color: #717171;
+  color: var(--muted);
   max-width: 420px;
 }
 .auth-story .story-label {
@@ -115,7 +115,7 @@
 .story-dots span:nth-child(4) { animation-delay: 19s; }
 @keyframes story-dot {
   0%, 32.2%, 100% { width: 8px; background: #ffffff59; }
-  7.2%, 25% { width: 24px; background: #fff; }
+  7.2%, 25% { width: 24px; background: var(--paper); }
 }
 @media (prefers-reduced-motion: reduce) {
   .story-photo,
@@ -223,8 +223,8 @@
   width: 42px;
   height: 40px;
   padding: 8px;
-  background: #f5f5f5;
-  color: #434343;
+  background: var(--soft);
+  color: var(--muted);
   border: 0;
   border-radius: 6px;
 }
@@ -235,7 +235,7 @@
   max-width: 480px;
 }
 .auth-form>p,.auth-foot {
-  color: #565656;
+  color: var(--muted);
 }
 .auth-form .btn.subtle {
   margin-top: 8px;
@@ -263,7 +263,7 @@
   border: 0;
   border-bottom: 3px solid transparent;
   background: none;
-  color: #565656;
+  color: var(--muted);
   font: inherit;
   font-size: 1.0625rem;
   font-weight: 600;
@@ -282,7 +282,7 @@
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fafbfc;
+  background: var(--soft);
 }
 .auth-privacy summary {
   cursor: pointer;
@@ -290,7 +290,7 @@
 }
 .auth-privacy p {
   margin: 8px 0 0;
-  color: #565656;
+  color: var(--muted);
 }
 .auth-form .check span {
   line-height: 1.6;

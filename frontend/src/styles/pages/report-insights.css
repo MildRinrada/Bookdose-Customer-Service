@@ -21,7 +21,7 @@
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  color: #6e6e73;
+  color: var(--muted);
 }
 
 /* Three big figures in a row. */
@@ -36,29 +36,29 @@
   gap: 2px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #f7f7f9;
+  background: var(--soft);
 }
 .report-figures span {
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .82rem;
   font-weight: 600;
 }
 .report-figures strong {
-  color: var(--ink-strong,#1c1c1e);
+  color: var(--ink);
   font-size: 1.45rem;
   font-weight: 800;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 .report-figures small {
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .78rem;
 }
 .report-figures .warn {
-  background: #fff4d6;
+  background: var(--amber-soft);
 }
 .report-figures .warn strong {
-  color: #7a4507;
+  color: var(--amber);
 }
 .report-stars {
   margin-left: 8px;
@@ -101,7 +101,7 @@
   width: 100%;
   height: 38px;
   border-radius: 10px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -110,17 +110,17 @@
   background: #e5484d;
 }
 .report-week-score.none {
-  background: #f0f0f2;
+  background: var(--soft);
   color: #a1a1a6;
 }
 .report-week-day {
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .75rem;
   white-space: nowrap;
 }
 .report-subhead {
   margin: 18px 0 8px;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .82rem;
   font-weight: 800;
   letter-spacing: .03em;
@@ -137,10 +137,10 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #f7f7f9;
+  background: var(--soft);
 }
 .report-comments li.low {
-  background: #fff1f0;
+  background: var(--red-soft);
 }
 .report-comment-stars {
   flex-shrink: 0;
@@ -149,7 +149,7 @@
   letter-spacing: 1px;
 }
 .report-comments li.low .report-comment-stars {
-  color: #e5484d;
+  color: var(--red);
 }
 .report-comment-body {
   display: grid;
@@ -158,7 +158,7 @@
   overflow-wrap: anywhere;
 }
 .report-comment-body a {
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .82rem;
 }
 
@@ -187,7 +187,7 @@
 .report-source-name .icon {
   width: 16px;
   height: 16px;
-  color: #6e6e73;
+  color: var(--muted);
 }
 progress.report-share {
   display: block;
@@ -198,21 +198,21 @@ progress.report-share {
   border: 0;
   border-radius: 4px;
   appearance: none;
-  background: #ededed;
+  background: var(--soft);
 }
 progress.report-share::-webkit-progress-bar {
   border-radius: 4px;
-  background: #ededed;
+  background: var(--soft);
 }
 progress.report-share::-webkit-progress-value {
   border-radius: 4px;
-  background: #1c1c1e;
+  background: var(--invert);
 }
 progress.report-share::-moz-progress-bar {
-  background: #1c1c1e;
+  background: var(--invert);
 }
 .report-low {
-  color: #a3182b;
+  color: var(--red);
   font-weight: 700;
 }
 
@@ -227,7 +227,7 @@ progress.report-share::-moz-progress-bar {
   gap: 2px;
   padding: 12px;
   border-radius: 14px;
-  background: #f7f7f9;
+  background: var(--soft);
   text-align: center;
 }
 .report-age strong {
@@ -237,18 +237,18 @@ progress.report-share::-moz-progress-bar {
   font-variant-numeric: tabular-nums;
 }
 .report-age span {
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .8rem;
   font-weight: 600;
 }
 .report-age.warn:not(.zero) {
-  background: #fff4d6;
+  background: var(--amber-soft);
 }
 .report-age.warn:not(.zero) strong {
-  color: #7a4507;
+  color: var(--amber);
 }
 .report-age.bad:not(.zero) {
-  background: #1c1c1e;
+  background: var(--invert);
 }
 .report-age.bad:not(.zero) strong,.report-age.bad:not(.zero) span {
   color: #fff;
@@ -264,7 +264,7 @@ progress.report-share::-moz-progress-bar {
   border-radius: 10px;
 }
 .report-oldest li:hover {
-  background: #f6f6f8;
+  background: var(--soft);
 }
 .report-oldest a {
   display: flex;
@@ -283,18 +283,18 @@ progress.report-share::-moz-progress-bar {
   flex-shrink: 0;
   padding: 1px 9px;
   border-radius: 999px;
-  background: #ededed;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
   font-size: .82rem;
   font-weight: 700;
 }
 .report-days.warn {
-  background: #fdf0d5;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .report-days.bad {
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
 }
 @media (max-width: 560px) {
   .report-aging {
@@ -322,10 +322,10 @@ progress.report-share::-moz-progress-bar {
   border-radius: 12px;
 }
 .report-load li.heavy {
-  background: #fff4d6;
+  background: var(--amber-soft);
 }
 .report-load li.unassigned {
-  border-top: 1px solid #ededed;
+  border-top: 1px solid var(--line);
   border-radius: 0 0 12px 12px;
 }
 .report-load-name {
@@ -342,8 +342,8 @@ progress.report-share::-moz-progress-bar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f0f0f2;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
 }
 .report-load-none .icon {
   width: 16px;
@@ -389,7 +389,7 @@ progress.report-share::-moz-progress-bar {
 }
 .report-section-head p {
   margin: 2px 0 0;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .86rem;
 }
 
@@ -412,7 +412,7 @@ progress.report-share::-moz-progress-bar {
   border-radius: 12px;
 }
 .report-articles li:hover {
-  background: #f6f6f8;
+  background: var(--soft);
 }
 .report-rank {
   display: grid;
@@ -421,14 +421,14 @@ progress.report-share::-moz-progress-bar {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font-size: .8rem;
   font-weight: 800;
 }
 .report-articles li:nth-child(n+4) .report-rank {
-  background: #ededed;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
 }
 .report-article-body {
   display: grid;
@@ -437,7 +437,7 @@ progress.report-share::-moz-progress-bar {
   min-width: 0;
 }
 .report-article-body a,.report-comment-body a.truncate {
-  color: var(--ink-strong,#1c1c1e);
+  color: var(--ink);
   font-weight: 700;
   text-decoration: none;
 }
@@ -479,11 +479,11 @@ progress.report-share::-moz-progress-bar {
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f7f7f9;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
 }
 .report-gaps.has {
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .report-gaps.has a {

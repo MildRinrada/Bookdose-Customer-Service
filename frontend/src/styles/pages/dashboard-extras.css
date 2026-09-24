@@ -295,7 +295,7 @@
   flex-shrink: 0;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #f2f2ef;
+  background: var(--soft);
   color: #5c6063;
   font-size: 1rem;
   white-space: nowrap;

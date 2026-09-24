@@ -47,7 +47,7 @@
   gap: 2px;
   margin: 0;
   padding: 6px;
-  border-bottom: 1px solid #ededed;
+  border-bottom: 1px solid var(--line);
   list-style: none;
 }
 .account-list li {
@@ -57,7 +57,7 @@
   border-radius: 12px;
 }
 .account-list li:hover {
-  background: #f4f4f6;
+  background: var(--soft);
 }
 .account-row {
   display: flex;
@@ -79,12 +79,12 @@
   height: 36px;
 }
 .account-row .account-who span {
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .85rem;
 }
 .account-busy {
   margin-left: auto;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .8rem;
   white-space: nowrap;
 }
@@ -93,11 +93,11 @@
   width: 34px;
   height: 34px;
   margin-right: 4px;
-  color: #6e6e73;
+  color: var(--muted);
 }
 .account-list .account-out:hover {
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
 }
 .account-out .icon {
   width: 16px;
@@ -151,7 +151,7 @@
   align-items: center;
   gap: 5px;
   margin-top: 2px;
-  color: #7a4507;
+  color: var(--amber);
   font-size: .85rem;
   font-weight: 600;
 }

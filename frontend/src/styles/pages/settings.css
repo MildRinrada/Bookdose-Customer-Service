@@ -14,7 +14,7 @@
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow);
 }
 .settings-nav-item {
@@ -26,16 +26,16 @@
   border: 0;
   border-radius: 10px;
   background: none;
-  color: #373737;
+  color: var(--ink);
   text-align: left;
   cursor: pointer;
 }
 .settings-nav-item:hover {
-  background: #f8f8f8;
+  background: var(--paper);
 }
 .settings-nav-item.active {
-  background: #f3f3f3;
-  color: #333333;
+  background: var(--soft);
+  color: var(--ink);
 }
 .settings-nav-icon {
   display: grid;
@@ -44,11 +44,11 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #f2f2f2;
-  color: #595959;
+  background: var(--soft);
+  color: var(--muted);
 }
 .settings-nav-item.active .settings-nav-icon {
-  background: #868686;
+  background: var(--invert);
   color: #fff;
 }
 .settings-nav-text {
@@ -58,7 +58,7 @@
   min-width: 0;
 }
 .settings-nav-hint {
-  color: #6b6b78;
+  color: var(--muted);
   line-height: 1.6;
 }
 .settings-panels {
@@ -92,8 +92,8 @@
 .org-facts code {
   padding: 1px 7px;
   border-radius: 6px;
-  background: #f4f4f4;
-  color: #363636;
+  background: var(--soft);
+  color: var(--ink);
 }
 .portal-link {
   display: flex;
@@ -103,7 +103,7 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .portal-link .grow {
   display: flex;
@@ -137,7 +137,7 @@
   margin: 0;
 }
 .member-suspended td {
-  color: #6b6b78;
+  color: var(--muted);
 }
 /* Role and team are short labels; they read as one line or not at all. */
 .member-cell {
@@ -155,7 +155,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .team-card .grow {
   display: flex;
@@ -233,8 +233,8 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: #f3f3f3;
-  color: #494949;
+  background: var(--soft);
+  color: var(--muted);
 }
 .channel-row {
   display: flex;
@@ -251,9 +251,9 @@
   width: 40px;
   display: grid;
   place-items: center;
-  background: #f3f3f3;
+  background: var(--soft);
   border-radius: 10px;
-  color: #494949;
+  color: var(--muted);
 }
 .channel-row h3 {
   font-size: 1rem;
@@ -262,7 +262,7 @@
 .channel-row p {
   font-size: 1rem;
   margin: 2px 0 0;
-  color: #6d6474;
+  color: var(--muted);
 }
 .channel-url,.portal-url {
   overflow-wrap: anywhere;
@@ -294,14 +294,14 @@
 }
 /* Not the sign-in form, whose tabs share the role: its submit stays the solid theme button. */
 [role=tabpanel]:not(.auth-form) .btn.primary {
-  background: #f3f3f3;
-  color: #383838;
+  background: var(--soft);
+  color: var(--ink);
   border-color: #a1a1a1;
 }
 /* The one button that saves the section stays the solid one. */
 .settings-save .btn.primary {
-  background: #868686;
-  border-color: #868686;
+  background: var(--invert);
+  border-color: var(--invert);
   color: #fff;
 }
 @media (max-width:1100px) {
@@ -363,11 +363,11 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
 }
 .support-item.status-pending {
   border-color: #f0c36d;
-  background: #fffaf0;
+  background: var(--amber-soft);
 }
 .support-item.status-active {
   border-color: #9fd3b6;
@@ -386,7 +386,7 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #f2f2f2;
+  background: var(--soft);
   color: #4c4c4c;
 }
 .support-actions {
@@ -396,11 +396,11 @@
 }
 .badge.support-status-pending {
   background: #fff1d6;
-  color: #7a4b00;
+  color: var(--amber);
 }
 .badge.support-status-active,.badge.support-status-approved {
-  background: #e3f4ea;
-  color: #1a6340;
+  background: var(--green-soft);
+  color: var(--green);
 }
 .support-history {
   margin-top: 14px;
@@ -439,7 +439,7 @@
   width: 100%;
 }
 .ai-webhook-warn {
-  color: #9a3412;
+  color: var(--amber);
   font-weight: 600;
 }
 
@@ -467,7 +467,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
 }
 .settings-part-list>p {
   margin: 2px 0 16px;
-  color: #515154;
+  color: var(--muted);
 }
 .settings-tiles {
   display: grid;
@@ -484,13 +484,13 @@ a.settings-nav-item,a.settings-nav-item:hover {
   padding: 16px 18px;
   border: 1px solid #e7e7e7;
   border-radius: 18px;
-  background: #fff;
-  color: #1c1c1e;
+  background: var(--paper);
+  color: var(--ink);
   text-decoration: none;
   transition: border-color .15s, box-shadow .15s, transform .15s;
 }
 .settings-tile:hover {
-  border-color: #1c1c1e;
+  border-color: var(--invert);
   box-shadow: 0 8px 22px #0000000f;
   transform: translateY(-1px);
 }
@@ -505,7 +505,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .settings-tile-icon .icon {
@@ -529,7 +529,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
   font-weight: 800;
 }
 .settings-tile-text small {
-  color: #515154;
+  color: var(--muted);
   font-size: .86rem;
   line-height: 1.5;
 }
@@ -544,8 +544,8 @@ a.settings-nav-item,a.settings-nav-item:hover {
   gap: 6px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #ededed;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
   font-size: .8rem;
   font-weight: 700;
   white-space: nowrap;
@@ -558,15 +558,15 @@ a.settings-nav-item,a.settings-nav-item:hover {
   background: #8e8e93;
 }
 .settings-status.on {
-  background: #e3f5ec;
-  color: #166344;
+  background: var(--green-soft);
+  color: var(--green);
 }
 .settings-status.on::before {
   background: #1f9d63;
 }
 .settings-status.warn {
-  background: #fff4d6;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .settings-status.warn::before {
   background: #d49a2a;
@@ -577,7 +577,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  color: #1c1c1e;
+  color: var(--ink);
   font-weight: 700;
 }
 .settings-part-back .icon {
@@ -601,7 +601,7 @@ a.settings-nav-item,a.settings-nav-item:hover {
 }
 .settings-part-head p {
   margin: 2px 0 0;
-  color: #515154;
+  color: var(--muted);
 }
 .settings-panels>.card+.card,.settings-panels>*+.card,.settings-panels>form+* {
   margin-top: 18px;
@@ -632,10 +632,10 @@ a.settings-nav-item,a.settings-nav-item:hover {
 .storage-notice .icon {
   flex-shrink: 0;
   margin-top: 2px;
-  color: #b8860b;
+  color: var(--amber);
 }
 .storage-notice.full .icon {
-  color: #a31525;
+  color: var(--red);
 }
 .storage-notice p {
   margin: 4px 0 0;

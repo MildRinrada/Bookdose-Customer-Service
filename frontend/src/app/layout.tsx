@@ -43,6 +43,8 @@ import '@/styles/pages/status.css';
 import '@/styles/text-size.css';
 import '@/styles/theme.css';
 import '@/styles/refresh.css';
+/* Last: a theme only redefines the tokens the rules above already read, so it must be the final word on them. */
+import '@/styles/themes.css';
 import '@/styles/reveal.css';
 
 export const metadata: Metadata = {

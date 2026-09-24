@@ -37,7 +37,10 @@ export const MAX_ROWS = 400;
 /** Where a card sits: its top-left square, and how many columns and rows it covers. */
 export type Box = { x: number; y: number; w: number; h: number };
 
-export type DashboardLayout = { hidden: string[]; box: Partial<Record<string, Box>> };
+/** base 'page': the member chose the screen's own arrangement over the organization's default. */
+export type DashboardLayout = { hidden: string[]; box: Partial<Record<string, Box>>; base?: 'page' };
+
+export const PAGE_LAYOUT: DashboardLayout = { hidden: [], box: {}, base: 'page' };
 
 export const EMPTY_LAYOUT: DashboardLayout = { hidden: [], box: {} };
 
@@ -91,7 +94,9 @@ export function readLayout(value: unknown): DashboardLayout {
       const read = readBox(value);
       if (read) box[id] = read;
     }
-  return { hidden: Array.isArray(found.hidden) ? found.hidden.filter((id): id is string => typeof id === 'string') : [], box };
+  const layout: DashboardLayout = { hidden: Array.isArray(found.hidden) ? found.hidden.filter((id): id is string => typeof id === 'string') : [], box };
+  if (found.base === 'page') layout.base = 'page';
+  return layout;
 }
 
 function safeParse(text: string): unknown {
@@ -105,11 +110,17 @@ function safeParse(text: string): unknown {
 
 export const isEmptyLayout = (layout: DashboardLayout) => !layout.hidden.length && !Object.keys(layout.box).length;
 
-/** The member's board over the organization's: a member who has laid out nothing follows the organization. */
-export const layoutInUse = (mine: DashboardLayout, organization: DashboardLayout) => (isEmptyLayout(mine) ? organization : mine);
+/** The member's board over the organization's: a member who has laid out nothing follows the organization, unless
+    they chose the page as it ships (base 'page'), which sits between the two. */
+export const layoutInUse = (mine: DashboardLayout, organization: DashboardLayout) =>
+  !isEmptyLayout(mine) ? mine : mine.base === 'page' ? EMPTY_LAYOUT : organization;
 
 /** sized: the member put this card on these squares themselves, so it is held to them. */
-export type PlacedCard = { id: string; title: string; box: Box; hidden: boolean; sized: boolean };
+/** empty: the card drew nothing when measured, so it holds no squares until it does. */
+export type PlacedCard = { id: string; title: string; box: Box; hidden: boolean; sized: boolean; empty?: boolean };
+
+/** On the board and taking room: not put away, and not empty. */
+export const occupies = (card: PlacedCard) => !card.hidden && !card.empty;
 
 /** Do two rectangles cover any of the same squares? */
 export const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -165,21 +176,39 @@ export const rowsFor = (pixels: number) =>
    and whatever that pushes into moves down, the same way a drop does. A card the member has sized keeps its size -
    it was chosen, and a choice is not corrected by measuring. */
 export function growToFit(cards: PlacedCard[], needs: Record<string, number>, fixed: (id: string) => boolean): PlacedCard[] {
-  const wanted = cards.map((card) => ({
-    ...card,
-    box: fixed(card.id) ? card.box : { ...card.box, h: Math.max(card.box.h, needs[card.id] ?? 0) },
-  }));
+  /* An untouched card takes exactly the rows its contents ask for once they have been measured - not more: the
+     rectangles this file ships with are guesses, and a guess a row too tall leaves a band of nothing at the foot of
+     a card, which reads as a mistake. Until it is measured, the guess stands.
+
+     A card measured at nothing - its contents drew nothing, for want of data or of the right role - holds no squares
+     at all rather than a guessed rectangle of blank page. It is still drawn, out of the flow, so the next measurement
+     sees it the moment it has something to show. */
+  const wanted = cards.map((card) => {
+    const rows = needs[card.id];
+    const empty = rows === 0;
+    const box = fixed(card.id) || empty ? card.box : { ...card.box, h: Math.max(MIN_H, rows ?? card.box.h) };
+    return { ...card, box, empty };
+  });
   const placed: PlacedCard[] = [];
   for (const card of wanted) {
-    if (card.hidden) {
+    if (!occupies(card)) {
       placed.push(card);
       continue;
     }
     let box = card.box;
+    if (!fixed(card.id)) {
+      /* And it sits directly under whatever is above it in its columns, the way the page flowed before it was a
+         board: a card nobody placed has no reason to float below a gap that a shorter card above it left behind. A
+         card the member placed stays on its squares - that gap is theirs. */
+      const under = placed
+        .filter((other) => occupies(other) && other.box.x < box.x + box.w && box.x < other.box.x + other.box.w && other.box.y < box.y + box.h)
+        .reduce((low, other) => Math.max(low, other.box.y + other.box.h), 0);
+      box = { ...box, y: Math.min(box.y, Math.max(0, under)) };
+    }
     for (let round = 0; round < PUSH_ROUNDS; round += 1) {
-      const under = placed.find((other) => !other.hidden && overlaps(box, other.box));
-      if (!under) break;
-      box = { ...box, y: under.box.y + under.box.h };
+      const over = placed.find((other) => occupies(other) && overlaps(box, other.box));
+      if (!over) break;
+      box = { ...box, y: over.box.y + over.box.h };
     }
     placed.push({ ...card, box });
   }
@@ -187,7 +216,7 @@ export function growToFit(cards: PlacedCard[], needs: Record<string, number>, fi
 }
 
 /** How many rows the board needs, so it keeps its shape while a card is being carried across it. */
-export const rowsNeeded = (cards: PlacedCard[]) => Math.max(8, bottomOf(cards.filter((c) => !c.hidden).map((c) => c.box)) + 2);
+export const rowsNeeded = (cards: PlacedCard[]) => Math.max(8, bottomOf(cards.filter(occupies).map((c) => c.box)) + 2);
 
 /** `box` clipped to the board, and to nothing smaller than a card. */
 export function fitBox(box: Box): Box {
@@ -213,17 +242,23 @@ export function materialise(layout: DashboardLayout, cards: PlacedCard[]): Dashb
    Only downwards. A push that could go either way has to guess which, and a guess that moves a card the reader was
    not looking at is worse than a longer page. */
 export function placeWithPush(layout: DashboardLayout, cards: PlacedCard[], id: string, box: Box): DashboardLayout {
+  return placeManyWithPush(layout, cards, { [id]: box });
+}
+
+/** Several cards put down at once, as one: whatever they land on moves down, and none of them is pushed by the
+    others, because they were carried together and arrive together. */
+export function placeManyWithPush(layout: DashboardLayout, cards: PlacedCard[], moves: Record<string, Box>): DashboardLayout {
   const found = materialise(layout, cards);
   const boxes: Record<string, Box> = {};
-  for (const card of cards) if (!card.hidden) boxes[card.id] = (found.box[card.id] as Box) ?? card.box;
-  boxes[id] = fitBox(box);
-  const queue = [id];
+  for (const card of cards) if (occupies(card)) boxes[card.id] = (found.box[card.id] as Box) ?? card.box;
+  for (const [id, box] of Object.entries(moves)) boxes[id] = fitBox(box);
+  const queue = Object.keys(moves);
   for (let round = 0; queue.length && round < PUSH_ROUNDS; round += 1) {
     const moved = queue.shift() as string;
     const above = boxes[moved];
     if (!above) continue;
     for (const [other, sitting] of Object.entries(boxes)) {
-      if (other === moved || other === id || !overlaps(above, sitting)) continue;
+      if (other === moved || other in moves || !overlaps(above, sitting)) continue;
       boxes[other] = fitBox({ ...sitting, y: above.y + above.h });
       queue.push(other);
     }

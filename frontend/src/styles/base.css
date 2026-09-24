@@ -23,6 +23,14 @@
   --ink: rgb(38, 41, 45);
   --muted: #65716b;
   --line: rgb(227, 227, 222);
+  /* The grey fill behind a chip, a count, a quiet row, and the inside of a field. Both were written into rules as
+     #f2f2f2 / #ededed / #fff a thousand times over; a theme can only repaint what goes through a name (themes.css). */
+  --soft: #f2f2f2;
+  --field: #fff;
+  /* The solid surface that says "this one": a pressed tab, a chosen filter, the button that saves. It always carries
+     white text, so on a dark paper it becomes lighter than the page rather than darker - the point is that it stands
+     away from the page, not that it is black. */
+  --invert: #1c1c1e;
 }
 * {
   box-sizing: border-box;

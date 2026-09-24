@@ -89,7 +89,7 @@ html:has(.composer) .assistant-panel {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #f2f2f2;
+  background: var(--soft);
   color: #353d40;
 }
 .assistant-mark .icon {
@@ -114,7 +114,7 @@ html:has(.composer) .assistant-panel {
   padding: 14px;
   overflow-y: auto;
   scrollbar-width: thin;
-  background: #fafaf8;
+  background: var(--soft);
 }
 .assistant-empty {
   display: grid;
@@ -137,7 +137,7 @@ html:has(.composer) .assistant-panel {
   padding: 22px 26px 18px;
   overflow-y: auto;
   scrollbar-width: none;
-  background: #fafaf8;
+  background: var(--soft);
   transition: opacity .2s ease, transform .2s ease;
 }
 .assistant-welcome::-webkit-scrollbar {
@@ -152,7 +152,7 @@ html:has(.composer) .assistant-panel {
 }
 .assistant-hello h2 {
   margin: 0;
-  color: #1c1c1e;
+  color: var(--ink);
   font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.4;
@@ -160,7 +160,7 @@ html:has(.composer) .assistant-panel {
 }
 .assistant-hello p {
   margin: 2px 0 0;
-  color: #515154;
+  color: var(--muted);
 }
 /* The box is the frame: the text and the send button side by side inside it, so the button never crosses its edge. */
 .assistant-ask {
@@ -170,7 +170,7 @@ html:has(.composer) .assistant-panel {
   padding: 7px 7px 7px 15px;
   border: 1px solid #c7c7cc;
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: 0 2px 8px #0000000a;
   transition: border-color .15s, box-shadow .15s;
 }
@@ -188,7 +188,7 @@ html:has(.composer) .assistant-panel {
   scrollbar-width: none;
   border: 0;
   background: transparent;
-  color: #1c1c1e;
+  color: var(--ink);
   font: inherit;
   line-height: 1.5;
   resize: none;
@@ -202,7 +202,7 @@ html:has(.composer) .assistant-panel {
 /* The typed example stays on one line. */
 .assistant-ask textarea::placeholder {
   overflow: hidden;
-  color: #6e6e73;
+  color: var(--muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -235,7 +235,7 @@ html:has(.composer) .assistant-panel {
 }
 .assistant-suggestions-title {
   margin: 0 0 4px 8px;
-  color: #515154;
+  color: var(--muted);
   font-size: .8rem;
   font-weight: 700;
 }
@@ -247,7 +247,7 @@ html:has(.composer) .assistant-panel {
   border: 0;
   border-radius: 10px;
   background: none;
-  color: #3a3a3c;
+  color: var(--ink);
   font: inherit;
   font-size: .9rem;
   line-height: 1.5;
@@ -255,8 +255,8 @@ html:has(.composer) .assistant-panel {
   cursor: pointer;
 }
 .assistant-suggestion:hover,.assistant-suggestion:focus-visible {
-  background: #f0f0f0;
-  color: #1c1c1e;
+  background: var(--soft);
+  color: var(--ink);
   outline: none;
 }
 .assistant-suggestion .icon {
@@ -264,11 +264,11 @@ html:has(.composer) .assistant-panel {
   width: 15px;
   height: 15px;
   margin-top: 3px;
-  color: #6e6e73;
+  color: var(--muted);
 }
 .assistant-welcome-note {
   margin: 0;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .8rem;
   text-align: center;
 }
@@ -276,7 +276,7 @@ html:has(.composer) .assistant-panel {
   padding: 0;
   border: 0;
   background: none;
-  color: #1c1c1e;
+  color: var(--ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -311,7 +311,7 @@ html:has(.composer) .assistant-panel {
   max-width: 88%;
   padding: 9px 12px;
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   border: 1px solid var(--line);
   line-height: 1.6;
   white-space: pre-wrap;
@@ -319,13 +319,13 @@ html:has(.composer) .assistant-panel {
 }
 .assistant-turn.user .assistant-bubble {
   border-color: transparent;
-  background: #484848;
+  background: var(--invert);
   color: #fff;
 }
 .assistant-turn.failed .assistant-bubble {
   border-color: #f1c9a5;
   background: #fff8ef;
-  color: #7a4b00;
+  color: var(--amber);
 }
 .assistant-tools {
   display: flex;
@@ -373,7 +373,7 @@ html:has(.composer) .assistant-panel {
 .assistant-form {
   flex-shrink: 0;
   padding: 10px 14px 14px;
-  background: #fafaf8;
+  background: var(--soft);
 }
 
 @media (max-width: 600px) {

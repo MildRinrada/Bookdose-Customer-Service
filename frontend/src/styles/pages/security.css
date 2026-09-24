@@ -75,7 +75,7 @@
   height: 200px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--paper);
   padding: 8px;
 }
 .totp-secret {
@@ -438,7 +438,7 @@ dialog.idle-dialog {
   z-index: 3;
   padding: 4px 10px;
   border-radius: 6px;
-  background: #2a2a2a;
+  background: var(--invert);
   color: #fff;
   line-height: 1.45;
   text-align: left;
@@ -717,7 +717,7 @@ p.card-body.muted .icon {
 .trap-kinds legend {
   margin-bottom: 8px;
   font-weight: 600;
-  color: #434343;
+  color: var(--muted);
 }
 .trap-kind-option {
   display: flex;

@@ -4,12 +4,12 @@
 
 /* The list */
 .staff-chats .inbox-list {
-  background: #fafafb;
+  background: var(--paper);
 }
 .staff-chats .inbox-tools {
   display: grid;
   gap: 10px;
-  background: #fafafb;
+  background: var(--paper);
 }
 .inbox-tabs {
   display: grid;
@@ -17,7 +17,7 @@
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: #ededed;
+  background: var(--soft);
 }
 .inbox-tab {
   display: inline-flex;
@@ -31,7 +31,7 @@
   border-radius: 999px;
   background: transparent;
   white-space: nowrap;
-  color: #1c1c1e;
+  color: var(--ink);
   font: inherit;
   font-size: .9rem;
   font-weight: 700;
@@ -41,15 +41,15 @@
   background: #ffffffb3;
 }
 .inbox-tab[aria-pressed="true"] {
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
 }
 .inbox-tab-count {
   min-width: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #fff;
-  color: #1c1c1e;
+  background: var(--paper);
+  color: var(--ink);
   font-size: .78rem;
   line-height: 20px;
   text-align: center;
@@ -81,11 +81,11 @@
   margin-top: 8px;
 }
 .staff-chats .inbox-item.inbox-row:hover {
-  background: #f1f1f1;
+  background: var(--soft);
 }
 .staff-chats .inbox-item.inbox-row.selected {
   padding-left: 12px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: 0 1px 2px #0000000f, 0 0 0 1px #e7e7e7;
 }
 .inbox-row-body {
@@ -100,14 +100,14 @@
 }
 .staff-chats .inbox-row h3 {
   margin: 1px 0 0;
-  color: #1c1c1e;
+  color: var(--ink);
 }
 .staff-chats .inbox-row .inbox-preview {
   display: block;
-  color: #515154;
+  color: var(--muted);
 }
 .inbox-preview-who {
-  color: #1c1c1e;
+  color: var(--ink);
   font-weight: 600;
 }
 .staff-chats .inbox-row .inbox-foot {
@@ -120,8 +120,8 @@
 .inbox-row .inbox-waiting {
   padding: 1px 9px 1px 7px;
   border-radius: 999px;
-  background: #fff4d6;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 
 /* The customer's avatar */
@@ -157,7 +157,7 @@
     padding: 14px;
     overflow: auto;
     border-left: 1px solid var(--line);
-    background: #fafafb;
+    background: var(--paper);
     scrollbar-width: thin;
   }
 }
@@ -165,11 +165,11 @@
   padding: 16px;
   border: 1px solid #e7e7e7;
   border-radius: 16px;
-  background: #fff;
+  background: var(--paper);
 }
 .aside-card h3 {
   margin: 0 0 10px;
-  color: #515154;
+  color: var(--muted);
   font-size: .8rem;
   font-weight: 800;
   letter-spacing: .03em;
@@ -192,7 +192,7 @@
 }
 .aside-company {
   margin: 2px 0 0;
-  color: #515154;
+  color: var(--muted);
 }
 .aside-person .aside-rows {
   justify-self: stretch;
@@ -215,18 +215,18 @@
   width: 16px;
   height: 16px;
   margin-top: 3px;
-  color: #3a3a3c;
+  color: var(--ink);
 }
 .aside-value {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .aside-value a {
-  color: #1c1c1e;
+  color: var(--ink);
 }
 .aside-empty {
   margin: 8px 0 0;
-  color: #515154;
+  color: var(--muted);
   font-size: .9rem;
 }
 .aside-history {
@@ -242,7 +242,7 @@
   margin-top: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   text-decoration: none;
 }
@@ -271,11 +271,11 @@
   padding: 8px 10px;
   margin: 0 -10px;
   border-radius: 10px;
-  color: #1c1c1e;
+  color: var(--ink);
   text-decoration: none;
 }
 .aside-others a:hover {
-  background: #f1f1f1;
+  background: var(--soft);
 }
 .aside-other-subject {
   overflow: hidden;
@@ -284,14 +284,14 @@
   font-weight: 600;
 }
 .aside-others small {
-  color: #515154;
+  color: var(--muted);
 }
 .aside-state {
   font-weight: 700;
 }
 .aside-state.tone-waiting {
-  color: #7a4507;
+  color: var(--amber);
 }
 .aside-state.tone-done {
-  color: #515154;
+  color: var(--muted);
 }

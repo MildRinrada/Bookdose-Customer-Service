@@ -49,7 +49,7 @@
   width: 244px;
   inset: 0 auto 0 0;
   padding: 31px 19px 19px;
-  background: white;
+  background: var(--paper);
   border-right: 1px solid var(--line);
   z-index: 20;
   display: flex;
@@ -69,7 +69,7 @@
   align-items: flex-start;
   padding: 12px;
   border: 1px solid #d0d0d0;
-  background: #fff;
+  background: var(--paper);
 }
 .workspace-select .avatar {
   font-size: 1rem;
@@ -83,7 +83,7 @@
   min-width: 0;
   color: var(--ink);
   border: 1px solid #959595;
-  background-color: #fafafa;
+  background-color: var(--paper);
   white-space: normal;
   cursor: pointer;
 }
@@ -109,7 +109,7 @@
   min-height: 48px;
 }
 .nav-item:hover {
-  background: #f9f9f9;
+  background: var(--paper);
   color: var(--purple);
 }
 .nav-item.active {
@@ -179,8 +179,8 @@ html.sidebar-collapsed .platform-scope>.grow {
   gap: 5px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #f2f2f2;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
   font-size: .875rem;
   white-space: nowrap;
 }
@@ -201,7 +201,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   padding-bottom: 10px;
 }
 .help-card {
-  border: 1px solid #eeeeee;
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: linear-gradient(135deg,#fbfbfb,#f8f8f8);
   margin-bottom: 18px;
@@ -252,7 +252,7 @@ html.sidebar-collapsed .platform-scope>.grow {
 }
 .breadcrumb b {
   font-weight: 500;
-  color: #595959;
+  color: var(--muted);
 }
 .top-actions {
   display: flex;
@@ -266,7 +266,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   align-items: center;
   color: #686873;
   border: 1px solid #959595;
-  background: #fff;
+  background: var(--paper);
   padding: 0 12px;
 }
 .global-search input {
@@ -276,7 +276,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   width: 100%;
   font-size: 1rem;
   padding: 8px 0;
-  color: #2d2d2d;
+  color: var(--ink);
 }
 .kbd {
   font-size: 1rem;
@@ -481,11 +481,11 @@ html.sidebar-collapsed .platform-scope>.grow {
   height: 22px;
 }
 .nav-item:hover {
-  background: #eeeeee;
-  color: #343434;
+  background: var(--soft);
+  color: var(--ink);
 }
 .nav-item.active {
-  color: #343434;
+  color: var(--ink);
   background: #ebebeb;
   font-weight: 700;
 }
@@ -503,7 +503,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   min-width: 0;
 }
 .global-search .icon {
-  color: #575757;
+  color: var(--muted);
 }
 .profile-avatar {
   object-fit: cover;
@@ -528,7 +528,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   flex-shrink: 0;
   min-width: 40px;
   min-height: 40px;
-  color: #575757;
+  color: var(--muted);
 }
 .sidebar .workspace-select {
   padding: 8px 10px;
@@ -540,7 +540,7 @@ html.sidebar-collapsed .platform-scope>.grow {
 }
 .nav-help {
   margin-top: 8px;
-  border-top: 1px solid #e6e6e6;
+  border-top: 1px solid var(--line);
   border-radius: 0 0 8px 8px;
 }
 .sidebar .profile {
@@ -630,7 +630,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   z-index: 80;
   padding: 7px 13px;
   border-radius: 9px;
-  background: #eaeaea;
+  background: var(--soft);
   color: #2c2c2c;
   font-size: .9375rem;
   font-weight: 500;
@@ -724,15 +724,15 @@ html.sidebar-collapsed .platform-scope>.grow {
   padding: 0 6px;
   border-color: #d0d0d0;
   border-radius: 5px;
-  background: #f5f5f5;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
   font-weight: 600;
 }
 .online {
   padding: 4px 10px;
   border-radius: 999px;
-  background: #e3f5ec;
-  color: #166344;
+  background: var(--green-soft);
+  color: var(--green);
   font-weight: 600;
 }
 .online::before {
@@ -744,13 +744,13 @@ html.sidebar-collapsed .platform-scope>.grow {
   color: #a5a5a5;
 }
 .breadcrumb .crumb-root {
-  color: #767676;
+  color: var(--muted);
 }
 .breadcrumb .crumb-root:hover {
-  color: #434343;
+  color: var(--muted);
 }
 .breadcrumb b {
-  color: #2b2b2b;
+  color: var(--ink);
   font-weight: 700;
 }
 .profile-menu {
@@ -760,10 +760,10 @@ html.sidebar-collapsed .platform-scope>.grow {
   gap: 2px;
   padding: 2px 6px 2px 2px;
   border-radius: 24px;
-  color: #575757;
+  color: var(--muted);
 }
 .avatar-btn:hover,.avatar-btn[aria-expanded=true] {
-  background: #f5f5f5;
+  background: var(--soft);
 }
 .avatar-btn .icon {
   width: 16px;
@@ -822,7 +822,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   min-width: 250px;
   max-width: calc(100vw - 32px);
   padding: 6px;
-  background: #fff;
+  background: var(--paper);
   border: 1px solid #d1d1d1;
   border-radius: 10px;
   box-shadow: 0 14px 34px #1e293b29;
@@ -844,22 +844,22 @@ html.sidebar-collapsed .platform-scope>.grow {
   border: 0;
   border-radius: 6px;
   background: none;
-  color: #373737;
+  color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 .menu-item:hover,.menu-item:focus-visible {
-  background: #f3f3f3;
-  color: #343434;
+  background: var(--soft);
+  color: var(--ink);
   outline: none;
 }
 .menu-item.danger {
-  color: #a31525;
+  color: var(--red);
 }
 .menu-item.danger:hover,.menu-item.danger:focus-visible {
-  background: #ffe0e5;
-  color: #a31525;
+  background: var(--red-soft);
+  color: var(--red);
 }
 /* Sidebar workspace picker: one compact dropdown with the organization mark inside. */
 .sidebar .workspace-select {
@@ -868,7 +868,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   border-radius: 10px;
 }
 .sidebar .workspace-select:hover {
-  border-color: #868686;
+  border-color: var(--invert);
 }
 .sidebar .workspace-select:focus-within {
   border-color: #777777;
@@ -954,8 +954,8 @@ html.platform-mode .nav-console {
   align-items: center;
   gap: 10px;
   padding: 10px 24px;
-  background: #fdf0d5;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
   font-weight: 600;
 }
 .support-view-banner .icon {
@@ -1080,9 +1080,9 @@ html.platform-mode .platform-banner .icon {
   padding: 8px;
   border: 1px solid #e7e7e7;
   border-radius: 16px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: 0 18px 40px #0000002e, 0 2px 6px #00000014;
-  color: #1c1c1e;
+  color: var(--ink);
 }
 .org-menu[hidden] {
   display: none;
@@ -1093,7 +1093,7 @@ html.platform-mode .platform-banner .icon {
   justify-content: space-between;
   gap: 8px;
   margin: 4px 8px 6px;
-  color: #515154;
+  color: var(--muted);
   font-size: .78rem;
   font-weight: 800;
 }
@@ -1101,8 +1101,8 @@ html.platform-mode .platform-banner .icon {
   min-width: 22px;
   padding: 0 7px;
   border-radius: 999px;
-  background: #ededed;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
   text-align: center;
 }
 .org-menu-search {
@@ -1115,13 +1115,13 @@ html.platform-mode .platform-banner .icon {
   border-radius: 10px;
 }
 .org-menu-search:focus-within {
-  border-color: #1c1c1e;
+  border-color: var(--invert);
 }
 .org-menu-search .icon {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  color: #515154;
+  color: var(--muted);
 }
 .org-menu-search input {
   flex: 1;
@@ -1148,17 +1148,17 @@ html.platform-mode .platform-banner .icon {
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #1c1c1e;
+  color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 .org-option:hover,.org-option:focus-visible {
-  background: #f3f3f3;
+  background: var(--soft);
   outline: none;
 }
 .org-option[aria-checked=true] {
-  background: #f3f3f3;
+  background: var(--soft);
 }
 .org-option .avatar {
   flex-shrink: 0;
@@ -1178,7 +1178,7 @@ html.platform-mode .platform-banner .icon {
   font-weight: 700;
 }
 .org-option-text small {
-  color: #515154;
+  color: var(--muted);
   font-size: .8rem;
 }
 .org-option>.icon {
@@ -1188,7 +1188,7 @@ html.platform-mode .platform-banner .icon {
 }
 .org-menu-empty {
   margin: 6px 10px;
-  color: #515154;
+  color: var(--muted);
   font-size: .88rem;
 }
 .org-menu-more {
@@ -1197,14 +1197,14 @@ html.platform-mode .platform-banner .icon {
   gap: 10px;
   margin-top: 4px;
   padding: 10px;
-  border-top: 1px solid #ededed;
+  border-top: 1px solid var(--line);
   border-radius: 0 0 10px 10px;
-  color: #1c1c1e;
+  color: var(--ink);
   font-weight: 600;
   text-decoration: none;
 }
 .org-menu-more:hover {
-  background: #f3f3f3;
+  background: var(--soft);
   text-decoration: none;
 }
 .org-menu-more .icon {
@@ -1228,4 +1228,4 @@ html.platform-mode .platform-banner .icon {
 /* Each organization in the menu keeps its own colour (theme.css paints every avatar in the sidebar card alike). */
 .sidebar .org-switch .org-menu .avatar { background: var(--info-soft); color: var(--link); }
 .sidebar .org-switch .org-menu .avatar.a1 { background: var(--green-soft); color: var(--green); }
-.sidebar .org-switch .org-menu .avatar.a2 { background: #f8ecdf; color: #925c30; }
+.sidebar .org-switch .org-menu .avatar.a2 { background: var(--amber-soft); color: var(--amber); }

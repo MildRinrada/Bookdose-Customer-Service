@@ -10,17 +10,17 @@
   overflow: hidden;
   position: relative;
   min-height: 106px;
-  background: #f2f2f2;
+  background: var(--soft);
   border: 1px solid #e2e2e2;
 }
 .hero-strip h2 {
   font-size: 1.0625rem;
   margin-bottom: 5px;
-  color: #2a2a2a;
+  color: var(--ink);
 }
 .hero-strip p {
   font-size: 1rem;
-  color: #494949;
+  color: var(--muted);
   margin: 0;
 }
 .hero-art {
@@ -50,7 +50,7 @@
 }
 .sla-item {
   padding: 14px 0;
-  border-bottom: 1px solid #f4f4f4;
+  border-bottom: 1px solid var(--line);
 }
 .sla-item:last-child {
   border-bottom: 0;
@@ -135,7 +135,7 @@
 }
 .chart-col b {
   font-size: 1rem;
-  color: #484848;
+  color: var(--muted);
   font-weight: 500;
 }
 .chart-legend {
@@ -184,7 +184,7 @@
 }
 .hero-strip p {
   margin: 4px 0 0;
-  color: #565656;
+  color: var(--muted);
 }
 .hero-art {
   display: none;
@@ -203,10 +203,10 @@
 .dashboard-summary {
   font-size: 1.0625rem;
   font-weight: 500;
-  color: #565656;
+  color: var(--muted);
 }
 .dashboard-summary strong {
-  color: #343434;
+  color: var(--ink);
   font-weight: 700;
 }
 .dashboard-table table {
@@ -253,7 +253,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: 0 8px 28px #26354a26;
 }
 .dashboard-quick-menu .row-actions {
@@ -301,7 +301,7 @@
   border-left-color: #969696;
 }
 .action-needed .sla-item.danger .time {
-  color: #a31525;
+  color: var(--red);
   font-weight: 600;
 }
 .action-needed .sla-item.warn .time {
@@ -309,7 +309,7 @@
   font-weight: 600;
 }
 .action-needed .sla-item.info .time {
-  color: #545454;
+  color: var(--muted);
 }
 @media (max-width:1180px) {
   .dashboard-table table {
@@ -329,7 +329,7 @@
   width: 1.75rem;
   height: 110px;
   flex-shrink: 0;
-  color: #565656;
+  color: var(--muted);
   text-align: right;
 }
 .chart-y span {
@@ -387,7 +387,7 @@
   background: #434343;
 }
 .case-chart .chart-col small {
-  color: #565656;
+  color: var(--muted);
 }
 .case-chart .chart-col::after {
   content: attr(data-tip);
@@ -399,7 +399,7 @@
   z-index: 3;
   padding: 4px 10px;
   border-radius: 6px;
-  background: #2a2a2a;
+  background: var(--invert);
   color: #fff;
   font-size: 1rem;
   white-space: nowrap;

@@ -50,6 +50,12 @@
   height: 100%;
   overflow: auto;
 }
+/* The edge of a card on the board is a real line in the theme's own colour. The faint ring the cards draw with
+   elsewhere (refresh.css) is 5% black: on a dark paper it is nothing, and while the board is being arranged, with
+   the card dimmed against the squares, it vanished on the light one too - which read as the card losing its edge. */
+.widget-body>.card,.widget-body>.board-card {
+  border: 1px solid var(--line);
+}
 /* Where the card being carried or pulled would land; red where something is already there. */
 .board-ghost {
   grid-column: calc(var(--x,0) + 1) / span var(--w,3);
@@ -107,30 +113,110 @@
   background-position: 6px 14px;
   pointer-events: none;
 }
-.widget-board.arranging .widget-body {
+/* While arranging, the bar sits over the top of the card and the card is pushed down under it by the same amount,
+   clipped at the foot: the card keeps the height it has when the page is read, so what is measured and what is
+   stored never include the bar. */
+.widget-board.arranging .widget>.widget-body {
   pointer-events: none;
-  opacity: .72;
+  opacity: .8;
+}
+/* Room above the first row for its bars. */
+.widget-board.arranging {
+  margin-top: 26px;
 }
 .widget-board.arranging .widget {
   border-radius: 18px;
   outline: 1px dashed var(--control-line);
   outline-offset: 3px;
-  background: var(--paper);
 }
+/* A card in the hand: drawn at the pixels under the pointer, lifted above the board, out of the grid. The ghost on
+   the squares says where it will settle when it is let go, and the settling is the only step there is. */
 .widget.carried {
   opacity: .5;
 }
+.widget.carried.free {
+  position: absolute;
+  z-index: 7;
+  grid-column: auto;
+  grid-row: auto;
+  left: var(--fx,0px);
+  top: var(--fy,0px);
+  width: var(--fw,auto);
+  height: var(--fh,auto);
+  opacity: .95;
+  box-shadow: var(--pop);
+  transition: none;
+}
+.widget.carried.free>.widget-body {
+  overflow: hidden;
+}
+.widget.carried.free>.widget-body>* {
+  height: 100%;
+  overflow: hidden;
+}
+/* A card with nothing to draw: kept in the page, out of the grid and out of sight, so it can be measured again and
+   take its place the moment it has something - a summary that arrives, a role that changes - without a blank
+   rectangle standing in for it meanwhile. */
+.widget.empty {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  visibility: hidden;
+  pointer-events: none;
+  grid-column: auto;
+  grid-row: auto;
+}
+/* A selected card, and the box being drawn over the board to select several. */
+.widget-board.arranging .widget.selected {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.board-marquee {
+  position: absolute;
+  z-index: 5;
+  left: var(--left,0px);
+  top: var(--top,0px);
+  width: var(--width,0px);
+  height: var(--height,0px);
+  border: 1px dashed var(--focus);
+  border-radius: 6px;
+  background: #4d8cad1a;
+  pointer-events: none;
+}
+.widget-board.arranging {
+  touch-action: none;
+}
+/* The bar a card is carried by sits in the gap above it - the gap is 22px and so is the bar - so while the page is
+   being arranged every card is still drawn whole, at the height it is read at, with nothing covered or cut off. */
 .widget-bar {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  right: 0;
+  z-index: 4;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  padding: 7px 10px;
-  border-radius: 12px 12px 0 0;
+  height: 22px;
+  padding: 0 4px 0 2px;
+  border-radius: 8px 8px 0 0;
   background: var(--info-soft);
-  font-size: .85rem;
+  font-size: .78rem;
+  line-height: 1;
+  white-space: nowrap;
   cursor: grab;
   touch-action: none;
+}
+.widget-bar .btn.sm {
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: .72rem;
+}
+.widget-bar .btn.sm .icon {
+  width: 12px;
+  height: 12px;
 }
 .widget.carried .widget-bar {
   cursor: grabbing;
@@ -146,7 +232,7 @@
 .widget-grip {
   display: grid;
   place-items: center;
-  padding: 2px;
+  padding: 0 2px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -259,18 +345,68 @@
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.put-away {
-  margin-top: 22px;
-  padding: 16px 20px;
+/* The board's right-click menu, at the pointer. */
+.board-menu {
+  position: fixed;
+  z-index: 60;
+  left: var(--x,0px);
+  top: var(--y,0px);
+  display: grid;
+  gap: 2px;
+  min-width: 250px;
+  max-width: min(340px,calc(100vw - 16px));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--pop);
+  animation: note-pop .12s ease-out;
 }
-.put-away h2 {
-  margin: 0 0 10px;
-  font-size: .95rem;
-}
-.put-away-list {
+.board-menu-item,.board-menu-title {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+.board-menu-item {
+  cursor: pointer;
+}
+.board-menu-item:hover,.board-menu-item:focus-visible {
+  background: var(--surface-hover);
+  outline: none;
+}
+.board-menu-item .icon,.board-menu-title .icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+.board-menu-group {
+  display: grid;
+  gap: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.board-menu-title {
+  padding-bottom: 2px;
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 700;
+}
+.board-menu-item.is-child {
+  padding-left: 38px;
+}
+.board-menu-empty {
+  padding: 0 10px 8px 38px;
+}
+.arrange-layer {
+  color: var(--muted);
 }
 
 /* SLA Watch: a ticking clock on the left of each case, red once late, amber in the last two hours. */
@@ -288,7 +424,7 @@
   gap: 12px;
   padding: 10px;
   border-radius: 14px;
-  background: #f7f7f9;
+  background: var(--soft);
 }
 .sla-timer {
   display: grid;
@@ -297,7 +433,7 @@
   min-width: 86px;
   padding: 6px 8px;
   border-radius: 10px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -305,7 +441,7 @@
   text-align: center;
 }
 .sla-timer small {
-  color: #c7c7cc;
+  color: var(--muted);
   font-size: .72rem;
   font-weight: 600;
 }
@@ -317,7 +453,7 @@
 }
 .sla-watch-item.warn .sla-timer {
   background: #f5b942;
-  color: #1c1c1e;
+  color: var(--ink);
 }
 .sla-watch-item.warn .sla-timer small {
   color: #5c4204;
@@ -325,8 +461,8 @@
 .sla-timer.info {
   min-width: 86px;
   min-height: 44px;
-  background: #e9e9e9;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
 }
 .sla-timer.info .icon {
   width: 18px;
@@ -349,7 +485,7 @@
   font-size: .85rem;
 }
 .sla-watch-item.danger .sla-watch-reason {
-  color: #c4262e;
+  color: var(--red);
 }
 .sla-watch .card-body>.small {
   display: inline-block;
@@ -368,7 +504,7 @@
   padding: 9px 10px;
   border: 0;
   border-radius: 12px;
-  background: #f4f4f6;
+  background: var(--soft);
   color: var(--ink);
   font: inherit;
   text-align: left;
@@ -376,17 +512,17 @@
   transition: background .15s;
 }
 .quick-reply-list button:hover {
-  background: #ececec;
+  background: var(--soft);
 }
 .quick-reply-list button.copied {
-  background: #e3f4ea;
+  background: var(--green-soft);
 }
 .quick-reply-key {
   flex-shrink: 0;
   max-width: 40%;
   padding: 1px 8px;
   border-radius: 999px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font-size: .82rem;
   font-weight: 700;
@@ -397,7 +533,7 @@
 .quick-reply-text {
   flex: 1;
   min-width: 0;
-  color: #3a3a3c;
+  color: var(--ink);
   font-size: .92rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -405,12 +541,12 @@
 }
 .quick-reply-state {
   flex-shrink: 0;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .82rem;
   font-weight: 600;
 }
 .quick-reply-list button.copied .quick-reply-state {
-  color: #1f7a4d;
+  color: var(--green);
 }
 .quick-reply-state .icon {
   width: 16px;
@@ -461,14 +597,14 @@
   color: #a1a1a6;
 }
 .board-empty strong {
-  color: #3a3a3c;
+  color: var(--ink);
 }
 .board-empty span {
   max-width: 260px;
   font-size: .88rem;
 }
 .board-card .card-header>.icon {
-  color: #6e6e73;
+  color: var(--muted);
 }
 .board-form {
   display: grid;
@@ -478,17 +614,17 @@
 .board-form textarea,.todo-form input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fafafb;
+  background: var(--paper);
   color: var(--ink);
   font: inherit;
   resize: vertical;
 }
 .board-form textarea:focus,.todo-form input:focus {
-  border-color: #1c1c1e;
+  border-color: var(--invert);
   outline: 2px solid #1c1c1e26;
-  background: #fff;
+  background: var(--paper);
 }
 .board-form .btn {
   justify-self: end;
@@ -504,10 +640,10 @@
   border-radius: 12px;
 }
 .handover-list li:hover {
-  background: #f6f6f8;
+  background: var(--soft);
 }
 .handover-list li.mine {
-  background: #f4f4f6;
+  background: var(--soft);
 }
 .handover-list .avatar {
   flex-shrink: 0;
@@ -527,14 +663,14 @@
 }
 .handover-body p {
   margin: 2px 0 0;
-  color: #3a3a3c;
+  color: var(--ink);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 .board-case {
   padding: 0 6px;
   border-radius: 6px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font-size: .88em;
   font-weight: 700;
@@ -583,7 +719,7 @@
   border-radius: 10px;
 }
 .my-todo-list li:hover {
-  background: #f6f6f8;
+  background: var(--soft);
 }
 .my-todo-list label {
   display: flex;
@@ -614,8 +750,8 @@
   flex-shrink: 0;
   padding: 1px 8px;
   border-radius: 999px;
-  background: #ededed;
-  color: #3a3a3c;
+  background: var(--soft);
+  color: var(--ink);
   font-size: .82rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -625,12 +761,12 @@
   height: 13px;
 }
 .my-todo-list li.soon .todo-time {
-  background: #fdf0d5;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .my-todo-list li.late .todo-time {
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
 }
 @media (max-width:560px) {
   .todo-form {

@@ -17,7 +17,7 @@
 }
 .customer-name {
   font-size: 1rem;
-  color: #373737;
+  color: var(--ink);
   font-weight: 500;
 }
 .customer-company {
@@ -121,7 +121,7 @@
   }
 }
 .muted,.small,.tiny,.ticket-id,.customer-company,.date-label {
-  color: #565656;
+  color: var(--muted);
 }
 .linked-row {
   cursor: pointer;
@@ -135,7 +135,7 @@
   padding-bottom: 16px;
 }
 .ticket-id {
-  color: #434343;
+  color: var(--muted);
 }
 .quick-cell {
   position: relative;
@@ -186,7 +186,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   padding: 6px 34px 6px 11px;
   border: 1px solid var(--control-line);
   border-radius: 12px;
-  background-color: #fff;
+  background-color: var(--paper);
   color: var(--ink);
   font: inherit;
   cursor: pointer;
@@ -233,13 +233,13 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   gap: 8px;
 }
 #ticket-count {
-  color: #575757;
+  color: var(--muted);
 }
 .bulk-bar {
-  background: #f6f6f6;
+  background: var(--soft);
 }
 .bulk-bar strong {
-  color: #343434;
+  color: var(--ink);
   margin-right: 6px;
 }
 /* Full case list: fixed-width status columns, the rest goes to subject and customer. The floor is low enough that a
@@ -283,14 +283,14 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   right: 0;
 }
 .ticket-list thead th:last-child {
-  background-color: #f7f7f9;
+  background-color: var(--soft);
 }
 .ticket-list .quick-cell {
-  background-color: #fff;
+  background-color: var(--paper);
 }
 .ticket-list tbody tr:hover .quick-cell,
 .ticket-list tbody tr:focus-within .quick-cell {
-  background-color: #f6f6f8;
+  background-color: var(--soft);
 }
 .ticket-list .ticket-title {
   max-width: 100%;
@@ -311,7 +311,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #a31525;
+  color: var(--red);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -335,7 +335,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   margin: 16px 0 0;
 }
 .preview-meta dt {
-  color: #565656;
+  color: var(--muted);
   margin-bottom: 4px;
 }
 .preview-meta dd {
@@ -503,7 +503,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   .case-sla-bar>span { transition: none; }
 }
 .back-link {
-  color: #6e6e73;
+  color: var(--muted);
   text-decoration: none;
 }
 .back-link:hover {
@@ -526,7 +526,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
 }
 .case-conversation .thread {
   max-height: 640px;
-  background: #fafafb;
+  background: var(--paper);
 }
 
 /* The side column: one small card per job, headed like the notifications' groups. */
@@ -543,7 +543,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   align-items: center;
   gap: 8px;
   margin: 0 0 12px;
-  color: #6e6e73;
+  color: var(--muted);
   font-size: .85rem;
   font-weight: 700;
   letter-spacing: .04em;
@@ -553,7 +553,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   width: 8px;
   height: 8px;
   border-radius: 2px;
-  background: #1c1c1e;
+  background: var(--invert);
 }
 .detail-sidebar form.info-block .btn.primary {
   width: 100%;
@@ -594,19 +594,19 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   margin-top: 6px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: #f4f4f6;
+  background: var(--soft);
   color: var(--ink);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
 .case-contact-line:hover {
-  background: #ececec;
+  background: var(--soft);
 }
 .case-contact-line .icon {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  color: #6e6e73;
+  color: var(--muted);
 }
 /* พักเคสไว้ก่อน (components/SnoozeCard): the card on the case screen, and the mark a paused case carries in lists.
    The list keeps the row where it is and only turns its words down: a paused case is still a case, and a row that

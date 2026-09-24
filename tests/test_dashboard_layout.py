@@ -103,6 +103,14 @@ class DashboardLayoutTests(unittest.TestCase):
         self.second_organization()
         self.assertEqual(self.org_default(),'')
 
+    def test_a_member_may_choose_the_page_as_it_ships_over_the_organization_default(self):
+        """base 'page' is kept, so a board with nothing laid out can still say: not the organization's, the screen's own."""
+        self.ok(self.admin,PREFS,{'dashboard':{'hidden':[],'box':{},'base':'page'}})
+        self.assertEqual(self.layout_of(self.admin)['base'],'page')
+        self.ok(self.admin,PREFS,{'dashboard':{'hidden':[],'box':{}}})
+        self.assertNotIn('base',self.layout_of(self.admin))
+        self.assertEqual(self.admin.call(PREFS,{'dashboard':{'hidden':[],'box':{},'base':'moon'}})[0],400)
+
 
 # The setUp, the sign-ins and the helpers of the main integration test, without its tests.
 for _name, _member in vars(base.IntegrationTests).items():

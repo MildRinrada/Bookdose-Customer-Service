@@ -260,7 +260,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
           {/* The switch the board below reads: the same key, so it belongs up here with the other actions. It is
               offered only where the organization has the feature (platform console → ฟีเจอร์รายองค์กร). */}
           {work.features?.dashboard_layout !== false && (
-            <button type="button" className={`btn${arranging ? ' primary' : ''}`} aria-pressed={arranging} onClick={() => setArranging(!arranging)}>
+            <button type="button" className="btn primary" aria-pressed={arranging} onClick={() => setArranging(!arranging)}>
               <Icon name="grip" />
               {arranging ? 'เสร็จสิ้น' : 'จัดหน้า'}
             </button>

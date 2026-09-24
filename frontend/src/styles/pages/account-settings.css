@@ -38,7 +38,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -47,12 +47,12 @@
   grid-column: 2;
 }
 .work-status-option:hover {
-  background: #f9f9f9;
+  background: var(--paper);
 }
 .work-status-option.selected {
   border: 2px solid var(--purple);
   padding: 11px 13px;
-  background: #f6f6f6;
+  background: var(--soft);
 }
 .work-status-pill {
   display: inline-flex;
@@ -60,14 +60,14 @@
   gap: 7px;
   padding: 4px 12px;
   border-radius: 999px;
-  background: #f2f2f2;
-  color: #434343;
+  background: var(--soft);
+  color: var(--muted);
   font-weight: 600;
   white-space: nowrap;
 }
-.work-status-pill.status-online { background: #e3f5ec; color: #166344; }
-.work-status-pill.status-break { background: #fdf0d5; color: #7a4507; }
-.work-status-pill.status-busy { background: #fde7dc; color: #9a3412; }
+.work-status-pill.status-online { background: var(--green-soft); color: var(--green); }
+.work-status-pill.status-break { background: var(--amber-soft); color: var(--amber); }
+.work-status-pill.status-busy { background: #fde7dc; color: var(--amber); }
 /* The work status in the top bar: a quiet button of the same height as its neighbours (Aa, the bell) - the status in
    words, its colour in the dot - that opens a menu of the statuses and what each means (features/staff-account/
    StatusSwitch). */
@@ -90,7 +90,7 @@
   cursor: pointer;
 }
 .status-switch:hover,.status-switch[aria-expanded="true"] {
-  background: #f4f4f6;
+  background: var(--soft);
 }
 .status-switch .status-dot {
   width: 9px;
@@ -120,7 +120,7 @@
   padding: 8px;
   border: 1px solid #e7e7e7;
   border-radius: 16px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: 0 18px 40px #0000001f, 0 2px 6px #00000014;
 }
 .status-menu[hidden] {
@@ -128,7 +128,7 @@
 }
 .status-menu-title {
   margin: 4px 10px 6px;
-  color: #515154;
+  color: var(--muted);
   font-size: .78rem;
   font-weight: 800;
   letter-spacing: .03em;
@@ -142,17 +142,17 @@
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #1c1c1e;
+  color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 .status-option:hover,.status-option:focus-visible {
-  background: #f3f3f3;
+  background: var(--soft);
   outline: none;
 }
 .status-option[aria-checked="true"] {
-  background: #f3f3f3;
+  background: var(--soft);
 }
 .status-option .status-dot {
   flex-shrink: 0;
@@ -166,7 +166,7 @@
   min-width: 0;
 }
 .status-option-text small {
-  color: #515154;
+  color: var(--muted);
   font-size: .82rem;
   line-height: 1.4;
 }
@@ -182,8 +182,8 @@
   margin: 4px 2px 0;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #fff4d6;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
   font-size: .86rem;
 }
 .status-menu-note .icon {
@@ -198,14 +198,14 @@
   gap: 10px;
   margin-top: 4px;
   padding: 10px 10px;
-  border-top: 1px solid #ededed;
+  border-top: 1px solid var(--line);
   border-radius: 0 0 10px 10px;
-  color: #1c1c1e;
+  color: var(--ink);
   font-weight: 600;
   text-decoration: none;
 }
 .status-menu-more:hover {
-  background: #f3f3f3;
+  background: var(--soft);
 }
 .status-menu-more .icon {
   width: 16px;
@@ -249,7 +249,7 @@ html.platform-mode .status-switch {
 }
 .day-check input:checked+span {
   border-color: var(--purple);
-  background: #f4f4f4;
+  background: var(--soft);
   color: #353d40;
   font-weight: 700;
 }
@@ -307,7 +307,7 @@ html.platform-mode .status-switch {
   max-width: 460px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: #f5f5f5;
+  background: var(--soft);
 }
 .reply-preview-bubble p {
   margin: 4px 0 0;
@@ -340,14 +340,14 @@ html.platform-mode .status-switch {
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   color: inherit;
   text-align: left;
   cursor: pointer;
 }
 .quick-reply:hover,.quick-reply:focus-visible {
   border-color: var(--purple);
-  background: #f9f9f9;
+  background: var(--paper);
 }
 .quick-replies-note {
   margin: 0;
@@ -371,7 +371,7 @@ html.platform-mode .status-switch {
   scrollbar-width: thin;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--pop, 0 24px 60px -12px #11111140);
 }
 .snippet-option {

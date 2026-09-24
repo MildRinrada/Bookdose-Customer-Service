@@ -23,7 +23,7 @@
   box-shadow: inset 4px 0 #1f9d63, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
 }
 .system-page .stat-card:has(.stat-icon.green) .stat-value {
-  color: #166344;
+  color: var(--green);
 }
 .system-page .stat-card:has(.stat-icon.blue) {
   box-shadow: inset 4px 0 #6a6a6a, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
@@ -33,7 +33,7 @@
   box-shadow: inset 4px 0 #c2410c, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a14;
 }
 .system-page .stat-card.urgent .stat-value {
-  color: #b42318;
+  color: var(--red);
 }
 .system-page .system-worker.starting .system-dot {
   background: #d49a2a;
@@ -46,7 +46,7 @@
 }
 .todo-card .tag-count {
   background: #fde3b0;
-  color: #7a4507;
+  color: var(--amber);
 }
 .todo-clear {
   border-left-color: #1f9d63;
@@ -102,12 +102,12 @@
   color: #9f1b10;
 }
 .level-warning .todo-level {
-  background: #fdf0d5;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .level-info .todo-level {
-  background: #f1f1f1;
-  color: #545454;
+  background: var(--soft);
+  color: var(--muted);
 }
 .todo-more {
   display: flex;
@@ -178,12 +178,12 @@
   font-weight: 700;
 }
 .health-pill.health-ok {
-  background: #e3f5ec;
-  color: #166344;
+  background: var(--green-soft);
+  color: var(--green);
 }
 .health-pill.health-warning {
-  background: #fdf0d5;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .health-pill.health-error {
   background: #fde2dd;
@@ -213,20 +213,20 @@
 }
 .security-tiles dt {
   font-size: .9rem;
-  color: #767676;
+  color: var(--muted);
 }
 .security-tiles dd {
   margin: 4px 0 0;
   font-size: 1.6rem;
   font-weight: 800;
-  color: #166344;
+  color: var(--green);
 }
 .security-tiles div.alert {
   border-color: #f3c4b8;
   background: #fff6f3;
 }
 .security-tiles div.alert dd {
-  color: #b42318;
+  color: var(--red);
 }
 
 /* The announcement form */
@@ -251,13 +251,13 @@
   align-items: center;
   gap: 10px;
   padding: 8px clamp(16px, 3vw, 36px);
-  background: #f1f1f1;
-  color: #434343;
+  background: var(--soft);
+  color: var(--muted);
   font-weight: 600;
 }
 .announcement-bar.warning {
-  background: #fdf0d5;
-  color: #7a4507;
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .announcement-bar .icon {
   width: 18px;

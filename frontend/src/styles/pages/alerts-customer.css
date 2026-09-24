@@ -96,7 +96,7 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fafbfc;
+  background: var(--soft);
 }
 .line-org-head {
   display: flex;
@@ -126,14 +126,14 @@
   padding: 12px 16px;
   border: 1px dashed #b4b4b4;
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
 }
 .line-code {
   font-size: 1.9rem;
   font-weight: 700;
   letter-spacing: .3em;
   font-variant-numeric: tabular-nums;
-  color: #373737;
+  color: var(--ink);
 }
 .line-expiry {
   display: inline-flex;

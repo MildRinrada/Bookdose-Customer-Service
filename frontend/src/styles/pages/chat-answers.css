@@ -45,7 +45,7 @@
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--pop, 0 24px 60px -12px #11111140);
   animation: note-pop .16s ease-out;
 }
@@ -108,7 +108,7 @@
 .qa-suggest li {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   overflow: hidden;
 }
 .qa-suggest-row {
@@ -180,7 +180,7 @@
   flex-direction: column;
   min-height: 0;
   border-top: 1px solid var(--line);
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .qa-panel-head {
   display: flex;
@@ -189,7 +189,7 @@
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--paper);
 }
 .qa-panel-head .grow {
   display: grid;
@@ -208,8 +208,8 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #f0f0f0;
-  color: #434343;
+  background: var(--soft);
+  color: var(--muted);
 }
 .qa-panel-body {
   flex: 1;
@@ -230,7 +230,7 @@
   gap: 8px;
   padding: 10px 16px;
   border-top: 1px solid var(--line);
-  background: #fff;
+  background: var(--paper);
 }
 
 /* Dragging a row over the conversation: the messages go pale behind a dashed frame, so the place it will land is
@@ -260,7 +260,7 @@
   max-width: calc(100% - 32px);
   padding: 12px 18px;
   border-radius: 999px;
-  background: #1c1c1e;
+  background: var(--invert);
   color: #fff;
   font-weight: 600;
   pointer-events: none;
@@ -282,7 +282,7 @@
   overflow-y: auto;
   scrollbar-width: thin;
   border-left: 1px solid var(--line);
-  background: #fcfcfc;
+  background: var(--paper);
 }
 @media (min-width: 1520px) {
   .inbox-layout.customer-chats.has-aside {

@@ -11,7 +11,7 @@
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -21,13 +21,13 @@
   align-items: center;
   gap: 14px;
   padding: 15px 18px;
-  border-bottom: 1px solid #f4f4f4;
+  border-bottom: 1px solid var(--line);
 }
 .trash-item:last-child {
   border-bottom: 0;
 }
 .trash-item:hover {
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .trash-icon {
   display: grid;
@@ -35,20 +35,20 @@
   width: 42px;
   height: 42px;
   border-radius: 11px;
-  background: #f2f2f2;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
 }
 .trash-ticket .trash-icon {
-  background: #eeeeee;
-  color: #585858;
+  background: var(--soft);
+  color: var(--muted);
 }
 .trash-contact .trash-icon {
   background: #e9f3ec;
   color: #1d6b45;
 }
 .trash-article .trash-icon {
-  background: #f2f2f2;
-  color: #474747;
+  background: var(--soft);
+  color: var(--muted);
 }
 .trash-body {
   display: flex;
@@ -69,8 +69,8 @@
   gap: 6px;
   padding: 5px 12px;
   border-radius: 20px;
-  background: #f2f2f2;
-  color: #575757;
+  background: var(--soft);
+  color: var(--muted);
   white-space: nowrap;
 }
 .trash-left .icon {
@@ -78,8 +78,8 @@
   height: 16px;
 }
 .trash-left.soon {
-  background: #fde7ea;
-  color: #a3182b;
+  background: var(--red-soft);
+  color: var(--red);
 }
 .trash-actions {
   display: flex;

@@ -22,7 +22,7 @@
   border: 1px solid var(--line);
   border-left-width: 5px;
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
 }
 .status-hero h1 {
   margin: 0 0 6px;
@@ -41,18 +41,18 @@
 .status-hero.state-ok { border-left-color: #4c8a63; }
 .status-hero.state-ok .icon { color: #4c8a63; }
 .status-hero.state-partial,.status-hero.state-unknown { border-left-color: #b8860b; }
-.status-hero.state-partial .icon,.status-hero.state-unknown .icon { color: #b8860b; }
+.status-hero.state-partial .icon,.status-hero.state-unknown .icon { color: var(--amber); }
 .status-hero.state-down { border-left-color: #a31525; }
-.status-hero.state-down .icon { color: #a31525; }
+.status-hero.state-down .icon { color: var(--red); }
 .status-notice {
   padding: 16px 18px;
   border: 1px solid #e3d5a8;
   border-radius: 12px;
-  background: #fdf8e8;
+  background: var(--amber-soft);
 }
 .status-notice.state-down {
   border-color: #eebfc6;
-  background: #fdf0f2;
+  background: var(--red-soft);
 }
 .status-notice p {
   margin: 6px 0 0;
@@ -72,7 +72,7 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
 }
 .status-item .grow {
   display: flex;
@@ -85,24 +85,24 @@
   flex-shrink: 0;
   color: #4c8a63;
 }
-.status-item.state-partial .icon,.status-item.state-unknown .icon { color: #b8860b; }
-.status-item.state-down .icon { color: #a31525; }
+.status-item.state-partial .icon,.status-item.state-unknown .icon { color: var(--amber); }
+.status-item.state-down .icon { color: var(--red); }
 .status-tag {
   flex-shrink: 0;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #f2f2ef;
-  color: #4a4a4a;
+  background: var(--soft);
+  color: var(--muted);
   font-size: 1rem;
   white-space: nowrap;
 }
-.status-item.state-partial .status-tag,.status-item.state-unknown .status-tag { background: #fdf8e8; color: #7a5c06; }
-.status-item.state-down .status-tag { background: #fdf0f2; color: #a31525; }
+.status-item.state-partial .status-tag,.status-item.state-unknown .status-tag { background: var(--amber-soft); color: #7a5c06; }
+.status-item.state-down .status-tag { background: var(--red-soft); color: var(--red); }
 .status-help {
   padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .status-help h2 {
   margin: 0 0 10px;
@@ -119,4 +119,4 @@
   text-align: center;
 }
 .status-item.state-starting .icon { color: #6b6f72; }
-.status-item.state-starting .status-tag { background: #f2f2ef; color: #4a4a4a; }
+.status-item.state-starting .status-tag { background: var(--soft); color: var(--muted); }

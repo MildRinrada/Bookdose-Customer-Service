@@ -68,7 +68,7 @@
   background: #fdf7f8;
 }
 .org-suspended .org-text strong {
-  color: #6b6b78;
+  color: var(--muted);
 }
 .org-suspend:hover {
   border-color: #c5606d;
@@ -257,7 +257,7 @@
   border: 1px solid var(--line);
   border-left: 4px solid #969696;
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
 }
 .audience-item strong {
   display: flex;
@@ -274,29 +274,29 @@
   border-left-color: #3f9a6c;
 }
 .badge.audience-badge.audience-platform {
-  background: #ececec;
-  color: #333333;
+  background: var(--soft);
+  color: var(--ink);
 }
 .badge.audience-badge.audience-staff {
-  background: #f2f2f2;
-  color: #3e3e3e;
+  background: var(--soft);
+  color: var(--muted);
 }
 .badge.audience-badge.audience-customer {
-  background: #e3f4ea;
-  color: #1a6340;
+  background: var(--green-soft);
+  color: var(--green);
 }
 /* Where a global article stands: a draft and waiting changes are what the eye must not miss. */
 .badge.article-state-draft {
   background: #fff4dc;
-  color: #7a4b00;
+  color: var(--amber);
 }
 .badge.article-state-changed {
   background: #fde8e2;
-  color: #9a3412;
+  color: var(--amber);
 }
 .badge.article-state-published {
-  background: #e3f4ea;
-  color: #1a6340;
+  background: var(--green-soft);
+  color: var(--green);
 }
 .article-state-note {
   margin: 12px 0;
@@ -348,12 +348,12 @@
   padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .role-note h2 {
   margin: 0 0 14px;
   font-size: 1rem;
-  color: #4a4a4a;
+  color: var(--muted);
 }
 .role-note-split {
   display: grid;
@@ -415,7 +415,7 @@
   text-align: right;
 }
 .btn.org-suspend {
-  color: #b42318;
+  color: var(--red);
   border-color: #f1b8b0;
 }
 .btn.org-suspend:hover {
@@ -428,7 +428,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  color: #7a4b00;
+  color: var(--amber);
 }
 .org-support-until {
   display: block;
@@ -468,7 +468,7 @@
   height: 14px;
 }
 .org-admin-missing {
-  color: #9a3412;
+  color: var(--amber);
   font-weight: 600;
 }
 .org-admins .btn {
@@ -594,7 +594,7 @@
 }
 .quota-cell:hover,.quota-cell:focus-visible {
   border-color: var(--line);
-  background: #fafafa;
+  background: var(--paper);
 }
 .quota-figures {
   white-space: nowrap;
@@ -604,7 +604,7 @@
   display: block;
   height: 5px;
   border-radius: 3px;
-  background: #ececec;
+  background: var(--soft);
   overflow: hidden;
 }
 .quota-bar::before {
@@ -656,7 +656,7 @@
   color: var(--muted);
 }
 .feature-off {
-  color: #b8860b;
+  color: var(--amber);
   font-weight: 600;
 }
 
@@ -758,7 +758,7 @@
 .status-live .icon {
   flex-shrink: 0;
   margin-top: 2px;
-  color: #b8860b;
+  color: var(--amber);
 }
 .status-live .grow {
   flex: 1;
@@ -799,16 +799,16 @@
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: #f2f2ef;
-  color: #4a4a4a;
+  background: var(--soft);
+  color: var(--muted);
   white-space: nowrap;
 }
 .health-chip strong {
   font-size: 1.15rem;
 }
 .health-chip.tone-ok { background: #eaf3ed; color: #2f6b47; }
-.health-chip.tone-watch { background: #fdf8e8; color: #7a5c06; }
-.health-chip.tone-risk { background: #fdf0f2; color: #a31525; }
+.health-chip.tone-watch { background: var(--amber-soft); color: #7a5c06; }
+.health-chip.tone-risk { background: var(--red-soft); color: var(--red); }
 /* Each signal: the number, and under it the count it came from. */
 .health-cell {
   line-height: 1.35;
@@ -823,7 +823,7 @@
 }
 .health-cell.tone-ok strong { color: #3f7a55; }
 .health-cell.tone-watch strong { color: #8a6508; }
-.health-cell.tone-risk strong { color: #a31525; }
+.health-cell.tone-risk strong { color: var(--red); }
 .health-cell.tone-none strong { color: #9a9a95; }
 @media (max-width: 1100px) {
   .health-table .col-seen,.health-table th:nth-child(7),.health-table td:nth-child(7) {

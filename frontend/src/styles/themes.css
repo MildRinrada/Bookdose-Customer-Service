@@ -1,0 +1,157 @@
+/* Reading themes: ขาว (as the app has always looked), ครีม, ดาร์ก and ดำ.
+
+   A theme is only a set of colours. Every layout, size and spacing rule is untouched, so a theme can never move
+   anything on a page - it repaints it. The choice lives on html[data-theme] and the layout's first script applies it
+   before anything is drawn, so a person who reads in the dark never gets a white flash on the way in.
+
+   What a theme redefines is the neutral surface and the ink on it (base.css :root). The coloured cues - green for
+   done, amber for waiting, red for late - keep their meaning in every theme; in the dark ones their soft fills are
+   darkened and their text lightened, because the light-theme pastel behind pale text is unreadable.
+
+   Anything still painted with a colour written into a rule rather than through a token stays as it is, which is why
+   the sweep that moved the common neutrals onto tokens matters more than this file. */
+
+/* ครีม: warm paper, brown-black ink. The amber cue is pushed away from the paper so it still reads as a warning. */
+html[data-theme='cream'] {
+  --bg: #f1e7d2;
+  --paper: #faf4e6;
+  --soft: #eadfc5;
+  --ink: #3b3326;
+  --muted: #675a44;
+  --line: #d6c7a6;
+  --field: #fbf6ea;
+  --accent: #4a3826;
+  --accent-hover: #5e4a34;
+  --link: #6b4a2b;
+  --info-soft: #ece4d1;
+  --surface-hover: #ebe1cb;
+  --control-line: #9b8e75;
+  --invert: #5a4632;
+  --amber: #7a4b00;
+  --green-soft: #e2ecd9;
+  --amber-soft: #f6e6c4;
+  --red-soft: #f6e0d9;
+  --shadow: 0 3px 14px #3a2f1c10;
+}
+
+/* Cream is brown all the way through: the sidebar's own greys (theme.css paints them as charcoal) and the
+   white active item are warmed to match the paper, and the switch track follows the soft fill. */
+html[data-theme='cream'] .sidebar .nav-item .nav-count,
+html[data-theme='cream'] .sidebar .workspace-select .avatar,html[data-theme='cream'] .sidebar .profile .avatar { background: #7a6248; }
+html[data-theme='cream'] .sidebar .workspace-select { background: #5a4632; border-color: #8a7258; }
+html[data-theme='cream'] .sidebar .nav-item:hover,html[data-theme='cream'] .sidebar .icon-btn:hover { background: #5e4a34; }
+html[data-theme='cream'] .sidebar .nav-item.active { background: var(--paper); color: var(--ink); }
+html[data-theme='cream'] .sidebar .help-card { background: #55412e; border-color: #8a7258; color: #f3e9d8; }
+html[data-theme='cream'] .sidebar .nav-help,html[data-theme='cream'] .sidebar .profile,html[data-theme='cream'] .sidebar-bottom { border-color: #6e5940; }
+html[data-theme='cream'] .sidebar { border-right-color: #6e5940; }
+
+/* ดาร์ก: a warm charcoal, the same family as the sidebar the app already had. */
+html[data-theme='dark'] {
+  /* Three clear steps of grey - sidebar, page, card - so the frame, the paper and what sits on it read as layers,
+     with an edge you can see between them. All one shade and the page turns into a single dark slab. */
+  --bg: #1c1f22;
+  --paper: #2b3034;
+  --soft: #3a4045;
+  --ink: #e9ebea;
+  --muted: #b1b9b7;
+  --line: #4a5156;
+  --field: #33383c;
+  --accent: #121416;
+  --accent-hover: #24282b;
+  --link: #9fd0e8;
+  --info-soft: #363c40;
+  --surface-hover: #3a4045;
+  --control-line: #7b858a;
+  --invert: #5b646a;
+  --green: #86d1ad;
+  --green-soft: #2b3f37;
+  --amber: #e6bf7a;
+  --amber-soft: #433a27;
+  --red: #f2a49c;
+  --red-soft: #472f2c;
+  --focus: #79b6d4;
+  --shadow: 0 3px 14px #00000055;
+}
+
+/* ดำ: for a dark room and for screens that switch a black pixel off. */
+html[data-theme='black'] {
+  --bg: #000;
+  --paper: #17191b;
+  --soft: #262a2d;
+  --ink: #eaebec;
+  --muted: #a7adb0;
+  --line: #3a3f43;
+  --field: #1d2022;
+  --accent: #0a0b0c;
+  --accent-hover: #1c1f21;
+  --link: #9fd0e8;
+  --info-soft: #222528;
+  --surface-hover: #262a2d;
+  --control-line: #6f777b;
+  --invert: #4c5357;
+  --green: #86d1ad;
+  --green-soft: #15291f;
+  --amber: #e6bf7a;
+  --amber-soft: #2e2415;
+  --red: #f2a49c;
+  --red-soft: #301a17;
+  --focus: #79b6d4;
+  --shadow: 0 3px 14px #00000070;
+}
+
+/* On a dark paper the one button that acts is the light thing on the page, not a black block on black: the same
+   inversion a pressed tab gets, so it is the brightest surface in reach and the eye lands on it first. */
+html[data-theme='dark'] .btn.primary,html[data-theme='black'] .btn.primary,
+html[data-theme='dark'] .composer-bottom>.btn.primary,html[data-theme='black'] .composer-bottom>.btn.primary,
+html[data-theme='dark'] .settings-save .btn.primary,html[data-theme='black'] .settings-save .btn.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+html[data-theme='dark'] .btn.primary:hover,html[data-theme='black'] .btn.primary:hover {
+  background: #fff;
+  border-color: #fff;
+}
+html[data-theme='dark'] :is(.filter-pills,.filter-chips,.contact-tags) :is(.filter-pill.active,.filter-pill[aria-pressed=true]),
+html[data-theme='black'] :is(.filter-pills,.filter-chips,.contact-tags) :is(.filter-pill.active,.filter-pill[aria-pressed=true]) {
+  background: var(--invert);
+  color: #fff;
+}
+html[data-theme='dark'] .btn.primary .icon,html[data-theme='black'] .btn.primary .icon { color: inherit; }
+
+/* On a dark page a picture at full strength glares; a shade off is enough and keeps the colours honest. */
+html[data-theme='dark'] img,html[data-theme='black'] img {
+  filter: brightness(.94);
+}
+
+/* The four swatches in the Aa panel: the letter T on that theme's own paper, as an e-reader shows them. */
+.theme-choices {
+  display: flex;
+  gap: 14px;
+  padding: 4px 2px;
+}
+.text-size-controls .theme-choices .theme-chip {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid #0000002e;
+  border-radius: 50%;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.text-size-controls .theme-choices .theme-chip:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+.text-size-controls .theme-choices .theme-chip[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--focus);
+}
+.text-size-controls .theme-choices .theme-chip.is-light { background: #fff; color: #1c1c1e; }
+.text-size-controls .theme-choices .theme-chip.is-cream { background: #f3e6c8; color: #5a4526; border-color: #d9c49a; }
+.text-size-controls .theme-choices .theme-chip.is-dark { background: #2d3134; color: #e7eae9; border-color: #ffffff2e; }
+.text-size-controls .theme-choices .theme-chip.is-black { background: #0b0b0c; color: #f2f2f2; border-color: #ffffff2e; }

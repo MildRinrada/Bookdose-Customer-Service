@@ -23,7 +23,7 @@
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
   text-align: center;
 }
 .org-qr img {
@@ -77,7 +77,7 @@
   padding: 2px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--paper);
   cursor: pointer;
 }
 .join-link-qr img {
@@ -112,7 +112,7 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fcfcfc;
+  background: var(--paper);
 }
 .org-role-head {
   display: flex;

@@ -16,6 +16,9 @@ ROUTES = [
     ('PATCH', f'/api/platform/tenants/{ID}/features', controller.set_tenant_feature, 'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/slug', controller.rename_tenant_slug,     'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/admins', controller.add_admin,          'platform'),
+    # องค์กรที่หลับ (dormant.py): nobody in for 90 days and no new case; emailing their owners.
+    ('GET',   '/api/platform/dormant',        controller.dormant_tenants,            'platform'),
+    ('POST',  f'/api/platform/tenants/{ID}/contact', controller.contact_tenant,      'platform'),
     ('GET',   '/api/platform/system',         controller.system,                     'platform'),
     ('GET',   '/api/platform/health',         controller.health,                     'platform'),
     ('POST',  '/api/platform/checklist/key-saved', controller.key_saved,             'platform'),
@@ -24,7 +27,13 @@ ROUTES = [
     ('GET',   '/api/platform/backups',        controller.backups,                    'platform'),
     ('POST',  '/api/platform/backups',        controller.run_backup,                 'platform'),
     ('POST',  '/api/platform/backups/settings', controller.save_backup_settings,     'platform'),
-    ('GET',   r'/api/platform/backups/(bookdose-(?:auto|manual)-\d{8}-\d{6}\.zip)', controller.download_backup, 'platform'),
+    ('GET',   r'/api/platform/backups/(bookdose-(?:auto|manual|upload|before)-\d{8}-\d{6}\.zip)', controller.download_backup, 'platform'),
+    # Restoring from the console (restore.py): a backup sent in pieces, what restoring it would replace, and the restore.
+    ('POST',  '/api/platform/restore/upload', controller.upload_backup,          'platform'),
+    # The libraries checked against the published vulnerabilities (vulns.py): once a day, or now.
+    ('POST',  '/api/platform/vulns',          controller.scan_vulnerabilities,   'platform'),
+    ('POST',  '/api/platform/restore/preview', controller.restore_preview,       'platform'),
+    ('POST',  '/api/platform/restore',        controller.restore_backup,         'platform'),
     ('GET',   '/api/platform/announcement',   controller.announcement,               'platform'),
     ('POST',  '/api/platform/announcement',   controller.save_announcement,          'platform'),
     ('DELETE','/api/platform/announcement',   controller.clear_announcement,         'platform'),

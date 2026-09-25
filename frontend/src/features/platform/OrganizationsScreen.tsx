@@ -21,9 +21,10 @@ import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
-import { PLATFORM_PREFIX, renameTenantSlug, setTenantFeature, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { DORMANT_PATH, PLATFORM_PREFIX, renameTenantSlug, setTenantFeature, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { DormantList } from './components/DormantList';
 import { SupportAccessForm, SuspendTenantForm, TenantAdminForm, TenantForm } from './components/TenantForms';
-import type { FeatureInfo, SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
+import type { DormantPage, FeatureInfo, SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
 /* Platform console, จัดการองค์กร: every organization on this installation - who is running, how many people are
    inside, the link to its customer side, and suspending or reopening it. Two tabs: the list (search, pills and the
@@ -31,11 +32,11 @@ import type { FeatureInfo, SupportSummary, Tenant, TenantFilters, TenantsPage } 
    → ต้องจัดการ (?admin=<id>) opens that organization's "invite admin" dialog once. The sign-up email and SMS
    settings live on ตั้งค่าระบบ (/platform/settings). Markup: pages/platform/platform*.html. */
 
-type OrgTab = 'list' | 'activity';
+type OrgTab = 'list' | 'dormant' | 'activity';
 
 const BASE = '/platform/organizations';
-const tabHref = (tab: OrgTab) => (tab === 'activity' ? `${BASE}?tab=activity` : BASE);
-const tabOf = (tab?: string): OrgTab => (tab === 'activity' ? 'activity' : 'list');
+const tabHref = (tab: OrgTab) => (tab === 'list' ? BASE : `${BASE}?tab=${tab}`);
+const tabOf = (tab?: string): OrgTab => (tab === 'activity' || tab === 'dormant' ? tab : 'list');
 
 export function OrganizationsScreen({ tab, admin }: { tab?: string; admin?: string }) {
   const tenants = useApi<TenantsPage>(TENANTS_PATH);
@@ -88,8 +89,11 @@ function OrganizationsView({ data, tab, admin }: { data: TenantsPage; tab?: stri
   }, [admin, tab, data.tenants, data.can_invite, openModal, router]);
 
   const audit = data.audit || [];
+  // องค์กรที่หลับ: counted on its tab from the start, so the number says whether there is anything to look at.
+  const dormant = useApi<DormantPage>(DORMANT_PATH);
   const tabs: Array<[OrgTab, string, number]> = [
     ['list', 'รายชื่อองค์กร', data.tenants.length],
+    ['dormant', 'องค์กรที่หลับ', dormant.data?.organizations.length ?? 0],
     ['activity', 'ประวัติกิจกรรม', audit.length],
   ];
 
@@ -126,7 +130,13 @@ function OrganizationsView({ data, tab, admin }: { data: TenantsPage; tab?: stri
         ))}
       </div>
       <div id={`org-panel-${current}`} role="tabpanel" aria-labelledby={`org-tab-${current}`}>
-        {current === 'list' ? <OrganizationsList data={data} /> : <PlatformActivity events={audit} />}
+        {current === 'list' ? (
+          <OrganizationsList data={data} />
+        ) : current === 'dormant' ? (
+          <DormantList page={dormant.data} />
+        ) : (
+          <PlatformActivity events={audit} />
+        )}
       </div>
     </>
   );

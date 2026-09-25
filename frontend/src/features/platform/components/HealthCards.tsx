@@ -11,7 +11,8 @@ import { date, number, relative } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
 import { backupFileUrl, clearAnnouncement, HEALTH_PATH, markKeySaved, PLATFORM_PREFIX, retryChannels, runBackup, saveAnnouncement, saveBackupSettings, setTenantQuota } from '../api';
 import { bytesText } from '../labels';
-import type { Announcement, BackupsView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
+import type { Announcement, BackupFile, BackupsView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
+import { RestoreDialog, uploadBackupFile } from './RestoreDialog';
 
 /* The cards of ภาพรวมระบบ that look across the whole platform (backend platform/health.py and backups.py): what needs
    doing, the backups, every organization's channels, how busy each organization is, security at a glance, and the
@@ -94,12 +95,19 @@ export function TodoCard({ items }: { items: TodoItem[] }) {
 }
 
 /* Backups: the last one, a button for one now, the daily automatic backup, and the files kept. */
+const kindWords: Record<BackupFile['kind'], string> = { auto: 'อัตโนมัติ', manual: 'สั่งเอง', upload: 'อัปโหลด', before: 'ก่อนกู้คืน' };
+
 export function BackupsCard({ view }: { view: BackupsView }) {
   const toast = useToast();
   const run = useRunAction();
   const refresh = useInvalidate();
+  const { openModal, closeModal } = useDialogs();
+  const [sending, setSending] = useState<number | null>(null);
   const s = view.settings;
   const newest = view.files[0];
+  // กู้คืนผ่านหน้าจอ: the file chosen (from the list, or sent from this computer), in the modal.
+  const openRestore = (name: string) =>
+    openModal('กู้คืนข้อมูลจากไฟล์สำรอง', <RestoreDialog name={name} onClose={() => closeModal()} />, { wide: true });
   return (
     <section className="card" id="backups">
       <div className="card-header">
@@ -181,6 +189,35 @@ export function BackupsCard({ view }: { view: BackupsView }) {
           {view.same_disk && ' · อยู่บนดิสก์เดียวกับข้อมูล ถ้าดิสก์เสียจะเสียทั้งคู่ ควรคัดลอกไฟล์ไปเก็บที่อื่นด้วย'}
           {' '}ไฟล์ที่สั่งเองไม่ถูกลบอัตโนมัติ
         </p>
+        <div className="restore-upload">
+          <input
+            id="restore-upload"
+            className="sr-only"
+            type="file"
+            accept=".zip,application/zip"
+            disabled={sending !== null}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (!file) return;
+              void run(async () => {
+                setSending(0);
+                try {
+                  const name = await uploadBackupFile(file, setSending);
+                  await refresh(HEALTH_PATH, PLATFORM_PREFIX);
+                  openRestore(name);
+                } finally {
+                  setSending(null);
+                }
+              });
+            }}
+          />
+          <label htmlFor="restore-upload" className={`btn${sending !== null ? ' disabled' : ''}`}>
+            <Icon name="download" />
+            {sending !== null ? `กำลังส่งไฟล์ ${Math.round(sending * 100)}%` : 'กู้คืนจากไฟล์ในเครื่อง'}
+          </label>
+          <span className="tiny muted">หรือกด กู้คืน ที่ไฟล์ในรายการ · ระบบบอกก่อนว่าจะแทนที่อะไรบ้าง ยังไม่มีอะไรเปลี่ยนจนกว่าจะยืนยัน</span>
+        </div>
         {view.files.length > 0 && (
           <div className="table-scroll">
             <table className="backup-files">
@@ -189,7 +226,7 @@ export function BackupsCard({ view }: { view: BackupsView }) {
                   <th>ไฟล์</th>
                   <th>ขนาด</th>
                   <th>
-                    <span className="sr-only">ดาวน์โหลด</span>
+                    <span className="sr-only">ดาวน์โหลดหรือกู้คืน</span>
                   </th>
                 </tr>
               </thead>
@@ -198,14 +235,18 @@ export function BackupsCard({ view }: { view: BackupsView }) {
                   <tr key={f.name}>
                     <td>
                       <strong>{date(f.created_at, true)}</strong>
-                      <span className="muted"> · {f.kind === 'auto' ? 'อัตโนมัติ' : 'สั่งเอง'}</span>
+                      <span className="muted"> · {kindWords[f.kind] ?? f.kind}</span>
                     </td>
                     <td>{bytesText(f.size)}</td>
-                    <td>
+                    <td className="backup-actions">
                       <a className="btn sm" href={backupFileUrl(f.name)} download={f.name}>
                         <Icon name="file" />
                         ดาวน์โหลด
                       </a>
+                      <button type="button" className="btn sm" disabled={view.running} onClick={() => openRestore(f.name)}>
+                        <Icon name="restore" />
+                        กู้คืน
+                      </button>
                     </td>
                   </tr>
                 ))}

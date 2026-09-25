@@ -53,6 +53,28 @@ class AIAssistantTests(unittest.TestCase):
         self.assertEqual(other.call('/api/ai/jobs/'+job)[0],404)
         self.ok(self.admin,'/api/ai/assistant',{'question':'สรุปงานวันนี้ให้หน่อย'})
 
+    def test_each_member_chooses_the_assistants_personality(self):
+        self.enable(chatbot_enabled=False)
+        # Not chosen yet: it speaks formally.
+        self.ok(self.admin,'/api/ai/assistant',{'question':'สวัสดี'})
+        self.assertEqual(self.run_job(lambda payload:{'answer':'สวัสดีครับ','citations':[]})[0][1]['persona'],{'style':'formal'})
+        for bad in ({'persona':'pirate'},{'persona':'custom','custom':'x'},{'persona':'custom','custom':'ก'*301}):
+            self.assertEqual(self.admin.call('/api/account/preferences',{'assistant':bad})[0],400,bad)
+        character = 'นิสัยแบบจงหลี่ สุภาพ สุขุม ชอบพูดประวัติศาสตร์ ติดต่อ me@example.com'
+        saved = self.ok(self.admin,'/api/account/preferences',{'assistant':{'persona':'custom','custom':character}})
+        self.assertEqual(saved['preferences']['assistant']['persona'],'custom')
+        self.ok(self.admin,'/api/ai/assistant',{'question':'สวัสดี'})
+        persona = self.run_job(lambda payload:{'answer':'สวัสดี สหายเอ๋ย','citations':[]})[0][1]['persona']
+        self.assertEqual(persona['style'],'custom')
+        self.assertIn('จงหลี่',persona['description'])
+        self.assertNotIn('me@example.com',persona['description'])
+        # Another member's assistant keeps its own voice; switching back drops the description.
+        agent,_ = self.create_member()
+        self.ok(agent,'/api/account/preferences',{'assistant':{'persona':'friendly','custom':'ignored'}})
+        self.ok(agent,'/api/ai/assistant',{'question':'สวัสดี'})
+        self.assertEqual(self.run_job(lambda payload:{'answer':'หวัดดี','citations':[]})[0][1]['persona'],{'style':'friendly'})
+        self.assertEqual(self.ok(agent,'/api/account/preferences')['preferences']['assistant'],{'persona':'friendly','custom':''})
+
     def test_assistant_needs_ai_for_staff_and_a_question(self):
         self.assertNotEqual(self.admin.call('/api/ai/assistant',{'question':'สวัสดี'})[0],201)
         self.enable(drafts_enabled=False,chatbot_enabled=False)

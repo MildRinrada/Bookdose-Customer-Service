@@ -49,6 +49,22 @@ export function ConversationSummary({ conversationId, messageCount }: { conversa
       await refresh(path);
     });
 
+  // Nothing summarized yet: one button in the toolbar's row (a failed try says why beside it).
+  if (!s && !working)
+    return (
+      <span className="conv-summary-offer">
+        <button type="button" className="btn sm" onClick={ask}>
+          <Icon name="sparkle" />
+          สรุปด้วย AI
+        </button>
+        {data.error && (
+          <span className="conv-summary-error" title={data.error}>
+            สรุปไม่สำเร็จ
+          </span>
+        )}
+      </span>
+    );
+
   return (
     <section className={`conv-summary${open ? '' : ' closed'}`} aria-label="สรุปบทสนทนาโดย AI">
       <div className="conv-summary-head">

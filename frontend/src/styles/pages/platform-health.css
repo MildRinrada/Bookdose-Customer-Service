@@ -136,6 +136,159 @@
 .backup-files td .muted {
   font-weight: 400;
 }
+.backup-files .backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* กู้คืนผ่านหน้าจอ (RestoreDialog): the file, what it would replace, the name typed out. */
+.restore-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0;
+}
+.restore-upload .btn.disabled {
+  opacity: 0.7;
+  pointer-events: none;
+}
+.restore {
+  display: grid;
+  gap: 14px;
+}
+.restore p,
+.restore ul {
+  margin: 0;
+}
+.restore-file {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.restore-file .icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+.restore-file span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.restore-file strong {
+  display: block;
+}
+.restore-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+.restore-totals>div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.restore-totals strong {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+.restore-totals small {
+  color: var(--muted);
+}
+.restore-orgs {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0;
+  list-style: none;
+}
+.restore-orgs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.restore-org-name {
+  flex: 1;
+  min-width: 140px;
+  overflow-wrap: anywhere;
+}
+.restore-org-name strong {
+  display: block;
+}
+.restore-org-name small,
+.restore-cases {
+  color: var(--muted);
+}
+.restore-change {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--info-soft);
+  color: var(--ink);
+}
+.restore-change.is-remove {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.restore-change.is-add {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.restore-notes {
+  display: grid;
+  gap: 6px;
+  padding-left: 20px;
+}
+.restore-notes li {
+  overflow-wrap: anywhere;
+}
+.restore-warn {
+  color: var(--amber);
+}
+.restore-warn .check {
+  margin-top: 6px;
+  color: var(--ink);
+}
+.restore-confirm {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.restore-confirm code {
+  user-select: all;
+}
+.restore-actions {
+  justify-content: flex-end;
+}
+.restore-done {
+  display: grid;
+  gap: 10px;
+}
+.restore-done p {
+  margin: 0;
+}
+.restore-done-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.restore-done .btn {
+  justify-self: start;
+}
 
 /* Channels and usage across organizations */
 .health-table {
@@ -277,4 +430,161 @@
   .todo-item .btn {
     margin-left: auto;
   }
+}
+
+/* ช่องโหว่ในไลบรารี (VulnsCard): each finding, its level, and the version that fixes it. */
+.vuln-summary {
+  margin-top: 0;
+  font-weight: 600;
+}
+.vuln-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.vuln {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.vuln p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.vuln-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.vuln-version {
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.vuln-level {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--info-soft);
+  color: var(--ink);
+}
+.vuln-level.is-critical,
+.vuln-level.is-high {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.vuln-level.is-medium {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.vuln-tag {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.vuln-meta {
+  color: var(--muted);
+}
+.vuln-meta a {
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: none;
+}
+.vuln-meta strong {
+  color: var(--ink);
+}
+.vuln-dev-toggle {
+  margin-top: 12px;
+}
+
+/* องค์กรที่หลับ (DormantList): each organization asleep, what it holds, and asking its owners or suspending it. */
+.dormant-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 16px 16px;
+  list-style: none;
+}
+.dormant {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.dormant p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.dormant-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.dormant-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dormant-name small {
+  margin-left: 8px;
+  color: var(--muted);
+}
+.dormant-days {
+  font-weight: 700;
+  color: var(--amber);
+}
+.dormant-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+}
+.dormant-facts dt {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.dormant-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+.dormant-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--amber);
+  font-weight: 600;
+}
+.dormant-warn .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+}
+.dormant-admins {
+  color: var(--muted);
+}
+.dormant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dormant-contact {
+  display: grid;
+  gap: 12px;
+}
+.dormant-contact p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.dormant-contact .btn {
+  justify-self: start;
 }

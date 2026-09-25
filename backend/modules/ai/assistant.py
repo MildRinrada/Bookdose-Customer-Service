@@ -26,12 +26,24 @@ def ask_form(body):
     return question.strip(),turns
 
 
+def persona_of(user_id):
+    """How the member chose their assistant to speak (ตั้งค่า in the assistant's panel): {'style'} and, for a character
+    they described, its 'description' (contact details masked like the question)."""
+    from backend.database import db as D
+    from backend.modules.staff_prefs import service as staff_prefs
+    with D.control() as cd:
+        chosen = staff_prefs.prefs_of(cd,user_id)['assistant']
+    if chosen['persona']=='custom' and chosen['custom']:
+        return {'style':'custom','description':insights._mask(chosen['custom'])}
+    return {'style':chosen['persona'] or 'formal'}
+
+
 def request(db, ctx, body):
     """Queue the question; the browser waits for the job like a reply draft (GET /api/ai/jobs/<id>)."""
     question,turns = ask_form(body)
     asked = ' '.join([question,*(t['text'] for t in turns if t['role']=='user')])
     articles = service.retrieve(db,asked,public_only=False)
-    payload = {'asked_by':'owner' if ctx['role']=='admin' else 'agent',
+    payload = {'asked_by':'owner' if ctx['role']=='admin' else 'agent','persona':persona_of(ctx['id']),
                'question':insights._mask(question),
                'history':[{'role':t['role'],'text':insights._mask(t['text'])} for t in turns],
                'articles':[{'id':a['id'],'title':a['title'],'visibility':a['visibility'],'text':a['body']} for a in articles]}

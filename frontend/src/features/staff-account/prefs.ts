@@ -24,7 +24,11 @@ export type StaffPreferences = {
   snippets: Snippet[];
   /** How this member arranged their overview (features/dashboard/layout.ts); empty = as the organization arranged it. */
   dashboard: DashboardLayout;
+  /** The personality of this member's AI assistant ('' until chosen; features/ai/components/PersonaPicker). */
+  assistant: AssistantPersona;
 };
+
+export type AssistantPersona = { persona: '' | 'formal' | 'friendly' | 'custom'; custom: string };
 
 /** GET /api/account/preferences */
 export type PreferencesView = {

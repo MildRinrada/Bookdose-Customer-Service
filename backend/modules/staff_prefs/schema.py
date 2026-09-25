@@ -7,7 +7,7 @@ import re
 
 from backend.modules.staff_prefs.model import (ALIAS_MAX, DASHBOARD_COLUMNS, DASHBOARD_MAX_CARDS, DASHBOARD_MAX_ROWS,
                                                DASHBOARD_MIN_H, DASHBOARD_MIN_W, DEFAULTS, EVENTS, MAX_LEAVE,
-                                               MAX_SNIPPETS, SIGNATURE_MAX, SNIPPET_MAX, STATUSES)
+                                               MAX_SNIPPETS, PERSONA_MAX, PERSONAS, SIGNATURE_MAX, SNIPPET_MAX, STATUSES)
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -101,6 +101,14 @@ def signature(value):
     return {'enabled':enabled,'text':text}
 
 
+def assistant(value):
+    """The AI assistant's personality: one of PERSONAS; 'custom' with the character described in a few words."""
+    require(isinstance(value,dict) and value.get('persona') in PERSONAS,'เลือกบุคลิกของผู้ช่วย AI')
+    custom = _text(value.get('custom',''),PERSONA_MAX,'บุคลิกที่ระบุ')
+    require(value['persona']!='custom' or len(custom)>=3,'บอกบุคลิกที่อยากให้เป็น อย่างน้อย 3 ตัวอักษร')
+    return {'persona':value['persona'],'custom':custom if value['persona']=='custom' else ''}
+
+
 def alias(value):
     value = _text(value,ALIAS_MAX,'ชื่อที่แสดงต่อลูกค้า')
     require(not value or any(c.isalpha() for c in value),'ชื่อที่แสดงต่อลูกค้าต้องมีตัวอักษร')
@@ -177,7 +185,7 @@ def dashboard(value):
 
 
 SECTIONS = {'status':lambda v:status({'status':v}),'hours':hours,'leave':leave,'notify':notify,'signature':signature,
-            'alias':alias,'snippets':snippets,'dashboard':dashboard}
+            'alias':alias,'snippets':snippets,'dashboard':dashboard,'assistant':assistant}
 
 
 def update(current, body):

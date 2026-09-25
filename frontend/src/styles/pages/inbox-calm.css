@@ -185,11 +185,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 6px 20px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 2px 20px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   font-size: .875rem;
+}
+.conv-toolbar .notes-switch {
+  order: 0;
 }
 .conv-toolbar .privacy-tag {
   background: none;

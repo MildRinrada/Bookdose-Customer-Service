@@ -90,7 +90,34 @@ export type SecuritySummary = { failed_sign_ins: number; locked_accounts: number
 
 export type BackupSettings = { enabled: boolean; hour: number; keep: number };
 
-export type BackupFile = { name: string; kind: 'auto' | 'manual'; size: number; created_at: string };
+/** auto / manual: made here; upload: sent from the console to restore; before: taken just before a restore. */
+export type BackupFile = { name: string; kind: 'auto' | 'manual' | 'upload' | 'before'; size: number; created_at: string };
+
+/** POST /api/platform/restore/preview: what restoring the file would replace (backend platform/restore.py). */
+export type RestorePreview = {
+  name: string;
+  /** What the admin types to confirm. */
+  confirm: string;
+  created_at: string | null;
+  size: number;
+  organizations: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    change: 'replace' | 'add' | 'remove';
+    cases_now: number | null;
+    cases_backup: number | null;
+    conversations_now: number | null;
+    conversations_backup: number | null;
+  }>;
+  totals: { replace: number; add: number; remove: number; cases_now: number; cases_backup: number };
+  attachments: number;
+  /** Who can sign in to the platform console afterwards. */
+  platform_admins: string[];
+  secrets: { key_id: string | null; available: boolean; files: number };
+};
+
+export type RestoreResult = { ok: true; safety_backup: string; secrets_restored: boolean; secrets_skipped: boolean };
 
 export type BackupsView = {
   folder: string;
@@ -116,6 +143,28 @@ export type Announcement = {
 
 export type AnnouncementInput = Pick<Announcement, 'text' | 'level' | 'audience' | 'starts_at' | 'ends_at'>;
 
+/** GET /api/platform/dormant: organizations nobody has used for `days` days (backend platform/dormant.py). */
+export type DormantPage = {
+  days: number;
+  mail_ready: boolean;
+  organizations: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    created_at: string;
+    members: number;
+    admins: Array<{ name: string; email: string }>;
+    /** A member of the team last opened the app (null: never). */
+    last_seen: string | null;
+    last_case: string | null;
+    last_customer_message: string | null;
+    open_cases: number;
+    used_bytes: number;
+    asleep_since: string;
+    contacted: { at: string; by: string } | null;
+  }>;
+};
+
 /** GET /api/platform/health */
 export type HealthPage = {
   todo: TodoItem[];
@@ -124,6 +173,29 @@ export type HealthPage = {
   security: SecuritySummary;
   backups: BackupsView;
   announcement: Announcement | null;
+  vulns: VulnsView;
+};
+
+/** A published vulnerability in a library the server runs (backend platform/vulns.py, from OSV.dev). */
+export type VulnFinding = {
+  ecosystem: 'PyPI' | 'npm' | string;
+  name: string;
+  version: string;
+  /** Only used to build and test the web app: never runs on the server (listed, not emailed). */
+  dev: boolean;
+  id: string;
+  cves: string[];
+  summary: string;
+  level: 'critical' | 'high' | 'medium' | 'low' | 'unknown';
+  score: number | null;
+  fixed: string[];
+  url: string;
+};
+
+export type VulnsView = {
+  last: { at: string; ok: boolean; error?: string; python: number; npm: number | null; findings: VulnFinding[] } | null;
+  running: boolean;
+  every_hours: number;
 };
 
 /** A row of GET /api/platform/notifications: a to-do of ภาพรวมระบบ, or the answer to the admin's own support request.

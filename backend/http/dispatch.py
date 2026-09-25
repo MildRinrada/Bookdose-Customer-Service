@@ -46,6 +46,7 @@ from backend.modules.customer_security import routes as customer_security_routes
 from backend.modules.customers import routes as customer_routes
 from backend.modules.guest import routes as guest_routes, service as guest_service
 from backend.modules.incidents import routes as incident_routes
+from backend.modules.pdpa import routes as pdpa_routes
 from backend.modules.invitations import routes as invitation_routes
 from backend.modules.conversations import routes as conversation_routes
 from backend.modules.knowledge import routes as knowledge_routes
@@ -65,7 +66,7 @@ from backend.utils.dates import now
 from backend.utils.routing import find
 from backend.utils.validation import require
 
-ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *portal_routes.ROUTES, *organization_routes.ROUTES,
+ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *pdpa_routes.ROUTES, *portal_routes.ROUTES, *organization_routes.ROUTES,
           *ticket_routes.ROUTES, *conversation_routes.ROUTES, *contact_routes.ROUTES, *knowledge_routes.ROUTES,
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,

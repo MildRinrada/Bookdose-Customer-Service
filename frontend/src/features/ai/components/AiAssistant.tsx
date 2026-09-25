@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/Icon';
+import { usePreferences } from '@/features/staff-account/prefs';
 import { useBoot, useWork } from '@/lib/session';
 import { askAssistant, waitForAiJob } from '../api';
 import type { AiCitation } from '../types';
 import { AiCitations } from './AiCitations';
 import { useWorkspaceAi } from './AiControls';
+import { PersonaPicker, personaLabels } from './PersonaPicker';
 
 /* ผู้ช่วย AI: the floating button at the bottom right of every staff page. A member of the team asks anything about
    their work; the answer comes from the organization's AI (n8n or OpenAI) with the knowledge articles it quotes.
@@ -117,12 +119,25 @@ export function AiAssistant() {
   const ready = Boolean(ai.drafts_enabled && ai.key_configured);
   const key = `bd-assistant:${work.tenant.id}`;
   const [open, setOpen] = useState(false);
+  // Grown to most of the screen, for a long answer; remembered on this browser.
+  const [large, setLarge] = useState(() => {
+    try {
+      return localStorage.getItem('bd-assistant:large') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   // leaving: the first screen fading out; thinking: the dots before the tips (written here) appear.
   const [leaving, setLeaving] = useState(false);
   const [thinking, setThinking] = useState(false);
+  // The assistant's personality, chosen by the member before the first question and changed from the heading.
+  const prefs = usePreferences(open && ready);
+  const persona = prefs.data?.preferences.assistant ?? null;
+  const [choosing, setChoosing] = useState(false);
+  const picking = ready && open && (choosing || (persona !== null && !persona.persona));
   const alive = useRef(true);
   const log = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -251,7 +266,7 @@ export function AiAssistant() {
         <Icon name={open ? 'close' : 'sparkle'} />
       </button>
       {open && (
-        <section id="ai-assistant" className="assistant-panel" role="dialog" aria-modal="false" aria-label="ผู้ช่วย AI">
+        <section id="ai-assistant" className={`assistant-panel${large ? ' large' : ''}`} role="dialog" aria-modal="false" aria-label="ผู้ช่วย AI">
           <header className="assistant-head">
             <span className="assistant-mark" aria-hidden="true">
               <Icon name="sparkle" />
@@ -260,16 +275,46 @@ export function AiAssistant() {
               <strong>ผู้ช่วย AI</strong>
               <span>ตอบจากคลังความรู้ของ {work.tenant.name}</span>
             </div>
+            {ready && persona?.persona && !picking && (
+              <button
+                type="button"
+                className="assistant-persona"
+                title={persona.persona === 'custom' ? persona.custom : 'เปลี่ยนบุคลิกของผู้ช่วย'}
+                onClick={() => setChoosing(true)}
+              >
+                {personaLabels[persona.persona]}
+              </button>
+            )}
             {turns.length > 0 && (
               <button type="button" className="icon-btn" aria-label="เริ่มแชทใหม่" title="เริ่มแชทใหม่" disabled={busy || thinking} onClick={() => setTurns([])}>
                 <Icon name="trash" />
               </button>
             )}
+            <button
+              type="button"
+              className="icon-btn assistant-size"
+              aria-pressed={large}
+              aria-label={large ? 'ย่อหน้าต่าง' : 'ขยายหน้าต่าง'}
+              title={large ? 'ย่อหน้าต่าง' : 'ขยายหน้าต่าง'}
+              onClick={() => {
+                const next = !large;
+                setLarge(next);
+                try {
+                  localStorage.setItem('bd-assistant:large', next ? '1' : '0');
+                } catch {
+                  // Private windows may refuse storage.
+                }
+              }}
+            >
+              <Icon name={large ? 'shrink' : 'expand'} />
+            </button>
             <button type="button" className="icon-btn" aria-label="ปิดผู้ช่วย AI" onClick={() => setOpen(false)}>
               <Icon name="close" />
             </button>
           </header>
-          {welcome ? (
+          {picking ? (
+            <PersonaPicker current={persona} onDone={() => setChoosing(false)} />
+          ) : welcome ? (
             <div className={`assistant-welcome${leaving ? ' leaving' : ''}`}>
               <div className="assistant-hello">
                 <h2>สวัสดี{userName ? ` คุณ${userName}` : ''}</h2>

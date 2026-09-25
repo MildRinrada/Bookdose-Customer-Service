@@ -139,7 +139,6 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         <div className="card-header">
           <div>
             <h2>เคสล่าสุด</h2>
-            <p>ติดตามทุกเรื่องให้ได้รับการดูแลอย่างต่อเนื่อง</p>
           </div>
           <Link className="btn subtle small" href="/tickets">
             ดูทั้งหมด <Icon name="arrow" />
@@ -155,10 +154,6 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         <div id="dashboard-tickets">
           <TicketTable tickets={shownTickets.slice(0, 6)} compact />
         </div>
-        <div className="table-footer">
-          <span>แสดงสูงสุด 6 เคสล่าสุด</span>
-          <Link href="/tickets">ไปที่เคสบริการ →</Link>
-        </div>
       </section>
     ),
     chart: (
@@ -166,7 +161,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         <div className="card-header">
           <div>
             <h2>เคสเข้าใหม่</h2>
-            <p>ย้อนหลัง 7 วัน · แกนตั้ง: จำนวนเคส</p>
+            <p>7 วันย้อนหลัง</p>
           </div>
           <Icon name="chart" />
         </div>
@@ -183,7 +178,6 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
               ))}
             </div>
           </div>
-          <div className="chart-legend">ชี้หรือแตะที่แท่งเพื่อดูจำนวนเคส</div>
         </div>
       </section>
     ),

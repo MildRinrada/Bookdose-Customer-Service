@@ -46,24 +46,37 @@ export const EMPTY_LAYOUT: DashboardLayout = { hidden: [], box: {} };
 
 export type CardDef = { id: string; title: string; note: string; box: Box };
 
-/* The page as it has always been, in squares. A row is 40px with a 22px gap, so h rows come out at 62h-22 pixels:
-   the numbers below are the heights these cards have always drawn at, rounded to the nearest row. */
+/* The page as it ships, in squares. A row is 40px with a 22px gap, so h rows come out at 62h-22 pixels; the heights
+   are guesses that the page corrects by measuring (growToFit), so what matters here is the order and the columns.
+
+   Two columns under the figures. The left, two thirds wide, is the work: the cases, then the week's chart, then the
+   two team boards side by side. The right third is what needs somebody now, most urgent first: cases about to break
+   their SLA, the ones forecast to, the chats waiting, and what was addressed to this member; the quick replies, which
+   nobody needs to see to act, come last. Cards that take no rows (nothing to show) drop out and the rest close up. */
 export const CARDS: CardDef[] = [
   { id: 'setup', title: 'เช็กลิสต์เริ่มต้นใช้งาน', note: 'ขั้นตอนตั้งค่าองค์กรที่ยังไม่ครบ', box: { x: 0, y: 0, w: 12, h: 5 } },
   { id: 'stats', title: 'ตัวเลขสรุป', note: 'เคสที่ดูแล · ของฉัน · ปิดวันนี้ · เกิน SLA', box: { x: 0, y: 5, w: 12, h: 4 } },
   { id: 'today', title: 'วันนี้ของฉัน', note: 'ตอบวันนี้ ปิดวันนี้ เวลาตอบ และ CSAT ของคุณ', box: { x: 0, y: 9, w: 12, h: 3 } },
   { id: 'tickets', title: 'เคสล่าสุด', note: 'ตาราง 6 เคสล่าสุด พร้อมตัวกรองด่วน', box: { x: 0, y: 12, w: 8, h: 15 } },
-  { id: 'waiting', title: 'แชทรอตอบ', note: 'บทสนทนาที่ลูกค้าพิมพ์ล่าสุด เรียงตามเวลาที่รอ', box: { x: 8, y: 12, w: 4, h: 7 } },
-  { id: 'replies', title: 'คำตอบด่วน', note: 'คำตอบสำเร็จรูปที่ใช้บ่อย', box: { x: 8, y: 19, w: 4, h: 4 } },
-  { id: 'me', title: 'ถึงคุณ', note: 'ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ', box: { x: 8, y: 23, w: 4, h: 7 } },
   { id: 'chart', title: 'เคสเข้าใหม่', note: 'กราฟ 7 วันย้อนหลัง', box: { x: 0, y: 27, w: 8, h: 6 } },
-  { id: 'forecast', title: 'คาดว่าจะเกิน SLA', note: 'เคสที่ยังไม่เกิน แต่ตามคิวและความเร็วทีมตอนนี้จะไม่ทัน', box: { x: 8, y: 30, w: 4, h: 8 } },
-  { id: 'sla', title: 'SLA Watch', note: 'เคสที่ต้องดำเนินการทันที พร้อมนาฬิกานับเวลา', box: { x: 8, y: 38, w: 4, h: 9 } },
   { id: 'handover', title: 'ส่งต่อกะ', note: 'บันทึกส่งต่อระหว่างกะของทีม', box: { x: 0, y: 33, w: 4, h: 7 } },
   { id: 'todo', title: 'สิ่งที่ต้องทำ', note: 'รายการงานส่วนตัวของคุณ', box: { x: 4, y: 33, w: 4, h: 7 } },
+  { id: 'sla', title: 'SLA Watch', note: 'เคสที่ต้องดำเนินการทันที พร้อมนาฬิกานับเวลา', box: { x: 8, y: 12, w: 4, h: 9 } },
+  { id: 'forecast', title: 'คาดว่าจะเกิน SLA', note: 'เคสที่ยังไม่เกิน แต่ตามคิวและความเร็วทีมตอนนี้จะไม่ทัน', box: { x: 8, y: 21, w: 4, h: 6 } },
+  { id: 'waiting', title: 'แชทรอตอบ', note: 'บทสนทนาที่ลูกค้าพิมพ์ล่าสุด เรียงตามเวลาที่รอ', box: { x: 8, y: 27, w: 4, h: 7 } },
+  { id: 'me', title: 'ถึงคุณ', note: 'ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ', box: { x: 8, y: 34, w: 4, h: 7 } },
+  { id: 'replies', title: 'คำตอบด่วน', note: 'คำตอบสำเร็จรูปที่ใช้บ่อย', box: { x: 8, y: 41, w: 4, h: 4 } },
   { id: 'insights', title: 'AI และคลังความรู้', note: 'เห็นเฉพาะเจ้าขององค์กร', box: { x: 0, y: 47, w: 12, h: 13 } },
   { id: 'manager', title: 'มุมมองผู้ดูแล', note: 'ภาระงานของทีม ช่องทาง และสถิติรวม', box: { x: 0, y: 60, w: 12, h: 16 } },
 ];
+
+/* What the page ships without. A page that shows everything shows nothing: the cards below are useful to the member
+   who wants them and noise to everyone else, so they wait under เพิ่มการ์ด (right-click) rather than on the page.
+   Only the page as it ships is trimmed this way; a board somebody laid out lists what they hid themselves. */
+export const DEFAULT_HIDDEN = ['today', 'forecast', 'replies', 'handover', 'todo'];
+
+/** Which cards a layout keeps off the page: its own list, or the trimmed page while nothing is laid out. */
+export const hiddenIn = (layout: DashboardLayout) => (isEmptyLayout(layout) ? DEFAULT_HIDDEN : layout.hidden);
 
 const BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 
@@ -142,13 +155,14 @@ export function placeCards(layout: DashboardLayout, available: (id: string) => b
   const found: PlacedCard[] = [];
   const taken: Box[] = [];
   const cards = CARDS.filter((card) => available(card.id));
+  const off = hiddenIn(layout);
   for (const card of cards.filter((card) => layout.box[card.id])) {
     const box = layout.box[card.id] as Box;
-    found.push({ id: card.id, title: card.title, box, hidden: layout.hidden.includes(card.id), sized: true });
-    if (!layout.hidden.includes(card.id)) taken.push(box);
+    found.push({ id: card.id, title: card.title, box, hidden: off.includes(card.id), sized: true });
+    if (!off.includes(card.id)) taken.push(box);
   }
   for (const card of cards.filter((card) => !layout.box[card.id])) {
-    const hidden = layout.hidden.includes(card.id);
+    const hidden = off.includes(card.id);
     // Only when the member has laid the board out themselves: otherwise this is the page as it ships.
     const box = isEmptyLayout(layout) ? card.box : { ...card.box, y: firstFreeRow({ ...card.box, y: bottomOf(taken) }, taken) };
     found.push({ id: card.id, title: card.title, box, hidden, sized: false });
@@ -230,7 +244,8 @@ export function fitBox(box: Box): Box {
 export function materialise(layout: DashboardLayout, cards: PlacedCard[]): DashboardLayout {
   const box: Partial<Record<string, Box>> = { ...layout.box };
   for (const card of cards) box[card.id] = box[card.id] ?? card.box;
-  return { ...layout, box };
+  // Written down with what the trimmed page kept off, so un-hiding one card does not bring back the rest.
+  return { ...layout, hidden: [...hiddenIn(layout)], box };
 }
 
 /* Putting a card where another one already is.

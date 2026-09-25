@@ -91,6 +91,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
             <button
               type="button"
               className="btn sm"
+              title="เปิดเคสจากบทสนทนานี้"
               onClick={() =>
                 run(async () => {
                   const result = await openTicketFromConversation(c.id);
@@ -101,12 +102,13 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
               }
             >
               <Icon name="plus" />
-              เปิดเคส
+              <span className="conv-action-label">เปิดเคส</span>
             </button>
           )}
           <button
             type="button"
             className="btn sm"
+            title={open ? 'ปิดบทสนทนา' : 'เปิดบทสนทนาอีกครั้ง'}
             onClick={() =>
               run(async () => {
                 await setConversationStatus(c.id, nextStatus);
@@ -116,16 +118,17 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
             }
           >
             <Icon name={open ? 'checkCircle' : 'chat'} />
-            {open ? 'ปิดบทสนทนา' : 'เปิดบทสนทนาอีกครั้ง'}
+            <span className="conv-action-label">{open ? 'ปิดบทสนทนา' : 'เปิดบทสนทนาอีกครั้ง'}</span>
           </button>
         </div>
       </div>
+      {/* One row: who may read, the AI summary (a button until there is one, then its own row under), notes only. */}
       <div className="conv-toolbar">
         <PrivacyTag org={work.tenant.name} />
+        <ConversationSummary conversationId={c.id} messageCount={messages.length} />
         <ThreadFilter messages={messages} notesOnly={notesOnly} onChange={setNotesOnly} />
       </div>
       <ContactHeadsUp contactId={contact.id} className="conv-headsup" />
-      <ConversationSummary conversationId={c.id} messageCount={messages.length} />
       {c.line && c.line.source_type !== 'user' && (
         <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม · เรียก AI ด้วย /bookdose หรือเมนชันบอต</div>
       )}

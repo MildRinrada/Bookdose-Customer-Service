@@ -1097,11 +1097,16 @@ input[type=file]::file-selector-button {
   background: var(--soft);
 }
 /* The plain field the form sends: reachable for scripts and tests, invisible to the reader. */
+/* Pinned to the top-left of its box: left at its place in the flow it sat under the editor, and a pane with a
+   sticky composer read that 1px as content to scroll to. */
 .rich-source {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   min-height: 0;
+  margin: 0;
   padding: 0;
   border: 0;
   opacity: 0;

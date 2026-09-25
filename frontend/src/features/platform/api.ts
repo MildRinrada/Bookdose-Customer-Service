@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, GlobalArticleInput, TurnstileSettings } from './types';
+import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, GlobalArticleInput, RestorePreview, RestoreResult, TurnstileSettings, VulnsView } from './types';
 
 /* Endpoints of backend/modules/platform/routes.py. Every platform read lives
    under /api/platform, so refreshing PLATFORM_PREFIX after a write also redraws the histories shown on the
@@ -8,6 +8,10 @@ import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, Glob
 export const PLATFORM_PREFIX = '/api/platform';
 export const SYSTEM_PATH = '/api/platform/system';
 export const TENANTS_PATH = '/api/platform/tenants';
+/** องค์กรที่หลับ (backend platform/dormant.py) and emailing an organization's admins from the platform's mailbox. */
+export const DORMANT_PATH = '/api/platform/dormant';
+export const contactTenant = (tenantId: string, body: { subject: string; message: string }) =>
+  api<{ sent: string[] }>(`${TENANTS_PATH}/${tenantId}/contact`, body);
 export const REGISTRATION_PATH = '/api/platform/registration';
 export const ADMINS_PATH = '/api/platform/admins';
 export const GLOBAL_FAQ_PATH = '/api/platform/faq';
@@ -51,6 +55,17 @@ export const runBackup = () => api<BackupsView>(BACKUPS_PATH, {});
 export const saveBackupSettings = (body: BackupSettings) => api<BackupsView>(`${BACKUPS_PATH}/settings`, body);
 /** A plain link: the browser downloads the archive with the session cookie (GET needs no CSRF token). */
 export const backupFileUrl = (name: string) => `${BACKUPS_PATH}/${encodeURIComponent(name)}`;
+
+/** Check the libraries against the published vulnerabilities now (backend platform/vulns.py). */
+export const scanVulns = () => api<VulnsView>('/api/platform/vulns', {});
+
+/* Restoring from the console (backend platform/restore.py). */
+const RESTORE_PATH = '/api/platform/restore';
+export const previewRestore = (name: string) => api<RestorePreview>(`${RESTORE_PATH}/preview`, { name });
+export const restoreBackup = (body: { name: string; confirm: string; without_secrets: boolean }) => api<RestoreResult>(RESTORE_PATH, body);
+/** One piece of a backup file sent from this computer; the last answers with the name it is kept under. */
+export const uploadBackupPiece = (body: { upload: string | null; offset: number; data: string; last: boolean }) =>
+  api<{ upload?: string; received?: number; name?: string }>(`${RESTORE_PATH}/upload`, body);
 export const saveAnnouncement = (body: AnnouncementInput) => api<{ announcement: Announcement }>(ANNOUNCEMENT_PATH, body);
 export const clearAnnouncement = () => api<{ announcement: null }>(ANNOUNCEMENT_PATH, undefined, 'DELETE');
 

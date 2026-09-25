@@ -224,6 +224,24 @@ def checklist(cd, session, snapshot):
         items.append(_item('two-factor','warning',f'ผู้ดูแลแพลตฟอร์ม {len(unprotected)} คนยังไม่เปิดการยืนยันสองขั้นตอน',
                            ', '.join(a['name'] for a in unprotected)+' · บัญชีเหล่านี้เข้าถึงทุกองค์กรได้',
                            'เปิดของฉัน' if mine else 'ดูทีมผู้ดูแล','/account?tab=security' if mine else '/platform/team'))
+    from backend.modules.platform import dormant
+    asleep = dormant.listing(cd)['organizations']
+    if asleep:
+        items.append(_item('dormant','info',f'องค์กรที่ไม่มีการใช้งาน {dormant.DAYS} วัน {len(asleep)} แห่ง',
+                           ', '.join(o['name'] for o in asleep[:5])+(' และอื่นๆ' if len(asleep)>5 else '')+
+                           ' · ไม่มีทีมงานเข้าใช้และไม่มีเคสใหม่ ติดต่อเจ้าของหรือระงับเพื่อปิดช่องโหว่',
+                           'ดูองค์กรที่หลับ','/platform/organizations?tab=dormant'))
+    from backend.modules.platform import vulns
+    scan = vulns.last(cd)
+    urgent = [f for f in (scan or {}).get('findings',[]) if f['level'] in vulns.URGENT and not f['dev']]
+    if urgent:
+        # A published hole in what runs is urgent whether rated high or critical: it is emailed at once too.
+        names = ', '.join(dict.fromkeys(f"{f['name']} {f['version']}" for f in urgent))
+        items.append(_item('vulns','critical',f'ไลบรารีมีช่องโหว่ระดับสูง {len(urgent)} รายการ',f'อัปเดต {names}'[:200],
+                           'ดูช่องโหว่','#vulns'))
+    elif scan and not scan.get('ok') and scan['at']<after(hours=-48):
+        items.append(_item('vulns-failed','info','ตรวจช่องโหว่ในไลบรารีไม่ได้มา 2 วัน',
+                           'เซิร์ฟเวอร์ติดต่อ api.osv.dev ไม่ได้ ตรวจการเชื่อมต่ออินเทอร์เน็ตหรือไฟร์วอลล์','ดูช่องโหว่','#vulns'))
     alerts = security.count_open_alerts(cd)
     if alerts:
         items.append(_item('alerts','warning',f'การแจ้งเตือนความปลอดภัยรอตรวจ {alerts} รายการ','ตรวจแล้วกดรับทราบในหน้าความปลอดภัย',

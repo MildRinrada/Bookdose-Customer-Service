@@ -695,7 +695,7 @@ input[type=file].attach-input {
   outline-offset: -6px;
   background: var(--paper);
 }
-.inbox-detail .composer-compact textarea {
+.inbox-detail .composer-compact textarea:not(.rich-source) {
   min-height: 56px;
   height: 64px;
   max-height: 180px;
@@ -875,7 +875,7 @@ input[type=file].attach-input {
   .inbox-layout {
     min-height: 0;
     flex: 1;
-    grid-template-columns: 320px minmax(0,1fr);
+    grid-template-columns: 300px minmax(0,1fr);
   }
   .inbox-list {
     max-height: none;
@@ -897,15 +897,17 @@ input[type=file].attach-input {
     max-height: none;
     flex: 1;
     overflow: auto;
-    padding: 16px;
+    padding: 20px 24px;
   }
   .inbox-detail>.composer {
-    padding: 10px 16px;
+    padding: 8px 16px 10px;
     flex-shrink: 0;
   }
-  .inbox-detail .composer textarea {
-    min-height: 60px;
-    height: 70px;
+  /* One line to start with; it grows as the reply does (Composer caps it). */
+  .inbox-detail .composer textarea:not(.rich-source) {
+    min-height: 46px;
+    height: 52px;
+    margin: 6px 0;
   }
   .inbox-detail .composer .composer-tip {
     display: none;
@@ -1241,7 +1243,9 @@ input[type=file].attach-input {
 .composer-actions>.tool-divider {
   margin: 0 4px;
 }
-@container (max-width:640px) {
+/* On a pane this narrow the formatting buttons step aside (the shortcuts still work) so the send button stays on
+   the tools' row instead of taking a row of its own. */
+@container (max-width:860px) {
   .composer-format,.composer-actions>.tool-divider {
     display: none;
   }
@@ -1334,7 +1338,7 @@ input[type=file].attach-input {
   .inbox-detail>.composer {
     padding: 10px 16px 12px;
   }
-  .inbox-detail .composer textarea {
+  .inbox-detail .composer textarea:not(.rich-source) {
     min-height: 56px;
     height: 64px;
     margin: 0 0 8px;
@@ -1407,13 +1411,24 @@ input[type=file].attach-input {
   width: 16px;
   height: 16px;
 }
+/* A narrower pane keeps the header to one row: the buttons show their icons alone (their titles say the rest), and
+   how a visitor can be reached steps aside (it is on the customer card). */
 @container (max-width:780px) {
-  .inbox-detail>.conv-header {
-    flex-wrap: wrap;
+  .conv-meta .conv-fact[title^="ลูกค้าแชทโดยไม่ได้เข้าสู่ระบบ"] {
+    display: none;
   }
-  .inbox-detail .conv-actions {
-    width: 100%;
-    flex-wrap: wrap;
+  .inbox-detail .conv-actions .conv-action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .inbox-detail .conv-actions .btn.sm {
+    min-width: 40px;
+    justify-content: center;
+    padding-inline: 10px;
   }
   .conv-title h2 {
     -webkit-line-clamp: 2;
@@ -1442,6 +1457,7 @@ input[type=file].attach-input {
     display: none;
   }
 }
+
 
 /* Reading comfort: a bubble is as wide as its text, up to about 60 characters a line, and the sender's name sits
    beside their picture (on the right for messages drawn from the right), with the message under it. */
@@ -1764,10 +1780,12 @@ input[type=file].attach-input {
     margin-top: 0;
     padding: 6px 12px;
   }
+  /* One line to start with (it grows as the reply does): the messages get the room. */
   .inbox-detail>.composer>.composer-input {
-    min-height: 64px;
+    min-height: 44px;
     max-height: 22vh;
-    margin: 8px 0;
+    margin: 6px 0;
+    padding: 10px 12px;
     overflow-y: auto;
   }
   .inbox-detail>.composer>.file-list:not(:empty) {
@@ -1826,6 +1844,35 @@ input[type=file].attach-input {
   background: var(--link);
   animation: conv-summary-pulse 1.2s ease-in-out infinite;
 }
+/* In the toolbar's row: the offer while there is nothing yet; a summary takes a row of its own under it. */
+.conv-toolbar>.conv-summary {
+  flex-basis: 100%;
+  order: 1;
+  margin: 6px 0 4px;
+}
+.conv-summary-offer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.conv-summary-offer .btn.sm {
+  min-height: 30px;
+  padding: 2px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font-size: .9rem;
+}
+.conv-summary-offer .btn.sm .icon {
+  width: 16px;
+  height: 16px;
+}
+.conv-summary-offer .conv-summary-error {
+  margin: 0;
+  color: var(--amber);
+  font-size: .85rem;
+}
 @keyframes conv-summary-pulse {
   50% { opacity: .25; }
 }
@@ -1867,3 +1914,4 @@ input[type=file].attach-input {
   color: var(--red);
   font-size: .9rem;
 }
+

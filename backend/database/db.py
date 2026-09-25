@@ -2,6 +2,7 @@
 import contextlib
 import os
 import sqlite3
+import threading
 
 from config import settings
 
@@ -46,14 +47,61 @@ def after_commit(db, key, callback):
         callback()
 
 
+# A restore from the platform console (platform/restore.py) replaces the databases under a running server: while it
+# does, every other thread waits at its next connection, and the restore waits for the connections already open.
+_gate = threading.Condition()
+_open = {}            # thread id -> connections it has open
+_holder = None        # the thread restoring, which alone may connect meanwhile
+
+
+@contextlib.contextmanager
+def paused(wait_seconds=30):
+    """Hold every other thread's database work while the block runs (after the connections they have open close, or
+    wait_seconds, whichever comes first)."""
+    global _holder
+    me = threading.get_ident()
+    with _gate:
+        if _holder is not None and _holder != me:
+            raise RuntimeError('Another thread holds the databases')
+        _holder = me
+        _gate.wait_for(lambda: not any(n for t, n in _open.items() if t != me), timeout=wait_seconds)
+    try:
+        yield
+    finally:
+        with _gate:
+            _holder = None
+            _gate.notify_all()
+
+
+def _enter():
+    me = threading.get_ident()
+    with _gate:
+        _gate.wait_for(lambda: _holder is None or _holder == me)
+        _open[me] = _open.get(me, 0) + 1
+
+
+def _leave():
+    me = threading.get_ident()
+    with _gate:
+        _open[me] -= 1
+        if not _open[me]:
+            del _open[me]
+        _gate.notify_all()
+
+
 @contextlib.contextmanager
 def connect(path):
     """Commit when the block succeeds, roll back when it raises."""
-    db = sqlite3.connect(path, timeout=15, factory=Connection)
-    db.row_factory = sqlite3.Row
-    db.execute('PRAGMA foreign_keys=ON')
-    db.execute('PRAGMA journal_mode=WAL')
+    _enter()
     try:
+        db = sqlite3.connect(path, timeout=15, factory=Connection)
+    except Exception:
+        _leave()
+        raise
+    try:
+        db.row_factory = sqlite3.Row
+        db.execute('PRAGMA foreign_keys=ON')
+        db.execute('PRAGMA journal_mode=WAL')
         yield db
         db.commit()
     except Exception:
@@ -61,6 +109,7 @@ def connect(path):
         raise
     finally:
         db.close()
+        _leave()
 
 
 def control():

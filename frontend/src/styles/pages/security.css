@@ -899,3 +899,12 @@ p.card-body.muted .icon {
     grid-template-columns: 1fr;
   }
 }
+
+/* The page in tabs (SecurityScreen): the panel under them starts flush, the section spacing inside stays. */
+.security-tabs {
+  margin-top: 4px;
+}
+.security-panel > .security-section:first-child,
+.security-panel > .card:first-child {
+  margin-top: 0;
+}

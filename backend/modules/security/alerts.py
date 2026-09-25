@@ -130,7 +130,7 @@ class Worker:
         self.thread.start()
 
     def run(self):
-        from backend.modules.platform import backups, watch
+        from backend.modules.platform import backups, vulns, watch
         while not self.stop.wait(self.INTERVAL):
             monitor.heartbeat('security')
             for name,step in (('security',run_rules),('security',cleanup),('watch',watch.run)):
@@ -147,3 +147,12 @@ class Worker:
             except Exception as error:
                 print(f'Automatic backup: {type(error).__name__}; retrying next round',flush=True)
                 monitor.error('security','backup: '+type(error).__name__)
+            # The libraries checked against the published vulnerabilities once a day (platform/vulns.py).
+            try:
+                with D.control() as cd:
+                    due = vulns.due(cd)
+                if due and not vulns.busy():
+                    threading.Thread(target=vulns.auto_round,name='bookdose-vulns',daemon=True).start()
+            except Exception as error:
+                print(f'Vulnerability scan: {type(error).__name__}; retrying next round',flush=True)
+                monitor.error('security','vulns: '+type(error).__name__)

@@ -55,6 +55,19 @@ def set_tenant_status(req, tenant_id):
     return req.send(200,{'ok':True})
 
 
+def dormant_tenants(req):
+    from backend.modules.platform import dormant
+    return req.send(200,dormant.listing(req.cd))
+
+
+def contact_tenant(req, tenant_id):
+    """Email an organization's admins from the platform's mailbox (the dormant list's ติดต่อ)."""
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import dormant
+    limited(('platform-contact',req.session['user_id']),30,3600)
+    return req.send(200,dormant.contact(req.cd,req.session,tenant_id,req.body))
+
+
 def platform_team(req):
     return req.send(200,{'admins':service.platform_team(req.cd),'me':req.session['user_id']})
 
@@ -90,11 +103,12 @@ def _snapshot():
 def health(req):
     """GET /api/platform/health: what needs doing, the channels of every organization, how busy each one is, security
     at a glance, the backups and the announcement (health.py)."""
-    from backend.modules.platform import backups, health as H
+    from backend.modules.platform import backups, health as H, vulns
     snapshot = _snapshot()
     return req.send(200,{'todo':H.checklist(req.cd,req.session,snapshot),'channels':H.channel_health(req.cd),
                          'usage':H.org_usage(req.cd),'security':H.security_summary(req.cd),
-                         'backups':backups.overview(req.cd),'announcement':H.announcement(req.cd)})
+                         'backups':backups.overview(req.cd),'announcement':H.announcement(req.cd),
+                         'vulns':vulns.overview(vulns.last(req.cd))})
 
 
 def notifications(req):
@@ -131,6 +145,36 @@ def run_backup(req):
 def save_backup_settings(req):
     from backend.modules.platform import backups as B
     return req.send(200,B.save_settings(req.cd,req.session,req.body))
+
+
+def scan_vulnerabilities(req):
+    """Check the libraries against the published vulnerabilities now (vulns.py)."""
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import vulns
+    limited(('platform-vulns',req.session['user_id']),10,3600)
+    return req.send(200,vulns.scan_now(req.session))
+
+
+def upload_backup(req):
+    """A piece of a backup sent from the admin's computer to restore (restore.py)."""
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import restore as R
+    limited(('platform-backup-upload',req.session['user_id']),3000,3600)
+    return req.send(200,R.upload(req.cd,req.session,req.body))
+
+
+def restore_preview(req):
+    """What restoring a backup would replace; nothing changes."""
+    from backend.modules.platform import restore as R
+    return req.send(200,R.preview(req.body.get('name')))
+
+
+def restore_backup(req):
+    """Restore a backup, confirmed by its name typed out: everyone is signed out afterwards."""
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import restore as R
+    limited(('platform-restore',req.session['user_id']),5,3600)
+    return req.send(200,R.restore(req.cd,req.session,req.body))
 
 
 def download_backup(req, name):

@@ -63,7 +63,7 @@ const SAVE_AFTER_MS = 700;
 const EDGE_PX = 110;
 const EDGE_SPEED = 22;
 /** How many times a card may be measured before its height is left alone for good. */
-const MEASURE_PASSES = 5;
+const MEASURE_PASSES = 12;
 
 /** The switch the page heading holds; the board below reads the same one. */
 export const ARRANGING = 'dashboard:arranging';
@@ -150,41 +150,51 @@ export function DashboardBoard({ content }: { content: Record<string, ReactNode>
      and a guess one row short cuts the last line off a card nobody asked to be shortened. The measuring is done on
      the page itself, once its contents have drawn, and what it pushes into moves down. */
   const [needs, setNeeds] = useState<Record<string, number>>({});
-  /* A card is measured a few times at most. Measuring without a limit is how a page ends up
-     asking itself for one more row, for ever; measuring once is not enough either, because a card's contents arrive
-     after the page does - a web font, a list that loads, a chart that draws. A handful of passes catches those and
-     then stops for good. */
+  /* Each card's contents are watched for their size (ResizeObserver): a list that loads, a chart that draws, a web
+     font arriving, a window resized - each is a change in height, and each is answered once. A card is given its rows
+     only when its measured height differs from what it has, and no more than MEASURE_PASSES times, so a page that
+     asks itself for one more row for ever runs into a ceiling. */
   const measured = useRef<Map<string, number>>(new Map());
-  // The effect below runs after every render on purpose: a card's contents change with the data, not with anything
-  // listable, and a card is measured only the first time it is seen.
+  const needsRef = useRef<Record<string, number>>({});
+  const currentRef = useRef(current);
+  needsRef.current = needs;
+  currentRef.current = current;
   const cards = growToFit(placeCards(current, (id) => id in content), needs, (id) => Boolean(current.box[id]));
   const shown = cards.filter((card) => !card.hidden);
+  const shownKey = shown.map((card) => card.id).join(',');
   useEffect(() => {
-    // After the browser has drawn, so what is measured is a card at the height its contents asked for.
-    const frame = requestAnimationFrame(() => {
-      const node = board.current;
-      if (!node) return;
-      const found: Record<string, number> = {};
-      for (const el of node.querySelectorAll<HTMLElement>('.widget')) {
-        const id = el.dataset.card ?? '';
-        // The card itself, not the box around it: the bar at its top while arranging and the room made for that bar
-        // are part of the page's furniture, not of the card, and a height measured with them in it was a row too
-        // tall and then stuck that way.
-        const card = el.querySelector<HTMLElement>('.widget-body > *');
-        const passes = measured.current.get(id) ?? 0;
-        if (!id || passes >= MEASURE_PASSES) continue;
-        // Nothing drawn: no squares. A card the member sized is otherwise left at its size, but an empty frame is
-        // not a size anybody chose, so emptiness is measured for every card and height only for the untouched.
-        const height = card?.offsetHeight ?? 0;
-        const rows = height === 0 ? 0 : current.box[id] ? (needs[id] ?? -1) : rowsFor(height);
-        if (rows === -1 || rows === needs[id]) continue;
-        measured.current.set(id, passes + 1);
-        found[id] = rows;
+    const node = board.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+    const take = (el: HTMLElement) => {
+      const id = el.dataset.card ?? '';
+      // The card itself, not the box around it: the bar at its top while arranging is the page's furniture.
+      const card = el.querySelector<HTMLElement>('.widget-body > *');
+      const passes = measured.current.get(id) ?? 0;
+      if (!id || passes >= MEASURE_PASSES) return;
+      // Nothing drawn: no squares. A card the member sized is otherwise left at its size, but an empty frame is
+      // not a size anybody chose, so emptiness is measured for every card and height only for the untouched.
+      const height = card?.offsetHeight ?? 0;
+      const have = needsRef.current[id];
+      const rows = height === 0 ? 0 : currentRef.current.box[id] ? (have ?? -1) : rowsFor(height);
+      if (rows === -1 || rows === have) return;
+      measured.current.set(id, passes + 1);
+      setNeeds((before) => (before[id] === rows ? before : { ...before, [id]: rows }));
+    };
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const widget = (entry.target as HTMLElement).closest<HTMLElement>('.widget');
+        if (widget) take(widget);
       }
-      if (Object.keys(found).length) setNeeds((before) => ({ ...before, ...found }));
     });
-    return () => cancelAnimationFrame(frame);
-  });
+    for (const el of node.querySelectorAll<HTMLElement>('.widget')) {
+      take(el);
+      const card = el.querySelector<HTMLElement>('.widget-body > *');
+      if (card) observer.observe(card);
+    }
+    return () => observer.disconnect();
+    // Again when the set of cards changes, and after a reset has forgotten every height (the contents did not resize).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownKey, Object.keys(needs).length === 0]);
   /* Arranging is a draft. Every move and stretch changes the page on the screen and nothing else, until บันทึก
      writes the board to the member's account or ยกเลิก puts back the board they opened with. A change made from the
      right-click menu while reading (hiding a card, a reset) is one deliberate click and is saved at once. */

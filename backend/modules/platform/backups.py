@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import threading
+import time
 
 from backend.database import audit, db as D
 from backend.modules.platform import repository
@@ -25,7 +26,9 @@ THAI = dt.timezone(dt.timedelta(hours=7))
 SETTINGS_KEY = 'backup_settings'
 LAST_KEY = 'backup_last'
 DEFAULTS = {'enabled':False,'hour':2,'keep':14}
-NAME = re.compile(r'bookdose-(auto|manual)-(\d{8})-(\d{6})\.zip')
+# auto / manual: made here; upload: sent from the console to restore (restore.py); before: the one taken just before a
+# restore, to undo it. Only automatic ones are ever removed.
+NAME = re.compile(r'bookdose-(auto|manual|upload|before)-(\d{8})-(\d{6})\.zip')
 # One backup at a time: the button and the daily round never write two archives at once.
 _running = threading.Lock()
 
@@ -98,32 +101,44 @@ def _same_disk(where, data):
 def run(kind, by):
     """Make one backup now ('manual' or 'auto'); returns the result recorded as the last backup. Old automatic
     backups beyond `keep` go afterwards (manual ones are never removed)."""
-    from backend.database.backup import make_backup
     require(_running.acquire(blocking=False),'กำลังสำรองข้อมูลอยู่ กรุณารอให้เสร็จก่อน',409)
     try:
-        moment = utc_now().astimezone(THAI)
-        name = f"bookdose-{kind}-{moment.strftime('%Y%m%d-%H%M%S')}.zip"
-        where = folder()
-        try:
-            where.mkdir(parents=True,exist_ok=True)
-            content = make_backup()
-            with (where/name).open('xb') as out:
-                out.write(content)
-            result = {'at':now(),'ok':True,'name':name,'size':len(content),'kind':kind,'by':by}
-        except (OSError,ValueError) as error:
-            result = {'at':now(),'ok':False,'error':type(error).__name__,'kind':kind,'by':by}
-        with D.control() as cd:
-            repository.save_setting(cd,LAST_KEY,json.dumps(result,ensure_ascii=False))
-            audit.record(cd,by,'platform.backup' if result['ok'] else 'platform.backup_failed',result.get('name',''),
-                         f"{'อัตโนมัติ' if kind=='auto' else 'สั่งจากคอนโซล'}")
-            cd.commit()
-            keep = settings(cd)['keep']
-        if result['ok']:
-            for old in [f for f in files() if f['kind']=='auto'][keep:]:
-                (where/old['name']).unlink(missing_ok=True)
-        return result
+        return write(kind,by)
     finally:
         _running.release()
+
+
+def new_name(kind):
+    return f"bookdose-{kind}-{utc_now().astimezone(THAI).strftime('%Y%m%d-%H%M%S')}.zip"
+
+
+def write(kind, by):
+    """run() without the lock, for a caller that holds it (a restore takes its safety backup this way)."""
+    from backend.database.backup import make_backup
+    where = folder()
+    name = new_name(kind)
+    # Names go by the second: a second one within it waits for the next.
+    while (where/name).exists():
+        time.sleep(0.2)
+        name = new_name(kind)
+    try:
+        where.mkdir(parents=True,exist_ok=True)
+        content = make_backup()
+        with (where/name).open('xb') as out:
+            out.write(content)
+        result = {'at':now(),'ok':True,'name':name,'size':len(content),'kind':kind,'by':by}
+    except (OSError,ValueError) as error:
+        result = {'at':now(),'ok':False,'error':type(error).__name__,'kind':kind,'by':by}
+    with D.control() as cd:
+        repository.save_setting(cd,LAST_KEY,json.dumps(result,ensure_ascii=False))
+        audit.record(cd,by,'platform.backup' if result['ok'] else 'platform.backup_failed',result.get('name',''),
+                     {'auto':'อัตโนมัติ','before':'ก่อนกู้คืน'}.get(kind,'สั่งจากคอนโซล'))
+        cd.commit()
+        keep = settings(cd)['keep']
+    if result['ok']:
+        for old in [f for f in files() if f['kind']=='auto'][keep:]:
+            (where/old['name']).unlink(missing_ok=True)
+    return result
 
 
 def run_now(cd, session):

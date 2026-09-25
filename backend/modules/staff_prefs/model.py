@@ -46,6 +46,8 @@ EMPTY_DASHBOARD = {'hidden':[],'box':{}}
 MAX_LEAVE = 20
 MAX_SNIPPETS = 50
 SIGNATURE_MAX = 500
+PERSONAS = ('formal','friendly','custom')
+PERSONA_MAX = 300
 ALIAS_MAX = 60
 SNIPPET_MAX = 2000
 NOTICE_ATTEMPTS = 3
@@ -62,6 +64,9 @@ DEFAULTS = {
     'snippets':[],
     # Empty means "as the organization arranged it", which in turn means "as the screen ships".
     'dashboard':{'hidden':[],'box':{}},
+    # The personality of the member's own AI assistant (ai/assistant.py): '' until they choose (it speaks formally
+    # meanwhile), 'formal', 'friendly', or 'custom' with the character they described.
+    'assistant':{'persona':'','custom':''},
 }
 
 CONTROL_TABLES = '''

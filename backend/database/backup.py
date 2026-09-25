@@ -88,6 +88,34 @@ def _empty_data_folder():
     return True
 
 
+def check_archive(archive):
+    """(manifest, entries) of an open platform backup, or a refusal saying what is wrong with it. Reads nothing but the
+    list of entries and the manifest."""
+    try:
+        manifest = json.loads(archive.read('manifest.json'))
+    except (KeyError,ValueError):
+        manifest = {}
+    require(isinstance(manifest,dict) and manifest.get('app')=='Bookdose Customer Service' and manifest.get('scope')=='platform'
+            and manifest.get('version')==1,'ต้องใช้ไฟล์สำรองทั้งแพลตฟอร์มรุ่น 1')
+    entries = [entry for entry in archive.infolist() if entry.filename!='manifest.json']
+    for entry in entries:
+        require(ENTRY.fullmatch(entry.filename),'โครงสร้างไฟล์สำรองไม่ถูกต้อง')
+    require(sum(e.file_size for e in entries)<=10*1024**3,'ไฟล์สำรองใหญ่เกิน 10 GB')
+    require(any(e.filename=='control.sqlite3' for e in entries),'ไม่พบฐานข้อมูลแพลตฟอร์ม')
+    return manifest,entries
+
+
+def sign_everyone_out():
+    """After a restore: every staff member and customer signs in again, and links sent before the backup stop working."""
+    with D.control() as db:
+        db.execute('DELETE FROM sessions')
+        if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name='pending_registrations'"):
+            db.execute('DELETE FROM pending_registrations')
+        for table in ('customer_sessions','customer_signups','customer_resets'):
+            if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name=?",(table,)):
+                db.execute(f'DELETE FROM {table}')
+
+
 def restore_backup(archive_path, new_key=False):
     """Restore a platform backup into an EMPTY data directory, then sign every staff member out. Returns what the
     operator should know. The sealed secrets are restored only when this server holds the key they were sealed with
@@ -95,13 +123,7 @@ def restore_backup(archive_path, new_key=False):
     new_key says to go on without them."""
     require(_empty_data_folder(),'โฟลเดอร์ข้อมูลต้องว่างก่อนกู้คืน (วางไว้ได้เฉพาะ keys/secret.key)')
     with zipfile.ZipFile(archive_path) as archive:
-        manifest = json.loads(archive.read('manifest.json'))
-        require(manifest.get('app')=='Bookdose Customer Service' and manifest.get('scope')=='platform' and manifest.get('version')==1,'ต้องใช้ไฟล์สำรองทั้งแพลตฟอร์มรุ่น 1')
-        entries = [entry for entry in archive.infolist() if entry.filename!='manifest.json']
-        for entry in entries:
-            require(ENTRY.fullmatch(entry.filename),'โครงสร้างไฟล์สำรองไม่ถูกต้อง')
-        require(sum(e.file_size for e in entries)<=10*1024**3,'ไฟล์สำรองใหญ่เกิน 10 GB')
-        require(any(e.filename=='control.sqlite3' for e in entries),'ไม่พบฐานข้อมูลแพลตฟอร์ม')
+        manifest,entries = check_archive(archive)
         needed = manifest.get('secret_key_id')
         has_key = not needed or needed in secret_box.available_key_ids()
         require(has_key or new_key,
@@ -115,14 +137,7 @@ def restore_backup(archive_path, new_key=False):
             archive.extract(entry,D.DATA)
     for path in (D.DATA/'secrets').glob('*') if (D.DATA/'secrets').is_dir() else ():
         path.chmod(0o600)
-    with D.control() as db:
-        db.execute('DELETE FROM sessions')
-        if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name='pending_registrations'"):
-            db.execute('DELETE FROM pending_registrations')
-        # Customers sign in again too, and links sent before the backup no longer work.
-        for table in ('customer_sessions','customer_signups','customer_resets'):
-            if D.one(db,"SELECT name FROM sqlite_master WHERE type='table' AND name=?",(table,)):
-                db.execute(f'DELETE FROM {table}')
+    sign_everyone_out()
     if has_key:
         return {'secrets':manifest.get('secret_files',0),'skipped':0,'key':needed}
     return {'secrets':0,'skipped':skipped,'key':needed}

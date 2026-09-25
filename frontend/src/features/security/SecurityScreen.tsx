@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading, StatCard } from '@/components/ui/display';
 import { FilterPill } from '@/components/ui/filters';
@@ -21,32 +22,55 @@ import { TrapEventsCard } from './components/TrapEvents';
 import { cardLabels, rangeLabels } from './labels';
 import type { SecurityOverview, SecurityRange } from './types';
 
-/* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/SECURITY-DESIGN.md §3–4): open
-   alerts, the numbers and chart of the chosen range, the IPs and accounts under attack, locked accounts, the events
-   log, the IP block list, ending an account's sessions, "กับดัก" (honeytokens, the newest trap events and the honeypot
-   settings; docs/HONEYPOT-DESIGN.md §5), and the security settings. The overview, alerts and locks
-   refresh themselves every minute (plain GETs: they never count as the admin's activity). Markup: pages/security.css. */
+/* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/SECURITY-DESIGN.md §3–4), in five
+   tabs so each is one thing to look at: ภาพรวม (the numbers and chart of the chosen range, the IPs and accounts under
+   attack), เหตุการณ์ (the events log), การเข้าถึง (locked accounts, the IP block list, ending an account's sessions),
+   กับดัก (honeytokens, the newest trap events and the honeypot settings; docs/HONEYPOT-DESIGN.md §5) and ตั้งค่า. The
+   open alerts sit above every tab. The overview, alerts and locks refresh themselves every minute (plain GETs: they
+   never count as the admin's activity). Markup: pages/security.css. */
 
-export function SecurityScreen() {
+type SecurityTab = 'overview' | 'events' | 'access' | 'traps' | 'settings';
+
+const TABS: Array<[SecurityTab, string]> = [
+  ['overview', 'ภาพรวม'],
+  ['events', 'เหตุการณ์'],
+  ['access', 'การเข้าถึง'],
+  ['traps', 'กับดัก'],
+  ['settings', 'ตั้งค่า'],
+];
+const BASE = '/platform/security';
+const tabOf = (tab?: string): SecurityTab => (TABS.some(([key]) => key === tab) ? (tab as SecurityTab) : 'overview');
+const tabHref = (tab: SecurityTab) => (tab === 'overview' ? BASE : `${BASE}?tab=${tab}`);
+
+export function SecurityScreen({ tab }: { tab?: string }) {
   const [range, setRange] = useUiState<SecurityRange>('security:range', '24h');
   const refresh = useInvalidate();
+  const [current, setCurrent] = useState<SecurityTab>(tabOf(tab));
+  // A link to ?tab=… while already here picks that tab.
+  const [seenTab, setSeenTab] = useState(tab);
+  if (tab !== seenTab) {
+    setSeenTab(tab);
+    setCurrent(tabOf(tab));
+  }
+  const select = (key: SecurityTab) => {
+    setCurrent(key);
+    window.history.replaceState(null, '', tabHref(key));
+  };
   return (
     <div className="security-page">
       <div className="page-heading">
         <div>
           <h1>ความปลอดภัย</h1>
-          <p>การเข้าสู่ระบบที่ผิดปกติ คำขอที่ถูกปฏิเสธ และการตั้งค่าเซสชันของทุกองค์กร</p>
+          <p>การเข้าสู่ระบบที่ผิดปกติ คำขอที่ถูกปฏิเสธ กับดัก และการตั้งค่าเซสชันของทุกองค์กร</p>
         </div>
         <div className="flex security-heading-actions">
-          <a className="btn subtle" href="#security-traps">
-            <Icon name="shield" />
-            กับดัก
-          </a>
-          <div className="filter-pills security-range" role="group" aria-label="ช่วงเวลา">
-            {(Object.keys(rangeLabels) as SecurityRange[]).map((value) => (
-              <FilterPill key={value} value={value} label={rangeLabels[value]} pressed={range === value} onClick={() => setRange(value)} />
-            ))}
-          </div>
+          {current === 'overview' && (
+            <div className="filter-pills security-range" role="group" aria-label="ช่วงเวลา">
+              {(Object.keys(rangeLabels) as SecurityRange[]).map((value) => (
+                <FilterPill key={value} value={value} label={rangeLabels[value]} pressed={range === value} onClick={() => setRange(value)} />
+              ))}
+            </div>
+          )}
           <button type="button" className="btn subtle" onClick={() => void refresh(SECURITY_PREFIX)}>
             <Icon name="clock" />
             รีเฟรช
@@ -54,15 +78,37 @@ export function SecurityScreen() {
         </div>
       </div>
       <AlertsBanner />
-      <Overview range={range} />
-      <LocksCard />
-      <EventsLog />
-      <div className="security-grid wide-first security-section">
-        <IpBlocksCard />
-        <RevokeSessionsCard />
+      <div className="tabs platform-tabs security-tabs" role="tablist" aria-label="ความปลอดภัย">
+        {TABS.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            id={`security-tab-${key}`}
+            className={`tab${current === key ? ' active' : ''}`}
+            role="tab"
+            aria-selected={current === key}
+            aria-controls={`security-panel-${key}`}
+            onClick={() => select(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
-      <Traps />
-      <SettingsCard />
+      <div id={`security-panel-${current}`} role="tabpanel" aria-labelledby={`security-tab-${current}`} className="security-panel">
+        {current === 'overview' && <Overview range={range} />}
+        {current === 'events' && <EventsLog />}
+        {current === 'access' && (
+          <>
+            <LocksCard />
+            <div className="security-grid wide-first security-section">
+              <IpBlocksCard />
+              <RevokeSessionsCard />
+            </div>
+          </>
+        )}
+        {current === 'traps' && <Traps />}
+        {current === 'settings' && <SettingsCard />}
+      </div>
     </div>
   );
 }
@@ -82,7 +128,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="lock"
           color={cards.failed_logins ? 'amber' : 'green'}
           foot={`ใน ${span} ล่าสุด`}
-          href="#security-events"
+          href={tabHref('events')}
         />
         <StatCard
           label={cardLabels.locked_now}
@@ -90,7 +136,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="users"
           color={cards.locked_now ? 'red' : 'green'}
           foot="ตอนนี้"
-          href="#security-locks"
+          href={tabHref('access')}
           urgent={cards.locked_now > 0}
         />
         <StatCard
@@ -99,7 +145,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="bolt"
           color={cards.rate_limited ? 'amber' : 'green'}
           foot={`ใน ${span} ล่าสุด`}
-          href="#security-events"
+          href={tabHref('events')}
         />
         <StatCard
           label={cardLabels.origin_csrf_rejected}
@@ -107,7 +153,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="shield"
           color={cards.origin_csrf_rejected ? 'amber' : 'green'}
           foot={`ใน ${span} ล่าสุด`}
-          href="#security-events"
+          href={tabHref('events')}
         />
         <StatCard
           label={cardLabels.cross_tenant_denied}
@@ -115,7 +161,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="globe"
           color={cards.cross_tenant_denied ? 'red' : 'green'}
           foot={`ใน ${span} ล่าสุด`}
-          href="#security-events"
+          href={tabHref('events')}
         />
         <StatCard
           label={cardLabels.open_alerts}
@@ -123,7 +169,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="bell"
           color={cards.open_alerts ? 'red' : 'green'}
           foot={cards.open_alerts ? 'ต้องตรวจสอบ' : 'ไม่มีเรื่องผิดปกติ'}
-          href={cards.open_alerts ? '#security-alerts' : '#security-settings'}
+          href={cards.open_alerts ? '#security-alerts' : tabHref('settings')}
           urgent={cards.open_alerts > 0}
         />
         <StatCard
@@ -132,7 +178,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="bolt"
           color={cards.honeytoken_triggers ? 'red' : 'green'}
           foot={`ใน ${span} ล่าสุด`}
-          href="#security-trap-events"
+          href={tabHref('traps')}
           urgent={Boolean(cards.honeytoken_triggers)}
         />
         <StatCard
@@ -141,7 +187,7 @@ function Overview({ range }: { range: SecurityRange }) {
           icon="search"
           color={cards.honeypot_hits ? 'amber' : 'green'}
           foot={`ใน ${span} ล่าสุด`}
-          href="#security-trap-events"
+          href={tabHref('traps')}
         />
       </div>
       <section className="card security-card" aria-labelledby="security-chart-title">

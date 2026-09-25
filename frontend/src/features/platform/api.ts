@@ -56,8 +56,9 @@ export const saveBackupSettings = (body: BackupSettings) => api<BackupsView>(`${
 /** A plain link: the browser downloads the archive with the session cookie (GET needs no CSRF token). */
 export const backupFileUrl = (name: string) => `${BACKUPS_PATH}/${encodeURIComponent(name)}`;
 
-/** Check the libraries against the published vulnerabilities now (backend platform/vulns.py). */
-export const scanVulns = () => api<VulnsView>('/api/platform/vulns', {});
+/** The libraries checked against the published vulnerabilities (backend platform/vulns.py): the last check, or check now. */
+export const VULNS_PATH = '/api/platform/vulns';
+export const scanVulns = () => api<VulnsView>(VULNS_PATH, {});
 
 /* Restoring from the console (backend platform/restore.py). */
 const RESTORE_PATH = '/api/platform/restore';

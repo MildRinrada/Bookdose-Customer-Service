@@ -74,18 +74,22 @@ class VulnScanTests(unittest.TestCase):
         self.assertIn('uvicorn 0.53.0',body)
         self.assertIn('CVE-2026-1111',body)
         self.assertNotIn('eslint',body)
-        # On the overview and its to-do list.
+        # On ความปลอดภัย → ช่องโหว่, and the overview's to-do list leads there.
+        self.assertEqual(self.ok(self.owner,'/api/platform/vulns')['last']['findings'][0]['id'],HIGH['id'])
         health = self.ok(self.owner,'/api/platform/health')
-        self.assertEqual(health['vulns']['last']['findings'][0]['id'],HIGH['id'])
+        self.assertNotIn('vulns',health)
         todo = {i['key']:i for i in health['todo']}
         self.assertEqual(todo['vulns']['level'],'critical')
         self.assertIn('uvicorn',todo['vulns']['detail'])
+        self.assertEqual(todo['vulns']['action']['href'],'/platform/security?tab=vulns')
+        self.assertIn('/platform/security?tab=vulns',body)
         # The next day's round finds the same: not emailed again.
         with self.fake_packages(), patch.object(vulns,'_request',side_effect=OsvFake()):
             vulns.scan()
         self.assertEqual(self.mailer.call_count,1)
         # Organizations' admins do not run it.
         self.assertEqual(self.admin.call('/api/platform/vulns',{})[0],403)
+        self.assertEqual(self.admin.call('/api/platform/vulns')[0],403)
 
     def test_osv_out_of_reach_keeps_the_last_findings_and_retries_soon(self):
         with self.fake_packages(), patch.object(vulns,'_request',side_effect=OsvFake()):

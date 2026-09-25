@@ -238,10 +238,10 @@ def checklist(cd, session, snapshot):
         # A published hole in what runs is urgent whether rated high or critical: it is emailed at once too.
         names = ', '.join(dict.fromkeys(f"{f['name']} {f['version']}" for f in urgent))
         items.append(_item('vulns','critical',f'ไลบรารีมีช่องโหว่ระดับสูง {len(urgent)} รายการ',f'อัปเดต {names}'[:200],
-                           'ดูช่องโหว่','#vulns'))
+                           'ดูช่องโหว่','/platform/security?tab=vulns'))
     elif scan and not scan.get('ok') and scan['at']<after(hours=-48):
         items.append(_item('vulns-failed','info','ตรวจช่องโหว่ในไลบรารีไม่ได้มา 2 วัน',
-                           'เซิร์ฟเวอร์ติดต่อ api.osv.dev ไม่ได้ ตรวจการเชื่อมต่ออินเทอร์เน็ตหรือไฟร์วอลล์','ดูช่องโหว่','#vulns'))
+                           'เซิร์ฟเวอร์ติดต่อ api.osv.dev ไม่ได้ ตรวจการเชื่อมต่ออินเทอร์เน็ตหรือไฟร์วอลล์','ดูช่องโหว่','/platform/security?tab=vulns'))
     alerts = security.count_open_alerts(cd)
     if alerts:
         items.append(_item('alerts','warning',f'การแจ้งเตือนความปลอดภัยรอตรวจ {alerts} รายการ','ตรวจแล้วกดรับทราบในหน้าความปลอดภัย',

@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { Icon } from '@/components/Icon';
+import { useDialogs } from '@/components/ui/Dialogs';
+import { useToast } from '@/components/ui/Toast';
 import { celebrate } from '@/features/staff-account/celebrate';
+import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
+import { hideSetup, OVERVIEW_PREFIX } from '../api';
 import type { SetupChecklist, SetupStep } from '../types';
 
 /* เริ่มต้นใช้งาน (owners): a broken channel first, then the four steps that make a new organization work, with where
@@ -15,6 +19,9 @@ import type { SetupChecklist, SetupStep } from '../types';
    Steps already done stay on the list, ticked, instead of disappearing: seeing three ticks and one blank is what
    makes the last one feel worth doing. Rules and AI sit apart under ทำเพิ่มได้ภายหลัง - they make a working
    organization better, they do not make it work. Nothing shows once the four are done and nothing is broken.
+
+   An owner who does not want to follow the steps closes them for good (ปิดถาวร, in this organization): the card leaves
+   the page and the cards under it move up. A broken channel still shows here, alone, because that is not a step.
    Markup: dashboard-extras (setup-card). */
 
 function StepRow({ step }: { step: SetupStep }) {
@@ -79,21 +86,50 @@ function useCelebrateFinished(setup: SetupChecklist) {
   }, [key, fingerprint]);
 }
 
+/** Is there anything for the card to show? When not, the page leaves it off and the cards under it move up. */
+export const setupShown = (setup: SetupChecklist) =>
+  setup.problems.length > 0 || (!setup.hidden && setup.steps.some((s) => !s.done));
+
 export function SetupCard({ setup }: { setup: SetupChecklist }) {
   useCelebrateFinished(setup);
+  const { confirm } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
   const done = setup.steps.filter((s) => s.done).length;
   const later = setup.later ?? [];
-  if (done === setup.steps.length && !setup.problems.length) return null;
+  if (!setupShown(setup)) return null;
+  const steps = !setup.hidden;
+  const close = () =>
+    confirm({
+      title: 'ปิดเริ่มต้นใช้งานถาวร',
+      message: 'รายการขั้นตอนนี้จะไม่แสดงบนหน้าภาพรวมของคุณในองค์กรนี้อีก การ์ดข้างล่างจะเลื่อนขึ้นมาแทน ถ้าช่องทางใดมีปัญหา ระบบยังเตือนตรงนี้เหมือนเดิม',
+      confirmLabel: 'ปิดถาวร',
+      run: async () => {
+        await hideSetup(true);
+        await refresh(OVERVIEW_PREFIX);
+        toast('ปิดเริ่มต้นใช้งานแล้ว');
+      },
+    });
   return (
     <section className="card setup-card" aria-labelledby="setup-title">
       <div className="card-header">
         <div>
           <h2 id="setup-title">{setup.problems.length ? 'ต้องแก้ไขตอนนี้' : 'เริ่มต้นใช้งาน'}</h2>
           <p>
-            ทำแล้ว {done} จาก {setup.steps.length} ขั้น · ทำครบแล้วองค์กรของคุณพร้อมรับลูกค้าจริง · เห็นเฉพาะเจ้าขององค์กร
+            {steps
+              ? `ทำแล้ว ${done} จาก ${setup.steps.length} ขั้น · ทำครบแล้วองค์กรของคุณพร้อมรับลูกค้าจริง · เห็นเฉพาะเจ้าขององค์กร`
+              : 'ช่องทางที่ส่งข้อความไม่ออก · เห็นเฉพาะเจ้าขององค์กร'}
           </p>
         </div>
-        <progress className="setup-progress" value={done} max={setup.steps.length} aria-label={`ทำแล้ว ${done} จาก ${setup.steps.length} ขั้น`} />
+        {steps && (
+          <div className="setup-head-side">
+            <progress className="setup-progress" value={done} max={setup.steps.length} aria-label={`ทำแล้ว ${done} จาก ${setup.steps.length} ขั้น`} />
+            <button type="button" className="btn small" onClick={close}>
+              <Icon name="close" />
+              ปิดถาวร
+            </button>
+          </div>
+        )}
       </div>
       <ul className="setup-list">
         {setup.problems.map((p) => (
@@ -108,11 +144,9 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
             </Link>
           </li>
         ))}
-        {setup.steps.map((step) => (
-          <StepRow key={step.key} step={step} />
-        ))}
+        {steps && setup.steps.map((step) => <StepRow key={step.key} step={step} />)}
       </ul>
-      {later.length > 0 && done === setup.steps.length && (
+      {steps && later.length > 0 && done === setup.steps.length && (
         <>
           <p className="setup-later-head tiny muted">ทำเพิ่มได้ภายหลัง · ไม่จำเป็นต่อการเริ่มใช้งาน</p>
           <ul className="setup-list setup-later">

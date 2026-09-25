@@ -23,7 +23,7 @@ import { MeItems } from './components/MeItems';
 import { MyDay } from './components/MyDay';
 import { NextTaskButton } from './components/NextTaskButton';
 import { QuickReplies } from './components/QuickReplies';
-import { SetupCard } from './components/SetupCard';
+import { SetupCard, setupShown } from './components/SetupCard';
 import { SlaForecast } from './components/SlaForecast';
 import { SlaWatch } from './components/SlaWatch';
 import { WaitingChats } from './components/WaitingChats';
@@ -202,7 +202,8 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
     sla: <SlaWatch needed={needed} shown={ASIDE_ITEMS} />,
     forecast: <SlaForecast forecast={dash?.forecast} shown={ASIDE_ITEMS} />,
   };
-  if (dash?.setup) cards.setup = <SetupCard setup={dash.setup} />;
+  // Only while there is something to show: a card that is not here gives its rows to the ones under it.
+  if (dash?.setup && setupShown(dash.setup)) cards.setup = <SetupCard setup={dash.setup} />;
   if (dash?.today && !readOnly) cards.today = <MyDay day={dash.today} />;
   if (!readOnly) {
     cards.todo = <TodoCard interval={interval} now={now} />;

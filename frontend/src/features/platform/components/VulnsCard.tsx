@@ -4,15 +4,16 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { useToast } from '@/components/ui/Toast';
+import { ErrorState, PageLoading } from '@/components/ui/display';
 import { date, number, relative } from '@/lib/format';
-import { useInvalidate } from '@/lib/query';
-import { HEALTH_PATH, scanVulns } from '../api';
+import { useApi, useInvalidate } from '@/lib/query';
+import { HEALTH_PATH, scanVulns, VULNS_PATH } from '../api';
 import type { VulnFinding, VulnsView } from '../types';
 
-/* ช่องโหว่ในไลบรารี on ภาพรวมระบบ (backend platform/vulns.py): the libraries the server runs checked once a day against
+/* ช่องโหว่ในไลบรารี on ความปลอดภัย → ช่องโหว่ (backend platform/vulns.py): the libraries the server runs checked once a day against
    OSV.dev (the CVE list, GitHub's advisories, PyPI's and npm's), what was found, most serious first, and which
    version fixes it. Those only used to build the web app are folded away: they never run on the server. A new high or
-   critical one is emailed to the platform admins at once. Markup: pages/platform-health.css (.vuln-*). */
+   critical one is emailed to the platform admins at once, and ภาพรวมระบบ's to-do list links here. Markup: pages/platform-health.css (.vuln-*). */
 
 const levelWords: Record<VulnFinding['level'], string> = { critical: 'วิกฤต', high: 'สูง', medium: 'กลาง', low: 'ต่ำ', unknown: 'ไม่ระบุ' };
 
@@ -48,7 +49,14 @@ function Finding({ f }: { f: VulnFinding }) {
   );
 }
 
-export function VulnsCard({ view }: { view: VulnsView }) {
+export function VulnsCard() {
+  const vulns = useApi<VulnsView>(VULNS_PATH, { refetchInterval: 60000 });
+  if (vulns.error) return <ErrorState error={vulns.error} onRetry={() => void vulns.refetch()} />;
+  if (!vulns.data) return <PageLoading />;
+  return <VulnsBody view={vulns.data} />;
+}
+
+function VulnsBody({ view }: { view: VulnsView }) {
   const toast = useToast();
   const run = useRunAction();
   const refresh = useInvalidate();
@@ -74,7 +82,7 @@ export function VulnsCard({ view }: { view: VulnsView }) {
             void run(async () => {
               toast('กำลังตรวจไลบรารี…');
               const found = await scanVulns();
-              await refresh(HEALTH_PATH);
+              await refresh(VULNS_PATH, HEALTH_PATH);
               toast(found.last?.ok ? 'ตรวจเสร็จแล้ว' : 'ติดต่อฐานข้อมูลช่องโหว่ไม่ได้ ลองใหม่ภายหลัง');
             })
           }

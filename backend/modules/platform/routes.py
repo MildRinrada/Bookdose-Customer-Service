@@ -31,6 +31,7 @@ ROUTES = [
     # Restoring from the console (restore.py): a backup sent in pieces, what restoring it would replace, and the restore.
     ('POST',  '/api/platform/restore/upload', controller.upload_backup,          'platform'),
     # The libraries checked against the published vulnerabilities (vulns.py): once a day, or now.
+    ('GET',   '/api/platform/vulns',          controller.vulnerabilities,        'platform'),
     ('POST',  '/api/platform/vulns',          controller.scan_vulnerabilities,   'platform'),
     ('POST',  '/api/platform/restore/preview', controller.restore_preview,       'platform'),
     ('POST',  '/api/platform/restore',        controller.restore_backup,         'platform'),

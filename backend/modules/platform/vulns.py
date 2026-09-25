@@ -293,7 +293,7 @@ def _send(recipients, cfg, secret, fresh):
             mail['From'],mail['To'] = cfg['address'],recipient
             mail['Date'],mail['Message-ID'],mail['Auto-Submitted'] = formatdate(localtime=False,usegmt=True),make_msgid(),'auto-generated'
             mail.set_content(f"การตรวจไลบรารีเทียบฐานข้อมูลช่องโหว่ (OSV.dev: CVE, GitHub Advisory) พบรายการใหม่ที่ต้องอัปเดต\n\n{lines}\n\n"
-                             f"ดูทั้งหมดที่ คอนโซลระบบกลาง → ภาพรวมระบบ:\n{cfg.get('public_base_url','').rstrip('/')}/platform/system#vulns\n\n"
+                             f"ดูทั้งหมดที่ คอนโซลระบบกลาง → ความปลอดภัย → ช่องโหว่:\n{cfg.get('public_base_url','').rstrip('/')}/platform/security?tab=vulns\n\n"
                              'อีเมลนี้ส่งถึงผู้ดูแลแพลตฟอร์มทุกคน แต่ละรายการแจ้งครั้งเดียว\n')
             T.send_email(cfg,secret,recipient,mail)
         except Exception as error:

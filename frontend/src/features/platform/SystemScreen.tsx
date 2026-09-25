@@ -8,7 +8,6 @@ import { date, number, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { HEALTH_PATH, SYSTEM_PATH } from './api';
 import { BackupsCard, ChannelsCard, SecurityCard, TodoCard, UsageCard } from './components/HealthCards';
-import { VulnsCard } from './components/VulnsCard';
 import { apiAreaLabels, bytesText, durationText, logSourceLabels, workerLabels, workerStatus } from './labels';
 import type { HealthPage, SystemOverview } from './types';
 
@@ -186,9 +185,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           <div className="system-grid system-section">
             <BackupsCard view={health.backups} />
             <SecurityCard summary={health.security} />
-          </div>
-          <div className="system-section">
-            <VulnsCard view={health.vulns} />
           </div>
           <div className="system-section">
             <ChannelsCard orgs={health.channels} />

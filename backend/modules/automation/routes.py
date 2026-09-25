@@ -4,6 +4,7 @@ from backend.utils.routing import ID
 ROUTES = [
     ('GET',   '/api/automation',                  controller.automation_page, 'workspace'),
     ('GET',   '/api/automation/overview',         controller.overview,        'workspace'),
+    ('POST',  '/api/automation/setup',            controller.hide_setup,      'workspace'),
     ('GET',   '/api/automation/alerts',           controller.alerts,          'workspace'),
     ('PATCH', '/api/automation/settings',         controller.save_settings,   'workspace'),
     ('POST',  '/api/automation/rules',            controller.create_rule,     'workspace'),

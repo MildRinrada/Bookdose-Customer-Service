@@ -72,5 +72,10 @@ def alerts(req):
     return req.send(200,service.my_alerts(req.db,req.ctx))
 
 
+def hide_setup(req):
+    from backend.modules.automation import setup
+    return req.send(200,setup.hide(req.cd,req.ctx,req.body))
+
+
 def overview(req):
     return req.send(200,service.overview(req.cd,req.db,req.ctx,schema.tz_offset(req.query)))

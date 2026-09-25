@@ -18,10 +18,25 @@ export function SettingsScreen() {
   const registration = useApi<RegistrationConfig>(REGISTRATION_PATH);
   const ready = Boolean(registration.data);
 
-  // /platform/settings#sms: the browser looked for the section before it was drawn, so scroll to it once it is.
+  // /platform/settings#turnstile: the browser looked for the section before it was drawn, so scroll to it once it is.
+  // The SMS and Turnstile cards load their own settings after that and grow, which pushed the section back down (the
+  // page opened on SMS): it is kept in place while the sections settle, until the admin scrolls, or for a few seconds.
   useEffect(() => {
     if (!ready || !window.location.hash) return;
-    document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.scrollIntoView({ block: 'start' });
+    const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    if (!target) return;
+    const align = () => target.scrollIntoView({ block: 'start' });
+    align();
+    const observer = new ResizeObserver(align);
+    document.querySelectorAll('.platform-settings-section').forEach((section) => observer.observe(section));
+    const stop = () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      for (const kind of ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const) window.removeEventListener(kind, stop);
+    };
+    const timer = window.setTimeout(stop, 4000);
+    for (const kind of ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const) window.addEventListener(kind, stop, { passive: true });
+    return stop;
   }, [ready]);
 
   if (registration.error && !registration.data) return <ErrorState error={registration.error} onRetry={() => void registration.refetch()} />;

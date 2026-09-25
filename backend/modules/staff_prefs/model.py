@@ -67,7 +67,11 @@ DEFAULTS = {
     # The personality of the member's own AI assistant (ai/assistant.py): '' until they choose (it speaks formally
     # meanwhile), 'formal', 'friendly', or 'custom' with the character they described.
     'assistant':{'persona':'','custom':''},
+    # เริ่มต้นใช้งาน closed for good (automation/setup.py): the organizations where this owner said they do not want
+    # the steps. Per organization, because a new one they join or open still needs its own.
+    'setup_hidden':[],
 }
+SETUP_HIDDEN_MAX = 200
 
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS staff_preferences (

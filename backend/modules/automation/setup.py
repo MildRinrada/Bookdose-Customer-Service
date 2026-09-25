@@ -12,6 +12,8 @@ that gets it working, and the last step is the one that proves it:
 A step can be partly done (the articles), and says so, because "2 จาก 5" is a reason to carry on and "ยังไม่เสร็จ" is
 not. Rules and AI come after: they make a working organization better, they do not make it work, and putting them in
 the same list made the list look longer than the job. The card goes away once the four are done and nothing is broken.
+
+An owner who does not want the steps closes them for good (hide): from then on only what is broken is shown to them.
 """
 from backend.modules.organization import repository as organization
 
@@ -69,4 +71,20 @@ def checklist(cd, db, ctx):
               'ร่างคำตอบจากคลังความรู้ และให้บอตตอบคำถามทั่วไปแทนทีม','ตั้งค่า AI','/settings?tab=ai'),
     ]
     problems = [_problem(c) for c in channels if c['status']!='ok']
-    return {'steps':steps,'later':later,'problems':problems}
+    from backend.modules.staff_prefs import service as prefs
+    hidden = ctx['tenant_id'] in prefs.prefs_of(cd,ctx['id'])['setup_hidden']
+    return {'steps':steps,'later':later,'problems':problems,'hidden':hidden}
+
+
+def hide(cd, ctx, body):
+    """POST /api/automation/setup {hidden}: close เริ่มต้นใช้งาน for good in this organization, or bring it back."""
+    from backend.utils.validation import require
+    from backend.modules.staff_prefs import service as prefs
+    require(ctx['role']=='admin' and not ctx.get('read_only'),'เฉพาะเจ้าขององค์กร',403)
+    hidden = body.get('hidden') if isinstance(body,dict) else None
+    require(isinstance(hidden,bool),'ข้อมูลไม่ถูกต้อง')
+    current = prefs.prefs_of(cd,ctx['id'])
+    others = [t for t in current['setup_hidden'] if t!=ctx['tenant_id']]
+    prefs.store(cd,ctx['id'],{**current,'setup_hidden':([ctx['tenant_id']]+others if hidden else others)})
+    cd.commit()
+    return {'hidden':hidden}

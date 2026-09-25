@@ -320,3 +320,13 @@
 .setup-later .setup-item:first-child {
   border-top: 0;
 }
+
+/* เริ่มต้นใช้งาน: the progress and ปิดถาวร side by side at the right of the heading. */
+.setup-head-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 14px;
+  flex: none;
+}

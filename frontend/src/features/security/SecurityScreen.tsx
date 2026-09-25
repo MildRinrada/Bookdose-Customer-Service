@@ -7,8 +7,11 @@ import { FilterPill } from '@/components/ui/filters';
 import { number } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { useUiState } from '@/lib/ui-state';
+import { VULNS_PATH } from '@/features/platform/api';
+import { VulnsCard } from '@/features/platform/components/VulnsCard';
 import { overviewPath, SECURITY_PREFIX } from './api';
 import { AlertsBanner } from './components/Alerts';
+import { CheckupPanel } from './components/Checkup';
 import { EventsLog } from './components/EventsLog';
 import { HoneypotSettingsCard } from './components/HoneypotSettingsCard';
 import { HoneytokensCard } from './components/Honeytokens';
@@ -22,20 +25,24 @@ import { TrapEventsCard } from './components/TrapEvents';
 import { cardLabels, rangeLabels } from './labels';
 import type { SecurityOverview, SecurityRange } from './types';
 
-/* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/SECURITY-DESIGN.md §3–4), in five
+/* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/SECURITY-DESIGN.md §3–4), in seven
    tabs so each is one thing to look at: ภาพรวม (the numbers and chart of the chosen range, the IPs and accounts under
-   attack), เหตุการณ์ (the events log), การเข้าถึง (locked accounts, the IP block list, ending an account's sessions),
-   กับดัก (honeytokens, the newest trap events and the honeypot settings; docs/HONEYPOT-DESIGN.md §5) and ตั้งค่า. The
+   attack), ตรวจสุขภาพ (are the headers, the certificate, the key, Turnstile and every organization set up safely),
+   เหตุการณ์ (the events log), การเข้าถึง (locked accounts, the IP block list, ending an account's sessions),
+   กับดัก (honeytokens, the newest trap events and the honeypot settings; docs/HONEYPOT-DESIGN.md §5), ช่องโหว่ (the
+   libraries checked against the published vulnerabilities; platform/components/VulnsCard.tsx) and ตั้งค่า. The
    open alerts sit above every tab. The overview, alerts and locks refresh themselves every minute (plain GETs: they
    never count as the admin's activity). Markup: pages/security.css. */
 
-type SecurityTab = 'overview' | 'events' | 'access' | 'traps' | 'settings';
+type SecurityTab = 'overview' | 'checkup' | 'events' | 'access' | 'traps' | 'vulns' | 'settings';
 
 const TABS: Array<[SecurityTab, string]> = [
   ['overview', 'ภาพรวม'],
+  ['checkup', 'ตรวจสุขภาพ'],
   ['events', 'เหตุการณ์'],
   ['access', 'การเข้าถึง'],
   ['traps', 'กับดัก'],
+  ['vulns', 'ช่องโหว่'],
   ['settings', 'ตั้งค่า'],
 ];
 const BASE = '/platform/security';
@@ -71,7 +78,7 @@ export function SecurityScreen({ tab }: { tab?: string }) {
               ))}
             </div>
           )}
-          <button type="button" className="btn subtle" onClick={() => void refresh(SECURITY_PREFIX)}>
+          <button type="button" className="btn subtle" onClick={() => void refresh(SECURITY_PREFIX, VULNS_PATH)}>
             <Icon name="clock" />
             รีเฟรช
           </button>
@@ -96,6 +103,7 @@ export function SecurityScreen({ tab }: { tab?: string }) {
       </div>
       <div id={`security-panel-${current}`} role="tabpanel" aria-labelledby={`security-tab-${current}`} className="security-panel">
         {current === 'overview' && <Overview range={range} />}
+        {current === 'checkup' && <CheckupPanel />}
         {current === 'events' && <EventsLog />}
         {current === 'access' && (
           <>
@@ -107,6 +115,7 @@ export function SecurityScreen({ tab }: { tab?: string }) {
           </>
         )}
         {current === 'traps' && <Traps />}
+        {current === 'vulns' && <VulnsCard />}
         {current === 'settings' && <SettingsCard />}
       </div>
     </div>

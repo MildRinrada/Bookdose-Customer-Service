@@ -51,6 +51,27 @@ class SetupChecklistTests(unittest.TestCase):
     def test_an_agent_never_sees_the_checklist(self):
         agent,_ = self.create_member()
         self.assertIsNone(self.ok(agent,'/api/automation/overview')['setup'])
+        self.assertEqual(agent.call('/api/automation/setup',{'hidden':True})[0],403)
+
+    def test_an_owner_closes_it_for_good_in_this_organization_only(self):
+        self.assertFalse(self.setup()['hidden'])
+        self.assertEqual(self.admin.call('/api/automation/setup',{'hidden':'yes'})[0],400)
+        self.assertEqual(self.ok(self.admin,'/api/automation/setup',{'hidden':True}),{'hidden':True})
+        closed = self.setup()
+        self.assertTrue(closed['hidden'])
+        # The steps are still there to read; what is broken is still sent (the page shows only that).
+        self.assertEqual(len(closed['steps']),4)
+        # Saving other preferences keeps it closed.
+        self.ok(self.admin,'/api/account/preferences',{'alias':'แอดมิน'})
+        self.assertTrue(self.setup()['hidden'])
+        # Another organization of the same owner still has its own.
+        self.second_organization()
+        self.assertFalse(self.setup()['hidden'])
+        self.admin.switch(self.org)
+        self.assertTrue(self.setup()['hidden'])
+        # And it can be brought back.
+        self.ok(self.admin,'/api/automation/setup',{'hidden':False})
+        self.assertFalse(self.setup()['hidden'])
 
 
 # The setUp, the sign-ins and the helpers of the main integration test, without its tests.

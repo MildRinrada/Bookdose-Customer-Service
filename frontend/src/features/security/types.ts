@@ -127,3 +127,17 @@ export type Honeytoken = {
 
 /** 201 of POST /api/platform/security/honeytokens: the secret (key / password / full link / decoy email) is shown once. */
 export type HoneytokenCreated = { token: Honeytoken; secret: string };
+
+/** GET /api/platform/security/checkup (backend security/checkup.py): ตรวจสุขภาพความปลอดภัย. */
+export type CheckupLevel = 'ok' | 'warning' | 'critical' | 'info';
+/** A header of the site, or an organization that needs something (with where to fix it). */
+export type CheckupItem = { label: string; ok: boolean; note?: string; value?: string; href?: string; link?: string };
+export type SecurityCheck = {
+  key: 'headers' | 'https' | 'key' | 'turnstile' | 'admins' | 'quota';
+  level: CheckupLevel;
+  title: string;
+  detail: string;
+  action: { label: string; href: string } | null;
+  items: CheckupItem[];
+};
+export type Checkup = { checked_at: string; site: string; checks: SecurityCheck[]; counts: Record<CheckupLevel, number> };

@@ -68,3 +68,13 @@ def delete_honeytoken(req, token_id):
 
 def test_honeytoken(req, token_id):
     return req.send(200,service.test_honeytoken(req,token_id))
+
+
+def checkup(req):
+    """ตรวจสุขภาพความปลอดภัย (checkup.py). A copy on this machine with no public address is checked where the admin
+    opened it: only localhost, so the Host a request names never sends the server elsewhere."""
+    from backend.middleware.security import from_web_app
+    from backend.modules.security import checkup as C
+    host = req.headers.get('X-Forwarded-Host','') if from_web_app(req) else ''
+    hint = 'http://'+host if host.split(':')[0] in C.LOCAL else ''
+    return req.send(200,C.run(req.cd,hint))

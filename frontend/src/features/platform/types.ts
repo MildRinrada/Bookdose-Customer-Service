@@ -173,7 +173,6 @@ export type HealthPage = {
   security: SecuritySummary;
   backups: BackupsView;
   announcement: Announcement | null;
-  vulns: VulnsView;
 };
 
 /** A published vulnerability in a library the server runs (backend platform/vulns.py, from OSV.dev). */

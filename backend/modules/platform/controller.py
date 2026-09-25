@@ -102,13 +102,12 @@ def _snapshot():
 
 def health(req):
     """GET /api/platform/health: what needs doing, the channels of every organization, how busy each one is, security
-    at a glance, the backups and the announcement (health.py)."""
-    from backend.modules.platform import backups, health as H, vulns
+    at a glance, the backups and the announcement (health.py). The library scan itself is on ความปลอดภัย → ช่องโหว่."""
+    from backend.modules.platform import backups, health as H
     snapshot = _snapshot()
     return req.send(200,{'todo':H.checklist(req.cd,req.session,snapshot),'channels':H.channel_health(req.cd),
                          'usage':H.org_usage(req.cd),'security':H.security_summary(req.cd),
-                         'backups':backups.overview(req.cd),'announcement':H.announcement(req.cd),
-                         'vulns':vulns.overview(vulns.last(req.cd))})
+                         'backups':backups.overview(req.cd),'announcement':H.announcement(req.cd)})
 
 
 def notifications(req):
@@ -145,6 +144,12 @@ def run_backup(req):
 def save_backup_settings(req):
     from backend.modules.platform import backups as B
     return req.send(200,B.save_settings(req.cd,req.session,req.body))
+
+
+def vulnerabilities(req):
+    """GET /api/platform/vulns: the last check of the libraries (ความปลอดภัย → ช่องโหว่; vulns.py)."""
+    from backend.modules.platform import vulns
+    return req.send(200,vulns.overview(vulns.last(req.cd)))
 
 
 def scan_vulnerabilities(req):

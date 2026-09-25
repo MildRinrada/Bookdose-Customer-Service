@@ -26,6 +26,7 @@ import {
   PAGE_LAYOUT,
   growToFit,
   placeCards,
+  closeGaps,
   placeManyWithPush,
   placeWithPush,
   pullEdge,
@@ -157,9 +158,14 @@ export function DashboardBoard({ content }: { content: Record<string, ReactNode>
   const measured = useRef<Map<string, number>>(new Map());
   const needsRef = useRef<Record<string, number>>({});
   const currentRef = useRef(current);
-  needsRef.current = needs;
-  currentRef.current = current;
-  const cards = growToFit(placeCards(current, (id) => id in content), needs, (id) => Boolean(current.box[id]));
+  // Kept current for the observer below; this effect is declared first, so it runs before the one that measures.
+  useEffect(() => {
+    needsRef.current = needs;
+    currentRef.current = current;
+  });
+  // A card with a rectangle on this board that is not on the page any more gives its rows back (closeGaps).
+  const vacated = Object.entries(current.box).flatMap(([id, box]) => (box && !(id in content) ? [box] : []));
+  const cards = closeGaps(growToFit(placeCards(current, (id) => id in content), needs, (id) => Boolean(current.box[id])), vacated);
   const shown = cards.filter((card) => !card.hidden);
   const shownKey = shown.map((card) => card.id).join(',');
   useEffect(() => {

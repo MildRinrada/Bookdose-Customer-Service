@@ -908,3 +908,151 @@ p.card-body.muted .icon {
 .security-panel > .card:first-child {
   margin-top: 0;
 }
+
+/* ตรวจสุขภาพ (features/security/components/Checkup.tsx): a summary, then one card per group, each check a row with
+   its mark, what was found and where to fix it. */
+.checkup {
+  display: grid;
+  gap: 18px;
+}
+.checkup-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 22px;
+}
+.checkup-summary h2 {
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+}
+.checkup-summary p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.checkup-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.checkup-counts li {
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.checkup-counts .is-ok,
+.checkup-check.is-ok .checkup-mark {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.checkup-counts .is-warning,
+.checkup-check.is-warning .checkup-mark {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.checkup-counts .is-critical,
+.checkup-check.is-critical .checkup-mark {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.checkup-check.is-info .checkup-mark {
+  background: var(--soft);
+  color: var(--ink);
+}
+.checkup-group .card-header {
+  padding-bottom: 4px;
+}
+.checkup-list {
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+}
+.checkup-check {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--line);
+}
+.checkup-check:first-child {
+  border-top: 0;
+}
+.checkup-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.checkup-mark svg {
+  width: 18px;
+  height: 18px;
+}
+.checkup-text h3 {
+  font-size: 1rem;
+  margin: 6px 0 4px;
+}
+.checkup-text p {
+  margin: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.checkup-check > .btn {
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.checkup-items {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.checkup-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--soft);
+}
+.checkup-item > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--red);
+}
+.checkup-item.ok > svg {
+  color: var(--green);
+}
+.checkup-item-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.checkup-item-text .muted {
+  font-size: 0.9rem;
+}
+.checkup-item .btn {
+  flex: none;
+}
+@media (max-width: 640px) {
+  .checkup-check {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 14px 16px;
+  }
+  .checkup-check > .btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .checkup-summary {
+    padding: 18px 16px;
+  }
+}

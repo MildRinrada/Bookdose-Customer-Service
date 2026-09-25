@@ -9,6 +9,9 @@ export const OVERVIEW_PREFIX = '/api/automation/overview';
 
 export const overviewPath = () => `${OVERVIEW_PREFIX}?tz=${new Date().getTimezoneOffset()}`;
 
+/** เริ่มต้นใช้งาน closed for good in this organization (hidden: true), or brought back (automation/setup.py). */
+export const hideSetup = (hidden: boolean) => api<{ hidden: boolean }>('/api/automation/setup', { hidden });
+
 /** The customer's overview (customers/dashboard.py build): service levels per organization. */
 export const CUSTOMER_DASHBOARD_PATH = '/api/customer/dashboard';
 

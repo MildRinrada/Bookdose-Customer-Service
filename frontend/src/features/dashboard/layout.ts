@@ -230,6 +230,39 @@ export function growToFit(cards: PlacedCard[], needs: Record<string, number>, fi
   return placed.sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
 }
 
+/* A card that went away leaves no hole.
+
+   A card that is no longer on the page - the setup checklist closed for good or finished, a card this member's role
+   does not get - still has its rectangle written down on a board somebody laid out, and the cards under it would sit
+   below an empty band. The cards under it, in its columns and everything under those in theirs, come up by as many
+   of its rows as they can without landing on a card beside them. A gap the member left between two cards that are
+   both still there is theirs and stays. */
+export function closeGaps(cards: PlacedCard[], vacated: Box[]): PlacedCard[] {
+  let placed = cards.map((card) => ({ ...card }));
+  for (const gap of [...vacated].sort((a, b) => b.y - a.y)) {
+    const on = placed.filter(occupies);
+    // What hangs under the gap: the cards starting at or below its top in its columns, then whatever is under those.
+    const moving = new Set<string>();
+    let reach = on.filter((c) => c.box.y >= gap.y && c.box.x < gap.x + gap.w && gap.x < c.box.x + c.box.w);
+    while (reach.length) {
+      for (const c of reach) moving.add(c.id);
+      reach = on.filter(
+        (c) => !moving.has(c.id) && on.some((m) => moving.has(m.id) && c.box.y >= m.box.y + m.box.h && c.box.x < m.box.x + m.box.w && m.box.x < c.box.x + c.box.w),
+      );
+    }
+    if (!moving.size) continue;
+    const staying = on.filter((c) => !moving.has(c.id));
+    const top = Math.min(...on.filter((c) => moving.has(c.id)).map((c) => c.box.y));
+    let lift = Math.min(gap.h, top);
+    for (; lift > 0; lift -= 1) {
+      const clear = on.every((c) => !moving.has(c.id) || !staying.some((s) => overlaps({ ...c.box, y: c.box.y - lift }, s.box)));
+      if (clear) break;
+    }
+    if (lift > 0) placed = placed.map((c) => (moving.has(c.id) ? { ...c, box: { ...c.box, y: c.box.y - lift } } : c));
+  }
+  return placed.sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
+}
+
 /** How many rows the board needs, so it keeps its shape while a card is being carried across it. */
 export const rowsNeeded = (cards: PlacedCard[]) => Math.max(8, bottomOf(cards.filter(occupies).map((c) => c.box)) + 2);
 

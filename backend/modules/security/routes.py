@@ -16,6 +16,8 @@ ROUTES = [
     ('POST',   SECURITY+'/ip-blocks',             controller.add_ip_block,      'platform'),
     ('DELETE', SECURITY+'/ip-blocks',             controller.remove_ip_block,   'platform'),
     ('POST',   SECURITY+'/revoke-sessions',       controller.revoke_sessions,   'platform'),
+    # ตรวจสุขภาพ: headers, the HTTPS certificate, the key, Turnstile, organizations without an admin or a quota (checkup.py).
+    ('GET',    SECURITY+'/checkup',               controller.checkup,           'platform'),
     ('GET',    SECURITY+'/settings',              controller.settings,          'platform'),
     ('POST',   SECURITY+'/settings',              controller.save_settings,     'platform'),
     ('GET',    SECURITY+'/honeytokens',           controller.honeytokens,       'platform'),

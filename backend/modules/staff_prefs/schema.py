@@ -7,7 +7,8 @@ import re
 
 from backend.modules.staff_prefs.model import (ALIAS_MAX, DASHBOARD_COLUMNS, DASHBOARD_MAX_CARDS, DASHBOARD_MAX_ROWS,
                                                DASHBOARD_MIN_H, DASHBOARD_MIN_W, DEFAULTS, EVENTS, MAX_LEAVE,
-                                               MAX_SNIPPETS, PERSONA_MAX, PERSONAS, SIGNATURE_MAX, SNIPPET_MAX, STATUSES)
+                                               MAX_SNIPPETS, PERSONA_MAX, PERSONAS, SETUP_HIDDEN_MAX, SIGNATURE_MAX, SNIPPET_MAX,
+                                               STATUSES)
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -32,6 +33,8 @@ def merged(saved):
             # across by name rather than dropped with the keys the defaults do not know.
             if key=='dashboard' and value.get('base')=='page':
                 found[key]['base'] = 'page'
+        elif key=='setup_hidden':
+            found[key] = [t for t in value if isinstance(t,str)][:SETUP_HIDDEN_MAX] if isinstance(value,list) else []
         else:
             found[key] = value
     return found

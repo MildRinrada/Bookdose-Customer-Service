@@ -10,6 +10,8 @@ export const OPEN_ALERTS_PATH = `${SECURITY_PREFIX}/alerts?open=1`;
 export const IP_BLOCKS_PATH = `${SECURITY_PREFIX}/ip-blocks`;
 export const SETTINGS_PATH = `${SECURITY_PREFIX}/settings`;
 export const HONEYTOKENS_PATH = `${SECURITY_PREFIX}/honeytokens`;
+/** ตรวจสุขภาพ: the platform's own security settings, checked when read (backend security/checkup.py). */
+export const CHECKUP_PATH = `${SECURITY_PREFIX}/checkup`;
 
 export const overviewPath = (range: SecurityRange) => `${SECURITY_PREFIX}/overview?range=${range}`;
 

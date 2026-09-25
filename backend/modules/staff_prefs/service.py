@@ -33,6 +33,11 @@ def _store(cd, user_id, prefs, status_changed=False):
                (user_id,json.dumps(prefs,ensure_ascii=False),moment,moment,int(status_changed)))
 
 
+def store(cd, user_id, prefs):
+    """Save preferences changed outside the preferences page (the caller commits)."""
+    _store(cd,user_id,prefs)
+
+
 def status_since(cd, user_id):
     row = one(cd,'SELECT status_at FROM staff_preferences WHERE user_id=?',(user_id,))
     return row['status_at'] if row and row['status_at'] else None

@@ -69,6 +69,8 @@ export type SetupChecklist = {
   /** Worth doing once it works: rules and AI. */
   later?: SetupStep[];
   problems: Array<{ key: string; level: 'critical' | 'warning'; title: string; detail: string; action: SetupAction }>;
+  /** This owner closed the steps for good in this organization: only what is broken is shown. */
+  hidden?: boolean;
 };
 
 /** Questions that ask the same thing and no public article answers (ai/insights.knowledge_gaps). */

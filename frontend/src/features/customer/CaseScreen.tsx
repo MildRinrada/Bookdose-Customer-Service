@@ -1,11 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
+import { Form } from '@/components/ui/Form';
+import { useToast } from '@/components/ui/Toast';
 import { date, relative, starsText } from '@/lib/format';
-import { useApi } from '@/lib/query';
-import { casePath } from './api';
+import { useApi, useInvalidate } from '@/lib/query';
+import { caseExportUrl, casePath, OVERVIEW_PATH, reopenCase } from './api';
 import { ProgressSteps } from './components/common';
 import { useOrgs, useOverview } from './hooks';
 import { caseState, chatState } from './labels';
@@ -30,7 +35,65 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
       back={{ href: '/customer/cases', label: 'เคสทั้งหมดของฉัน' }}
       chatHref={(chat) => `/customer/chats/${slug}/${chat}`}
       newChatHref="/customer/chats/new"
+      actions={<CaseActions slug={slug} id={id} data={data} />}
     />
+  );
+}
+
+/* What the signed-in customer can do with their case (customers/perks.py): send it back when the problem returned
+   within a few days of it being finished, and keep it as a file. */
+function CaseActions({ slug, id, data }: { slug: string; id: string; data: CaseDetail }) {
+  const { openModal } = useDialogs();
+  const reopen = data.reopen;
+  return (
+    <>
+      {reopen?.allowed && (
+        <button type="button" className="btn primary" onClick={() => openModal('ปัญหายังไม่หาย', <ReopenForm slug={slug} id={id} data={data} />)}>
+          <Icon name="restore" />
+          ยังไม่หาย
+        </button>
+      )}
+      <a className="btn" href={caseExportUrl(slug, id)} download>
+        <Icon name="download" />
+        ดาวน์โหลดประวัติ
+      </a>
+    </>
+  );
+}
+
+function ReopenForm({ slug, id, data }: { slug: string; id: string; data: CaseDetail }) {
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const router = useRouter();
+  return (
+    <Form
+      data-form="case-reopen"
+      onSubmit={async (values) => {
+        const result = await reopenCase(slug, id, String(values.message ?? ''));
+        closeModal(true);
+        toast('ส่งเคสกลับให้ทีมงานแล้ว');
+        await refresh(casePath(slug, id), OVERVIEW_PATH);
+        if (result.conversation_id) router.push(`/customer/chats/${slug}/${result.conversation_id}`);
+      }}
+    >
+      <p className="notice">
+        เคส BD-{data.case.number} จะกลับไปให้ทีมงานดูแลต่อ พร้อมข้อความของคุณในแชทเดิม ไม่ต้องเริ่มเล่าใหม่ ส่งกลับได้ภายใน {data.reopen?.days ?? 7} วันหลังปิดเคส
+      </p>
+      <div className="field">
+        <label htmlFor="reopen-message">ตอนนี้เป็นอย่างไร (ไม่บังคับ)</label>
+        <textarea id="reopen-message" name="message" rows={4} maxLength={1000} autoFocus placeholder="เช่น ใช้ได้วันเดียวแล้วกลับมาเป็นเหมือนเดิม" />
+      </div>
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={() => closeModal()}>
+          ยกเลิก
+        </button>
+        <button type="submit" className="btn primary">
+          <Icon name="send" />
+          ส่งเคสกลับให้ทีมงาน
+        </button>
+      </div>
+    </Form>
   );
 }
 
@@ -41,10 +104,12 @@ export type CaseViewProps = {
   /** Where one of the case's chats opens. */
   chatHref: (conversationId: string) => string;
   newChatHref: string;
+  /** Buttons of the signed-in customer's own (ยังไม่หาย, ดาวน์โหลดประวัติ). */
+  actions?: ReactNode;
 };
 
 /** Where a case stands and what comes next, for whoever follows it. */
-export function CaseView({ data, orgName, back, chatHref, newChatHref }: CaseViewProps) {
+export function CaseView({ data, orgName, back, chatHref, newChatHref, actions }: CaseViewProps) {
   const t = data.case;
   const view = caseState(t.status);
   const done = view.tone === 'done';
@@ -85,11 +150,16 @@ export function CaseView({ data, orgName, back, chatHref, newChatHref }: CaseVie
           <p>
             <strong>{view.label}</strong> · {view.hint}
           </p>
-          {replyChat && (
-            <Link className="btn primary" href={chatHref(replyChat)}>
-              <Icon name="chat" />
-              ตอบกลับทีมงาน
-            </Link>
+          {(replyChat || actions) && (
+            <div className="customer-banner-actions">
+              {replyChat && (
+                <Link className="btn primary" href={chatHref(replyChat)}>
+                  <Icon name="chat" />
+                  ตอบกลับทีมงาน
+                </Link>
+              )}
+              {actions}
+            </div>
           )}
         </div>
         <div className="customer-banner-side">

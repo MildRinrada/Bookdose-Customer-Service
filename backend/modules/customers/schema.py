@@ -2,6 +2,7 @@
 and what the customer is shown of their account and cases."""
 import re
 
+from backend.utils.files import PICTURE_FIELD_MAX, png_data_url
 from backend.utils.validation import require, field, email_field, person_name, new_password, existing_password
 
 TOKEN = re.compile(r'[A-Za-z0-9_-]{43}')
@@ -59,8 +60,14 @@ def _phone(body):
 
 
 def profile_form(body):
-    """(name, phone) the customer edits in their account settings; the email stays as signed up."""
-    return person_name(body),_phone(body)
+    """(name, phone, avatar) the customer edits in their account settings; the email stays as signed up. The avatar
+    is None when left out (kept as it is), '' to remove it, or a PNG data URL up to 512 × 512 and 128 KB."""
+    avatar = None
+    if 'avatar' in body:
+        avatar = field(body,'avatar',PICTURE_FIELD_MAX,False)
+        ok,problem = png_data_url(avatar,'รูปโปรไฟล์')
+        require(ok,problem)
+    return person_name(body),_phone(body),avatar
 
 
 def notifications_form(body):
@@ -107,7 +114,7 @@ def account_view(session):
         return {'signed_in':False}
     return {'signed_in':True,'name':session['name'],'email':session['email'],'phone':session['phone'],'csrf':session['csrf'],
             'email_verified':bool(session['email_verified']),'notify_email':bool(session['notify_email']),'consent_version':session['consent_version'],
-            'consent_at':session['consent_at'],'created_at':session['created_at']}
+            'consent_at':session['consent_at'],'created_at':session['created_at'],'avatar':session.get('avatar') or ''}
 
 
 CASE_FIELDS = ('id','number','subject','category','status','created_at','updated_at','first_response_due_at','first_response_at',

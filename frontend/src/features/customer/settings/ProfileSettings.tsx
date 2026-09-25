@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Icon } from '@/components/Icon';
+import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
@@ -39,19 +40,20 @@ export function ProfileSettings() {
         <div className="card-header">
           <div>
             <h2>ข้อมูลส่วนตัว</h2>
-            <p>ชื่อที่ทีมงานใช้เรียก และเบอร์สำหรับติดต่อกลับ</p>
+            <p>รูปและชื่อที่ทีมงานเห็น และเบอร์สำหรับติดต่อกลับ</p>
           </div>
         </div>
         <Form
-          key={`${me.name}|${me.phone}`}
+          key={`${me.name}|${me.phone}|${(me.avatar ?? '').length}`}
           className="card-body"
           data-form="customer-profile"
           onSubmit={async (values) => {
-            await saveProfile({ name: values.name ?? '', phone: values.phone || '' });
+            await saveProfile({ name: values.name ?? '', phone: values.phone || '', avatar: values.avatar || '' });
             toast('บันทึกข้อมูลแล้ว');
             await refresh(ACCOUNT_PATH);
           }}
         >
+          <PhotoPicker value={me.avatar ?? ''} personName={me.name} />
           <div className="field">
             <span className="file-field-title">อีเมลที่ใช้เข้าสู่ระบบ</span>
             <div className="customer-email">

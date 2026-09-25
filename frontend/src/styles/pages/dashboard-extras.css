@@ -330,3 +330,12 @@
   gap: 10px 14px;
   flex: none;
 }
+
+/* A card's icon sits before its title, not in the corner: alone at the right edge it reads as a button to press. */
+.card-title-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  color: var(--muted);
+}

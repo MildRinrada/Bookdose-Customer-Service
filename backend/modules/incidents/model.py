@@ -21,4 +21,9 @@ CREATE TABLE IF NOT EXISTS known_issues (
     created_at TEXT NOT NULL, updated_at TEXT NOT NULL, resolved_at TEXT
 );
 CREATE INDEX IF NOT EXISTS known_issues_status ON known_issues(status,resolved_at);
+-- แจ้งฉันเมื่อแก้แล้ว (follow.py): signed-in customers waiting to hear that an issue is fixed; told_at once they were.
+CREATE TABLE IF NOT EXISTS known_issue_followers (
+    issue_id TEXT NOT NULL, account_id TEXT NOT NULL, created_at TEXT NOT NULL, told_at TEXT,
+    PRIMARY KEY(issue_id,account_id)
+);
 '''

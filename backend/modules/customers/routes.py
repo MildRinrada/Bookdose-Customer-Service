@@ -32,4 +32,6 @@ ROUTES = [
     ('GET',  '/api/customer/overview',      controller.overview,             'customer-account'),
     ('GET',  '/api/customer/dashboard',     controller.dashboard,            'customer-account'),
     ('GET',  '/api/customer/faq',           controller.faq,                  'customer-account'),
+    # The ? in the customer's top bar: the website is not working for them (platform problem reports).
+    ('POST', '/api/customer/problem-report', controller.report_problem,      'customer-account'),
 ]

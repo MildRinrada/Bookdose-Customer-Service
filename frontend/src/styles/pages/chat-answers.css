@@ -213,8 +213,9 @@
 }
 .qa-panel-body {
   flex: 1;
-  /* Always a few lines of the answer, however short the window: a panel with one line showing reads as broken. */
-  min-height: 9em;
+  /* A few lines of the answer however short the window, but never so many that the buttons under it are pushed out
+     of the pane: they are how the reader gets back to the messages. */
+  min-height: 4.5em;
   max-height: 70vh;
   padding: 16px;
   overflow-y: auto;

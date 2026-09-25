@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
-import { Avatar } from '@/components/ui/display';
+import { HelpMenu } from '@/features/help/HelpMenu';
+import { Avatar, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { useCustomer, useCustomerLogout, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
 import { RealtimeProvider } from '@/lib/realtime-provider';
@@ -50,7 +51,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   const nav = (p: CustomerPage) => (
     <NavItem key={p.key} href={p.href} label={p.label} icon={p.icon} active={page?.key === p.key} count={counts[p.key] ?? 0} />
   );
-  const photo = <Avatar name={me.name} index={2} />;
+  const photo = me.avatar ? <ProfilePhoto src={me.avatar} /> : <Avatar name={me.name} index={2} />;
 
   return (
     // Live updates of the customer's chats, cases and alerts in every organization.
@@ -94,6 +95,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
               <Icon name="bell" />
               {counts.alerts > 0 && <span className="bell-count">{counts.alerts}</span>}
             </Link>
+            <HelpMenu audience="customer" />
             <TextSizeMenu />
             <ProfileMenu
               photo={photo}

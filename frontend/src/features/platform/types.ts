@@ -299,6 +299,8 @@ export type ProblemReport = {
   created_at: string;
   handled_at: string | null;
   handled_by: string | null;
+  /** Who sent it: a member of an organization's team, or a signed-in customer (no organization). */
+  reporter?: 'staff' | 'customer';
 };
 
 /** GET /api/platform/reports */

@@ -9,7 +9,7 @@ import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import { Composer, MessageThread } from '@/features/inbox';
 import { starsText } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { OVERVIEW_PATH, continueOnLine, rateService, sessionPath } from '../api';
+import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, sessionPath } from '../api';
 import { chatView, ratingLabels } from '../labels';
 import type { PortalSession, PortalSurvey } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
@@ -107,6 +107,8 @@ export function ChatView({
   const survey = data.survey && (data.survey.pending || data.survey.rating) ? data.survey : null;
   const [lineOpen, setLineOpen] = useState(false);
   const refresh = useInvalidate();
+  // The AI bar stays while the bot answers (it holds คุยกับเจ้าหน้าที่); once a person has the chat that is one chip.
+  const bot = data.ai?.mode === 'bot';
   return (
     <>
       <div className="card-header conv-header">
@@ -118,19 +120,25 @@ export function ChatView({
           <p className="conv-meta">
             <span className="customer-org-badge">คุยกับ {orgName}</span>
             {category && <span className="customer-category-tag">{category}</span>}
-            <span className={`customer-state tone-${view.tone}`} id="customer-state-label" data-tone={view.tone}>
+            <span className={`customer-state tone-${view.tone}`} id="customer-state-label" data-tone={view.tone} title={view.hint}>
               {view.label}
             </span>
+            {!bot && (
+              <span className="customer-staff-chip">
+                <Icon name="users" />
+                เจ้าหน้าที่ดูแลอยู่
+              </span>
+            )}
             {data.ticket && (
               <Link className="conv-case-link" href={`/customer/cases/${slug}/${data.ticket.id}`} title={`ดูรายละเอียดเคส ${reference}`}>
                 เคส {reference}
               </Link>
             )}
-            <span className="customer-state-hint" id="customer-state-hint">
-              {view.hint}
-            </span>
           </p>
         </div>
+        <a className="icon-btn conv-download" href={chatExportUrl(slug, id)} download title="ดาวน์โหลดประวัติการคุย" aria-label="ดาวน์โหลดประวัติการคุย">
+          <Icon name="download" />
+        </a>
         <ContinueOnLineButton line={data.line} open={lineOpen} onToggle={() => setLineOpen(!lineOpen)} />
       </div>
       {lineOpen && data.line && !data.line.moved && (
@@ -141,10 +149,12 @@ export function ChatView({
           onClose={() => setLineOpen(false)}
         />
       )}
-      <KnownIssuesBar slug={slug} />
-      <div className="notice customer-ai-status" id="customer-ai-status">
-        <AiPortalStatus ai={data.ai} slug={slug} conversationId={id} />
-      </div>
+      <KnownIssuesBar slug={slug} follow />
+      {bot && (
+        <div className="notice customer-ai-status" id="customer-ai-status">
+          <AiPortalStatus ai={data.ai} slug={slug} conversationId={id} />
+        </div>
+      )}
       {/* The survey is part of the conversation: it follows the newest message and scrolls with the messages. */}
       <MessageThread
         messages={data.messages}

@@ -369,3 +369,9 @@
 .ai-result-empty .ai-result-close {
   margin-top: -4px;
 }
+/* ต่อจากเรื่องเดิม: the earlier chat the customer said this one carries on from, opened from the header. */
+.staff-chats .conv-facts .conv-follows {
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}

@@ -56,6 +56,24 @@
   font-weight: 700;
   text-decoration: none;
 }
+/* แจ้งฉันเมื่อแก้แล้ว: the signed-in customer's button at the end of an active notice. */
+.known-issue-follow {
+  flex-shrink: 0;
+  align-self: center;
+  white-space: nowrap;
+}
+.known-issue-follow.is-on {
+  border-color: var(--green);
+  color: var(--green);
+}
+@media (max-width: 560px) {
+  .known-issue {
+    flex-wrap: wrap;
+  }
+  .known-issue-follow {
+    margin-left: 28px;
+  }
+}
 /* The settings panel */
 .issues-panel {
   display: grid;

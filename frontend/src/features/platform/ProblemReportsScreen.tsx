@@ -65,7 +65,7 @@ function ReportCard({ report, index }: { report: ProblemReport; index: number })
           <div className="org-text">
             <strong className="truncate">{report.user_name || 'ไม่ทราบชื่อ'}</strong>
             <span className="muted truncate">
-              {report.tenant_name || 'ไม่ทราบองค์กร'} · {report.user_email || 'ไม่มีอีเมล'}
+              {report.reporter === 'customer' ? 'บัญชีลูกค้า' : report.tenant_name || 'ไม่ทราบองค์กร'} · {report.user_email || 'ไม่มีอีเมล'}
             </span>
           </div>
         </div>

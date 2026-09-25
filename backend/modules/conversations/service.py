@@ -29,8 +29,10 @@ def list_conversations(db, ctx):
     """Each row carries guest: {follow: [...]} when a guest of guest web chat started it (else null)."""
     from backend.modules.guest import service as guest
     found = repository.list_with_previews(db,visible_team(ctx))
+    from backend.modules.customers import perks
     reach = guest.reach(db,[c['contact_id'] for c in found])
-    return [{**c,'guest':reach.get(c['contact_id'])} for c in found]
+    members = perks.member_contacts(db)
+    return [{**c,'guest':reach.get(c['contact_id']),'member':c['contact_id'] in members} for c in found]
 
 
 def conversation_detail(db, conv):
@@ -39,6 +41,11 @@ def conversation_detail(db, conv):
     conv['line'] = repository.line_thread(db,conv['id'])
     conv['category'] = customer_repository.category_of(db,conv['id'])
     conv['reference'] = customer_repository.reference_of(db,conv['id'])
+    # ต่อจากเรื่องเดิม and สมาชิก (customers/perks.py): the chat the customer said this one carries on from, and
+    # whether a signed-in customer wrote it.
+    from backend.modules.customers import perks
+    conv['follows'] = perks.follow_of(db,conv['id'])
+    conv['member'] = conv['contact_id'] in perks.member_contacts(db)
     # How the customer's latest message reads (ai/mood.py), for the header.
     from backend.modules.ai import mood
     conv['mood'] = mood.of(db,conv['id'])

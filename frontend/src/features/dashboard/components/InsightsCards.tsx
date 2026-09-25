@@ -163,12 +163,11 @@ export function GapsCard({ insights }: { insights: Insights }) {
     <section className="card gaps-card" aria-labelledby="gaps-title">
       <div className="card-header">
         <div>
-          <h2 id="gaps-title">คำถามที่ยังไม่มีบทความตอบ</h2>
+          <h2 id="gaps-title"><Icon name="book" className="card-title-icon" />คำถามที่ยังไม่มีบทความตอบ</h2>
           <p>
             {days} วันล่าสุด · {gaps.total} คำถามที่บทความสาธารณะยังตอบไม่ได้ เรียงจากที่ถามบ่อยที่สุด
           </p>
         </div>
-        <Icon name="book" />
       </div>
       <div className="card-body">
         {gaps.groups.length ? (

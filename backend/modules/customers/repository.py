@@ -55,8 +55,9 @@ def set_password(cd, account_id, password):
     cd.execute('UPDATE customer_accounts SET password=? WHERE id=?',(password,account_id))
 
 
-def set_profile(cd, account_id, name, phone):
-    cd.execute('UPDATE customer_accounts SET name=?,phone=? WHERE id=?',(name,phone,account_id))
+def set_profile(cd, account_id, name, phone, avatar=None):
+    """avatar None keeps the picture as it is."""
+    cd.execute('UPDATE customer_accounts SET name=?,phone=?,avatar=COALESCE(?,avatar) WHERE id=?',(name,phone,avatar,account_id))
 
 
 def set_notify_email(cd, account_id, enabled):
@@ -99,7 +100,7 @@ def find_session(cd, token_hash):
     """The session with its account, whatever its limits say (customers.service.load_session judges them)."""
     return one(cd,'''SELECT s.token_hash,s.csrf,s.account_id,s.id AS session_id,s.last_seen_at,s.created_at AS session_created_at,
                    s.last_active_at,s.expires_at,a.name,a.email,a.phone,
-                   a.email_verified,a.notify_email,a.notify_prefs,a.consent_version,a.consent_at,a.created_at
+                   a.email_verified,a.notify_email,a.notify_prefs,a.consent_version,a.consent_at,a.created_at,a.avatar
                    FROM customer_sessions s
                    JOIN customer_accounts a ON a.id=s.account_id WHERE s.token_hash=?''',(token_hash,))
 

@@ -21,8 +21,18 @@ export const casePath = (slug: string, id: string) => `/api/public/${slug}/cases
 /** The public page of an organization (name, articles, whether sign-up email works). */
 export const publicInfoPath = (slug: string) => `/api/public/${slug}`;
 
-export const openChat = (slug: string, body: { subject: string; body: string; category: string; attachments: Upload[] }) =>
+export const openChat = (slug: string, body: { subject: string; body: string; category: string; attachments: Upload[]; follows?: string }) =>
   api<{ id: string }>(`/api/public/${slug}/conversations`, body);
+
+/* What signing in gives (backend customers/perks.py, incidents/follow.py): send a finished case back, keep a chat or
+   a case as a file (plain links: the browser downloads with the session cookie), hear when a known issue is fixed. */
+export const reopenCase = (slug: string, id: string, message: string) =>
+  api<{ conversation_id: string | null }>(`/api/public/${slug}/cases/${id}/reopen`, { message });
+export const chatExportUrl = (slug: string, id: string) => `/api/public/${slug}/conversations/${id}/export`;
+export const caseExportUrl = (slug: string, id: string) => `/api/public/${slug}/cases/${id}/export`;
+export const followingPath = (slug: string) => `/api/public/${slug}/issues/following`;
+export const followIssue = (slug: string, id: string, follow: boolean) =>
+  api<{ following: string[] }>(`/api/public/${slug}/issues/${id}/follow`, { follow });
 
 /** Answer the satisfaction survey of a chat (X-Conversation-ID). */
 export const rateService = (slug: string, conversationId: string, body: { rating: number; comment: string }) =>
@@ -34,7 +44,7 @@ export const continueOnLine = (slug: string, conversationId: string) =>
 
 export const joinOrganization = (slug: string) => api<{ organization: CustomerOrg }>(ORGS_PATH, { slug });
 
-export const saveProfile = (body: { name: string; phone: string }) => api<{ ok: true }>('/api/customer/profile', body);
+export const saveProfile = (body: { name: string; phone: string; avatar?: string }) => api<{ ok: true }>('/api/customer/profile', body);
 
 export const changePassword = (body: { current_password: string; password: string }) => api<{ ok: true }>('/api/customer/password', body);
 

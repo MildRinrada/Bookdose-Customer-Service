@@ -42,7 +42,7 @@ export type CaseFields = {
 
 export type CustomerCase = CaseFields & OrgLabel;
 
-export type AlertKind = 'reply' | 'survey' | 'waiting' | 'done' | 'followup';
+export type AlertKind = 'reply' | 'survey' | 'waiting' | 'done' | 'followup' | 'issue';
 
 /** A row of overview.alerts; which ids are set depends on the kind. */
 export type CustomerAlert = OrgLabel & {
@@ -56,6 +56,8 @@ export type CustomerAlert = OrgLabel & {
   conversation_id?: string;
   case_id?: string;
   number?: number;
+  /** 'issue': the known issue the customer followed, now fixed. */
+  issue_id?: string;
 };
 
 /** A notification event with the channels it goes to (GET /api/customer/notification-settings). */
@@ -131,6 +133,8 @@ export type CaseDetail = {
   /** When the team plans to get back to the customer. */
   followups: string[];
   rating: number | null;
+  /** ยังไม่หาย: whether the finished case can be sent back now, and until when (signed-in customers only). */
+  reopen?: { allowed: boolean; until: string | null; days: number };
 };
 
 /** A row of GET /api/customer/faq: a public article of an organization the customer can contact. */

@@ -22,6 +22,13 @@ ROUTES = [
     ('GET',  PORTAL+'/issues',              controller.known_issues,        'portal'),
     ('POST', PORTAL+'/conversations',       controller.open_conversation,   'customer'),
     ('GET',  PORTAL+f'/cases/{ID}',         controller.case_detail,         'customer'),
+    # What signing in gives (customers/perks.py, incidents/follow.py): send a finished case back, keep a chat or a
+    # case as a file, and hear when a known issue is fixed.
+    ('POST', PORTAL+f'/cases/{ID}/reopen',  controller.reopen_case,         'customer'),
+    ('GET',  PORTAL+f'/cases/{ID}/export',  controller.export_case,         'customer'),
+    ('GET',  PORTAL+f'/conversations/{ID}/export', controller.export_conversation, 'customer'),
+    ('GET',  PORTAL+'/issues/following',    controller.issues_following,    'customer'),
+    ('POST', PORTAL+f'/issues/{ID}/follow', controller.follow_issue,        'customer'),
     ('GET',  PORTAL+'/session',             controller.conversation,        'customer'),
     ('POST', PORTAL+'/handoff',             controller.hand_off,            'customer'),
     ('POST', PORTAL+'/messages',            controller.post_message,        'customer'),

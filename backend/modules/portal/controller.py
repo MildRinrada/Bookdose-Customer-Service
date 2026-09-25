@@ -63,3 +63,29 @@ def rate(req):
 
 def download_attachment(req, file_id):
     return req.send_download(*service.public_attachment(req.db,req.org['id'],req.customer,file_id))
+
+
+# What signing in gives (customers/perks.py, incidents/follow.py)
+def reopen_case(req, case_id):
+    from backend.modules.customers import perks
+    return req.send(200,{'conversation_id':perks.reopen_case(req.db,req.org['id'],req.customer,case_id,req.body)})
+
+
+def export_conversation(req, conversation_id):
+    from backend.modules.customers import perks
+    return req.send_download(*perks.export_conversation(req.db,req.org,req.customer,conversation_id))
+
+
+def export_case(req, case_id):
+    from backend.modules.customers import perks
+    return req.send_download(*perks.export_case(req.db,req.org,req.customer,case_id))
+
+
+def issues_following(req):
+    from backend.modules.incidents import follow
+    return req.send(200,{'following':follow.following(req.db,req.customer['account_id'])},headers={'Cache-Control':'no-store'})
+
+
+def follow_issue(req, issue_id):
+    from backend.modules.incidents import follow
+    return req.send(200,follow.set_following(req.db,req.customer,issue_id,req.body))

@@ -14,7 +14,7 @@ import { readFiles } from '@/lib/files';
 import { useApi, useInvalidate } from '@/lib/query';
 import type { CustomerOrg } from '@/lib/types';
 import { FAQ_PATH, openChat, OVERVIEW_PATH } from '../api';
-import { useOrgFilter, useOrgs } from '../hooks';
+import { useOrgFilter, useOrgs, useOverview } from '../hooks';
 import { replyPromise } from '../labels';
 import type { CustomerArticle } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
@@ -47,11 +47,16 @@ function OrgIntro({ org }: { org: CustomerOrg | undefined }) {
   );
 }
 
-export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; hasChats: boolean }) {
+export function NewChatForm({ preselect = '', follows = '', hasChats }: { preselect?: string; follows?: string; hasChats: boolean }) {
   const orgs = useOrgs();
   const [orgFilter] = useOrgFilter();
-  const initial = orgs.find((o) => o.slug === preselect) ?? orgs.find((o) => o.slug === orgFilter) ?? orgs[0];
+  // ต่อจากเรื่องเดิม: the customer's earlier chats with the chosen organization, newest first; a link may name one.
+  const earlierChats = useOverview().conversations;
+  const carried = earlierChats.find((c) => c.id === follows);
+  const initial =
+    orgs.find((o) => o.slug === carried?.org_slug) ?? orgs.find((o) => o.slug === preselect) ?? orgs.find((o) => o.slug === orgFilter) ?? orgs[0];
   const [slug, setSlug] = useState(initial?.slug ?? '');
+  const earlier = earlierChats.filter((c) => c.org_slug === slug);
   const org = orgs.find((o) => o.slug === slug);
   const toast = useToast();
   const refresh = useInvalidate();
@@ -85,6 +90,7 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
             body: values.body ?? '',
             category: values.category || '',
             attachments,
+            ...(values.follows ? { follows: values.follows } : {}),
           });
           toast(`ส่งถึง ${orgs.find((o) => o.slug === values.org)?.name || 'ทีมงาน'} แล้ว ติดตามคำตอบได้ในแชทนี้`);
           // The new chat must be in the list when its page opens.
@@ -98,7 +104,7 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
             <RequiredStar />
           </label>
           <OrgPicker id="request-org" orgs={orgs} value={slug} onChange={setSlug} />
-          <KnownIssuesBar slug={slug} />
+          <KnownIssuesBar slug={slug} follow />
           <small className="muted">
             ตัวระบบค้าง หน้าเว็บผิดปกติ หรือพบ Bug ติดต่อผู้ให้บริการระบบได้เสมอ · เรื่องบริการ สินค้า หรือเคสขององค์กรใด ให้เลือกองค์กรนั้น
           </small>
@@ -106,6 +112,18 @@ export function NewChatForm({ preselect = '', hasChats }: { preselect?: string; 
         <div id="customer-org-intro" className="customer-org-intro" aria-live="polite">
           <OrgIntro org={org} />
         </div>
+        {/* ต่อจากเรื่องเดิม: the team sees the earlier chat at once, so nothing has to be told again. */}
+        {earlier.length > 0 && (
+          <SelectField key={`follows-${slug}`} label="ต่อจากเรื่องเดิม (ไม่บังคับ)" name="follows" id="request-follows" defaultValue={carried?.org_slug === slug ? follows : ''}>
+            <option value="">เรื่องใหม่ ไม่เกี่ยวกับเรื่องเดิม</option>
+            {earlier.slice(0, 30).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.ticket_number ? `BD-${c.ticket_number} · ` : ''}
+                {c.subject}
+              </option>
+            ))}
+          </SelectField>
+        )}
         {/* Another organization has its own categories: the choice starts over. */}
         <SelectField key={slug} label="หมวดเรื่อง" name="category" id="request-category" required defaultValue="">
           <option value="">เลือกหมวดเรื่อง</option>

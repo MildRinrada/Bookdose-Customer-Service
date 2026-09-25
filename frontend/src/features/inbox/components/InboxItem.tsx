@@ -36,7 +36,9 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
   const upset = c.status !== 'closed' && Boolean(c.mood_level || c.mood_urgent);
   const channelName = channelNames[c.channel] || c.channel;
   const guest = c.guest ? ' · ผู้เยี่ยมชม (ไม่ได้เข้าสู่ระบบ)' : '';
-  const foot = [channelName, c.ticket_number ? `BD-${c.ticket_number}` : null, c.company, c.status === 'closed' ? 'ปิดแล้ว' : null].filter((x): x is string => Boolean(x));
+  const foot = [channelName, c.member ? 'สมาชิก' : null, c.ticket_number ? `BD-${c.ticket_number}` : null, c.company, c.status === 'closed' ? 'ปิดแล้ว' : null].filter(
+    (x): x is string => Boolean(x),
+  );
   return (
     <Link
       className={`inbox-item staff-chat-item inbox-row${selected ? ' selected' : ''}${waiting ? ' needs-reply' : ''}`}

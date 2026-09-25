@@ -70,6 +70,10 @@ def create_control_tables(db):
     # is what every organization had until now, so nothing changes for one that never sets a picture.
     if 'logo' not in {row[1] for row in db.execute('PRAGMA table_info(tenants)')}:
         db.execute("ALTER TABLE tenants ADD COLUMN logo TEXT NOT NULL DEFAULT ''")
+    # A problem report can come from a customer's account too (the ? in the customer's top bar): who sent it, so the
+    # console tells a customer from a team member. Every report before this came from a team.
+    if 'reporter' not in {row[1] for row in db.execute('PRAGMA table_info(problem_reports)')}:
+        db.execute("ALTER TABLE problem_reports ADD COLUMN reporter TEXT NOT NULL DEFAULT 'staff'")
 
 
 def create_tenant_tables(db):

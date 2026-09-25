@@ -501,6 +501,17 @@ def report_problem(cd, session, body, browser=''):
     return report_id
 
 
+def report_problem_as_customer(cd, account, body, browser=''):
+    """A signed-in customer tells the platform the website is not working for them (the ? in their top bar). It
+    belongs to no organization: the customer's account is the same for all of them."""
+    message,page = schema.problem_report(body)
+    report_id = uid()
+    repository.insert_problem_report(cd,report_id,None,{'user_id':account['id'],'name':account['name'],'email':account['email']},
+                                     page,message,(browser or '')[:300],'customer')
+    cd.commit()
+    return report_id
+
+
 def problem_reports(cd):
     return {'reports':repository.problem_reports(cd),'open':repository.open_report_count(cd)}
 

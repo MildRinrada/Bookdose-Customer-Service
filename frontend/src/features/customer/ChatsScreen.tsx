@@ -7,7 +7,6 @@ import { Icon } from '@/components/Icon';
 import { customerUnread } from '@/components/shell/CustomerShell';
 import { CustomerNone, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { SearchInput } from '@/components/ui/filters';
-import { GuestClaimBanners } from '@/features/guest/components/GuestClaimBanners';
 import { useSinglePane } from '@/features/inbox';
 import { plainText, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
@@ -31,7 +30,19 @@ const articleHref = (article: PeekArticle) => `/customer/faq/${article.id}`;
    and then jump to the open chat. Kept in memory like the other screen choices (lib/ui-state): a reload starts fresh. */
 let listScroll = 0;
 
-export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slug?: string; id?: string; newChat?: boolean; preselect?: string }) {
+export function ChatsScreen({
+  slug,
+  id,
+  newChat = false,
+  preselect = '',
+  follows = '',
+}: {
+  slug?: string;
+  id?: string;
+  newChat?: boolean;
+  preselect?: string;
+  follows?: string;
+}) {
   const overview = useOverview();
   const orgs = useOrgs();
   const router = useRouter();
@@ -93,7 +104,7 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
   const drop = useArticleDrop((id) => articles.find((a) => a.id === id), read);
 
   let detail;
-  if (newChat || (!list.length && !openId)) detail = <NewChatForm key={preselect} preselect={preselect} hasChats={list.length > 0} />;
+  if (newChat || (!list.length && !openId)) detail = <NewChatForm key={preselect + follows} preselect={preselect} follows={follows} hasChats={list.length > 0} />;
   else if (openId && openSlug) {
     if (session.data)
       detail = (
@@ -126,7 +137,6 @@ export function ChatsScreen({ slug, id, newChat = false, preselect = '' }: { slu
           <p>คุยกับทุกองค์กรที่คุณติดต่อ และติดตามทุกเรื่องที่เคยส่งไว้ในที่เดียว</p>
         </div>
       </div>
-      <GuestClaimBanners />
       <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}${articles.length ? ' has-aside' : ''}`}>
         <div className="inbox-list" ref={listRef}>
           <div className="inbox-tools customer-chat-tools">

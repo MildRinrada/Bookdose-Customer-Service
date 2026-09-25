@@ -91,6 +91,8 @@ export type WidgetInfo = {
 export type GuestChatSettings = {
   guest_chat: { enabled: boolean };
   widget: { enabled: boolean; origins: string[]; position: WidgetPosition; theme: WidgetTheme; title: string };
+  /** คิวก่อนสำหรับสมาชิก: signed-in customers go ahead of guests in the queue (customers/perks.py). */
+  members_first?: boolean;
   chat_url?: string;
   chat_qr?: string;
 };

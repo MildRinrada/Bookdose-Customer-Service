@@ -67,6 +67,9 @@ def _link(cd, db, tenant_id, path):
     return base.rstrip('/')+path if base else path
 
 
+link = _link
+
+
 # Queueing
 def queue_line(cd, db, tenant_id, account_id, subject, path, dedup=None):
     """A LINE message to a linked account (its preferences were checked by the caller, or it is the confirmation of
@@ -85,26 +88,46 @@ def send(tenant_id):
     """Send the queued LINE notices that are due, outside any transaction; returns how many went out. A notice whose LINE went away meanwhile (unlinked, or the channel switched off) is closed unsent, and so is
     any row that is not a LINE notice."""
     from backend.modules.channels import service as channels
-    jobs = []
+    jobs,mails = [],[]
     with D.control() as cd, D.tenant(tenant_id) as db:
         D.begin(db)
         line_ok = bool(line_channel(db,tenant_id))
+        mail_ok = platform.registration_ready(cd)
         for row in customer_accounts.due_alerts(db):
             account = customer_accounts.find(cd,row['account_id'])
             link = customer_accounts.line_link(db,row['account_id'])
             if row['attempts']>=MAX_ATTEMPTS:
                 customer_accounts.finish_alert(db,row['id'],row['error'] or 'failed')
+            elif row['channel']=='email':
+                # Only to an address the customer proved, while the platform can send at all.
+                if not account or not account['email_verified'] or not mail_ok:
+                    customer_accounts.finish_alert(db,row['id'],'off')
+                else:
+                    customer_accounts.claim_alert(db,row['id'],after(seconds=CLAIM_SECONDS))
+                    mails.append({**row,'recipient':account['email'],'name':account['name']})
             elif not account or row['channel']!='line' or not line_ok or not link:
                 customer_accounts.finish_alert(db,row['id'],'off')
             else:
                 customer_accounts.claim_alert(db,row['id'],after(seconds=CLAIM_SECONDS))
                 jobs.append({**row,'recipient':link['line_user_id']})
         line_secret = channels.read_secret(tenant_id,'line') if jobs else {}
+        cfg,secret = (platform.registration_config(cd),platform.registration_secret()) if mails else ({},{})
     results = []
     for job in jobs:
         error = None
         try:
             T.send_line(line_secret,job['recipient'],_line_text(job),str(uuid.UUID(job['id'])))
+        except ChannelError as failure:
+            error = failure
+        except Exception:
+            error = ChannelError('unknown',uncertain=True)
+        results.append((job,error))
+    from backend.modules.customers import service as customers
+    for job in mails:
+        error = None
+        try:
+            customers.send_mail(cfg,secret,job['recipient'],job['subject'],
+                                f"สวัสดีคุณ{job['name']}\n\n{job['text']}\n\n{job['link']}\n")
         except ChannelError as failure:
             error = failure
         except Exception:

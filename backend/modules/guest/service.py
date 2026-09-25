@@ -59,8 +59,10 @@ def require_enabled(db):
 
 def settings_view(db):
     guest_chat,widget = _json_setting(db,'guest_chat',DEFAULT_GUEST_CHAT),_json_setting(db,'widget',DEFAULT_WIDGET)
+    from backend.modules.customers import perks
     return {'guest_chat':{'enabled':guest_chat['enabled'] is True},
-            'widget':{key:widget[key] for key in ('enabled','origins','position','theme','title')}}
+            'widget':{key:widget[key] for key in ('enabled','origins','position','theme','title')},
+            'members_first':perks.members_first(db)}
 
 
 def settings_page(cd, db, ctx, base):
@@ -73,7 +75,11 @@ def settings_page(cd, db, ctx, base):
 def save_settings(db, ctx, body):
     current = settings_view(db)
     guest_chat,widget = schema.settings_form(body,current['guest_chat'],current['widget'])
+    first = body.get('members_first',current['members_first'])
+    require(isinstance(first,bool),'ข้อมูลคิวก่อนสำหรับสมาชิกไม่ถูกต้อง')
     D.begin(db)
+    from backend.modules.customers import perks
+    perks.set_members_first(db,first)
     repository.save_setting(db,'guest_chat',json.dumps(guest_chat))
     repository.save_setting(db,'widget',json.dumps(widget,ensure_ascii=False))
     audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],'แชทบนเว็บไซต์')

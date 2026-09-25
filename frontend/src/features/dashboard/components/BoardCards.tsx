@@ -66,10 +66,9 @@ export function HandoverCard({ interval, readOnly }: { interval: number | false;
     <section className="card board-card handover-card" aria-labelledby="handover-title">
       <div className="card-header">
         <div>
-          <h2 id="handover-title">ส่งต่อกะ</h2>
+          <h2 id="handover-title"><Icon name="users" className="card-title-icon" />ส่งต่อกะ</h2>
           <p>ทุกคนในองค์กรเห็น · เก็บ {board?.handover_days ?? 3} วัน</p>
         </div>
-        <Icon name="users" />
       </div>
       <div className="card-body">
         {!readOnly && (
@@ -159,10 +158,9 @@ export function TodoCard({ interval, now }: { interval: number | false; now: num
     <section className="card board-card my-todo-card" aria-labelledby="todo-title">
       <div className="card-header">
         <div>
-          <h2 id="todo-title">สิ่งที่ต้องทำของฉัน</h2>
+          <h2 id="todo-title"><Icon name="checkCircle" className="card-title-icon" />สิ่งที่ต้องทำของฉัน</h2>
           <p>{open ? `เหลือ ${open} งาน · เห็นเฉพาะคุณ` : 'เห็นเฉพาะคุณ'}</p>
         </div>
-        <Icon name="checkCircle" />
       </div>
       <div className="card-body">
         <form className="todo-form" onSubmit={(e) => void submit(e)}>

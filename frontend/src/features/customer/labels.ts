@@ -65,6 +65,13 @@ export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
     detail: (a) => a.subject,
     href: caseHref,
   },
+  issue: {
+    icon: 'checkCircle',
+    tone: 'done',
+    title: (a) => `${a.org_name} แก้ปัญหาที่คุณติดตามไว้แล้ว`,
+    detail: (a) => `${a.subject} · ถ้ายังใช้งานไม่ได้ เริ่มแชทกับทีมงานได้เลย`,
+    href: (a) => `/customer/chats/new?org=${a.org_slug}`,
+  },
   followup: {
     icon: 'calendar',
     tone: 'plan',

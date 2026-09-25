@@ -215,11 +215,11 @@ def find_global_article(db, article_id):
     return one(db,'SELECT * FROM global_articles WHERE id=?',(article_id,))
 
 
-def insert_problem_report(db, report_id, org, user, page, message, browser):
-    db.execute('''INSERT INTO problem_reports(id,tenant_id,tenant_name,user_id,user_name,user_email,page,message,browser,created_at)
-                  VALUES(?,?,?,?,?,?,?,?,?,?)''',
+def insert_problem_report(db, report_id, org, user, page, message, browser, reporter='staff'):
+    db.execute('''INSERT INTO problem_reports(id,tenant_id,tenant_name,user_id,user_name,user_email,page,message,browser,created_at,reporter)
+                  VALUES(?,?,?,?,?,?,?,?,?,?,?)''',
                (report_id,org and org['id'],(org or {}).get('name',''),user['user_id'],user.get('name',''),
-                user.get('email',''),page,message,browser,now()))
+                user.get('email',''),page,message,browser,now(),reporter))
 
 
 def problem_reports(db, limit=200):

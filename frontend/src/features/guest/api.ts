@@ -66,7 +66,8 @@ export const forgetGuest = (slug: string) => api<{ ok: true }>(`${guestBase(slug
 
 /* Staff: ตั้งค่าองค์กร → แชทบนเว็บไซต์ */
 export const GUEST_SETTINGS_PATH = '/api/settings/guest-chat';
-export const saveGuestSettings = (body: Pick<GuestChatSettings, 'guest_chat' | 'widget'>) => api<GuestChatSettings>(GUEST_SETTINGS_PATH, body);
+export const saveGuestSettings = (body: Pick<GuestChatSettings, 'guest_chat' | 'widget'> | { members_first: boolean }) =>
+  api<GuestChatSettings>(GUEST_SETTINGS_PATH, body);
 
 /* Signed-in customer: chats from before signing in */
 export const GUEST_CLAIMS_PATH = '/api/customer/guest-claims';

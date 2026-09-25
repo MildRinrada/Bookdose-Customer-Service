@@ -27,7 +27,7 @@ export function GuestChatPanel() {
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
   if (!data) return <PageLoading />;
   // A save redraws the forms from what the server kept.
-  return <GuestChatCards key={JSON.stringify([data.guest_chat, data.widget])} data={data} slug={work.tenant.slug} orgName={work.tenant.name} />;
+  return <GuestChatCards key={JSON.stringify([data.guest_chat, data.widget, data.members_first])} data={data} slug={work.tenant.slug} orgName={work.tenant.name} />;
 }
 
 function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug: string; orgName: string }) {
@@ -125,6 +125,36 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
               </div>
             </div>
           </div>
+          <div className="form-actions">
+            <button className="btn primary" type="submit">
+              บันทึก
+            </button>
+          </div>
+        </Form>
+      </section>
+      <section className="card">
+        <div className="card-header">
+          <div>
+            <h2>คิวก่อนสำหรับสมาชิก</h2>
+            <p>ลูกค้าที่เข้าสู่ระบบด้วยบัญชีลูกค้าได้ลำดับคิวก่อนลูกค้าที่แชทโดยไม่เข้าสู่ระบบ เป็นสิทธิพิเศษที่ชวนให้ลูกค้าสมัครสมาชิก</p>
+          </div>
+        </div>
+        <Form
+          className="card-body"
+          onSubmit={async (_values, form) => {
+            const on = (form.elements.namedItem('members_first') as HTMLInputElement).checked;
+            await saveGuestSettings({ members_first: on });
+            toast(on ? 'เปิดคิวก่อนสำหรับสมาชิกแล้ว' : 'ปิดคิวก่อนสำหรับสมาชิกแล้ว');
+            await refresh(GUEST_SETTINGS_PATH);
+          }}
+        >
+          <label className="check">
+            <input type="checkbox" className="switch" name="members_first" defaultChecked={Boolean(data.members_first)} />
+            ให้สมาชิกได้คิวก่อน
+          </label>
+          <p className="tiny muted">
+            มีผลกับลำดับคิวที่ลูกค้าเห็น ปุ่มรับงานถัดไป และเคสที่รอคนรับ แชทของสมาชิกมีป้าย “สมาชิก” ในกล่องข้อความ ลูกค้าที่ไม่เข้าสู่ระบบยังได้รับบริการตามปกติ แค่รอหลังสมาชิก
+          </p>
           <div className="form-actions">
             <button className="btn primary" type="submit">
               บันทึก

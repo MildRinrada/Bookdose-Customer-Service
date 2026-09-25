@@ -43,7 +43,7 @@ def _waiting(db, conversation_id=None):
     """[{id, team_id, since, n}] for every conversation waiting for the team (or only that one), longest waiting first;
     n is the rowid of the first waiting message, which orders two customers who wrote in the same second."""
     only,params = (' AND c.id=?',(conversation_id,)) if conversation_id else ('',())
-    found = rows(db,f'''SELECT c.id,c.team_id,
+    found = rows(db,f'''SELECT c.id,c.team_id,c.contact_id,
         (SELECT MIN(m.rowid) FROM messages m WHERE m.conversation_id=c.id AND m.kind='customer' AND m.rowid>
             COALESCE((SELECT MAX(r.rowid) FROM messages r WHERE r.conversation_id=c.id AND {_HUMAN_REPLY}),0)) AS n
         FROM conversations c LEFT JOIN ai_conversations a ON a.conversation_id=c.id
@@ -51,6 +51,11 @@ def _waiting(db, conversation_id=None):
     found = [c for c in found if c['n']]
     for c in found:
         c['since'] = db.execute('SELECT created_at FROM messages WHERE rowid=?',(c['n'],)).fetchone()[0]
+    # The organization lets its signed-in customers go first (customers/perks.py): they queue ahead of guests.
+    from backend.modules.customers import perks
+    if perks.members_first(db):
+        members = perks.member_contacts(db)
+        return sorted(found,key=lambda c:(c['contact_id'] not in members,c['since'],c['n']))
     return sorted(found,key=lambda c:(c['since'],c['n']))
 
 

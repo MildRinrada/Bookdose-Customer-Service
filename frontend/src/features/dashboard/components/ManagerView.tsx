@@ -38,12 +38,11 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         <section className="card agents-card" data-reveal="">
           <div className="card-header">
             <div>
-              <h2>สถานะเจ้าหน้าที่ Real-time</h2>
+              <h2><Icon name="users" className="card-title-icon" />สถานะเจ้าหน้าที่ Real-time</h2>
               <p>
                 Live Agent Activity · กำลังใช้งาน {agents.filter((x) => x.presence === 'online').length} จาก {agents.length} คน
               </p>
             </div>
-            <Icon name="users" />
           </div>
           <div className="agent-table" role="table" aria-label="สถานะเจ้าหน้าที่">
             <div className="agent-row agent-head" role="row">
@@ -93,12 +92,11 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         <section className="card csat-card" data-reveal="">
           <div className="card-header">
             <div>
-              <h2>ความพึงพอใจลูกค้า</h2>
+              <h2><Icon name="star" className="card-title-icon" />ความพึงพอใจลูกค้า</h2>
               <p>
                 CSAT · 30 วันล่าสุด · ตอบ {c.count} จาก {c.sent} แบบประเมิน
               </p>
             </div>
-            <Icon name="star" />
           </div>
           <div className="card-body">
             {csatAverage ? (
@@ -125,10 +123,9 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         <section className="card auto-card" data-reveal="">
           <div className="card-header">
             <div>
-              <h2>ระบบอัตโนมัติ</h2>
+              <h2><Icon name="macro" className="card-title-icon" />ระบบอัตโนมัติ</h2>
               <p>Automation &amp; Workflow</p>
             </div>
-            <Icon name="macro" />
           </div>
           <div className="card-body auto-body">
             <div className="auto-summary">

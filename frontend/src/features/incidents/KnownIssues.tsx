@@ -2,13 +2,17 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
-import { useApi } from '@/lib/query';
+import { useRunAction } from '@/components/ui/actions';
+import { useToast } from '@/components/ui/Toast';
+import { followingPath, followIssue } from '@/features/customer/api';
+import { useApi, useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
 
 /* ประกาศปัญหาที่รู้แล้ว (backend/modules/incidents): what of the organization's is down, told on every chat page before
    anybody asks - "ตอนนี้ระบบชำระเงินมีปัญหา ทีมกำลังแก้ไข" - so a hundred customers do not each write in to ask the
    same thing. Once it is fixed it shows as back for an hour, so the ones who saw the problem see it end.
-   The team sees the same notices over the inbox, so they know what customers are being told. Markup:
+   A signed-in customer can ask to hear when an active one is fixed (แจ้งฉันเมื่อแก้แล้ว, incidents/follow.py) instead
+   of writing in to ask. The team sees the same notices over the inbox, so they know what customers are being told. Markup:
    pages/known-issues.css. */
 
 export type KnownIssue = {
@@ -26,9 +30,21 @@ export type KnownIssue = {
 const POLL_MS = 60000;
 
 /** The notices on a customer's chat page (the visitor's and the signed-in customer's), for the organization `slug`. */
-export function KnownIssuesBar({ slug }: { slug: string }) {
+export function KnownIssuesBar({ slug, follow = false }: { slug: string; follow?: boolean }) {
   const found = useApi<{ issues: KnownIssue[] }>(slug ? `/api/public/${slug}/issues` : null, { refetchInterval: POLL_MS });
   const issues = found.data?.issues ?? [];
+  const active = follow && issues.some((i) => i.status === 'active');
+  const following = useApi<{ following: string[] }>(active ? followingPath(slug) : null);
+  const mine = following.data?.following ?? [];
+  const run = useRunAction();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const toggle = (issue: KnownIssue, on: boolean) =>
+    run(async () => {
+      await followIssue(slug, issue.id, on);
+      await refresh(followingPath(slug));
+      toast(on ? 'จะแจ้งให้ทราบเมื่อแก้เสร็จ ทางช่องทางที่คุณตั้งไว้ในการแจ้งเตือน' : 'เลิกติดตามแล้ว');
+    });
   if (!issues.length) return null;
   return (
     <div className="known-issues" role="status" aria-live="polite">
@@ -47,6 +63,19 @@ export function KnownIssuesBar({ slug }: { slug: string }) {
             )}
             {issue.detail && issue.status === 'active' && <span className="known-issue-detail">{issue.detail}</span>}
           </span>
+          {active && issue.status === 'active' && following.data && (
+            mine.includes(issue.id) ? (
+              <button type="button" className="btn sm known-issue-follow is-on" aria-pressed="true" onClick={() => void toggle(issue, false)}>
+                <Icon name="check" />
+                ติดตามอยู่
+              </button>
+            ) : (
+              <button type="button" className="btn sm known-issue-follow" aria-pressed="false" onClick={() => void toggle(issue, true)}>
+                <Icon name="bell" />
+                แจ้งฉันเมื่อแก้แล้ว
+              </button>
+            )
+          )}
         </p>
       ))}
     </div>

@@ -60,6 +60,9 @@ def _send(cfg, secret, recipient, subject, text):
     T.send_email(cfg,secret,recipient,mail)
 
 
+send_mail = _send
+
+
 def _page(cfg, fragment=''):
     """A link into the customer's side of the app (the main page)."""
     return f"{cfg['public_base_url']}/"+(f'#{fragment}' if fragment else '')
@@ -460,10 +463,10 @@ def account_view(cd, session):
 def update_profile(cd, session, body):
     """The customer changes the name the teams call them and their phone number. In each organization the contact
     record takes the new phone only where that team has not written something else there."""
-    name,phone = schema.profile_form(body)
+    name,phone,avatar = schema.profile_form(body)
     D.begin(cd)
     account = repository.find(cd,session['account_id'])
-    repository.set_profile(cd,account['id'],name,phone)
+    repository.set_profile(cd,account['id'],name,phone,avatar)
     cd.commit()
     for tenant_id in repository.org_ids(cd,account['id']):
         if not tenants.find_active(cd,tenant_id):
@@ -526,10 +529,11 @@ def _conversations(db, session):
 
 
 # The button of each alert (what the customer does next).
-ACTION_LABELS = {'reply':'อ่านและตอบกลับ','survey':'ให้คะแนน','waiting':'ส่งข้อมูลเพิ่ม','done':'ดูเคส','followup':'ดูเคส'}
+ACTION_LABELS = {'reply':'อ่านและตอบกลับ','survey':'ให้คะแนน','waiting':'ส่งข้อมูลเพิ่ม','done':'ดูเคส','followup':'ดูเคส',
+                 'issue':'เปิดแชท'}
 
 
-def _alerts(conversations_list, cases):
+def _alerts(conversations_list, cases, issues=()):
     """Newest first. 'action' marks what waits for the customer (counted on the bell); the rest is news; every alert
     has the words of its button (action_label). Worked out from how things are now, so they clear themselves once the
     customer has read the reply, answered the survey, or the team moved the case on."""
@@ -549,6 +553,10 @@ def _alerts(conversations_list, cases):
             found.append({**base,'kind':'done','action':False,'at':t['resolved_at'] or t['updated_at']})
         if t['next_followup_at'] and t['status'] not in ('resolved','closed'):
             found.append({**base,'kind':'followup','action':False,'at':t['next_followup_at']})
+    # A known issue the customer followed was fixed (incidents/follow.py): news, not something to do.
+    for i in issues:
+        found.append({'kind':'issue','action':False,'issue_id':i['id'],'subject':i['title'],'org_slug':i['org_slug'],
+                      'org_name':i['org_name'],'at':i['resolved_at']})
     for a in found:
         a['action_label'] = ACTION_LABELS[a['kind']]
     found.sort(key=lambda a:a['at'],reverse=True)
@@ -560,7 +568,8 @@ def overview(cd, session):
     organization), and what the side menu counts and the notifications page lists."""
     found,_ = _connected(cd,session)
     joined = set(repository.org_ids(cd,session['account_id']))
-    conversation_rows,case_rows = [],[]
+    from backend.modules.incidents import follow
+    conversation_rows,case_rows,issue_rows = [],[],[]
     for org in found:
         if org['id'] not in joined:
             continue
@@ -568,9 +577,10 @@ def overview(cd, session):
         with D.tenant(org['id']) as db:
             conversation_rows += [{**c,**label} for c in _conversations(db,session)]
             case_rows += [{**schema.case_row(t),**label} for t in repository.cases_of(db,session['account_id'])]
+            issue_rows += [{**i,**label} for i in follow.told_alerts(db,session['account_id'])]
     conversation_rows.sort(key=lambda c:c['updated_at'],reverse=True)
     case_rows.sort(key=lambda t:t['updated_at'],reverse=True)
-    alerts = _alerts(conversation_rows,case_rows)
+    alerts = _alerts(conversation_rows,case_rows,issue_rows)
     return {'conversations':conversation_rows,'cases':case_rows,'alerts':alerts,'alert_count':sum(a['action'] for a in alerts)}
 
 
@@ -627,11 +637,15 @@ def new_web_conversation(db, org, contact_id, author_name, subject, category, bo
 def open_conversation(cd, db, org, session, body):
     """Start a chat with this organization as the signed-in customer (connecting it if this is the first contact).
     Returns the conversation id."""
+    from backend.modules.customers import perks
     subject,category = request_form(db,body)
     account = repository.find(cd,session['account_id'])
+    follows = perks.follows_form(db,account['id'],body)
     D.begin(db)
     contact_id = _ensure_member(db,account)
     conv_id = new_web_conversation(db,org,contact_id,account['name'],subject,category,body)
+    if follows:
+        perks.set_follow(db,conv_id,follows)
     repository.mark_seen(db,account['id'],conv_id)
     db.commit()
     repository.join_org(cd,account['id'],org['id'])
@@ -648,8 +662,12 @@ def mark_seen(db, session, conversation_id):
 def case_detail(db, session, case_id):
     ticket = repository.owned_case(db,session['account_id'],schema.case_id(case_id))
     require(ticket,'ไม่พบเคสนี้ในบัญชีของคุณ',404)
-    return schema.case_view(ticket,repository.case_conversations(db,session['account_id'],ticket['id']),
+    from backend.modules.customers import perks
+    view = schema.case_view(ticket,repository.case_conversations(db,session['account_id'],ticket['id']),
                             repository.case_followups(db,ticket['id']),repository.case_rating(db,ticket['id']))
+    # ยังไม่หาย: a finished case can go back to the team from its page for a few days (perks.reopen_case).
+    view['reopen'] = {'allowed':perks.can_reopen(ticket),'until':perks.reopen_until(ticket),'days':perks.REOPEN_DAYS}
+    return view
 
 
 # Notices of what happened in a web conversation (email, and LINE when linked)

@@ -65,8 +65,12 @@ def most_upset_unassigned(db, team_id):
 
 def oldest_unassigned(db, team_id):
     """The team's case that has waited longest for someone to take it."""
+    # With คิวก่อนสำหรับสมาชิก on (customers/perks.py) a signed-in customer's case is taken first.
+    from backend.modules.customers import perks
+    first = int(perks.members_first(db))
     return one(db,f'''SELECT * FROM tickets WHERE assignee_id IS NULL AND team_id=? AND status IN {WORKING} AND {AWAKE}
-                      ORDER BY created_at,number LIMIT 1''',(team_id,))
+                      ORDER BY (? AND contact_id IN (SELECT contact_id FROM customer_contacts)) DESC,created_at,number LIMIT 1''',
+               (team_id,first))
 
 
 # พักเคส

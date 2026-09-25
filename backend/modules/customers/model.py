@@ -72,6 +72,10 @@ CREATE TABLE IF NOT EXISTS conversation_categories (
 CREATE TABLE IF NOT EXISTS conversation_references (
     conversation_id TEXT PRIMARY KEY, reference TEXT NOT NULL
 );
+-- ต่อจากเรื่องเดิม (perks.py): the earlier chat of the customer's a new one carries on from.
+CREATE TABLE IF NOT EXISTS conversation_follows (
+    conversation_id TEXT PRIMARY KEY, follows_id TEXT NOT NULL, created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS customer_line_links (
     account_id TEXT PRIMARY KEY, line_user_id TEXT NOT NULL UNIQUE, linked_at TEXT NOT NULL
 );
@@ -96,7 +100,8 @@ CREATE INDEX IF NOT EXISTS customer_alert_outbox_due ON customer_alert_outbox(se
 # Columns added to the control tables after the first release (customers.migrate.control_columns adds them). A
 # session gained the name it is listed and signed out by (id, a plain identifier, never the token), the device it
 # was opened from and when it was last used (customer_security shows them under ตั้งค่าบัญชี → ความปลอดภัย).
-ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFAULT '{}'"},
+# avatar: the customer's own picture (a PNG data URL, up to 512 × 512 and 128 KB; '' for the letters of their name).
+ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFAULT '{}'",'avatar':"TEXT NOT NULL DEFAULT ''"},
                          'customer_sessions':{'id':"TEXT NOT NULL DEFAULT ''",'user_agent':"TEXT NOT NULL DEFAULT ''",
                                               'ip':"TEXT NOT NULL DEFAULT ''",'last_seen_at':"TEXT NOT NULL DEFAULT ''"}}
 
@@ -104,7 +109,8 @@ ADDED_CONTROL_COLUMNS = {'customer_accounts':{'notify_prefs':"TEXT NOT NULL DEFA
 # LINE is on once the account is linked with the organization's LINE. 'reply' by email is the notify_email switch.
 NOTIFY_EVENTS = (('reply','ทีมงานตอบกลับในแชท',True),
                  ('ai','ผู้ช่วย AI ตอบคำถามในแชท',True),
-                 ('handoff','ส่งต่อเรื่องให้เจ้าหน้าที่ดูแล',True))
+                 ('handoff','ส่งต่อเรื่องให้เจ้าหน้าที่ดูแล',True),
+                 ('issue','ปัญหาที่ติดตามไว้แก้เสร็จแล้ว',True))
 
 # Columns added to the organization's tables after the first release (customers.migrate.tenant_columns adds them). A
 # notice of a web conversation says what happened there: 'reply' (the team wrote), 'ai' (the chatbot answered) or

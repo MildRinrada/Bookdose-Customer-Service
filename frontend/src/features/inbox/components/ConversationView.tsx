@@ -66,6 +66,17 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
                 ผู้เยี่ยมชม · {reachText(guest.follow)}
               </span>
             )}
+            {c.member && (
+              <span className="conv-fact" title="ลูกค้าเข้าสู่ระบบด้วยบัญชีลูกค้า">
+                สมาชิก
+              </span>
+            )}
+            {c.follows && (
+              <Link className="conv-fact conv-follows" href={`/inbox/${c.follows.id}`} title={`ลูกค้าบอกว่าเรื่องนี้ต่อจาก “${c.follows.subject}”`}>
+                <Icon name="history" />
+                ต่อจาก {c.follows.ticket_number ? `BD-${c.follows.ticket_number}` : `“${c.follows.subject}”`}
+              </Link>
+            )}
             {c.category && (
               <span className="conv-fact" title="หมวดที่ลูกค้าเลือก">
                 {c.category}

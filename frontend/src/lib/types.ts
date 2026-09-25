@@ -175,6 +175,8 @@ export type CustomerAccount =
       notify_email: boolean;
       consent_version: string;
       consent_at: string;
+      /** The customer's own picture (a PNG data URL), '' for the letters of their name. */
+      avatar?: string;
       created_at: string;
       /** The platform's announcement written for customers too, while it lasts. */
       announcement?: { text: string; level: 'info' | 'warning'; ends_at: string | null } | null;

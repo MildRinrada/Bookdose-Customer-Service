@@ -37,6 +37,8 @@ export type ConversationSummary = {
   mood_urgent?: number | null;
   mood_reason?: string | null;
   mood_source?: string | null;
+  /** A signed-in customer's chat (สมาชิก; customers/perks.py). */
+  member?: boolean;
 };
 
 export type MessageKind = 'customer' | 'reply' | 'note';
@@ -98,6 +100,9 @@ export type Conversation = {
   reference?: string;
   /** A web chat without an account (see ConversationSummary.guest). */
   guest?: GuestReach | null;
+  /** A signed-in customer's chat, and the earlier chat of theirs they said this one carries on from (customers/perks.py). */
+  member?: boolean;
+  follows?: { id: string; subject: string; status: string; updated_at: string; ticket_number: number | null } | null;
   /** Two-way translation: on for the organization, and the language replies go out in ('' when not known). */
   translation?: { enabled: boolean; language: string };
 };

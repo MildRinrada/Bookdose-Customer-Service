@@ -50,6 +50,10 @@ def change(db, ctx, issue_id, body):
     repository.update(db,issue_id,title,detail,status)
     event = 'issue.resolved' if status=='resolved' and current['status']!='resolved' else \
         'issue.reopened' if status=='active' and current['status']!='active' else 'issue.updated'
+    if event=='issue.resolved':
+        # The customers who asked to hear it are told once (follow.py).
+        from backend.modules.incidents import follow
+        follow.tell_resolved(db,{'id':issue_id,'title':title})
     audit.record(db,ctx['name'],event,issue_id,title)
     db.commit()
     return staff_view(db)

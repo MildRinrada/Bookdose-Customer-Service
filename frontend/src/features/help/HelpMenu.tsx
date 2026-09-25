@@ -8,14 +8,17 @@ import { useOpenOnThisPage } from '@/components/shell/chrome';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { reportProblem } from './api';
+import { reportProblem, reportProblemAsCustomer } from './api';
 
 /* The ? in the top bar: the three things a member reaches for when the screen does not do what they expected -
    the keys that save time, the guides the Bookdose team writes, and a way to say that something is broken.
 
    A report goes to the platform, not to the organization's own admins: what is reported here is the product, and
    only the team that builds it can fix it. It is read in the platform console (ผู้ดูแลแพลตฟอร์ม → รายงานปัญหา).
-   Markup: styles/layout.css (help-menu). */
+   A signed-in customer gets the same ? with what a customer needs: the answers, the system's status and the same
+   report (it is marked as a customer's in the console). Markup: styles/layout.css (help-menu). */
+
+type Audience = 'staff' | 'customer';
 
 const MAX = 4000;
 
@@ -31,7 +34,7 @@ const SHORTCUTS: { keys: string; what: string; where: string }[] = [
   { keys: 'Esc', what: 'ปิดเมนู กล่องข้อความ หรือหน้าต่างที่เปิดอยู่', where: 'ทุกหน้า' },
 ];
 
-export function HelpMenu() {
+export function HelpMenu({ audience = 'staff' }: { audience?: Audience }) {
   const [open, setOpen] = useOpenOnThisPage();
   const { openModal } = useDialogs();
   const pathname = usePathname();
@@ -74,20 +77,29 @@ export function HelpMenu() {
         <Icon name="help" />
       </button>
       <div className="profile-menu-panel" id="help-menu" hidden={!open}>
-        <button type="button" className="menu-item" onClick={() => openModal('คีย์ลัดทั้งหมด', <ShortcutList />)}>
-          <Icon name="bolt" />
-          คีย์ลัดทั้งหมด
-        </button>
-        <Link className="menu-item" href="/guides">
-          <Icon name="book" />
-          คู่มือจาก Bookdose
-        </Link>
+        {audience === 'customer' ? (
+          <Link className="menu-item" href="/customer/faq">
+            <Icon name="book" />
+            คำถามที่พบบ่อย
+          </Link>
+        ) : (
+          <>
+            <button type="button" className="menu-item" onClick={() => openModal('คีย์ลัดทั้งหมด', <ShortcutList />)}>
+              <Icon name="bolt" />
+              คีย์ลัดทั้งหมด
+            </button>
+            <Link className="menu-item" href="/guides">
+              <Icon name="book" />
+              คู่มือจาก Bookdose
+            </Link>
+          </>
+        )}
         {/* Opens in its own tab: when something is broken, the page you are on is the one you want to keep. */}
         <a className="menu-item" href="/status" target="_blank" rel="noopener">
           <Icon name="chart" />
           สถานะระบบ
         </a>
-        <button type="button" className="menu-item" onClick={() => openModal('รายงานปัญหา', <ReportForm page={pathname} />)}>
+        <button type="button" className="menu-item" onClick={() => openModal('รายงานปัญหา', <ReportForm page={pathname} audience={audience} />)}>
           <Icon name="bell" />
           รายงานปัญหา
         </button>
@@ -118,21 +130,28 @@ function ShortcutList() {
   );
 }
 
-function ReportForm({ page }: { page: string }) {
+function ReportForm({ page, audience }: { page: string; audience: Audience }) {
+  const customer = audience === 'customer';
   const { closeModal } = useDialogs();
   const toast = useToast();
   return (
     <Form
       data-form="problem-report"
       onSubmit={async (values) => {
-        await reportProblem(String(values.message ?? ''), page);
+        await (customer ? reportProblemAsCustomer : reportProblem)(String(values.message ?? ''), page);
         closeModal(true);
         toast('ส่งรายงานให้ผู้ดูแลแพลตฟอร์มแล้ว ขอบคุณครับ');
       }}
     >
-      <p className="notice">
-        เรื่องนี้ส่งตรงถึง<strong>ทีมที่ทำระบบ</strong> ไม่ผ่านผู้ดูแลองค์กรของคุณ เจออะไรก็บอกได้เลย
-      </p>
+      {customer ? (
+        <p className="notice">
+          สำหรับปัญหาของ<strong>เว็บไซต์</strong> เช่น กดแล้วไม่ทำงาน หน้าไม่ขึ้น เรื่องนี้ส่งถึงทีมที่ทำระบบ ถ้าเป็นเรื่องบริการขององค์กร แชทกับองค์กรนั้นได้เลย
+        </p>
+      ) : (
+        <p className="notice">
+          เรื่องนี้ส่งตรงถึง<strong>ทีมที่ทำระบบ</strong> ไม่ผ่านผู้ดูแลองค์กรของคุณ เจออะไรก็บอกได้เลย
+        </p>
+      )}
       <div className="field">
         <label htmlFor="report-message">เกิดอะไรขึ้น</label>
         <textarea
@@ -142,9 +161,13 @@ function ReportForm({ page }: { page: string }) {
           maxLength={MAX}
           required
           autoFocus
-          placeholder="เช่น กดปุ่มมอบหมายในหน้าเคสแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง"
+          placeholder={customer ? 'เช่น กดส่งข้อความแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง' : 'เช่น กดปุ่มมอบหมายในหน้าเคสแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง'}
         />
-        <span className="tiny muted">แนบชื่อ อีเมล และหน้าที่คุณเปิดอยู่ไปด้วย จะได้ติดต่อกลับถูกคน ข้อความที่คุยกับลูกค้าไม่ถูกส่งไป</span>
+        <span className="tiny muted">
+          {customer
+            ? 'แนบชื่อ อีเมล และหน้าที่คุณเปิดอยู่ไปด้วย จะได้ติดต่อกลับถูกคน ข้อความในแชทของคุณไม่ถูกส่งไป'
+            : 'แนบชื่อ อีเมล และหน้าที่คุณเปิดอยู่ไปด้วย จะได้ติดต่อกลับถูกคน ข้อความที่คุยกับลูกค้าไม่ถูกส่งไป'}
+        </span>
       </div>
       <div className="form-actions">
         <button type="button" className="btn" onClick={() => closeModal()}>

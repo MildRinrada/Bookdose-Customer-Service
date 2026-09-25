@@ -43,6 +43,8 @@ export type ChannelSetting = {
   last_received: string | null;
   outbox: OutboxCount[];
   events?: unknown[];
+  /** LINE: where LINE says it sends events, as the last check read it (channels/health.py); {} before a check. */
+  webhook?: { endpoint?: string; active?: boolean };
 };
 
 /** GET /api/channels/facebook */

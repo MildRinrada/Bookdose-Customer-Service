@@ -74,6 +74,12 @@ CREATE TABLE IF NOT EXISTS facebook_settings (
     config TEXT NOT NULL DEFAULT '{}', generation TEXT NOT NULL, last_error TEXT NOT NULL DEFAULT '',
     last_checked TEXT, last_received TEXT
 );
+-- เฝ้าช่องทาง (channels/health.py): since when a channel has not worked, whether its admins were told, when LINE /
+-- Facebook were last asked, and where LINE says it sends its webhook.
+CREATE TABLE IF NOT EXISTS channel_health (
+    kind TEXT PRIMARY KEY, broken_since TEXT, error TEXT NOT NULL DEFAULT '', told_at TEXT, verified_at TEXT,
+    webhook TEXT NOT NULL DEFAULT '{}'
+);
 CREATE INDEX IF NOT EXISTS channel_outbox_pending ON channel_outbox(status,next_attempt_at);
 CREATE INDEX IF NOT EXISTS channel_inbox_pending ON channel_inbox(status,created_at);
 '''

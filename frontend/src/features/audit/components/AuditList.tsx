@@ -147,7 +147,7 @@ function AuditEventRow({ run, changes }: { run: Run; changes: string }) {
           ) : null}
         </p>
         {changes && <p className="audit-changes">{changes}</p>}
-        <p className="audit-meta">
+        <div className="audit-meta">
           <span className={`audit-kind kind-${group}`}>
             <Icon name={auditIcon(e.action)} />
             {auditGroups[group].label}
@@ -159,7 +159,7 @@ function AuditEventRow({ run, changes }: { run: Run; changes: string }) {
               <span className="audit-repeat-times">เวลา {run.all.map((x) => clockTime(x.created_at)).join(', ')}</span>
             </details>
           )}
-        </p>
+        </div>
       </div>
     </li>
   );

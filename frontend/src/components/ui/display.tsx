@@ -153,7 +153,7 @@ export function InitialLoading({ text = 'กำลังเปิดพื้น
   return (
     <div className="initial-loading" role="status">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icon.svg" width={48} height={48} alt="Bookdose" />
+      <img src="/logo.png" width={48} height={48} alt="Bookdose" />
       <p>{text}</p>
     </div>
   );

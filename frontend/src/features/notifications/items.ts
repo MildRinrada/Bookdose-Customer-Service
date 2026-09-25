@@ -2,7 +2,7 @@
 
 import type { ConversationSummary } from '@/features/inbox/types';
 import { needsReply } from '@/features/inbox/hooks';
-import { formatDuration, overdue, plainText } from '@/lib/format';
+import { clockTime, dayLabel, formatDuration, overdue, plainText } from '@/lib/format';
 import { channelIcons } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useStaffAlerts, useStaffTickets } from '@/lib/session';
@@ -14,6 +14,12 @@ export const notificationKinds: Record<NotificationKind, { label: string; icon: 
   ticket: { label: 'เคสบริการ', icon: 'ticket' },
   inbox: { label: 'กล่องข้อความ', icon: 'inbox' },
 };
+
+/** "10:32 น." today, "เมื่อวาน 10:32 น." or the date before that. */
+function sinceText(at: string) {
+  const day = dayLabel(new Date(at));
+  return `${day === 'วันนี้' ? '' : day + ' '}${clockTime(at)} น.`;
+}
 
 export type NotificationSource = {
   alerts?: StaffAlerts | null;
@@ -27,6 +33,16 @@ export type NotificationSource = {
 export function notificationItems({ alerts, tickets, conversations }: NotificationSource): NotificationItem[] {
   const items: NotificationItem[] = [];
   const now = Date.now();
+  for (const c of alerts?.channels ?? [])
+    items.push({
+      kind: 'me',
+      tone: 'late',
+      icon: channelIcons[c.kind] || 'inbox',
+      title: `${c.name} รับส่งข้อความไม่ได้ตั้งแต่ ${sinceText(c.since)}`,
+      detail: c.error,
+      at: c.since,
+      href: `/settings?tab=${c.kind}`,
+    });
   for (const e of alerts?.escalations ?? [])
     items.push({ kind: 'me', tone: 'late', icon: 'bolt', title: `BD-${e.number} ยกระดับมาหาคุณ`, detail: e.subject, at: e.escalated_at, href: `/tickets/${e.ticket_id}` });
   for (const f of alerts?.forecasts ?? [])

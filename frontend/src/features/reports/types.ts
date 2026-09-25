@@ -3,7 +3,7 @@
 /** The period and filters (kept per session). `days` is the chosen quick range, 0 when dates were typed. */
 export type ReportFilter = { from: string; to: string; team: string; assignee: string; days: number };
 
-export type ReportMetrics = { total: number; open: number; late: number; avg: number | null; sla: number | null };
+export type ReportMetrics = { total: number; open: number; late: number; avg: number | null; median: number | null; sla: number | null };
 
 /** GET /api/reports/extras (backend/modules/reports): what the case list cannot tell, for the same dates. `bot` and
     `articles` for the organization's admins, `gaps` for its owners (not support access); null otherwise. */

@@ -8,7 +8,11 @@ export type SettingsBody = {
   response_hours: string;
   resolution_hours: string;
   welcome: string;
+  /** Targets of their own for the other priorities; '' follows ปกติ (backend tickets/sla.py). */
+  sla_by_priority?: Record<SlaPriority, { response: string; resolution: string }>;
 };
+
+export type SlaPriority = 'urgent' | 'high' | 'low';
 
 /** POST /api/members (new account) or PATCH /api/members/<id> (role, team, active). */
 export type MemberBody = {

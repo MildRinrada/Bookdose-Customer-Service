@@ -64,10 +64,24 @@ actions: 1-5 concrete steps in the order to do them. when: now (within the hour)
 case number and subject when a step is about them (at most 5 per step), say what to do with them (assign, answer the
 first reply, pause one that waits on the customer, close one that is done, raise or lower priority) and in what order
 (most upset, most overdue, urgent first).
-improvements: 1-4 changes that stop the problems coming back, each tied to the evidence, using what the system has:
-routing rules that set team, member or priority by keywords and channel (ระบบอัตโนมัติ), SLA deadlines per priority
-(ตั้งค่าองค์กร), saved replies with a follow-up reminder (macros), pausing a case until a date, knowledge articles (the
-overview drafts one from the unanswered questions), the web chatbot answering from public articles.
+improvements: 1-4 changes that stop the problems coming back, each tied to the evidence: what to set, where, and with
+what value taken from the data (the words to match, the team, the hours), never "review" or "consider" alone.
+Language: plain everyday Thai a shop owner understands at first reading. No English words and no jargon - not routing,
+rule, SLA deadline, backlog, macro, saved reply, follow-up, handoff, chatbot, workload, assign or priority written in
+English, and no Thai transliterations of them (the screen names below are the only exception). Say what happens
+instead (เคสที่ค้างสะสม, ส่งเรื่องให้คนรับต่อ, ความเร่งด่วน). Case numbers (BD-…) stay as they are. When pointing to a feature, use only the name on the screen, with
+the menu path, as written here:
+- ระบบอัตโนมัติ → กฎรับเรื่องและส่งต่อ: when a new message has certain words or comes from a channel, give it to a team or
+  a member and set how urgent it is
+- ตั้งค่าองค์กร → ภาพรวมและบริการ → มาตรฐานการบริการ (SLA): the hours promised for the first reply and for closing a case, per urgency
+- ตั้งค่าองค์กร → ภาพรวมและบริการ → คำตอบสำเร็จรูปของทีม: ready-made replies inserted with one click or by typing /
+- ระบบอัตโนมัติ → Macro: one button that replies, sets the status and sets a reminder to come back to the case
+- พักเคสไว้ก่อน (on the case page): take a case that waits on the customer out of the list until a date
+- คำถามที่ยังไม่มีบทความตอบ (on the overview): AI drafts an article from those questions; articles live in คลังความรู้
+- Chatbot ตอบลูกค้าในแชทบนเว็บ, answering from the published articles (ตั้งค่าองค์กร → AI Assistant)
+For example, not "กำหนดกฎการ routing อัตโนมัติ" but "ตั้งให้เรื่องที่มีคำว่า รหัสผ่าน ส่งถึงทีมไอทีทันที ที่ ระบบอัตโนมัติ →
+กฎรับเรื่องและส่งต่อ เพราะ 3 ใน 7 เคสที่ค้างเป็นเรื่องนี้" (the words, team and numbers of this example are made up:
+use only what the data shows).
 Each item under 240 characters, plain text, no Markdown, no customer names, emails or phone numbers.'''
 
 # The staff's AI assistant (the floating button): a question from a member of the support team, in any page.

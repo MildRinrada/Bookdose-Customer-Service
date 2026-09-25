@@ -84,7 +84,7 @@ def setting(db, key):
 
 
 def update_setting(db, key, value):
-    db.execute('UPDATE settings SET value=? WHERE key=?',(value,key))
+    db.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,value))
 
 
 # คำตอบสำเร็จรูปของทีม

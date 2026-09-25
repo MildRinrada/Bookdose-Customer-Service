@@ -35,7 +35,7 @@ export function ConversationSummary({ conversationId, messageCount }: { conversa
   const state = useApi<SummaryState>(available ? path : null, {
     refetchInterval: (last) => ((last as SummaryState | undefined)?.working ? POLL_MS : false),
   });
-  const [open, setOpen] = useUiState('conv-summary:open', true);
+  const [open, setOpen] = useUiState('conv-summary:open', false);
   const refresh = useInvalidate();
   const run = useRunAction();
   const data = state.data;

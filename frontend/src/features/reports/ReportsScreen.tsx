@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { useToast } from '@/components/ui/Toast';
+import { download } from '@/lib/api/client';
 import { Avatar, ChartColumn, EmptyState, StatCard } from '@/components/ui/display';
 import { FilterPill } from '@/components/ui/filters';
 import { Form } from '@/components/ui/Form';
@@ -14,9 +17,21 @@ import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { ArticlesCard, BotReportCard } from './components/ReportAi';
-import { BacklogCard, ResolutionCard, SatisfactionCard, SourcesCard } from './components/ReportInsights';
+import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard, SourcesCard } from './components/ReportInsights';
 import { BusyHoursCard, ReopenCard, WorkloadCard } from './components/ReportTeam';
-import { defaultReportFilter, reportExtrasPath, reportMetrics, reportRange, reportRanges, reportTickets, reportTrend } from './labels';
+import {
+  defaultReportFilter,
+  reportDatasetPath,
+  reportExtrasPath,
+  reportMetrics,
+  reportRange,
+  reportRanges,
+  reportTickets,
+  reportTrend,
+} from './labels';
+
+/** Who may take the period's tables away (backend reports/service.LEADS). */
+const LEADS = ['admin', 'manager'];
 import type { ReportExtras, ReportFilter } from './types';
 
 /* Service report: a period to look at, the numbers for it against the period before, the shape of the work
@@ -30,6 +45,8 @@ export function ReportsScreen() {
   const all = (useStaffTickets().data?.tickets ?? []) as TicketRow[];
   const [f, setFilter] = useUiState<ReportFilter>('reports:filter', defaultReportFilter());
   const extras = useApi<ReportExtras>(reportExtrasPath(f), { keepPrevious: true }).data;
+  const toast = useToast();
+  const [exporting, setExporting] = useState(false);
 
   const tickets = reportTickets(all, f);
   const m = reportMetrics(tickets);
@@ -81,11 +98,29 @@ export function ReportsScreen() {
             {date(f.from)} - {date(f.to)} · เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน
           </p>
         </div>
-        <div className="flex">
+        <div className="flex wrap">
           <button type="button" className="btn subtle" onClick={() => saveCSV(tickets, 'report-tickets.csv')}>
             <Icon name="download" />
             ดาวน์โหลด CSV
           </button>
+          {LEADS.includes(work.role) && (
+            <button
+              type="button"
+              className="btn"
+              disabled={exporting}
+              title="ตารางเคส บทสนทนา ข้อความ (ไม่มีเนื้อความ) CSAT การเปิดซ้ำ และการยกระดับ ของช่วงที่เลือก พร้อมคำอธิบายทุกคอลัมน์ ไม่มีชื่อหรือช่องทางติดต่อลูกค้า"
+              onClick={() => {
+                setExporting(true);
+                void download(reportDatasetPath(f), `bookdose-dataset-${f.from}-${f.to}.zip`)
+                  .then(() => toast('ดาวน์โหลดชุดข้อมูลแล้ว'))
+                  .catch((error: Error) => toast(error.message, true))
+                  .finally(() => setExporting(false));
+              }}
+            >
+              <Icon name="download" />
+              {exporting ? 'กำลังเตรียมไฟล์…' : 'ชุดข้อมูลสำหรับวิเคราะห์ (ZIP)'}
+            </button>
+          )}
         </div>
       </div>
       {/* Keyed by the filter so the fields show a range picked with the pills. */}
@@ -142,7 +177,13 @@ export function ReportsScreen() {
           <div className="stats-grid">
             <StatCard label="เคสทั้งหมด" value={m.total} icon="ticket" foot={reportTrend(m.total, before.total, 'เคส')} href="/tickets" />
             <StatCard label="ยังดูแลอยู่" value={m.open} icon="users" foot={reportTrend(m.open, before.open, 'เคส')} href="/tickets?filter=active" />
-            <StatCard label="ตอบกลับครั้งแรกเฉลี่ย" value={formatDuration(m.avg)} icon="clock" foot={reportTrend(m.avg, before.avg, 'นาที')} href="/tickets" />
+            <StatCard
+              label="ตอบกลับครั้งแรก (ค่ากลาง)"
+              value={formatDuration(m.median)}
+              icon="clock"
+              foot={reportTrend(m.median, before.median, 'นาที')}
+              href="/tickets"
+            />
             <StatCard
               label="ตอบทัน SLA"
               value={m.sla == null ? '-' : m.sla.toFixed(1) + '%'}
@@ -172,26 +213,27 @@ export function ReportsScreen() {
             </div>
           </section>
           <div className="report-grid">
+            <FirstResponseCard all={all} f={f} />
             <ResolutionCard all={all} f={f} />
+          </div>
+          <div className="report-grid">
             <SatisfactionCard all={all} f={f} />
+            <BacklogCard all={all} f={f} />
           </div>
           <SourcesCard tickets={tickets} />
           <div className="report-grid">
-            <BacklogCard all={all} f={f} />
-            <div className="report-stack">
-              <section className="card">
-                <div className="card-header">
-                  <h2>เคสตามสถานะ</h2>
-                </div>
-                <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
-              </section>
-              <section className="card">
-                <div className="card-header">
-                  <h2>เคสตามความเร่งด่วน</h2>
-                </div>
-                <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
-              </section>
-            </div>
+            <section className="card">
+              <div className="card-header">
+                <h2>เคสตามสถานะ</h2>
+              </div>
+              <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
+            </section>
+            <section className="card">
+              <div className="card-header">
+                <h2>เคสตามความเร่งด่วน</h2>
+              </div>
+              <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
+            </section>
           </div>
           <div className="report-grid">
             <ReopenCard all={all} f={f} />

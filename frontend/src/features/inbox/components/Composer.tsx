@@ -64,8 +64,11 @@ export type ComposerProps = {
   insertRef?: RefObject<((text: string) => void) | null>;
   /** publicView: what to show above the box for what is being typed (the customer chats offer matching answers). */
   suggest?: (text: string) => ReactNode;
-  /** After a message was sent and the conversation refreshed (e.g. the customer chat refreshes its own session). */
-  onSent?: () => unknown | Promise<unknown>;
+  /** After a message was sent and the conversation refreshed (e.g. the customer chat refreshes its own session), with
+      what was sent. */
+  onSent?: (kind?: 'reply' | 'note') => unknown | Promise<unknown>;
+  /** The team's composer: the thread shows internal notes only (ThreadFilter), so what is written is a note. */
+  notesOnly?: boolean;
 };
 
 export function Composer(props: ComposerProps) {
@@ -242,6 +245,7 @@ function StaffComposer({
   caseNumber,
   translateTo,
   onSent,
+  notesOnly = false,
 }: ComposerProps) {
   const work = useWork();
   const toast = useToast();
@@ -256,8 +260,16 @@ function StaffComposer({
   const [drafts, setDrafts] = useUiState<Record<string, string>>('inbox:drafts', {});
   // The saved draft is where the text box starts; after that the box itself is the truth.
   const [initialDraft] = useState(() => drafts[id] || '');
-  const [kind, setKind] = useState<'reply' | 'note'>(manual ? 'note' : 'reply');
-  const [kindChanged, setKindChanged] = useState(false);
+  const [kind, setKind] = useState<'reply' | 'note'>(manual || notesOnly ? 'note' : 'reply');
+  const [kindChanged, setKindChanged] = useState(notesOnly);
+  // Reading the notes alone, a member writes a note: a reply typed there went to the customer and vanished from the
+  // filtered thread. Turning the filter off brings back what the box was before it.
+  const [filtered, setFiltered] = useState({ on: notesOnly, before: kind });
+  if (filtered.on !== notesOnly) {
+    setFiltered({ on: notesOnly, before: notesOnly ? kind : filtered.before });
+    setKind(notesOnly ? 'note' : manual ? 'note' : filtered.before);
+    setKindChanged(notesOnly || filtered.before === 'note');
+  }
   // What is in the box now, for the warning that a file was promised and none is attached.
   const [text, setText] = useState(initialDraft);
   const forgotFile = MENTIONS_FILE.test(text) && pills.files.length === 0;
@@ -418,7 +430,7 @@ function StaffComposer({
         pills.clear();
         await refresh(...CONVERSATION_PREFIXES);
         followThread(form);
-        await onSent?.();
+        await onSent?.(sent);
         toast(
           sent === 'note'
             ? 'บันทึกภายในแล้ว'

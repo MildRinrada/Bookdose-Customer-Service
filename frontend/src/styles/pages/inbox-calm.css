@@ -179,6 +179,20 @@
 .conv-urgent {
   color: var(--red);
 }
+/* The header in two short lines - the subject, then the facts on one line (the name gives way first) - so the thread
+   keeps the height. */
+.staff-chats .inbox-detail>.conv-header {
+  padding: 8px 16px;
+}
+.staff-chats .conv-header .conv-meta {
+  margin-top: 0;
+}
+@container (min-width:781px) {
+  .staff-chats .conv-facts {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+}
 
 /* Privacy and the notes switch: one slim row above the thread. */
 .conv-toolbar {
@@ -194,6 +208,34 @@
 }
 .conv-toolbar .notes-switch {
   order: 0;
+}
+/* A folded summary is one slim line between who may read and the notes switch, not a band of its own. */
+.conv-toolbar>.conv-summary.closed {
+  flex: 1 1 0;
+  min-width: 240px;
+  order: 0;
+  margin: 4px 0;
+  padding: 2px 4px 2px 12px;
+}
+.conv-toolbar>.conv-summary.closed .conv-summary-actions>.tiny {
+  display: none;
+}
+.conv-toolbar>.conv-summary.closed .conv-summary-head {
+  flex-wrap: nowrap;
+}
+.conv-toolbar>.conv-summary.closed .conv-summary-toggle {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.conv-toolbar>.conv-summary.closed .conv-summary-toggle .tiny {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-toolbar>.conv-summary.closed .conv-summary-actions {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 .conv-toolbar .privacy-tag {
   background: none;

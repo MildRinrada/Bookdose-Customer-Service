@@ -6,3 +6,10 @@ def extras(req):
     """Every member: the period's busy hours (an agent's own team). Leads also get the chatbot and the articles; the
     organization's owner also the questions no article answers."""
     return req.send(200,service.extras(req.db,req.ctx,req.query))
+
+
+def dataset(req):
+    """Leads: the period as tidy CSV tables in one ZIP, for analysis elsewhere (reports/dataset.py)."""
+    from backend.modules.reports import dataset as tables
+    content,name = tables.build(req.cd,req.db,req.ctx,req.query)
+    return req.send(200,content,'application/zip',{'Content-Disposition':f'attachment; filename="{name}"'})

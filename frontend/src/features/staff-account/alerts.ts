@@ -78,7 +78,7 @@ export async function allowDesktop(): Promise<boolean> {
 export function showDesktop(title: string, body: string, href: string, tag: string) {
   if (!desktopSupported() || Notification.permission !== 'granted') return false;
   try {
-    const note = new Notification(title, { body, tag, icon: '/icon.svg' });
+    const note = new Notification(title, { body, tag, icon: '/logo.png' });
     note.onclick = () => {
       window.focus();
       window.location.assign(href);

@@ -59,6 +59,15 @@ def verify_line(secret):
     except (ValueError,TypeError,AttributeError):raise ChannelError('credentials') from None
 
 
+def line_webhook_info(secret):
+    """Where LINE sends this bot's events and whether "Use webhook" is on: {'endpoint','active'}."""
+    raw,_,_=line_request(secret['access_token'],'/v2/bot/channel/webhook/endpoint')
+    try:
+        data=json.loads(raw)
+        return {'endpoint':str(data.get('endpoint',''))[:500],'active':data.get('active') is True}
+    except (ValueError,TypeError,AttributeError):raise ChannelError('rejected') from None
+
+
 def send_line(secret,recipient,text,retry_key):
     _,_,provider_id=line_request(secret['access_token'],'/v2/bot/message/push',
         {'to':recipient,'messages':text if isinstance(text,list) else [{'type':'text','text':text}]},retry_key)

@@ -10,7 +10,7 @@ from backend.modules.automation.service import SYSTEM_ACTOR
 from backend.modules.contacts import repository as contacts, service as contact_service
 from backend.modules.conversations import repository as conversations, service as conversation_service
 from backend.modules.organization import repository as organization
-from backend.modules.tickets import repository, schema
+from backend.modules.tickets import repository, schema, sla
 from backend.modules.trash import service as trash
 from backend.realtime import events as realtime
 from backend.utils.dates import iso, now, utc_now
@@ -23,11 +23,9 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
     When linked to a conversation that already has a staff reply, that reply is its first response.
     Matching routing rules then set its priority, team and owner."""
     ticket_id = uid()
-    settings = organization.settings(db)
     timestamp = utc_now()
     repository.insert(db,ticket_id,repository.next_number(db),subject,contact_id,team_id,assignee_id,priority,category,
-                      iso(timestamp+dt.timedelta(hours=float(settings['response_hours']))),
-                      iso(timestamp+dt.timedelta(hours=float(settings['resolution_hours']))))
+                      *sla.deadlines(db,priority,timestamp))
     if conversation_id:
         repository.link_conversation(db,ticket_id,conversation_id)
         response = repository.first_staff_reply_time(db,conversation_id)
@@ -108,6 +106,8 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     if status not in ('resolved','closed'):
         repository.note_reopen(db,'id=?',(ticket['id'],),'staff')
     repository.update(db,ticket['id'],status,priority,team_id,assignee,resolved_at)
+    if priority!=ticket['priority']:
+        sla.follow_priority(db,ticket['id'])
     conversations.set_team_for_ticket(db,ticket['id'],team_id)
     automation.after_status_change(db,ctx,ticket,status)
     # Priority, team and assignee are for staff; the customer hears only about a new status. The team that had the

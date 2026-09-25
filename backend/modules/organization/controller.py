@@ -34,6 +34,42 @@ def update_settings(req):
 
 
 @require_role('admin')
+def save_business_hours(req):
+    from backend.modules.organization import hours
+    return req.send(200,{'business_hours':hours.save(req.db,req.ctx,req.body)})
+
+
+@require_role('admin')
+def data_retention(req):
+    from backend.modules.organization import retention
+    return req.send(200,retention.overview(req.db))
+
+
+@require_role('admin')
+def save_data_retention(req):
+    from backend.modules.organization import retention
+    return req.send(200,retention.save(req.db,req.ctx,req.body))
+
+
+@require_role('admin')
+def team_security(req):
+    from backend.modules.organization import team_security as security
+    return req.send(200,security.overview(req.cd,req.db,req.ctx))
+
+
+@require_role('admin')
+def save_team_security(req):
+    from backend.modules.organization import team_security as security
+    return req.send(200,security.save(req.cd,req.db,req.ctx,req.body))
+
+
+@require_role('admin')
+def save_quiet_close(req):
+    from backend.modules.automation import quiet
+    return req.send(200,{'quiet_close':quiet.save(req.db,req.ctx,req.body)})
+
+
+@require_role('admin')
 def save_team_snippets(req):
     service.save_team_snippets(req.db,req.ctx,req.body)
     return req.send(200,{'ok':True})

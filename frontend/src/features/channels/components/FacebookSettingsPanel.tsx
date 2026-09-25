@@ -12,6 +12,7 @@ import { CHANNEL_SETTINGS_PREFIXES, FACEBOOK_PATH, saveFacebook, testFacebook } 
 import type { FacebookSetting } from '../types';
 import { ChannelField } from '../util';
 import { OutboxBadges } from './ChannelSettingsPanel';
+import { facebookSteps, SetupSteps } from './SetupSteps';
 
 /* Facebook Messenger settings (settings page, LINE / Email / Facebook tab; admins only): the Page token and app
    secret, the receiving team, on/off, a test, and the Callback URL + Verify Token to give Meta.
@@ -49,6 +50,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
           await refresh(...CHANNEL_SETTINGS_PREFIXES);
         }}
       >
+        <SetupSteps steps={facebookSteps(c)} />
         <div className="notice mb">
           รับข้อความจากเพจ Facebook เข้ากล่องข้อความเดียวกับ Web / LINE / Email แล้วตอบกลับจากที่นี่ ต้องมี Meta App ที่เปิด Messenger และ
           Page Access Token ที่มีสิทธิ์ pages_messaging · ตอบได้ภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้าตามนโยบาย Messenger · ส่งได้เฉพาะข้อความ

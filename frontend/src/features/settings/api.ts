@@ -14,6 +14,32 @@ export const saveCustomerCategories = (categories: CustomerCategory[]) => api('/
 /** คำตอบสำเร็จรูปของทีม: the whole list at once, in the order given (owners only). */
 export const saveTeamSnippets = (snippets: TeamSnippet[]) => api('/api/settings/snippets', { snippets });
 
+/** เวลาทำการ (backend organization/hours.py): Monday first, null for a closed day. */
+export type Holiday = { date: string; name: string };
+export type BusinessHours = { enabled: boolean; sla: boolean; days: Array<[string, string] | null>; holidays: Holiday[]; message: string };
+export const RETENTION_PATH = '/api/settings/retention';
+type RetentionCount = { conversations: number; files: number; bytes: number };
+export type Retention = {
+  enabled: boolean;
+  months: number;
+  enabled_at: string | null;
+  months_choices: number[];
+  wait_days: number;
+  starts_at: string | null;
+  preview: Record<string, RetentionCount>;
+  cleared: { conversations: number; files: number; last_at: string | null };
+};
+export const saveRetention = (value: { enabled: boolean; months: number }) => api<Retention>(RETENTION_PATH, value);
+export const TEAM_SECURITY_PATH ='/api/settings/security';
+export type TeamSecurity = {
+  require_two_factor: boolean;
+  members: Array<{ id: string; name: string; email: string; role: string; protected: boolean }>;
+};
+export const saveTeamSecurity = (on: boolean) => api<TeamSecurity>(TEAM_SECURITY_PATH, { require_two_factor: on });
+export type QuietClose ={ enabled: boolean; remind_days: number; close_days: number; remind_message: string; close_message: string };
+export const saveQuietClose = (value: QuietClose) => api<{ quiet_close: QuietClose }>('/api/settings/quiet-close', value);
+export const saveBusinessHours =(hours: BusinessHours) => api<{ business_hours: BusinessHours }>('/api/settings/hours', hours);
+
 export type TeamBody = { name: string; description: string };
 
 export const createTeam = (body: TeamBody) => api<{ id: string }>('/api/teams', body);

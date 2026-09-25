@@ -134,6 +134,12 @@ def upgrade_tenant(db):
     db.executescript(staff_prefs.TENANT_TABLES)
     # คำตอบสำเร็จรูปของทีม: a list, where the organization used to have one prepared reply. The saved one moves in.
     db.executescript(organization.TEAM_SNIPPETS_TABLE)
+    from backend.modules.organization import hours
+    db.executescript(hours.TABLE)
+    from backend.modules.automation import quiet
+    db.executescript(quiet.TABLE)
+    from backend.modules.organization import retention
+    db.executescript(retention.TABLE)
     from backend.modules.organization import repository as organization_repository
     organization_repository.move_canned_reply(db)
     # A team can say what it is for, beside what it is called (ทีมและสมาชิก). Teams made before this have no words yet.

@@ -253,8 +253,10 @@ def process_outbox(tenant_id):
         conv = conversations.find(db,message['conversation_id'])
         row = repository.find_facebook_setting(db)
         link = repository.link_for_conversation(db,conv['id'])
+        from backend.modules.channels.move import SYSTEM_ACTOR
         member = organization.find_active_membership(cd,tenant_id,job['actor_id'])
-        permitted = tenants.is_active(cd,tenant_id) and member and (member['role']!='agent' or member['team_id']==conv['team_id'])
+        # A notice the system wrote (outside business hours, organization/hours.py) goes while the organization is active.
+        permitted = tenants.is_active(cd,tenant_id) and (job['actor_id']==SYSTEM_ACTOR or member and (member['role']!='agent' or member['team_id']==conv['team_id']))
         if not permitted or not row or not row['enabled'] or row['generation']!=job['generation'] or not link or link['account_identity']!=row['config'].get('page_id'):
             finish(db,job,'failed','changed')
             return True

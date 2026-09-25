@@ -113,6 +113,11 @@ function TicketConversationCard({ conv, contactName, caseNumber }: { conv: Ticke
         recipient={contactName}
         caseNumber={caseNumber}
         translateTo={translateTo(conv.translation)}
+        notesOnly={notesOnly}
+        // A reply sent while the thread shows notes only would be out of sight: show the whole thread again.
+        onSent={(sent) => {
+          if (sent === 'reply') setNotesOnly(false);
+        }}
       />
     </section>
   );

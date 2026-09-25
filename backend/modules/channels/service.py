@@ -16,7 +16,7 @@ from backend.extensions import channel_transport as T
 from backend.modules.platform import repository as platform_repository, service as platform_service
 from backend.middleware.access import get_scoped
 from backend.modules.ai import service as ai
-from backend.modules.channels import email_oauth as O, facebook, file_links as F, repository, schema
+from backend.modules.channels import email_oauth as O, facebook, file_links as F, health, repository, schema
 from backend.modules.channels.model import KINDS
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations, service as conversation_service
@@ -69,7 +69,9 @@ def overview(db, tenant_id):
             'oauth_client_configured':bool(secret.get('oauth_client_secret')),'route_id':row['route_id'] if row else None,
             'last_error':CHANNEL_ERRORS.get(row['last_error'],'') if row else '',
             'last_checked':row['last_checked'] if row else None,'last_received':row['last_received'] if row else None,
-            'outbox':repository.outbox_counts(db,kind),'events':repository.recent_events(db,kind)})
+            'outbox':repository.outbox_counts(db,kind),'events':repository.recent_events(db,kind),
+            # Where LINE sends its events, as the last check read it (the setup steps; channels/health.py).
+            **({'webhook':health.webhook(db)} if kind=='line' else {})})
     return output
 
 
@@ -161,6 +163,12 @@ def test_channel(db, tenant_id, kind):
         repository.set_check_result(db,kind,error.code)
         db.commit()
         raise
+    # Where LINE sends its events, for the setup step "วาง Webhook URL" (read only; nothing is changed at LINE).
+    if kind=='line':
+        try:
+            health.save_webhook(db,T.line_webhook_info(secret))
+        except ChannelError:
+            pass
     repository.set_check_result(db,kind,'')
     db.commit()
     return {'ok':True,'message':'เชื่อมต่อสำเร็จ (ยังไม่ได้ส่งข้อความจริง)'}
@@ -604,6 +612,9 @@ def process_outbox(tenant_id):
             return True
         status = 'accepted' if not error else 'unknown' if error.uncertain else 'queued' if error.retryable and attempts<3 else 'failed'
         finish(db,job,status,error.code if error else '',provider_id)
+        # A refused token shows on the settings page and in the owners' alert at once (channels/health.py).
+        if error and error.code=='credentials':
+            repository.set_check_result(db,job['kind'],'credentials')
         if job['actor_id']==AI_ACTOR and status in ('failed','unknown'):
             ai.stop_bot(db,conv['id'],'delivery_failed')
             if not tickets.is_conversation_linked(db,conv['id']):
@@ -701,6 +712,8 @@ class Worker:
                     try:
                         if mail:
                             poll_email(tid,self.store_message)
+                            if health.due(tid):
+                                health.run(tid)
                         else:
                             process_outbox(tid)
                             process_line(tid,self.store_message)

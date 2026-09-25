@@ -6,6 +6,7 @@ export type PublicOrgInfo = {
   welcome?: string;
   ai_enabled?: boolean;
   response_hours?: number | string;
+  response_in_opening_time?: boolean;
   /** Sign-ups must confirm their email (the platform's email is set up). */
   email_verification: boolean;
   channels?: unknown[];

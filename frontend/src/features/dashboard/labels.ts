@@ -112,6 +112,7 @@ export const botReasonLabels: Record<string, string> = {
   not_configured: 'ยังไม่ได้ตั้ง API Key',
   unauthorized: 'API Key ใช้ไม่ได้',
   model_unavailable: 'ใช้โมเดล AI ที่ตั้งไว้ไม่ได้',
+  busy: 'โมเดล AI มีผู้ใช้มากชั่วคราว',
   rate_limit: 'ผู้ให้บริการ AI จำกัดการใช้งานชั่วคราว',
   provider: 'ผู้ให้บริการ AI ขัดข้อง',
   invalid_output: 'คำตอบของ AI ใช้ไม่ได้',

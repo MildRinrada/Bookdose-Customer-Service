@@ -977,11 +977,11 @@ main .customer-link-head>.text-size-controls {
   text-overflow: ellipsis;
 }
 .customer-chats .inbox-detail>.conv-header {
-  padding: 10px 16px;
+  padding: 8px 16px;
 }
 .customer-chats .conv-meta {
   gap: 6px 8px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 .customer-staff-chip {
   display: inline-flex;

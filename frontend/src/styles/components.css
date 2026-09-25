@@ -1547,3 +1547,16 @@ select:disabled {
 .ai-mood-switch small {
   font-weight: 400;
 }
+
+/* The organization requires two-step sign-in (StaffShell): on ตั้งค่าบัญชี, the reason and the way back to work. */
+.two-factor-gate-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 16px;
+}
+.two-factor-gate-notice .grow {
+  flex: 1 1 260px;
+  min-width: 0;
+}

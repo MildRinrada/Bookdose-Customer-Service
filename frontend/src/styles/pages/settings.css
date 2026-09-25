@@ -640,3 +640,295 @@ a.settings-nav-item,a.settings-nav-item:hover {
 .storage-notice p {
   margin: 4px 0 0;
 }
+
+/* เวลาทำการ (BusinessHoursCard): a row per day - the day's switch, then its opening and closing time. */
+.hours-days {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 6px;
+}
+.hours-day {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+.hours-day .day-check span {
+  min-width: 96px;
+}
+.hours-day input[type='time'] {
+  width: auto;
+  min-height: 40px;
+}
+.hours-to {
+  color: var(--muted);
+}
+/* ความปลอดภัยของทีม (TeamSecurityPanel): the switch as a state and one button, then who has set it up. */
+.team-security-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.team-security-state .grow {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-weight: 600;
+}
+.team-security-list .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.team-security-list strong .muted {
+  font-weight: 400;
+}
+.team-security-list .settings-status {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+/* ระยะเวลาเก็บข้อมูล (RetentionCard): one choice per length, each saying what it would clear today. */
+.retention-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0 12px;
+}
+@media (min-width: 600px) {
+  .retention-choices {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+.retention-choice {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.retention-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.retention-choice small {
+  color: var(--muted);
+  font-size: .8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.retention-choice.selected {
+  border-color: #2c7155;
+  box-shadow: inset 0 0 0 1px #2c7155;
+}
+.retention-choice:has(input:focus-visible) {
+  outline: 2px solid #2c7155;
+  outline-offset: 2px;
+}
+.retention-what {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 14px;
+}
+
+/* ปิดเคสเมื่อลูกค้าเงียบ (QuietCloseCard): the two waits read as sentences with a number in them. */
+.quiet-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin: 14px 0 16px;
+}
+.quiet-days label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.quiet-days input {
+  width: 76px;
+  min-height: 40px;
+  text-align: center;
+}
+
+/* SLA by priority (ServicePanel SlaTable): a row per priority, ปกติ required, the others may be left to follow it. */
+.sla-table {
+  display: grid;
+  grid-template-columns: minmax(84px, auto) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+}
+.sla-head {
+  color: var(--muted);
+  font-size: .86rem;
+  font-weight: 600;
+}
+.sla-table input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+}
+.sla-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sla-level::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.sla-level.urgent::before {
+  background: #c51c31;
+}
+.sla-level.high::before {
+  background: #a66a0c;
+}
+.sla-level.normal::before {
+  background: #2c7155;
+}
+.sla-note {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+}
+
+/* A phone: the day on its own row, both times side by side under it. */
+@media (max-width: 520px) {
+  .hours-day:not(.closed) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 6px 8px;
+  }
+  .hours-day:not(.closed) .day-check {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .hours-day input[type='time'] {
+    width: 100%;
+    min-width: 0;
+  }
+}
+.hours-off {
+  color: var(--muted);
+  font-size: .9rem;
+}
+.hours-switches {
+  display: grid;
+  gap: 12px;
+}
+.hours-switches .check>span {
+  display: grid;
+  gap: 2px;
+}
+.hours-switches small {
+  font-weight: 400;
+}
+.hours-holidays {
+  margin: 18px 0 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.hours-holidays h3 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+.hours-holiday-list {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hours-holiday-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.hours-holiday-list li>span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hours-holiday-list li>button {
+  margin-left: auto;
+}
+.hours-holiday-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.hours-holiday-add input[type='date'] {
+  width: auto;
+  min-height: 40px;
+}
+.hours-holiday-add input[type='text'] {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 40px;
+}
+
+/* The steps to a working channel (SetupSteps): a tick for what the system has seen, the next step says what to do. */
+.setup-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  list-style: none;
+}
+.setup-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0,1fr);
+  gap: 10px;
+  align-items: start;
+}
+.setup-step-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--control-line);
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: .85rem;
+  font-weight: 700;
+}
+.setup-step-mark .icon {
+  width: 15px;
+  height: 15px;
+}
+.setup-steps li.done .setup-step-mark {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+.setup-steps li.done .setup-step-text {
+  color: var(--muted);
+}
+.setup-steps li.current .setup-step-mark {
+  border-color: var(--ink);
+  border-width: 2px;
+}
+.setup-steps li.current .setup-step-text>span:first-child {
+  font-weight: 600;
+}
+.setup-step-text {
+  display: grid;
+  gap: 2px;
+  padding-top: 2px;
+  overflow-wrap: anywhere;
+}

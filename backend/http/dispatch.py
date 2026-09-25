@@ -51,7 +51,7 @@ from backend.modules.invitations import routes as invitation_routes
 from backend.modules.conversations import routes as conversation_routes
 from backend.modules.knowledge import routes as knowledge_routes
 from backend.modules.org_links import routes as org_link_routes
-from backend.modules.organization import routes as organization_routes
+from backend.modules.organization import routes as organization_routes, team_security
 from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
 from backend.modules.reports import routes as report_routes
@@ -222,6 +222,8 @@ def route_request(req, path):
         req.ctx = auth.select_workspace(req)
         with D.tenant(req.ctx['tenant_id']) as db:
             req.db = db
+            # An organization that requires two-step sign-in lets a member without it no further than their account.
+            team_security.check(req)
             # For the live agent monitor: who is using the app right now (a platform admin looking in is not staff).
             if not req.ctx.get('read_only'):
                 automation.touch_activity(db,req.ctx)

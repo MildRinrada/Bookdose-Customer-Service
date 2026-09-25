@@ -34,6 +34,9 @@ ARTICLE_QUESTIONS = 12
 BRIEF_SUBJECTS = 40
 BRIEF_CASES = 15              # the open cases the advice may name, most overdue first
 BRIEF_COMMENTS = 5
+# The advice is read in Thai: the cases go to the AI with the words the screens use, so none of the codes come back.
+PRIORITY_TH = {'low':'ต่ำ','normal':'ปกติ','high':'สูง','urgent':'เร่งด่วน'}
+STATUS_TH = {'new':'ใหม่','open':'กำลังดำเนินการ','pending_customer':'รอลูกค้า','pending_internal':'รอทีมภายใน'}
 ID = re.compile(r'[a-f0-9]{32}')
 
 _cache = {}
@@ -196,12 +199,13 @@ def _open_cases(db, now_iso):
                      WHERE t.status NOT IN ('resolved','closed')''')
     cases = []
     for c in found:
-        missed = 'first_reply' if not c['first_response_at'] else 'resolution'
-        due = c['first_response_due_at'] if missed=='first_reply' else c['resolution_due_at']
-        cases.append({'case':f"BD-{c['number']}",'subject':_mask(_plain(c['subject'],100)),'priority':c['priority'],'status':c['status'],
+        replied = bool(c['first_response_at'])
+        due = c['resolution_due_at'] if replied else c['first_response_due_at']
+        cases.append({'case':f"BD-{c['number']}",'subject':_mask(_plain(c['subject'],100)),
+                      'priority':PRIORITY_TH.get(c['priority'],c['priority']),'status':STATUS_TH.get(c['status'],c['status']),
                       'category':c['category'],'team':c['team'] or '','assigned':bool(c['assignee_id']),
                       'hours_open':_hours(c['created_at'],now_iso),'hours_past_deadline':max(0,_hours(due,now_iso)),
-                      'deadline':missed,'paused':bool(c['snoozed_until'] and c['snoozed_until']>now_iso),'customer_upset':c['mood'] or 0})
+                      'deadline':'ปิดเคส' if replied else 'ตอบครั้งแรก','paused':bool(c['snoozed_until'] and c['snoozed_until']>now_iso),'customer_upset':c['mood'] or 0})
     cases.sort(key=lambda c:(-c['hours_past_deadline'],-c['customer_upset']))
     return cases
 

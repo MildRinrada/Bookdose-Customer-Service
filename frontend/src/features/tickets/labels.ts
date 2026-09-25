@@ -19,10 +19,14 @@ export const ticketScopes: Record<string, string> = {
 
 export const densityLabels: Record<string, string> = { comfortable: 'อ่านสบาย', compact: 'กระชับ' };
 
-/** The list's filters as they appear in the address: /tickets?q=&status=&priority=&contact=&filter=<scope>. */
-export type TicketFilter = { q?: string; status?: string; priority?: string; contact?: string; filter?: string };
+/** The list's filters as they appear in the address: /tickets?q=&status=&priority=&contact=&assignee=&filter=<scope>. */
+export type TicketFilter = { q?: string; status?: string; priority?: string; contact?: string; assignee?: string; filter?: string };
 
-export const FILTER_KEYS = ['q', 'status', 'priority', 'contact', 'filter'] as const;
+export const FILTER_KEYS = ['q', 'status', 'priority', 'contact', 'assignee', 'filter'] as const;
+
+/** งานค้าง: what somebody has to do something about now - open, not waiting for the customer, not paused. The manager
+    view's count of it opens /tickets?assignee=<id>&filter=backlog, to hand some of it to someone else. */
+export const BACKLOG_SCOPE = 'backlog';
 
 /* พักเคส. A paused case is not work anybody can do now, so the working scopes walk past it - that is the whole point
    of pausing one. ทุกเคส still means all of them: a list that says "every case" and quietly leaves some out is a list
@@ -41,6 +45,7 @@ export function inScope(t: TicketRow, scope: string | undefined, me: string): bo
     (scope === 'mine' && !isDone(t) && awake && t.assignee_id === me) ||
     (scope === 'overdue' && overdue(t) && awake) ||
     (scope === 'snoozed' && isSnoozed(t)) ||
+    (scope === BACKLOG_SCOPE && !isDone(t) && awake && t.status !== 'pending_customer') ||
     (scope === 'resolved_today' && isDone(t) && new Date(t.resolved_at ?? '').toDateString() === new Date().toDateString())
   );
 }
@@ -51,6 +56,7 @@ export function matchesTicketFilters(t: TicketRow, f: TicketFilter): boolean {
   return (
     (!q || [t.subject, t.contact_name, t.company, `BD-${t.number}`, t.category].some((v) => String(v).toLowerCase().includes(q))) &&
     (!f.contact || t.contact_id === f.contact) &&
+    (!f.assignee || t.assignee_id === f.assignee) &&
     (!f.status || t.status === f.status) &&
     (!f.priority || t.priority === f.priority)
   );

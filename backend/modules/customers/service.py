@@ -18,7 +18,7 @@ from backend.modules.conversations import repository as conversations
 from backend.modules.customers import repository, schema
 from backend.modules.customers.model import CONSENT_VERSION, DEFAULT_CATEGORIES
 from backend.modules.knowledge import repository as knowledge
-from backend.modules.organization import repository as organization
+from backend.modules.organization import hours, repository as organization
 from backend.modules.platform import repository as tenants, service as platform
 from backend.utils.dates import after, now
 from backend.utils.security import password_ok, token_hash, uid
@@ -153,6 +153,7 @@ def _org_view(org, home):
         # has_logo, not the picture: a customer with ten organizations would carry a megabyte of them in every answer.
         return {'slug':org['slug'],'name':org['name'],'home':bool(home) and org['id']==home['id'],'has_logo':bool(org['logo']),
                 'welcome':organization.setting(db,'welcome'),'response_hours':organization.setting(db,'response_hours'),
+                'response_in_opening_time':hours.sla_in_opening_time(db),
                 'ai_enabled':ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
                 'categories':[c['name'] for c in categories(db)]}
 

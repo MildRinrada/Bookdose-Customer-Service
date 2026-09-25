@@ -31,6 +31,8 @@ export const auditEventLabels: Record<string, string> = {
   'tenant.register': 'สมัครองค์กรใหม่',
   'registration.settings_updated': 'ตั้งค่าอีเมลยืนยัน',
   'account.profile_updated': 'ปรับรูปโปรไฟล์และชื่อ',
+  'retention.cleared': 'ลบเนื้อหาบทสนทนาเก่าตามระยะเวลาเก็บข้อมูล',
+  'reports.dataset_exported': 'ส่งออกชุดข้อมูลสำหรับวิเคราะห์',
 };
 
 export const auditGroups: Record<AuditGroup, { label: string; icon: string }> = {
@@ -53,6 +55,8 @@ const auditIcons: Record<string, string> = {
   'ticket.updated': 'edit',
   'ticket.snoozed': 'clock',
   'ticket.woken': 'bell',
+  'ticket.quiet_reminded': 'send',
+  'ticket.quiet_closed': 'checkCircle',
   'ticket.deleted': 'close',
   'tickets.exported': 'download',
   'contact.created': 'users',
@@ -73,6 +77,8 @@ const auditIcons: Record<string, string> = {
   'member.updated': 'users',
   'team.created': 'users',
   'settings.updated': 'settings',
+  'retention.cleared': 'trash',
+  'reports.dataset_exported': 'download',
   'backup.created': 'download',
   'channel.message_received': 'mail',
   'channel.failed': 'close',
@@ -84,7 +90,7 @@ export function auditEventGroup(action: string): AuditGroup {
     ? 'ai'
     : /^(auth|account|member|tenant|registration|team)\./.test(action)
       ? 'security'
-      : /settings|channel|oauth|backup|export/.test(action)
+      : /settings|channel|oauth|backup|export|retention/.test(action)
         ? 'settings'
         : 'work';
 }

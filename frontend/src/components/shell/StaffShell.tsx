@@ -108,7 +108,9 @@ export function StaffShell({ children }: { children: ReactNode }) {
 
   if (membership && (workspace.isPending || tickets.isPending || alerts.isPending)) return <InitialLoading />;
   const failed = workspace.error ?? tickets.error ?? alerts.error;
-  if (membership && failed)
+  // The organization requires two-step sign-in and this account has none: only ตั้งค่าบัญชี opens, to add it.
+  const needsTwoFactor = Boolean(membership) && failed?.reason === 'two_factor_required';
+  if (membership && failed && !needsTwoFactor)
     return (
       <ErrorState
         title="เปิดพื้นที่ทำงานไม่สำเร็จ"
@@ -137,8 +139,36 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const roleLabel = user.platform_admin ? 'ผู้ดูแลแพลตฟอร์ม' : work ? roleLabels[work.role] : 'ผู้ดูแลระบบกลาง';
   const activeMemberships = boot.memberships.filter((m) => m.status === 'active');
 
+  const retry = () => {
+    void workspace.refetch();
+    void tickets.refetch();
+    void alerts.refetch();
+  };
   let content: ReactNode = children;
   if (!allowed) content = <PageLoading />;
+  else if (needsTwoFactor && isAccountPath(pathname))
+    content = (
+      <>
+        <div className="notice warning two-factor-gate-notice">
+          <span className="grow">{failed?.message} · เปิดได้ในส่วน &ldquo;ความปลอดภัย&rdquo; ด้านล่าง แล้วกลับไปทำงานต่อได้ทันที</span>
+          <button type="button" className="btn sm" onClick={retry}>
+            ตั้งเสร็จแล้ว กลับไปทำงาน
+          </button>
+        </div>
+        {children}
+      </>
+    );
+  else if (needsTwoFactor)
+    content = (
+      <EmptyState title="เปิดการยืนยันตัวตน 2 ขั้นก่อนเข้าใช้งาน" description={failed?.message ?? ''} icon="lock">
+        <Link className="btn primary" href="/account?tab=security">
+          ไปตั้งค่าความปลอดภัย
+        </Link>
+        <button type="button" className="btn" onClick={retry}>
+          ตั้งเสร็จแล้ว ลองอีกครั้ง
+        </button>
+      </EmptyState>
+    );
   else if (!work && !platform && !isAccountPath(pathname))
     content = (
       <EmptyState title="ไม่มีพื้นที่ทำงานที่ใช้งานอยู่" description="เลือกองค์กรอื่นจากเมนู หรือติดต่อผู้ดูแลองค์กรเพื่อเปิดใช้งานอีกครั้ง" icon="lock">

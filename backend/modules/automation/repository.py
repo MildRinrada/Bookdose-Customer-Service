@@ -155,6 +155,14 @@ def open_count_by_assignee(db):
     return dict(db.execute(f'SELECT assignee_id,COUNT(*) FROM tickets WHERE assignee_id IS NOT NULL AND status NOT IN {DONE} GROUP BY assignee_id').fetchall())
 
 
+def backlog_by_assignee(db, moment):
+    """งานค้าง of the manager view: the cases each member has to do something about now - not waiting for the
+    customer, not paused (tickets/model.py พักเคส)."""
+    return dict(db.execute(f'''SELECT assignee_id,COUNT(*) FROM tickets WHERE assignee_id IS NOT NULL AND status NOT IN {DONE}
+                               AND status!='pending_customer' AND (snoozed_until IS NULL OR snoozed_until<=?)
+                               GROUP BY assignee_id''',(moment,)).fetchall())
+
+
 # CSAT surveys
 def insert_survey(db, survey_id, ticket_id, conversation_id, message_id):
     db.execute('INSERT INTO csat_surveys(id,ticket_id,conversation_id,message_id,sent_at) VALUES(?,?,?,?,?)',(survey_id,ticket_id,conversation_id,message_id,now()))

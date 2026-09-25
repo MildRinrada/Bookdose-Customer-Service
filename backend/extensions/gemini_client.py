@@ -15,11 +15,14 @@ URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateC
 DEFAULT_MODEL = 'gemini-3.8-flash'
 # Room for the model's thinking, which Gemini counts in the same output budget as the answer.
 THINKING_TOKENS = 1024
-# Google answers 503 "high demand" (or 500/502/504) for a moment when a model is busy: asked again after these waits,
-# while the job is still well inside its time (ai/service.JOB_TIMEOUT_SECONDS).
-RETRY_WAITS = (2,5)
+# Google answers 503 "high demand" (or 500/502/504) when a model is busy, sometimes for an hour, and a busy answer
+# can itself take 20 seconds: the chosen model is asked once more, then these names Google keeps pointing at a current
+# flash model take over, while the job is still well inside its time (ai/service.JOB_TIMEOUT_SECONDS).
+RETRY_WAITS = (2,)
 RETRY_STATUSES = (500,502,503,504)
 RETRY_WITHIN_SECONDS = 30
+FALLBACK_MODELS = ('gemini-flash-latest','gemini-flash-lite-latest')
+FALLBACK_WITHIN_SECONDS = 120
 # A Gemini 3 answer with a few turns of history can take longer than OpenAI's 25 seconds; the job allows far more.
 TIMEOUT_SECONDS = 60
 
@@ -75,13 +78,8 @@ def _send(request):
             time.sleep(wait)
 
 
-def call_provider(key,cfg,payload,mode):
-    """Returns (parsed JSON answer, {'input_tokens','output_tokens'}), like openai_client.call_provider. Provider details
-    never reach error messages; the key goes in a header, never in the URL."""
-    instructions,schema = openai_client.MODES.get(mode,(openai_client.INSTRUCTIONS,openai_client.OUTPUT_SCHEMA))
-    model = cfg['model']
+def _request(key, model, instructions, schema, payload, limit):
     thinking = _thinking(model)
-    limit = max(cfg['max_output_tokens'],openai_client.OWNER_OUTPUT_TOKENS.get(mode,0))
     generation = {'responseMimeType':'application/json','responseJsonSchema':_schema(schema),
                   'maxOutputTokens':limit+(0 if thinking=={'thinkingBudget':0} else THINKING_TOKENS)}
     if thinking:
@@ -89,10 +87,30 @@ def call_provider(key,cfg,payload,mode):
     request_body = {'systemInstruction':{'parts':[{'text':instructions}]},
                     'contents':[{'role':'user','parts':[{'text':json.dumps(payload,ensure_ascii=False)}]}],
                     'generationConfig':generation}
-    request = urllib.request.Request(URL.format(model=urllib.parse.quote(model,safe='')),data=json.dumps(request_body).encode(),
+    return urllib.request.Request(URL.format(model=urllib.parse.quote(model,safe='')),data=json.dumps(request_body).encode(),
         headers={'x-goog-api-key':key,'Content-Type':'application/json'},method='POST')
+
+
+def call_provider(key,cfg,payload,mode):
+    """Returns (parsed JSON answer, {'input_tokens','output_tokens'}), like openai_client.call_provider. Provider details
+    never reach error messages; the key goes in a header, never in the URL. When the chosen model stays busy, a
+    fallback model answers (FALLBACK_MODELS); when all of them are, the job fails as 'busy'."""
+    instructions,schema = openai_client.MODES.get(mode,(openai_client.INSTRUCTIONS,openai_client.OUTPUT_SCHEMA))
+    limit = max(cfg['max_output_tokens'],openai_client.OWNER_OUTPUT_TOKENS.get(mode,0))
+    models = [cfg['model'],*(m for m in FALLBACK_MODELS if m!=cfg['model'])]
+    started = time.monotonic()
     try:
-        raw = _send(request)
+        for index,model in enumerate(models):
+            try:
+                raw = _send(_request(key,model,instructions,schema,payload,limit))
+                break
+            except urllib.error.HTTPError as error:
+                # Busy, or a fallback this account does not have: the next one, while there is time.
+                if index==len(models)-1 or time.monotonic()-started>FALLBACK_WITHIN_SECONDS \
+                        or not (error.code in RETRY_STATUSES or (index>0 and error.code==404)):
+                    raise
+                error.close()
+                print(f'Gemini: {model} busy, trying {models[index+1]}',flush=True)
         if len(raw)>1_000_000:
             raise AIError('invalid_output')
         data = json.loads(raw)
@@ -114,7 +132,7 @@ def call_provider(key,cfg,payload,mode):
         error.close()
         # 404: the model does not exist or is closed to this account - the key is fine, the model name is not.
         raise AIError('unauthorized' if invalid_key or code in (401,403) else 'model_unavailable' if code==404
-                      else 'rate_limit' if code==429 else 'provider') from None
+                      else 'rate_limit' if code==429 else 'busy' if code in RETRY_STATUSES else 'provider') from None
     except (urllib.error.URLError,TimeoutError,OSError) as error:
         print(f'Gemini: {type(error).__name__}',flush=True)
         raise AIError('provider') from None

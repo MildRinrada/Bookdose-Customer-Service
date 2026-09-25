@@ -41,6 +41,8 @@ export const eventLabels: Record<string, string> = {
   'issue.removed': 'ลบประกาศปัญหา',
   'ticket.snoozed': 'พักเคสไว้ก่อน',
   'ticket.woken': 'เคสกลับมาในคิว',
+  'ticket.quiet_reminded': 'ถามลูกค้าที่เงียบไปว่ายังต้องการความช่วยเหลือไหม',
+  'ticket.quiet_closed': 'ปิดเคสเพราะลูกค้าไม่ตอบกลับ',
   'message.reply': 'ตอบกลับลูกค้า',
   'message.note': 'เพิ่มบันทึกภายใน',
   'conversation.created': 'รับเรื่องใหม่ผ่านเว็บ',

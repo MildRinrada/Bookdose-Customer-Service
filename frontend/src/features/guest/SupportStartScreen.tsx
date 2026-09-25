@@ -95,7 +95,10 @@ export function SupportStartScreen({ slug }: { slug: string }) {
   else if (!overview.data) body = <InitialLoading text="กำลังเปิดหน้าเริ่มแชท…" />;
   else {
     const chats = overview.data.conversations.length;
-    const promise = replyPromise({ response_hours: Number(info.data?.response_hours) || undefined });
+    const promise = replyPromise({
+      response_hours: Number(info.data?.response_hours) || undefined,
+      response_in_opening_time: Boolean(info.data?.response_in_opening_time),
+    });
     const articles = ((info.data?.articles as PublicArticle[] | undefined) ?? []).slice(0, 5);
     body = (
       <>

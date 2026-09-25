@@ -63,7 +63,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
             </span>
             {guest && (
               <span className="conv-fact" title={`ลูกค้าแชทโดยไม่ได้เข้าสู่ระบบ · ${reachText(guest.follow)}`}>
-                ผู้เยี่ยมชม · {reachText(guest.follow)}
+                ผู้เยี่ยมชม
               </span>
             )}
             {c.member && (
@@ -156,6 +156,11 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         conversation={c} recipient={contact.name}
         caseNumber={t?.number}
         translateTo={translateTo(c.translation)}
+        notesOnly={notesOnly}
+        // A reply sent while the thread shows notes only would be out of sight: show the whole thread again.
+        onSent={(sent) => {
+          if (sent === 'reply') setNotesOnly(false);
+        }}
       />
     </>
   );

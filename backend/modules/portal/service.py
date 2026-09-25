@@ -12,7 +12,7 @@ from backend.modules.channels import repository as channel_settings
 from backend.modules.conversations import repository as conversations, service as conversation_service
 from backend.modules.customers import service as customers
 from backend.modules.knowledge import repository as knowledge
-from backend.modules.organization import repository as organization
+from backend.modules.organization import hours, repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.portal import schema
 from backend.modules.tickets import repository as tickets
@@ -54,7 +54,8 @@ def portal_info(cd, db, org):
                                     ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
                                     # The organization's own public articles, then the platform's articles for every customer.
                                     knowledge.list_public(db)+tenants.global_articles(cd,'customer'),organization.setting(db,'response_hours'),
-                                    customers.email_ready(cd),contact_channels(db),[c['name'] for c in customers.categories(db)])
+                                    customers.email_ready(cd),contact_channels(db),[c['name'] for c in customers.categories(db)],
+                                    hours.sla_in_opening_time(db))
 
 
 # The customer's own conversations. The viewer is the signed-in customer's session, or a guest of guest web chat

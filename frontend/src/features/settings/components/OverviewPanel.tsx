@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Avatar, EmptyState, ProfilePhoto } from '@/components/ui/display';
@@ -10,12 +10,17 @@ import { Form } from '@/components/ui/Form';
 import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { useToast } from '@/components/ui/Toast';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
+import { priorityLabels } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useWork } from '@/lib/session';
 import type { TeamSnippet } from '@/lib/types';
 import { changeOrgSlug, downloadBackup, saveOrgProfile, saveSettings, saveTeamSnippets, WORKSPACE_PATH } from '../api';
+import type { SettingsBody, SlaPriority } from '../types';
+import { BusinessHoursCard, savedHours } from './BusinessHoursCard';
 import { CategoriesForm } from './CategoriesForm';
+import { QuietCloseCard } from './QuietCloseCard';
+import { RetentionCard } from './RetentionCard';
 
 /* ตั้งค่า → the organization's own sections, one per page: who it is and its customer link (ProfilePanel), the SLA
    and automatic texts (ServicePanel), the categories customers choose from (CategoriesPanel) and the backup
@@ -118,6 +123,64 @@ function StorageNotice() {
   );
 }
 
+/* SLA by priority: ปกติ is the organization's SLA (required); เร่งด่วน, สูง and ต่ำ may have their own, and an empty
+   box follows ปกติ (backend tickets/sla.py). Changing a case's priority measures it again from when it opened. */
+const SLA_OWN: SlaPriority[] = ['urgent', 'high', 'low'];
+const SLA_ROWS: Array<SlaPriority | 'normal'> = ['urgent', 'high', 'normal', 'low'];
+
+function slaSaved(raw: unknown): Partial<Record<SlaPriority, { response: number | null; resolution: number | null }>> {
+  try {
+    const value = typeof raw === 'string' && raw ? JSON.parse(raw) : {};
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function SlaTable({ normal, saved }: { normal: [string, string]; saved: ReturnType<typeof slaSaved> }) {
+  const box = (name: string, label: string, value: string | number | null | undefined, base: string) => (
+    <input
+      type="number"
+      name={name}
+      aria-label={label}
+      min={0.25}
+      max={8760}
+      step="any"
+      inputMode="decimal"
+      defaultValue={value ?? ''}
+      placeholder={base ? `ปกติ ${base}` : undefined}
+      required={!base}
+    />
+  );
+  return (
+    <div className="sla-table" role="group" aria-label="SLA ตามความเร่งด่วน">
+      <span className="sla-head">ความเร่งด่วน</span>
+      <span className="sla-head">ตอบครั้งแรกภายใน (ชม.)</span>
+      <span className="sla-head">แก้ไขเคสภายใน (ชม.)</span>
+      {SLA_ROWS.map((p) => {
+        const name = priorityLabels[p];
+        return p === 'normal' ? (
+          <Fragment key={p}>
+            <strong className={`sla-level ${p}`}>{name}</strong>
+            {box('response_hours', `${name}: ตอบครั้งแรกภายใน`, normal[0], '')}
+            {box('resolution_hours', `${name}: แก้ไขเคสภายใน`, normal[1], '')}
+          </Fragment>
+        ) : (
+          <Fragment key={p}>
+            <strong className={`sla-level ${p}`}>{name}</strong>
+            {box(`sla-${p}-response`, `${name}: ตอบครั้งแรกภายใน`, saved[p]?.response, normal[0])}
+            {box(`sla-${p}-resolution`, `${name}: แก้ไขเคสภายใน`, saved[p]?.resolution, normal[1])}
+          </Fragment>
+        );
+      })}
+      <p className="tiny muted sla-note">
+        ช่องที่เว้นว่างใช้เวลาเดียวกับระดับปกติ · เมื่อเปลี่ยนความเร่งด่วนของเคส ไม่ว่าจะเปลี่ยนเองหรือกฎรับเรื่องเปลี่ยนให้ ระบบคำนวณกำหนดเวลาใหม่นับจากตอนเปิดเคส
+        ถ้าตอบครั้งแรกไปแล้ว กำหนดตอบครั้งแรกจะคงเดิม
+      </p>
+    </div>
+  );
+}
+
 export function ServicePanel() {
   const work = useWork();
   const toast = useToast();
@@ -132,6 +195,9 @@ export function ServicePanel() {
           response_hours: values.response_hours ?? '',
           resolution_hours: values.resolution_hours ?? '',
           welcome: values.welcome ?? '',
+          sla_by_priority: Object.fromEntries(
+            SLA_OWN.map((p) => [p, { response: values[`sla-${p}-response`] ?? '', resolution: values[`sla-${p}-resolution`] ?? '' }]),
+          ) as SettingsBody['sla_by_priority'],
         });
         toast('บันทึกการตั้งค่าแล้ว');
         await refresh(WORKSPACE_PATH);
@@ -141,26 +207,17 @@ export function ServicePanel() {
         <div className="card-header">
           <div>
             <h2>มาตรฐานการบริการ (SLA)</h2>
-            <p>ใช้กับเคสที่เปิดใหม่ · นับต่อเนื่อง 24 ชั่วโมง รวมวันหยุด</p>
+            <p>
+              ใช้กับเคสที่เปิดใหม่ ·{' '}
+              {savedHours(work.settings.business_hours).sla
+                ? 'นับเฉพาะในเวลาทำการ ไม่นับกลางคืน วันที่ปิด และวันหยุดพิเศษ'
+                : 'นับต่อเนื่อง 24 ชั่วโมง รวมวันหยุด'}{' '}
+              · เปลี่ยนได้ที่การ์ดเวลาทำการด้านล่าง
+            </p>
           </div>
         </div>
         <div className="card-body">
-          <div className="form-grid">
-            <TextField
-              id="f-response_hours"
-              label="ตอบกลับครั้งแรกภายใน (ชม.)"
-              name="response_hours"
-              type="number"
-              defaultValue={setting('response_hours')}
-            />
-            <TextField
-              id="f-resolution_hours"
-              label="แก้ไขเคสภายใน (ชม.)"
-              name="resolution_hours"
-              type="number"
-              defaultValue={setting('resolution_hours')}
-            />
-          </div>
+          <SlaTable normal={[setting('response_hours'), setting('resolution_hours')]} saved={slaSaved(work.settings.sla_by_priority)} />
         </div>
       </section>
       <section className="card">
@@ -188,6 +245,8 @@ export function ServicePanel() {
         </button>
       </div>
     </Form>
+    <BusinessHoursCard />
+    <QuietCloseCard />
     <TeamRepliesCard snippets={work.snippets} />
     </>
   );
@@ -332,6 +391,7 @@ export function BackupPanel() {
       }
     });
   return (
+    <>
     <section className="card">
       <div className="card-header">
         <h2>ข้อมูลและการสำรอง</h2>
@@ -354,6 +414,8 @@ export function BackupPanel() {
         <p className="tiny muted mt">รายการที่ลบจะอยู่ในถังขยะ 30 วันก่อนถูกลบถาวร · การสำรองทั้งระบบและกู้คืนทำผ่านคำสั่งที่อธิบายใน README.md</p>
       </div>
     </section>
+    <RetentionCard />
+    </>
   );
 }
 

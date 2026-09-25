@@ -18,7 +18,7 @@ import { exportTickets, TICKET_PREFIXES, updateTicket } from './api';
 import { NewTicketButton } from './components/NewTicket';
 import { DENSITY_KEY, TicketTable, type TicketSelection } from './components/TicketTable';
 import { useDownloadTicketsCSV } from './csv';
-import { densityLabels, FILTER_KEYS, inScope, matchesTicketFilters, ticketScopes, ticketsHref, type TicketFilter } from './labels';
+import { BACKLOG_SCOPE, densityLabels, FILTER_KEYS, inScope, matchesTicketFilters, ticketScopes, ticketsHref, type TicketFilter } from './labels';
 import type { TicketChanges, TicketRow } from './types';
 
 /* The case list (the old ticketsPage): search, status and priority filters, quick scopes with counts, a customer
@@ -128,8 +128,9 @@ export function TicketsScreen() {
   const teams = new Set(picked.map((t) => t.team_id));
   const bulkMembers = teams.size === 1 ? work.members.filter((m) => m.active && teams.has(m.team_id)) : [];
 
-  const filtered = Boolean(filter.q || filter.status || filter.priority || filter.contact || (filter.filter && filter.filter !== 'all'));
+  const filtered = Boolean(filter.q || filter.status || filter.priority || filter.contact || filter.assignee || (filter.filter && filter.filter !== 'all'));
   const contactName = filter.contact ? all.find((t) => t.contact_id === filter.contact)?.contact_name || 'ที่เลือก' : '';
+  const backlog = filter.filter === BACKLOG_SCOPE;
   const currentScope = filter.filter || 'all';
 
   return (
@@ -191,6 +192,17 @@ export function TicketsScreen() {
           {contactName && (
             <Link className="filter-pill active contact-chip" href="/tickets" aria-current="true" title="ล้างตัวกรองลูกค้า">
               ลูกค้า: {contactName} ✕
+            </Link>
+          )}
+          {(filter.assignee || backlog) && (
+            <Link
+              className="filter-pill active contact-chip"
+              href={ticketsHref({ ...filter, assignee: '', filter: '' })}
+              aria-current="true"
+              title="ล้างตัวกรองนี้"
+            >
+              {backlog ? 'งานค้าง' : 'เคส'}
+              {filter.assignee ? `ของ ${memberName(filter.assignee)}` : ''} ✕
             </Link>
           )}
           {filtered && (

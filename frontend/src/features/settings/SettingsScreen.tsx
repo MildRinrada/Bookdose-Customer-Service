@@ -13,6 +13,7 @@ import { useUiState } from '@/lib/ui-state';
 import { GuestChatPanel } from './components/GuestChatPanel';
 import { JoinLinksPanel } from './components/JoinLinksPanel';
 import { BackupPanel, CategoriesPanel, ProfilePanel, ServicePanel } from './components/OverviewPanel';
+import { TeamSecurityPanel } from './components/TeamSecurityPanel';
 import { TeamsPanel } from './components/TeamsPanel';
 import { partsOf, settingsPlaceOf, settingsParts, settingsTabs, type SettingsPart, type SettingsTab } from './labels';
 
@@ -193,6 +194,8 @@ function Part({ part }: { part: SettingsPart }) {
       return <CategoriesPanel />;
     case 'backup':
       return <BackupPanel />;
+    case 'security':
+      return <TeamSecurityPanel />;
     case 'line':
       return <ChannelSettingsPanel kind="line" />;
     case 'email':

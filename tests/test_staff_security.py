@@ -147,6 +147,29 @@ class StaffSecurityTests(unittest.TestCase):
         sign_in = self.ok(someone,'/api/sign-in/passkey/options',{})
         self.assertEqual(someone.call('/api/sign-in/passkey',{'credential':soft.get(sign_in,self.base)})[0],403)
 
+    def test_an_organization_can_require_it_of_every_member(self):
+        agent,_ = self.create_member(email='agent@example.com')
+        # The owner turning it on needs one first: no organization locks its own owner out.
+        self.assertEqual(self.admin.call('/api/settings/security',{'require_two_factor':True})[0],409)
+        self.enable_totp(self.admin)
+        self.assertEqual(self.admin.call('/api/settings/security',{'require_two_factor':'yes'})[0],400)
+        state = self.ok(self.admin,'/api/settings/security',{'require_two_factor':True})
+        self.assertTrue(state['require_two_factor'])
+        self.assertEqual({m['email']:m['protected'] for m in state['members']}['agent@example.com'],False)
+        # The member without one reaches their own account, and nothing of the organization.
+        status,answer = agent.call('/api/workspace')
+        self.assertEqual((status,answer.get('reason')),(403,'two_factor_required'))
+        self.assertEqual(agent.call('/api/tickets')[0],403)
+        self.assertEqual(self.ok(agent,'/api/bootstrap')['user']['email'],'agent@example.com')
+        self.ok(agent,SECURITY)
+        # Turning it on opens the way; the owner's own work never stopped.
+        self.ok(self.admin,'/api/workspace')
+        self.enable_totp(agent)
+        self.ok(agent,'/api/workspace')
+        self.assertEqual(agent.call('/api/settings/security')[0],403)
+        self.assertTrue({m['email']:m['protected'] for m in self.ok(self.admin,'/api/settings/security')['members']}['agent@example.com'])
+        self.assertFalse(self.ok(self.admin,'/api/settings/security',{'require_two_factor':False})['require_two_factor'])
+
     def test_the_server_owner_can_reset_a_lost_second_factor(self):
         from backend.modules.staff_security import service
         agent,_ = self.create_member(email='agent@example.com')

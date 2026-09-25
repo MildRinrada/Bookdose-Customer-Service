@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { EscalationRow } from '@/features/automation/components/EscalationRow';
+import { BACKLOG_SCOPE, ticketsHref } from '@/features/tickets/labels';
 import { clockTime, formatDuration, relative, starsText } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { useTeamName } from '@/lib/session';
@@ -48,7 +49,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             <div className="agent-row agent-head" role="row">
               <span role="columnheader">เจ้าหน้าที่</span>
               <span role="columnheader">สถานะ</span>
-              <span role="columnheader" title="เคสที่ยังไม่ปิดที่รับผิดชอบอยู่">ถืออยู่</span>
+              <span role="columnheader" title="เคสที่ต้องทำต่อตอนนี้ ไม่นับเคสรอลูกค้าและเคสที่พักไว้">งานค้าง</span>
               <span role="columnheader">ปิดวันนี้</span>
               <span role="columnheader">ตอบวันนี้</span>
               <span role="columnheader" title="เวลาตอบครั้งแรกเฉลี่ย 30 วันล่าสุด">ตอบแรกเฉลี่ย</span>
@@ -69,8 +70,18 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
                   <span className={`presence-label ${x.presence}`}>{presenceLabels[x.presence]}</span>
                   <span className="tiny muted">{x.last_seen ? `ล่าสุด ${relative(x.last_seen)}` : 'ยังไม่เคยเข้าใช้'}</span>
                 </span>
-                <span className="mono agent-num" role="cell" data-label="เคสที่ถืออยู่">
-                  {x.open}
+                <span className="mono agent-num" role="cell" data-label="งานค้าง">
+                  {x.open ? (
+                    <Link
+                      className="agent-backlog"
+                      href={ticketsHref({ assignee: x.id, filter: BACKLOG_SCOPE })}
+                      title={`ดูงานค้างของ ${x.name} เพื่อย้ายให้คนอื่น`}
+                    >
+                      {x.open}
+                    </Link>
+                  ) : (
+                    0
+                  )}
                 </span>
                 <span className="mono agent-num" role="cell" data-label="ปิดวันนี้">
                   {x.resolved_today}
@@ -87,7 +98,10 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
               </div>
             ))}
           </div>
-          <p className="card-note tiny muted">“กำลังใช้งาน” คือเปิดโปรแกรมภายใน 5 นาทีล่าสุด · ตอบครั้งแรกเฉลี่ยและ CSAT นับ 30 วันล่าสุดจากเคสที่รับผิดชอบ</p>
+          <p className="card-note tiny muted">
+            “กำลังใช้งาน” คือเปิดโปรแกรมภายใน 5 นาทีล่าสุด · “งานค้าง” คือเคสที่ต้องทำต่อตอนนี้ ไม่นับเคสรอลูกค้าและเคสที่พักไว้ กดตัวเลขเพื่อดูและย้ายเคสให้คนอื่น
+            · ตอบครั้งแรกเฉลี่ยและ CSAT นับ 30 วันล่าสุดจากเคสที่รับผิดชอบ
+          </p>
         </section>
         <section className="card csat-card" data-reveal="">
           <div className="card-header">

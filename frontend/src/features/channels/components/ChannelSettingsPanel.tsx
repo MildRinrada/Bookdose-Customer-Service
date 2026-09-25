@@ -14,6 +14,7 @@ import { CHANNEL_SETTINGS_PREFIXES, CHANNELS_PATH, saveChannel, startEmailOAuth,
 import { deliveryNames, emailAuthModes, smtpPorts } from '../labels';
 import type { ChannelSetting, OutboxCount } from '../types';
 import { ChannelField } from '../util';
+import { emailSteps, lineSteps, SetupSteps } from './SetupSteps';
 
 /* The LINE and Email settings (settings page, LINE / Email / Facebook tab; admins only): credentials, the team that
    receives new conversations, on/off, chatbot, a login test, the webhook URL and the delivery queue.
@@ -94,6 +95,7 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
           await refresh(...CHANNEL_SETTINGS_PREFIXES);
         }}
       >
+        <SetupSteps steps={k === 'line' ? lineSteps(c) : emailSteps(c)} />
         <div className="notice mb">
           {k === 'line' &&
             'รับข้อความส่วนตัวและกลุ่มจาก LINE OA ตอบข้อความ รูป และลิงก์เอกสารผ่านบัญชีเดิม ต้องเปิดโปรแกรมไว้และใช้ Webhook URL แบบ HTTPS ที่ LINE เข้าถึงได้'}

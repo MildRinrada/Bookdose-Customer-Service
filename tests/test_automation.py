@@ -224,6 +224,21 @@ class AutomationTests(unittest.TestCase):
         self.assertIsNotNone(row['last_seen'])
         self.assertEqual((row['open'],row['replies_today']),(1,1))
         self.assertIsNotNone(row['avg_first_response'])
+        # งานค้าง: a case waiting for the customer, or paused, is not work to do now.
+        def backlog():
+            manager = self.ok(self.admin,'/api/automation/overview?tz=-420')['manager']
+            return next(a for a in manager['agents'] if a['id']==agent_id)['open']
+        self.ok(self.admin,f'/api/tickets/{tid}',{'status':'pending_customer'},'PATCH')
+        self.assertEqual(backlog(),0)
+        self.ok(self.admin,f'/api/tickets/{tid}',{'status':'open'},'PATCH')
+        with D.tenant(self.org) as db:
+            db.execute('UPDATE tickets SET snoozed_until=? WHERE id=?',((utc_now()+dt.timedelta(hours=3)).isoformat(timespec='seconds'),tid))
+            db.commit()
+        self.assertEqual(backlog(),0)
+        with D.tenant(self.org) as db:
+            db.execute('UPDATE tickets SET snoozed_until=NULL WHERE id=?',(tid,))
+            db.commit()
+        self.assertEqual(backlog(),1)
         # The busy hours moved to the service report: every conversation of the period, by weekday and hour.
         self.assertNotIn('heatmap',manager)
         first,last = (utc_now()-dt.timedelta(days=365)).date().isoformat(),utc_now().date().isoformat()

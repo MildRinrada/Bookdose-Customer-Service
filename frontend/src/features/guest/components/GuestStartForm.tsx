@@ -42,7 +42,10 @@ function topicIcon(name: string): string {
 }
 
 function Intro({ info, orgName }: { info: PublicOrgInfo | undefined; orgName: string }) {
-  const promise = replyPromise({ response_hours: Number(info?.response_hours) || undefined });
+  const promise = replyPromise({
+    response_hours: Number(info?.response_hours) || undefined,
+    response_in_opening_time: Boolean(info?.response_in_opening_time),
+  });
   return (
     <div className="customer-org-intro guest-intro">
       {info?.welcome && <p className="customer-welcome">{info.welcome}</p>}

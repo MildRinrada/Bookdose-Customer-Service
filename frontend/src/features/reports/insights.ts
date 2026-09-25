@@ -38,11 +38,49 @@ export function longDuration(minutes: number | null): string {
   return n >= 60 ? `${Math.floor(n / 60)} ชม.${n % 60 ? ` ${n % 60} นาที` : ''}` : `${n} นาที`;
 }
 
-function median(values: number[]) {
+export function median(values: number[]) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** The time `p` of the cases were within (0.9: nine in ten), by the nearest-rank rule, so it is always a real case's. */
+export function percentile(values: number[], p: number) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))];
+}
+
+const spread = (minutes: number[], buckets: [string, number][]) =>
+  buckets.map(([label, limit], i) => ({ label, count: minutes.filter((m) => m <= limit && (i === 0 || m > buckets[i - 1][1])).length }));
+
+export const RESPONSE_BUCKETS: [string, number][] = [
+  ['ภายใน 15 นาที', 15],
+  ['15-60 นาที', 60],
+  ['1-4 ชม.', 240],
+  ['4-24 ชม.', 1440],
+  ['เกิน 1 วัน', Infinity],
+];
+
+/** Cases opened in the period that the team has answered: the typical first reply (median), the time nine in ten
+    were answered within (P90), the average beside them, how many were in time, and how the times spread. An average
+    alone is pulled up by the few cases left for days; the median and P90 say what most customers lived. */
+export function firstResponse(all: TicketRow[], f: ReportFilter, previous = false) {
+  const r = periodOf(f, previous);
+  const opened = all.filter((t) => inScope(t, f) && within(t.created_at, r));
+  const answered = opened.filter((t) => t.first_response_at);
+  const minutes = answered.map((t) => Math.max(0, (new Date(t.first_response_at as string).getTime() - new Date(t.created_at).getTime()) / 60000));
+  const onTime = answered.filter((t) => new Date(t.first_response_at as string) <= new Date(t.first_response_due_at)).length;
+  return {
+    count: answered.length,
+    waiting: opened.length - answered.length,
+    avg: minutes.length ? minutes.reduce((a, b) => a + b, 0) / minutes.length : null,
+    median: median(minutes),
+    p90: percentile(minutes, 0.9),
+    sla: answered.length ? (100 * onTime) / answered.length : null,
+    buckets: spread(minutes, RESPONSE_BUCKETS),
+  };
 }
 
 export const RESOLVE_BUCKETS: [string, number][] = [
@@ -60,14 +98,12 @@ export function resolution(all: TicketRow[], f: ReportFilter, previous = false) 
   const solved = all.filter((t) => inScope(t, f) && t.resolved_at && within(t.resolved_at, r));
   const minutes = solved.map((t) => Math.max(0, (new Date(t.resolved_at as string).getTime() - new Date(t.created_at).getTime()) / 60000));
   const onTime = solved.filter((t) => new Date(t.resolved_at as string) <= new Date(t.resolution_due_at)).length;
-  const buckets = RESOLVE_BUCKETS.map(([label, limit], i) => ({
-    label,
-    count: minutes.filter((m) => m <= limit && (i === 0 || m > RESOLVE_BUCKETS[i - 1][1])).length,
-  }));
+  const buckets = spread(minutes, RESOLVE_BUCKETS);
   return {
     count: solved.length,
     avg: minutes.length ? minutes.reduce((a, b) => a + b, 0) / minutes.length : null,
     median: median(minutes),
+    p90: percentile(minutes, 0.9),
     sla: solved.length ? (100 * onTime) / solved.length : null,
     buckets,
   };

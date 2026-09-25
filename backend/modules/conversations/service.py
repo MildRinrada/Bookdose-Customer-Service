@@ -316,6 +316,9 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
     if kind=='customer':
         if not uploads and automation.take_rating(db,conversation_id,text):
             return mid
+        # Outside the organization's hours the customer hears when the team is back (organization/hours.py).
+        from backend.modules.organization import hours
+        hours.after_customer_message(db,tenant_id,conversation_id)
         repository.reopen(db,conversation_id)
         tickets.reopen_for_conversation(db,conversation_id)
         # A case paused waiting for the customer is unpaused by the customer: the thing it was waiting for is here.

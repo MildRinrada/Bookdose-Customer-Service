@@ -18,10 +18,13 @@ export function chatView(data: PortalSession): CustomerState {
   return data.ticket ? caseState(data.ticket.status) : data.conversation.status === 'closed' ? customerStates.done : customerStates.received;
 }
 
-/** "ภายใน 4 ชั่วโมง" reads as a promise; a half-hour setting still has to read properly. */
-export function replyPromise(org: Pick<CustomerOrg, 'response_hours'> | undefined): string {
+/** "ภายใน 4 ชั่วโมง" reads as a promise; a half-hour setting still has to read properly. Counted in opening time only
+    (ตั้งค่า → เวลาทำการ), it says so: "4 ชั่วโมงทำการ", never turned into days (24 opening hours are not one day). */
+export function replyPromise(org: Pick<CustomerOrg, 'response_hours' | 'response_in_opening_time'> | undefined): string {
   const hours = Number(org?.response_hours);
   if (!Number.isFinite(hours) || hours <= 0) return '';
+  if (org?.response_in_opening_time)
+    return hours < 1 ? `${Math.round(hours * 60)} นาทีในเวลาทำการ` : `${Number.isInteger(hours) ? hours : hours.toFixed(1)} ชั่วโมงทำการ`;
   return hours < 1
     ? `${Math.round(hours * 60)} นาที`
     : hours >= 24 && hours % 24 === 0

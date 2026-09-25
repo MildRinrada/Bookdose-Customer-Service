@@ -155,6 +155,10 @@ def apply_rules(db, ticket_id):
                     away = f" · ไม่มอบหมายให้ผู้รับผิดชอบตามกฎ เพราะ{state['reason']}"
                     assignee = ticket['assignee_id']
     tickets.update(db,ticket_id,ticket['status'],priority,team,assignee,ticket['resolved_at'])
+    if priority!=ticket['priority']:
+        # An urgent case is measured against the urgent targets from the start (tickets/sla.py).
+        from backend.modules.tickets import sla
+        sla.follow_priority(db,ticket_id)
     conversations.set_team_for_ticket(db,ticket_id,team)
     names = [rule['name'] for rule in matched]
     audit.record(db,SYSTEM_ACTOR,'automation.rule_applied',ticket_id,', '.join(names)+away)
@@ -433,7 +437,14 @@ def my_alerts(db, ctx):
             'followups':repository.open_followups_for(db,ctx['id'],team),
             'escalations':repository.escalations_to(db,ctx['id']),
             'praise':repository.praise_for(db,ctx['id'],after(days=-7)),
-            'forecasts':repository.forecasts_to(db,ctx['id'],now())}
+            'forecasts':repository.forecasts_to(db,ctx['id'],now()),
+            # A channel that stopped working (channels/health.py): for the organization's admins, who can fix it.
+            'channels':_channel_alerts(db) if ctx.get('role')=='admin' else []}
+
+
+def _channel_alerts(db):
+    from backend.modules.channels import health
+    return health.alerts(db)
 
 
 def ticket_extras(db, ticket_id):
@@ -458,7 +469,7 @@ def csat_summary(db, since):
 
 def manager_overview(cd, db, ctx, tz):
     since,day = after(days=-30),_local_day_start(tz)
-    seen,open_by = repository.last_seen(db),repository.open_count_by_assignee(db)
+    seen,open_by = repository.last_seen(db),repository.backlog_by_assignee(db,now())
     resolved,replies = repository.resolved_since_by_assignee(db,day),repository.replies_since_by_author(db,day)
     speed,ratings = repository.first_response_minutes_by_assignee(db,since),repository.csat_by_assignee(db,since)
     agents = [{'id':m['id'],'name':m['name'],'role':m['role'],'team_id':m['team_id'],'last_seen':seen.get(m['id']),
@@ -554,6 +565,13 @@ class Worker:
                             # พักเคส: the ones whose moment has come go back to the queue and their owners hear.
                             from backend.modules.tickets import service as ticket_service
                             ticket_service.wake_due(db)
+                            # ปิดเคสเมื่อลูกค้าเงียบ: ask the customers gone quiet, close the cases still quiet.
+                            from backend.modules.automation import quiet
+                            quiet.run(db,tenant_id)
+                            # ระยะเวลาเก็บข้อมูล: the content of conversations kept past the chosen time (hourly).
+                            from backend.modules.organization import retention
+                            if retention.due(tenant_id):
+                                retention.run(db,tenant_id)
                     except Exception as error:
                         print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation',type(error).__name__)

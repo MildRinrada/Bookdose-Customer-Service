@@ -7,7 +7,7 @@ import type { TicketRow } from '@/features/tickets/types';
 import { date, formatDuration, relative, starsText } from '@/lib/format';
 import { channelIcons, channelNames } from '@/lib/labels';
 import { reportTrend } from '../labels';
-import { backlog, bySource, longDuration, resolution, satisfaction, type SourceRow } from '../insights';
+import { backlog, bySource, firstResponse, longDuration, resolution, satisfaction, type SourceRow } from '../insights';
 import type { ReportFilter } from '../types';
 
 /* The service report's second half (insights.ts): time to solve, customer satisfaction, where the cases come from
@@ -26,6 +26,68 @@ function Bar({ label, count, max, tone = '', note }: { label: ReactNode; count: 
   );
 }
 
+type Times = { median: number | null; p90: number | null; avg: number | null; sla: number | null };
+
+/* The typical time (median), the time nine in ten were within (P90), the average and how many were in time: the
+   average alone is pulled up by the few cases left for days, so it is never shown by itself. */
+function TimeFigures({ now, before, done }: { now: Times; before: Times; done: string }) {
+  const hours = (m: number | null) => m && m / 60;
+  return (
+    <div className="report-figures four">
+      <div>
+        <span>ครึ่งหนึ่ง{done}ภายใน</span>
+        <strong>{longDuration(now.median)}</strong>
+        <small>ค่ากลาง · {reportTrend(hours(now.median), hours(before.median), 'ชม.')}</small>
+      </div>
+      <div>
+        <span>9 ใน 10 เคส{done}ภายใน</span>
+        <strong>{longDuration(now.p90)}</strong>
+        <small>P90 · {reportTrend(hours(now.p90), hours(before.p90), 'ชม.')}</small>
+      </div>
+      <div>
+        <span>เฉลี่ย</span>
+        <strong>{longDuration(now.avg)}</strong>
+        <small>{reportTrend(hours(now.avg), hours(before.avg), 'ชม.')}</small>
+      </div>
+      <div className={now.sla != null && now.sla < 80 ? 'warn' : ''}>
+        <span>{done}ทันกำหนด</span>
+        <strong>{now.sla == null ? '-' : `${now.sla.toFixed(0)}%`}</strong>
+        <small>{reportTrend(now.sla, before.sla, '%')}</small>
+      </div>
+    </div>
+  );
+}
+
+export function FirstResponseCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
+  const now = firstResponse(all, f);
+  const before = firstResponse(all, f, true);
+  return (
+    <section className="card report-card">
+      <div className="card-header">
+        <div>
+          <h2>เวลาตอบกลับครั้งแรก</h2>
+          <p>
+            เคสที่เปิดในช่วงนี้และตอบแล้ว {now.count} เคส{now.waiting ? ` · ยังไม่ได้ตอบ ${now.waiting} เคส (ไม่นับ)` : ''} · นับจากเปิดเคสจนทีมตอบครั้งแรก
+          </p>
+        </div>
+        <Icon name="clock" />
+      </div>
+      <div className="card-body">
+        {now.count ? (
+          <>
+            <TimeFigures now={now} before={before} done="ตอบ" />
+            {now.buckets.map((b) => (
+              <Bar key={b.label} label={b.label} count={b.count} max={now.count} note={`${((100 * b.count) / now.count).toFixed(0)}%`} />
+            ))}
+          </>
+        ) : (
+          <p className="empty-mini">ยังไม่มีเคสที่ตอบแล้วในช่วงนี้</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function ResolutionCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
   const now = resolution(all, f);
   const before = resolution(all, f, true);
@@ -41,23 +103,7 @@ export function ResolutionCard({ all, f }: { all: TicketRow[]; f: ReportFilter }
       <div className="card-body">
         {now.count ? (
           <>
-            <div className="report-figures">
-              <div>
-                <span>ครึ่งหนึ่งเสร็จภายใน</span>
-                <strong>{longDuration(now.median)}</strong>
-                <small>ค่ามัธยฐาน</small>
-              </div>
-              <div>
-                <span>เฉลี่ย</span>
-                <strong>{longDuration(now.avg)}</strong>
-                <small>{reportTrend(now.avg && now.avg / 60, before.avg && before.avg / 60, 'ชม.')}</small>
-              </div>
-              <div className={now.sla != null && now.sla < 80 ? 'warn' : ''}>
-                <span>เสร็จทันกำหนด</span>
-                <strong>{now.sla == null ? '-' : `${now.sla.toFixed(0)}%`}</strong>
-                <small>{reportTrend(now.sla, before.sla, '%')}</small>
-              </div>
-            </div>
+            <TimeFigures now={now} before={before} done="เสร็จ" />
             {now.buckets.map((b) => (
               <Bar key={b.label} label={b.label} count={b.count} max={now.count} note={`${((100 * b.count) / now.count).toFixed(0)}%`} />
             ))}

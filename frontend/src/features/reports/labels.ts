@@ -1,5 +1,6 @@
 import type { TicketRow } from '@/features/tickets/types';
 import { isDone, overdue } from '@/lib/format';
+import { median } from './insights';
 import type { ReportFilter, ReportMetrics } from './types';
 
 /* The report's rules: the period choices, the cases in a period (and the period before), their figures and how
@@ -20,7 +21,11 @@ export function reportRange(days: number): { from: string; to: string } {
 export const reportExtrasPath = (f: ReportFilter) =>
   `/api/reports/extras?from=${f.from}&to=${f.to}&tz=${new Date().getTimezoneOffset()}${f.team ? `&team=${encodeURIComponent(f.team)}` : ''}`;
 
-export const defaultReportFilter = (): ReportFilter => ({ ...reportRange(30), team: '', assignee: '', days: 30 });
+/** GET /api/reports/dataset: the same dates and team as tidy CSV tables in one ZIP (leads). */
+export const reportDatasetPath = (f: ReportFilter) =>
+  `/api/reports/dataset?from=${f.from}&to=${f.to}&tz=${new Date().getTimezoneOffset()}${f.team ? `&team=${encodeURIComponent(f.team)}` : ''}`;
+
+export const defaultReportFilter =(): ReportFilter => ({ ...reportRange(30), team: '', assignee: '', days: 30 });
 
 /** Cases created in the period (or, with `previous`, in the same-length period just before it), by team and owner. */
 export function reportTickets(tickets: TicketRow[], f: ReportFilter, previous = false): TicketRow[] {
@@ -48,6 +53,7 @@ export function reportMetrics(tickets: TicketRow[]): ReportMetrics {
     open: tickets.filter((t) => !isDone(t)).length,
     late: tickets.filter(overdue).length,
     avg: replied.length ? replied.reduce((n, t) => n + minutes(t), 0) / replied.length : null,
+    median: median(replied.map(minutes)),
     sla: replied.length
       ? (100 * replied.filter((t) => new Date(t.first_response_at as string) <= new Date(t.first_response_due_at)).length) / replied.length
       : null,

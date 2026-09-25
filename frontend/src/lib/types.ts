@@ -147,6 +147,8 @@ export type StaffAlerts = {
   followups: Array<{ ticket_id: string; number: number; note: string; due_at: string; subject: string; status?: string } & Record<string, unknown>>;
   /** Cases the member was told are likely to miss a deadline (automation/forecast.py), while that still stands. */
   forecasts?: SlaForecastAlert[];
+  /** Admins: a channel that stopped working (channels/health.py), while it still does not work. */
+  channels?: Array<{ kind: 'line' | 'email' | 'facebook'; name: string; since: string; error: string }>;
   /** Five-star answers of the last 7 days on the member's own cases (celebrated once each). */
   praise?: Array<{ id: string; ticket_id: string; number: number; subject: string; comment: string; answered_at: string }>;
   mentions: Array<
@@ -197,6 +199,8 @@ export type CustomerOrg = {
   has_logo?: boolean;
   welcome?: string;
   response_hours?: number;
+  /** The reply time counts only while the organization is open (backend organization/hours.sla_in_opening_time). */
+  response_in_opening_time?: boolean;
   categories?: string[];
   ai_enabled?: boolean;
 } & Record<string, unknown>;

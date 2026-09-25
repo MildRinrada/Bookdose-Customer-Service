@@ -91,18 +91,33 @@ class GeminiClientTests(unittest.TestCase):
         def http(code, body=b'{}'):
             return urllib.error.HTTPError('https://x',code,'x',{},io.BytesIO(body))
         cases = [(http(400,b'{"error":{"details":[{"reason":"API_KEY_INVALID"}]}}'),'unauthorized'),(http(400),'provider'),
-                 (http(404),'model_unavailable'),(http(401),'unauthorized'),(http(429),'rate_limit'),(http(503),'provider')]
+                 (http(404),'model_unavailable'),(http(401),'unauthorized'),(http(429),'rate_limit')]
         for error,code in cases:
-            with patch.object(Gemini,'open_without_redirects',side_effect=error), patch.object(Gemini.time,'sleep'),                     self.assertRaises(AIError) as raised:
+            with patch.object(Gemini,'open_without_redirects',side_effect=error), patch.object(Gemini.time,'sleep'), \
+                    self.assertRaises(AIError) as raised:
                 Gemini.call_provider(GEMINI_KEY,CFG,{},'test')
             self.assertEqual(raised.exception.code,code)
-        # Busy for a moment (503): asked again, and the second answer is used; busy every time: 'provider'.
-        with patch.object(Gemini,'open_without_redirects',side_effect=[http(503),gemini_answer(OK)]) as sent,                 patch.object(Gemini.time,'sleep') as slept:
+        # Busy for a moment (503): asked again, and the second answer is used.
+        with patch.object(Gemini,'open_without_redirects',side_effect=[http(503),gemini_answer(OK)]) as sent, \
+                patch.object(Gemini.time,'sleep') as slept:
             self.assertEqual(Gemini.call_provider(GEMINI_KEY,CFG,{},'test')[0],OK)
         self.assertEqual(sent.call_count,2);slept.assert_called_once_with(Gemini.RETRY_WAITS[0])
-        with patch.object(Gemini,'open_without_redirects',side_effect=[http(503) for _ in range(3)]) as sent,                 patch.object(Gemini.time,'sleep'), self.assertRaises(AIError) as raised:
+        # Still busy: a fallback model answers.
+        urls = []
+        def busy_then_fallback(request, timeout):
+            urls.append(request.full_url)
+            if len(urls)<=2:
+                raise http(503)
+            return gemini_answer(OK)
+        with patch.object(Gemini,'open_without_redirects',side_effect=busy_then_fallback), patch.object(Gemini.time,'sleep'):
+            self.assertEqual(Gemini.call_provider(GEMINI_KEY,CFG,{},'test')[0],OK)
+        self.assertIn('/models/gemini-2.5-flash:',urls[0]);self.assertIn(f'/models/{Gemini.FALLBACK_MODELS[0]}:',urls[2])
+        # Every model busy: 'busy', not a wrong key.
+        tries = 2*(1+len(Gemini.FALLBACK_MODELS))
+        with patch.object(Gemini,'open_without_redirects',side_effect=[http(503) for _ in range(tries)]) as sent, \
+                patch.object(Gemini.time,'sleep'), self.assertRaises(AIError) as raised:
             Gemini.call_provider(GEMINI_KEY,CFG,{},'test')
-        self.assertEqual((sent.call_count,raised.exception.code),(3,'provider'))
+        self.assertEqual((sent.call_count,raised.exception.code),(tries,'busy'))
         # Cut off by the token limit: not a usable answer.
         with patch.object(Gemini,'open_without_redirects',return_value=gemini_answer(OK,'MAX_TOKENS')), self.assertRaises(AIError) as raised:
             Gemini.call_provider(GEMINI_KEY,CFG,{},'test')

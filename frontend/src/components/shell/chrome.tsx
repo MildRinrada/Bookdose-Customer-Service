@@ -12,7 +12,7 @@ export function Brand() {
   return (
     <Link className="brand" href="/" aria-label="Bookdose Customer Service">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="brand-logo" src="/icon.svg" width={40} height={40} alt="" />
+      <img className="brand-logo" src="/logo.png" width={40} height={40} alt="" />
       <span className="brand-text">
         bookdose<small>CUSTOMER SERVICE</small>
       </span>

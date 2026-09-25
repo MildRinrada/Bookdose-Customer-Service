@@ -103,7 +103,12 @@ def save_profile(cd, db, ctx, body):
 
 
 def update_settings(db, ctx, body):
-    for key,value in schema.settings_form(body):
+    from backend.modules.tickets import sla
+    values = schema.settings_form(body)
+    # The targets per priority, when the form sent them (a form without them keeps what was saved).
+    if sla.KEY in body:
+        values.append((sla.KEY,json.dumps(sla.form(body))))
+    for key,value in values:
         repository.update_setting(db,key,value)
     audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'])
     db.commit()

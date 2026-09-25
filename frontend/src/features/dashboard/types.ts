@@ -85,7 +85,19 @@ export type KnowledgeGap = {
 };
 
 /** The owner's last AI summary of today, or where it stands. */
-export type Brief = { id: string; status: string; lines: string[]; created_at: string; error: string };
+export type BriefAction = { when: 'now' | 'today' | 'this_week'; text: string };
+/** Today's advice for the owner. `lines` is what a summary made before the advice had its parts holds. */
+export type Brief = {
+  id: string;
+  status: string;
+  headline: string;
+  problems: string[];
+  actions: BriefAction[];
+  improvements: string[];
+  lines: string[];
+  created_at: string;
+  error: string;
+};
 
 export type Insights = {
   days: number;

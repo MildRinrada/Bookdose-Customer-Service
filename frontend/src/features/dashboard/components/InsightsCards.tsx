@@ -10,7 +10,7 @@ import { ArticleForm, type ArticleDraft } from '@/features/knowledge';
 import { clockTime, relative } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
 import { OVERVIEW_PREFIX, requestArticleDraft, requestBrief } from '../api';
-import type { Brief, Insights, KnowledgeGap } from '../types';
+import type { Brief, BriefAction, Insights, KnowledgeGap } from '../types';
 
 /* The owner's cards about AI and the knowledge base: today's summary (made only when asked: it costs a request) and
    the questions no article answers with an AI draft of the missing article. How the chatbot did is in the service
@@ -33,6 +33,57 @@ function AiOff({ ai }: { ai: Insights['ai'] }) {
       {ai.key_configured ? 'เปิด “AI ช่วยร่างคำตอบ” ก่อนจึงใช้ได้' : 'เชื่อม AI (OpenAI Gemini หรือ n8n) ก่อนจึงใช้ได้'} ·{' '}
       <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
     </p>
+  );
+}
+
+const WHEN: Record<BriefAction['when'], string> = { now: 'ทำเลย', today: 'วันนี้', this_week: 'สัปดาห์นี้' };
+
+/** The advice in the order it is read: where things stand, what is wrong, what to do in order, what to change. */
+function BriefAdvice({ brief }: { brief: Brief }) {
+  if (!brief.headline) {
+    return (
+      <ul className="brief-lines">
+        {brief.lines.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <div className="brief-advice">
+      <p className="brief-headline">{brief.headline}</p>
+      {brief.problems.length > 0 && (
+        <section>
+          <h3>ปัญหาที่พบ</h3>
+          <ul className="brief-lines">
+            {brief.problems.map((text, i) => (
+              <li key={i}>{text}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <section>
+        <h3>ควรจัดการอย่างไร</h3>
+        <ol className="brief-steps">
+          {brief.actions.map((action, i) => (
+            <li key={i}>
+              <span className={`brief-when ${action.when}`}>{WHEN[action.when]}</span>
+              <span>{action.text}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+      {brief.improvements.length > 0 && (
+        <section>
+          <h3>ข้อปรับปรุง</h3>
+          <ul className="brief-lines">
+            {brief.improvements.map((text, i) => (
+              <li key={i}>{text}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -66,7 +117,7 @@ export function BriefCard({ brief, ai }: { brief: Brief | null; ai: Insights['ai
           <h2 id="brief-title">
             <Icon name="sparkle" /> สรุปสถานการณ์วันนี้
           </h2>
-          <p>AI อ่านตัวเลขของวันนี้เทียบ 7 วันที่ผ่านมา · สร้างเมื่อกดเท่านั้น (ใช้ AI 1 ครั้ง)</p>
+          <p>AI อ่านเคสที่ค้าง งานเข้า-ออก 7 วัน คำถามที่ยังไม่มีบทความ และคะแนนความพอใจ แล้วบอกว่าควรทำอะไร · สร้างเมื่อกดเท่านั้น (ใช้ AI 1 ครั้ง)</p>
         </div>
         {usable && (
           <button type="button" className="btn small" onClick={() => void make()} disabled={working}>
@@ -80,19 +131,15 @@ export function BriefCard({ brief, ai }: { brief: Brief | null; ai: Insights['ai
           <AiOff ai={ai} />
         ) : brief?.status === 'done' ? (
           <>
-            <ul className="brief-lines">
-              {brief.lines.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
+            <BriefAdvice brief={brief} />
             <p className="tiny muted">สรุปเมื่อ {clockTime(brief.created_at)} น. · ตรวจตัวเลขจริงได้ในหน้ารายงาน</p>
           </>
         ) : working ? (
-          <p className="empty-mini">AI กำลังอ่านตัวเลขของวันนี้…</p>
+          <p className="empty-mini">AI กำลังอ่านสถานการณ์ของวันนี้…</p>
         ) : brief?.status === 'failed' ? (
           <p className="empty-mini">{brief.error || 'สรุปไม่สำเร็จ'} · กดสรุปวันนี้อีกครั้ง</p>
         ) : (
-          <p className="empty-mini">กด “สรุปวันนี้” เพื่อให้ AI บอกว่าวันนี้ต่างจากปกติอย่างไร เรื่องไหนเข้ามามาก และควรทำอะไรก่อน</p>
+          <p className="empty-mini">กด “สรุปวันนี้” เพื่อให้ AI บอกปัญหาที่พบ เคสไหนควรจัดการก่อนและอย่างไร และควรปรับอะไรไม่ให้เกิดซ้ำ</p>
         )}
       </div>
     </section>

@@ -77,24 +77,33 @@ export function ConversationSummary({ conversationId, messageCount }: { conversa
             </span>
           )}
         </button>
-        {working ? (
-          <span className="conv-summary-working" role="status">
-            <span className="conv-summary-pulse" aria-hidden="true" />
-            {s ? 'กำลังอัปเดต อ่านสรุปเดิมไปก่อนได้' : 'AI กำลังสรุป…'}
-          </span>
-        ) : !s ? (
-          <button type="button" className="btn sm" onClick={ask}>
-            <Icon name="sparkle" />
-            สรุปด้วย AI
-          </button>
-        ) : data.new_messages > 0 ? (
-          <button type="button" className="btn sm" onClick={ask} title="ส่งให้ AI เฉพาะข้อความใหม่ พร้อมสรุปเดิม">
-            <Icon name="sparkle" />
-            อัปเดตสรุป (+{data.new_messages} ข้อความใหม่)
-          </button>
-        ) : (
-          <span className="tiny muted">สรุปถึงข้อความล่าสุดแล้ว</span>
-        )}
+        <span className="conv-summary-actions">
+          {working ? (
+            <span className="conv-summary-working" role="status">
+              <span className="conv-summary-pulse" aria-hidden="true" />
+              {s ? 'กำลังอัปเดต อ่านสรุปเดิมไปก่อนได้' : 'AI กำลังสรุป…'}
+            </span>
+          ) : !s ? (
+            <button type="button" className="btn sm" onClick={ask}>
+              <Icon name="sparkle" />
+              สรุปด้วย AI
+            </button>
+          ) : data.new_messages > 0 ? (
+            <button type="button" className="btn sm" onClick={ask} title="ส่งให้ AI เฉพาะข้อความใหม่ พร้อมสรุปเดิม">
+              <Icon name="sparkle" />
+              อัปเดตสรุป (+{data.new_messages} ข้อความใหม่)
+            </button>
+          ) : (
+            <span className="tiny muted">สรุปถึงข้อความล่าสุดแล้ว</span>
+          )}
+          {s && (
+            // The band takes room above the thread: folded to its one line, it stays out of the way until wanted again.
+            <button type="button" className="btn sm conv-summary-fold" aria-expanded={open} onClick={() => setOpen(!open)}>
+              <Icon name="down" />
+              {open ? 'ย่อ' : 'ดูสรุป'}
+            </button>
+          )}
+        </span>
       </div>
       {data.error && !working && <p className="conv-summary-error">{data.error}</p>}
       {s && open && (

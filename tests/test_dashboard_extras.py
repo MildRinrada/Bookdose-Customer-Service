@@ -2,6 +2,7 @@
 the chatbot's results, the questions no article answers (with an AI article draft from them) and today's AI summary.
 The AI provider is mocked; nothing leaves the machine."""
 import datetime as dt
+import json
 import sqlite3
 import unittest
 from unittest.mock import patch
@@ -181,13 +182,22 @@ class DashboardExtrasTests(unittest.TestCase):
         self.enable_ai()
         job = self.ok(self.admin,'/api/ai/insights/brief?tz=-420',{})['id']
         self.assertEqual(self.ok(self.admin,OVERVIEW)['insights']['brief']['status'],'pending')
-        seen = self.run_job({'lines':['วันนี้เรื่องเข้ามา 1 เรื่อง','ยังไม่มีเคสเกิน SLA']})
+        advice = {'headline':'งานค้างมากกว่างานเข้า ให้เคลียร์เคสที่เลยกำหนดก่อน','problems':['เคสเปิดทั้งหมดเลยกำหนด'],
+                  'actions':[{'when':'now','text':'มอบหมาย BD-1001 ให้คนในทีม'}],'improvements':['ตั้งกฎส่งต่อเคสตามคำสำคัญ']}
+        seen = self.run_job(advice)
         mode,payload = seen[0]
         self.assertEqual(mode,'brief')
         self.assertGreaterEqual(sum(payload['conversations_today_by_channel'].values()),1)
+        # The open cases the advice may name: number and subject, how late - no customer.
+        self.assertTrue(payload['open_cases']);self.assertTrue(payload['open_cases'][0]['case'].startswith('BD-'))
+        self.assertNotIn('contact',json.dumps(payload['open_cases'][0]))
         self.assertNotIn('someone@example.com',str(payload))
         brief = self.ok(self.admin,OVERVIEW)['insights']['brief']
-        self.assertEqual((brief['id'],brief['status'],brief['lines'][0]),(job,'done','วันนี้เรื่องเข้ามา 1 เรื่อง'))
+        self.assertEqual((brief['id'],brief['status'],brief['headline'],brief['actions']),(job,'done',advice['headline'],advice['actions']))
+        # An answer without steps is not advice.
+        again = self.ok(self.admin,'/api/ai/insights/brief?tz=-420',{})['id']
+        self.run_job({**advice,'actions':[]})
+        self.assertEqual(self.ok(self.admin,f'/api/ai/jobs/{again}')['status'],'failed')
         agent,_ = self.create_member()
         self.assertEqual(agent.call('/api/ai/insights/brief',{})[0],403)
 

@@ -1830,6 +1830,25 @@ input[type=file].attach-input {
   width: 16px;
   height: 16px;
 }
+.conv-summary-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-left: auto;
+}
+.conv-summary-fold {
+  min-height: 32px;
+  padding: 2px 10px;
+}
+.conv-summary-fold .icon {
+  width: 16px;
+  height: 16px;
+  transition: transform .15s ease;
+}
+.conv-summary-fold[aria-expanded='true'] .icon {
+  transform: rotate(180deg);
+}
 .conv-summary-working {
   display: inline-flex;
   align-items: center;

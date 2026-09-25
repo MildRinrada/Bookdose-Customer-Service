@@ -6,7 +6,8 @@ for there:
   knowledge_gaps   customers' first questions that no public article answers (or that the chatbot found no article
                    for), grouped when they ask the same thing, most asked first
   request_article  an AI job that drafts an article from one group of those questions (the owner edits and saves it)
-  request_brief    an AI job that sums up today in a few lines, from counts and today's questions only
+  request_brief    an AI job that tells the owner what to do today: the problems it sees, the steps (naming open
+                   cases by number and subject), the improvements - from counts, open cases and customers' questions
 
 The questions are the customers' own words, read by the organization's owner only; before any of them goes to the
 AI provider, email addresses and phone numbers are masked."""
@@ -15,6 +16,7 @@ import re
 import threading
 import time
 from collections import Counter
+from datetime import datetime
 
 from backend.database.db import one, rows
 from backend.exceptions.errors import AIError
@@ -30,6 +32,8 @@ COVERED = 0.3                 # an article answers a question when it shares thi
 CACHE_SECONDS = 120           # the overview refreshes every 30 s; the gaps are worth recounting every two minutes
 ARTICLE_QUESTIONS = 12
 BRIEF_SUBJECTS = 40
+BRIEF_CASES = 15              # the open cases the advice may name, most overdue first
+BRIEF_COMMENTS = 5
 ID = re.compile(r'[a-f0-9]{32}')
 
 _cache = {}
@@ -178,14 +182,57 @@ def _count_by(db, sql, params):
     return {key or 'อื่นๆ':count for key,count in db.execute(sql,params).fetchall()}
 
 
+def _hours(since, until):
+    return round((datetime.fromisoformat(until)-datetime.fromisoformat(since)).total_seconds()/3600,1)
+
+
+def _open_cases(db, now_iso):
+    """The open cases, most overdue first: what the advice can name. Subjects are masked; no customer, no messages."""
+    found = rows(db,'''SELECT t.number,t.subject,t.priority,t.status,t.category,t.created_at,t.assignee_id,t.snoozed_until,
+                     t.first_response_at,t.first_response_due_at,t.resolution_due_at,tm.name AS team,
+                     (SELECT MAX(m.level) FROM ticket_conversations tc JOIN conversation_moods m ON m.conversation_id=tc.conversation_id
+                      WHERE tc.ticket_id=t.id) AS mood
+                     FROM tickets t LEFT JOIN teams tm ON tm.id=t.team_id
+                     WHERE t.status NOT IN ('resolved','closed')''')
+    cases = []
+    for c in found:
+        missed = 'first_reply' if not c['first_response_at'] else 'resolution'
+        due = c['first_response_due_at'] if missed=='first_reply' else c['resolution_due_at']
+        cases.append({'case':f"BD-{c['number']}",'subject':_mask(_plain(c['subject'],100)),'priority':c['priority'],'status':c['status'],
+                      'category':c['category'],'team':c['team'] or '','assigned':bool(c['assignee_id']),
+                      'hours_open':_hours(c['created_at'],now_iso),'hours_past_deadline':max(0,_hours(due,now_iso)),
+                      'deadline':missed,'paused':bool(c['snoozed_until'] and c['snoozed_until']>now_iso),'customer_upset':c['mood'] or 0})
+    cases.sort(key=lambda c:(-c['hours_past_deadline'],-c['customer_upset']))
+    return cases
+
+
 def brief_payload(db, day):
-    """Today against the last seven days, as counts, plus today's questions (masked) - no names, no case contents."""
+    """What the owner's advice is built from: today against the last seven days as counts, the open cases (number,
+    subject, how late), how the work is spread, unanswered questions and low ratings (masked) - no customer names,
+    no conversations."""
     week = after(days=-7)
     today_channels = _count_by(db,'SELECT channel,COUNT(*) FROM conversations WHERE created_at>=? GROUP BY channel',(day,))
     week_channels = _count_by(db,'SELECT channel,COUNT(*) FROM conversations WHERE created_at>=? AND created_at<? GROUP BY channel',(week,day))
     ratings = one(db,'SELECT COUNT(*) AS count,AVG(rating) AS average FROM csat_surveys WHERE answered_at>=?',(day,))
     now_iso = now()
+    cases = _open_cases(db,now_iso)
+    load = Counter(a for (a,) in db.execute("SELECT assignee_id FROM tickets WHERE assignee_id IS NOT NULL AND status NOT IN ('resolved','closed')"))
+    week_ratings = one(db,'SELECT COUNT(*) AS count,AVG(rating) AS average,SUM(rating<=2) AS low FROM csat_surveys WHERE answered_at>=?',(week,))
+    replies = sorted(_hours(a,b)*60 for a,b in db.execute('SELECT created_at,first_response_at FROM tickets WHERE first_response_at IS NOT NULL AND created_at>=?',(week,)))
+    gaps = knowledge_gaps(db,after(days=-INSIGHT_DAYS))
     return {
+        'open_cases':cases[:BRIEF_CASES],'open_cases_not_listed':max(0,len(cases)-BRIEF_CASES),
+        'open_cases_per_member':sorted(load.values(),reverse=True),
+        'cases_opened_last_7_days':db.execute('SELECT COUNT(*) FROM tickets WHERE created_at>=?',(week,)).fetchone()[0],
+        'cases_resolved_last_7_days':db.execute('SELECT COUNT(*) FROM tickets WHERE resolved_at>=?',(week,)).fetchone()[0],
+        'first_reply_minutes_last_7_days':{'cases':len(replies),'median':round(replies[len(replies)//2]) if replies else None},
+        'chatbot_last_7_days':bot_performance(db,week),
+        'unanswered_questions_last_30_days':[{'question':_mask(g['label']),'times':g['count']} for g in gaps['groups']],
+        'satisfaction_last_7_days':{'answers':week_ratings['count'],'average':round(week_ratings['average'],2) if week_ratings['average'] else None,
+                                    'low':week_ratings['low'] or 0,
+                                    'low_comments':[_mask(_plain(c,160)) for (c,) in db.execute(
+                                        "SELECT comment FROM csat_surveys WHERE answered_at>=? AND rating<=2 AND comment!='' ORDER BY answered_at DESC LIMIT ?",
+                                        (week,BRIEF_COMMENTS))]},
         'conversations_today_by_channel':today_channels,
         'conversations_daily_average_last_7_days_by_channel':{k:round(v/7,1) for k,v in week_channels.items()},
         'cases_opened_today':db.execute('SELECT COUNT(*) FROM tickets WHERE created_at>=?',(day,)).fetchone()[0],
@@ -211,5 +258,8 @@ def latest_brief(db, ctx, day):
     if not job:
         return None
     result = json.loads(job['result'] or '{}') if job['status']=='done' else {}
-    return {'id':job['id'],'status':job['status'],'lines':result.get('lines',[]),'created_at':job['created_at'],
+    # A summary made before the advice had its parts is only lines.
+    return {'id':job['id'],'status':job['status'],'lines':result.get('lines',[]),'headline':result.get('headline',''),
+            'problems':result.get('problems',[]),'actions':result.get('actions',[]),'improvements':result.get('improvements',[]),
+            'created_at':job['created_at'],
             'error':schema.AI_ERRORS.get(job['error'],'') if job['status']=='failed' else ''}

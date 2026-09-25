@@ -167,11 +167,11 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
             max={503}
             minLength={undefined}
             autoComplete="new-password"
-            placeholder={a.openai_key ? `บันทึกคีย์ ${service} แล้ว · เว้นว่างเพื่อใช้คีย์เดิม` : 'sk-… หรือ AIza…'}
+            placeholder={a.openai_key ? `บันทึกคีย์ ${service} แล้ว · เว้นว่างเพื่อใช้คีย์เดิม` : 'sk-… หรือ AQ.…'}
             hint={
               n8n
                 ? 'ไม่ใช้ระหว่างที่เชื่อม n8n Webhook อยู่'
-                : 'OpenAI (platform.openai.com) ขึ้นต้นด้วย sk- · Gemini (aistudio.google.com) ขึ้นต้นด้วย AIza · ระบบรู้เองจากคีย์ เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิม'
+                : 'OpenAI (platform.openai.com) ขึ้นต้นด้วย sk- · Gemini (aistudio.google.com) ขึ้นต้นด้วย AQ. หรือ AIza · ระบบรู้เองจากคีย์ เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิม'
             }
           />
           <TextField

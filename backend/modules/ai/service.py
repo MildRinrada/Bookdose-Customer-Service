@@ -49,7 +49,7 @@ def has_key(tenant_id):
 
 
 def key_provider(key):
-    """Which service an API key belongs to, by its shape: Gemini (AIza…) or OpenAI (sk-…)."""
+    """Which service an API key belongs to, by its shape: Gemini (AQ.… or AIza…) or OpenAI (sk-…)."""
     return 'gemini' if gemini_client.is_key(key) else 'openai'
 
 
@@ -304,10 +304,22 @@ def validate_owner_result(result, mode, payload=None):
                 or len(title)>200 or len(category)>80 or len(body)>20000:
             raise AIError('invalid_output')
         return {'title':title.strip(),'category':category.strip() or 'ทั่วไป','body':body.strip()}
-    lines = result.get('lines')
-    if not isinstance(lines,list) or not 1<=len(lines)<=6 or not all(isinstance(l,str) and 0<len(l.strip())<=300 for l in lines):
+    return validate_brief(result)
+
+
+def validate_brief(result):
+    """Today's advice: a headline, the problems, the steps (each now / today / this week) and the improvements."""
+    def texts(value, low, high):
+        if not isinstance(value,list) or not low<=len(value)<=high or not all(isinstance(t,str) and 0<len(t.strip())<=400 for t in value):
+            raise AIError('invalid_output')
+        return [t.strip() for t in value]
+    headline,actions = result.get('headline'),result.get('actions')
+    if not isinstance(headline,str) or not 0<len(headline.strip())<=400 or not isinstance(actions,list) or not 1<=len(actions)<=6 \
+            or not all(isinstance(a,dict) and a.get('when') in ('now','today','this_week') for a in actions):
         raise AIError('invalid_output')
-    return {'lines':[l.strip() for l in lines]}
+    steps = texts([a.get('text') for a in actions],1,6)
+    return {'headline':headline.strip(),'problems':texts(result.get('problems'),0,5),
+            'actions':[{'when':a['when'],'text':t} for a,t in zip(actions,steps)],'improvements':texts(result.get('improvements'),0,5)}
 
 
 def permitted(cd, tenant_id, job, db):

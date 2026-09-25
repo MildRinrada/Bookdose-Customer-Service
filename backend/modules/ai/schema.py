@@ -43,10 +43,11 @@ def settings_form(body, current):
     require(isinstance(key,str),'รูปแบบ API Key ไม่ถูกต้อง')
     key = key.strip()
     # Another provider's key looks alike (sk-…); OpenAI would only answer 401, after the key had been sent there.
-    require(not key.startswith('sk-ant-'),'นี่คือ API Key ของ Anthropic (Claude) ซึ่งยังไม่รองรับ: ใช้คีย์ OpenAI (sk-…) หรือ Gemini (AIza…)')
-    # OpenAI (platform.openai.com: sk-proj-… or sk-…) or Gemini (aistudio.google.com: AIza…).
-    require(not key or re.fullmatch(r'sk-[A-Za-z0-9_\-]{16,500}|AIza[A-Za-z0-9_\-]{30,200}',key),
-            'รูปแบบ API Key ไม่ถูกต้อง: ใช้คีย์ OpenAI (ขึ้นต้นด้วย sk-) หรือ Gemini (ขึ้นต้นด้วย AIza)')
+    require(not key.startswith('sk-ant-'),'นี่คือ API Key ของ Anthropic (Claude) ซึ่งยังไม่รองรับ: ใช้คีย์ OpenAI (sk-…) หรือ Gemini (AQ.… หรือ AIza…)')
+    # OpenAI (platform.openai.com: sk-proj-… or sk-…) or Gemini (aistudio.google.com: an Auth key AQ.…, or an older
+    # Standard key AIza…).
+    require(not key or re.fullmatch(r'sk-[A-Za-z0-9_\-]{16,500}|AQ\.[A-Za-z0-9_.\-]{20,500}|AIza[A-Za-z0-9_\-]{30,200}',key),
+            'รูปแบบ API Key ไม่ถูกต้อง: ใช้คีย์ OpenAI (ขึ้นต้นด้วย sk-) หรือ Gemini (ขึ้นต้นด้วย AQ. หรือ AIza)')
     remove = body.get('remove_key',False)
     require(type(remove) is bool and not (remove and key),'ข้อมูลลบ API Key ไม่ถูกต้อง')
     return cfg,model,key,remove

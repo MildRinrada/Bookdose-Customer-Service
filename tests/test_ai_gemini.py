@@ -11,9 +11,11 @@ from backend.exceptions.errors import AIError
 from backend.extensions import gemini_client as Gemini, openai_client as OpenAI
 from backend.modules.ai import service as AI
 
-GEMINI_KEY = 'AIzaUnitTestNotARealKey0123456789abcdef'
+GEMINI_KEY = 'AQ.AbUnitTest-not_a.real-key-0123456789abcdef'
+OLD_GEMINI_KEY = 'AIzaUnitTestNotARealKey0123456789abcdef'
 OPENAI_KEY = 'sk-unit-test-not-a-real-key-0123456789'
 CFG = {'model':'gemini-2.5-flash','max_output_tokens':1000}
+CFG3 = {'model':Gemini.DEFAULT_MODEL,'max_output_tokens':1000}
 OK = {'answer':'เชื่อมต่อ AI สำเร็จ','summary':'','needs_human':False,'citations':[]}
 
 
@@ -47,8 +49,11 @@ class GeminiSettingsTests(unittest.TestCase):
         # Back to an OpenAI key: the Gemini model left as it was goes back to OpenAI's default.
         back = self.ok(self.admin,'/api/ai/settings',{'api_key':OPENAI_KEY},'PATCH')
         self.assertEqual((back['provider'],back['model']),('openai',AI.DEFAULT_MODEL))
-        status,body = self.admin.call('/api/ai/settings',{'api_key':'AIza-short'},'PATCH')
-        self.assertEqual(status,400);self.assertIn('AIza',body['error'])
+        # The older Standard key (AIza…) is still a Gemini key.
+        self.assertEqual(self.ok(self.admin,'/api/ai/settings',{'api_key':OLD_GEMINI_KEY},'PATCH')['provider'],'gemini')
+        for bad in ('AIza-short','AQ.short','AQ.Ab has spaces 0123456789abcdef'):
+            status,body = self.admin.call('/api/ai/settings',{'api_key':bad},'PATCH')
+            self.assertEqual(status,400);self.assertIn('AQ.',body['error'])
 
     def test_jobs_go_to_gemini_with_a_gemini_key(self):
         self.ok(self.admin,'/api/ai/settings',{'api_key':GEMINI_KEY},'PATCH')
@@ -78,16 +83,26 @@ class GeminiClientTests(unittest.TestCase):
         self.assertNotIn('additionalProperties',json.dumps(body['generationConfig']['responseJsonSchema']))
         self.assertEqual(body['generationConfig']['thinkingConfig'],{'thinkingBudget':0})
         self.assertEqual(body['generationConfig']['responseMimeType'],'application/json')
+        with patch.object(Gemini,'open_without_redirects',side_effect=fake_open):
+            Gemini.call_provider(GEMINI_KEY,CFG3,{'test':'x'},'test')
+        self.assertEqual(json.loads(sent[1].data)['generationConfig']['thinkingConfig'],{'thinkingLevel':'low'})
 
     def test_errors(self):
         def http(code, body=b'{}'):
             return urllib.error.HTTPError('https://x',code,'x',{},io.BytesIO(body))
         cases = [(http(400,b'{"error":{"details":[{"reason":"API_KEY_INVALID"}]}}'),'unauthorized'),(http(400),'provider'),
-                 (http(404),'unauthorized'),(http(429),'rate_limit'),(http(503),'provider')]
+                 (http(404),'model_unavailable'),(http(401),'unauthorized'),(http(429),'rate_limit'),(http(503),'provider')]
         for error,code in cases:
-            with patch.object(Gemini,'open_without_redirects',side_effect=error), self.assertRaises(AIError) as raised:
+            with patch.object(Gemini,'open_without_redirects',side_effect=error), patch.object(Gemini.time,'sleep'),                     self.assertRaises(AIError) as raised:
                 Gemini.call_provider(GEMINI_KEY,CFG,{},'test')
             self.assertEqual(raised.exception.code,code)
+        # Busy for a moment (503): asked again, and the second answer is used; busy every time: 'provider'.
+        with patch.object(Gemini,'open_without_redirects',side_effect=[http(503),gemini_answer(OK)]) as sent,                 patch.object(Gemini.time,'sleep') as slept:
+            self.assertEqual(Gemini.call_provider(GEMINI_KEY,CFG,{},'test')[0],OK)
+        self.assertEqual(sent.call_count,2);slept.assert_called_once_with(Gemini.RETRY_WAITS[0])
+        with patch.object(Gemini,'open_without_redirects',side_effect=[http(503) for _ in range(3)]) as sent,                 patch.object(Gemini.time,'sleep'), self.assertRaises(AIError) as raised:
+            Gemini.call_provider(GEMINI_KEY,CFG,{},'test')
+        self.assertEqual((sent.call_count,raised.exception.code),(3,'provider'))
         # Cut off by the token limit: not a usable answer.
         with patch.object(Gemini,'open_without_redirects',return_value=gemini_answer(OK,'MAX_TOKENS')), self.assertRaises(AIError) as raised:
             Gemini.call_provider(GEMINI_KEY,CFG,{},'test')

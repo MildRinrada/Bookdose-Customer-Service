@@ -1,6 +1,7 @@
 """Google Gemini API (generateContent): the same instructions, JSON schema and input as the OpenAI call, for an
-organization whose API key is a Gemini key (Google AI Studio, AIza…). One request per AI job; nothing is stored there."""
+organization whose API key is a Gemini key (Google AI Studio: AQ.… or the older AIza…). One request per AI job; nothing is stored there."""
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -10,14 +11,23 @@ from backend.extensions import openai_client
 from backend.utils.http import open_without_redirects
 
 URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
-DEFAULT_MODEL = 'gemini-2.5-flash'
+# What Google names for new accounts (gemini-2.5-flash answers 404 "no longer available to new users" since 2026).
+DEFAULT_MODEL = 'gemini-3.8-flash'
 # Room for the model's thinking, which Gemini counts in the same output budget as the answer.
 THINKING_TOKENS = 1024
+# Google answers 503 "high demand" (or 500/502/504) for a moment when a model is busy: asked again after these waits,
+# while the job is still well inside its time (ai/service.JOB_TIMEOUT_SECONDS).
+RETRY_WAITS = (2,5)
+RETRY_STATUSES = (500,502,503,504)
+RETRY_WITHIN_SECONDS = 30
+# A Gemini 3 answer with a few turns of history can take longer than OpenAI's 25 seconds; the job allows far more.
+TIMEOUT_SECONDS = 60
 
 
 def is_key(key):
-    """A Gemini API key (Google AI Studio). OpenAI keys start with sk-."""
-    return key.startswith('AIza')
+    """A Gemini API key: an Auth key (AQ.…, what AI Studio issues since 2026) or an older Standard key (AIza…).
+    Both go in the x-goog-api-key header. OpenAI keys start with sk-."""
+    return key.startswith(('AQ.','AIza'))
 
 
 def is_model(model):
@@ -43,9 +53,26 @@ def _thinking(model):
         return {'thinkingBudget':0}
     if model.startswith('gemini-2.5-pro'):
         return {'thinkingBudget':128}
-    if model.startswith('gemini-3'):
-        return {'thinkingLevel':'low'}
-    return None
+    if model.startswith(('gemini-1','gemini-2','gemma-')):
+        return None
+    # Gemini 3 and later, and the -latest names that point at them.
+    return {'thinkingLevel':'low'}
+
+
+def _send(request):
+    """The response body, asking again while Google says the model is busy (RETRY_WAITS)."""
+    started = time.monotonic()
+    for wait in (*RETRY_WAITS,None):
+        try:
+            with open_without_redirects(request,TIMEOUT_SECONDS) as response:
+                return response.read(1_000_001)
+        except urllib.error.HTTPError as error:
+            # Only the status, for the server's log: why an owner saw "บริการ AI ไม่พร้อมใช้งาน".
+            print(f'Gemini: HTTP {error.code}',flush=True)
+            if wait is None or error.code not in RETRY_STATUSES or time.monotonic()-started+wait>RETRY_WITHIN_SECONDS:
+                raise
+            error.close()
+            time.sleep(wait)
 
 
 def call_provider(key,cfg,payload,mode):
@@ -65,8 +92,7 @@ def call_provider(key,cfg,payload,mode):
     request = urllib.request.Request(URL.format(model=urllib.parse.quote(model,safe='')),data=json.dumps(request_body).encode(),
         headers={'x-goog-api-key':key,'Content-Type':'application/json'},method='POST')
     try:
-        with open_without_redirects(request,25) as response:
-            raw = response.read(1_000_001)
+        raw = _send(request)
         if len(raw)>1_000_000:
             raise AIError('invalid_output')
         data = json.loads(raw)
@@ -86,8 +112,11 @@ def call_provider(key,cfg,payload,mode):
         except OSError:
             invalid_key = False
         error.close()
-        raise AIError('unauthorized' if invalid_key or code in (401,403,404) else 'rate_limit' if code==429 else 'provider') from None
-    except (urllib.error.URLError,TimeoutError,OSError):
+        # 404: the model does not exist or is closed to this account - the key is fine, the model name is not.
+        raise AIError('unauthorized' if invalid_key or code in (401,403) else 'model_unavailable' if code==404
+                      else 'rate_limit' if code==429 else 'provider') from None
+    except (urllib.error.URLError,TimeoutError,OSError) as error:
+        print(f'Gemini: {type(error).__name__}',flush=True)
         raise AIError('provider') from None
     except (ValueError,KeyError,TypeError,AttributeError,IndexError):
         raise AIError('invalid_output') from None

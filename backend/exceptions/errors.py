@@ -20,7 +20,7 @@ class RateLimited(APIError):
 
 
 AI_ERRORS = {
-    'not_configured':'ยังไม่ได้เชื่อม AI (OpenAI API Key หรือ n8n Webhook) สำหรับองค์กรนี้',
+    'not_configured':'ยังไม่ได้เชื่อม AI (API Key ของ OpenAI หรือ Gemini หรือ n8n Webhook) สำหรับองค์กรนี้',
     'disabled':'ผู้ดูแลยังไม่ได้เปิดใช้ AI สำหรับงานนี้',
     'quota':'ถึงเพดานการใช้ AI ขององค์กรหรือบทสนทนาแล้ว',
     'unauthorized':'API Key หรือรหัสลับของ Webhook ใช้งานไม่ได้ กรุณาตรวจสอบคีย์ รหัสลับ และสิทธิ์โมเดล',

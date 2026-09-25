@@ -4,7 +4,8 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useOpenOnThisPage } from './chrome';
 
 /* Reading preferences shared by staff, sign-in and customer pages: html[data-text-size] scales the whole app
-   (src/styles/text-size.css) and html[data-theme] repaints it (src/styles/themes.css). Both are kept in this browser,
+   (src/styles/text-size.css), html[data-theme] repaints it (src/styles/themes.css) and html[data-font] swaps the
+   typeface (src/styles/themes.css, faces in src/styles/fonts.css). All are kept in this browser,
    not on the account: it is how this person reads on this screen, and the screen at home is a different screen.
 
    The layout's first script applies them before anything is drawn - a saved dark theme that arrived one paint late
@@ -25,12 +26,22 @@ export const THEMES = [
 const THEME_VALUES = THEMES.map((t) => t.value) as readonly string[];
 const validTheme = (value: string | null | undefined) => (value && THEME_VALUES.includes(value) ? value : 'light');
 
-/** The script the root layout runs first (with the CSP nonce): text size, theme and the collapsed sidebar, before paint. */
+const FONT_KEY = 'bookdose.font';
+export const FONTS = [
+  { value: 'sarabun', label: 'Sarabun', title: 'Sarabun (ค่าเดิม)' },
+  { value: 'noto', label: 'Noto Sans Thai', title: 'Noto Sans Thai' },
+] as const;
+const FONT_VALUES = FONTS.map((f) => f.value) as readonly string[];
+const validFont = (value: string | null | undefined) => (value && FONT_VALUES.includes(value) ? value : 'sarabun');
+
+/** The script the root layout runs first (with the CSP nonce): text size, theme, font and the collapsed sidebar, before paint. */
 export const EARLY_PREFERENCES_SCRIPT = `(function(){var d=document.documentElement;try{var s=${JSON.stringify(SIZES)},l=${JSON.stringify(
   LEGACY,
 )},v=localStorage.getItem('${KEY}');d.dataset.textSize=s.indexOf(v)>=0?v:(l[v]||'100');var t=${JSON.stringify(
   THEME_VALUES,
-)},k=localStorage.getItem('${THEME_KEY}');d.dataset.theme=t.indexOf(k)>=0?k:'light';if(localStorage.getItem('bookdose.sidebar')==='collapsed')d.classList.add('sidebar-collapsed');}catch(e){d.dataset.textSize='100';d.dataset.theme='light';}})();`;
+)},k=localStorage.getItem('${THEME_KEY}');d.dataset.theme=t.indexOf(k)>=0?k:'light';var f=${JSON.stringify(
+  FONT_VALUES,
+)},n=localStorage.getItem('${FONT_KEY}');d.dataset.font=f.indexOf(n)>=0?n:'sarabun';if(localStorage.getItem('bookdose.sidebar')==='collapsed')d.classList.add('sidebar-collapsed');}catch(e){d.dataset.textSize='100';d.dataset.theme='light';d.dataset.font='sarabun';}})();`;
 
 const listeners = new Set<() => void>();
 function subscribe(listener: () => void) {
@@ -39,7 +50,8 @@ function subscribe(listener: () => void) {
   const onStorage = (event: StorageEvent) => {
     if (event.key === KEY || event.key === null) document.documentElement.dataset.textSize = valid(event.newValue);
     if (event.key === THEME_KEY || event.key === null) document.documentElement.dataset.theme = validTheme(event.newValue);
-    if (event.key === KEY || event.key === THEME_KEY || event.key === null) listener();
+    if (event.key === FONT_KEY || event.key === null) document.documentElement.dataset.font = validFont(event.newValue);
+    if (event.key === KEY || event.key === THEME_KEY || event.key === FONT_KEY || event.key === null) listener();
   };
   window.addEventListener('storage', onStorage);
   return () => {
@@ -67,6 +79,37 @@ function saveTheme(value: string) {
   const theme = validTheme(value);
   document.documentElement.dataset.theme = theme;
   remember(THEME_KEY, theme);
+}
+
+function saveFont(value: string) {
+  const font = validFont(value);
+  document.documentElement.dataset.font = font;
+  remember(FONT_KEY, font);
+}
+
+/** The typefaces to read in, each button set in its own face so the choice is seen, not described. */
+export function FontControls() {
+  const font = useSyncExternalStore(subscribe, () => validFont(document.documentElement.dataset.font), () => 'sarabun');
+  return (
+    <div className="text-size-controls font-controls">
+      <label id="font-choice-label">ฟอนต์</label>
+      <div className="font-choices" role="group" aria-labelledby="font-choice-label">
+        {FONTS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={`font-chip is-${option.value}`}
+            title={option.title}
+            aria-pressed={font === option.value}
+            onClick={() => saveFont(option.value)}
+          >
+            <span className="font-chip-sample">กขค Aa</span>
+            <span className="font-chip-name">{option.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** The four papers to read on. Beside the size, as an e-reader puts them. */
@@ -165,6 +208,7 @@ export function TextSizeMenu() {
       </button>
       <div className="text-size-panel" id="text-size-panel" hidden={!open}>
         <TextSizeControls />
+        <FontControls />
         <ThemeControls />
       </div>
     </div>

@@ -1,4 +1,4 @@
-"""AI queries (tenant database), the organization's OpenAI API key file and its n8n webhook file."""
+"""AI queries (tenant database), the organization's API key file (OpenAI or Gemini) and its n8n webhook file."""
 import json
 
 from backend.database import db as D
@@ -11,6 +11,7 @@ IN_FLIGHT = "status IN ('pending','running')"
 
 # API key: a private file per organization, never in the database, API responses or backups, sealed with the
 # platform's secret key (utils/secret_box).
+# The file keeps its first name when the key is a Gemini one: backups and restores already know it by that name.
 def key_path(tenant_id):
     D.tenant_path(tenant_id)  # Validate the ID before constructing a secret path.
     return D.DATA/'secrets'/f'{tenant_id}.openai-key'

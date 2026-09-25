@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 from backend.extensions import monitor
 from backend.database import audit, db as D
 from backend.exceptions.errors import AIError
-from backend.extensions import ai_webhook, openai_client
+from backend.extensions import ai_webhook, gemini_client, openai_client
 from backend.middleware.access import get_scoped
 from backend.modules.ai import mood, repository, schema, summary, translate
 from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
@@ -44,17 +44,33 @@ def config(db):
 
 
 def has_key(tenant_id):
-    """The organization is connected to an AI: an n8n webhook (used when there is one) or an OpenAI API key."""
+    """The organization is connected to an AI: an n8n webhook (used when there is one) or an OpenAI or Gemini API key."""
     return bool(repository.read_webhook(tenant_id) or repository.read_key(tenant_id))
+
+
+def key_provider(key):
+    """Which service an API key belongs to, by its shape: Gemini (AIza…) or OpenAI (sk-…)."""
+    return 'gemini' if gemini_client.is_key(key) else 'openai'
+
+
+def model_for(provider, model, changed):
+    """The model to save with a key of `provider`. A model of the other service left as it was follows the key to this
+    service's default; one typed in that does not belong to the key is refused rather than sent where it cannot work."""
+    if (provider=='gemini')==gemini_client.is_model(model):
+        return model
+    require(not changed,'โมเดลนี้ไม่ใช่ของ Gemini: ใช้ชื่อโมเดลที่ขึ้นต้นด้วย gemini- เช่น '+gemini_client.DEFAULT_MODEL if provider=='gemini'
+            else 'โมเดลนี้ไม่ใช่ของ OpenAI: ใช้ชื่อโมเดลของ OpenAI เช่น '+DEFAULT_MODEL)
+    return gemini_client.DEFAULT_MODEL if provider=='gemini' else DEFAULT_MODEL
 
 
 def overview(db, tenant_id):
     cfg = config(db)
     webhook = repository.read_webhook(tenant_id)
+    key = repository.read_key(tenant_id)
     # The owner sees the saved URL (the secret header is what protects the workflow) and only the last characters of
     # the secret, enough to compare with n8n's Header Auth. Never on /api/workspace, which every member reads.
-    cfg.update(key_configured=has_key(tenant_id),openai_key=bool(repository.read_key(tenant_id)),
-               provider='n8n' if webhook else 'openai',webhook_host=urlsplit(webhook['url']).netloc if webhook else '',
+    cfg.update(key_configured=has_key(tenant_id),openai_key=bool(key),key_provider=key_provider(key) if key else '',
+               provider='n8n' if webhook else key_provider(key) if key else 'openai',webhook_host=urlsplit(webhook['url']).netloc if webhook else '',
                webhook_url=webhook['url'] if webhook else '',webhook_secret_end=webhook['secret'][-4:] if webhook else '',
                usage=repository.usage_since(db,today()))
     return cfg
@@ -352,9 +368,12 @@ def process_one(tenant_id):
     error = None
 
     def ask():
-        # The organization's n8n workflow when it connected one, otherwise OpenAI; the answer is checked the same way.
+        # The organization's n8n workflow when it connected one, otherwise its key's service (Gemini or OpenAI); the
+        # answer is checked the same way.
         if webhook:
             return ai_webhook.call(webhook,cfg,payload,job['mode'])
+        if key_provider(key)=='gemini':
+            return gemini_client.call_provider(key,cfg,payload,job['mode'])
         return openai_client.call_provider(key,cfg,payload,job['mode'])
     try:
         if not webhook and not key:
@@ -445,7 +464,10 @@ def save_settings(db, ctx, body):
         {'url':change['url'] or saved['url'],'secret':change['secret'] or (saved or {}).get('secret','')}
     require(not webhook or webhook['secret'],'กรุณาตั้งรหัสลับของ Webhook (ใส่ค่าเดียวกันใน Header Auth ของ n8n)')
     require(effective_key or webhook or not (cfg['drafts_enabled'] or cfg['chatbot_enabled'] or cfg['translate_enabled']),
-            'ต้องเชื่อม AI (OpenAI API Key หรือ n8n Webhook) ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบการเชื่อมต่อ')
+            'ต้องเชื่อม AI (API Key ของ OpenAI หรือ Gemini หรือ n8n Webhook) ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบการเชื่อมต่อ')
+    # With n8n the workflow picks the model; with a key the model has to be one of that key's service.
+    if effective_key and not webhook:
+        model = model_for(key_provider(effective_key),model,model!=config(db)['model'])
     D.begin(db)
     if key or remove:
         repository.write_key(ctx['tenant_id'],effective_key)

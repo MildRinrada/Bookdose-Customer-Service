@@ -446,10 +446,10 @@
   font-weight: 600;
 }
 .sla-watch-item.danger .sla-timer {
-  background: #e5484d;
+  background: #c4343a;
 }
 .sla-watch-item.danger .sla-timer small {
-  color: #ffe1e1;
+  color: #fff;
 }
 .sla-watch-item.warn .sla-timer {
   background: #f5b942;

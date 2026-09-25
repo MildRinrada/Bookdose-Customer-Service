@@ -118,7 +118,7 @@ def save_channel(cd, db, ctx, kind, body):
             cfg.update(info)
     cfg['chatbot_enabled'] = schema.chatbot_flag(body,cfg)
     if cfg['chatbot_enabled']:
-        require(ai.has_key(ctx['tenant_id']),'กรุณาเชื่อม AI (OpenAI API Key หรือ n8n Webhook) ในส่วน AI ก่อนเปิด Chatbot')
+        require(ai.has_key(ctx['tenant_id']),'กรุณาเชื่อม AI (API Key ของ OpenAI หรือ Gemini หรือ n8n Webhook) ในส่วน AI ก่อนเปิด Chatbot')
     # Provider checks happen before starting write transactions.
     D.begin(cd)
     D.begin(db)

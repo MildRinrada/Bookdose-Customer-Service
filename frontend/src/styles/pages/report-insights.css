@@ -107,7 +107,7 @@
   font-variant-numeric: tabular-nums;
 }
 .report-week-score.low {
-  background: #e5484d;
+  background: #c4343a;
 }
 .report-week-score.none {
   background: var(--soft);

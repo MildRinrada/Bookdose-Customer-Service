@@ -9,7 +9,7 @@
   --surface-hover: #eff1ec;
   --control-line: #87928c;
   --focus: #4d8cad;
-  --green: #327b61;
+  --green: #2c7155;
   --green-soft: #e9f3ed;
   --red: #b84339;
   --red-soft: #fbefec;
@@ -21,7 +21,7 @@
   --shadow: 0 3px 14px #26292d04;
   --font: 'Sarabun',-apple-system,BlinkMacSystemFont,'Thonburi','Leelawadee UI',sans-serif;
   --ink: rgb(38, 41, 45);
-  --muted: #65716b;
+  --muted: #5d6963;
   --line: rgb(227, 227, 222);
   /* The grey fill behind a chip, a count, a quiet row, and the inside of a field. Both were written into rules as
      #f2f2f2 / #ededed / #fff a thousand times over; a theme can only repaint what goes through a name (themes.css). */

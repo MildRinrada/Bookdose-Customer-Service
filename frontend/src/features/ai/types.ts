@@ -32,11 +32,14 @@ export type AiSettings = {
   conversation_limit: number;
   max_output_tokens: number;
   version: string;
-  /** Connected to an AI at all: an n8n webhook or an OpenAI key. */
+  /** Connected to an AI at all: an n8n webhook or an API key. */
   key_configured: boolean;
+  /** An API key is saved (OpenAI or Gemini; the name is older than Gemini). */
   openai_key: boolean;
-  /** Who answers: the organization's n8n workflow (when one is connected) or OpenAI. */
-  provider: 'openai' | 'n8n';
+  /** Whose the saved key is, by its shape; '' when there is none. */
+  key_provider: 'openai' | 'gemini' | '';
+  /** Who answers: the organization's n8n workflow (when one is connected), otherwise the saved key's service. */
+  provider: 'openai' | 'gemini' | 'n8n';
   /** The connected webhook's host, its whole URL, and the last 4 characters of its secret (to compare with n8n). */
   webhook_host: string;
   webhook_url: string;

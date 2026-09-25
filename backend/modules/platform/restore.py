@@ -251,7 +251,7 @@ def restore(cd, session, body):
             manifest,entries = B.check_archive(archive)
             needed,has_key = _key(manifest)
             require(has_key or without,f'ไฟล์นี้เข้ารหัส Token ด้วยกุญแจ {needed} ซึ่งเซิร์ฟเวอร์นี้ไม่มี: ตั้ง BOOKDOSE_SECRET_KEY เดิมก่อน '
-                                        'หรือเลือกกู้คืนโดยไม่มี Token (ต้องใส่ LINE อีเมล Facebook OpenAI และ SMS ใหม่)')
+                                        'หรือเลือกกู้คืนโดยไม่มี Token (ต้องใส่ LINE อีเมล Facebook คีย์ AI และ SMS ใหม่)')
             # The request's own read of the platform database ends here: the file changes under it next.
             cd.commit()
             safety = backups.write('before',session['user_id'])

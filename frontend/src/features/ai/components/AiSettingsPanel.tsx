@@ -12,7 +12,7 @@ import { useWork } from '@/lib/session';
 import { AI_SETTINGS_PATH, saveAiSettings, testAiConnection, waitForAiJob } from '../api';
 import type { AiSettings } from '../types';
 
-/* The organization's AI settings (settings page, AI tab; admins only): the OpenAI key, the model, the two modes,
+/* The organization's AI settings (settings page, AI tab; admins only): the API key (OpenAI or Gemini), the model, the two modes,
    the limits, a connection test and today's usage. Markup: modules/ai/ai-settings. */
 
 export function AiSettingsPanel() {
@@ -37,6 +37,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
   }, []);
 
   const n8n = a.provider === 'n8n';
+  const service = a.key_provider === 'gemini' ? 'Gemini' : 'OpenAI';
   const testUrl = a.webhook_url.includes('/webhook-test/');
   // A random secret to paste into n8n's Header Auth too; it is shown once, before saving.
   const makeSecret = () => {
@@ -76,7 +77,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           <p>ตั้งค่าแยกสำหรับ {work.tenant.name}</p>
         </div>
         <span className={`badge ${a.key_configured ? 'resolved' : ''}`}>
-          {n8n ? 'ใช้ n8n Webhook' : a.key_configured ? 'บันทึก API Key แล้ว' : 'ยังไม่ได้เชื่อม AI'}
+          {n8n ? 'ใช้ n8n Webhook' : a.key_configured ? `ใช้ ${service}` : 'ยังไม่ได้เชื่อม AI'}
         </span>
       </div>
       <Form
@@ -99,13 +100,13 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
         }}
       >
         <div className="notice mb">
-          เมื่อเปิดใช้ ระบบจะส่งข้อความและบทความที่เกี่ยวข้องไปยัง {n8n ? `workflow n8n ของคุณ (${a.webhook_host})` : 'OpenAI'} เพื่อสร้างคำตอบ
+          เมื่อเปิดใช้ ระบบจะส่งข้อความและบทความที่เกี่ยวข้องไปยัง {n8n ? `workflow n8n ของคุณ (${a.webhook_host})` : a.key_configured ? service : 'OpenAI หรือ Gemini ตามคีย์ที่ใส่'} เพื่อสร้างคำตอบ
           {n8n ? ' แล้ว workflow ส่งต่อให้โมเดลที่คุณเลือกใน n8n' : ' มีค่าใช้บริการตามบัญชี API ของคุณ'} Chatbot
           อ่านเฉพาะบทความที่เผยแพร่ให้ลูกค้า ส่วนร่างสำหรับเจ้าหน้าที่อาจใช้บทความและบันทึกภายใน
         </div>
         <h3 className="ai-settings-heading">n8n Webhook {n8n && <span className="badge resolved">เชื่อมแล้ว</span>}</h3>
         <p className="tiny muted">
-          เชื่อม workflow ใน n8n แล้วระบบจะส่งงาน AI ทั้งหมดของ {work.tenant.name} ไปที่ workflow นั้นแทน OpenAI (ช่วยร่างคำตอบ, Chatbot,
+          เชื่อม workflow ใน n8n แล้วระบบจะส่งงาน AI ทั้งหมดของ {work.tenant.name} ไปที่ workflow นั้นแทน API Key (ช่วยร่างคำตอบ, Chatbot,
           ผู้ช่วย AI, คำแนะนำในหน้าภาพรวม) และเลือกโมเดลใน AI Agent ของ n8n
         </p>
         <div className="form-grid">
@@ -151,31 +152,39 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           {n8n && (
             <label className="check">
               <input name="remove_webhook" type="checkbox" />
-              เลิกใช้ n8n Webhook (กลับไปใช้ OpenAI API Key)
+              เลิกใช้ n8n Webhook (กลับไปใช้ API Key)
             </label>
           )}
         </div>
-        <h3 className="ai-settings-heading">OpenAI และการใช้งาน</h3>
+        <h3 className="ai-settings-heading">API Key และการใช้งาน</h3>
         <div className="form-grid">
           <TextField
             id="ai-key"
-            label="OpenAI API Key"
+            label="API Key (OpenAI หรือ Gemini)"
             name="api_key"
             type="password"
             required={false}
             max={503}
             minLength={undefined}
             autoComplete="new-password"
-            placeholder={a.openai_key ? 'เว้นว่างเพื่อใช้คีย์เดิม' : 'sk-…'}
-            hint={n8n ? 'ไม่ใช้ระหว่างที่เชื่อม n8n Webhook อยู่' : 'เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิมและไม่รวมในไฟล์สำรอง'}
+            placeholder={a.openai_key ? `บันทึกคีย์ ${service} แล้ว · เว้นว่างเพื่อใช้คีย์เดิม` : 'sk-… หรือ AIza…'}
+            hint={
+              n8n
+                ? 'ไม่ใช้ระหว่างที่เชื่อม n8n Webhook อยู่'
+                : 'OpenAI (platform.openai.com) ขึ้นต้นด้วย sk- · Gemini (aistudio.google.com) ขึ้นต้นด้วย AIza · ระบบรู้เองจากคีย์ เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิม'
+            }
           />
           <TextField
             id="ai-model"
-            label="โมเดล OpenAI"
+            label="โมเดล"
             name="model"
             defaultValue={a.model}
             max={100}
-            hint={n8n ? 'เมื่อใช้ n8n ให้เลือกโมเดลใน workflow' : 'ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์ และรองรับ Structured Outputs'}
+            hint={
+              n8n
+                ? 'เมื่อใช้ n8n ให้เลือกโมเดลใน workflow'
+                : 'ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์และรองรับ Structured Outputs · เปลี่ยนคีย์ไปอีกเจ้า ระบบเปลี่ยนเป็นโมเดลเริ่มต้นของเจ้านั้นให้'
+            }
           />
           <label className="check">
             <input type="checkbox" className="switch" name="drafts_enabled" defaultChecked={a.drafts_enabled} />

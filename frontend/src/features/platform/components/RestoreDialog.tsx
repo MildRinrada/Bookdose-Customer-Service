@@ -47,7 +47,7 @@ export function RestoreDialog({ name, onClose }: { name: string; onClose: () => 
         </p>
         <p>
           ทุกคนถูกออกจากระบบ รวมถึงคุณ เข้าสู่ระบบใหม่ด้วยบัญชีที่อยู่ในไฟล์สำรอง
-          {done.secrets_skipped && ' · ยังไม่มี Token ของช่องทาง ต้องใส่ LINE อีเมล Facebook OpenAI และ SMS ใหม่'}
+          {done.secrets_skipped && ' · ยังไม่มี Token ของช่องทาง ต้องใส่ LINE อีเมล Facebook คีย์ AI และ SMS ใหม่'}
         </p>
         <p className="tiny muted">
           ข้อมูลก่อนกู้เก็บไว้ที่ <code>{done.safety_backup}</code> ถ้ากู้ผิดไฟล์ กู้คืนจากไฟล์นี้เพื่อกลับไปเหมือนเดิม
@@ -117,13 +117,13 @@ export function RestoreDialog({ name, onClose }: { name: string; onClose: () => 
         </li>
         <li>ไฟล์แนบ {number(preview.attachments)} ไฟล์</li>
         {preview.secrets.available ? (
-          <li>Token ของช่องทาง (LINE อีเมล Facebook OpenAI SMS) กู้คืนได้ เพราะเซิร์ฟเวอร์นี้มีกุญแจ {preview.secrets.key_id}</li>
+          <li>Token ของช่องทาง (LINE อีเมล Facebook คีย์ AI SMS) กู้คืนได้ เพราะเซิร์ฟเวอร์นี้มีกุญแจ {preview.secrets.key_id}</li>
         ) : (
           <li className="restore-warn">
             เซิร์ฟเวอร์นี้ไม่มีกุญแจ <code>{preview.secrets.key_id}</code> ที่เข้ารหัส Token ในไฟล์นี้ ตั้ง BOOKDOSE_SECRET_KEY เดิมก่อนถ้ายังมีอยู่
             <label className="check">
               <input type="checkbox" checked={withoutSecrets} onChange={(e) => setWithoutSecrets(e.target.checked)} />
-              กู้คืนโดยไม่มี Token (ต้องใส่ LINE อีเมล Facebook OpenAI และ SMS ใหม่)
+              กู้คืนโดยไม่มี Token (ต้องใส่ LINE อีเมล Facebook คีย์ AI และ SMS ใหม่)
             </label>
           </li>
         )}

@@ -52,12 +52,13 @@ def organization_logo(org):
 
 
 def portal_info(cd, db, org):
+    from backend.modules.organization import banner
     return schema.organization_view(org,organization.setting(db,'welcome'),
                                     ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
                                     # The organization's own public articles, then the platform's articles for every customer.
                                     knowledge.list_public(db)+tenants.global_articles(cd,'customer'),organization.setting(db,'response_hours'),
                                     customers.email_ready(cd),contact_channels(db),[c['name'] for c in customers.categories(db)],
-                                    hours.sla_in_opening_time(db))
+                                    hours.sla_in_opening_time(db),banner.config(db))
 
 
 # The customer's own conversations. The viewer is the signed-in customer's session, or a guest of guest web chat

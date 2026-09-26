@@ -1,6 +1,6 @@
 # เชื่อม LINE Official Account, Email และ Facebook Messenger จริง
 
-เข้า **ตั้งค่าองค์กร** (`/#settings`) แท็บ **LINE / Email / Facebook** ด้วยสิทธิ์ผู้ดูแลองค์กร จะมีส่วน **LINE · เชื่อมบัญชีจริง**, **Email · เชื่อมบัญชีจริง** และ **Facebook Messenger · เชื่อมเพจจริง** แต่ละองค์กรมีข้อมูลเชื่อมต่อและคิวของตัวเอง ระบบไม่อนุญาตให้นำ LINE OA อีเมล หรือเพจเดียวกันไปผูกหลายองค์กร และไม่เปลี่ยนบัญชีต้นทางของช่องทางที่ผูกแล้ว
+เข้า **ตั้งค่าองค์กร** (`/#settings`) หมวด **LINE / อีเมล / Facebook / Instagram** ด้วยสิทธิ์ผู้ดูแลองค์กร จะมีส่วน **LINE · เชื่อมบัญชีจริง**, **อีเมล · เชื่อมบัญชีจริง** และ **Facebook และ Instagram · เชื่อมเพจจริง** แต่ละองค์กรมีข้อมูลเชื่อมต่อและคิวของตัวเอง ระบบไม่อนุญาตให้นำ LINE OA อีเมล หรือเพจเดียวกันไปผูกหลายองค์กร และไม่เปลี่ยนบัญชีต้นทางของช่องทางที่ผูกแล้ว
 
 ## LINE OA
 
@@ -39,7 +39,7 @@ SMTP รับข้อความแล้วไม่ได้รับปร
 ## Facebook Messenger
 
 1. สร้างแอปใน [Meta for Developers](https://developers.facebook.com/) เพิ่มสินค้า **Messenger** แล้วเชื่อมเพจ Facebook ขององค์กร สร้าง **Page Access Token** ที่มีสิทธิ์ `pages_messaging` และคัดลอก **App Secret** จาก App settings → Basic
-2. ใน Bookdose เปิดส่วน **Facebook Messenger · เชื่อมเพจจริง** เลือกทีมรับเรื่องใหม่ แล้วกด **บันทึก Facebook** โดยยังไม่ติ๊กเปิดใช้ ระบบจะสร้าง **Callback URL** และ **Verify Token**
+2. ใน Bookdose เปิดส่วน **Facebook และ Instagram · เชื่อมเพจจริง** เลือกทีมรับเรื่องใหม่ แล้วกด **บันทึก Facebook และ Instagram** โดยยังไม่ติ๊กเปิดใช้ ระบบจะสร้าง **Callback URL** และ **Verify Token**
 3. ใน Messenger → Webhooks ของแอป ใส่ Callback URL และ Verify Token ซึ่งต้องเป็น HTTPS สาธารณะ เช่น `https://support.example.com/api/webhooks/facebook/<route-id>` กด Verify and Save แล้ว Subscribe เหตุการณ์ **messages** ของเพจ
 4. กลับมาใส่ Page Access Token และ App Secret ติ๊ก **เปิดรับและส่ง Facebook Messenger** แล้วบันทึก ระบบตรวจ token กับ Graph API ก่อนเปิดใช้ และผูกเพจกับองค์กรนี้ เพจหนึ่งผูกได้องค์กรเดียว และเปลี่ยนเป็นเพจอื่นในช่องทางเดิมไม่ได้
 5. ลูกค้าทักเพจแล้วเรื่องจะเข้า **กล่องข้อความ** พร้อมป้าย **Facebook** ตอบในช่องข้อความตามปกติ แล้วตรวจสถานะการส่งใต้ข้อความ

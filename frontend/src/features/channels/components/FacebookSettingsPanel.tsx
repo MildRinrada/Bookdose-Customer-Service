@@ -15,7 +15,7 @@ import { ChannelField } from '../util';
 import { OutboxBadges } from './ChannelSettingsPanel';
 import { facebookSteps, instagramSteps, SetupSteps } from './SetupSteps';
 
-/* Facebook Messenger and Instagram settings (settings page, LINE / Email / Facebook tab; admins only): the Page token
+/* Facebook Messenger and Instagram settings (settings page, LINE / อีเมล / Facebook / Instagram section; admins only): the Page token
    and app secret, the receiving team, on/off for the Page and for its Instagram account's DMs, a test, and the
    Callback URL + Verify Token to give Meta (the same for both). Markup: modules/channels/facebook-settings. */
 
@@ -37,7 +37,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
   return (
     <section className="card mt" id="channel-facebook">
       <div className="card-header">
-        <h2>Facebook Messenger · เชื่อมเพจจริง</h2>
+        <h2>Facebook และ Instagram · เชื่อมเพจจริง</h2>
         <span className="badge">{c.credentials_configured ? 'บันทึกข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่มีข้อมูลเชื่อมต่อ'}</span>
       </div>
       <Form
@@ -58,7 +58,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
       >
         <SetupSteps steps={facebookSteps(c)} />
         <div className="notice mb">
-          รับข้อความจากเพจ Facebook เข้ากล่องข้อความเดียวกับ Web / LINE / Email แล้วตอบกลับจากที่นี่ ต้องมี Meta App ที่เปิด Messenger และ
+          รับข้อความจากเพจ Facebook เข้ากล่องข้อความเดียวกับแชทบนเว็บ LINE และอีเมล แล้วตอบกลับจากที่นี่ ต้องมี Meta App ที่เปิด Messenger และ
           Page Access Token ที่มีสิทธิ์ pages_messaging · ตอบได้ภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้าตามนโยบาย Messenger · ส่งได้เฉพาะข้อความ
         </div>
         {v.page_name && (
@@ -98,7 +98,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
         </p>
         <div className="flex wrap mt">
           <button className="btn primary" type="submit">
-            บันทึก Facebook
+            บันทึก Facebook และ Instagram
           </button>
           <button
             className="btn"

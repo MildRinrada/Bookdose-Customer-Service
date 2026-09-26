@@ -64,6 +64,12 @@ def save_team_security(req):
 
 
 @require_role('admin')
+def save_support_banner(req):
+    from backend.modules.organization import banner
+    return req.send(200,{'support_banner':banner.save(req.db,req.ctx,req.body)})
+
+
+@require_role('admin')
 def save_quiet_close(req):
     from backend.modules.automation import quiet
     return req.send(200,{'quiet_close':quiet.save(req.db,req.ctx,req.body)})

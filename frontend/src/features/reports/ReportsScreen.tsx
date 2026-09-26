@@ -19,6 +19,7 @@ import { useUiState } from '@/lib/ui-state';
 import { ArticlesCard, BotReportCard } from './components/ReportAi';
 import { HISTORY_NEEDED, HISTORY_WEEKS, unusualDays, type DayFlag } from './analysis';
 import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
+import { ForecastCard } from './components/ReportForecast';
 import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard } from './components/ReportInsights';
 import { BusyHoursCard, ReopenCard, WorkloadCard } from './components/ReportTeam';
 import {
@@ -225,6 +226,7 @@ export function ReportsScreen() {
               <UnusualDays flagged={flagged} compared={unusual.compared} />
             </div>
           </section>
+          <ForecastCard all={all} team={f.team} />
           <div className="report-grid">
             <FirstResponseCard all={all} f={f} />
             <ResolutionCard all={all} f={f} />

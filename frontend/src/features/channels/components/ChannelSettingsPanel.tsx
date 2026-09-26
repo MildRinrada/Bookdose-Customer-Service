@@ -8,7 +8,7 @@ import { Form } from '@/components/ui/Form';
 import { TeamOptions } from '@/components/ui/pickers';
 import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
-import { channelNames } from '@/lib/labels';
+import { settingsParts } from '@/features/settings/labels';
 import { useApi, useInvalidate } from '@/lib/query';
 import { CHANNEL_SETTINGS_PREFIXES, CHANNELS_PATH, saveChannel, saveChannelPresentation, startEmailOAuth, syncEmail, testChannel } from '../api';
 import { deliveryNames, emailAuthModes, smtpPorts } from '../labels';
@@ -16,7 +16,7 @@ import type { ChannelSetting, OutboxCount } from '../types';
 import { ChannelField } from '../util';
 import { emailSteps, lineSteps, SetupSteps } from './SetupSteps';
 
-/* The LINE and Email settings (settings page, LINE / Email / Facebook tab; admins only): credentials, the team that
+/* The LINE and Email settings (settings page, LINE / อีเมล / Facebook / Instagram section; admins only): credentials, the team that
    receives new conversations, on/off, chatbot, a login test, the webhook URL and the delivery queue.
    Markup: modules/channels/channel-settings, channel-field, email-oauth-fields, outbox-badge. */
 
@@ -140,7 +140,8 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
   const run = useRunAction();
   const k = c.kind;
   const v = c.config;
-  const name = channelNames[k];
+  // As the settings page names the part (LINE, อีเมล).
+  const name = settingsParts[k].label;
   const webhookURL = k === 'line' && c.route_id ? `${origin()}/api/webhooks/line/${c.route_id}` : '';
 
   const action = (kind: 'test' | 'sync') =>
@@ -310,7 +311,7 @@ function EmailOAuthFields({ c }: { c: ChannelSetting }) {
 
   return (
     <>
-      <SelectField id="email-auth_mode" label="วิธีเข้าสู่ระบบ Email" name="auth_mode" defaultValue={v.auth_mode || 'password'} onChange={choose}>
+      <SelectField id="email-auth_mode" label="วิธีเข้าสู่ระบบอีเมล" name="auth_mode" defaultValue={v.auth_mode || 'password'} onChange={choose}>
         {Object.entries(emailAuthModes).map(([value, label]) => (
           <option key={value} value={value}>
             {label}
@@ -319,7 +320,7 @@ function EmailOAuthFields({ c }: { c: ChannelSetting }) {
       </SelectField>
       <div className="notice span-2">
         OAuth: ลงทะเบียน Web application ขององค์กรกับ Google Cloud หรือ Microsoft Entra แล้วกรอก Client ID/Secret และ Redirect URI
-        บันทึกโดยยังไม่เปิดช่องทาง จากนั้นกดเชื่อมบัญชี เมื่ออนุญาตสำเร็จจึงเปิดรับและส่ง Email
+        บันทึกโดยยังไม่เปิดช่องทาง จากนั้นกดเชื่อมบัญชี เมื่ออนุญาตสำเร็จจึงเปิดรับและส่งอีเมล
       </div>
       <ChannelField kind="email" name="oauth_client_id" label="OAuth Client ID" value={v.oauth_client_id || ''} />
       <ChannelField kind="email" name="oauth_client_secret" label="OAuth Client Secret" type="password" />

@@ -20,6 +20,9 @@ from backend.utils.dates import now, utc_now
 
 KINDS = ('line','email','facebook')
 NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook Messenger'}
+# Where to fix it, in the words of the settings page (frontend settings/labels: the section, then its part).
+SECTION = 'LINE / อีเมล / Facebook / Instagram'
+PARTS = {'line':'LINE','email':'อีเมล','facebook':'Facebook และ Instagram'}
 BROKEN = ('credentials','oauth_expired','network','host')
 GRACE_MINUTES = 10
 VERIFY_MINUTES = 30
@@ -169,7 +172,7 @@ def _send(mail, admin, organization, kind, change, since, error):
         subject = f'{name} ของ {organization} รับส่งข้อความไม่ได้'
         text = (f'สวัสดีคุณ{admin["name"]}\n\nตั้งแต่ {clock(since)} ระบบรับหรือส่งข้อความทาง {name} ขององค์กร {organization} ไม่ได้\n'
                 f'สาเหตุ: {CHANNEL_ERRORS.get(error,CHANNEL_ERRORS["network"])}\n\n'
-                f'แก้ได้ที่ ตั้งค่าองค์กร → LINE / Email / Facebook → {name}\n{link}\n\n'
+                f'แก้ได้ที่ ตั้งค่าองค์กร → {SECTION} → {PARTS[kind]}\n{link}\n\n'
                 'เมื่อกลับมาใช้ได้ ระบบจะแจ้งอีกครั้ง อีเมลนี้ส่งถึงเจ้าขององค์กรทุกคน\n')
     else:
         subject = f'{name} ของ {organization} กลับมาใช้ได้แล้ว'

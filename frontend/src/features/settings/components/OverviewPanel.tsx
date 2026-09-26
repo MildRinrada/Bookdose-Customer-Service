@@ -21,6 +21,7 @@ import { BusinessHoursCard, savedHours } from './BusinessHoursCard';
 import { CategoriesForm } from './CategoriesForm';
 import { QuietCloseCard } from './QuietCloseCard';
 import { RetentionCard } from './RetentionCard';
+import { SupportBannerCard } from './SupportBannerCard';
 
 /* ตั้งค่า → the organization's own sections, one per page: who it is and its customer link (ProfilePanel), the SLA
    and automatic texts (ServicePanel), the categories customers choose from (CategoriesPanel) and the backup
@@ -34,6 +35,7 @@ export function ProfilePanel() {
   // The screen only renders in the browser (the staff layout waits for the workspace), so window is there.
   const customerUrl = typeof window === 'undefined' ? '' : customerHomeUrl(work.tenant.slug, boot?.home?.slug);
   return (
+    <>
     <section className="card">
       <div className="card-header">
         <h2>ข้อมูลองค์กร</h2>
@@ -92,6 +94,8 @@ export function ProfilePanel() {
         )}
       </div>
     </section>
+    {work.role === 'admin' && <SupportBannerCard />}
+    </>
   );
 }
 

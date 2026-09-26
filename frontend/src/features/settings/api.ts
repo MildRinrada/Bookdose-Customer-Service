@@ -1,4 +1,5 @@
 import { api, download } from '@/lib/api/client';
+import type { SupportBanner } from '@/features/guest/components/OrgBanner';
 import type { TeamSnippet } from '@/lib/types';
 import type { CustomerCategory, InviteBody, MemberBody, SettingsBody } from './types';
 
@@ -38,6 +39,7 @@ export type TeamSecurity = {
 export const saveTeamSecurity = (on: boolean) => api<TeamSecurity>(TEAM_SECURITY_PATH, { require_two_factor: on });
 export type QuietClose ={ enabled: boolean; remind_days: number; close_days: number; remind_message: string; close_message: string };
 export const saveQuietClose = (value: QuietClose) => api<{ quiet_close: QuietClose }>('/api/settings/quiet-close', value);
+export const saveSupportBanner = (value: SupportBanner) => api<{ support_banner: SupportBanner }>('/api/settings/banner', value);
 export const saveBusinessHours =(hours: BusinessHours) => api<{ business_hours: BusinessHours }>('/api/settings/hours', hours);
 
 export type TeamBody = { name: string; description: string };

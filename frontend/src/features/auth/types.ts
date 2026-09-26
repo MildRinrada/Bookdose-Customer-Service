@@ -2,7 +2,8 @@
 
 /** GET /api/public/<code>: what the page says about the organization a customer signs up with (portal schema). */
 export type PublicOrgInfo = {
-  organization: { name: string; slug: string };
+  /** logo: a data: URL, or '' when none is set; banner: the support pages' band (guest/components/OrgBanner). */
+  organization: { name: string; slug: string; logo?: string; banner?: unknown };
   welcome?: string;
   ai_enabled?: boolean;
   response_hours?: number | string;

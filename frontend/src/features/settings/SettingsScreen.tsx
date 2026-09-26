@@ -18,7 +18,7 @@ import { TeamsPanel } from './components/TeamsPanel';
 import { partsOf, settingsPlaceOf, settingsParts, settingsTabs, type SettingsPart, type SettingsTab } from './labels';
 
 /* Organization settings: the sections in the menu on the left (as before), one open on the right. A section with too
-   many fields for one page (ภาพรวมและบริการ, LINE / Email / Facebook) opens as icons of its parts first; an icon opens
+   many fields for one page (ภาพรวมและบริการ, LINE / อีเมล / Facebook / Instagram) opens as icons of its parts first; an icon opens
    that part alone (/settings?tab=<part>), with the way back to the icons above it. Markup: pages/settings.css
    (settings-frame, settings-nav, settings-tiles, settings-part). */
 

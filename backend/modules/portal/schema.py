@@ -2,11 +2,12 @@
 
 
 def organization_view(org, welcome, ai_enabled, articles, response_hours='', email_verification=False, channels=(), categories=(),
-                      response_in_opening_time=False):
+                      response_in_opening_time=False, banner=None):
     """response_hours is the organization's own first-reply promise (response_in_opening_time: counted in its opening
     hours only); email_verification says whether a sign-up must confirm its email (the platform's email is set up);
-    channels are the other ways to reach the team."""
-    return {'organization':{'name':org['name'],'slug':org['slug'],'logo':org.get('logo','')},'welcome':welcome,'ai_enabled':ai_enabled,
+    channels are the other ways to reach the team; banner is the support pages' band (organization/banner.py)."""
+    return {'organization':{'name':org['name'],'slug':org['slug'],'logo':org.get('logo',''),'banner':banner},
+            'welcome':welcome,'ai_enabled':ai_enabled,
             'articles':articles,'response_hours':response_hours,'response_in_opening_time':response_in_opening_time,
             'email_verification':email_verification,'channels':list(channels),'categories':list(categories)}
 

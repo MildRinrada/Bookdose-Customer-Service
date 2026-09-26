@@ -123,6 +123,12 @@ html[data-theme='dark'] .btn.primary .icon,html[data-theme='black'] .btn.primary
 html[data-theme='dark'] img,html[data-theme='black'] img {
   filter: brightness(.94);
 }
+/* The logo is dark ink on nothing, lost on a dark page: the loading screen gives it the white tile the sidebar does. */
+html[data-theme='dark'] .initial-loading img,html[data-theme='black'] .initial-loading img {
+  padding: 4px;
+  border-radius: 12px;
+  background: #fff;
+}
 
 /* The four swatches in the Aa panel: the letter T on that theme's own paper, as an e-reader shows them. */
 .theme-choices {

@@ -16,6 +16,7 @@ import { ORG_CODE } from '@/lib/routes';
 import { guestPages, guestPath } from './api';
 import { GuestNav, SignedInLink } from './components/GuestFrame';
 import { GuestStartForm, linksMessage } from './components/GuestStartForm';
+import { OrgBanner, PoweredBy } from './components/OrgBanner';
 import { useGuestOverview } from './hooks';
 
 /* Starting a chat without an account, like a help center of its own per organization (Zendesk, Freshdesk): a visitor
@@ -29,30 +30,40 @@ import { useGuestOverview } from './hooks';
 
 type PublicArticle = { id: string; title: string; category: string };
 
+/* An organization's page carries its banner (OrgBanner) and Bookdose at the foot; the page for typing a code in
+   belongs to no organization yet, so it keeps the Bookdose header. */
 function Frame({ slug, orgName, children }: { slug?: string; orgName?: string; children: ReactNode }) {
   const account = useCustomerAccount();
   return (
     <main className="guest-page">
-      <header className="guest-head">
-        <Brand />
-        {orgName && <span className="customer-link-org guest-head-org">{orgName}</span>}
-        <div className="guest-head-actions">
-          {slug && <GuestNav slug={slug} current="chat" />}
-          {slug ? (
-            <SignedInLink slug={slug} />
-          ) : (
-            !account.data?.signed_in && (
+      {slug ? (
+        <OrgBanner slug={slug} name={orgName ?? ''}>
+          <GuestNav slug={slug} current="chat" />
+          <SignedInLink slug={slug} />
+          <TextSizeMenu />
+        </OrgBanner>
+      ) : (
+        <header className="guest-head">
+          <Brand />
+          <div className="guest-head-actions">
+            {!account.data?.signed_in && (
               <Link className="btn subtle" href="/login">
                 เข้าสู่ระบบ
               </Link>
-            )
-          )}
-          <TextSizeMenu />
-        </div>
-      </header>
+            )}
+            <TextSizeMenu />
+          </div>
+        </header>
+      )}
       {children}
       <p className="guest-foot tiny muted">
         <Icon name="lock" /> ข้อความส่งถึงทีมงาน{orgName ? `ของ ${orgName}` : 'ขององค์กร'}โดยตรง · อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+        {slug && (
+          <>
+            {' '}
+            · <PoweredBy />
+          </>
+        )}
       </p>
     </main>
   );
@@ -173,7 +184,8 @@ export function SupportStartScreen({ slug }: { slug: string }) {
     );
   }
   return (
-    <Frame slug={overview.data || info.data ? slug : undefined} orgName={name}>
+    // The banner from the start (it fills in when the organization's details come); none for a code that is no organization.
+    <Frame slug={info.error?.status === 404 ? undefined : slug} orgName={name}>
       {body}
     </Frame>
   );

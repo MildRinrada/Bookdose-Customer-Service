@@ -92,6 +92,27 @@ class OrgProfileTests(unittest.TestCase):
     def test_an_organization_without_a_picture_answers_404(self):
         self.assertEqual(self.admin.call('/api/public/alpha/logo')[0],404)
 
+    def test_the_support_pages_banner_is_the_organizations_own_choice(self):
+        """แบนเนอร์หน้าช่วยเหลือ: a line under the name and a colour from the set, set by the owner, shown on the public
+        page (so a customer knows whom they are writing to); the default before anyone chooses."""
+        visitor,_ = self.visitor()
+        self.assertEqual(self.ok(visitor,'/api/public/alpha')['organization']['banner'],{'tagline':'','tone':'stone'})
+        saved = self.ok(self.admin,'/api/settings/banner',{'tagline':'  ฝ่ายดูแลสมาชิก\nตอบทุกวัน  ','tone':'forest'})['support_banner']
+        self.assertEqual(saved,{'tagline':'ฝ่ายดูแลสมาชิก ตอบทุกวัน','tone':'forest'})   # one line, trimmed
+        self.assertEqual(self.ok(visitor,'/api/public/alpha')['organization']['banner'],saved)
+        self.assertEqual(json.loads(self.ok(self.admin,'/api/workspace')['settings']['support_banner']),saved)
+        detail = ' '.join(e['detail'] or '' for e in self.ok(self.admin,'/api/audit')['events'])
+        self.assertIn('แบนเนอร์หน้าช่วยเหลือ (สีเขียวเข้ม · ฝ่ายดูแลสมาชิก ตอบทุกวัน)',detail)
+        # Only the set's colours, a short line, and only the owner.
+        for bad in ({'tagline':'','tone':'purple'},{'tagline':'','tone':'#ff00ff'},{'tagline':'ก'*81,'tone':'mint'},{'tagline':5,'tone':'mint'},{'tone':'mint','tagline':None}):
+            self.assertEqual(self.admin.call('/api/settings/banner',bad)[0],400,bad)
+        agent,_ = self.create_member()
+        self.assertEqual(agent.call('/api/settings/banner',{'tagline':'','tone':'mint'})[0],403)
+        self.assertEqual(self.ok(visitor,'/api/public/alpha')['organization']['banner'],saved)
+        # Organization B keeps its own.
+        self.second_organization()
+        self.assertEqual(json.loads(self.ok(self.admin,'/api/workspace')['settings'].get('support_banner') or '{}').get('tone'),None)
+
     def test_the_members_own_list_of_organizations_says_which_have_a_picture(self):
         self.with_logo()
         joined = self.ok(self.admin,'/api/bootstrap')['memberships']

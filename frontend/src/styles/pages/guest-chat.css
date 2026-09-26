@@ -101,11 +101,12 @@
   padding: 24px 16px;
 }
 
-/* The chat card: the list of the visitor's chats (when there are several) beside the open chat */
+/* The chat card: the list of the visitor's chats (when there are several) beside the open chat. Its height leaves the
+   window room for the organization's banner (84px) and the line at the foot. */
 .guest-chat {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  height: min(880px, calc(100dvh - 148px));
+  height: min(880px, calc(100dvh - 188px));
   min-height: 520px;
 }
 .guest-chat.has-list {
@@ -895,7 +896,8 @@
   .guest-chat,
   .guest-chat.has-list {
     grid-template-columns: minmax(0, 1fr);
-    height: calc(100dvh - 110px);
+    /* The banner on a phone: the organization's row, then its links (124px). */
+    height: calc(100dvh - 140px);
     min-height: 440px;
   }
   .guest-chat.has-list:not(.show-list) .guest-list,
@@ -1197,4 +1199,137 @@ body:has(.guest-embed) {
 }
 .guest-reach-text {
   color: var(--muted);
+}
+
+/* แบนเนอร์หน้าช่วยเหลือ (guest/components/OrgBanner): the organization's own band on its support pages, and the same
+   band as a sample in ตั้งค่า → ข้อมูลองค์กร. Each colour sets its background, its words and its quieter words; each
+   has a dark twin for the dark and black themes, and every pair stays readable. The page's links sit in the band, so
+   their quiet state and the page you are on take the band's colours. */
+:is(.org-banner,.banner-swatch) {
+  --banner-bg: #f1f1ee;
+  --banner-ink: #26292d;
+  --banner-soft: #56605b;
+}
+:is(.org-banner,.banner-swatch).tone-mint { --banner-bg: #e2f1e9; --banner-ink: #17402f; --banner-soft: #2f5e4a; }
+:is(.org-banner,.banner-swatch).tone-sky { --banner-bg: #e3eef8; --banner-ink: #16344f; --banner-soft: #335673; }
+:is(.org-banner,.banner-swatch).tone-sand { --banner-bg: #f6ecd6; --banner-ink: #4a340c; --banner-soft: #6a5021; }
+:is(.org-banner,.banner-swatch).tone-rose { --banner-bg: #f8e5e3; --banner-ink: #5c1f1b; --banner-soft: #7a3a35; }
+:is(.org-banner,.banner-swatch).tone-forest { --banner-bg: #1f5c46; --banner-ink: #fff; --banner-soft: #d3eadf; }
+:is(.org-banner,.banner-swatch).tone-navy { --banner-bg: #1f3a5f; --banner-ink: #fff; --banner-soft: #d5e2f2; }
+:is(.org-banner,.banner-swatch).tone-charcoal { --banner-bg: #26292d; --banner-ink: #fff; --banner-soft: #d6d8da; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch) { --banner-bg: #2c3136; --banner-ink: #eceeee; --banner-soft: #b8bfbd; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-mint { --banner-bg: #1b3229; --banner-ink: #d6f0e3; --banner-soft: #a9cdbb; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-sky { --banner-bg: #1b2b3b; --banner-ink: #d5e6f6; --banner-soft: #a8c2da; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-sand { --banner-bg: #352b17; --banner-ink: #f3e2bd; --banner-soft: #d0bc93; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-rose { --banner-bg: #3b2321; --banner-ink: #f6d6d2; --banner-soft: #d3aaa5; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-forest { --banner-bg: #22614a; --banner-ink: #fff; --banner-soft: #d3eadf; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-navy { --banner-bg: #264670; --banner-ink: #fff; --banner-soft: #d5e2f2; }
+html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch).tone-charcoal { --banner-bg: #3a3f44; --banner-ink: #fff; --banner-soft: #d6d8da; }
+.org-banner {
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--banner-bg);
+  color: var(--banner-ink);
+}
+.org-banner-id {
+  display: flex;
+  flex: 1 1 280px;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+/* The logo on white whatever the band: most logos are drawn for a white page. */
+.org-banner-logo {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #fff;
+  object-fit: contain;
+}
+.org-banner-initials {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: var(--banner-ink);
+  color: var(--banner-bg);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.org-banner-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.org-banner-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.org-banner-tagline {
+  color: var(--banner-soft);
+  font-size: .95rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.org-banner .guest-head-actions .btn.subtle {
+  color: var(--banner-ink);
+}
+.org-banner .guest-head-actions .btn.subtle:hover {
+  background: color-mix(in srgb,var(--banner-ink) 12%,transparent);
+}
+.org-banner .guest-head-actions .guest-nav .btn.active {
+  border-color: var(--banner-ink);
+  background: var(--banner-ink);
+  color: var(--banner-bg);
+}
+.org-banner .guest-head-actions .guest-nav .btn.active:hover {
+  background: color-mix(in srgb,var(--banner-ink) 85%,var(--banner-bg));
+}
+/* Bookdose at the foot: small, and its logo on white so it does not vanish on a dark page. */
+.guest-foot {
+  flex-wrap: wrap;
+}
+.powered-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.powered-by:hover,
+.powered-by:focus-visible {
+  color: var(--ink);
+  text-decoration: none;
+}
+.powered-by img {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 1px;
+  border-radius: 5px;
+  background: #fff;
+}
+@media (max-width: 760px) {
+  .org-banner {
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+  .org-banner-id {
+    gap: 12px;
+  }
+  .org-banner-logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+  .org-banner-name {
+    font-size: 1.12rem;
+  }
+  .org-banner-tagline {
+    font-size: .88rem;
+  }
 }

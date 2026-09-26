@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
-import { Brand } from '@/components/shell/chrome';
 import { TextSizeMenu } from '@/components/shell/TextSize';
 import { EmptyState, ErrorState, InitialLoading, PageLoading } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
@@ -29,6 +28,7 @@ import { FollowCard } from './components/FollowCard';
 import { GuestNav, SignedInLink } from './components/GuestFrame';
 import { GuestClaimBanners } from './components/GuestClaimBanners';
 import { GuestMenu } from './components/GuestMenu';
+import { OrgBanner, PoweredBy } from './components/OrgBanner';
 import { GuestStartForm, linksMessage } from './components/GuestStartForm';
 import { useGuestOverview, useGuestSession } from './hooks';
 import { byNewest, isWidgetTheme, unreadCount } from './labels';
@@ -126,21 +126,17 @@ function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
   return (
     <main className={frameClass} data-theme={embed ? theme : undefined}>
       {!embed && (
-        <header className="guest-head">
-          <Brand />
-          {orgName && <span className="customer-link-org guest-head-org">{orgName}</span>}
-          <div className="guest-head-actions">
-            <GuestNav slug={slug} current="chat" />
-            <SignedInLink slug={slug} />
-            <TextSizeMenu />
-          </div>
-        </header>
+        <OrgBanner slug={slug} name={orgName}>
+          <GuestNav slug={slug} current="chat" />
+          <SignedInLink slug={slug} />
+          <TextSizeMenu />
+        </OrgBanner>
       )}
       {!embed && <SignedInClaims slug={slug} />}
       {body}
       {!embed && (
         <p className="guest-foot tiny muted">
-          <Icon name="lock" /> ข้อความส่งถึงทีมงานของ {orgName || 'องค์กร'} โดยตรง · อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+          <Icon name="lock" /> ข้อความส่งถึงทีมงานของ {orgName || 'องค์กร'} โดยตรง · อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท · <PoweredBy />
         </p>
       )}
     </main>

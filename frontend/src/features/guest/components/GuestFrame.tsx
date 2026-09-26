@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
-import { Brand } from '@/components/shell/chrome';
 import { TextSizeMenu } from '@/components/shell/TextSize';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { guestPages } from '../api';
+import { OrgBanner, PoweredBy } from './OrgBanner';
 
-/* The slim page around a visitor's pages of one organization without signing in (/support/<org>/…: its chats, FAQ and a case):
-   the brand, the organization, links between the chat and the FAQ, sign-in, and the text size. Markup: guest-page,
-   guest-head. */
+/* The page around a visitor's pages of one organization without signing in (/support/<org>/…: its chats, FAQ and a case):
+   the organization's banner with links between the chat and the FAQ, sign-in and the text size in it, and Bookdose at
+   the foot. Markup: guest-page, org-banner, guest-foot. */
 
 /** A signed-in customer can go to their own chats instead (the organization joins their list via ?org=). */
 export function SignedInLink({ slug }: { slug: string }) {
@@ -48,16 +48,15 @@ export function GuestNav({ slug, current }: { slug: string; current: 'chat' | 'f
 export function GuestFrame({ slug, orgName, current, children }: { slug: string; orgName: string; current: 'faq' | 'case'; children: ReactNode }) {
   return (
     <main className="guest-page guest-page-wide">
-      <header className="guest-head">
-        <Brand />
-        {orgName && <span className="customer-link-org guest-head-org">{orgName}</span>}
-        <div className="guest-head-actions">
-          <GuestNav slug={slug} current={current} />
-          <SignedInLink slug={slug} />
-          <TextSizeMenu />
-        </div>
-      </header>
+      <OrgBanner slug={slug} name={orgName}>
+        <GuestNav slug={slug} current={current} />
+        <SignedInLink slug={slug} />
+        <TextSizeMenu />
+      </OrgBanner>
       {children}
+      <p className="guest-foot tiny muted">
+        <PoweredBy />
+      </p>
     </main>
   );
 }

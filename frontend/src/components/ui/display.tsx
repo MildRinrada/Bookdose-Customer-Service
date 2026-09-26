@@ -94,9 +94,10 @@ export function StatCard({
 
 /** One bar of a count chart (overview and reports: cases per day; system: API requests per hour).
     Markup: pages/dashboard/chart-column. */
-export function ChartColumn({ tip, count, max, day }: { tip: string; count: number; max: number; day: ReactNode }) {
+/** One day's column. `tone` marks a day the report found unusual ('high' busier, 'low' quieter than usual). */
+export function ChartColumn({ tip, count, max, day, tone }: { tip: string; count: number; max: number; day: ReactNode; tone?: 'high' | 'low' }) {
   return (
-    <div className="chart-col" tabIndex={0} role="img" aria-label={tip} data-tip={tip}>
+    <div className={`chart-col${tone ? ` ${tone}` : ''}`} tabIndex={0} role="img" aria-label={tip} data-tip={tip}>
       <progress value={count} max={max} aria-hidden="true" />
       <small aria-hidden="true">{day}</small>
     </div>

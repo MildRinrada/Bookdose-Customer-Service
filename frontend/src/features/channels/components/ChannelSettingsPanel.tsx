@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChangeEvent } from 'react';
+import { Fragment, useState, type ChangeEvent } from 'react';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { useRunAction } from '@/components/ui/actions';
 import { NumberField, SelectField } from '@/components/ui/fields';
@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { channelNames } from '@/lib/labels';
 import { useApi, useInvalidate } from '@/lib/query';
-import { CHANNEL_SETTINGS_PREFIXES, CHANNELS_PATH, saveChannel, startEmailOAuth, syncEmail, testChannel } from '../api';
+import { CHANNEL_SETTINGS_PREFIXES, CHANNELS_PATH, saveChannel, saveChannelPresentation, startEmailOAuth, syncEmail, testChannel } from '../api';
 import { deliveryNames, emailAuthModes, smtpPorts } from '../labels';
 import type { ChannelSetting, OutboxCount } from '../types';
 import { ChannelField } from '../util';
@@ -30,9 +30,95 @@ export function ChannelSettingsPanel({ kind }: { kind?: ChannelSetting['kind'] }
   return (
     <>
       {channels.data.filter((c) => !kind || c.kind === kind).map((c) => (
-        <ChannelCard key={c.kind} c={c} />
+        <Fragment key={c.kind}>
+          <ChannelCard c={c} />
+          {c.route_id && <ChannelWordsCard c={c} />}
+        </Fragment>
       ))}
     </>
+  );
+}
+
+/* What customers read from the channel itself: email's sender name and signature, LINE's welcome for a new friend.
+   Saved on its own (PATCH …/presentation), so changing a word never checks the account again or cancels a reply
+   waiting to go out, as saving the connection above does. */
+function ChannelWordsCard({ c }: { c: ChannelSetting }) {
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const v = c.config;
+  const [sender, setSender] = useState(v.sender_name || '');
+  const email = c.kind === 'email';
+  return (
+    <section className="card mt" id={`channel-${c.kind}-words`}>
+      <div className="card-header">
+        <div>
+          <h2>{email ? 'ชื่อผู้ส่งและลายเซ็น' : 'ข้อความต้อนรับเพื่อนใหม่'}</h2>
+          <p>
+            {email
+              ? 'ลูกค้าเห็นในทุกอีเมลที่ทีมตอบกลับ · บันทึกแยกจากการเชื่อมต่อด้านบน ข้อความที่รอส่งจะไม่ถูกยกเลิก'
+              : 'ส่งทันทีเมื่อลูกค้าเพิ่มบัญชี LINE นี้เป็นเพื่อน เป็นการตอบกลับของ LINE จึงไม่นับโควตาข้อความของบัญชี'}
+          </p>
+        </div>
+      </div>
+      <Form
+        key={JSON.stringify([v.sender_name, v.signature, v.welcome_enabled, v.welcome_message])}
+        className="card-body"
+        onSubmit={async (values, form) => {
+          await saveChannelPresentation(
+            c.kind,
+            email
+              ? { sender_name: values.sender_name ?? '', signature: values.signature ?? '' }
+              : {
+                  welcome_enabled: (form.elements.namedItem('welcome_enabled') as HTMLInputElement).checked,
+                  welcome_message: values.welcome_message ?? '',
+                },
+          );
+          toast(email ? 'บันทึกชื่อผู้ส่งและลายเซ็นแล้ว' : 'บันทึกข้อความต้อนรับแล้ว');
+          await refresh(...CHANNEL_SETTINGS_PREFIXES);
+        }}
+      >
+        {email ? (
+          <>
+            <div className="field">
+              <label htmlFor="email-sender_name">ชื่อผู้ส่ง</label>
+              <input
+                id="email-sender_name"
+                name="sender_name"
+                maxLength={80}
+                value={sender}
+                onChange={(e) => setSender(e.target.value)}
+                placeholder="ชื่อที่ลูกค้าเห็นแทนอีเมล"
+              />
+              <p className="tiny muted">
+                ลูกค้าจะเห็นผู้ส่งเป็น <strong>{sender.trim() ? `${sender.trim()} <${v.address || 'อีเมลรับเรื่อง'}>` : v.address || 'อีเมลรับเรื่อง'}</strong>
+              </p>
+            </div>
+            <div className="field">
+              <label htmlFor="email-signature">ลายเซ็นท้ายอีเมล</label>
+              <textarea id="email-signature" name="signature" rows={4} maxLength={600} defaultValue={v.signature || ''} />
+              <p className="tiny muted">ต่อท้ายทุกอีเมลที่ตอบลูกค้า เช่น ชื่อทีม เบอร์โทร และเวลาทำการ ขึ้นบรรทัดใหม่ได้ · ไม่ใส่ก็ได้</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="check">
+              <input type="checkbox" className="switch" name="welcome_enabled" defaultChecked={Boolean(v.welcome_enabled)} />
+              ส่งข้อความต้อนรับเมื่อมีคนเพิ่มเพื่อน
+            </label>
+            <div className="field mt">
+              <label htmlFor="line-welcome_message">ข้อความต้อนรับ</label>
+              <textarea id="line-welcome_message" name="welcome_message" rows={4} maxLength={1000} defaultValue={v.welcome_message || ''} />
+              <p className="tiny muted">
+                ถ้าตั้งข้อความทักทายไว้ใน LINE Official Account Manager ด้วย ลูกค้าจะได้ 2 ข้อความ ให้ปิดฝั่งนั้น หรือเลือกใช้ที่นี่ที่เดียว
+              </p>
+            </div>
+          </>
+        )}
+        <button className="btn primary" type="submit">
+          {email ? 'บันทึกชื่อผู้ส่งและลายเซ็น' : 'บันทึกข้อความต้อนรับ'}
+        </button>
+      </Form>
+    </section>
   );
 }
 

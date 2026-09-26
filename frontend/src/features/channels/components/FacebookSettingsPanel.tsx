@@ -1,5 +1,6 @@
 'use client';
 
+import { Icon } from '@/components/Icon';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { SelectField } from '@/components/ui/fields';
@@ -12,11 +13,11 @@ import { CHANNEL_SETTINGS_PREFIXES, FACEBOOK_PATH, saveFacebook, testFacebook } 
 import type { FacebookSetting } from '../types';
 import { ChannelField } from '../util';
 import { OutboxBadges } from './ChannelSettingsPanel';
-import { facebookSteps, SetupSteps } from './SetupSteps';
+import { facebookSteps, instagramSteps, SetupSteps } from './SetupSteps';
 
-/* Facebook Messenger settings (settings page, LINE / Email / Facebook tab; admins only): the Page token and app
-   secret, the receiving team, on/off, a test, and the Callback URL + Verify Token to give Meta.
-   Markup: modules/channels/facebook-settings. */
+/* Facebook Messenger and Instagram settings (settings page, LINE / Email / Facebook tab; admins only): the Page token
+   and app secret, the receiving team, on/off for the Page and for its Instagram account's DMs, a test, and the
+   Callback URL + Verify Token to give Meta (the same for both). Markup: modules/channels/facebook-settings. */
 
 export function FacebookSettingsPanel() {
   const facebook = useApi<FacebookSetting>(FACEBOOK_PATH);
@@ -45,8 +46,13 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
         data-form="facebook-settings"
         onSubmit={async (values, form) => {
           const box = (key: string) => form.elements.namedItem(key) as HTMLInputElement;
-          await saveFacebook({ ...values, enabled: box('enabled').checked, remove_credentials: box('remove_credentials').checked });
-          toast('บันทึก Facebook Messenger แล้ว');
+          await saveFacebook({
+            ...values,
+            enabled: box('enabled').checked,
+            instagram_enabled: box('instagram_enabled').checked,
+            remove_credentials: box('remove_credentials').checked,
+          });
+          toast('บันทึก Facebook และ Instagram แล้ว');
           await refresh(...CHANNEL_SETTINGS_PREFIXES);
         }}
       >
@@ -58,6 +64,13 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
         {v.page_name && (
           <p className="small">
             <strong>เพจที่เชื่อม:</strong> {v.page_name} <span className="muted">(Page ID {v.page_id})</span>
+            {v.instagram_username && (
+              <>
+                {' · '}
+                <strong>Instagram:</strong> @{v.instagram_username}
+                {!c.instagram.on && <span className="muted"> (ปิดรับ DM อยู่)</span>}
+              </>
+            )}
           </p>
         )}
         <div className="form-grid">
@@ -69,6 +82,10 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
           <label className="check">
             <input name="enabled" type="checkbox" className="switch" defaultChecked={c.enabled} />
             เปิดรับและส่ง Facebook Messenger
+          </label>
+          <label className="check">
+            <input name="instagram_enabled" type="checkbox" className="switch" defaultChecked={v.instagram_enabled} />
+            รับและตอบ DM Instagram ของบัญชีที่ผูกกับเพจนี้
           </label>
           <label className="check">
             <input name="remove_credentials" type="checkbox" />
@@ -113,8 +130,9 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
               </button>
             </div>
             <p>
-              ใส่ทั้งสองค่าใน Meta for Developers → Messenger → Webhooks แล้ว Subscribe เหตุการณ์ messages ของเพจ ถ้าเปิดผ่าน localhost
-              ให้ใช้โดเมน HTTPS สาธารณะที่ชี้มายังเซิร์ฟเวอร์นี้แทน
+              ใส่ทั้งสองค่าใน Meta for Developers → Messenger → Webhooks แล้ว Subscribe เหตุการณ์ messages ของเพจ ถ้ารับ DM Instagram ด้วย
+              ให้ใส่ค่าเดียวกันที่ Webhooks ของ Instagram แล้วติ๊ก messages · ถ้าเปิดผ่าน localhost ให้ใช้โดเมน HTTPS
+              สาธารณะที่ชี้มายังเซิร์ฟเวอร์นี้แทน
             </p>
           </div>
         )}
@@ -125,6 +143,18 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
           </p>
           <OutboxBadges outbox={c.outbox} />
         </div>
+        {v.instagram_enabled && (
+          <div className="instagram-setup mt">
+            <h3>
+              <Icon name="instagram" /> ขั้นตอนรับ DM Instagram
+            </h3>
+            <SetupSteps steps={instagramSteps(c)} />
+            <p className="small muted">
+              DM ล่าสุด: {c.instagram.last_received ? date(c.instagram.last_received, true) : '-'} · ตอบได้ไม่เกิน 1,000 ตัวอักษร ภายใน 24 ชั่วโมงหลัง DM ล่าสุดของลูกค้า
+            </p>
+            <OutboxBadges outbox={c.instagram.outbox} />
+          </div>
+        )}
       </Form>
     </section>
   );

@@ -19,7 +19,7 @@ from backend.modules.platform import model, orghealth, repository
 from backend.utils.dates import after, now, utc_now
 from backend.utils.validation import require
 
-CHANNEL_NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook'}
+CHANNEL_NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook','instagram':'Instagram'}
 STUCK_MINUTES = 15            # a reply still waiting to go out after this long is worth a look
 KEY_SAVED = 'secret_key_saved'
 LEVELS = {'critical':0,'warning':1,'info':2}
@@ -57,7 +57,11 @@ def tenant_channels(db):
     the organization's own overview, ตั้งค่าองค์กรให้ครบ)."""
     from backend.modules.channels import repository as channels
     items = [_channel(kind,channels.find_setting(db,kind),_outbox(db,kind)) for kind in ('line','email')]
-    items.append(_channel('facebook',channels.find_facebook_setting(db),_outbox(db,'facebook')))
+    page = channels.find_facebook_setting(db)
+    items.append(_channel('facebook',page,_outbox(db,'facebook')))
+    # Instagram rides on the Page's connection: on when the Page is on and Instagram is turned on.
+    instagram = dict(page,enabled=int(bool(page['enabled'] and page['config'].get('instagram_enabled')))) if page else None
+    items.append(_channel('instagram',instagram,_outbox(db,'instagram')))
     return [c for c in items if c['enabled'] or c['waiting'] or c['failed'] or c['unknown']]
 
 

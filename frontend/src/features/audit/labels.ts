@@ -14,6 +14,7 @@ export const auditEventLabels: Record<string, string> = {
   'channel.unknown': 'ไม่ทราบผลการส่งข้อความ',
   'line.join': 'เข้าร่วมกลุ่ม LINE',
   'line.leave': 'ออกจากกลุ่ม LINE',
+  'line.follow': 'ส่งข้อความต้อนรับเพื่อนใหม่ LINE',
   'ai.handoff': 'โอนเคสให้เจ้าหน้าที่ดูแลต่อ',
   'ai.completed': 'AI ประมวลผลคำตอบสำเร็จ',
   'ai.queued': 'นำคำขอ AI เข้าคิว',

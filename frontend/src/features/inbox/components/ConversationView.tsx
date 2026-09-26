@@ -146,6 +146,9 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
       {c.channel === 'facebook' && (
         <div className="notice">Facebook Messenger: ตอบได้เฉพาะข้อความ ไม่เกิน 2,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
       )}
+      {c.channel === 'instagram' && (
+        <div className="notice">Instagram: ตอบได้เฉพาะข้อความ ไม่เกิน 1,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
+      )}
       <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
       <ColleaguesHere conversationId={c.id} />
       <Composer

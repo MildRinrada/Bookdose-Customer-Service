@@ -206,5 +206,5 @@ async function page(request: NextRequest) {
 
 export const config = {
   // widget.js is a plain script other websites load: no page policy on it.
-  matcher: [{ source: '/((?!_next/static|_next/image|favicon.svg|icon.svg|logo.png|widget.js).*)' }],
+  matcher: [{ source: '/((?!_next/static|_next/image|favicon.svg|icon.svg|logo.png|notify-icon.png|widget.js).*)' }],
 };

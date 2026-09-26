@@ -20,7 +20,7 @@ export type Contact = {
   guest?: GuestReach | null;
   /** Their answered satisfaction surveys (average 1-5), or null before any answer. */
   satisfaction?: { average: number; count: number; last: string } | null;
-  /** The channel they wrote on most (web, line, email, facebook, manual). */
+  /** The channel they wrote on most (web, line, email, facebook, instagram, manual). */
   main_channel?: string | null;
   /** How the team looks after them (the edit form's care profile), or null before it was first saved. */
   profile?: ContactProfile | null;
@@ -29,7 +29,7 @@ export type Contact = {
 /** contact_profiles: the team's tags, a warning shown on the customer's chats and cases, contact preferences, the
     language to answer in, consent to be contacted back and a data deletion request (who / when kept by the server). */
 export type ContactProfile = {
-  preferred_channel: '' | 'web' | 'line' | 'facebook' | 'email' | 'phone';
+  preferred_channel: '' | 'web' | 'line' | 'facebook' | 'instagram' | 'email' | 'phone';
   contact_hours: string;
   language: '' | 'th' | 'en';
   tags: string[];

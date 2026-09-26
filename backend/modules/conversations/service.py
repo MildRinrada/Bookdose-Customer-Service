@@ -18,7 +18,7 @@ from backend.utils.security import uid
 from backend.utils.validation import require
 
 # Channels whose replies are delivered by a provider (queued), rather than read on the support page.
-EXTERNAL = ('line','email','facebook')
+EXTERNAL = ('line','email','facebook','instagram')
 
 
 def visible_conversation(db, ctx, conversation_id):
@@ -105,7 +105,7 @@ def store_staff_message(db, ctx, conv, kind, body, cd=None):
     replies are queued for delivery, a human reply stops the bot, and a note records its @mentions."""
     require(kind=='note' or conv['channel'] in ('web',)+EXTERNAL,'เคสที่บันทึกเองรองรับบันทึกภายใน กรุณารับเรื่องผ่านหน้าลูกค้าเพื่อสนทนากับลูกค้า')
     external = kind=='reply' and conv['channel'] in EXTERNAL
-    provider = facebook if conv['channel']=='facebook' else channels
+    provider = facebook if conv['channel'] in facebook.KINDS else channels
     author = ctx['name']
     if kind=='reply':
         # What the customer sees of the member: the name they chose for customers, and their signature under it.
@@ -222,7 +222,7 @@ def message_list(db, conversation_id, public=False):
 # thread would stop matching what happened. So it is refused and says why.
 CANNOT_RECALL = ('ข้อความที่ส่งออกทาง {channel} เรียกคืนไม่ได้ ลูกค้าได้รับฉบับเดิมไปแล้ว '
                  'แก้ไขหรือลบที่นี่จะทำให้สิ่งที่ทีมเห็นไม่ตรงกับสิ่งที่ลูกค้าเห็น · ส่งข้อความใหม่เพื่อแก้ความเข้าใจแทน')
-CHANNEL_NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook'}
+CHANNEL_NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook','instagram':'Instagram'}
 
 
 def _own_message(db, ctx, conversation_id, message_id, action):

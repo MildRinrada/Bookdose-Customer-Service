@@ -28,7 +28,7 @@ from backend.utils.validation import require
 
 SYSTEM_ACTOR = 'ระบบอัตโนมัติ'
 DONE = ('resolved','closed')
-REPLYABLE = ('web','line','email','facebook')   # channels a reply reaches the customer on
+REPLYABLE = ('web','line','email','facebook','instagram')   # channels a reply reaches the customer on
 SURVEY_DAYS = 7                                  # a survey answer is accepted this long after it was sent
 TEAM_MENTION = '@ทีม'                            # mentions everyone in the conversation's team
 
@@ -235,7 +235,7 @@ def escalate_due(cd, db, tenant_id):
 # Sending to the customer through the conversation's channel
 def _check_external(db, tenant_id, conv, body):
     from backend.modules.channels import facebook, service as channels
-    if conv['channel']=='facebook':
+    if conv['channel'] in facebook.KINDS:
         facebook.check_reply(db,tenant_id,conv,body)
     elif conv['channel'] in ('line','email'):
         channels.check_reply(db,tenant_id,conv,body)
@@ -243,7 +243,7 @@ def _check_external(db, tenant_id, conv, body):
 
 def _enqueue_external(db, ctx, conv, message_id):
     from backend.modules.channels import facebook, service as channels
-    if conv['channel']=='facebook':
+    if conv['channel'] in facebook.KINDS:
         facebook.enqueue_reply(db,ctx,conv,message_id)
     elif conv['channel'] in ('line','email'):
         channels.enqueue_reply(db,ctx,conv,message_id)

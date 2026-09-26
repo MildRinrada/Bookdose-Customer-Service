@@ -76,6 +76,36 @@ def line_options(body, cfg):
     cfg['public_base_url'] = public_origin(text_field(body,'public_base_url',cfg.get('public_base_url',''),500))
 
 
+SENDER_NAME_MAX = 80
+SIGNATURE_MAX = 600
+WELCOME_MAX = 1000
+
+
+def note_field(body, key, default, maximum, label):
+    """Several lines a customer reads (a signature, a welcome): line breaks and tabs kept, other control characters
+    refused, trailing spaces of each line dropped."""
+    value = body.get(key,default)
+    require(isinstance(value,str),f'{label}ไม่ถูกต้อง')
+    value = value.replace('\r\n','\n')
+    require(len(value)<=maximum,f'{label}ยาวได้ไม่เกิน {maximum:,} ตัวอักษร')
+    require(not any(ord(c)<32 and c not in '\n\t' for c in value),f'{label}มีอักขระที่ใช้ไม่ได้')
+    return '\n'.join(line.rstrip() for line in value.strip().split('\n'))
+
+
+def presentation(kind, body, cfg):
+    """The words customers read from the channel itself, as {config key: value}: for email the sender's name and the
+    signature under every reply, for LINE the welcome a customer gets on adding the account as a friend."""
+    if kind=='email':
+        name = text_field(body,'sender_name',cfg.get('sender_name',''),SENDER_NAME_MAX)
+        require(not any(c in name for c in '<>"@'),'ชื่อผู้ส่งใช้เครื่องหมาย < > " หรือ @ ไม่ได้')
+        return {'sender_name':name,'signature':note_field(body,'signature',cfg.get('signature',''),SIGNATURE_MAX,'ลายเซ็น')}
+    welcome = body.get('welcome_enabled',cfg.get('welcome_enabled',False))
+    require(type(welcome) is bool,'สถานะข้อความต้อนรับไม่ถูกต้อง')
+    message = note_field(body,'welcome_message',cfg.get('welcome_message',''),WELCOME_MAX,'ข้อความต้อนรับ')
+    require(not welcome or message,'กรุณาพิมพ์ข้อความต้อนรับก่อนเปิดใช้')
+    return {'welcome_enabled':welcome,'welcome_message':message}
+
+
 def chatbot_flag(body, cfg):
     bot = body.get('chatbot_enabled',cfg.get('chatbot_enabled',False))
     require(type(bot) is bool,'สถานะ Chatbot ไม่ถูกต้อง')
@@ -110,19 +140,22 @@ def line_webhook_events(raw, identity):
     return events
 
 
-def facebook_events(raw, page_id):
-    """The messaging events of a Page webhook addressed to the connected Page; entries for other Pages are ignored."""
+def facebook_events(raw, page_id, instagram_id=None):
+    """[(platform, event)] of a Meta webhook: 'facebook' for the connected Page's Messenger events (object 'page'),
+    'instagram' for its connected Instagram account's DMs (object 'instagram', entry id = that account) when
+    instagram_id is given. Entries for any other Page or account are ignored."""
     try:
         data = json.loads(raw)
     except (ValueError,UnicodeError):
         raise APIError(400,'Webhook JSON ไม่ถูกต้อง') from None
-    require(isinstance(data,dict) and data.get('object')=='page','Webhook ไม่ใช่เหตุการณ์ของเพจ Facebook')
+    require(isinstance(data,dict) and data.get('object') in ('page','instagram'),'Webhook ไม่ใช่เหตุการณ์ของเพจ Facebook หรือ Instagram')
+    platform,owner = ('instagram',instagram_id) if data['object']=='instagram' else ('facebook',page_id)
     entries = data.get('entry')
     require(isinstance(entries,list) and len(entries)<=100,'Webhook entry ไม่ถูกต้อง')
     events = []
     for entry in entries:
-        if isinstance(entry,dict) and page_id and str(entry.get('id'))==page_id and isinstance(entry.get('messaging'),list):
-            events.extend(event for event in entry['messaging'][:100] if isinstance(event,dict))
+        if isinstance(entry,dict) and owner and str(entry.get('id'))==owner and isinstance(entry.get('messaging'),list):
+            events.extend((platform,event) for event in entry['messaging'][:100] if isinstance(event,dict))
     return events
 
 

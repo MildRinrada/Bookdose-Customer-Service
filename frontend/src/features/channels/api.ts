@@ -11,6 +11,14 @@ export function saveChannel(kind: 'line' | 'email', body: Record<string, unknown
   return api(`/api/channels/${kind}`, body, 'PATCH');
 }
 
+/** Only the words customers read (email: sender name and signature; LINE: the welcome): the connection is untouched. */
+export function saveChannelPresentation(
+  kind: 'line' | 'email',
+  body: { sender_name?: string; signature?: string; welcome_enabled?: boolean; welcome_message?: string },
+) {
+  return api(`/api/channels/${kind}/presentation`, body, 'PATCH');
+}
+
 export function testChannel(kind: 'line' | 'email') {
   return api(`/api/channels/${kind}/test`, {});
 }

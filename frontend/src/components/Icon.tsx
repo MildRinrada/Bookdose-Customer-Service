@@ -72,6 +72,8 @@ const paths = {
   expand: 'M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7',
   shrink: 'M4 14h6v6 M20 10h-6V4 M14 10l7-7 M3 21l7-7',
   translate: 'M5 8l6 6 M4 14l6-6 2-3 M2 5h12 M7 2h1 M22 22l-5-10-5 10 M14 18h6',
+  // A rounded square with the lens and the flash: Instagram's own mark, drawn in the same line as the rest.
+  instagram: 'M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17.5 6.5h.01',
   facebook:
     'M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.7 7.1V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.3S17.5 2 12 2z M6.5 13.5l3.8-4 2 2 3.7-4-3.8 4-2-2z',
 } as const;

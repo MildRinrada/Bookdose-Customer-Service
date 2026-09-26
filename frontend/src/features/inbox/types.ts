@@ -5,7 +5,7 @@ import type { ChannelDeliveryState } from '@/features/channels/types';
 import type { GuestReach } from '@/features/guest/types';
 import type { MessageFile } from '@/lib/types';
 
-export type Channel = 'web' | 'line' | 'email' | 'facebook' | 'manual';
+export type Channel = 'web' | 'line' | 'email' | 'facebook' | 'instagram' | 'manual';
 
 /** A row of GET /api/conversations (repository.list_with_previews). */
 export type ConversationSummary = {

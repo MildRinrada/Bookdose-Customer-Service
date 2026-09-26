@@ -540,6 +540,10 @@ progress.report-share::-moz-progress-bar {
 .pivot-table .pivot-few {
   color: var(--muted);
 }
+.pivot-card .card-header {
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .pivot-card .card-note {
   margin: 0;
   padding: 12px 22px 18px;
@@ -556,8 +560,8 @@ progress.report-share::-moz-progress-bar {
   }
   .pivot-table tr {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
     padding: 12px 18px;
     border-bottom: 1px solid var(--line);
   }
@@ -604,13 +608,13 @@ progress.report-share::-moz-progress-bar {
 }
 .speed-rows {
   display: grid;
-  gap: 8px;
-}
-.speed-row {
-  display: grid;
-  grid-template-columns: minmax(96px, auto) minmax(60px, 1fr) auto;
+  grid-template-columns: max-content minmax(60px, 1fr) max-content;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
+}
+/* The rows share the columns above, so every bar starts and ends at the same place. */
+.speed-row {
+  display: contents;
 }
 .speed-row progress {
   width: 100%;
@@ -647,11 +651,21 @@ progress.report-share::-moz-progress-bar {
   white-space: nowrap;
 }
 @media (max-width: 520px) {
+  .speed-rows {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
   .speed-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 10px;
   }
   .speed-row progress {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+  .speed-value {
+    white-space: normal;
   }
 }

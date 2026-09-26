@@ -204,7 +204,8 @@ def _deliver(db, tenant_id, conv, mid):
         row = channels.setting(db,conv['channel'])
         if row and row['enabled'] and channel_repository.link_for_conversation(db,conv['id']):
             channels.enqueue_reply(db,ctx,conv,mid)
-    elif conv['channel']==facebook.KIND:
+    elif conv['channel'] in facebook.KINDS:
         row = channel_repository.find_facebook_setting(db)
-        if row and row['enabled'] and channel_repository.link_for_conversation(db,conv['id']):
+        on = row and row['enabled'] and (conv['channel']==facebook.KIND or facebook.instagram_on(row))
+        if on and channel_repository.link_for_conversation(db,conv['id']):
             facebook.enqueue_reply(db,ctx,conv,mid)

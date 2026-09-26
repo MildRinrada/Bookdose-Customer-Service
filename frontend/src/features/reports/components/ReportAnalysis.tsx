@@ -46,8 +46,10 @@ function Cells({ m, label }: { m: Measures & { share?: number }; label: string }
         {label}
       </td>
       <td data-label="เคส">
-        <strong>{m.cases}</strong>
-        {m.share != null && <small className="muted"> {m.share.toFixed(0)}%</small>}
+        <span>
+          <strong>{m.cases}</strong>
+          {m.share != null && <small className="muted"> {m.share.toFixed(0)}%</small>}
+        </span>
       </td>
       <td data-label="ตอบครั้งแรก" className={fewAnswered ? 'pivot-few' : ''}>
         {formatDuration(m.responseMedian)}
@@ -60,8 +62,10 @@ function Cells({ m, label }: { m: Measures & { share?: number }; label: string }
       </td>
       <td data-label="แก้ไขเสร็จ">{formatDuration(m.resolutionMedian)}</td>
       <td data-label="CSAT" className={m.csatCount && m.csatCount < FEW ? 'pivot-few' : ''}>
-        {m.csat == null ? '-' : `${m.csat.toFixed(1)} ★`}
-        {m.csatCount > 0 && <small className="muted"> ({m.csatCount})</small>}
+        <span>
+          {m.csat == null ? '-' : `${m.csat.toFixed(1)} ★`}
+          {m.csatCount > 0 && <small className="muted"> ({m.csatCount} คำตอบ)</small>}
+        </span>
       </td>
       <td data-label="เปิดซ้ำ" className={m.finished && m.finished < FEW ? 'pivot-few' : ''}>
         {pct(m.reopenRate)}

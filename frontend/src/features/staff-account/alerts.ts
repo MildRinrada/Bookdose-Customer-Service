@@ -78,7 +78,8 @@ export async function allowDesktop(): Promise<boolean> {
 export function showDesktop(title: string, body: string, href: string, tag: string) {
   if (!desktopSupported() || Notification.permission !== 'granted') return false;
   try {
-    const note = new Notification(title, { body, tag, icon: '/logo.png' });
+    // The logo on a white circle: the plain logo's dark body disappears on a dark notification.
+    const note = new Notification(title, { body, tag, icon: '/notify-icon.png' });
     note.onclick = () => {
       window.focus();
       window.location.assign(href);

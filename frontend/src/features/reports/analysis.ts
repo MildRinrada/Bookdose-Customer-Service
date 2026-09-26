@@ -140,6 +140,45 @@ export function sortRows(rows: PivotRow[], column: PivotColumn | 'natural', desc
   });
 }
 
+/* วันที่ผิดปกติ. Each day of the period against the same weekday of the four weeks before it (a Monday is compared
+   with Mondays, since the week has a shape of its own): unusually busy when it has at least twice the usual and three
+   more cases, unusually quiet when a day that usually has several has a third or less - which can mean a holiday, or
+   a channel that stopped bringing messages. The usual is the median of those weeks, and only weeks after the
+   organization's first case count, so a new organization is not told every day is unusual. */
+export const HISTORY_WEEKS = 4;
+export const HISTORY_NEEDED = 3;
+
+export type DayFlag = { day: Date; count: number; typical: number; kind: 'high' | 'low' };
+
+export function unusualDays(scoped: TicketRow[], days: Array<{ day: Date; count: number }>, now = new Date()) {
+  const perDay = new Map<string, number>();
+  let first: Date | null = null;
+  for (const t of scoped) {
+    const at = new Date(t.created_at);
+    perDay.set(at.toDateString(), (perDay.get(at.toDateString()) ?? 0) + 1);
+    if (!first || at < first) first = at;
+  }
+  const start = first ? new Date(first.getFullYear(), first.getMonth(), first.getDate()) : null;
+  const flags = new Map<string, DayFlag>();
+  let compared = 0;
+  for (const { day, count } of days) {
+    const weeks: number[] = [];
+    for (let w = 1; w <= HISTORY_WEEKS; w++) {
+      const before = new Date(day);
+      before.setDate(before.getDate() - 7 * w);
+      if (start && before >= start) weeks.push(perDay.get(before.toDateString()) ?? 0);
+    }
+    if (weeks.length < HISTORY_NEEDED) continue;
+    compared++;
+    const typical = median(weeks) ?? 0;
+    const today = day.toDateString() === now.toDateString();
+    if (count >= typical * 2 && count - typical >= 3) flags.set(day.toDateString(), { day, count, typical, kind: 'high' });
+    // Today is not over yet: it cannot be called quiet.
+    else if (!today && day < now && typical >= 4 && count <= typical / 3) flags.set(day.toDateString(), { day, count, typical, kind: 'low' });
+  }
+  return { flags, compared };
+}
+
 export type SpeedBy = 'response' | 'resolution';
 
 /** Satisfaction by how fast the case went: of the cases the customer rated, the average score and the share who were

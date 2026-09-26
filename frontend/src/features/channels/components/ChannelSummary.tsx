@@ -28,6 +28,9 @@ export function ChannelSummary() {
       {fb && (
         <SummaryRow icon="facebook" name="Facebook Messenger" account={fb.config.page_name || 'ตั้งค่าเพจด้านล่าง'} live={fb.enabled && fb.credentials_configured} />
       )}
+      {fb?.config.instagram_enabled && (
+        <SummaryRow icon="instagram" name="Instagram" account={fb.config.instagram_username ? `@${fb.config.instagram_username}` : 'ตั้งค่าในหน้า Facebook'} live={fb.instagram.on} />
+      )}
     </>
   );
 }

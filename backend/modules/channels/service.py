@@ -147,6 +147,39 @@ def save_channel(cd, db, ctx, kind, body):
     return overview(db,ctx['tenant_id'])
 
 
+def save_presentation(db, ctx, kind, body):
+    """Only the words customers read (email: sender name and signature; LINE: the welcome for a new friend). The
+    connection is not checked again, and its generation and queued messages stay as they are, so changing a
+    signature never cancels a reply waiting to go out."""
+    row = setting(db,kind)
+    require(row,'บันทึกการเชื่อมต่อช่องทางนี้ก่อน',409)
+    changes = schema.presentation(kind,body,row['config'])
+    D.begin(db)
+    row = setting(db,kind)
+    repository.update_config(db,kind,json.dumps({**row['config'],**changes},ensure_ascii=False))
+    audit.record(db,ctx['name'],'channel.settings_updated',row['route_id'],
+                 'อีเมล: ชื่อผู้ส่งและลายเซ็น' if kind=='email' else 'LINE: ข้อความต้อนรับเพื่อนใหม่')
+    db.commit()
+    return overview(db,ctx['tenant_id'])
+
+
+def welcome_new_friend(row, secret, payload):
+    """A customer added the LINE account as a friend: the organization's welcome, sent as the reply LINE allows to
+    that event (free, unlike a push message). Called outside any transaction. Returns '' when sent, else why not."""
+    cfg = row['config']
+    source = payload.get('source') or {}
+    token = payload.get('replyToken')
+    if not cfg.get('welcome_enabled') or not cfg.get('welcome_message'):
+        return 'off'
+    if not isinstance(source,dict) or source.get('type')!='user' or not isinstance(token,str) or not token:
+        return 'ignored'
+    try:
+        T.reply_line(secret,token,cfg['welcome_message'])
+    except ChannelError as error:
+        return error.code
+    return ''
+
+
 def test_channel(db, tenant_id, kind):
     """Sign in to the provider without sending a message; the result is shown on the settings page."""
     row = setting(db,kind)
@@ -325,6 +358,8 @@ def process_line(tenant_id, store_message):
         secret = read_secret(tenant_id,'line')
     attachment = None
     media_error = None
+    # A new friend: the welcome goes out now, outside the transaction, as file downloads do.
+    welcome = welcome_new_friend(row,secret,payload) if payload.get('type')=='follow' else None
     if payload.get('type')=='message' and isinstance(payload.get('message'),dict) and payload['message'].get('type') in ('image','video','file'):
         try:
             attachment = T.line_media(secret,payload['message'])
@@ -343,11 +378,17 @@ def process_line(tenant_id, store_message):
         if media_error and media_error.retryable and current['attempts']<3:
             repository.retry_event_later(db,event['id'],media_error.code)
             return True
-        try:
-            ingest_line(db,tenant_id,row,payload,attachment,store_message)
-            status,error = 'done','media' if media_error else ''
-        except ChannelError as problem:
-            status,error = 'ignored',problem.code
+        if welcome is not None:
+            # A new friend is not a conversation until they write; a welcome that went out is recorded.
+            status,error = ('done','') if welcome=='' else ('ignored',welcome)
+            if welcome=='':
+                audit.record(db,'LINE','line.follow',row['route_id'],'ส่งข้อความต้อนรับเพื่อนใหม่แล้ว')
+        else:
+            try:
+                ingest_line(db,tenant_id,row,payload,attachment,store_message)
+                status,error = 'done','media' if media_error else ''
+            except ChannelError as problem:
+                status,error = 'ignored',problem.code
         repository.set_event_status(db,event['id'],status,error,clear_payload=True)
     return True
 
@@ -479,7 +520,7 @@ def line_retry_window_passed(job):
 
 def retry_message(db, ctx, mid):
     job = repository.outbox_for_message(db,mid)
-    if job and job['kind']==facebook.KIND:
+    if job and job['kind'] in facebook.KINDS:
         return facebook.retry(db,ctx,job)
     require(not repository.find_ai_guard(db,mid),'ข้อความ AI ที่ยกเลิกแล้วไม่ส่งซ้ำ กรุณาตรวจและส่งข้อความใหม่')
     require(F.valid(db,mid),'ลิงก์ไฟล์หมดอายุหรือถูกถอน กรุณาสร้างข้อความใหม่')

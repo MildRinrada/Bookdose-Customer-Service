@@ -105,6 +105,13 @@ def save_channel(req, kind):
 
 
 @require_role('admin')
+def save_presentation(req, kind):
+    """Email's sender name and signature, or LINE's welcome for a new friend: the connection itself is left alone."""
+    _limit_settings(req)
+    return req.send(200,service.save_presentation(req.db,req.ctx,kind,req.body))
+
+
+@require_role('admin')
 def test_channel(req, kind):
     _limit_settings(req)
     service.test_channel(req.db,req.ctx['tenant_id'],kind)

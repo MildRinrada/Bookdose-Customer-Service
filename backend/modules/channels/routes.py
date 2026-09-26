@@ -15,6 +15,7 @@ ROUTES = [
     ('GET',   '/api/channels',                                    controller.overview,             'workspace'),
     ('PATCH', '/api/channels/(line|email)',                       controller.save_channel,         'workspace'),
     ('POST',  '/api/channels/(line|email)/test',                  controller.test_channel,         'workspace'),
+    ('PATCH', '/api/channels/(line|email)/presentation',          controller.save_presentation,    'workspace'),
     ('POST',  '/api/channels/email/sync',                         controller.sync_email,           'workspace'),
     ('POST',  f'/api/messages/{ID}/retry',                        controller.retry_delivery,       'workspace'),
     ('POST',  f'/api/messages/{ID}/revoke-files',                 controller.revoke_files,         'workspace'),

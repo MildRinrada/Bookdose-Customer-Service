@@ -35,6 +35,8 @@ def contact_channels(db):
     page = channel_settings.find_facebook_setting(db)
     if page and page['enabled']:
         found.append({'kind':'facebook','label':page['config'].get('page_name','')})
+        if page['config'].get('instagram_enabled') and page['config'].get('instagram_id'):
+            found.append({'kind':'instagram','label':'@'+page['config'].get('instagram_username','')})
     return found
 
 

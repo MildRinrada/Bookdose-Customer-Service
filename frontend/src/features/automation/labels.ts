@@ -10,6 +10,7 @@ export const ruleChannelLabels: Record<string, string> = {
   line: 'LINE',
   email: 'Email',
   facebook: 'Facebook Messenger',
+  instagram: 'Instagram',
   manual: 'เคสที่เจ้าหน้าที่บันทึกเอง',
 };
 

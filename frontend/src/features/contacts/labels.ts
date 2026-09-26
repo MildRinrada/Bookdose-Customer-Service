@@ -96,6 +96,7 @@ export function compareContacts(a: Contact, b: Contact, key: ContactSortKey, sta
 export const preferredChannelLabels: Record<string, string> = {
   line: 'LINE',
   facebook: 'Facebook',
+  instagram: 'Instagram',
   web: 'แชทบนเว็บ',
   email: 'อีเมล',
   phone: 'โทรศัพท์',

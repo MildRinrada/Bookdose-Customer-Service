@@ -200,7 +200,7 @@ def release(db, message_id, written):
     if conv['channel'] not in EXTERNAL:
         return
     tenant_id = D.tenant_id_of(db)
-    provider = facebook if conv['channel']=='facebook' else channels
+    provider = facebook if conv['channel'] in facebook.KINDS else channels
     try:
         provider.check_reply(db,tenant_id,conv,{'body':message['body']})
     except Exception:

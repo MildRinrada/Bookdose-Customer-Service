@@ -219,6 +219,51 @@ class ChannelTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT COUNT(*) FROM conversations WHERE channel='email'").fetchone()[0],3)
             self.assertEqual(db.execute("SELECT COUNT(*) FROM messages WHERE conversation_id=? AND kind='customer'",(conv['id'],)).fetchone()[0],2)
 
+    def test_email_sender_name_and_signature_leave_the_queue_alone(self):
+        conv=self.incoming_email();mid=self.reply(conv)
+        for bad in ({'sender_name':'Support <x@y.z>'},{'signature':'x'*601},{'signature':'bell\x07'}):
+            self.assertEqual(self.admin.call('/api/channels/email/presentation',bad,'PATCH')[0],400,bad)
+        agent,_=self.create_member()
+        self.assertEqual(agent.call('/api/channels/email/presentation',{'sender_name':'x'},'PATCH')[0],403)
+        self.ok(self.admin,'/api/channels/email/presentation',{'sender_name':'ฝ่ายบริการลูกค้า Bookdose','signature':'ทีมบริการลูกค้า  \r\nโทร 02-000-0000'},'PATCH')
+        # Only the words changed: the reply waiting to go out is still queued.
+        self.assertEqual(self.job(mid)['status'],'queued')
+        with patch.object(T,'send_email',return_value=self.job(mid)['provider_id']) as send:
+            C.process_outbox(self.org);mail=send.call_args.args[3]
+        sender=mail['From'].addresses[0]
+        self.assertEqual((sender.display_name,sender.addr_spec),('ฝ่ายบริการลูกค้า Bookdose','support@example.com'))
+        self.assertIn('\n-- \nทีมบริการลูกค้า\nโทร 02-000-0000',mail.get_body(('plain',)).get_content())
+        self.assertIn('ทีมบริการลูกค้า<br>โทร 02-000-0000',mail.get_body(('html',)).get_content())
+        # Saving the connection form keeps them.
+        self.assertEqual(self.configure('email')['config']['sender_name'],'ฝ่ายบริการลูกค้า Bookdose')
+
+    def test_line_welcomes_a_new_friend_once_by_reply(self):
+        cfg=self.configure()
+        follow=lambda key:self.event(key,type='follow',replyToken='reply-token-'+key,message=None)
+        # Off (the default): a new friend is quietly noted, nothing is sent.
+        self.webhook(cfg['route_id'],[follow('first')])
+        with patch.object(T,'reply_line') as reply:C.process_line(self.org,app.store_message);reply.assert_not_called()
+        self.assertEqual(self.admin.call('/api/channels/line/presentation',{'welcome_enabled':True,'welcome_message':'  '},'PATCH')[0],400)
+        self.ok(self.admin,'/api/channels/line/presentation',{'welcome_enabled':True,'welcome_message':'ยินดีต้อนรับ\nพิมพ์คำถามได้เลย'},'PATCH')
+        self.webhook(cfg['route_id'],[follow('second')])
+        with patch.object(T,'reply_line') as reply:
+            self.assertTrue(C.process_line(self.org,app.store_message))
+            self.assertFalse(C.process_line(self.org,app.store_message))
+        self.assertEqual(reply.call_count,1)
+        self.assertEqual(reply.call_args.args[1:],('reply-token-second','ยินดีต้อนรับ\nพิมพ์คำถามได้เลย'))
+        with D.tenant(self.org) as db:
+            # No conversation until they write, and the event is done.
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM conversations WHERE channel='line'").fetchone()[0],0)
+            self.assertEqual(D.one(db,"SELECT status FROM channel_inbox WHERE event_key='second'")['status'],'done')
+        # A failed reply is not retried (the token is single use), and the next message still arrives.
+        self.webhook(cfg['route_id'],[follow('third'),self.event('hello')])
+        with patch.object(T,'reply_line',side_effect=T.ChannelError('network',retryable=True)) as reply:
+            C.process_line(self.org,app.store_message);C.process_line(self.org,app.store_message)
+        self.assertEqual(reply.call_count,1)
+        with D.tenant(self.org) as db:
+            self.assertEqual(D.one(db,"SELECT status,error FROM channel_inbox WHERE event_key='third'"),{'status':'ignored','error':'network'})
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM conversations WHERE channel='line'").fetchone()[0],1)
+
     def test_smtp_unknown_never_auto_or_manual_retry(self):
         conv=self.incoming_email();mid=self.reply(conv)
         with patch.object(T,'send_email',side_effect=T.ChannelError('unknown',uncertain=True)) as send:

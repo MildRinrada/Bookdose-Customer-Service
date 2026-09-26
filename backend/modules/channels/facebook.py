@@ -1,7 +1,10 @@
-"""Facebook Messenger: a Facebook Page connected with its Page access token and the Meta app's App Secret.
-Messages arrive on a signed webhook and are stored at once (text; a file is noted for staff to open on the Page).
-Staff replies wait in the shared outbox and a background round sends them through the Graph API, outside any
-database transaction. The chatbot does not answer on Messenger."""
+"""Facebook Messenger and Instagram: a Facebook Page connected with its Page access token and the Meta app's App
+Secret, and - when the owner turns it on - the Instagram professional account connected to that Page, whose DMs use
+the same token, the same app and the same webhook URL (Meta sends them as object 'instagram').
+Messages arrive on a signed webhook and are stored at once (text; a file is noted for staff to open on the Page or in
+Instagram). Conversations and replies keep their own kind ('facebook' or 'instagram'), so the inbox, reports and
+rules tell them apart. Staff replies wait in the shared outbox and a background round sends them through the Graph
+API, outside any database transaction. The chatbot does not answer on Messenger or Instagram."""
 import hashlib
 import hmac
 import json
@@ -24,7 +27,11 @@ from backend.utils.security import uid
 from backend.utils.validation import require
 
 KIND = 'facebook'
-TEXT_LIMIT = 2000           # Messenger's limit for one text message
+IG_KIND = 'instagram'
+KINDS = (KIND,IG_KIND)
+NAMES = {KIND:'Facebook',IG_KIND:'Instagram'}
+TEXT_LIMITS = {KIND:2000,IG_KIND:1000}   # one text message on Messenger / in an Instagram DM
+TEXT_LIMIT = TEXT_LIMITS[KIND]
 LEASE_SECONDS = 120
 PSID = re.compile(r'[0-9]{1,40}')
 
@@ -54,15 +61,24 @@ def ready(secret):
 
 
 # Settings
+def instagram_on(row):
+    """Instagram DMs are received and answered: the channel on, Instagram turned on, and its account known."""
+    return bool(row and row['enabled'] and row['config'].get('instagram_enabled') and row['config'].get('instagram_id'))
+
+
 def overview(db, tenant_id):
     row = repository.find_facebook_setting(db)
     cfg = row['config'] if row else {'team_id':organization.first_team_id(db)}
+    last_instagram = db.execute("""SELECT MAX(m.created_at) FROM messages m JOIN conversations c ON c.id=m.conversation_id
+                                   WHERE c.channel=? AND m.kind='customer'""",(IG_KIND,)).fetchone()[0]
     return {'kind':KIND,'enabled':bool(row and row['enabled']),
-            'config':{key:cfg.get(key,'') for key in ('team_id','page_id','page_name','verify_token')},
+            'config':{**{key:cfg.get(key,'') for key in ('team_id','page_id','page_name','verify_token','instagram_id','instagram_username')},
+                      'instagram_enabled':bool(cfg.get('instagram_enabled'))},
             'credentials_configured':ready(read_secret(tenant_id)),'route_id':row['route_id'] if row else None,
             'last_error':CHANNEL_ERRORS.get(row['last_error'],'') if row else '',
             'last_checked':row['last_checked'] if row else None,'last_received':row['last_received'] if row else None,
-            'outbox':repository.outbox_counts(db,KIND)}
+            'outbox':repository.outbox_counts(db,KIND),
+            'instagram':{'on':instagram_on(row),'last_received':last_instagram,'outbox':repository.outbox_counts(db,IG_KIND)}}
 
 
 def save(cd, db, ctx, body):
@@ -80,13 +96,22 @@ def save(cd, db, ctx, body):
     if remove:
         secret = {}
     cfg.setdefault('verify_token',secrets.token_urlsafe(24))
+    instagram = body.get('instagram_enabled',cfg.get('instagram_enabled',False))
+    require(type(instagram) is bool,'สถานะ Instagram ไม่ถูกต้อง')
     checked = old['last_checked'] if old else None
     if enabled:
         require(ready(secret),'กรุณาระบุ Page Access Token และ App Secret')
         info = T.verify_facebook(secret['page_access_token'])
         require(not cfg.get('page_id') or cfg['page_id']==info['identity'],'ช่องทางนี้ผูกกับเพจเดิมแล้ว ไม่สามารถเปลี่ยนเป็นเพจอื่นในประวัติเดิมได้')
         cfg.update(page_id=info['identity'],page_name=info['display_name'])
+        if instagram:
+            account = T.facebook_instagram(secret['page_access_token'],info['identity'])
+            require(account,'เพจนี้ยังไม่ได้ผูกกับบัญชี Instagram แบบมืออาชีพ ผูกบัญชีในการตั้งค่าเพจก่อน แล้วบันทึกอีกครั้ง')
+            require(not cfg.get('instagram_id') or cfg['instagram_id']==account['identity'],
+                    'ช่องทางนี้ผูกกับบัญชี Instagram เดิมแล้ว ไม่สามารถเปลี่ยนเป็นบัญชีอื่นในประวัติเดิมได้')
+            cfg.update(instagram_id=account['identity'],instagram_username=account['display_name'])
         checked = now()
+    cfg['instagram_enabled'] = instagram
     # Provider checks happen before starting write transactions.
     D.begin(cd)
     D.begin(db)
@@ -96,7 +121,8 @@ def save(cd, db, ctx, body):
     repository.save_facebook_setting(db,route_id,enabled,json.dumps(cfg,ensure_ascii=False),uid(),checked)
     write_secret(ctx['tenant_id'],secret)
     # Replies queued under the old settings are never sent with the new ones.
-    repository.fail_queued(db,KIND)
+    for kind in KINDS:
+        repository.fail_queued(db,kind)
     audit.record(db,ctx['name'],'channel.settings_updated',route_id,KIND)
     db.commit()
     cd.commit()
@@ -139,7 +165,8 @@ def verify_subscription(route_id, query):
 
 
 def accept_webhook(route_id, raw, signature):
-    """Check Meta's X-Hub-Signature-256 over the raw body, then store each new message."""
+    """Check Meta's X-Hub-Signature-256 over the raw body, then store each new message (Messenger, and Instagram DMs
+    when Instagram is on)."""
     with D.control() as cd:
         route = repository.active_facebook_route(cd,route_id)
     if not route:
@@ -148,64 +175,78 @@ def accept_webhook(route_id, raw, signature):
     expected = 'sha256='+hmac.new(app_secret.encode(),raw,hashlib.sha256).hexdigest()
     if not app_secret or not hmac.compare_digest(signature,expected):
         raise PermissionError('Invalid Facebook signature')
-    events = schema.facebook_events(raw,route['page_id'])
     with D.tenant(route['tenant_id']) as db:
         D.begin(db)
         row = repository.find_facebook_setting(db)
         if not row or not row['enabled']:
             raise ChannelError('disabled')
-        stored = [mid for event in events if (mid := ingest(db,route['tenant_id'],row,event))]
+        events = schema.facebook_events(raw,route['page_id'],row['config']['instagram_id'] if instagram_on(row) else None)
+        stored = [mid for platform,event in events if (mid := ingest(db,route['tenant_id'],row,event,platform))]
         repository.set_facebook_received(db)
     return len(stored)
 
 
-def ingest(db, tenant_id, row, event):
-    """One Messenger event -> a customer message. Echoes of the Page's own messages, other event types and
-    redeliveries (same message id) are skipped. Returns the message id or None."""
+def ingest(db, tenant_id, row, event, platform=KIND):
+    """One Messenger or Instagram event -> a customer message. Echoes of the Page's (or account's) own messages,
+    unsent messages, other event types and redeliveries (same message id) are skipped. Returns the message id or
+    None."""
     from backend.modules.conversations.service import store_message
+    kind = IG_KIND if platform==IG_KIND else KIND
     message,sender = event.get('message'),event.get('sender')
     sender_id = sender.get('id') if isinstance(sender,dict) else None
-    if not isinstance(message,dict) or message.get('is_echo') or not isinstance(sender_id,str) or not PSID.fullmatch(sender_id):
+    if (not isinstance(message,dict) or message.get('is_echo') or message.get('is_deleted') or not isinstance(sender_id,str)
+            or not PSID.fullmatch(sender_id)):
         return None
     external_id = message.get('mid')
     if not isinstance(external_id,str) or not 1<=len(external_id)<=300:
         return None
-    key = 'fb:'+external_id
+    key = ('ig:' if kind==IG_KIND else 'fb:')+external_id
     if repository.inbox_event_exists(db,row['route_id'],key):
         return None
-    repository.insert_channel_event(db,row['route_id'],key,KIND,row['generation'])
+    repository.insert_channel_event(db,row['route_id'],key,kind,row['generation'])
     text = message.get('text') if isinstance(message.get('text'),str) else ''
     if message.get('attachments'):
-        text = (text+'\n' if text else '')+'[ลูกค้าส่งไฟล์แนบผ่าน Facebook กรุณาตรวจจากกล่องข้อความของเพจ]'
-    text = text.strip()[:19000] or '(ข้อความว่างจาก Facebook)'
-    name = 'Facebook • '+sender_id[-6:]
-    link = repository.find_link(db,row['route_id'],sender_id)
+        where = 'แอป Instagram ของบัญชีองค์กร' if kind==IG_KIND else 'กล่องข้อความของเพจ'
+        text = (text+'\n' if text else '')+f'[ลูกค้าส่งไฟล์แนบผ่าน {NAMES[kind]} กรุณาตรวจจาก{where}]'
+    text = text.strip()[:19000] or f'(ข้อความว่างจาก {NAMES[kind]})'
+    name = f'{NAMES[kind]} • '+sender_id[-6:]
+    # An Instagram user and a Messenger user are told apart in the link, whatever their numbers.
+    link_key = ('ig:'+sender_id) if kind==IG_KIND else sender_id
+    link = repository.find_link(db,row['route_id'],link_key)
     if link:
         conv = link['conversation_id']
     else:
         contact_id,conv = uid(),uid()
         contacts.insert(db,contact_id,name,'','','','','channel')
-        conversations.insert(db,conv,contact_id,text.split('\n')[0][:300],KIND,row['config']['team_id'])
-        repository.insert_link(db,conv,row['route_id'],sender_id,sender_id,row['config']['page_id'])
+        conversations.insert(db,conv,contact_id,text.split('\n')[0][:300],kind,row['config']['team_id'])
+        identity = row['config']['instagram_id'] if kind==IG_KIND else row['config']['page_id']
+        repository.insert_link(db,conv,row['route_id'],link_key,sender_id,identity)
     mid = store_message(db,tenant_id,conv,None,name,'customer',{'body':text})
-    audit.record(db,'Facebook','channel.message_received',conv)
+    audit.record(db,NAMES[kind],'channel.message_received',conv)
     return mid
 
 
 # Replies (outbox)
+def _identity(row, kind):
+    """The account a conversation of this kind must still be connected to: the Page, or its Instagram account."""
+    return row['config'].get('instagram_id' if kind==IG_KIND else 'page_id')
+
+
 def check_reply(db, tenant_id, conv, body):
-    """A reply can go out on this conversation's Page right now: text only, within Messenger's length limit."""
+    """A reply can go out on this conversation's Page (or Instagram account) right now: text only, within the
+    platform's length limit."""
+    kind = IG_KIND if conv['channel']==IG_KIND else KIND
     row = repository.find_facebook_setting(db)
     link = repository.link_for_conversation(db,conv['id'])
-    if not row or not row['enabled'] or not link:
+    if not row or not row['enabled'] or not link or (kind==IG_KIND and not instagram_on(row)):
         raise ChannelError('disabled')
-    if row['config'].get('page_id')!=link['account_identity']:
+    if _identity(row,kind)!=link['account_identity']:
         raise ChannelError('changed')
     if not ready(read_secret(tenant_id)):
         raise ChannelError('credentials')
-    text = body.get('body','')
-    require(not body.get('attachments'),'Facebook Messenger รองรับเฉพาะข้อความ กรุณาส่งไฟล์เป็นลิงก์')
-    require(isinstance(text,str) and text.strip() and len(text)<=TEXT_LIMIT,f'Facebook ส่งข้อความได้ไม่เกิน {TEXT_LIMIT:,} ตัวอักษร')
+    text,limit = body.get('body',''),TEXT_LIMITS[kind]
+    require(not body.get('attachments'),f'{NAMES[kind]} รองรับเฉพาะข้อความ กรุณาส่งไฟล์เป็นลิงก์')
+    require(isinstance(text,str) and text.strip() and len(text)<=limit,f'{NAMES[kind]} ส่งข้อความได้ไม่เกิน {limit:,} ตัวอักษร')
     return row
 
 
@@ -213,7 +254,8 @@ def enqueue_reply(db, ctx, conv, mid):
     """Queue a stored reply for the delivery round (same transaction as the message)."""
     row = repository.find_facebook_setting(db)
     job_id = uid()
-    repository.insert_outbox(db,job_id,mid,row['route_id'],KIND,ctx['id'],row['generation'],job_id,'')
+    kind = IG_KIND if conv['channel']==IG_KIND else KIND
+    repository.insert_outbox(db,job_id,mid,row['route_id'],kind,ctx['id'],row['generation'],job_id,'')
     conversations.set_delivery(db,mid,'queued')
 
 
@@ -238,15 +280,16 @@ def finish(db, job, status, error='', provider_id=None):
 
 
 def process_outbox(tenant_id):
-    """Send one queued reply: re-check permission and settings, send outside the transaction, record the result."""
+    """Send one queued reply (Messenger or Instagram): re-check permission and settings, send outside the
+    transaction, record the result."""
     with D.control() as cd, D.tenant(tenant_id) as db:
         D.begin(db)
-        for old in repository.stale_sending(db,after(seconds=-LEASE_SECONDS),(KIND,)):
+        for old in repository.stale_sending(db,after(seconds=-LEASE_SECONDS),KINDS):
             # The Send API has no retry key, so a send that may have gone out is never repeated automatically.
             finish(db,old,'unknown','unknown')
-        if repository.any_sending(db,(KIND,)):
+        if repository.any_sending(db,KINDS):
             return False
-        job = repository.next_queued(db,(KIND,))
+        job = repository.next_queued(db,KINDS)
         if not job:
             return False
         message = conversations.find_message(db,job['message_id'])
@@ -257,7 +300,9 @@ def process_outbox(tenant_id):
         member = organization.find_active_membership(cd,tenant_id,job['actor_id'])
         # A notice the system wrote (outside business hours, organization/hours.py) goes while the organization is active.
         permitted = tenants.is_active(cd,tenant_id) and (job['actor_id']==SYSTEM_ACTOR or member and (member['role']!='agent' or member['team_id']==conv['team_id']))
-        if not permitted or not row or not row['enabled'] or row['generation']!=job['generation'] or not link or link['account_identity']!=row['config'].get('page_id'):
+        instagram_off = job['kind']==IG_KIND and not instagram_on(row)
+        if (not permitted or not row or not row['enabled'] or instagram_off or row['generation']!=job['generation'] or not link
+                or link['account_identity']!=_identity(row,job['kind'])):
             finish(db,job,'failed','changed')
             return True
         secret = read_secret(tenant_id)
@@ -283,5 +328,5 @@ def process_outbox(tenant_id):
         finish(db,job,status,error.code if error else '',provider_id)
         if status=='queued':
             repository.set_next_attempt(db,job['id'],after(seconds=10*3**(attempts-1)))
-        audit.record(db,'ระบบส่งข้อความ','channel.'+status,conv['id'],KIND)
+        audit.record(db,'ระบบส่งข้อความ','channel.'+status,conv['id'],job['kind'])
     return True

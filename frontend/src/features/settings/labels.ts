@@ -21,7 +21,7 @@ export const settingsParts = {
   security: { tab: 'overview', label: 'ความปลอดภัยของทีม', hint: 'บังคับเจ้าหน้าที่ยืนยันตัวตน 2 ขั้น', icon: 'lock' },
   line: { tab: 'connections', label: 'LINE', hint: 'LINE Official Account ขององค์กร', icon: 'chat' },
   email: { tab: 'connections', label: 'อีเมล', hint: 'รับและตอบอีเมลของลูกค้าในกล่องข้อความ', icon: 'mail' },
-  facebook: { tab: 'connections', label: 'Facebook Messenger', hint: 'ข้อความจากเพจ Facebook ขององค์กร', icon: 'facebook' },
+  facebook: { tab: 'connections', label: 'Facebook และ Instagram', hint: 'ข้อความจากเพจ Facebook และ DM Instagram ที่ผูกกับเพจ', icon: 'facebook' },
 } as const satisfies Record<string, { tab: SettingsTab; label: string; hint: string; icon: string }>;
 
 export type SettingsPart = keyof typeof settingsParts;

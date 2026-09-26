@@ -20,10 +20,11 @@ export const channelNames: Record<string, string> = {
   line: 'LINE',
   email: 'Email',
   facebook: 'Facebook',
+  instagram: 'Instagram',
   manual: 'บันทึกเอง',
 };
 
-export const channelIcons: Record<string, string> = { web: 'globe', line: 'chat', email: 'mail', facebook: 'facebook', manual: 'file' };
+export const channelIcons: Record<string, string> = { web: 'globe', line: 'chat', email: 'mail', facebook: 'facebook', instagram: 'instagram', manual: 'file' };
 
 export const escalationReasons: Record<string, string> = {
   unclaimed: 'ไม่มีผู้รับเรื่องทันเวลา',

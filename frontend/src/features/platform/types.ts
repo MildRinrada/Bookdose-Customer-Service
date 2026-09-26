@@ -45,7 +45,7 @@ export type TodoItem = {
 };
 
 export type ChannelState = {
-  kind: 'line' | 'email' | 'facebook';
+  kind: 'line' | 'email' | 'facebook' | 'instagram';
   name: string;
   enabled: boolean;
   status: 'ok' | 'warning' | 'error';

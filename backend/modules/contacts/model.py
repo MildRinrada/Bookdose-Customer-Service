@@ -12,7 +12,7 @@ CREATE TABLE contacts (
 # tags, a warning shown on the customer's chats and cases, how and when they like to be contacted, the language to
 # answer in (the AI answers in it too), whether they agreed to be contacted back and when they asked to have their
 # data deleted. One row per contact, made on its first save.
-PREFERRED_CHANNELS = ('web','line','facebook','email','phone')
+PREFERRED_CHANNELS = ('web','line','facebook','instagram','email','phone')
 LANGUAGES = ('th','en')
 CONSENTS = ('yes','no')
 TAGS_MAX = 10

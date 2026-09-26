@@ -13,6 +13,9 @@ export type LineConfig = {
   public_base_url?: string;
   display_name?: string;
   identity?: string;
+  /** The reply sent when a customer adds the account as a friend (channels.service.welcome_new_friend). */
+  welcome_enabled?: boolean;
+  welcome_message?: string;
 } & Record<string, unknown>;
 
 export type EmailConfig = {
@@ -28,6 +31,9 @@ export type EmailConfig = {
   oauth_client_id?: string;
   oauth_redirect_uri?: string;
   display_name?: string;
+  /** Shown beside the address as the sender, and under every reply (channel_transport.build_email). */
+  sender_name?: string;
+  signature?: string;
 } & Record<string, unknown>;
 
 /** A row of GET /api/channels (LINE and Email). */
@@ -51,13 +57,24 @@ export type ChannelSetting = {
 export type FacebookSetting = {
   kind: 'facebook';
   enabled: boolean;
-  config: { team_id: string; page_id: string; page_name: string; verify_token: string };
+  config: {
+    team_id: string;
+    page_id: string;
+    page_name: string;
+    verify_token: string;
+    /** The Instagram professional account connected to the Page, whose DMs come in with the same token. */
+    instagram_enabled: boolean;
+    instagram_id: string;
+    instagram_username: string;
+  };
   credentials_configured: boolean;
   route_id: string | null;
   last_error: string;
   last_checked: string | null;
   last_received: string | null;
   outbox: OutboxCount[];
+  /** on: the Page is on, Instagram is turned on and its account is known (channels/facebook.instagram_on). */
+  instagram: { on: boolean; last_received: string | null; outbox: OutboxCount[] };
 };
 
 /** Workspace.channels: which provider channels are on, and whether their chatbot is. */

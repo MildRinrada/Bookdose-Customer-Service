@@ -38,6 +38,10 @@ import { useSnippets } from './SnippetSuggest';
    tells them "กำลังพิมพ์…" (never while writing an internal note). */
 
 const ACCEPT = '.png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt';
+/** A reply's longest text on each provider (the server checks the same: channels/schema, channels/facebook). */
+const REPLY_LIMITS: Record<string, number> = { line: 5000, facebook: 2000, instagram: 1000 };
+/** Replies that wait in the delivery queue instead of appearing in the web chat at once. */
+const QUEUED_CHANNELS = ['line', 'email', 'facebook', 'instagram'];
 
 export type ComposerProps = {
   conversationId: string;
@@ -434,7 +438,7 @@ function StaffComposer({
         toast(
           sent === 'note'
             ? 'บันทึกภายในแล้ว'
-            : ['line', 'email'].includes(channel)
+            : QUEUED_CHANNELS.includes(channel)
               ? 'ข้อความเข้าคิวส่งแล้ว ตรวจผลใต้ข้อความได้'
               : 'ข้อความพร้อมอ่านในแชทบนหน้าลูกค้าของลูกค้า',
         );
@@ -470,7 +474,7 @@ function StaffComposer({
         id={`compose-${id}`}
         name="body"
         defaultValue={initialDraft}
-        maxLength={channel === 'line' && kind === 'reply' ? 5000 : 20000}
+        maxLength={kind === 'reply' ? (REPLY_LIMITS[channel] ?? 20000) : 20000}
         label="ข้อความ"
         placeholder={`${basePlaceholder} (${SEND_SHORTCUT} เพื่อส่ง)`}
         sourcePlaceholder={kindChanged && kind === 'note' ? 'บันทึกภายใน… ลูกค้าจะไม่เห็นข้อความนี้' : basePlaceholder}

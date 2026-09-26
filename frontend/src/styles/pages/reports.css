@@ -159,6 +159,60 @@
 .report-chart .chart-col small {
   color: var(--muted);
 }
+/* วันที่ผิดปกติ: a busier day's bar in amber; a quieter day's column tinted red (its bar may be nearly empty). */
+.report-chart .chart-col.high progress::-webkit-progress-value {
+  background: #d49a2a;
+}
+.report-chart .chart-col.high progress::-moz-progress-bar {
+  background: #d49a2a;
+}
+.report-chart .chart-col.low progress,
+.report-chart .chart-col.low progress::-webkit-progress-bar {
+  background: var(--red-soft);
+}
+.report-chart .chart-col.low progress::-webkit-progress-value {
+  background: var(--red);
+}
+.report-chart .chart-col.low progress::-moz-progress-bar {
+  background: var(--red);
+}
+.report-chart .chart-col.high small,
+.report-chart .chart-col.low small {
+  font-weight: 700;
+  color: var(--ink);
+}
+.unusual-note {
+  margin: 12px 0 0;
+}
+.unusual-days {
+  margin-top: 14px;
+}
+.unusual-days ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+.unusual-days li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+}
+.unusual-days li.low {
+  background: var(--red-soft);
+}
+.unusual-mark {
+  flex-shrink: 0;
+  color: #b07a14;
+  font-size: .8rem;
+}
+.unusual-days li.low .unusual-mark {
+  color: var(--red);
+}
 .bar-row {
   grid-template-columns: minmax(140px,1fr) 2fr minmax(78px,auto);
   margin: 14px 0;

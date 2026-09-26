@@ -16,6 +16,8 @@ from backend.utils.dates import after, utc_now
 
 PAGE = '1234567890'
 PSID = '9876543210'
+IG = '17841400000000001'        # the Instagram professional account connected to the Page
+IGSID = '9876543210'            # an Instagram user; the same digits as the Messenger user on purpose
 
 
 class AutomationTests(unittest.TestCase):
@@ -303,6 +305,66 @@ class FacebookTests(unittest.TestCase):
 
     def ticket_priority(self, conversation):
         return self.ok(self.admin,f'/api/conversations/{conversation}')['ticket']['priority']
+
+    def instagram(self, route, events, account=IG, secret=b'app-secret'):
+        payload = {'object':'instagram','entry':[{'id':account,'time':1,'messaging':events}]}
+        signature = 'sha256='+hmac.new(secret,json.dumps(payload).encode(),hashlib.sha256).hexdigest()
+        return self.admin.call('/api/webhooks/facebook/'+route,payload,headers={'X-Hub-Signature-256':signature,'X-CSRF-Token':''})
+
+    def dm(self, mid='ig-1', text='สั่งของทาง IG ยังไม่ได้รับค่ะ', **extra):
+        return {'sender':{'id':IGSID},'recipient':{'id':IG},'timestamp':1,'message':{'mid':mid,'text':text,**extra}}
+
+    def channel_convs(self, channel):
+        return [c for c in self.ok(self.admin,'/api/conversations')['conversations'] if c['channel']==channel]
+
+    def test_instagram_dms_ride_on_the_page(self):
+        self.ok(self.admin,'/api/automation/rules',{'name':'ของไม่ถึงจาก IG','channel':'instagram','keywords':'ยังไม่ได้รับ','set_priority':'high'})
+        # The Page must have an Instagram professional account connected.
+        with patch.object(T,'facebook_instagram',return_value=None):
+            with patch.object(T,'verify_facebook',return_value={'identity':PAGE,'display_name':'Bookdose Page'}):
+                status,_ = self.admin.call('/api/channels/facebook',{'team_id':self.team,'enabled':True,'page_access_token':'page-token',
+                                                                     'app_secret':'app-secret','instagram_enabled':True},'PATCH')
+        self.assertEqual(status,400)
+        with patch.object(T,'facebook_instagram',return_value={'identity':IG,'display_name':'bookdose.th'}):
+            cfg = self.configure(instagram_enabled=True)
+        self.assertEqual((cfg['config']['instagram_id'],cfg['config']['instagram_username'],cfg['instagram']['on']),(IG,'bookdose.th',True))
+        route = cfg['route_id']
+        # A DM, its redelivery, an echo, an unsent message and another account's DM: one message.
+        self.assertEqual(self.instagram(route,[self.dm(),self.dm(),self.dm('echo',is_echo=True),self.dm('gone',is_deleted=True)])[0],200)
+        self.assertEqual(self.instagram(route,[self.dm('other')],account='17841499999999999')[0],200)
+        self.assertEqual(self.instagram(route,[self.dm('forged')],secret=b'wrong')[0],403)
+        ig = self.channel_convs('instagram')
+        self.assertEqual(len(ig),1)
+        conv = ig[0]['id']
+        detail = self.ok(self.admin,f'/api/conversations/{conv}')
+        self.assertEqual(len(detail['messages']),1)
+        self.assertTrue(detail['messages'][0]['author_name'].startswith('Instagram • '))
+        self.assertEqual(self.ticket_priority(conv),'high')
+        # A Messenger user with the same digits is someone else.
+        self.webhook(route,[self.event('fb-1','สวัสดีจากเพจ')])
+        self.assertEqual((len(self.channel_convs('facebook')),len(self.channel_convs('instagram'))),(1,1))
+        # Replies: Instagram's own length limit, then out through the Page to the Instagram user.
+        path = f'/api/conversations/{conv}/messages'
+        self.assertEqual(self.admin.call(path,{'kind':'reply','body':'ก'*1001})[0],400)
+        mid = self.ok(self.admin,path,{'kind':'reply','body':'กำลังตรวจสอบให้ค่ะ'})['id']
+        with D.tenant(self.org) as db:
+            self.assertEqual(db.execute('SELECT kind FROM channel_outbox WHERE message_id=?',(mid,)).fetchone()[0],'instagram')
+        with patch.object(T,'send_facebook',return_value='ig.out') as send:
+            self.assertTrue(F.process_outbox(self.org))
+        self.assertEqual(send.call_args.args,('page-token',IGSID,'กำลังตรวจสอบให้ค่ะ'))
+        self.assertEqual(next(m for m in self.ok(self.admin,path.rsplit('/',1)[0])['messages'] if m['id']==mid)['delivery'],'accepted')
+        # The customer's help page lists Instagram beside the Page.
+        kinds = {c['kind']:c['label'] for c in self.admin.call('/api/public/alpha')[1]['channels']}
+        self.assertEqual((kinds.get('facebook'),kinds.get('instagram')),('Bookdose Page','@bookdose.th'))
+        # Instagram off: DMs are no longer taken in or answered; Messenger goes on.
+        self.configure(instagram_enabled=False)
+        self.assertEqual(self.admin.call(path,{'kind':'reply','body':'อีกครั้ง'})[0],503)
+        self.instagram(route,[self.dm('ig-2','ข้อความใหม่')])
+        self.assertEqual(len(self.ok(self.admin,f'/api/conversations/{conv}')['messages']),2)
+        self.webhook(route,[self.event('fb-2','ยังอยู่ไหม')])
+        fb = self.channel_convs('facebook')[0]['id']
+        self.assertEqual(len([m for m in self.ok(self.admin,f'/api/conversations/{fb}')['messages'] if m['kind']=='customer']),2)
+        self.assertNotIn('instagram',{c['kind'] for c in self.admin.call('/api/public/alpha')[1]['channels']})
 
     def test_failed_send_can_be_retried_and_settings_are_admin_only(self):
         cfg = self.configure()

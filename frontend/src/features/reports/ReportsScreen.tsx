@@ -17,6 +17,7 @@ import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { ArticlesCard, BotReportCard } from './components/ReportAi';
+import { HISTORY_NEEDED, HISTORY_WEEKS, unusualDays, type DayFlag } from './analysis';
 import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
 import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard } from './components/ReportInsights';
 import { BusyHoursCard, ReopenCard, WorkloadCard } from './components/ReportTeam';
@@ -60,6 +61,12 @@ export function ReportsScreen() {
   });
   const max = Math.max(1, ...counts.map((c) => c.count));
   const busiest = counts.reduce((a, b) => (b.count > a.count ? b : a), counts[0]);
+  // วันที่ผิดปกติ: against the same weekday before, over every case of the team and owner picked (not only the period).
+  const unusual = unusualDays(
+    all.filter((t) => (!f.team || t.team_id === f.team) && (!f.assignee || t.assignee_id === f.assignee)),
+    counts,
+  );
+  const flagged = [...unusual.flags.values()];
 
   const bars = (labels: Record<string, string>, key: 'status' | 'priority', tone: string) =>
     Object.entries(labels).map(([value, label]) => {
@@ -201,16 +208,21 @@ export function ReportsScreen() {
             </div>
             <div className="card-body">
               <div className="chart">
-                {counts.map((c) => (
-                  <ChartColumn
-                    key={c.day.toDateString()}
-                    tip={`${date(c.day)} · ${c.count} เคส`}
-                    count={c.count}
-                    max={max}
-                    day={days <= 31 ? c.day.getDate() : ''}
-                  />
-                ))}
+                {counts.map((c) => {
+                  const flag = unusual.flags.get(c.day.toDateString());
+                  return (
+                    <ChartColumn
+                      key={c.day.toDateString()}
+                      tip={`${date(c.day)} · ${c.count} เคส${flag ? ` · ${flag.kind === 'high' ? 'มากกว่า' : 'น้อยกว่า'}ปกติ (ปกติราว ${Math.round(flag.typical)})` : ''}`}
+                      count={c.count}
+                      max={max}
+                      day={days <= 31 ? c.day.getDate() : ''}
+                      tone={flag?.kind}
+                    />
+                  );
+                })}
               </div>
+              <UnusualDays flagged={flagged} compared={unusual.compared} />
             </div>
           </section>
           <div className="report-grid">
@@ -289,6 +301,43 @@ export function ReportsScreen() {
         ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
       </p>
     </>
+  );
+}
+
+const WEEKDAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+/* The days under the chart that stood out against the same weekday before (analysis.unusualDays), with the usual
+   count beside them; or why none are named. */
+function UnusualDays({ flagged, compared }: { flagged: DayFlag[]; compared: number }) {
+  if (!compared)
+    return (
+      <p className="unusual-note tiny muted">
+        ต้องมีข้อมูลย้อนหลังอย่างน้อย {HISTORY_NEEDED} สัปดาห์ ระบบจึงจะบอกได้ว่าวันไหนมีเคสมากหรือน้อยผิดปกติ
+      </p>
+    );
+  if (!flagged.length)
+    return <p className="unusual-note tiny muted">ไม่มีวันที่เคสมากหรือน้อยผิดปกติ เมื่อเทียบกับวันเดียวกันใน {HISTORY_WEEKS} สัปดาห์ก่อนหน้า</p>;
+  return (
+    <div className="unusual-days">
+      <h3 className="report-subhead">วันที่ผิดปกติ</h3>
+      <ul>
+        {flagged.map((d) => (
+          <li key={d.day.toDateString()} className={d.kind}>
+            <span className="unusual-mark" aria-hidden="true">
+              {d.kind === 'high' ? '▲' : '▼'}
+            </span>
+            <span>
+              <strong>
+                วัน{WEEKDAY_NAMES[d.day.getDay()]} {date(d.day)} · {d.count} เคส
+              </strong>{' '}
+              {d.kind === 'high' ? 'มากกว่าปกติ' : 'น้อยกว่าปกติ'} วัน{WEEKDAY_NAMES[d.day.getDay()]}ปกติราว {Math.round(d.typical)} เคส
+              {d.kind === 'low' && <span className="muted"> · อาจเป็นวันหยุด หรือช่องทางติดต่อมีปัญหา</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="tiny muted">เทียบกับค่ากลางของวันเดียวกันใน {HISTORY_WEEKS} สัปดาห์ก่อนหน้า · มากกว่าปกติคือตั้งแต่ 2 เท่าและเกินอย่างน้อย 3 เคส</p>
+    </div>
   );
 }
 

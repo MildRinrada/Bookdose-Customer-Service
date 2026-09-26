@@ -3,7 +3,7 @@
 Rows point at cases and conversations by id without foreign keys, so deleting a case never fails because of them;
 queries join on the case, so rows of a deleted case simply stop showing."""
 
-CHANNELS = ('web','line','email','facebook','manual')
+CHANNELS = ('web','line','email','facebook','instagram','manual')
 RULE_CHANNELS = ('',)+CHANNELS                                  # '' = any channel
 MACRO_STATUSES = ('','open','pending_customer','pending_internal','resolved','closed')   # '' = keep the status
 

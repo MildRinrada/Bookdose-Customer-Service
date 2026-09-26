@@ -71,6 +71,11 @@ def insert_setting(db, kind, route_id, generation):
     db.execute('INSERT INTO channel_settings(kind,route_id,generation) VALUES(?,?,?)',(kind,route_id,generation))
 
 
+def update_config(db, kind, config_json):
+    """The settings alone, in the same generation: nothing queued or being received is touched."""
+    db.execute('UPDATE channel_settings SET config=? WHERE kind=?',(config_json,kind))
+
+
 def save_setting(db, kind, enabled, config_json, generation, last_checked):
     """New settings start a new generation: pending polls are released and errors cleared."""
     db.execute('''UPDATE channel_settings SET enabled=?,config=?,generation=?,last_error='',

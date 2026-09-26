@@ -76,6 +76,25 @@ export function emailSteps(c: ChannelSetting): Step[] {
   ];
 }
 
+/** Instagram DMs through the Page: its account found, turned on here, Meta sending its DMs, and one received. */
+export function instagramSteps(c: FacebookSetting): Step[] {
+  const received = Boolean(c.instagram.last_received);
+  return [
+    {
+      label: 'ผูกบัญชี Instagram แบบมืออาชีพกับเพจนี้ แล้วบันทึกโดยเปิดรับ DM Instagram',
+      done: Boolean(c.config.instagram_id),
+      hint: 'ผูกได้ในการตั้งค่าเพจ Facebook หรือในแอป Instagram (บัญชีต้องเป็นแบบธุรกิจหรือครีเอเตอร์) และ Page Access Token ต้องมีสิทธิ์ instagram_manage_messages',
+    },
+    { label: 'เปิดใช้ช่องทาง Facebook', done: c.enabled, hint: 'DM Instagram ใช้การเชื่อมต่อเดียวกับเพจ ต้องเปิดช่องทาง Facebook ด้วย' },
+    {
+      label: 'ใน Meta App ตั้ง Webhooks ของ Instagram ด้วย Callback URL เดิม แล้วติ๊ก messages',
+      done: received,
+      hint: 'ในแอป Instagram ต้องเปิด การตั้งค่า → ความเป็นส่วนตัว → ข้อความ → อนุญาตให้เข้าถึงข้อความ ด้วย ระบบยืนยันขั้นนี้ได้เมื่อ DM แรกเข้ามา',
+    },
+    { label: 'ส่ง DM หาบัญชีนี้จาก Instagram บัญชีอื่น และระบบได้รับแล้ว', done: received, hint: 'ยังไม่มี DM เข้ามา ลองส่งจากบัญชีส่วนตัว' },
+  ];
+}
+
 export function facebookSteps(c: FacebookSetting): Step[] {
   return [
     { label: 'ใส่ Page Access Token และ App Secret แล้วกดบันทึก', done: c.credentials_configured, hint: 'คัดลอกจาก Meta App ที่เปิด Messenger ไว้' },

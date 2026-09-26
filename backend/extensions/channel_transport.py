@@ -3,6 +3,7 @@ No credentials in logs."""
 import base64
 from contextlib import contextmanager
 from email import policy
+from email.headerregistry import Address
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import formatdate, parseaddr
@@ -66,6 +67,12 @@ def line_webhook_info(secret):
         data=json.loads(raw)
         return {'endpoint':str(data.get('endpoint',''))[:500],'active':data.get('active') is True}
     except (ValueError,TypeError,AttributeError):raise ChannelError('rejected') from None
+
+
+def reply_line(secret,reply_token,text):
+    """Answer one webhook event with its reply token: free (a push counts against the monthly quota), once, and only
+    shortly after the event."""
+    line_request(secret['access_token'],'/v2/bot/message/reply',{'replyToken':reply_token,'messages':[{'type':'text','text':text}]})
 
 
 def send_line(secret,recipient,text,retry_key):
@@ -277,11 +284,15 @@ REPLY_SIGN = 'ส่งผ่านระบบบริการลูกค้
 REPLY_ROLE = 'ทีมดูแลลูกค้า'
 
 
-def reply_html(text,brand='',base='',author='',slug=''):
-    """A team reply as HTML: the stored Markdown rendered the way the pages render it, inside the mail frame."""
+def reply_html(text,brand='',base='',author='',slug='',signature=''):
+    """A team reply as HTML: the stored Markdown rendered the way the pages render it, inside the mail frame, with the
+    organization's signature (plain text, its lines kept) under it."""
     from backend.extensions import mail_style
     from backend.utils import markdown
     body = markdown.to_html(text,base or markdown.DEFAULT_BASE) or f'<p>{markdown.esc(text)}</p>'
+    if signature:
+        lines = '<br>'.join(markdown.esc(line) for line in signature.split('\n'))
+        body += f'<p style="margin:18px 0 0;padding-top:12px;border-top:1px solid #e6e6e1;color:#55555f">{lines}</p>'
     home = f'{base.rstrip(chr(47))}/support/{slug}' if base and slug else ''
     return mail_style.frame(
         body,brand=brand,title=REPLY_TITLE if brand else '',line=REPLY_KICKER if brand else '',
@@ -292,8 +303,13 @@ def reply_html(text,brand='',base='',author='',slug=''):
 
 
 def build_email(cfg,recipient,subject,text,message_id,reference,attachments,brand='',base='',author='',slug=''):
+    """A team reply by email. The sender's name (cfg sender_name, e.g. the service desk's) is shown beside the
+    address; the signature (cfg signature) follows the text in both the plain and the HTML part."""
     mail=EmailMessage()
-    mail['From']=cfg['address'];mail['To']=recipient
+    name=(cfg.get('sender_name') or '').strip()
+    mail['From']=Address(display_name=name,addr_spec=cfg['address']) if name else cfg['address']
+    mail['To']=recipient
+    signature=(cfg.get('signature') or '').strip()
     mail['Subject']=subject if subject.lower().startswith('re:') else 'Re: '+subject
     mail['Date']=formatdate(localtime=False,usegmt=True);mail['Message-ID']=message_id
     mail['Auto-Submitted']='auto-generated'
@@ -301,8 +317,9 @@ def build_email(cfg,recipient,subject,text,message_id,reference,attachments,bran
         mail['In-Reply-To']=reference;mail['References']=reference
     # Both forms travel together: the reader's client picks the HTML, a text-only reader still gets the words, and a
     # message that is HTML alone scores worse with spam filters.
-    mail.set_content(text)
-    mail.add_alternative(reply_html(text,brand,base,author,slug),subtype='html')
+    # "-- " on its own line is how mail readers tell a signature from the text.
+    mail.set_content(text+(f'\n\n-- \n{signature}' if signature else ''))
+    mail.add_alternative(reply_html(text,brand,base,author,slug,signature),subtype='html')
     for file in attachments:
         major,minor=file['mime'].split('/',1)
         mail.add_attachment(file['content'],maintype=major,subtype=minor,filename=file['name'])
@@ -339,7 +356,22 @@ def verify_facebook(token):
     return {'identity':str(data['id']),'display_name':str(data.get('name') or 'Facebook Page')[:100]}
 
 
+def facebook_instagram(token,page_id):
+    """The Instagram professional account connected to the Page: {'identity': its id, 'display_name': its username},
+    or None when the Page has none. Its DMs are read and answered with the same Page access token."""
+    fields=urllib.parse.quote('instagram_business_account{id,username}',safe=',')
+    try:data=facebook_request(token,f'/{page_id}?fields={fields}')
+    except ChannelError as error:
+        if error.code=='rejected':raise ChannelError('credentials') from None
+        raise
+    account=data.get('instagram_business_account') if isinstance(data,dict) else None
+    if not isinstance(account,dict) or not re.fullmatch(r'[0-9]{1,40}',str(account.get('id',''))):return None
+    return {'identity':str(account['id']),'display_name':str(account.get('username') or 'Instagram')[:100]}
+
+
 def send_facebook(token,recipient,text):
+    """A text reply through the Page: to a Messenger user by PSID, or to an Instagram user by IGSID (the Page's
+    connected Instagram account answers)."""
     data=facebook_request(token,'/me/messages',{'recipient':{'id':recipient},'messaging_type':'RESPONSE','message':{'text':text}},sending=True)
     return str(data.get('message_id',''))[:200] if isinstance(data,dict) else ''
 

@@ -54,7 +54,7 @@ CLOSE_FORBIDDEN = 4403
 CLOSE_IDLE = 4408
 CLOSE_LIMIT = 4429
 
-REPLY_CHANNELS = ('web','line','email','facebook')
+REPLY_CHANNELS = ('web','line','email','facebook','instagram')
 # What a browser may signal about a conversation; each is a method name on the identity.
 SIGNALS = ('typing','viewing')
 ID = re.compile(r'[a-f0-9]{32}')

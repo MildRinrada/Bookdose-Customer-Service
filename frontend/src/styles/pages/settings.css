@@ -932,3 +932,16 @@ a.settings-nav-item,a.settings-nav-item:hover {
   padding-top: 2px;
   overflow-wrap: anywhere;
 }
+
+/* DM Instagram under the Facebook Page (FacebookSettingsPanel): its own steps, set apart by a line. */
+.instagram-setup {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.instagram-setup h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 1rem;
+}

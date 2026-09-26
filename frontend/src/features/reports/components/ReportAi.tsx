@@ -49,12 +49,14 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>ผลงานของบอต AI</h2>
+          <h2 className="report-title">
+            <Icon name="sparkle" />
+            ผลงานของบอต AI
+          </h2>
           <p>
             {bot.conversations} บทสนทนาที่บอตเริ่มตอบในช่วงนี้ · {bot.answers} คำตอบจากบอต
           </p>
         </div>
-        <Icon name="sparkle" />
       </div>
       <div className="card-body">
         {!bot.conversations ? (
@@ -151,12 +153,14 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>คลังความรู้ที่ทีมใช้</h2>
+          <h2 className="report-title">
+            <Icon name="book" />
+            คลังความรู้ที่ทีมใช้
+          </h2>
           <p>
             ใช้ตอบลูกค้า {a.uses} ครั้งในช่วงนี้ · ถูกใช้ {a.used_articles} จาก {a.articles} บทความ
           </p>
         </div>
-        <Icon name="book" />
       </div>
       <div className="card-body">
         {a.top.length ? (

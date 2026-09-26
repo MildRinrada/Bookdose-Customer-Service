@@ -199,17 +199,35 @@ def running_jobs_started_before(db, before):
     return rows(db,"SELECT * FROM ai_jobs WHERE status='running' AND updated_at<?",(before,))
 
 
-def any_running(db):
-    return bool(one(db,"SELECT 1 FROM ai_jobs WHERE status='running'"))
+def any_running(db, since):
+    """A provider call is under way: a running job, or one cancelled while its call was out (it keeps its lease until
+    the call comes back, process_one releases it) - up to `since`, in case the process died with the call out."""
+    return bool(one(db,"SELECT 1 FROM ai_jobs WHERE status='running' OR (status='cancelled' AND lease IS NOT NULL AND updated_at>=?)",(since,)))
+
+
+def release(db, job_id):
+    """The job's provider call has come back."""
+    db.execute('UPDATE ai_jobs SET lease=NULL WHERE id=?',(job_id,))
+
+
+# The order the worker takes waiting jobs in (next_pending).
+TURN = "CASE WHEN mode='translate' THEN -1 WHEN mode='mood' THEN 2 WHEN mode='summary' AND requested_by IS NULL THEN 1 ELSE 0 END"
 
 
 def next_pending(db):
     """The oldest waiting job that somebody is waiting for - a translation first (a reply is held for it, or a member is
     reading); a summary written ahead of time (ai/summary.py), then a mood reading (ai/mood.py), only once none is left."""
-    return one(db,"""SELECT * FROM ai_jobs WHERE status='pending'
-                     ORDER BY CASE WHEN mode='translate' THEN -1 WHEN mode='mood' THEN 2 WHEN mode='summary' AND requested_by IS NULL THEN 1 ELSE 0 END,
-                     created_at,rowid
-                     LIMIT 1""")
+    return one(db,f"SELECT * FROM ai_jobs WHERE status='pending' ORDER BY {TURN},created_at,rowid LIMIT 1")
+
+
+def jobs_ahead(db, job_id):
+    """How many jobs the worker does before this waiting one: the one it is on now, and those next_pending takes first
+    (as things stand; a translation asked later still goes first)."""
+    me = one(db,f'SELECT {TURN} AS turn,created_at,rowid AS n FROM ai_jobs WHERE id=?',(job_id,))
+    if not me:
+        return 0
+    return db.execute(f"""SELECT COUNT(*) FROM ai_jobs WHERE id!=? AND (status='running'
+                          OR (status='pending' AND ({TURN},created_at,rowid)<(?,?,?)))""",(job_id,me['turn'],me['created_at'],me['n'])).fetchone()[0]
 
 
 def set_job_state(db, job_id, status, error):

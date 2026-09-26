@@ -33,6 +33,11 @@ def wake_ticket(req, ticket_id):
     return req.send(200,{'ok':True})
 
 
+def tag_ticket(req, ticket_id):
+    from backend.modules.tickets import tags
+    return req.send(200,{'tags':tags.set_for_ticket(req.db,req.ctx,ticket_id,req.body)})
+
+
 def export_tickets(req):
     return req.send(200,service.export_tickets_csv(req.db,req.ctx),'text/csv; charset=utf-8',
                     {'Content-Disposition':'attachment; filename="bookdose-tickets.csv"'})

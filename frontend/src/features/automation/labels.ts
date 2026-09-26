@@ -53,16 +53,20 @@ export function ruleCondition(rule: Pick<AutomationRule, 'channel' | 'keywords'>
 }
 
 export function ruleActions(
-  rule: Pick<AutomationRule, 'set_priority' | 'set_team_id' | 'set_assignee_id'>,
+  rule: Pick<AutomationRule, 'set_priority' | 'set_team_id' | 'set_assignee_id' | 'set_tags'>,
   teamName: (id: string) => string,
   memberName: (id: string) => string,
+  tagName: (id: string) => string = () => '',
 ): string {
+  const tags = (rule.set_tags ?? []).map(tagName).filter(Boolean);
   return [
     rule.set_priority && `ความเร่งด่วน${priorityLabels[rule.set_priority]}`,
     // A space before the name, as "มอบหมาย" has: a team called "Customer Success" would otherwise run straight
     // into the Thai word before it ("ส่งให้Customer Success").
     rule.set_team_id && `ส่งให้ ${teamName(rule.set_team_id)}`,
     rule.set_assignee_id && `มอบหมาย ${memberName(rule.set_assignee_id)}`,
+    // A rule may put on up to ten: three by name keeps the line readable, the rest are counted.
+    tags.length > 0 && `ติดป้าย ${tags.slice(0, 3).map((t) => `“${t}”`).join(' ')}${tags.length > 3 ? ` และอีก ${tags.length - 3} ป้าย` : ''}`,
   ]
     .filter(Boolean)
     .join(' · ');

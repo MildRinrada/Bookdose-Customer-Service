@@ -76,6 +76,8 @@ input[type=checkbox],input[type=radio],.merge-option input { accent-color: var(-
 /* Reading surfaces and forms */
 .card,.stat-card,.filters,.settings-nav,.article-card,.inbox-layout,.detail-layout,dialog,
 .dashboard-quick-menu,.message-media,.composer,.conversation-header { border-color: var(--line); }
+/* A <dialog> otherwise keeps the browser's white Canvas under the dark themes' light words. */
+dialog { background: var(--paper); }
 th { background: var(--soft); color: var(--muted); border-color: var(--line); }
 td { border-bottom-color: var(--line); }
 tbody tr:hover { background: var(--surface-hover); }

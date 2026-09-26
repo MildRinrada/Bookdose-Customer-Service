@@ -376,6 +376,372 @@ html:has(.composer) .assistant-panel {
   40% { opacity: 1; transform: translateY(-3px); }
 }
 
+/* While the assistant works (AssistantProgress): a card the width of the chat with what it is doing now and the time
+   so far, the steps (done, now, next) with what each read or waits on, and a line that says the page still hears from
+   the server. The same steps fold under the answer afterwards (assistant-trace). */
+.assistant-progress {
+  justify-self: stretch;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+.assistant-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.assistant-progress-head strong {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+}
+.assistant-progress-clock {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-variant-numeric: tabular-nums;
+}
+.assistant-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: assistant-spin .8s linear infinite;
+}
+@keyframes assistant-spin {
+  to { transform: rotate(360deg); }
+}
+.assistant-steps {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.assistant-steps li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  padding: 5px 0;
+}
+.assistant-step-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+}
+.assistant-step-mark .icon {
+  width: 12px;
+  height: 12px;
+}
+.assistant-steps li.done .assistant-step-mark {
+  border-color: transparent;
+  background: var(--green-soft);
+  color: var(--green);
+}
+.assistant-steps li.active .assistant-step-mark {
+  border: 0;
+}
+.assistant-steps li.active .assistant-step-mark .assistant-spinner {
+  width: 18px;
+  height: 18px;
+}
+.assistant-step-label {
+  color: var(--ink);
+  line-height: 1.5;
+}
+.assistant-steps li.active .assistant-step-label {
+  font-weight: 700;
+}
+.assistant-steps li.todo .assistant-step-label {
+  color: var(--muted);
+}
+.assistant-step-detail {
+  display: grid;
+  gap: 2px;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+/* What was read for the question, as small pieces. */
+.assistant-gathered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.assistant-gathered span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: .8rem;
+}
+/* The line that says the page still hears from the server, and หยุดรอ beside it (under it on a narrow chat). */
+.assistant-progress-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.assistant-progress-foot .btn {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.assistant-progress-pulse {
+  display: flex;
+  flex: 1 1 220px;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.5;
+}
+.assistant-progress-pulse>span {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: assistant-pulse 1.6s ease-in-out infinite;
+}
+.assistant-progress-pulse.warn {
+  color: var(--amber);
+}
+.assistant-progress-pulse.warn>span {
+  background: var(--amber);
+  animation: none;
+}
+@keyframes assistant-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+/* How the answer came about, folded next to its sources. */
+.assistant-trace {
+  font-size: .875rem;
+}
+.assistant-trace summary {
+  padding: 4px 0;
+  color: var(--link);
+  cursor: pointer;
+}
+.assistant-trace[open] {
+  flex-basis: 100%;
+}
+.assistant-trace .assistant-steps {
+  margin-top: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+/* A case the answer names (BD-12): a link to it, bold, never underlined. */
+.assistant-case-link {
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: none;
+}
+.assistant-case-link:hover,.assistant-case-link:focus-visible {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* What the assistant proposes to do (AssistantActions): a card under the answer, the width of the chat, one row per
+   case with a tick box, the words of what will change, a box for a message or note, and ทำเลย at the bottom. After
+   the press each row says done or why not. */
+.assistant-actions {
+  justify-self: stretch;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+.assistant-actions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+.assistant-actions-head strong {
+  color: var(--ink);
+}
+.assistant-actions-head span {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.assistant-action-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.assistant-action-list li {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.assistant-action-list li:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.assistant-action-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.assistant-action-row input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--invert);
+  cursor: pointer;
+}
+.assistant-action-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.assistant-action-case {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: .85rem;
+}
+.assistant-action-case a {
+  flex-shrink: 0;
+  color: var(--link);
+  font-weight: 700;
+  text-decoration: none;
+}
+.assistant-action-case a:hover,.assistant-action-case a:focus-visible {
+  color: var(--ink);
+  text-decoration: none;
+}
+.assistant-action-case>span:first-child {
+  flex-shrink: 0;
+  color: var(--ink);
+  font-weight: 700;
+}
+.assistant-action-subject {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assistant-action-body label {
+  display: grid;
+  gap: 1px;
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.55;
+  cursor: pointer;
+}
+.assistant-action-list li:not(.picked) .assistant-action-body label {
+  cursor: default;
+}
+.assistant-action-list li.skipped .assistant-action-body,.assistant-action-list li.skipped .assistant-action-text {
+  opacity: .6;
+}
+/* The text that goes out: the member's to rewrite before the press. */
+.assistant-action-text {
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--control-line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: .92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: none;
+  scrollbar-width: thin;
+}
+p.assistant-action-text {
+  border-color: var(--line);
+  background: var(--soft);
+}
+textarea.assistant-action-text:focus-visible {
+  border-color: var(--ink);
+  outline: none;
+}
+.assistant-action-state {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--muted);
+}
+.assistant-action-state .icon {
+  width: 13px;
+  height: 13px;
+}
+.assistant-action-list li.ok .assistant-action-state {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.assistant-action-list li.failed .assistant-action-state {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.assistant-action-error {
+  margin: 0 0 0 30px;
+  color: var(--red);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+.assistant-actions-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .85rem;
+}
+.assistant-actions-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.assistant-actions-foot span {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.assistant-actions-foot .btn {
+  margin-left: auto;
+}
+
 /* In the chat, the question box of the first screen sits at the bottom (.assistant-ask). */
 .assistant-form {
   flex-shrink: 0;
@@ -402,7 +768,8 @@ html:has(.composer) .assistant-panel {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .assistant-panel,.assistant-typing span,.assistant-fab,.assistant-log,.assistant-form,.assistant-turn.fresh,.assistant-welcome,.assistant-ask {
+  .assistant-panel,.assistant-typing span,.assistant-fab,.assistant-log,.assistant-form,.assistant-turn.fresh,.assistant-welcome,.assistant-ask,
+  .assistant-spinner,.assistant-progress-pulse>span {
     animation: none;
     transition: none;
   }

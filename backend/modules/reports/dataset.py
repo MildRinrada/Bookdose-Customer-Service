@@ -15,6 +15,7 @@ from backend.database import audit
 from backend.database.db import rows
 from backend.middleware.access import visible_team
 from backend.modules.reports.service import LEADS, _arg, period
+from backend.modules.tickets import tags
 from backend.utils.dates import now
 from backend.utils.validation import require
 
@@ -33,7 +34,7 @@ TABLES = {
         ('resolution_due_at','กำหนดแก้ไขเสร็จตาม SLA (UTC)'),('resolved_at','เวลาที่แก้ไขเสร็จหรือปิด (UTC)'),
         ('resolution_minutes','นาทีจากเปิดเคสถึงแก้ไขเสร็จ'),('resolution_met','แก้ไขเสร็จทันกำหนด 1/0 ว่าง = ยังไม่เสร็จและยังไม่เลยกำหนด'),
         ('reopen_count','จำนวนครั้งที่เคสกลับมาเปิดใหม่ (reopens.csv)'),('csat_rating','คะแนนความพึงพอใจล่าสุด 1-5 ว่าง = ไม่มีคำตอบ'),
-        ('escalated','ถูกยกระดับอัตโนมัติ 1/0 (escalations.csv)')],
+        ('escalated','ถูกยกระดับอัตโนมัติ 1/0 (escalations.csv)'),('tags','ป้ายเคส คั่นด้วย | ว่าง = ไม่มีป้าย')],
     'conversations.csv':[
         ('conversation_id','รหัสบทสนทนา'),('created_at','เวลาเริ่ม (UTC)'),('updated_at','เวลาเคลื่อนไหวล่าสุด (UTC)'),
         ('channel','ช่องทาง: web, line, email, facebook, manual'),('status','สถานะ: open, closed'),
@@ -92,9 +93,11 @@ def build(cd, db, ctx, query):
                             WHERE tc.ticket_id=t.id ORDER BY c.created_at LIMIT 1) AS channel,
                           (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopen_count,
                           (SELECT s.rating FROM csat_surveys s WHERE s.ticket_id=t.id AND s.rating IS NOT NULL ORDER BY s.answered_at DESC LIMIT 1) AS csat_rating,
-                          EXISTS(SELECT 1 FROM escalations e WHERE e.ticket_id=t.id) AS escalated
+                          EXISTS(SELECT 1 FROM escalations e WHERE e.ticket_id=t.id) AS escalated,{tags.IDS_COLUMN}
                           FROM tickets t WHERE t.created_at>=? AND t.created_at<? AND {in_team} ORDER BY t.created_at''',(since,until,team,team))
+    names = {tag['id']:tag['name'] for tag in tags.catalog(db)}
     for t in tickets:
+        t['tags'] = '|'.join(names[i] for i in tags.split_ids(t.pop('tag_ids')) if i in names)
         t['first_response_minutes'] = _minutes(t['created_at'],t['first_response_at'])
         t['first_response_met'] = _met(t['first_response_at'],t['first_response_due_at'],moment)
         t['resolution_minutes'] = _minutes(t['created_at'],t['resolved_at'])

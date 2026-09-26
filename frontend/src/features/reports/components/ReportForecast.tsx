@@ -1,15 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
-import type { TicketRow } from '@/features/tickets/types';
 import {
   AHEAD_DAYS,
-  forecast,
   LEARN_WEEKS,
   NEEDED_DAYS,
   RANGE_SHARE,
   TEST_DAYS,
+  type Forecast,
   type ForecastDay,
   type TestedDay,
 } from '../forecast';
@@ -24,8 +23,8 @@ const clock = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
 const cases = (d: ForecastDay) => (d.low === d.high ? `${d.low}` : `${d.low}-${d.high}`);
 const SHOWN = 7;
 
-export function ForecastCard({ all, team }: { all: TicketRow[]; team: string }) {
-  const f = useMemo(() => forecast(team ? all.filter((t) => t.team_id === team) : all), [all, team]);
+/** `f` is forecast() of the team picked (the report works it out once, for this card and the staffing card). */
+export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: string }) {
   const [more, setMore] = useState(false);
   const scope = team ? ' ของทีมที่เลือก' : '';
 
@@ -34,10 +33,12 @@ export function ForecastCard({ all, team }: { all: TicketRow[]; team: string }) 
       <section className="card report-card">
         <div className="card-header">
           <div>
-            <h2>พยากรณ์จำนวนเคส</h2>
+            <h2 className="report-title">
+              <Icon name="chart" />
+              พยากรณ์จำนวนเคส
+            </h2>
             <p>คาดการณ์เคสใหม่ {AHEAD_DAYS} วันข้างหน้า จากเคสที่ผ่านมา{scope}</p>
           </div>
-          <Icon name="chart" />
         </div>
         <div className="card-body">
           <p className="empty-mini">
@@ -59,12 +60,14 @@ export function ForecastCard({ all, team }: { all: TicketRow[]; team: string }) 
     <section className="card report-card forecast-card">
       <div className="card-header">
         <div>
-          <h2>พยากรณ์จำนวนเคส</h2>
+          <h2 className="report-title">
+            <Icon name="chart" />
+            พยากรณ์จำนวนเคส
+          </h2>
           <p>
             คาดการณ์เคสใหม่ {AHEAD_DAYS} วันข้างหน้า จากเคส {f.weeks} สัปดาห์ล่าสุด{scope} · นับจากวันนี้ ไม่ขึ้นกับช่วงวันที่ด้านบน
           </p>
         </div>
-        <Icon name="chart" />
       </div>
       <div className="card-body">
         <div className="report-figures">

@@ -53,6 +53,7 @@ def settings_form(body, current):
     return cfg,model,key,remove
 
 
-def job_view(job, result):
+def job_view(job, result, progress=None):
     return {'id':job['id'],'status':job['status'],'result':result,
-            'error':AI_ERRORS.get(job['error'],''),'input_tokens':job['input_tokens'],'output_tokens':job['output_tokens']}
+            'error':AI_ERRORS.get(job['error'],''),'input_tokens':job['input_tokens'],'output_tokens':job['output_tokens'],
+            **({'progress':progress} if progress else {})}

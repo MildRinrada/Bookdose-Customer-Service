@@ -10,7 +10,7 @@ from backend.modules.automation.service import SYSTEM_ACTOR
 from backend.modules.contacts import repository as contacts, service as contact_service
 from backend.modules.conversations import repository as conversations, service as conversation_service
 from backend.modules.organization import repository as organization
-from backend.modules.tickets import repository, schema, sla
+from backend.modules.tickets import repository, schema, sla, tags
 from backend.modules.trash import service as trash
 from backend.realtime import events as realtime
 from backend.utils.dates import iso, now, utc_now
@@ -21,7 +21,8 @@ from backend.utils.validation import require
 def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, category='ทั่วไป', conversation_id=None):
     """Create a case with SLA deadlines from the organization's settings and return its id.
     When linked to a conversation that already has a staff reply, that reply is its first response.
-    Matching routing rules then set its priority, team and owner."""
+    Matching routing rules then set its priority, team, owner and tags; a case still without an owner is handed to
+    someone in its team when the organization turned แจกเคสอัตโนมัติ on (automation/distribution.py)."""
     ticket_id = uid()
     timestamp = utc_now()
     repository.insert(db,ticket_id,repository.next_number(db),subject,contact_id,team_id,assignee_id,priority,category,
@@ -32,6 +33,8 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
         if response:
             repository.set_first_response(db,ticket_id,response)
     automation.apply_rules(db,ticket_id)
+    from backend.modules.automation import distribution
+    distribution.assign_new(db,ticket_id)
     # A new case: staff lists, and the customer's cases; its conversation now shows the case (and may have moved team).
     realtime.ticket(db,ticket_id,public=True,teams=(team_id,),conversations_listed=True)
     if conversation_id:
@@ -49,6 +52,8 @@ def list_tickets(db, ctx):
     for t in cases:
         f = found.get(t['id'])
         t['forecast'] = {k:f[k] for k in ('kind','due','expected','late_minutes','ahead')} if f else None
+        # ป้ายเคส (tags.py): the ids; the names are the organization's list in the workspace.
+        t['tags'] = tags.split_ids(t.pop('tag_ids'))
     return cases
 
 
@@ -90,7 +95,7 @@ def ticket_detail(db, ctx, ticket_id):
         from backend.modules.ai import translate
         conv['translation'] = translate.state(db,conv['id'])
         conv.pop('portal_token',None)
-    return {'ticket':ticket,'contact':contacts.find(db,ticket['contact_id']),
+    return {'ticket':{**ticket,'tags':tags.of_ticket(db,ticket['id'])},'contact':contacts.find(db,ticket['contact_id']),
             'conversations':convs,'events':audit.for_entity(db,ticket['id']),
             'automation':automation.ticket_extras(db,ticket['id'])}
 
@@ -236,8 +241,11 @@ def notify_assigned(db, ticket, assignee, ctx=None):
 
 
 def export_tickets_csv(db, ctx):
-    """CSV of the cases the user may see."""
+    """CSV of the cases the user may see, their tags by name."""
+    names = {t['id']:t['name'] for t in tags.catalog(db)}
     records = repository.export_rows(db,visible_team(ctx))
+    for record in records:
+        record['tag_ids'] = ', '.join(names[t] for t in tags.split_ids(record['tag_ids']) if t in names)
     data = schema.tickets_csv(records)
     audit.record(db,ctx['name'],'tickets.exported',ctx['tenant_id'],str(len(records)))
     db.commit()
@@ -251,7 +259,8 @@ def delete_ticket(db, ctx, ticket_id):
     ticket = get_scoped(db,'tickets',ticket_id,ctx)
     customer = contacts.find(db,ticket['contact_id']) or {}
     trash.capture(db,ctx,'ticket',ticket['id'],f"BD-{ticket['number']} · {ticket['subject']}",
-                  {'tickets':[ticket],'ticket_conversations':repository.conversation_links(db,ticket['id'])},
+                  {'tickets':[ticket],'ticket_conversations':repository.conversation_links(db,ticket['id']),
+                   'ticket_tags':repository.tag_rows(db,ticket['id'])},
                   detail=customer.get('name',''))
     realtime.ticket(db,ticket['id'],public=True,conversations_listed=True)
     repository.delete(db,ticket['id'])

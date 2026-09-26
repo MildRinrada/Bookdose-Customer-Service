@@ -41,12 +41,25 @@ def settings(db):
 
 
 # Administration (admins and team leads)
-def automation_page(db):
+def automation_page(cd, db, ctx):
+    from backend.modules.automation import distribution
+    from backend.modules.staff_prefs.model import WORK_TZ
+    # "วันนี้" of the handing out is the organization's day (Thai time), as its members' hours are.
+    midnight = dt.datetime.now(WORK_TZ).replace(hour=0,minute=0,second=0,microsecond=0)
     return {'rules':repository.rules(db),'macros':repository.macros(db),'settings':settings(db),
-            'escalations':repository.recent_escalations(db,20)}
+            'escalations':repository.recent_escalations(db,20),
+            'distribution':distribution.overview(cd,db,ctx['tenant_id'],iso(midnight.astimezone(dt.timezone.utc)))}
+
+
+def save_distribution(cd, db, ctx, body):
+    from backend.modules.automation import distribution
+    return distribution.save(cd,db,ctx,body)
 
 
 def _check_rule(cd, db, ctx, values):
+    if values['set_tags']:
+        from backend.modules.tickets import tags
+        require(set(values['set_tags'])<=tags.known_ids(db),'ป้ายบางอันถูกลบไปแล้ว กรุณาเปิดฟอร์มใหม่')
     if values['set_team_id']:
         require(organization.team_exists(db,values['set_team_id']),'ไม่พบทีม')
     if values['set_assignee_id']:
@@ -136,11 +149,13 @@ def apply_rules(db, ticket_id):
     if not matched:
         return []
     priority,team,assignee = ticket['priority'],ticket['team_id'],ticket['assignee_id']
+    tag_ids = []
     for rule in matched:
         priority = rule['set_priority'] or priority
         if rule['set_team_id'] and organization.team_exists(db,rule['set_team_id']):
             team = rule['set_team_id']
         assignee = rule['set_assignee_id'] or assignee
+        tag_ids += [t for t in rule['set_tags'] if t not in tag_ids]
     away = ''
     if assignee:
         from backend.modules.staff_prefs import service as staff_prefs
@@ -162,6 +177,12 @@ def apply_rules(db, ticket_id):
     conversations.set_team_for_ticket(db,ticket_id,team)
     names = [rule['name'] for rule in matched]
     audit.record(db,SYSTEM_ACTOR,'automation.rule_applied',ticket_id,', '.join(names)+away)
+    if tag_ids:
+        # ป้ายเคส (tickets/tags.py) the rules put on, written in the case's history like a member's tagging.
+        from backend.modules.tickets import tags
+        added = tags.add(db,ticket_id,tag_ids,SYSTEM_ACTOR)
+        if added:
+            audit.record(db,SYSTEM_ACTOR,'ticket.tagged',ticket_id,json.dumps({'added':tags.names_of(db,added),'removed':[]},ensure_ascii=False))
     if assignee and assignee!=ticket['assignee_id']:
         from backend.modules.staff_prefs import service as staff_prefs
         staff_prefs.queue(db,assignee,'assigned',f"เคส BD-{ticket['number']} มอบหมายให้คุณ",
@@ -558,6 +579,9 @@ class Worker:
                         return
                     try:
                         with D.control() as cd, D.tenant(tenant_id) as db:
+                            # แจกเคสอัตโนมัติ first: a case someone can take now should not be escalated as unclaimed.
+                            from backend.modules.automation import distribution
+                            distribution.run(cd,db,tenant_id)
                             escalate_due(cd,db,tenant_id)
                             # A case the queue will not reach in time: its owner hears before the deadline passes.
                             from backend.modules.automation import forecast

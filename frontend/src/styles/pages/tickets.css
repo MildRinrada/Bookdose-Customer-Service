@@ -731,3 +731,250 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   width: 16px;
   height: 16px;
 }
+
+/* ป้ายเคส (features/tickets/tags.ts): chips on the case list, the case screen, a routing rule and the report. A chip
+   that can be switched reads as a control (a clear edge, dark words); one switched on is the solid "this one" fill the
+   app uses for a chosen thing. A read-only chip is a quiet label. */
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.ticket-list .tag-chips {
+  margin-top: 6px;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: .88rem;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.tag-chip.more {
+  color: var(--muted);
+}
+button.tag-chip.toggle {
+  min-height: 36px;
+  padding: 5px 13px;
+  border-color: var(--control-line);
+  background: var(--paper);
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.tag-chip.toggle:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+button.tag-chip.toggle.on {
+  border-color: var(--invert);
+  background: var(--invert);
+  color: #fff;
+}
+button.tag-chip.toggle .icon {
+  width: 15px;
+  height: 15px;
+}
+button.tag-chip.toggle:disabled {
+  cursor: default;
+  opacity: .55;
+}
+button.tag-chip.toggle.on:disabled {
+  opacity: .8;
+}
+button.tag-chip.toggle:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.tag-picker {
+  display: grid;
+  gap: 10px;
+}
+.tag-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--control-line);
+  border-radius: 8px;
+  background: var(--field);
+}
+.tag-picker-search input {
+  color: var(--ink);
+  border: 0;
+  padding: 9px 0;
+  background: transparent;
+}
+.tag-picker-search input:focus {
+  outline: none;
+}
+.tag-picker-search:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+.case-tags-card {
+  display: grid;
+  gap: 10px;
+}
+.case-tags-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.case-tags-head h3 {
+  margin: 0;
+}
+.case-tags-card p {
+  margin: 0;
+}
+/* On a phone the tag filter takes a row of its own, so the status and priority filters keep theirs readable. */
+@media (max-width:760px) {
+  .filters #ticket-tag {
+    flex: 1 1 100%;
+  }
+}
+
+/* จัดการป้ายเคส (ManageTags, in the modal): the field that makes a tag first, then the tags as chips with their
+   count, and a pencil and a bin that read as buttons. Words the owner types are the page's own ink, not the grey the
+   app's plain inputs start from, so nothing here looks locked. */
+.tag-manage {
+  display: grid;
+  gap: 14px;
+}
+.tag-manage p {
+  margin: 0;
+}
+.tag-manage input {
+  color: var(--ink);
+  border-color: var(--control-line);
+  font-size: 1rem;
+}
+.tag-manage input::placeholder {
+  color: var(--muted);
+}
+.tag-manage-create label {
+  color: var(--ink);
+  font-weight: 700;
+}
+.tag-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tag-manage-row input {
+  flex: 1;
+  min-width: 0;
+}
+.tag-manage-row .btn {
+  flex-shrink: 0;
+}
+.tag-manage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+.tag-manage-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.tag-manage-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.tag-manage-list li {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+}
+.tag-manage-list li + li {
+  border-top: 1px solid var(--line);
+}
+.tag-manage-list li.editing {
+  display: block;
+  padding: 8px 10px;
+  background: var(--soft);
+}
+.tag-manage-list .tag-chip {
+  justify-self: start;
+  font-size: 1rem;
+  padding: 3px 12px;
+}
+.tag-manage-count {
+  color: var(--muted);
+  font-size: .92rem;
+  white-space: nowrap;
+}
+.tag-manage-actions {
+  display: flex;
+  gap: 4px;
+}
+.tag-manage-actions .icon-btn {
+  min-width: 40px;
+  min-height: 40px;
+  border: 1px solid var(--control-line);
+  color: var(--ink);
+}
+@media (max-width:480px) {
+  .tag-manage-create .tag-manage-row {
+    flex-wrap: wrap;
+  }
+  .tag-manage-create .tag-manage-row .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .tag-manage-list li {
+    gap: 8px;
+  }
+}
+/* An owner adds a word to the list from the case itself. */
+.tag-create {
+  display: flex;
+  gap: 8px;
+}
+.tag-create input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-color: var(--control-line);
+  color: var(--ink);
+}
+.tag-create .btn {
+  flex-shrink: 0;
+}
+/* A tag just made, marked for a moment where it landed; the list's own search box. */
+.tag-manage-list li.fresh {
+  background: var(--green-soft);
+  transition: background .6s;
+}
+.tag-manage .tag-picker-search input {
+  border: 0;
+}
+.tag-picker-more {
+  justify-self: start;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-manage-list li.fresh {
+    transition: none;
+  }
+}
+.tag-manage-full {
+  color: var(--amber);
+  font-weight: 600;
+}

@@ -7,10 +7,12 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
+import { useCaseTags } from '@/features/tickets/tags';
 import { plainText } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { useMemberName, useTeamName } from '@/lib/session';
 import { AUTOMATION_PATH, deleteMacro, deleteRule, saveAutomationSettings, saveRule } from './api';
+import { DistributionCard } from './components/DistributionCard';
 import { EscalationRow } from './components/EscalationRow';
 import { MacroForm } from './components/MacroForm';
 import { RuleForm } from './components/RuleForm';
@@ -33,6 +35,8 @@ function AutomationView({ data }: { data: AutomationPage }) {
   const refresh = useInvalidate();
   const teamName = useTeamName();
   const memberName = useMemberName();
+  const tagList = useCaseTags();
+  const tagName = (id: string) => tagList.find((t) => t.id === id)?.name ?? '';
 
   // A click that fails says why in the toast, as the old action dispatcher did.
   const act = (work: () => Promise<unknown>) => async () => {
@@ -55,6 +59,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
         set_priority: r.set_priority,
         set_team_id: r.set_team_id,
         set_assignee_id: r.set_assignee_id,
+        set_tags: r.set_tags ?? [],
         enabled: !r.enabled,
       });
       toast(r.enabled ? `ปิดกฎ “${r.name}” แล้ว` : `เปิดกฎ “${r.name}” แล้ว`);
@@ -95,7 +100,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
       <div className="page-heading">
         <div>
           <h1>ระบบอัตโนมัติ</h1>
-          <p>ลดงานซ้ำ ๆ ด้วยกฎรับเรื่อง การยกระดับ SLA ปุ่ม Macro และแบบประเมินความพึงพอใจ</p>
+          <p>ลดงานซ้ำ ๆ ด้วยกฎรับเรื่อง การแจกเคส การยกระดับ SLA ปุ่ม Macro และแบบประเมินความพึงพอใจ</p>
         </div>
         <div className="flex">
           <Link className="btn subtle" href="/dashboard">
@@ -132,7 +137,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
                           <span className="auto-chip when">ถ้า</span>
                           <span>{ruleCondition(r)}</span>
                           <span className="auto-chip then">ให้</span>
-                          <span>{ruleActions(r, teamName, memberName)}</span>
+                          <span>{ruleActions(r, teamName, memberName, tagName)}</span>
                         </p>
                       </div>
                       <div className="auto-row-actions">
@@ -166,6 +171,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
             </div>
             <p className="auto-foot tiny muted">หลายกฎตรงกัน กฎที่สร้างทีหลังชนะ · ผู้รับผิดชอบต้องอยู่ในทีมของเคส</p>
           </section>
+          {data.distribution && <DistributionCard data={data.distribution} />}
           <section className="card" id="automation-macros">
             <div className="card-header">
               <div>

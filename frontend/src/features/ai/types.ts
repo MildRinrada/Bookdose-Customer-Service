@@ -9,6 +9,52 @@ export type AiState = { mode: 'human' | 'bot' | string; reason?: string; pending
 /** The draft an agent asked for (job.result of a finished 'draft' job). */
 export type AiDraftResult = { answer: string; summary: string; needs_human: boolean; citations: AiCitation[] };
 
+/** Something the staff's assistant proposes to do, as the server checked it (ai/assistant_actions.py): ids, never the
+    AI's own words for what it is, so the list says exactly what ทำเลย will do. */
+export type AssistantAction = {
+  type: 'update_case' | 'tag_case' | 'snooze_case' | 'wake_case' | 'note' | 'reply' | 'retry_send' | 'auto_assign';
+  /** The case ("BD-12") and its id; a note or message to a chat on screen that is not a case has neither. */
+  case?: string;
+  subject?: string;
+  ticket_id?: string | null;
+  conversation_id?: string;
+  changes?: { status?: string; priority?: string; team_id?: string; assignee_id?: string | null };
+  add_tags?: string[];
+  remove_tags?: string[];
+  until?: string;
+  text?: string;
+  messages?: string[];
+  enabled?: boolean;
+  cap?: number;
+};
+
+/** What happened to each action picked when the member pressed ทำเลย. */
+export type AssistantRunResult = { index: number; ok: boolean; error: string };
+
+/** The assistant's answer (job.result of a finished 'ask' job). */
+export type AssistantResult = {
+  answer: string;
+  citations: AiCitation[];
+  actions?: AssistantAction[];
+  /** Actions the AI proposed that pointed at something it was not shown, left out. */
+  dropped?: number;
+  /** Case number → id, for the cases the answer names that the member may open. */
+  cases?: Record<string, string>;
+  ran?: { at: string; results: AssistantRunResult[] };
+};
+
+/** Where a job stands while it waits or runs (ai/service.progress). */
+export type AiJobProgress = {
+  /** Jobs the worker does before this one (the one it is on now included); 0 once it runs. */
+  ahead: number;
+  waited_seconds: number;
+  /** How long the AI has been at it; null while it waits. */
+  running_seconds: number | null;
+  provider: 'openai' | 'gemini' | 'n8n' | '';
+  /** The most the call may take before the job fails and says so. */
+  limit_seconds: number;
+};
+
 /** GET /api/ai/jobs/<id> */
 export type AiJob = {
   id: string;
@@ -17,6 +63,20 @@ export type AiJob = {
   error: string;
   input_tokens?: number;
   output_tokens?: number;
+  progress?: AiJobProgress;
+};
+
+/** What the server gathered for an assistant question before queueing it (POST /api/ai/assistant). */
+export type AssistantGathered = {
+  cases: number;
+  cases_not_listed: number;
+  articles: number;
+  /** "BD-12", "chat" for a chat on screen that is not a case, or "". */
+  current: string;
+  customers: number;
+  members: number;
+  channels: number;
+  history: number;
 };
 
 /** GET /api/ai/settings (admins only). */

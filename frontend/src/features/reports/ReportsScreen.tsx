@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useToast } from '@/components/ui/Toast';
 import { download } from '@/lib/api/client';
@@ -20,7 +20,10 @@ import { ArticlesCard, BotReportCard } from './components/ReportAi';
 import { HISTORY_NEEDED, HISTORY_WEEKS, unusualDays, type DayFlag } from './analysis';
 import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
 import { ForecastCard } from './components/ReportForecast';
+import { forecast } from './forecast';
 import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard } from './components/ReportInsights';
+import { StaffingCard } from './components/ReportStaffing';
+import { TagBarsCard } from './components/ReportTags';
 import { BusyHoursCard, ReopenCard, WorkloadCard } from './components/ReportTeam';
 import {
   defaultReportFilter,
@@ -45,15 +48,19 @@ export function ReportsScreen() {
   const work = useWork();
   const memberName = useMemberName();
   const saveCSV = useDownloadTicketsCSV();
-  const all = (useStaffTickets().data?.tickets ?? []) as TicketRow[];
+  const loaded = useStaffTickets().data?.tickets as TicketRow[] | undefined;
+  const all = useMemo(() => loaded ?? [], [loaded]);
   const [f, setFilter] = useUiState<ReportFilter>('reports:filter', defaultReportFilter());
   const extras = useApi<ReportExtras>(reportExtrasPath(f), { keepPrevious: true }).data;
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
+  // พยากรณ์จำนวนเคส of the team picked, from today whatever the period: the forecast card and the staffing card.
+  const ahead = useMemo(() => forecast(f.team ? all.filter((t) => t.team_id === f.team) : all), [all, f.team]);
 
   const tickets = reportTickets(all, f);
   const m = reportMetrics(tickets);
-  const before = reportMetrics(reportTickets(all, f, true));
+  const earlier = reportTickets(all, f, true);
+  const before = reportMetrics(earlier);
   const days = Math.max(1, Math.round((new Date(f.to).getTime() - new Date(f.from).getTime()) / 86400000) + 1);
   const counts = [...Array(days)].map((_, i) => {
     const day = new Date(f.from + 'T00:00:00');
@@ -226,7 +233,8 @@ export function ReportsScreen() {
               <UnusualDays flagged={flagged} compared={unusual.compared} />
             </div>
           </section>
-          <ForecastCard all={all} team={f.team} />
+          <ForecastCard forecast={ahead} team={f.team} />
+          {work.role === 'admin' && !work.read_only && <StaffingCard forecast={ahead} all={all} team={f.team} />}
           <div className="report-grid">
             <FirstResponseCard all={all} f={f} />
             <ResolutionCard all={all} f={f} />
@@ -255,6 +263,7 @@ export function ReportsScreen() {
                 </div>
                 <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
               </section>
+              <TagBarsCard tickets={tickets} before={earlier} />
             </div>
           </div>
           <BusyHoursCard hours={extras?.hours} f={f} />

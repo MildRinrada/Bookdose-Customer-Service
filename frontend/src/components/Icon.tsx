@@ -17,6 +17,7 @@ const paths = {
   shield: 'M12 2l9 4v6c0 5-9 10-9 10S3 17 3 12V6z M8 12l3 3 5-6',
   search: 'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
   plus: 'M12 5v14 M5 12h14',
+  minus: 'M5 12h14',
   clock: 'M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
   check: 'M5 12l4 4L19 6',
   checkCircle: 'M9 12l2 2 4-4 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
@@ -72,6 +73,8 @@ const paths = {
   expand: 'M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7',
   shrink: 'M4 14h6v6 M20 10h-6V4 M14 10l7-7 M3 21l7-7',
   translate: 'M5 8l6 6 M4 14l6-6 2-3 M2 5h12 M7 2h1 M22 22l-5-10-5 10 M14 18h6',
+  // ป้ายเคส: a luggage tag with its hole.
+  tag: 'M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z M8.5 8.5h.01',
   // A rounded square with the lens and the flash: Instagram's own mark, drawn in the same line as the rest.
   instagram: 'M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17.5 6.5h.01',
   facebook:

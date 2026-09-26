@@ -3,6 +3,7 @@
 No provider call occurs on an inbound customer's request. Jobs and messages are
 committed together; provider calls run without an open database transaction.
 """
+import datetime as dt
 import json
 import re
 import threading
@@ -297,7 +298,9 @@ def validate_owner_result(result, mode, payload=None):
                             and a['id']==cite.get('article_id') and quote in a['text']),None)
             if article and article['id'] not in {c['article_id'] for c in citations}:
                 citations.append({'article_id':article['id'],'title':article['title'],'quote':quote,'visibility':article['visibility']})
-        return {'answer':answer.strip(),'citations':citations[:5]}
+        # What it proposes to do is checked against what it was shown (ai/assistant_actions.py).
+        from backend.modules.ai import assistant
+        return assistant.finish(answer.strip(),citations[:5],result,payload)
     if mode=='article':
         title,category,body = (result.get(k) for k in ('title','category','body'))
         if not all(isinstance(v,str) for v in (title,category,body)) or not title.strip() or not body.strip() \
@@ -352,8 +355,9 @@ def process_one(tenant_id):
         # A reply held for its translation never waits for good (ai/translate.py).
         for conversation_id in translate.sweep(db):
             realtime.conversation(db,conversation_id)
-        # Only one in-flight provider call per tenant, even with multiple app processes.
-        if repository.any_running(db):
+        # Only one in-flight provider call per tenant, even with multiple app processes (a job cancelled while its call
+        # is out still counts until the call comes back).
+        if repository.any_running(db,after(seconds=-JOB_TIMEOUT_SECONDS)):
             return False
         job = repository.next_pending(db)
         if not job:
@@ -378,15 +382,18 @@ def process_one(tenant_id):
         key = repository.read_key(tenant_id)
     usage = {'input_tokens':0,'output_tokens':0}
     error = None
+    # What stays here: the ids behind the assistant's refs (ai/assistant_context.py) are what its answer is checked
+    # against, never something the provider needs.
+    sent = {k:v for k,v in payload.items() if not k.startswith('_')}
 
     def ask():
         # The organization's n8n workflow when it connected one, otherwise its key's service (Gemini or OpenAI); the
         # answer is checked the same way.
         if webhook:
-            return ai_webhook.call(webhook,cfg,payload,job['mode'])
+            return ai_webhook.call(webhook,cfg,sent,job['mode'])
         if key_provider(key)=='gemini':
-            return gemini_client.call_provider(key,cfg,payload,job['mode'])
-        return openai_client.call_provider(key,cfg,payload,job['mode'])
+            return gemini_client.call_provider(key,cfg,sent,job['mode'])
+        return openai_client.call_provider(key,cfg,sent,job['mode'])
     try:
         if not webhook and not key:
             raise AIError('not_configured')
@@ -420,6 +427,8 @@ def process_one(tenant_id):
         current = repository.find_job(db,job['id'])
         if current['lease']!=lease:
             return True
+        # The call is back: the next job may go, whatever becomes of this one (a member may have stopped waiting).
+        repository.release(db,job['id'])
         repository.set_usage(db,job['id'],usage)
         if current['status']!='running':
             return True
@@ -514,8 +523,35 @@ def find_job(db, job_id):
     return repository.find_job(db,job_id)
 
 
+def provider_limit(tenant_id, mode):
+    """(who answers: 'n8n' | 'openai' | 'gemini' | '', how long this job's call may take at most, in seconds)."""
+    if repository.read_webhook(tenant_id):
+        return 'n8n',ai_webhook.TIMEOUT_SECONDS
+    key = repository.read_key(tenant_id)
+    if not key:
+        return '',0
+    if key_provider(key)=='gemini':
+        # One model, then the fallbacks while it is still early (gemini_client.call_provider).
+        return 'gemini',gemini_client.FALLBACK_WITHIN_SECONDS+gemini_client.TIMEOUT_SECONDS
+    return 'openai',openai_client.timeout_for(mode)
+
+
+def progress(db, tenant_id, job):
+    """Where a job the member is waiting for stands, so the page can say what is happening rather than spin: the jobs
+    the worker does before it, how long it has waited and how long the AI has been at it, who answers and the most
+    that may take."""
+    provider,limit = provider_limit(tenant_id,job['mode'])
+    moment = dt.datetime.now(dt.timezone.utc)
+    since = lambda stamp:max(0,int((moment-dt.datetime.fromisoformat(stamp)).total_seconds()))
+    running = job['status']=='running'
+    return {'ahead':0 if running else repository.jobs_ahead(db,job['id']),'waited_seconds':since(job['created_at']),
+            # claim() stamps updated_at when the worker takes the job.
+            'running_seconds':since(job['updated_at']) if running else None,'provider':provider,'limit_seconds':limit}
+
+
 def job_view(db, ctx, job_id):
-    """Status and result of a job the user requested. A finished draft whose conversation or settings changed is reported as stale."""
+    """Status and result of a job the user requested (with where it stands while it waits or runs). A finished draft
+    whose conversation or settings changed is reported as stale."""
     job = repository.job_for_user(db,job_id,ctx['id'])
     require(job,'ไม่พบงาน AI',404)
     if job['conversation_id']:
@@ -526,7 +562,7 @@ def job_view(db, ctx, job_id):
     signature = result.pop('_context_hash',None)
     if job['mode']=='draft' and job['status']=='done' and (signature!=snapshot(db,job)[2] or job['config_version']!=config(db)['version']):
         job['status'],job['error'],result = 'cancelled','stale',{}
-    return schema.job_view(job,result)
+    return schema.job_view(job,result,progress(db,ctx['tenant_id'],job) if job['status'] in ('pending','running') else None)
 
 
 class Worker:

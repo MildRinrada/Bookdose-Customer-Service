@@ -22,10 +22,12 @@ export function ReopenCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>เคสที่ถูกเปิดซ้ำ</h2>
+          <h2 className="report-title">
+            <Icon name="restore" />
+            เคสที่ถูกเปิดซ้ำ
+          </h2>
           <p>เคสที่แก้ไขเสร็จหรือปิดแล้วแต่กลับมาเปิดอีก เพราะลูกค้าทักกลับหรือทีมเปิดเอง</p>
         </div>
-        <Icon name="restore" />
       </div>
       <div className="card-body">
         {now.finished ? (
@@ -83,10 +85,12 @@ export function WorkloadCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) 
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>ภาระงานของทีม</h2>
+          <h2 className="report-title">
+            <Icon name="users" />
+            ภาระงานของทีม
+          </h2>
           <p>เคสที่ยังไม่เสร็จตอนนี้ของแต่ละคน · เฉลี่ยคนละ {load.average.toFixed(1)} เคส</p>
         </div>
-        <Icon name="users" />
       </div>
       {heavy.length > 0 && (
         <p className="notice warning report-hint">
@@ -143,12 +147,14 @@ export function BusyHoursCard({ hours, f }: { hours: ReportExtras['hours'] | und
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>ช่วงเวลาที่ลูกค้าติดต่อเข้ามา</h2>
+          <h2 className="report-title">
+            <Icon name="calendar" />
+            ช่วงเวลาที่ลูกค้าติดต่อเข้ามา
+          </h2>
           <p>
             บทสนทนาใหม่ {hours.total} เรื่องในช่วงนี้ (ทุกช่องทาง{f.team ? ' ของทีมที่เลือก' : ''}) · แยกตามวันและชั่วโมงตามเวลาเครื่องของคุณ
           </p>
         </div>
-        <Icon name="calendar" />
       </div>
       <div className="card-body">
         {hours.total ? (

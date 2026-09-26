@@ -44,13 +44,25 @@ def keywords(body):
     return '\n'.join(words)
 
 
+def rule_tags(body):
+    """The ป้ายเคส a rule puts on (tickets/tags.py): ids, each once; the service checks they are on the list."""
+    from backend.modules.tickets.tags import PER_CASE
+    value = body.get('set_tags',[]) or []
+    require(isinstance(value,list) and all(isinstance(v,str) and ID.fullmatch(v) for v in value),'ข้อมูลป้ายไม่ถูกต้อง')
+    value = list(dict.fromkeys(value))
+    require(len(value)<=PER_CASE,f'กฎหนึ่งติดป้ายได้ไม่เกิน {PER_CASE} ป้าย')
+    return value
+
+
 def rule_form(body):
     values = {'name':field(body,'name',100),'enabled':_flag(body,'enabled',True),'channel':body.get('channel','') or '',
               'keywords':keywords(body),'set_priority':body.get('set_priority','') or '',
-              'set_team_id':_optional_id(body,'set_team_id'),'set_assignee_id':_optional_id(body,'set_assignee_id')}
+              'set_team_id':_optional_id(body,'set_team_id'),'set_assignee_id':_optional_id(body,'set_assignee_id'),
+              'set_tags':rule_tags(body)}
     require(values['channel'] in RULE_CHANNELS,'ช่องทางไม่ถูกต้อง')
     require(values['set_priority'] in ('',)+PRIORITIES,'ความเร่งด่วนไม่ถูกต้อง')
-    require(values['set_priority'] or values['set_team_id'] or values['set_assignee_id'],'กรุณาเลือกสิ่งที่ระบบต้องทำอย่างน้อย 1 อย่าง')
+    require(values['set_priority'] or values['set_team_id'] or values['set_assignee_id'] or values['set_tags'],
+            'กรุณาเลือกสิ่งที่ระบบต้องทำอย่างน้อย 1 อย่าง')
     return values
 
 

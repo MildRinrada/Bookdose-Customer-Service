@@ -8,7 +8,7 @@ from backend.utils.dates import iso, utc_now
 from backend.utils.validation import require, field
 
 EXCEL_UTF8_BOM = '\ufeff'
-CSV_HEADER = ['Case','Subject','Customer','Status','Priority','Category','Created at','First response at','Resolved at']
+CSV_HEADER = ['Case','Subject','Customer','Status','Priority','Category','Created at','First response at','Resolved at','Tags']
 
 
 def new_ticket(body):

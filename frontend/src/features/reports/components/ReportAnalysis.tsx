@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { FilterPill } from '@/components/ui/filters';
 import { csvText, saveCSVFile } from '@/features/tickets/csv';
+import { useCaseTags } from '@/features/tickets/tags';
 import type { TicketRow } from '@/features/tickets/types';
 import { formatDuration } from '@/lib/format';
 import { useMemberName, useTeamName } from '@/lib/session';
@@ -77,11 +78,15 @@ function Cells({ m, label }: { m: Measures & { share?: number }; label: string }
 export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
   const teamName = useTeamName();
   const memberName = useMemberName();
-  const [dimension, setDimension] = useUiState<Dimension>('reports:pivot', 'channel');
+  const tagList = useCaseTags();
+  const [picked, setDimension] = useUiState<Dimension>('reports:pivot', 'channel');
+  // ป้ายเคส only once the organization has a list of them.
+  const dimensions = (Object.keys(dimensionLabels) as Dimension[]).filter((d) => d !== 'tag' || tagList.length > 0);
+  const dimension = dimensions.includes(picked) ? picked : 'channel';
   const natural = orderedDimensions.includes(dimension);
   const [sort, setSort] = useState<{ column: PivotColumn | 'natural'; descending: boolean } | null>(null);
   const current = sort ?? (natural ? { column: 'natural' as const, descending: false } : { column: 'cases' as const, descending: true });
-  const rows = sortRows(pivot(tickets, dimension, { team: teamName, member: memberName }), current.column, current.descending);
+  const rows = sortRows(pivot(tickets, dimension, { team: teamName, member: memberName, tags: tagList }), current.column, current.descending);
   const total = measure(tickets);
   const worst = rows
     .filter((r) => r.answered >= FEW && r.responseSla != null && r.responseSla < 80)
@@ -120,7 +125,7 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
       </div>
       <div className="card-body">
         <div className="filter-pills pivot-dimensions" role="group" aria-label="แยกตาม">
-          {(Object.keys(dimensionLabels) as Dimension[]).map((d) => (
+          {dimensions.map((d) => (
             <FilterPill key={d} value={d} label={dimensionLabels[d]} pressed={d === dimension} onClick={pick} />
           ))}
         </div>
@@ -169,6 +174,7 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
       </table>
       <p className="card-note tiny muted">
         ตัวเลขสีจางมาจากเคสน้อยกว่า {FEW} เคส ยังใช้ตัดสินอะไรไม่ได้ · ตอบครั้งแรกและแก้ไขเสร็จเป็นค่ากลาง ไม่ใช่ค่าเฉลี่ย · วันและช่วงเวลานับตามนาฬิกาของเครื่องคุณ
+        {dimension === 'tag' && ' · เคสที่ติดหลายป้ายนับในทุกป้าย สัดส่วนรวมกันจึงเกิน 100% ได้'}
       </p>
     </section>
   );
@@ -184,10 +190,12 @@ export function SpeedSatisfactionCard({ tickets }: { tickets: TicketRow[] }) {
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>ความเร็วกับความพอใจ</h2>
+          <h2 className="report-title">
+            <Icon name="star" />
+            ความเร็วกับความพอใจ
+          </h2>
           <p>เคสที่เปิดในช่วงนี้และลูกค้าให้คะแนนแล้ว {s.total} เคส · คะแนนเฉลี่ยแยกตามว่าลูกค้ารอนานแค่ไหน</p>
         </div>
-        <Icon name="star" />
       </div>
       <div className="card-body">
         <div className="filter-pills" role="group" aria-label="แยกตาม">

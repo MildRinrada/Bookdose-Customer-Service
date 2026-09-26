@@ -49,7 +49,21 @@ def ask(req):
     from backend.utils.validation import require
     require(not req.ctx.get('read_only'),'ผู้ช่วย AI ใช้ได้เฉพาะทีมงานขององค์กร',403)
     limited(('ai-ask',req.ctx['id']),30,3600)
-    return req.send(201,{'id':assistant.request(req.db,req.ctx,req.body),'status':'pending'})
+    job_id,gathered = assistant.request(req.cd,req.db,req.ctx,req.body)
+    return req.send(201,{'id':job_id,'status':'pending','gathered':gathered})
+
+
+def stop_ask(req, job_id):
+    """หยุดรอ: the member stops waiting for one of their questions."""
+    from backend.modules.ai import assistant
+    return req.send(200,assistant.stop(req.db,req.ctx,job_id))
+
+
+def run_actions(req, job_id):
+    """ทำเลย: what the assistant proposed in one answer, done with the member's own rights (ai/assistant_actions.py)."""
+    from backend.modules.ai import assistant_actions
+    limited(('ai-run',req.ctx['id']),30,3600)
+    return req.send(200,assistant_actions.run(req.cd,req.db,req.ctx,job_id,req.body))
 
 
 def job(req, job_id):

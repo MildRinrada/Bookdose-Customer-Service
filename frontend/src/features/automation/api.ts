@@ -1,13 +1,17 @@
 import { api } from '@/lib/api/client';
-import type { AutomationRule, AutomationSettings, Macro, MacroRunResult, MacroTarget } from './types';
+import type { AutomationRule, AutomationSettings, DistributionSettings, Macro, MacroRunResult, MacroTarget } from './types';
 
 /* Endpoints of backend/modules/automation/routes.py. Reads go through useApi(AUTOMATION_PATH). */
 
 export const AUTOMATION_PATH = '/api/automation';
 
-export type RuleBody = Pick<AutomationRule, 'name' | 'channel' | 'keywords' | 'set_priority' | 'set_team_id' | 'set_assignee_id'> & {
+export type RuleBody = Pick<AutomationRule, 'name' | 'channel' | 'keywords' | 'set_priority' | 'set_team_id' | 'set_assignee_id' | 'set_tags'> & {
   enabled: boolean;
 };
+
+/** แจกเคสอัตโนมัติ (owners only). Cases already waiting are handed out as soon as it is saved. */
+export const saveDistribution = (body: DistributionSettings) =>
+  api<{ settings: DistributionSettings }>('/api/automation/distribution', body, 'PATCH');
 
 export type MacroBody = Pick<Macro, 'name' | 'reply' | 'set_status' | 'followup_hours'>;
 

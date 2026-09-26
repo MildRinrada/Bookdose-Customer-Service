@@ -24,6 +24,8 @@ export type TicketRow = TicketSummary & {
   /** How many times it went back to work after being resolved or closed, and the last time. */
   reopens?: number;
   reopened_at?: string | null;
+  /** ป้ายเคส: ids from the organization's list (tags.ts). */
+  tags?: string[];
 } & Snooze;
 
 /** พักเคส: when a paused case comes back, why it was paused and who paused it (null / '' when it is not paused). */
@@ -38,6 +40,8 @@ export type Ticket = TicketSummary &
   Snooze & {
     category: string;
     contact_id: string;
+    /** ป้ายเคส: ids from the organization's list, in its order. */
+    tags?: string[];
   };
 
 /** A conversation of the case, with its messages (tickets.service.ticket_detail). */

@@ -7,6 +7,7 @@ ROUTES = [
     ('POST',  '/api/automation/setup',            controller.hide_setup,      'workspace'),
     ('GET',   '/api/automation/alerts',           controller.alerts,          'workspace'),
     ('PATCH', '/api/automation/settings',         controller.save_settings,   'workspace'),
+    ('PATCH', '/api/automation/distribution',     controller.save_distribution,'workspace'),
     ('POST',  '/api/automation/rules',            controller.create_rule,     'workspace'),
     ('PATCH', f'/api/automation/rules/{ID}',      controller.update_rule,     'workspace'),
     ('DELETE',f'/api/automation/rules/{ID}',      controller.delete_rule,     'workspace'),

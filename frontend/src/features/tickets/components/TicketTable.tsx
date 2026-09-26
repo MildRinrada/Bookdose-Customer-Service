@@ -15,8 +15,10 @@ import { useUiState } from '@/lib/ui-state';
 import { claimSound } from '@/features/staff-account/celebrate';
 import { TICKET_PREFIXES, updateTicket } from '../api';
 import { isSnoozed, lateBy, snoozeUntilText } from '../labels';
+import { tagsOf, useCaseTags } from '../tags';
 import type { TicketChanges, TicketRow } from '../types';
 import { SnoozeChip, useWakeTicket } from './SnoozeCard';
+import { TagChips } from './TagPicker';
 import { useTicketPreview } from './TicketPreview';
 
 /* The case table (the old ticketTable): the full list pages through 25 at a time with row selection and quick
@@ -149,6 +151,7 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
   const forecast = !late && !isDone(t) ? t.forecast : null;
   const assignee = memberName(t.assignee_id);
   const paused = isSnoozed(t);
+  const tagList = useCaseTags();
   return (
     <tr className={paused ? 'snoozed-row' : undefined}>
       {selection && (
@@ -186,6 +189,7 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
         )}
         {!isDone(t) && <MoodTag mood={t} className="ticket-mood" />}
         {paused && <SnoozeChip until={t.snoozed_until as string} note={t.snooze_note} />}
+        {!compact && <TagChips tags={tagsOf(t.tags, tagList)} limit={3} />}
       </td>
       <td className="customer-col">
         <div className="flex">

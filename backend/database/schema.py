@@ -167,3 +167,10 @@ def upgrade_tenant(db):
         if name not in columns:
             db.execute(f'ALTER TABLE tickets ADD COLUMN {name} {declaration}')
     db.execute(tickets.SNOOZE_INDEX)
+    # ป้ายเคส: the organization's words for what a case is about, on its cases (tickets/tags.py); routing rules may
+    # put them on. แจกเคสอัตโนมัติ: who each case went to (automation/distribution.py).
+    from backend.modules.tickets import tags
+    db.executescript(tags.TABLE)
+    from backend.modules.automation import distribution, repository as automation_repository
+    automation_repository.add_rule_tags(db)
+    db.executescript(distribution.TABLE)

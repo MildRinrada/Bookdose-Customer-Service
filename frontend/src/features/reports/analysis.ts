@@ -5,11 +5,12 @@ import { median, percentile, RESOLVE_BUCKETS, RESPONSE_BUCKETS } from './insight
 /* The report for people who ask their own questions: the period's cases split by one dimension with every measure
    beside it (pivot), and how satisfaction moves with speed. Both from the case list already on screen. */
 
-export type Dimension = 'channel' | 'category' | 'team' | 'priority' | 'assignee' | 'weekday' | 'daypart';
+export type Dimension = 'channel' | 'category' | 'tag' | 'team' | 'priority' | 'assignee' | 'weekday' | 'daypart';
 
 export const dimensionLabels: Record<Dimension, string> = {
   channel: 'ช่องทาง',
   category: 'หมวดเรื่อง',
+  tag: 'ป้ายเคส',
   team: 'ทีม',
   priority: 'ความเร่งด่วน',
   assignee: 'ผู้รับผิดชอบ',
@@ -73,10 +74,25 @@ export function measure(list: TicketRow[]): Measures {
   };
 }
 
-type Names = { team: (id: string | null | undefined) => string; member: (id: string | null | undefined) => string };
+type Names = {
+  team: (id: string | null | undefined) => string;
+  member: (id: string | null | undefined) => string;
+  /** The organization's ป้ายเคส, in its order. */
+  tags?: Array<{ id: string; name: string }>;
+};
+
+/** The groups a case falls in: one for most dimensions, one per tag for ป้ายเคส (a case about two things counts in
+    both), and "ยังไม่ติดป้าย" for a case with none. */
+function groupsOf(t: TicketRow, dimension: Dimension, names: Names): Array<[string, string, number]> {
+  if (dimension !== 'tag') return [groupOf(t, dimension, names)];
+  const list = names.tags ?? [];
+  const have = new Set(t.tags ?? []);
+  const found = list.flatMap((tag, i): Array<[string, string, number]> => (have.has(tag.id) ? [[tag.id, tag.name, i]] : []));
+  return found.length ? found : [['', 'ยังไม่ติดป้าย', list.length]];
+}
 
 /** [key, label, natural order] of a case in a dimension. Days and hours are the viewer's own clock. */
-function groupOf(t: TicketRow, dimension: Dimension, names: Names): [string, string, number] {
+function groupOf(t: TicketRow, dimension: Exclude<Dimension, 'tag'>, names: Names): [string, string, number] {
   switch (dimension) {
     case 'channel': {
       const channel = String(t.channel || 'manual');
@@ -108,10 +124,11 @@ function groupOf(t: TicketRow, dimension: Dimension, names: Names): [string, str
 export function pivot(tickets: TicketRow[], dimension: Dimension, names: Names): PivotRow[] {
   const groups = new Map<string, { label: string; order: number; list: TicketRow[] }>();
   for (const t of tickets) {
-    const [key, label, order] = groupOf(t, dimension, names);
-    const group = groups.get(key) ?? { label, order, list: [] };
-    group.list.push(t);
-    groups.set(key, group);
+    for (const [key, label, order] of groupsOf(t, dimension, names)) {
+      const group = groups.get(key) ?? { label, order, list: [] };
+      group.list.push(t);
+      groups.set(key, group);
+    }
   }
   return [...groups.entries()].map(([key, g]) => ({
     key,

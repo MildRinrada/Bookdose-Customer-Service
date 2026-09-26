@@ -9,7 +9,12 @@ LEADS_ONLY = 'เฉพาะเจ้าขององค์กร'
 
 @require_role(*LEADS,message=LEADS_ONLY)
 def automation_page(req):
-    return req.send(200,service.automation_page(req.db))
+    return req.send(200,service.automation_page(req.cd,req.db,req.ctx))
+
+
+@require_role('admin',message=LEADS_ONLY)
+def save_distribution(req):
+    return req.send(200,{'settings':service.save_distribution(req.cd,req.db,req.ctx,req.body)})
 
 
 @require_role(*LEADS,message=LEADS_ONLY)

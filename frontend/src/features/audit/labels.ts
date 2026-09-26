@@ -22,6 +22,7 @@ export const auditEventLabels: Record<string, string> = {
   'ai.cancelled': 'ยกเลิกคำขอ AI',
   'ai.resumed': 'ให้ AI ดูแลต่อ',
   'ai.settings_updated': 'ปรับการตั้งค่า AI',
+  'ai.actions_run': 'สั่งงานผ่านผู้ช่วย AI',
   'conversation.created': 'รับเรื่องใหม่',
   'conversation.closed': 'ปิดบทสนทนา',
   'conversation.open': 'เปิดบทสนทนาอีกครั้ง',
@@ -55,6 +56,8 @@ const auditIcons: Record<string, string> = {
   'ticket.created': 'plus',
   'ticket.updated': 'edit',
   'ticket.snoozed': 'clock',
+  'ticket.tagged': 'tag',
+  'ticket.auto_assigned': 'users',
   'ticket.woken': 'bell',
   'ticket.quiet_reminded': 'send',
   'ticket.quiet_closed': 'checkCircle',
@@ -169,10 +172,11 @@ export function auditImportant(action: string): boolean {
   );
 }
 
-/** Done by the system rather than a person: the AI's own work and a channel's delivery reports. Hidden unless asked. */
+/** Done by the system rather than a person: the AI's own work and a channel's delivery reports. Hidden unless asked.
+    What a member told the assistant to do (ai.actions_run) is the member's own doing. */
 export function auditAutomated(event: AuditEvent): boolean {
   return (
-    (auditEventGroup(event.action) === 'ai' && event.action !== 'ai.settings_updated') ||
+    (auditEventGroup(event.action) === 'ai' && !['ai.settings_updated', 'ai.actions_run'].includes(event.action)) ||
     /^channel\.(accepted|failed|unknown|message_received)$/.test(event.action) ||
     /^(line\.join|line\.leave)$/.test(event.action)
   );

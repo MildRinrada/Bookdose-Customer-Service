@@ -21,6 +21,7 @@ import { useWork } from '@/lib/session';
 import { deleteTicket, TICKET_PREFIXES, TICKETS_PATH, updateTicket } from '../api';
 import type { TicketDetail } from '../types';
 import { SnoozeCard } from './SnoozeCard';
+import { TicketTagsCard } from './TicketTagsCard';
 import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers';
 
 /* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, managing the case,
@@ -67,6 +68,7 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
         </Link>
       </section>
       <TicketUpdateForm key={formKey} data={data} onSaved={() => setFormKey((k) => k + 1)} />
+      <TicketTagsCard ticket={t} />
       <SnoozeCard ticket={t} />
       <section className="card info-block">
         <h3>เตือนติดตามผล</h3>

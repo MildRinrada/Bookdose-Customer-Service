@@ -8,6 +8,12 @@ def extras(req):
     return req.send(200,service.extras(req.db,req.ctx,req.query))
 
 
+def staffing(req):
+    """The organization's owners: who is expected to work on each of the coming days (reports/staffing.py)."""
+    from backend.modules.reports import staffing as plan
+    return req.send(200,plan.overview(req.cd,req.db,req.ctx))
+
+
 def dataset(req):
     """Leads: the period as tidy CSV tables in one ZIP, for analysis elsewhere (reports/dataset.py)."""
     from backend.modules.reports import dataset as tables

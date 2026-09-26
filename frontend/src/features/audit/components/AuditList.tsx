@@ -33,7 +33,7 @@ export function useAuditChanges() {
   const { data: work } = useWorkspace();
   return useCallback(
     (event: AuditEvent): string => {
-      if (event.action !== 'ticket.updated' || !event.detail) return '';
+      if (!['ticket.updated', 'ticket.auto_assigned', 'ticket.tagged'].includes(event.action) || !event.detail) return '';
       let changes: unknown;
       try {
         changes = JSON.parse(event.detail);
@@ -41,6 +41,16 @@ export function useAuditChanges() {
         return event.detail;
       }
       if (!changes || typeof changes !== 'object') return '';
+      if (event.action === 'ticket.tagged') {
+        // ป้ายเคส by name, as they were called at the time.
+        const { added = [], removed = [] } = changes as { added?: string[]; removed?: string[] };
+        return [added.length && `เพิ่ม ${added.join(', ')}`, removed.length && `เอาออก ${removed.join(', ')}`].filter(Boolean).join(' · ');
+      }
+      if (event.action === 'ticket.auto_assigned') {
+        const { assignee_id: to, held } = changes as { assignee_id?: Change; held?: number };
+        const who = work?.members.find((m) => m.id === to?.after)?.name || 'สมาชิก';
+        return `ให้ ${who}${typeof held === 'number' ? ` · ตอนนั้นถืออยู่ ${held} เคส` : ''}`;
+      }
       const name = (field: string, value: unknown): string => {
         const text = value == null ? '' : String(value);
         if (field === 'status') return statusLabels[text] || text;

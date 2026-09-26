@@ -9,4 +9,6 @@ ROUTES = [
     ('POST',  '/api/ai/insights/article', controller.draft_article, 'workspace'),
     ('POST',  '/api/ai/insights/brief',   controller.brief,         'workspace'),
     ('POST',  '/api/ai/assistant',        controller.ask,           'workspace'),
+    ('POST',  f'/api/ai/assistant/{ID}/run', controller.run_actions, 'workspace'),
+    ('DELETE',f'/api/ai/assistant/{ID}',  controller.stop_ask,      'workspace'),
 ]

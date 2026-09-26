@@ -1,5 +1,7 @@
 """Automation queries: rules, macros, follow-ups, escalations, CSAT surveys, mentions and member activity.
 Functions taking team_id limit results to that team when it is given (agents)."""
+import json
+
 from backend.database.db import one, rows
 from backend.utils.dates import now
 
@@ -11,27 +13,52 @@ def _team(column, team_id):
 
 
 # Rules (applied in the order they were created; a later rule may override an earlier one)
+def add_rule_tags(db):
+    """ป้ายเคส a rule puts on the cases it matches (tickets/tags.py): a JSON list of tag ids. Rules made before have none."""
+    if 'set_tags' not in {row[1] for row in db.execute('PRAGMA table_info(automation_rules)')}:
+        db.execute("ALTER TABLE automation_rules ADD COLUMN set_tags TEXT NOT NULL DEFAULT '[]'")
+
+
+def _rule(row):
+    if row is None:
+        return None
+    try:
+        value = json.loads(row.get('set_tags') or '[]')
+    except ValueError:
+        value = []
+    return {**row,'set_tags':[t for t in value if isinstance(t,str)] if isinstance(value,list) else []}
+
+
 def rules(db):
-    return rows(db,'SELECT * FROM automation_rules ORDER BY created_at,rowid')
+    return [_rule(r) for r in rows(db,'SELECT * FROM automation_rules ORDER BY created_at,rowid')]
 
 
 def enabled_rules(db):
-    return rows(db,'SELECT * FROM automation_rules WHERE enabled=1 ORDER BY created_at,rowid')
+    return [_rule(r) for r in rows(db,'SELECT * FROM automation_rules WHERE enabled=1 ORDER BY created_at,rowid')]
 
 
 def find_rule(db, rule_id):
-    return one(db,'SELECT * FROM automation_rules WHERE id=?',(rule_id,))
+    return _rule(one(db,'SELECT * FROM automation_rules WHERE id=?',(rule_id,)))
 
 
 def insert_rule(db, rule_id, v, user_id):
-    db.execute('''INSERT INTO automation_rules(id,name,enabled,channel,keywords,set_priority,set_team_id,set_assignee_id,created_by,created_at,updated_at)
-                  VALUES(?,?,?,?,?,?,?,?,?,?,?)''',(rule_id,v['name'],int(v['enabled']),v['channel'],v['keywords'],v['set_priority'],
-                  v['set_team_id'],v['set_assignee_id'],user_id,now(),now()))
+    db.execute('''INSERT INTO automation_rules(id,name,enabled,channel,keywords,set_priority,set_team_id,set_assignee_id,set_tags,created_by,created_at,updated_at)
+                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?)''',(rule_id,v['name'],int(v['enabled']),v['channel'],v['keywords'],v['set_priority'],
+                  v['set_team_id'],v['set_assignee_id'],json.dumps(v['set_tags']),user_id,now(),now()))
 
 
 def update_rule(db, rule_id, v):
-    db.execute('''UPDATE automation_rules SET name=?,enabled=?,channel=?,keywords=?,set_priority=?,set_team_id=?,set_assignee_id=?,updated_at=?
-                  WHERE id=?''',(v['name'],int(v['enabled']),v['channel'],v['keywords'],v['set_priority'],v['set_team_id'],v['set_assignee_id'],now(),rule_id))
+    db.execute('''UPDATE automation_rules SET name=?,enabled=?,channel=?,keywords=?,set_priority=?,set_team_id=?,set_assignee_id=?,set_tags=?,
+                  updated_at=? WHERE id=?''',(v['name'],int(v['enabled']),v['channel'],v['keywords'],v['set_priority'],v['set_team_id'],
+                  v['set_assignee_id'],json.dumps(v['set_tags']),now(),rule_id))
+
+
+def drop_rule_tags(db, tag_ids):
+    """Tags taken off the organization's list come out of every rule that put them on."""
+    for rule in rules(db):
+        kept = [t for t in rule['set_tags'] if t not in tag_ids]
+        if kept!=rule['set_tags']:
+            db.execute('UPDATE automation_rules SET set_tags=?,updated_at=? WHERE id=?',(json.dumps(kept),now(),rule['id']))
 
 
 def delete_rule(db, rule_id):

@@ -13,6 +13,8 @@ export type AutomationRule = {
   set_priority: string;
   set_team_id: string;
   set_assignee_id: string;
+  /** ป้ายเคส ids the rule puts on (features/tickets/tags.ts). */
+  set_tags: string[];
   created_by?: string;
   created_at?: string;
   updated_at?: string;
@@ -44,12 +46,29 @@ export type Escalation = {
   assignee_id?: string | null;
 };
 
+/** แจกเคสอัตโนมัติ (backend automation/distribution.py): all_teams, or only `teams`; owners get cases too when chosen. */
+export type DistributionSettings = { enabled: boolean; cap: number; all_teams: boolean; teams: string[]; owners: boolean };
+
+/** Someone the handing out could give a case to: whether they can take one now, and why not. */
+export type DistributionPerson = { id: string; name: string; role: string; team_id: string | null; load: number; ready: boolean; reason: string };
+
+export type Distribution = {
+  settings: DistributionSettings;
+  people: DistributionPerson[];
+  /** Cases with no owner the handing out still has to place, and how many it placed today. */
+  waiting: number;
+  today: number;
+  active_minutes: number;
+  cap_range: [number, number];
+};
+
 /** GET /api/automation */
 export type AutomationPage = {
   rules: AutomationRule[];
   macros: Macro[];
   settings: AutomationSettings;
   escalations: Escalation[];
+  distribution: Distribution;
 };
 
 /** A follow-up reminder on a case (ticket detail: automation.followups). */

@@ -94,6 +94,18 @@ def save_customer_categories(req):
 
 
 @require_role('admin')
+def case_tags(req):
+    from backend.modules.tickets import tags
+    return req.send(200,tags.overview(req.db))
+
+
+@require_role('admin')
+def save_case_tags(req):
+    from backend.modules.tickets import tags
+    return req.send(200,tags.save(req.db,req.ctx,req.body))
+
+
+@require_role('admin')
 def create_team(req):
     return req.send(201,{'id':service.create_team(req.db,req.ctx,req.body)})
 

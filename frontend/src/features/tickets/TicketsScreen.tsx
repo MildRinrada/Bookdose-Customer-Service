@@ -15,13 +15,16 @@ import { useInvalidate } from '@/lib/query';
 import { useMemberName, useStaffTickets, useStaffUser, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { exportTickets, TICKET_PREFIXES, updateTicket } from './api';
+import { ManageTagsButton } from './components/ManageTags';
 import { NewTicketButton } from './components/NewTicket';
 import { DENSITY_KEY, TicketTable, type TicketSelection } from './components/TicketTable';
 import { useDownloadTicketsCSV } from './csv';
-import { BACKLOG_SCOPE, densityLabels, FILTER_KEYS, inScope, matchesTicketFilters, ticketScopes, ticketsHref, type TicketFilter } from './labels';
+import { BACKLOG_SCOPE, densityLabels, FILTER_KEYS, inScope, matchesTicketFilters, ticketScopes, ticketsHref, UNTAGGED, type TicketFilter } from './labels';
+import { useCaseTags } from './tags';
 import type { TicketChanges, TicketRow } from './types';
 
-/* The case list (the old ticketsPage): search, status and priority filters, quick scopes with counts, a customer
+/* The case list (the old ticketsPage): search, status, priority and tag filters (owners manage the tags from here),
+   quick scopes with counts, a customer
    filter from the address, row density, selection with bulk assign / close / export, and the full CSV export.
    Filters live in the address (/tickets?q=&status=&priority=&contact=&filter=) so a filtered list can be shared;
    the global search in the top bar opens /tickets?q=<text>. Markup: pages/tickets/tickets, ticket-toolbar. */
@@ -37,6 +40,7 @@ export function TicketsScreen() {
   const refresh = useInvalidate();
   const saveCSV = useDownloadTicketsCSV();
   const tickets = useStaffTickets();
+  const tagList = useCaseTags();
   const all = (tickets.data?.tickets ?? []) as TicketRow[];
 
   const fromAddress: TicketFilter = Object.fromEntries(FILTER_KEYS.map((key) => [key, toArray(params.get(key))]));
@@ -128,7 +132,9 @@ export function TicketsScreen() {
   const teams = new Set(picked.map((t) => t.team_id));
   const bulkMembers = teams.size === 1 ? work.members.filter((m) => m.active && teams.has(m.team_id)) : [];
 
-  const filtered = Boolean(filter.q || filter.status || filter.priority || filter.contact || filter.assignee || (filter.filter && filter.filter !== 'all'));
+  const filtered = Boolean(
+    filter.q || filter.status || filter.priority || filter.tag || filter.contact || filter.assignee || (filter.filter && filter.filter !== 'all'),
+  );
   const contactName = filter.contact ? all.find((t) => t.contact_id === filter.contact)?.contact_name || 'ที่เลือก' : '';
   const backlog = filter.filter === BACKLOG_SCOPE;
   const currentScope = filter.filter || 'all';
@@ -175,6 +181,17 @@ export function TicketsScreen() {
             options={Object.entries(priorityLabels).map(([value, label]) => ({ value, label }))}
             onChange={(value) => setFilter('priority', value)}
           />
+          {tagList.length > 0 && (
+            <FilterSelect
+              id="ticket-tag"
+              label="กรองป้ายเคส"
+              any="ทุกป้าย"
+              value={filter.tag ?? ''}
+              options={[...tagList.map((t) => ({ value: t.id, label: t.name })), { value: UNTAGGED, label: 'ยังไม่ติดป้าย' }]}
+              onChange={(value) => setFilter('tag', value)}
+            />
+          )}
+          {work.role === 'admin' && !work.read_only && <ManageTagsButton first={!tagList.length} />}
         </div>
         <div className="filters ticket-toolbar" data-filter-bar="" hidden={count > 0}>
           <div className="filter-chips" role="group" aria-label="ตัวกรองด่วน">

@@ -831,3 +831,92 @@ a.auto-stat:hover {
     min-width: 0;
   }
 }
+
+/* A routing rule's ป้ายเคส, under the three choices of what it does. */
+.rule-tags {
+  margin: 4px 0 12px;
+}
+.tag-field-label {
+  font-size: 1rem;
+  font-weight: 550;
+  color: var(--muted);
+}
+
+/* แจกเคสอัตโนมัติ (DistributionCard): the settings, then who could take a case now and why not. */
+.distribution-fields {
+  display: grid;
+  grid-template-columns: minmax(0,16rem) minmax(0,1fr);
+  align-items: start;
+  gap: 12px 20px;
+}
+.distribution-owners {
+  margin-top: 30px;
+}
+.distribution-teams {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+.distribution-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding-left: 26px;
+}
+.distribution-people {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.distribution-people li {
+  display: grid;
+  grid-template-columns: minmax(0,1.4fr) auto minmax(0,1fr);
+  align-items: center;
+  gap: 4px 14px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+.distribution-people li.ready {
+  background: var(--green-soft);
+}
+.distribution-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+}
+.distribution-load {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.distribution-state {
+  color: var(--muted);
+  font-size: .92rem;
+  text-align: right;
+}
+.distribution-state.ready {
+  color: var(--green);
+  font-weight: 700;
+}
+@container (max-width:560px) {
+  .distribution-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .distribution-owners {
+    margin-top: 0;
+  }
+  .distribution-people li {
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+  .distribution-state {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+.distribution-card {
+  container-type: inline-size;
+}

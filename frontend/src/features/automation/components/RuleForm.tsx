@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import { priorityLabels } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
 import { useTeamName, useWork } from '@/lib/session';
+import { TagPicker } from '@/features/tickets/components/TagPicker';
+import { TAGS_PER_CASE, useCaseTags } from '@/features/tickets/tags';
 import { AUTOMATION_PATH, saveRule } from '../api';
 import { ruleChannelLabels } from '../labels';
 import type { AutomationRule } from '../types';
@@ -21,6 +23,8 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
   const refresh = useInvalidate();
   const [team, setTeam] = useState(rule?.set_team_id || '');
   const [assignee, setAssignee] = useState(rule?.set_assignee_id || '');
+  const tagList = useCaseTags();
+  const [tags, setTags] = useState<string[]>(() => (rule?.set_tags ?? []).filter((id) => tagList.some((t) => t.id === id)));
   // Only people of the chosen team can own its cases; with no team chosen, the case keeps its own team.
   const assignees = work.members.filter((m) => m.active && (!team || m.team_id === team));
 
@@ -36,6 +40,7 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
           set_priority: values.set_priority,
           set_team_id: values.set_team_id,
           set_assignee_id: values.set_assignee_id,
+          set_tags: tags,
           enabled,
         });
         closeModal(true);
@@ -113,7 +118,22 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
                 </option>
               ))}
             </select>
+            {!assignee && <span className="tiny muted">ถ้าเปิดแจกเคสอัตโนมัติไว้ ระบบแจกให้คนในทีมที่พร้อมและถืองานน้อยที่สุด</span>}
           </div>
+        </div>
+        <div className="field rule-tags">
+          <span className="tag-field-label">ติดป้ายเคส</span>
+          {tagList.length ? (
+            <TagPicker
+              tags={tagList}
+              picked={tags}
+              max={TAGS_PER_CASE}
+              label="ป้ายที่กฎนี้ติดให้เคส"
+              onToggle={(id) => setTags((all) => (all.includes(id) ? all.filter((t) => t !== id) : [...all, id]))}
+            />
+          ) : (
+            <span className="tiny muted">ยังไม่มีป้ายเคส ตั้งรายการป้ายได้ที่หน้าเคสบริการ ปุ่มจัดการป้าย</span>
+          )}
         </div>
       </fieldset>
       <label className="check">

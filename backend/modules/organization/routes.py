@@ -13,6 +13,8 @@ ROUTES = [
     ('PATCH', '/api/settings/slug', controller.change_slug, 'workspace'),
     ('POST',  '/api/settings/banner', controller.save_support_banner, 'workspace'),
     ('POST',  '/api/settings/categories', controller.save_customer_categories, 'workspace'),
+    ('GET',   '/api/settings/tags', controller.case_tags, 'workspace'),
+    ('POST',  '/api/settings/tags', controller.save_case_tags, 'workspace'),
     ('POST',  '/api/settings/snippets', controller.save_team_snippets, 'workspace'),
     ('POST',  '/api/settings/hours', controller.save_business_hours, 'workspace'),
     ('POST',  '/api/settings/quiet-close', controller.save_quiet_close, 'workspace'),

@@ -64,12 +64,14 @@ export function FirstResponseCard({ all, f }: { all: TicketRow[]; f: ReportFilte
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>เวลาตอบกลับครั้งแรก</h2>
+          <h2 className="report-title">
+            <Icon name="clock" />
+            เวลาตอบกลับครั้งแรก
+          </h2>
           <p>
             เคสที่เปิดในช่วงนี้และตอบแล้ว {now.count} เคส{now.waiting ? ` · ยังไม่ได้ตอบ ${now.waiting} เคส (ไม่นับ)` : ''} · นับจากเปิดเคสจนทีมตอบครั้งแรก
           </p>
         </div>
-        <Icon name="clock" />
       </div>
       <div className="card-body">
         {now.count ? (
@@ -94,10 +96,12 @@ export function ResolutionCard({ all, f }: { all: TicketRow[]; f: ReportFilter }
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>เวลาแก้ไขเคสจนเสร็จ</h2>
+          <h2 className="report-title">
+            <Icon name="checkCircle" />
+            เวลาแก้ไขเคสจนเสร็จ
+          </h2>
           <p>เคสที่แก้ไขเสร็จในช่วงนี้ {now.count} เคส · นับจากเปิดเคสจนแก้ไขเสร็จ</p>
         </div>
-        <Icon name="checkCircle" />
       </div>
       <div className="card-body">
         {now.count ? (
@@ -123,10 +127,12 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>ความพึงพอใจลูกค้า (CSAT)</h2>
+          <h2 className="report-title">
+            <Icon name="star" />
+            ความพึงพอใจลูกค้า (CSAT)
+          </h2>
           <p>คำตอบแบบประเมินที่ได้รับในช่วงนี้ {s.count} คำตอบ</p>
         </div>
-        <Icon name="star" />
       </div>
       <div className="card-body">
         {s.count ? (
@@ -196,10 +202,12 @@ export function BacklogCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
     <section className="card report-card">
       <div className="card-header">
         <div>
-          <h2>เคสค้างนานแค่ไหน</h2>
+          <h2 className="report-title">
+            <Icon name="clock" />
+            เคสค้างนานแค่ไหน
+          </h2>
           <p>เคสที่ยังไม่เสร็จตอนนี้ {b.total} เคส (ทุกช่วงเวลา) · แยกตามจำนวนวันที่รอ</p>
         </div>
-        <Icon name="clock" />
       </div>
       <div className="card-body">
         {b.total ? (

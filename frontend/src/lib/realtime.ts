@@ -1,4 +1,4 @@
-/* Realtime hints from the API (docs/REALTIME-DESIGN.md). One WebSocket per page to the same origin as every other
+/* Realtime hints from the API (docs/realtime.md). One WebSocket per page to the same origin as every other
    request; Next.js forwards /api/* to the Python server, upgrades included. The socket carries hints only: an event
    says what changed and the page asks the REST API again (src/lib/realtime-provider.tsx maps events to queries).
    `typing` and `read` are the only events shown as they arrive.

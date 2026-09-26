@@ -1,4 +1,4 @@
-/* Answers of the platform security API (docs/SECURITY-DESIGN.md §3), field names as the server sends them. */
+/* Answers of the platform security API (docs/security/monitoring-and-traps.md), field names as the server sends them. */
 
 export type SecurityRange = '24h' | '7d';
 export type Severity = 'info' | 'warning' | 'critical';
@@ -13,7 +13,7 @@ export type SecurityOverview = {
     origin_csrf_rejected: number;
     cross_tenant_denied: number;
     open_alerts: number;
-    /** Decoy path and hidden form field hits in the range (docs/HONEYPOT-DESIGN.md §4). */
+    /** Decoy path and hidden form field hits in the range (docs/security/monitoring-and-traps.md). */
     honeypot_hits?: number;
     /** Honeytoken triggers in the range. */
     honeytoken_triggers?: number;
@@ -79,7 +79,7 @@ export type BlockDuration = '1h' | '24h' | '7d' | 'permanent';
 
 /** GET / POST /api/platform/security/settings */
 export type SecuritySettings = {
-  /** Honeypots (docs/HONEYPOT-DESIGN.md §3); a save that leaves it out keeps it as it is. */
+  /** Honeypots (docs/security/monitoring-and-traps.md); a save that leaves it out keeps it as it is. */
   honeypot?: HoneypotSettings;
   sessions: {
     staff: { idle_minutes: number; absolute_hours: number };
@@ -95,7 +95,7 @@ export type SecuritySettings = {
   };
 };
 
-/* Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md) */
+/* Honeypots and honeytokens (docs/security/monitoring-and-traps.md) */
 
 export type DecoyPathMatch = 'exact' | 'prefix';
 

@@ -2,7 +2,7 @@
 know about the change, and queues the events on the connection: they are sent only after that transaction commits
 (backend/database/db.py Connection.after_commit), and a rolled-back change sends nothing.
 
-Who receives what (docs/REALTIME-DESIGN.md section 3):
+Who receives what (docs/realtime.md):
   staff              members of the organization who may see the conversation or case: its team for agents, every
                      team for admins and managers (backend/middleware/access.py visible_team)
   customer accounts  the accounts owning the contact of a web conversation (customer_contacts), and for a case also

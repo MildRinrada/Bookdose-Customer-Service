@@ -1,4 +1,4 @@
-"""Platform security (docs/SECURITY-DESIGN.md), everything in the control database:
+"""Platform security (docs/security/README.md), everything in the control database:
 
   login_failures    progressive lockout, one row per typed email ('signin:<email>' for the shared sign-in page,
                     'staff:<email>' / 'customer:<email>' for the staff and customer endpoints), whether or not
@@ -13,7 +13,7 @@
   security_alerts   rules the worker checks every minute (thresholds in the security settings); one open alert per
                     rule and address, updated while it continues.
   ip_blocks         addresses refused before anything else (HTTP and WebSocket), for a time or permanently.
-  honeytokens       traps a Superadmin plants (docs/HONEYPOT-DESIGN.md): a decoy account email, an API key, a password
+  honeytokens       traps a Superadmin plants (docs/security/monitoring-and-traps.md): a decoy account email, an API key, a password
                     or a shared-file link that no real user ever uses. Only the SHA-256 of the secret is kept (the
                     decoy email itself is kept too: it is what a sign-in types); lookup_prefix (its first 12
                     characters) lets a request be checked in memory before anything is hashed.
@@ -95,7 +95,7 @@ EVENT_KINDS = {
     'security_settings_changed':'critical',
     # Cloudflare Turnstile (backend/extensions/turnstile.py)
     'captcha_failed':'warning','captcha_unavailable':'warning',
-    # Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md)
+    # Honeypots and honeytokens (docs/security/monitoring-and-traps.md)
     'honeypot_path':'warning','honeypot_form':'warning','honeytoken_triggered':'critical','trap_ip_block':'warning',
 }
 TRAP_EVENT_KINDS = ('honeypot_path','honeypot_form','honeytoken_triggered','trap_ip_block')
@@ -126,7 +126,7 @@ BLOCK_DURATIONS = {'1h':3600,'24h':86400,'7d':7*86400,'permanent':None}
 BLOCKED_MESSAGE = 'ไม่สามารถเข้าถึงระบบได้จากเครือข่ายนี้'
 BLOCK_CACHE_SECONDS = 30
 
-# Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md)
+# Honeypots and honeytokens (docs/security/monitoring-and-traps.md)
 # Decoy paths nobody using the app ever opens: API ones (answered like any unknown API path) and the page ones the
 # Next.js app reports through POST /api/trap (also caught here when a scanner reaches this server directly).
 # Lower case, no trailing slash; 'prefix' covers the path itself and everything below it.

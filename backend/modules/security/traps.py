@@ -1,4 +1,4 @@
-"""Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md): traps no real user ever touches, so touching one says a scanner,
+"""Honeypots and honeytokens (docs/security/monitoring-and-traps.md): traps no real user ever touches, so touching one says a scanner,
 a bot or an insider is at work. A trap never changes the answer: the request goes on exactly as it would have.
 
   Decoy paths      DECOY_API_PATHS / DECOY_PAGE_PATHS and the Superadmin's custom API paths. dispatch() notes a hit

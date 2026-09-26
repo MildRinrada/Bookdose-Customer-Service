@@ -25,11 +25,11 @@ import { TrapEventsCard } from './components/TrapEvents';
 import { cardLabels, rangeLabels } from './labels';
 import type { SecurityOverview, SecurityRange } from './types';
 
-/* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/SECURITY-DESIGN.md §3–4), in seven
+/* Platform console → ความปลอดภัย (/platform/security, platform admins only; docs/security/monitoring-and-traps.md), in seven
    tabs so each is one thing to look at: ภาพรวม (the numbers and chart of the chosen range, the IPs and accounts under
    attack), ตรวจสุขภาพ (are the headers, the certificate, the key, Turnstile and every organization set up safely),
    เหตุการณ์ (the events log), การเข้าถึง (locked accounts, the IP block list, ending an account's sessions),
-   กับดัก (honeytokens, the newest trap events and the honeypot settings; docs/HONEYPOT-DESIGN.md §5), ช่องโหว่ (the
+   กับดัก (honeytokens, the newest trap events and the honeypot settings; docs/security/monitoring-and-traps.md), ช่องโหว่ (the
    libraries checked against the published vulnerabilities; platform/components/VulnsCard.tsx) and ตั้งค่า. The
    open alerts sit above every tab. The overview, alerts and locks refresh themselves every minute (plain GETs: they
    never count as the admin's activity). Markup: pages/security.css. */

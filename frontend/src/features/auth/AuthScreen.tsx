@@ -55,7 +55,7 @@ type Props = {
   org?: string;
   /** ?next=, a path inside the app to return to after signing in. */
   next?: string;
-  /** ?expired=: the session this person had ran out (docs/SECURITY-DESIGN.md §2). */
+  /** ?expired=: the session this person had ran out (docs/security/authentication.md). */
   expired?: ExpiryReason | null;
 };
 

@@ -1,4 +1,4 @@
-"""Realtime hints over WebSocket (docs/REALTIME-DESIGN.md): the handshake of staff, customers and guests (Origin,
+"""Realtime hints over WebSocket (docs/realtime.md): the handshake of staff, customers and guests (Origin,
 cookie, session checked again), who hears about which change (public replies but never internal notes, nothing from
 another customer, guest or organization, agents only their team), typing (who may type, throttling), read receipts
 both ways, events only after the transaction commits, a LINE message stored by a worker thread, and the frame, socket

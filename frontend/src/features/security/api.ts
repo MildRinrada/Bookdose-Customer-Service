@@ -1,7 +1,7 @@
 import { api } from '@/lib/api/client';
 import type { BlockDuration, HoneypotSettings, HoneytokenCreated, HoneytokenKind, Honeytoken, SecurityEventFilters, SecurityRange, SecuritySettings } from './types';
 
-/* Endpoints of the platform security API (docs/SECURITY-DESIGN.md §3, scope 'platform'). Every read lives under
+/* Endpoints of the platform security API (docs/security/monitoring-and-traps.md, scope 'platform'). Every read lives under
    SECURITY_PREFIX, so refreshing it after a change redraws the whole page. */
 
 export const SECURITY_PREFIX = '/api/platform/security';

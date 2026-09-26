@@ -20,7 +20,7 @@ export type Boot = {
   csrf: string | null;
   tenant_id: string | null;
   memberships: Membership[];
-  /** Session limits (docs/SECURITY-DESIGN.md §2), when the server sends them here too. */
+  /** Session limits (docs/security/authentication.md), when the server sends them here too. */
   idle_expires_at?: string | null;
   absolute_expires_at?: string | null;
   /** Signed out because the cookie's session has just run out. */
@@ -182,7 +182,7 @@ export type CustomerAccount =
       created_at: string;
       /** The platform's announcement written for customers too, while it lasts. */
       announcement?: { text: string; level: 'info' | 'warning'; ends_at: string | null } | null;
-      /** When the session ends without activity / at the latest (docs/SECURITY-DESIGN.md §2). */
+      /** When the session ends without activity / at the latest (docs/security/authentication.md). */
       idle_expires_at?: string | null;
       absolute_expires_at?: string | null;
     };

@@ -1,5 +1,5 @@
 """The Superadmin security dashboard (/api/platform/security/...): overview, events, locked accounts, alerts, blocked
-addresses, ending an account's sessions, the security settings and the honeytokens (docs/HONEYPOT-DESIGN.md). Every change is written to the platform audit
+addresses, ending an account's sessions, the security settings and the honeytokens (docs/security/monitoring-and-traps.md). Every change is written to the platform audit
 log and recorded as a security event."""
 import datetime as dt
 import json

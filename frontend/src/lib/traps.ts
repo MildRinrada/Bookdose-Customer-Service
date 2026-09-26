@@ -1,4 +1,4 @@
-/* Honeypots of the web app (docs/HONEYPOT-DESIGN.md §1a, §2 "link", §5).
+/* Honeypots of the web app (docs/security/monitoring-and-traps.md).
    - Decoy page paths: addresses scanners and bots try (leaked config files, other CMSs' admin pages). No page of this
      app lives there and no person using the app ever opens one. src/proxy.ts answers them exactly like any unknown
      address (the app's 404 page) and, after the answer, reports the hit to the API (POST /api/trap).

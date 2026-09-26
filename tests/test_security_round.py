@@ -1,4 +1,4 @@
-"""Security round (docs/SECURITY-DESIGN.md): progressive lockout after wrong sign-in secrets, idle and absolute session
+"""Security round (docs/security/authentication.md): progressive lockout after wrong sign-in secrets, idle and absolute session
 limits, security events with flood control, alerts, the IP block list and the Superadmin security API. Email is
 mocked and every test uses a disposable database; nothing leaves the machine."""
 import datetime as dt

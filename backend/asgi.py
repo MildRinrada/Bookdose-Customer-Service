@@ -1,11 +1,11 @@
 """ASGI application: FastAPI on uvicorn in front of the same route table as the old http.server (backend/server.py).
 
-Phase 1 of docs/FASTAPI-MIGRATION.md: FastAPI is only the transport. One catch-all route hands every request to
+Phase 1 of docs/architecture.md: FastAPI is only the transport. One catch-all route hands every request to
 backend.http.dispatch.dispatch(), which runs the same middleware, controllers, error messages and status codes as
 before. FastAPI's own answers never reach a client: no /docs or /openapi.json, and its 404/405/422/500 pages are
 replaced by {error: message} with the security headers.
 
-Phase 2a: realtime hints over WebSocket (backend/realtime, docs/REALTIME-DESIGN.md): /api/realtime/staff,
+Phase 2a: realtime hints over WebSocket (backend/realtime, docs/realtime.md): /api/realtime/staff,
 /api/realtime/customer and /api/public/<org>/guest/realtime. The lifespan attaches the event loop to the in-process
 hub, so services and background workers can publish from their threads.
 

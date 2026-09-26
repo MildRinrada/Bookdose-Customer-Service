@@ -1,5 +1,5 @@
 /* Shapes of the guest web chat API (/api/public/<org>/guest…, /widget, /api/settings/guest-chat,
-   /api/customer/guest-claims, /api/platform/sms), snake_case as the server sends them. See docs/GUEST-CHAT-DESIGN.md. */
+   /api/customer/guest-claims, /api/platform/sms), snake_case as the server sends them. See docs/features/support-page-and-guest-chat.md. */
 
 /** This browser's visitor (GET …/guest → guest). Addresses come back masked; `csrf` goes in X-Guest-CSRF. */
 export type GuestInfo = {

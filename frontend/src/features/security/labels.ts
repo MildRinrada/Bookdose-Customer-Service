@@ -1,6 +1,6 @@
 import type { BlockDuration, DecoyPathMatch, HoneytokenKind, SecurityRange, SecuritySettings } from './types';
 
-/* Every Thai word of the platform security page (docs/SECURITY-DESIGN.md §4): event kinds, levels, who, alert rules,
+/* Every Thai word of the platform security page (docs/security/monitoring-and-traps.md): event kinds, levels, who, alert rules,
    durations, chart series and the settings with their bounds. */
 
 export const eventKindLabels: Record<string, string> = {
@@ -147,7 +147,7 @@ export const alertSettingLabels: Record<keyof SecuritySettings['alerts'], { labe
   webhook_failures_10m: { label: 'ลายเซ็น Webhook ไม่ถูกต้อง', hint: 'ครั้งภายใน 10 นาที → เฝ้าระวัง' },
 };
 
-/* Traps (docs/HONEYPOT-DESIGN.md) */
+/* Traps (docs/security/monitoring-and-traps.md) */
 
 /** The event kinds the traps record, in the order the trap events card lists its filters. */
 export const TRAP_EVENT_KINDS = ['honeytoken_triggered', 'honeypot_path', 'honeypot_form', 'trap_ip_block'] as const;

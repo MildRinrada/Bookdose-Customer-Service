@@ -1,4 +1,4 @@
-"""Realtime hints over WebSocket (FastAPI server only; docs/REALTIME-DESIGN.md).
+"""Realtime hints over WebSocket (FastAPI server only; docs/realtime.md).
 
 The socket carries hints, the REST API carries data: an event says what changed ({"type":"changed","scope":...}) and
 the page fetches it again through the usual endpoints, where every permission rule stays. Events never carry message

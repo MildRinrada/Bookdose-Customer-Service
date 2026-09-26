@@ -3,7 +3,7 @@
 import { useId } from 'react';
 import type { FormValues } from './Form';
 
-/* A text box people never see, never reach and never fill (docs/HONEYPOT-DESIGN.md §1b): off the screen by class
+/* A text box people never see, never reach and never fill (docs/security/monitoring-and-traps.md): off the screen by class
    (.form-extra, no inline style), `inert` (never focusable, not even by a script's focus()), hidden from screen
    readers, left out of the tab order, and marked for the browser and password managers not to autofill. A bot that
    fills every box it finds fills this one too, and the server then quietly refuses the request with the answer a

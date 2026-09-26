@@ -14,7 +14,7 @@ import { createHoneytoken, deleteHoneytoken, HONEYTOKENS_PATH, SECURITY_PREFIX, 
 import { honeytokenKindLabel, honeytokenKinds } from '../labels';
 import type { Honeytoken, HoneytokenCreated, HoneytokenKind } from '../types';
 
-/* Honeytokens (docs/HONEYPOT-DESIGN.md §2): things no real user ever uses — a decoy account email, an API key, a
+/* Honeytokens (docs/security/monitoring-and-traps.md): things no real user ever uses — a decoy account email, an API key, a
    password, a shared-file link — planted where an attacker or a curious insider would find them. The list shows
    where each one was planted and when it last went off; each can be switched off, tested (an info event only, no
    block, no email), renamed or deleted. "สร้างกับดัก" shows the secret once. */

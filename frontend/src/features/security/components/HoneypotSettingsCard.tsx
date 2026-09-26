@@ -12,7 +12,7 @@ import { saveHoneypotSettings, SECURITY_PREFIX, SETTINGS_PATH } from '../api';
 import { BUILT_IN_API_DECOYS, CUSTOM_DECOY_PATH, decoyMatchLabels, durationLabels, MAX_CUSTOM_DECOYS, PATH_HIT_BOUNDS } from '../labels';
 import type { BlockDuration, DecoyPathMatch, HoneypotSettings, SecuritySettings } from '../types';
 
-/* Honeypot settings (docs/HONEYPOT-DESIGN.md §3): the decoy paths and the hidden form fields on or off, the
+/* Honeypot settings (docs/security/monitoring-and-traps.md): the decoy paths and the hidden form fields on or off, the
    Superadmin's own API decoy paths (the server refuses one that would shadow a real route and says why), and when
    an address is blocked by itself. Saves only the honeypot part of the security settings. */
 

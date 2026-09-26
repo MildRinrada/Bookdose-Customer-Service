@@ -35,7 +35,7 @@ import { byNewest, isWidgetTheme, unreadCount } from './labels';
 import type { GuestConversation, GuestOverview, WidgetInfo } from './types';
 
 /* /support/<org>/tickets[/<id>] and /support/<org>/embed: chatting with an organization without an account
-   (docs/GUEST-CHAT-DESIGN.md §4).
+   (docs/features/support-page-and-guest-chat.md).
    The same pieces as the signed-in customer's chat — the thread with the survey inside it, the AI status with
    "คุยกับเจ้าหน้าที่", the composer — talking to the guest routes. The page has its own slim header; the embedded
    copy (inside a website's iframe, see public/widget.js) has none, sends X-Embed and tells the page around it how

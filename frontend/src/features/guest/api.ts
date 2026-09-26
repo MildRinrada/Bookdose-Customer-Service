@@ -2,7 +2,7 @@ import { api } from '@/lib/api/client';
 import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, GuestStartLink, SmsSettings, SmsSettingsBody } from './types';
 import type { LineMoveCode } from '@/features/customer/types';
 
-/* Endpoints of the guest web chat (docs/GUEST-CHAT-DESIGN.md §3). The visitor's routes live under
+/* Endpoints of the guest web chat (docs/features/support-page-and-guest-chat.md). The visitor's routes live under
    /api/public/<org>/guest; the chat named by X-Conversation-ID (the `conversation` option of api()) is the one /session, /messages,
    /handoff and /csat act on, exactly like the signed-in portal routes one level up. */
 

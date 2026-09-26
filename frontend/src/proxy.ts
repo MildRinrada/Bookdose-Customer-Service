@@ -10,7 +10,7 @@ import { FILE_LINK_PATH, isDecoyPagePath, TRAP_API_PATH } from '@/lib/traps';
      is off. next.config.ts leaves X-Frame-Options off that one path for the same reason. connect-src names this
      host's ws:/wss: as well, for the live updates socket (src/lib/realtime.ts); older browsers do not count a
      WebSocket to the same host as 'self'.
-   - Traps (docs/HONEYPOT-DESIGN.md, src/lib/traps.ts): a decoy page path and a /files/<token> link are answered
+   - Traps (docs/security/monitoring-and-traps.md, src/lib/traps.ts): a decoy page path and a /files/<token> link are answered
      exactly as they would be anyway (the 404 page / the "file moved" page, same headers); the visit is reported to
      the API in the background (POST /api/trap) with the same trusted address API requests carry, never an address
      the browser claims. */

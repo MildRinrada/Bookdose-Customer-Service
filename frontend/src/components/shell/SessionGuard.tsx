@@ -18,7 +18,7 @@ import {
 import type { Boot, CustomerAccount } from '@/lib/types';
 
 /* Session limits inside a signed-in frame (StaffShell for the organization and the platform console, CustomerShell).
-   docs/SECURITY-DESIGN.md §2 and §4:
+   docs/security/authentication.md:
    - Activity: a real keydown / pointerdown in the page, or the window getting focus, posts the activity endpoint at
      most once a minute (a trailing post covers activity inside that minute). Nothing else posts it: polling, the
      realtime socket and timers never do, and a hidden tab never does. A successful change (non-GET) already counts

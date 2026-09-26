@@ -1,4 +1,4 @@
-"""Honeypots and honeytokens (docs/HONEYPOT-DESIGN.md): decoy API and page paths answered like any unknown path, the web
+"""Honeypots and honeytokens (docs/security/monitoring-and-traps.md): decoy API and page paths answered like any unknown path, the web
 app's trap reports, hidden form fields, honeytokens of every kind (decoy account, API key, password, shared-file link)
 with their events, alerts, emails and automatic blocks, and real users left alone. Email is mocked and every test uses a
 disposable database; nothing leaves the machine."""

@@ -15,7 +15,7 @@ import type {
 /* Endpoints of backend/modules/auth (the shared sign-in, setup, organization sign-up), backend/modules/customers (the
    customer account's public actions) and the platform's registration email settings. */
 
-/* The public forms send the hidden box of HoneypotField (`website`, '' for every person; docs/HONEYPOT-DESIGN.md
+/* The public forms send the hidden box of HoneypotField (`website`, '' for every person; docs/security/monitoring-and-traps.md
    §1b). Filled, the server answers what a normal failure would and does nothing else. */
 type Honeypot = { website?: string };
 

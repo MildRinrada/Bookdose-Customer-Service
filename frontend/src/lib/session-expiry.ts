@@ -1,4 +1,4 @@
-/* When the signed-in session runs out (docs/SECURITY-DESIGN.md §2). The server keeps two limits per session: idle
+/* When the signed-in session runs out (docs/security/authentication.md). The server keeps two limits per session: idle
    (no activity for too long) and absolute (signed in too long). It says when each ends as `idle_expires_at` /
    `absolute_expires_at` (GET /api/session, GET /api/customer/account, and the activity endpoints), and answers an
    expired session with 401 {reason: 'idle' | 'absolute'}.

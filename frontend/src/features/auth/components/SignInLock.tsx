@@ -6,7 +6,7 @@ import { ApiError } from '@/lib/api/client';
 import { clockTime } from '@/lib/format';
 
 /* Too many wrong passwords (or codes) for this email: the server answers 429 {error, retry_after} until the lock ends
-   (docs/SECURITY-DESIGN.md §1). The sign-in forms (AuthScreen, TwoFactorStep) show it here with a live countdown and
+   (docs/security/authentication.md). The sign-in forms (AuthScreen, TwoFactorStep) show it here with a live countdown and
    keep their submit button disabled until it is over. Markup: pages/security.css (.lock-notice). */
 
 export type SignInLock = {

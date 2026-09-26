@@ -179,20 +179,6 @@
   height: 16px;
   margin-top: 3px;
 }
-.report-source+.report-source,.table-scroll+.table-scroll {
-  margin-top: 6px;
-}
-.report-source-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-.report-source-name .icon {
-  width: 16px;
-  height: 16px;
-  color: var(--muted);
-}
 progress.report-share {
   display: block;
   width: 140px;
@@ -505,4 +491,167 @@ progress.report-share::-moz-progress-bar {
   margin-top: 2px;
 }
 @media (max-width: 560px) {
+}
+
+/* วิเคราะห์แยกตามมุมที่เลือก (PivotCard): one row per group, every measure beside it; the headers sort. On a phone
+   each row becomes a small card of labelled figures instead of a table wider than the screen. */
+.pivot-dimensions {
+  flex-wrap: wrap;
+}
+.pivot-table th,
+.pivot-table td {
+  padding: 11px 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pivot-table th:first-child,
+.pivot-table td:first-child {
+  padding-left: 22px;
+  text-align: left;
+  white-space: normal;
+}
+.pivot-table th:last-child,
+.pivot-table td:last-child {
+  padding-right: 22px;
+}
+.pivot-sort {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pivot-sort:hover,
+.pivot-sort:focus-visible {
+  color: var(--ink);
+  text-decoration: none;
+}
+.pivot-name {
+  font-weight: 600;
+}
+.pivot-table tfoot td {
+  border-top: 2px solid var(--line);
+  border-bottom: 0;
+  font-weight: 700;
+}
+.pivot-table .pivot-few {
+  color: var(--muted);
+}
+.pivot-card .card-note {
+  margin: 0;
+  padding: 12px 22px 18px;
+}
+@media (max-width: 760px) {
+  .pivot-table thead {
+    display: none;
+  }
+  .pivot-table,
+  .pivot-table tbody,
+  .pivot-table tfoot,
+  .pivot-table tr {
+    display: block;
+  }
+  .pivot-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 14px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pivot-table td,
+  .pivot-table td:first-child,
+  .pivot-table td:last-child {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    text-align: right;
+    white-space: normal;
+  }
+  .pivot-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+  }
+  .pivot-table td.pivot-name {
+    grid-column: 1 / -1;
+    font-size: 1.02rem;
+  }
+  .pivot-table td.pivot-name::before {
+    content: none;
+  }
+  .pivot-table tfoot tr {
+    border-top: 2px solid var(--line);
+  }
+  .pivot-table tfoot td {
+    border-top: 0;
+  }
+}
+
+/* ความเร็วกับความพอใจ (SpeedSatisfactionCard): the score of each waiting time as a bar out of 5. */
+.speed-finding {
+  margin: 14px 0 12px;
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+.speed-finding strong {
+  margin: 0 4px;
+}
+.speed-rows {
+  display: grid;
+  gap: 8px;
+}
+.speed-row {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.speed-row progress {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: 8px;
+  appearance: none;
+  background: var(--soft);
+}
+.speed-row progress::-webkit-progress-bar {
+  border-radius: 8px;
+  background: var(--soft);
+}
+.speed-row progress::-webkit-progress-value {
+  border-radius: 8px;
+  background: #f5b942;
+}
+.speed-row progress::-moz-progress-bar {
+  border-radius: 8px;
+  background: #f5b942;
+}
+.speed-row.few .speed-value strong,
+.speed-row.few .speed-label {
+  color: var(--muted);
+}
+.speed-row.few progress::-webkit-progress-value {
+  background: var(--line);
+}
+.speed-row.few progress::-moz-progress-bar {
+  background: var(--line);
+}
+.speed-value {
+  text-align: right;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .speed-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .speed-row progress {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }

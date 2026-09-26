@@ -143,33 +143,6 @@ export function satisfaction(all: TicketRow[], f: ReportFilter, previous = false
   };
 }
 
-export type SourceRow = { key: string; total: number; open: number; late: number; avg: number | null; sla: number | null };
-
-/** The cases of the period grouped by channel or by category, largest first. */
-export function bySource(tickets: TicketRow[], key: 'channel' | 'category'): SourceRow[] {
-  const groups = new Map<string, TicketRow[]>();
-  for (const t of tickets) {
-    const value = String(t[key] || '') || (key === 'channel' ? 'manual' : 'ไม่ระบุหมวด');
-    groups.set(value, [...(groups.get(value) ?? []), t]);
-  }
-  return [...groups.entries()]
-    .map(([value, list]) => {
-      const replied = list.filter((t) => t.first_response_at);
-      const minutes = replied.map((t) => (new Date(t.first_response_at as string).getTime() - new Date(t.created_at).getTime()) / 60000);
-      return {
-        key: value,
-        total: list.length,
-        open: list.filter((t) => !isDone(t)).length,
-        late: list.filter(overdue).length,
-        avg: minutes.length ? minutes.reduce((a, b) => a + b, 0) / minutes.length : null,
-        sla: replied.length
-          ? (100 * replied.filter((t) => new Date(t.first_response_at as string) <= new Date(t.first_response_due_at)).length) / replied.length
-          : null,
-      };
-    })
-    .sort((a, b) => b.total - a.total);
-}
-
 export const AGE_BUCKETS: [string, number, string][] = [
   ['ไม่ถึง 1 วัน', 1, 'fresh'],
   ['1-3 วัน', 3, 'ok'],

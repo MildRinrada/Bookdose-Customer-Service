@@ -10,8 +10,37 @@ import type { TicketRow } from './types';
 
 type CsvTicket = Pick<TicketRow, 'number' | 'subject' | 'contact_name' | 'status' | 'priority' | 'assignee_id' | 'created_at'>;
 
+/** Rows as CSV text Excel opens as UTF-8. A negative number stays a number; any other text a spreadsheet would run
+    as a formula gets a leading '. */
+export function csvText(rows: unknown[][]): string {
+  return (
+    '﻿' +
+    rows
+      .map((row) =>
+        row
+          .map((value) => {
+            let s = String(value ?? '');
+            if (/^[\s]*[=+@-]/.test(s) && !/^-\d+(\.\d+)?$/.test(s)) s = "'" + s;
+            return '"' + s.replaceAll('"', '""') + '"';
+          })
+          .join(','),
+      )
+      .join('\r\n')
+  );
+}
+
+/** Save CSV text as `filename`. */
+export function saveCSVFile(text: string, filename: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function ticketsCSV(tickets: CsvTicket[], memberName: (id: string | null | undefined) => string): string {
-  const rows = [
+  return csvText([
     ['Case', 'Subject', 'Customer', 'Status', 'Priority', 'Assignee', 'Created at'],
     ...tickets.map((t) => [
       'BD-' + t.number,
@@ -22,31 +51,12 @@ export function ticketsCSV(tickets: CsvTicket[], memberName: (id: string | null 
       memberName(t.assignee_id),
       t.created_at,
     ]),
-  ];
-  return (
-    '﻿' +
-    rows
-      .map((row) =>
-        row
-          .map((value) => {
-            let s = String(value ?? '');
-            if (/^[\s]*[=+@-]/.test(s)) s = "'" + s;
-            return '"' + s.replaceAll('"', '""') + '"';
-          })
-          .join(','),
-      )
-      .join('\r\n')
-  );
+  ]);
 }
 
 /** Save the cases as `filename` (the old downloadTicketsCSV; memberName names the assignee column). */
 export function downloadTicketsCSV(tickets: CsvTicket[], filename: string, memberName: (id: string | null | undefined) => string) {
-  const url = URL.createObjectURL(new Blob([ticketsCSV(tickets, memberName)], { type: 'text/csv;charset=utf-8' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  saveCSVFile(ticketsCSV(tickets, memberName), filename);
 }
 
 /** The same with the workspace's member names: const save = useDownloadTicketsCSV(); save(tickets, 'x.csv'). */

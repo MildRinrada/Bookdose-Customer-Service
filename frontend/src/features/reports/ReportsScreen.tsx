@@ -17,7 +17,8 @@ import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { ArticlesCard, BotReportCard } from './components/ReportAi';
-import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard, SourcesCard } from './components/ReportInsights';
+import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
+import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard } from './components/ReportInsights';
 import { BusyHoursCard, ReopenCard, WorkloadCard } from './components/ReportTeam';
 import {
   defaultReportFilter,
@@ -29,10 +30,10 @@ import {
   reportTickets,
   reportTrend,
 } from './labels';
+import type { ReportExtras, ReportFilter } from './types';
 
 /** Who may take the period's tables away (backend reports/service.LEADS). */
 const LEADS = ['admin', 'manager'];
-import type { ReportExtras, ReportFilter } from './types';
 
 /* Service report: a period to look at, the numbers for it against the period before, the shape of the work
    (per day, by status, by priority) and how the team did. Built from the case list (/api/tickets), which the
@@ -218,26 +219,29 @@ export function ReportsScreen() {
           </div>
           <div className="report-grid">
             <SatisfactionCard all={all} f={f} />
-            <BacklogCard all={all} f={f} />
+            <SpeedSatisfactionCard tickets={tickets} />
           </div>
-          <SourcesCard tickets={tickets} />
+          <PivotCard tickets={tickets} />
           <div className="report-grid">
-            <section className="card">
-              <div className="card-header">
-                <h2>เคสตามสถานะ</h2>
-              </div>
-              <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
-            </section>
-            <section className="card">
-              <div className="card-header">
-                <h2>เคสตามความเร่งด่วน</h2>
-              </div>
-              <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
-            </section>
+            <BacklogCard all={all} f={f} />
+            <WorkloadCard all={all} f={f} />
           </div>
           <div className="report-grid">
             <ReopenCard all={all} f={f} />
-            <WorkloadCard all={all} f={f} />
+            <div className="report-stack">
+              <section className="card">
+                <div className="card-header">
+                  <h2>เคสตามสถานะ</h2>
+                </div>
+                <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
+              </section>
+              <section className="card">
+                <div className="card-header">
+                  <h2>เคสตามความเร่งด่วน</h2>
+                </div>
+                <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
+              </section>
+            </div>
           </div>
           <BusyHoursCard hours={extras?.hours} f={f} />
           {extras?.bot && (

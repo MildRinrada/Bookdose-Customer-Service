@@ -4,13 +4,12 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import type { TicketRow } from '@/features/tickets/types';
-import { date, formatDuration, relative, starsText } from '@/lib/format';
-import { channelIcons, channelNames } from '@/lib/labels';
+import { date, relative, starsText } from '@/lib/format';
 import { reportTrend } from '../labels';
-import { backlog, bySource, firstResponse, longDuration, resolution, satisfaction, type SourceRow } from '../insights';
+import { backlog, firstResponse, longDuration, resolution, satisfaction } from '../insights';
 import type { ReportFilter } from '../types';
 
-/* The service report's second half (insights.ts): time to solve, customer satisfaction, where the cases come from
+/* The service report's second half (insights.ts): time to first reply and to solve, customer satisfaction
    and how long the open ones have waited. Markup: pages/reports (report-*). */
 
 function Bar({ label, count, max, tone = '', note }: { label: ReactNode; count: number; max: number; tone?: string; note?: string }) {
@@ -187,73 +186,6 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
           <p className="empty-mini">ยังไม่มีคำตอบแบบประเมินในช่วงนี้ · ระบบส่งให้ลูกค้าเมื่อปิดเคส (ตั้งค่าได้ที่ระบบอัตโนมัติ)</p>
         )}
       </div>
-    </section>
-  );
-}
-
-function SourceTable({ rows, kind }: { rows: SourceRow[]; kind: 'channel' | 'category' }) {
-  const total = rows.reduce((n, r) => n + r.total, 0);
-  return (
-    <div className="table-scroll">
-      <table className="report-source">
-        <thead>
-          <tr>
-            <th>{kind === 'channel' ? 'ช่องทาง' : 'หมวดหมู่'}</th>
-            <th>เคส</th>
-            <th>ยังดูแลอยู่</th>
-            <th>เกิน SLA</th>
-            <th>ตอบแรกเฉลี่ย</th>
-            <th>ตอบทัน SLA</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.key}>
-              <td>
-                <span className="report-source-name">
-                  {kind === 'channel' && <Icon name={channelIcons[r.key] ?? 'chat'} />}
-                  {kind === 'channel' ? (channelNames[r.key] ?? r.key) : r.key}
-                </span>
-                <progress className="report-share" value={r.total} max={Math.max(1, total)} aria-hidden="true" />
-              </td>
-              <td>
-                <strong>{r.total}</strong> <small className="muted">{((100 * r.total) / Math.max(1, total)).toFixed(0)}%</small>
-              </td>
-              <td>{r.open}</td>
-              <td>{r.late ? <span className="badge suspended">{r.late}</span> : <span className="muted">0</span>}</td>
-              <td>{formatDuration(r.avg)}</td>
-              <td className={r.sla != null && r.sla < 80 ? 'report-low' : ''}>{r.sla == null ? '-' : `${r.sla.toFixed(0)}%`}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export function SourcesCard({ tickets }: { tickets: TicketRow[] }) {
-  const channels = bySource(tickets, 'channel');
-  const categories = bySource(tickets, 'category');
-  const worst = [...channels, ...categories].filter((r) => r.total >= 3 && r.sla != null).sort((a, b) => (a.sla ?? 100) - (b.sla ?? 100))[0];
-  return (
-    <section className="card report-card">
-      <div className="card-header">
-        <div>
-          <h2>เคสมาจากไหน</h2>
-          <p>แยกตามช่องทางที่ลูกค้าติดต่อเข้ามา และหมวดหมู่ของเรื่อง</p>
-        </div>
-        <Icon name="chart" />
-      </div>
-      {worst && worst.sla != null && worst.sla < 80 && (
-        <p className="notice warning report-hint">
-          <Icon name="clock" />
-          <span>
-            “{channelNames[worst.key] ?? worst.key}” ตอบทัน SLA เพียง {worst.sla.toFixed(0)}% · ลองจัดคนดูแลช่องทางหรือหมวดนี้เพิ่ม
-          </span>
-        </p>
-      )}
-      <SourceTable rows={channels} kind="channel" />
-      <SourceTable rows={categories} kind="category" />
     </section>
   );
 }

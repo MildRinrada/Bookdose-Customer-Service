@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { AchievementsSettings } from './AchievementsSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { OrganizationsSettings } from './OrganizationsSettings';
 import { ProfileSettings } from './ProfileSettings';
@@ -26,6 +27,7 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
     status: () => <StatusSettings />,
     notifications: () => <NotificationSettings />,
     replies: () => <RepliesSettings />,
+    achievements: () => <AchievementsSettings />,
     security: () => <SecuritySettings />,
     organizations: () => <OrganizationsSettings />,
   }[current]();

@@ -136,6 +136,22 @@ export type TicketSummary = {
   resolved_at?: string | null;
 } & Record<string, unknown>;
 
+/** A hand raised on a case (backend tickets/hands.py), as the case and its list carry it. */
+export type Hand = {
+  id: string;
+  raised_by: string;
+  raised_name: string;
+  note: string;
+  raised_at: string;
+  helper_id: string | null;
+  helper_name: string;
+};
+
+export type HandAlert = Hand & { ticket_id: string; number: number; subject: string; kind: 'ask' | 'coming' };
+
+/** A badge of ผลงานของฉัน; `progress` and `earned_at` come with the full list (GET /api/achievements). */
+export type Badge = { key: string; name: string; detail: string; goal: number; icon: string; progress?: number; earned_at?: string | null };
+
 /** GET /api/automation/alerts (and overview.me): what is addressed to the signed-in member. */
 export type StaffAlerts = {
   escalations: Array<
@@ -151,6 +167,14 @@ export type StaffAlerts = {
   channels?: Array<{ kind: 'line' | 'email' | 'facebook'; name: string; since: string; error: string }>;
   /** Five-star answers of the last 7 days on the member's own cases (celebrated once each). */
   praise?: Array<{ id: string; ticket_id: string; number: number; subject: string; comment: string; answered_at: string }>;
+  /** Praise in a customer's message on กำแพงคำชม, of the last 7 days (celebrated once each, like five stars). */
+  kudos?: Array<{ id: string; text: string; created_at: string }>;
+  /** ยกมือขอช่วย: hands raised on cases this member can see ('ask'), and their own hand somebody is coming to ('coming'). */
+  hands?: HandAlert[];
+  /** Badges earned and not celebrated yet (backend achievements/badges.py). */
+  badges?: Badge[];
+  /** Last month's summary, the first time the member opens the app in a new month. */
+  recap?: { month: string; label: string } | null;
   mentions: Array<
     {
       conversation_id: string;

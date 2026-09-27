@@ -2,14 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { markBadgesSeen } from '@/features/achievements/api';
 import { useStaffAlerts } from '@/lib/session';
 import { playSound } from './alerts';
 import { celebrate, onCelebrate, setFeedbackPrefs, type Celebration } from './celebrate';
 import { usePreferences } from './prefs';
 
 /* The staff frame's celebrations: confetti over the page and a card at the bottom when the member closes a case (one
-   card for several closed together) or a customer gives their case five stars. Five stars given while the page was
-   closed are celebrated the next time it opens; the first visit only remembers what is already there. Reduced motion
+   card for several closed together), a customer gives their case five stars or praises them in a message (กำแพงคำชม),
+   or they earn a badge (ผลงานของฉัน). Five stars and praise given while the page was closed are celebrated the next
+   time it opens; the first visit only remembers what is already there. A badge is celebrated once, on whichever
+   screen the alerts bring it, and the server is told it was seen even when celebrations are off. Reduced motion
    keeps the card without confetti. Styles: styles/pages/celebrations.css. */
 
 const CHEERS = ['เยี่ยมมาก!', 'สุดยอด!', 'เก่งมาก!', 'ทำได้ดีมาก!'];
@@ -57,6 +60,7 @@ export function Celebrations({ userId }: { userId: string }) {
   }, [card]);
 
   usePraise(userId, Boolean(notify?.celebrate));
+  useNewBadges(Boolean(notify?.celebrate), Boolean(notify));
 
   return (
     <>
@@ -64,10 +68,10 @@ export function Celebrations({ userId }: { userId: string }) {
       {card && (
         <div className={`celebration-card ${card.kind}`} role="status">
           <span className="celebration-icon" aria-hidden="true">
-            <Icon name={card.kind === 'praise' ? 'star' : 'checkCircle'} />
+            <Icon name={card.kind === 'praise' ? 'star' : card.kind === 'badge' ? 'award' : 'checkCircle'} />
           </span>
           <span className="celebration-text">
-            <small>{card.kind === 'praise' ? 'ลูกค้าให้ ★★★★★' : card.cheer}</small>
+            <small>{card.label ?? (card.kind === 'praise' ? 'ลูกค้าให้ ★★★★★' : card.kind === 'badge' ? 'เหรียญใหม่!' : card.cheer)}</small>
             <strong>{card.title}</strong>
             {card.detail && <span>{card.detail}</span>}
           </span>
@@ -80,28 +84,59 @@ export function Celebrations({ userId }: { userId: string }) {
   );
 }
 
-/** New five-star answers on the member's cases (the alerts' "praise"), remembered per member in this browser. */
+/** The ids in `items` not seen in this browser before; the first visit only remembers (returns nothing). */
+function freshIds(key: string, ids: string[]): Set<string> {
+  let seen: string[] | null = null;
+  try {
+    seen = JSON.parse(localStorage.getItem(key) ?? 'null');
+  } catch {
+    /* Storage off: nothing is remembered and nothing old is celebrated. */
+  }
+  try {
+    localStorage.setItem(key, JSON.stringify(ids));
+  } catch {
+    /* Private window. */
+  }
+  return new Set(seen ? ids.filter((id) => !seen.includes(id)) : []);
+}
+
+/** New five-star answers on the member's cases (the alerts' "praise") and praise in customers' messages (กำแพงคำชม,
+    the alerts' "kudos"), remembered per member in this browser. */
 function usePraise(userId: string, enabled: boolean) {
-  const praise = useStaffAlerts().data?.praise;
+  const alerts = useStaffAlerts().data;
+  const praise = alerts?.praise;
+  const kudos = alerts?.kudos;
   useEffect(() => {
     if (!enabled || !praise) return;
-    const key = `bd-praise-seen:${userId}`;
-    let seen: string[] | null = null;
-    try {
-      seen = JSON.parse(localStorage.getItem(key) ?? 'null');
-    } catch {
-      /* Storage off: nothing is remembered and nothing old is celebrated. */
-    }
-    const fresh = seen ? praise.filter((p) => !seen.includes(p.id)) : [];
-    try {
-      localStorage.setItem(key, JSON.stringify(praise.map((p) => p.id)));
-    } catch {
-      /* Private window. */
-    }
-    if (!seen) return;
-    for (const p of fresh.slice(0, 3))
+    const fresh = freshIds(`bd-praise-seen:${userId}`, praise.map((p) => p.id));
+    for (const p of praise.filter((p) => fresh.has(p.id)).slice(0, 3))
       celebrate({ kind: 'praise', title: `BD-${p.number} ได้ 5 ดาว`, detail: p.comment ? `“${p.comment.slice(0, 80)}”` : p.subject });
   }, [praise, userId, enabled]);
+  useEffect(() => {
+    if (!enabled || !kudos) return;
+    const fresh = freshIds(`bd-kudos-seen:${userId}`, kudos.map((k) => k.id));
+    for (const k of kudos.filter((k) => fresh.has(k.id)).slice(0, 2))
+      celebrate({ kind: 'praise', label: 'คำชมจากลูกค้า', title: 'ลูกค้าชมคุณ ขึ้นกำแพงคำชมแล้ว', detail: `“${k.text.slice(0, 80)}”` });
+  }, [kudos, userId, enabled]);
+}
+
+/** Badges earned and not seen yet (the alerts' "badges"): one card for them, then the server hears they were seen. */
+function useNewBadges(enabled: boolean, ready: boolean) {
+  const badges = useStaffAlerts().data?.badges;
+  const told = useRef(new Set<string>());
+  useEffect(() => {
+    if (!ready || !badges?.length) return;
+    const fresh = badges.filter((b) => !told.current.has(b.key));
+    if (!fresh.length) return;
+    fresh.forEach((b) => told.current.add(b.key));
+    if (enabled)
+      celebrate(
+        fresh.length === 1
+          ? { kind: 'badge', title: `ได้เหรียญ “${fresh[0].name}”`, detail: fresh[0].detail }
+          : { kind: 'badge', title: `ได้เหรียญใหม่ ${fresh.length} เหรียญ`, detail: fresh.map((b) => b.name).join(', ') },
+      );
+    void markBadgesSeen(fresh.map((b) => b.key)).catch(() => undefined);
+  }, [badges, enabled, ready]);
 }
 
 /** Paper falling from above the page for about three seconds, drawn on a canvas that takes no clicks. */

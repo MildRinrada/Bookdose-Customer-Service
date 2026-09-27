@@ -1,6 +1,7 @@
 /* Shapes of GET /api/automation/overview (automation.service.overview). Field names are the server's. */
 
 import type { Escalation } from '@/features/automation/types';
+import type { KudosWall } from '@/features/kudos/types';
 import type { Role, StaffAlerts } from '@/lib/types';
 
 export type AgentActivity = {
@@ -126,10 +127,24 @@ export type ForecastCase = {
 /** unknown: cases in a queue with no pace to go by (nothing answered or closed in seven days). */
 export type SlaForecast = { cases: ForecastCase[]; unknown: number; response_per_hour: number | null; generated_at: string };
 
+/** พยากรณ์อากาศของกล่องข้อความ (backend automation/weather.py): the day ahead as a weather report. `expected` and
+    `usual` are cases for today, null while the organization has less than two weeks of cases. */
+export type Weather = {
+  kind: 'storm' | 'rain' | 'hot' | 'cloudy' | 'clear' | 'fair';
+  title: string;
+  detail: string;
+  notes: string[];
+  expected: number | null;
+  usual: number | null;
+};
+
 export type Overview = {
   me: StaffAlerts;
   today?: MyDay;
   forecast?: SlaForecast;
+  weather?: Weather;
+  /** กำแพงคำชม: the newest praise (features/kudos). */
+  kudos?: KudosWall;
   manager: ManagerOverview | null;
   setup?: SetupChecklist | null;
   insights?: Insights | null;

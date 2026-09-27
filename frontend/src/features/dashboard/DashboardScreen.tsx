@@ -27,11 +27,13 @@ import { SetupCard, setupShown } from './components/SetupCard';
 import { SlaForecast } from './components/SlaForecast';
 import { SlaWatch } from './components/SlaWatch';
 import { WaitingChats } from './components/WaitingChats';
+import { WeatherLine } from './components/WeatherLine';
+import { KudosCard } from '@/features/kudos/components/KudosWall';
 import { actionNeeded, meItems } from './labels';
 import type { Overview } from './types';
 
-/* Overview: greeting with รับงานถัดไป, the owner's setup checklist, stat cards, วันนี้ของฉัน and แชทรอตอบ, recent cases,
-   คำตอบด่วน, "ถึงคุณ" (mentions, follow-ups, escalations), คาดว่าจะเกิน SLA, SLA Watch, the new-cases chart, ส่งต่อกะ and the member's
+/* Overview: greeting with รับงานถัดไป and the day's weather (WeatherLine), the owner's setup checklist, stat cards, วันนี้ของฉัน and แชทรอตอบ, recent cases,
+   คำตอบด่วน, "ถึงคุณ" (mentions, follow-ups, escalations), คาดว่าจะเกิน SLA, SLA Watch, the new-cases chart, กำแพงคำชม, ส่งต่อกะ and the member's
    to-dos and, for the organization's
    owners, the AI and knowledge cards and the manager view. The overview's own data
    (/api/automation/overview) refreshes every 30 seconds (every minute while live updates are connected, which refresh it on changes)
@@ -201,6 +203,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
     ),
     sla: <SlaWatch needed={needed} shown={ASIDE_ITEMS} />,
     forecast: <SlaForecast forecast={dash?.forecast} shown={ASIDE_ITEMS} />,
+    kudos: <KudosCard wall={dash?.kudos} readOnly={readOnly} />,
   };
   // Only while there is something to show: a card that is not here gives its rows to the ones under it.
   if (dash?.setup && setupShown(dash.setup)) cards.setup = <SetupCard setup={dash.setup} />;
@@ -263,6 +266,8 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
             </button>
           )}
         </div>
+        {/* The day ahead as a weather report: a row of its own under the greeting and the actions. */}
+        <WeatherLine weather={dash?.weather} />
       </div>
       <DashboardBoard content={cards} />
       <div className="section-bottom">

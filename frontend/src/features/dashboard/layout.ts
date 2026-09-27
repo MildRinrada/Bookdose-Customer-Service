@@ -49,8 +49,8 @@ export type CardDef = { id: string; title: string; note: string; box: Box };
 /* The page as it ships, in squares. A row is 40px with a 22px gap, so h rows come out at 62h-22 pixels; the heights
    are guesses that the page corrects by measuring (growToFit), so what matters here is the order and the columns.
 
-   Two columns under the figures. The left, two thirds wide, is the work: the cases, then the week's chart, then the
-   two team boards side by side. The right third is what needs somebody now, most urgent first: cases about to break
+   Two columns under the figures. The left, two thirds wide, is the work: the cases, then the week's chart, the
+   customers' praise (กำแพงคำชม), then the two team boards side by side. The right third is what needs somebody now, most urgent first: cases about to break
    their SLA, the ones forecast to, the chats waiting, and what was addressed to this member; the quick replies, which
    nobody needs to see to act, come last. Cards that take no rows (nothing to show) drop out and the rest close up. */
 export const CARDS: CardDef[] = [
@@ -59,15 +59,16 @@ export const CARDS: CardDef[] = [
   { id: 'today', title: 'วันนี้ของฉัน', note: 'ตอบวันนี้ ปิดวันนี้ เวลาตอบ และ CSAT ของคุณ', box: { x: 0, y: 9, w: 12, h: 3 } },
   { id: 'tickets', title: 'เคสล่าสุด', note: 'ตาราง 6 เคสล่าสุด พร้อมตัวกรองด่วน', box: { x: 0, y: 12, w: 8, h: 15 } },
   { id: 'chart', title: 'เคสเข้าใหม่', note: 'กราฟ 7 วันย้อนหลัง', box: { x: 0, y: 27, w: 8, h: 6 } },
-  { id: 'handover', title: 'ส่งต่อกะ', note: 'บันทึกส่งต่อระหว่างกะของทีม', box: { x: 0, y: 33, w: 4, h: 7 } },
-  { id: 'todo', title: 'สิ่งที่ต้องทำ', note: 'รายการงานส่วนตัวของคุณ', box: { x: 4, y: 33, w: 4, h: 7 } },
+  { id: 'kudos', title: 'กำแพงคำชม', note: 'คำชมจากลูกค้าที่ทุกคนในองค์กรเห็น', box: { x: 0, y: 33, w: 8, h: 8 } },
+  { id: 'handover', title: 'ส่งต่อกะ', note: 'บันทึกส่งต่อระหว่างกะของทีม', box: { x: 0, y: 41, w: 4, h: 7 } },
+  { id: 'todo', title: 'สิ่งที่ต้องทำ', note: 'รายการงานส่วนตัวของคุณ', box: { x: 4, y: 41, w: 4, h: 7 } },
   { id: 'sla', title: 'SLA Watch', note: 'เคสที่ต้องดำเนินการทันที พร้อมนาฬิกานับเวลา', box: { x: 8, y: 12, w: 4, h: 9 } },
   { id: 'forecast', title: 'คาดว่าจะเกิน SLA', note: 'เคสที่ยังไม่เกิน แต่ตามคิวและความเร็วทีมตอนนี้จะไม่ทัน', box: { x: 8, y: 21, w: 4, h: 6 } },
   { id: 'waiting', title: 'แชทรอตอบ', note: 'บทสนทนาที่ลูกค้าพิมพ์ล่าสุด เรียงตามเวลาที่รอ', box: { x: 8, y: 27, w: 4, h: 7 } },
   { id: 'me', title: 'ถึงคุณ', note: 'ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ', box: { x: 8, y: 34, w: 4, h: 7 } },
   { id: 'replies', title: 'คำตอบด่วน', note: 'คำตอบสำเร็จรูปที่ใช้บ่อย', box: { x: 8, y: 41, w: 4, h: 4 } },
-  { id: 'insights', title: 'AI และคลังความรู้', note: 'เห็นเฉพาะเจ้าขององค์กร', box: { x: 0, y: 47, w: 12, h: 13 } },
-  { id: 'manager', title: 'มุมมองผู้ดูแล', note: 'ภาระงานของทีม ช่องทาง และสถิติรวม', box: { x: 0, y: 60, w: 12, h: 16 } },
+  { id: 'insights', title: 'AI และคลังความรู้', note: 'เห็นเฉพาะเจ้าขององค์กร', box: { x: 0, y: 49, w: 12, h: 13 } },
+  { id: 'manager', title: 'มุมมองผู้ดูแล', note: 'ภาระงานของทีม ช่องทาง และสถิติรวม', box: { x: 0, y: 62, w: 12, h: 16 } },
 ];
 
 /* What the page ships without. A page that shows everything shows nothing: the cards below are useful to the member

@@ -43,6 +43,24 @@ def fill_fields(req, ticket_id):
     return req.send(200,{'fields':fields.set_for_ticket(req.db,req.ctx,ticket_id,req.body)})
 
 
+def raise_hand(req, ticket_id):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.tickets import hands
+    limited(('hand',req.ctx['id']),30,3600)
+    return req.send(200,{'hand':hands.raise_hand(req.db,req.ctx,ticket_id,req.body)})
+
+
+def help_hand(req, ticket_id):
+    from backend.modules.tickets import hands
+    return req.send(200,{'hand':hands.come_help(req.db,req.ctx,ticket_id)})
+
+
+def lower_hand(req, ticket_id):
+    from backend.modules.tickets import hands
+    hands.lower(req.db,req.ctx,ticket_id)
+    return req.send(200,{'ok':True})
+
+
 def export_tickets(req):
     return req.send(200,service.export_tickets_csv(req.db,req.ctx),'text/csv; charset=utf-8',
                     {'Content-Disposition':'attachment; filename="bookdose-tickets.csv"'})

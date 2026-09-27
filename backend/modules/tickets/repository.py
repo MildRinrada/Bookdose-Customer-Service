@@ -1,6 +1,7 @@
 """Case queries. Functions taking team_id limit results to that team when it is given (agents)."""
 from backend.database.db import one, rows
 from backend.modules.tickets.fields import VALUES_COLUMN as FIELD_VALUES
+from backend.modules.tickets.hands import COLUMN as HAND
 from backend.modules.tickets.tags import IDS_COLUMN as TAG_IDS
 from backend.utils.dates import now
 
@@ -25,7 +26,7 @@ def list_with_contacts(db, team_id=None):
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_at,
               (SELECT s.comment FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_comment,
-              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,{MOOD_COLUMNS},{TAG_IDS},{FIELD_VALUES},
+              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,{MOOD_COLUMNS},{TAG_IDS},{FIELD_VALUES},{HAND},
               (SELECT MAX(r.reopened_at) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopened_at
               FROM tickets t LEFT JOIN escalations e ON e.ticket_id=t.id JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.updated_at DESC,t.number DESC''',params)
 

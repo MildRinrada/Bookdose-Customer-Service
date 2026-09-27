@@ -151,6 +151,9 @@ def _clear(db, conv, moment):
     for table in ('conversation_summaries','conversation_moods','conversation_languages','ai_jobs'):
         db.execute(f'DELETE FROM {table} WHERE conversation_id=?',(conv,))
     db.execute("UPDATE csat_surveys SET comment='' WHERE conversation_id=?",(conv,))
+    # The customer's words on กำแพงคำชม are content of the conversation too.
+    from backend.modules.kudos import service as kudos
+    kudos.forget_conversations(db,[conv])
     db.execute('INSERT INTO retention_cleared VALUES(?,?,?)',(conv,stamp,len(keys)))
     # A finished case whose conversations are all cleared keeps its number and times, not its words.
     for ticket in [r[0] for r in db.execute('SELECT ticket_id FROM ticket_conversations WHERE conversation_id=?',(conv,))]:
@@ -159,4 +162,5 @@ def _clear(db, conv, moment):
         if not left:
             db.execute("UPDATE tickets SET subject=?,snooze_note='' WHERE id=?",(CLEARED_SUBJECT,ticket))
             db.execute('UPDATE followups SET note=? WHERE ticket_id=?',(CLEARED_SUBJECT,ticket))
+            db.execute("UPDATE help_requests SET note='' WHERE ticket_id=?",(ticket,))
     return keys

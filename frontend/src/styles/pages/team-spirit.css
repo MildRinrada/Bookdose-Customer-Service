@@ -1,0 +1,541 @@
+/* What makes the team's day a little better: the weather line under the overview's greeting, กำแพงคำชม, ยกมือขอช่วย,
+   the inbox once it is clear, and ผลงานของฉัน (the monthly summary card and the badges). Colours come from the theme's
+   tokens, except the summary card, which is dark in every theme as the celebration card is. */
+
+/* พยากรณ์อากาศของกล่องข้อความ (dashboard/components/WeatherLine) */
+/* The greeting and the actions stay on their row as before; the weather is a row of its own under them. */
+.page-heading.dashboard-heading {
+  flex-wrap: wrap;
+  row-gap: 14px;
+}
+/* On a wide screen the greeting gives way to the actions, as it did before the heading could wrap; a phone keeps
+   stacking them (layout.css). */
+@media (min-width:761px) {
+  .dashboard-heading>h1 {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+.page-heading p.dashboard-weather {
+  display: flex;
+  flex-basis: 100%;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.weather-sky {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.weather-sky .icon {
+  width: 22px;
+  height: 22px;
+}
+.dashboard-weather.cloudy .weather-sky {
+  background: var(--soft);
+  color: var(--ink);
+}
+.dashboard-weather.rain .weather-sky {
+  background: var(--info-soft);
+  color: var(--ink);
+}
+.dashboard-weather:is(.storm,.hot) .weather-sky {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.weather-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  min-width: 0;
+}
+.weather-text strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.weather-note {
+  flex-basis: 100%;
+  font-size: .92rem;
+}
+
+/* กำแพงคำชม (features/kudos) */
+.kudos-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kudos-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.kudos-item.mine {
+  background: var(--soft);
+}
+.kudos-quote {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.kudos-quote p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.kudos-quote p::before {
+  content: '“';
+}
+.kudos-quote p::after {
+  content: '”';
+}
+.kudos-stars {
+  color: #d49a2a;
+  font-size: .95rem;
+  letter-spacing: 2px;
+}
+.kudos-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+.kudos-meta .avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  font-size: .8rem;
+}
+.kudos-who {
+  display: grid;
+  flex: 1 1 160px;
+  min-width: 0;
+  line-height: 1.3;
+}
+.kudos-who strong {
+  color: var(--ink);
+  font-size: .95rem;
+}
+.kudos-who time {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.kudos-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.kudos-cheer .icon,.kudos-count .icon {
+  width: 16px;
+  height: 16px;
+}
+.kudos-cheer.cheered {
+  border-color: #e5484d;
+  color: var(--ink);
+}
+.kudos-cheer.cheered .icon,.kudos-count .icon {
+  color: #e5484d;
+  fill: currentColor;
+}
+.kudos-cheer-count {
+  min-width: 1.5em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--soft);
+  font-size: .8rem;
+  text-align: center;
+}
+.kudos-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+.kudos-remove .icon {
+  width: 16px;
+  height: 16px;
+}
+#modal .kudos-list {
+  max-width: 640px;
+}
+
+/* ยกมือขอช่วย (tickets/components/HandCard) */
+.hand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  margin-right: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: .75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hand-chip.helped {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.hand-chip .icon {
+  width: 13px;
+  height: 13px;
+}
+.hand-card > * + * {
+  margin-top: 10px;
+}
+.hand-card p {
+  margin: 0;
+}
+.hand-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+.hand-who .icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--amber);
+}
+.hand-card input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--control-line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font: inherit;
+  background: var(--field);
+  color: var(--ink);
+}
+.hand-card > .btn,.hand-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+.hand-card.raised {
+  background: var(--amber-soft);
+}
+.hand-card.raised .btn:not(.primary) {
+  background: var(--paper);
+}
+.hand-note {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.hand-actions {
+  display: grid;
+  gap: 8px;
+}
+.case-hero-flag.hand {
+  background: #ffffff1f;
+  color: #fff;
+}
+
+/* กล่องว่าง (inbox/components/AllClear) */
+.all-clear {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 36px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+.all-clear-art {
+  width: 120px;
+  height: 100px;
+  margin-bottom: 8px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.all-clear-cup {
+  stroke: var(--ink);
+}
+.all-clear-spark {
+  stroke: #d49a2a;
+}
+.all-clear-steam {
+  animation: all-clear-steam 3.2s ease-in-out infinite;
+}
+@keyframes all-clear-steam {
+  0%, 100% { opacity: .25; transform: translateY(3px); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+.all-clear strong {
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+.all-clear.compact {
+  padding: 12px 8px;
+}
+.all-clear.compact .all-clear-art {
+  width: 72px;
+  height: 60px;
+  margin-bottom: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .all-clear-steam { animation: none; opacity: .8; }
+}
+
+/* สรุปผลงานประจำเดือน (features/achievements/components/RecapCard) */
+.recap {
+  display: grid;
+  gap: 14px;
+}
+.recap-card {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 22px;
+  background: radial-gradient(120% 140% at 100% 0,#343a3f 0,#1f2326 62%);
+  color: #fff;
+}
+.recap-head {
+  display: grid;
+  gap: 2px;
+}
+.recap-org {
+  color: #aab4b1;
+  font-size: .92rem;
+}
+.recap-month {
+  color: #f5b942;
+  font-weight: 700;
+}
+.recap-name {
+  font-size: 1.6rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.recap-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #ffffff12;
+}
+.recap-emoji {
+  flex-shrink: 0;
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.recap-title > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.recap-title small {
+  color: #aab4b1;
+  font-size: .85rem;
+}
+.recap-title strong {
+  color: #f5b942;
+  font-size: 1.45rem;
+  line-height: 1.25;
+}
+.recap-title span span,.recap-title > span:last-child > span {
+  color: #dfe4e2;
+}
+.recap-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+  gap: 10px;
+  margin: 0;
+}
+.recap-facts > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #ffffff0f;
+}
+.recap-facts dt {
+  color: #aab4b1;
+  font-size: .85rem;
+}
+.recap-facts dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.recap-facts span {
+  color: #aab4b1;
+  font-size: .8rem;
+}
+.recap-quote {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.recap-quote blockquote {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.recap-quote figcaption {
+  color: #aab4b1;
+  font-size: .85rem;
+}
+.recap-badges {
+  display: grid;
+  gap: 8px;
+}
+.recap-badges > span {
+  color: #aab4b1;
+  font-size: .85rem;
+}
+.recap-badges ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recap-badges li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f5b94226;
+  color: #f7c96b;
+  font-weight: 600;
+}
+.recap-badges .icon {
+  width: 15px;
+  height: 15px;
+}
+.recap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.recap-picker {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.recap-picker select {
+  width: auto;
+  min-width: 200px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--control-line);
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+}
+
+/* เหรียญความสำเร็จ (features/achievements/components/BadgeGrid) */
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(230px,1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.badge-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.badge-medal {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px dashed var(--control-line);
+  border-radius: 50%;
+  color: var(--muted);
+}
+.badge-tile.earned .badge-medal {
+  border: 0;
+  background: #f5b942;
+  color: #1f2326;
+}
+.badge-medal .icon {
+  width: 22px;
+  height: 22px;
+}
+.badge-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.badge-text strong {
+  color: var(--ink);
+}
+.badge-text > span {
+  color: var(--muted);
+  font-size: .88rem;
+}
+.badge-text .badge-when {
+  color: var(--green);
+  font-weight: 600;
+}
+.badge-progress {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+}
+.badge-progress progress {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--soft);
+}
+.badge-progress progress::-webkit-progress-bar {
+  background: var(--soft);
+}
+.badge-progress progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: var(--ink);
+}
+.badge-progress progress::-moz-progress-bar {
+  background: var(--ink);
+}
+.badge-progress span {
+  color: var(--muted);
+  font-size: .8rem;
+}
+.celebration-card.badge .celebration-icon {
+  background: #f5b942;
+  color: #1f2326;
+}

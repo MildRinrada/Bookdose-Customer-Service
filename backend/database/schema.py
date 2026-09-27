@@ -178,3 +178,10 @@ def upgrade_tenant(db):
     from backend.modules.automation import distribution, repository as automation_repository
     automation_repository.add_rule_tags(db)
     db.executescript(distribution.TABLE)
+    # กำแพงคำชม (kudos), ยกมือขอช่วย (tickets/hands.py) and ผลงานของฉัน: the monthly summary and badges (achievements).
+    from backend.modules.achievements import model as achievements
+    from backend.modules.kudos import model as kudos
+    from backend.modules.tickets import hands
+    db.executescript(kudos.TENANT_TABLES)
+    db.executescript(hands.TABLE)
+    db.executescript(achievements.TENANT_TABLES)

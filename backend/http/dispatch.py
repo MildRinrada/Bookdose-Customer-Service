@@ -36,6 +36,7 @@ from backend.extensions import monitor
 from backend.middleware import auth
 from backend.middleware.rate_limit import limited
 from backend.middleware.security import SECURITY_HEADERS, check_host_and_origin, request_ip
+from backend.modules.achievements import routes as achievement_routes
 from backend.modules.ai import routes as ai_routes
 from backend.modules.auth import routes as auth_routes
 from backend.modules.automation import routes as automation_routes, service as automation
@@ -50,6 +51,7 @@ from backend.modules.pdpa import routes as pdpa_routes
 from backend.modules.invitations import routes as invitation_routes
 from backend.modules.conversations import routes as conversation_routes
 from backend.modules.knowledge import routes as knowledge_routes
+from backend.modules.kudos import routes as kudos_routes
 from backend.modules.org_links import routes as org_link_routes
 from backend.modules.organization import routes as organization_routes, team_security
 from backend.modules.platform import routes as platform_routes
@@ -71,7 +73,7 @@ ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *pdpa_routes.ROUTES, *po
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
           *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES, *staff_prefs_routes.ROUTES,
-          *board_routes.ROUTES, *report_routes.ROUTES, *incident_routes.ROUTES]
+          *board_routes.ROUTES, *report_routes.ROUTES, *incident_routes.ROUTES, *kudos_routes.ROUTES, *achievement_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')

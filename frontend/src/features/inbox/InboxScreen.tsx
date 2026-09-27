@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { moodHeat } from '@/components/ui/MoodTag';
 import { StaffIssuesBanner } from '@/features/incidents/KnownIssues';
+import { AllClear } from './components/AllClear';
 import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
@@ -138,6 +139,11 @@ export function InboxScreen({ id }: { id?: string }) {
     <EmptyState title="ยังไม่มีข้อความ" description="แชร์หน้าลูกค้าเพื่อเริ่มรับเรื่องจากลูกค้า" icon="chat" />
   ) : query.trim() ? (
     <EmptyState title="ไม่พบบทสนทนาที่ค้นหา" description="ลองใช้ชื่อลูกค้า เรื่อง หรือหมายเลขเคส" icon="search" />
+  ) : !channel && filter !== 'all' ? (
+    // Nobody is waiting (or nothing is open) on any channel: the team has cleared the inbox.
+    <AllClear seed={conversations.length}>
+      <span className="tiny">เลือก “ทั้งหมด” เพื่อดูบทสนทนาที่ปิดแล้ว</span>
+    </AllClear>
   ) : (
     <EmptyState
       title={filter === 'waiting' ? 'ตอบครบทุกบทสนทนาแล้ว' : 'ไม่มีบทสนทนาที่เปิดอยู่'}

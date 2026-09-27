@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { AllClear } from '@/features/inbox/components/AllClear';
 import { needsReply } from '@/features/inbox/hooks';
 import { useCachedConversations } from '@/features/notifications/items';
 import { plainText } from '@/lib/format';
@@ -72,7 +73,7 @@ export function WaitingChats({ now }: { now: number }) {
             </div>
           </>
         ) : (
-          <div className="empty-mini">ไม่มีลูกค้ารอคำตอบ ✨</div>
+          <AllClear compact seed={(conversations.data?.conversations ?? []).length} />
         )}
       </div>
     </section>

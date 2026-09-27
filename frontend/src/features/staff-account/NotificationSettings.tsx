@@ -57,7 +57,14 @@ function NotifyCard({ view }: { view: PreferencesView }) {
           setPermission(desktopPermission());
           const events = Object.fromEntries(Object.keys(view.events).map((key) => [key, values[`event:${key}`] === 'on'])) as Record<NotifyEvent, boolean>;
           await savePreferences({
-            notify: { desktop: values.desktop === 'on', sound: values.sound === 'on', email: values.email === 'on', celebrate: values.celebrate === 'on', events },
+            notify: {
+              desktop: values.desktop === 'on',
+              sound: values.sound === 'on',
+              email: values.email === 'on',
+              celebrate: values.celebrate === 'on',
+              recap: values.recap === 'on',
+              events,
+            },
           });
           await refresh(PREFS_PATH);
           toast('บันทึกการแจ้งเตือนแล้ว');
@@ -88,8 +95,15 @@ function NotifyCard({ view }: { view: PreferencesView }) {
           <label className="check">
             <input type="checkbox" className="switch" name="celebrate" defaultChecked={notify.celebrate} />
             <span>
-              ฉลองเมื่อปิดเคสหรือได้ 5 ดาว
+              ฉลองเมื่อปิดเคส ได้ 5 ดาว ได้คำชม หรือได้เหรียญใหม่
               <span className="tiny muted block">พลุกระดาษและการ์ดแสดงความยินดีสั้น ๆ มีเสียงด้วยเมื่อเปิดเสียงเตือนไว้</span>
+            </span>
+          </label>
+          <label className="check">
+            <input type="checkbox" className="switch" name="recap" defaultChecked={notify.recap} />
+            <span>
+              สรุปผลงานประจำเดือน
+              <span className="tiny muted block">เด้งการ์ดสรุปผลงานของเดือนที่แล้วครั้งเดียว เมื่อเข้าระบบครั้งแรกของเดือน ดูย้อนหลังได้ที่ ผลงานของฉัน</span>
             </span>
           </label>
           <label className="check">

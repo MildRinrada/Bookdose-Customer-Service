@@ -9,8 +9,9 @@ import type { Availability, WorkStatus } from '@/lib/types';
 
 export const PREFS_PATH = '/api/account/preferences';
 
-/** weekly_report: the service report's summary every Monday (the organization's owners; backend reports/weekly.py). */
-export type NotifyEvent = 'assigned' | 'customer_reply' | 'sla' | 'snoozed' | 'weekly_report';
+/** weekly_report: the service report's summary every Monday (the organization's owners; backend reports/weekly.py).
+    help: a colleague raised their hand on a case the member can see (on screen and by sound only). */
+export type NotifyEvent = 'assigned' | 'customer_reply' | 'sla' | 'snoozed' | 'help' | 'weekly_report';
 
 export type Snippet = { id?: string; shortcut: string; text: string };
 
@@ -18,8 +19,9 @@ export type StaffPreferences = {
   status: WorkStatus;
   hours: { enabled: boolean; days: number[]; start: string; end: string };
   leave: { from: string; to: string; note: string }[];
-  /** celebrate: confetti and a card when the member closes a case or gets five stars (Celebrations). */
-  notify: { desktop: boolean; sound: boolean; email: boolean; celebrate: boolean; events: Record<NotifyEvent, boolean> };
+  /** celebrate: confetti and a card when the member closes a case, gets five stars or praise, or earns a badge
+      (Celebrations). recap: last month's summary pops up the first time they open the app in a month (RecapPopup). */
+  notify: { desktop: boolean; sound: boolean; email: boolean; celebrate: boolean; recap: boolean; events: Record<NotifyEvent, boolean> };
   signature: { enabled: boolean; text: string };
   alias: string;
   snippets: Snippet[];

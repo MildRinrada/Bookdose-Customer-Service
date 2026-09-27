@@ -1,10 +1,11 @@
 import { playSound } from './alerts';
 
 /* Small rewards for the member's own work (ตั้งค่าบัญชี → การแจ้งเตือน → ฉลอง): whoever closes a case or sees five
-   stars arrive calls celebrate(); <Celebrations /> in the staff frame shows the confetti and the card. The sounds
+   stars, praise or a new badge arrive calls celebrate(); <Celebrations /> in the staff frame shows the confetti and the card. The sounds
    follow the member's "เสียงเตือน" switch; setFeedbackPrefs keeps a copy of both switches for code outside React. */
 
-export type Celebration = { kind: 'resolved' | 'praise'; title: string; detail?: string };
+/** `label`: the small line above the title, when it is not the kind's usual one. */
+export type Celebration = { kind: 'resolved' | 'praise' | 'badge'; title: string; detail?: string; label?: string };
 
 const EVENT = 'bookdose:celebrate';
 let prefs = { sound: false, celebrate: true };

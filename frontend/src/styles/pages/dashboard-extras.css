@@ -265,26 +265,14 @@
   margin: 0;
   min-width: 0;
 }
-/* Side by side, today's advice is as tall as the questions card beside it and scrolls inside when it says more:
-   taken out of the flow, it adds nothing to the row's height, so a long answer never pushes past the board's card. */
+/* Side by side, today's advice is as tall as what it says, not stretched to the questions card beside it; a long
+   answer scrolls inside past a height, so it never pushes the section far down the board. */
 @media (min-width:951px) {
-  .insights-grid {
-    align-items: stretch;
-  }
-  .insights-grid>.stack {
-    position: relative;
-    min-height: 320px;
-  }
   .insights-grid>.stack>.brief-card {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
     margin: 0;
   }
   .brief-card>.card-body {
-    flex: 1;
-    min-height: 0;
+    max-height: 520px;
     overflow-y: auto;
   }
 }

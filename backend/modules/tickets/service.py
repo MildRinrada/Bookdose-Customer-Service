@@ -10,7 +10,7 @@ from backend.modules.automation.service import SYSTEM_ACTOR
 from backend.modules.contacts import repository as contacts, service as contact_service
 from backend.modules.conversations import repository as conversations, service as conversation_service
 from backend.modules.organization import repository as organization
-from backend.modules.tickets import fields, repository, schema, sla, tags
+from backend.modules.tickets import fields, hands, repository, schema, sla, tags
 from backend.modules.trash import service as trash
 from backend.realtime import events as realtime
 from backend.utils.dates import iso, now, utc_now
@@ -57,6 +57,8 @@ def list_tickets(db, ctx):
         t['tags'] = tags.split_ids(t.pop('tag_ids'))
         # ช่องข้อมูลเพิ่มเติม (fields.py): {field id: value}; the fields themselves are in the workspace too.
         t['fields'] = fields.parse_values(t.pop('field_values'),extra)
+        # ยกมือขอช่วย (hands.py): who is stuck on it and who is coming, while the hand is up.
+        t['hand'] = hands.parse(t['hand'])
     return cases
 
 
@@ -98,7 +100,8 @@ def ticket_detail(db, ctx, ticket_id):
         from backend.modules.ai import translate
         conv['translation'] = translate.state(db,conv['id'])
         conv.pop('portal_token',None)
-    return {'ticket':{**ticket,'tags':tags.of_ticket(db,ticket['id']),'fields':fields.values_of(db,ticket['id'])},
+    return {'ticket':{**ticket,'tags':tags.of_ticket(db,ticket['id']),'fields':fields.values_of(db,ticket['id']),
+                      'hand':hands.open_for(db,ticket['id'])},
             'contact':contacts.find(db,ticket['contact_id']),
             'conversations':convs,'events':audit.for_entity(db,ticket['id']),
             'automation':automation.ticket_extras(db,ticket['id'])}
@@ -117,6 +120,8 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     if status not in ('resolved','closed'):
         repository.note_reopen(db,'id=?',(ticket['id'],),'staff')
     repository.update(db,ticket['id'],status,priority,team_id,assignee,resolved_at)
+    if status in ('resolved','closed'):
+        hands.lower_on_close(db,ticket['id'],ctx['name'])
     if priority!=ticket['priority']:
         sla.follow_priority(db,ticket['id'])
     conversations.set_team_for_ticket(db,ticket['id'],team_id)

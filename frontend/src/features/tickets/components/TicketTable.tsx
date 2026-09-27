@@ -17,6 +17,7 @@ import { TICKET_PREFIXES, updateTicket } from '../api';
 import { isSnoozed, lateBy, snoozeUntilText } from '../labels';
 import { tagsOf, useCaseTags } from '../tags';
 import type { TicketChanges, TicketRow } from '../types';
+import { HandChip } from './HandCard';
 import { SnoozeChip, useWakeTicket } from './SnoozeCard';
 import { TagChips } from './TagPicker';
 import { useTicketPreview } from './TicketPreview';
@@ -187,6 +188,7 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
             น่าจะเกิน · ช้าราว {formatDuration(forecast.late_minutes)}
           </span>
         )}
+        {!isDone(t) && t.hand && <HandChip hand={t.hand} />}
         {!isDone(t) && <MoodTag mood={t} className="ticket-mood" />}
         {paused && <SnoozeChip until={t.snoozed_until as string} note={t.snooze_note} />}
         {!compact && <TagChips tags={tagsOf(t.tags, tagList)} limit={3} />}

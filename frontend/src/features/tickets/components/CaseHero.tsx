@@ -94,6 +94,12 @@ export function CaseHero({
             </span>
           )}
           {mood && <MoodTag mood={mood} className="case-hero-mood" />}
+          {t.hand && !isDone(t) && (
+            <span className="case-hero-flag hand" title={t.hand.note || undefined}>
+              <Icon name="hand" />
+              {t.hand.raised_name} ยกมือขอช่วย{t.hand.helper_id ? ` · ${t.hand.helper_name} กำลังช่วย` : ''}
+            </span>
+          )}
           {escalation && (
             <span className="case-hero-flag">
               <Icon name="bolt" />

@@ -74,7 +74,7 @@ def read_mentions(req):
 
 
 def alerts(req):
-    return req.send(200,service.my_alerts(req.db,req.ctx))
+    return req.send(200,service.my_alerts(req.db,req.ctx,req.cd))
 
 
 def hide_setup(req):

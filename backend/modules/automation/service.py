@@ -416,6 +416,9 @@ def rate_from_portal(db, conv, body):
     require(survey,'แบบประเมินนี้ปิดแล้ว หรือให้คะแนนไปแล้ว',409)
     repository.answer_survey(db,survey['id'],value,comment)
     audit.record(db,'ลูกค้า','csat.rated',survey['ticket_id'],str(value))
+    # Five stars with a comment go up on กำแพงคำชม for the case's owner.
+    from backend.modules.kudos import service as kudos
+    kudos.on_rating(db,survey,value,comment)
     realtime.conversation(db,conv['id'])
     db.commit()
 
@@ -456,13 +459,28 @@ def read_mentions(db, ctx, body):
 
 
 # What each person should see
-def my_alerts(db, ctx):
+def my_alerts(db, ctx, cd=None):
+    from backend.modules.achievements import badges, recap
+    from backend.modules.kudos import service as kudos
+    from backend.modules.tickets import hands
     team = visible_team(ctx)
+    # เหรียญความสำเร็จ reached since the last look are given here (at most every few minutes), so they arrive with the
+    # alerts on whichever screen the member is on.
+    if not ctx.get('read_only'):
+        badges.check(db,ctx['tenant_id'],ctx['id'])
+        db.commit()
     return {'mentions':repository.unread_mentions(db,ctx['id'],team),
             'followups':repository.open_followups_for(db,ctx['id'],team),
             'escalations':repository.escalations_to(db,ctx['id']),
             'praise':repository.praise_for(db,ctx['id'],after(days=-7)),
+            # Praise in a customer's message (กำแพงคำชม), celebrated like five stars.
+            'kudos':kudos.mine_since(db,ctx['id'],after(days=-7)),
             'forecasts':repository.forecasts_to(db,ctx['id'],now()),
+            # ยกมือขอช่วย: hands raised on the cases this member can see, and who is coming to their own.
+            'hands':hands.alerts(db,ctx,team),
+            'badges':[] if ctx.get('read_only') else badges.unseen(db,ctx['id']),
+            # Last month's summary, the first time the member opens the app in a new month.
+            'recap':recap.pending(cd,db,ctx),
             # A channel that stopped working (channels/health.py): for the organization's admins, who can fix it.
             'channels':_channel_alerts(db) if ctx.get('role')=='admin' else []}
 
@@ -525,9 +543,14 @@ def overview(cd, db, ctx, tz):
     the organization's owners also the manager view, what is left to set up, the chatbot and the knowledge gaps, and
     today's AI summary."""
     from backend.modules.ai import insights
-    from backend.modules.automation import forecast, setup
+    from backend.modules.automation import forecast, setup, weather
+    from backend.modules.kudos import service as kudos
     owner = ctx['role']=='admin' and not ctx.get('read_only')
-    return {'me':my_alerts(db,ctx),'today':my_today(db,ctx,tz),'forecast':forecast.sla_forecast(db,visible_team(ctx)),
+    return {'me':my_alerts(db,ctx,cd),'today':my_today(db,ctx,tz),'forecast':forecast.sla_forecast(db,visible_team(ctx)),
+            # The first line of the overview: the day ahead as a weather report (weather.py).
+            'weather':weather.forecast(db,visible_team(ctx),tz),
+            # กำแพงคำชม: the newest praise, the same for the whole organization.
+            'kudos':kudos.card(db,ctx),
             'manager':manager_overview(cd,db,ctx,tz) if ctx['role']!='agent' else None,
             'setup':setup.checklist(cd,db,ctx) if owner else None,
             'insights':{**insights.overview(db,ctx['tenant_id']),'brief':insights.latest_brief(db,ctx,_local_day_start(tz))} if owner else None}

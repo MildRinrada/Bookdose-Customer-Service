@@ -8,6 +8,7 @@ import { Avatar, EmptyState, ErrorState, InitialLoading, PageLoading, ProfilePho
 import { useToast } from '@/components/ui/Toast';
 import { AiAssistant } from '@/features/ai/components/AiAssistant';
 import { HelpMenu } from '@/features/help/HelpMenu';
+import { RecapPopup } from '@/features/achievements/components/RecapPopup';
 import { Celebrations } from '@/features/staff-account/Celebrations';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { PlatformBell } from '@/features/platform/components/PlatformBell';
@@ -242,6 +243,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
       {/* ผู้ช่วย AI: for the organization's own team, not the console or a look in on support access. */}
       {work && !readOnly && !platform && <AiAssistant />}
       {work && !readOnly && !platform && <Celebrations userId={user.id} />}
+      {/* Last month's summary, once, the first time the member opens the app in a new month. */}
+      {work && !readOnly && !platform && <RecapPopup />}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (

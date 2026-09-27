@@ -29,7 +29,7 @@ export type NotificationSource = {
 
 /* One list, newest first. A case that is past its SLA or still unassigned needs someone; a conversation whose
    last message came from the customer is waiting for a reply; and what is addressed to you: a case escalated to
-   you, a follow-up reminder that is due, a colleague who @mentioned you. */
+   you, a follow-up reminder that is due, a colleague who @mentioned you or raised their hand for help. */
 export function notificationItems({ alerts, tickets, conversations }: NotificationSource): NotificationItem[] {
   const items: NotificationItem[] = [];
   const now = Date.now();
@@ -58,6 +58,13 @@ export function notificationItems({ alerts, tickets, conversations }: Notificati
   for (const f of alerts?.followups ?? [])
     if (new Date(f.due_at).getTime() <= now)
       items.push({ kind: 'me', tone: 'waiting', icon: 'clock', title: `ถึงเวลาติดตาม BD-${f.number}`, detail: f.note, at: f.due_at, href: `/tickets/${f.ticket_id}` });
+  // ยกมือขอช่วย: a colleague stuck on a case this member can see, or who is coming to their own.
+  for (const h of alerts?.hands ?? [])
+    items.push(
+      h.kind === 'ask'
+        ? { kind: 'me', tone: 'waiting', icon: 'hand', title: `${h.raised_name} ยกมือขอช่วย BD-${h.number}`, detail: h.note || h.subject, at: h.raised_at, href: `/tickets/${h.ticket_id}` }
+        : { kind: 'me', tone: 'new', icon: 'hand', title: `${h.helper_name} กำลังมาช่วยเคส BD-${h.number}`, detail: h.subject, at: h.raised_at, href: `/tickets/${h.ticket_id}` },
+    );
   for (const m of alerts?.mentions ?? [])
     items.push({
       kind: 'me',

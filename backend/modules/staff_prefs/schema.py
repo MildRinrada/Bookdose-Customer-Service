@@ -93,6 +93,7 @@ def notify(value):
     return {'desktop':_bool(value.get('desktop',False),'การแจ้งเตือนบนหน้าจอ'),'sound':_bool(value.get('sound',False),'เสียงเตือน'),
             'email':_bool(value.get('email',False),'การแจ้งเตือนทางอีเมล'),
             'celebrate':_bool(value.get('celebrate',True),'การฉลองเมื่อปิดเคส'),
+            'recap':_bool(value.get('recap',True),'สรุปผลงานประจำเดือน'),
             'events':{key:_bool(events.get(key,True),'เหตุการณ์แจ้งเตือน') for key in EVENTS}}
 
 

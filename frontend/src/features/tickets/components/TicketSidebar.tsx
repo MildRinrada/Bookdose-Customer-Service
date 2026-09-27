@@ -20,12 +20,13 @@ import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
 import { deleteTicket, TICKET_PREFIXES, TICKETS_PATH, updateTicket } from '../api';
 import type { TicketDetail } from '../types';
+import { HandCard } from './HandCard';
 import { SnoozeCard } from './SnoozeCard';
 import { TicketFieldsCard } from './TicketFieldsCard';
 import { TicketTagsCard } from './TicketTagsCard';
 import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers';
 
-/* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, managing the case,
+/* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, ยกมือขอช่วย, managing the case,
    the organization's own fields, tags, follow-up reminders, macros and the CSAT result. The SLA clocks are in the
    case's head (CaseHero). */
 
@@ -69,6 +70,7 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
           ดูเคสทั้งหมดของลูกค้ารายนี้
         </Link>
       </section>
+      <HandCard ticket={t} />
       <TicketUpdateForm key={formKey} data={data} onSaved={() => setFormKey((k) => k + 1)} />
       <TicketFieldsCard ticket={t} />
       <TicketTagsCard ticket={t} />

@@ -13,7 +13,8 @@ import { usePreferences, type NotifyEvent } from './prefs';
 /* The desktop notification and sound of ตั้งค่าบัญชี → การแจ้งเตือน, run by the staff frame while a workspace is open.
    It watches what the page already loads (the cases, the member's alerts, and - when customer answers are wanted -
    the conversation list) and speaks up only about something new since the page opened: a case now assigned to the
-   member or escalated to them, their case past its SLA, a customer answering on their case. */
+   member or escalated to them, their case past its SLA, a customer answering on their case, a colleague raising
+   their hand for help on a case they can see (or coming to help with their own). */
 
 /** urgent: escalated to the member, past its SLA or an urgent case - it gets the firmer sound. */
 type WorkEvent = { key: string; event: NotifyEvent; title: string; body: string; href: string; urgent?: boolean };
@@ -30,7 +31,7 @@ export function useWorkAlerts(userId: string, enabled: boolean) {
   }).data?.conversations;
   // What was already there is never announced: each source is taken in silently the first time it arrives.
   const seen = useRef(new Set<string>());
-  const seeded = useRef({ tickets: false, conversations: false });
+  const seeded = useRef({ tickets: false, conversations: false, hands: false });
 
   useEffect(() => {
     if (!active || !notify || !tickets) return;
@@ -58,11 +59,19 @@ export function useWorkAlerts(userId: string, enabled: boolean) {
             mine: Boolean(c.ticket_id && owner.get(c.ticket_id) === userId),
           });
     }
+    // ยกมือขอช่วย: a colleague stuck on a case this member can see, and who is coming to their own.
+    const handEvents: (WorkEvent & { mine: boolean })[] = (alerts?.hands ?? []).map((h) =>
+      h.kind === 'ask'
+        ? { key: `help:${h.id}`, event: 'help', title: `${h.raised_name} ยกมือขอช่วยเคส BD-${h.number}`, body: h.note || h.subject, href: `/tickets/${h.ticket_id}`, mine: true }
+        : { key: `coming:${h.id}:${h.helper_id}`, event: 'help', title: `${h.helper_name} กำลังมาช่วยเคส BD-${h.number}`, body: h.subject, href: `/tickets/${h.ticket_id}`, mine: true },
+    );
     for (const [source, events] of [
       ['tickets', ticketEvents.map((item) => ({ ...item, mine: true }))],
       ['conversations', conversationEvents],
+      ['hands', handEvents],
     ] as const) {
       if (source === 'conversations' && !conversations) continue;
+      if (source === 'hands' && !alerts) continue;
       const first = !seeded.current[source];
       seeded.current[source] = true;
       for (const item of events) {

@@ -275,9 +275,14 @@ def _erase_contact(db, contact_id, files):
                       'guest_conversations','guest_seen','guest_notifications','customer_seen','customer_notifications'):
             db.execute(f'DELETE FROM {table} WHERE conversation_id=?',(conv,))
         db.execute('UPDATE csat_surveys SET comment=NULL WHERE conversation_id=?',(conv,))
+    # The customer's praise on กำแพงคำชม goes with the rest of their words.
+    from backend.modules.kudos import service as kudos
+    kudos.forget_conversations(db,convs)
     for ticket in [r[0] for r in db.execute('SELECT id FROM tickets WHERE contact_id=?',(contact_id,))]:
         db.execute("UPDATE tickets SET subject=?,snooze_note='' WHERE id=?",(ERASED_TEXT,ticket))
         db.execute('DELETE FROM ticket_field_values WHERE ticket_id=?',(ticket,))
+        # What a member wrote when they asked for help may name the customer.
+        db.execute("UPDATE help_requests SET note='' WHERE ticket_id=?",(ticket,))
         db.execute('UPDATE followups SET note=? WHERE ticket_id=?',(ERASED_TEXT,ticket))
         db.execute('UPDATE csat_surveys SET comment=NULL WHERE ticket_id=?',(ticket,))
     from backend.modules.guest import repository as guests

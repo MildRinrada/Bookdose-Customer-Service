@@ -1,6 +1,7 @@
 import { celebrate } from '@/features/staff-account/celebrate';
 import { api, download } from '@/lib/api/client';
 import { isDone } from '@/lib/format';
+import type { Hand } from '@/lib/types';
 import type { NewTicket, TicketChanges } from './types';
 
 /* The case endpoints (backend/modules/tickets/routes.py). Read the list with useStaffTickets() and one case with
@@ -34,6 +35,20 @@ export function snoozeTicket(id: string, until: string, note: string) {
 /** Back into the queue now, before the pause is over. */
 export function wakeTicket(id: string) {
   return api<{ ok: true }>(`${ticketPath(id)}/snooze`, undefined, 'DELETE');
+}
+
+/** ยกมือขอช่วย: the case's team and the organization's owners see it at once (backend tickets/hands.py). */
+export function raiseHand(id: string, note: string) {
+  return api<{ hand: Hand }>(`${ticketPath(id)}/hand`, { note });
+}
+
+/** เข้าไปช่วย: the one who asked sees who is coming. */
+export function helpHand(id: string) {
+  return api<{ hand: Hand }>(`${ticketPath(id)}/hand/help`, {});
+}
+
+export function lowerHand(id: string) {
+  return api<{ ok: true }>(`${ticketPath(id)}/hand`, undefined, 'DELETE');
 }
 
 /** Moves the case to the recycle bin (admins only). */

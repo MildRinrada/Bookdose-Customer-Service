@@ -42,6 +42,7 @@ import '@/styles/pages/inbox-calm.css';
 import '@/styles/pages/inbox-fresh.css';
 import '@/styles/pages/ai-assistant.css';
 import '@/styles/pages/celebrations.css';
+import '@/styles/pages/team-spirit.css';
 import '@/styles/pages/accounts.css';
 import '@/styles/pages/status.css';
 import '@/styles/text-size.css';

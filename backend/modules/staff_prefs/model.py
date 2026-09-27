@@ -19,7 +19,8 @@ WORK_TZ = dt.timezone(dt.timedelta(hours=7))
 
 STATUSES = {'online':'พร้อมรับเรื่อง','break':'พักเบรก / ทานข้าว','busy':'ยุ่งอยู่','offline':'ไม่อยู่'}
 EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าตอบกลับในเคสของฉัน','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA',
-          'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว','weekly_report':'สรุปรายงานประจำสัปดาห์ ทุกวันจันทร์ (เฉพาะเจ้าขององค์กร)'}
+          'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว','help':'เพื่อนยกมือขอช่วยในเคสที่ฉันเห็น (บนหน้าจอและเสียงเท่านั้น)',
+          'weekly_report':'สรุปรายงานประจำสัปดาห์ ทุกวันจันทร์ (เฉพาะเจ้าขององค์กร)'}
 # Emails written as a formal memo: the subject is the notice's own (it names the organization), and the body opens
 # with เรียน and closes with จึงเรียนมาเพื่อโปรดทราบ (reports/weekly.py).
 FORMAL_EVENTS = ('weekly_report',)
@@ -60,8 +61,9 @@ DEFAULTS = {
     'status':'online',
     'hours':{'enabled':False,'days':[0,1,2,3,4],'start':'09:00','end':'18:00'},
     'leave':[],
-    # celebrate: confetti and a card when the member closes a case or a customer gives their case 5 stars.
-    'notify':{'desktop':False,'sound':False,'email':False,'celebrate':True,'events':{key:True for key in EVENTS}},
+    # celebrate: confetti and a card when the member closes a case, a customer gives their case 5 stars or praises
+    # them, or they earn a badge. recap: last month's summary pops up the first time they open the app in a month.
+    'notify':{'desktop':False,'sound':False,'email':False,'celebrate':True,'recap':True,'events':{key:True for key in EVENTS}},
     'signature':{'enabled':False,'text':''},
     'alias':'',
     'snippets':[],

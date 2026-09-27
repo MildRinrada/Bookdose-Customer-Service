@@ -4,7 +4,7 @@ import type { AuditEvent } from '@/features/audit/types';
 import type { TicketAutomation } from '@/features/automation/types';
 import type { Contact } from '@/features/contacts/types';
 import type { Conversation, Message } from '@/features/inbox/types';
-import type { TicketSummary } from '@/lib/types';
+import type { Hand, TicketSummary } from '@/lib/types';
 
 /** A row of GET /api/tickets (repository.list_with_contacts): the case, its customer and escalation. */
 export type TicketRow = TicketSummary & {
@@ -28,6 +28,8 @@ export type TicketRow = TicketSummary & {
   tags?: string[];
   /** ช่องข้อมูลเพิ่มเติม: {field id: value} (fields.ts). */
   fields?: Record<string, string>;
+  /** ยกมือขอช่วย (backend tickets/hands.py): while somebody's hand is up on it. */
+  hand?: Hand | null;
   /** The service report only (backend reports/stats.py, merged from /api/reports/extras): each wait for the team's
       next reply after the first (minutes), the team's replies, and how upset the customer got (0-2). */
   stats?: CaseStats;
@@ -51,6 +53,8 @@ export type Ticket = TicketSummary &
     tags?: string[];
     /** ช่องข้อมูลเพิ่มเติม: {field id: value} of fields still on the list (fields.ts). */
     fields?: Record<string, string>;
+    /** ยกมือขอช่วย: the hand up on it now, if any. */
+    hand?: Hand | null;
   };
 
 /** A conversation of the case, with its messages (tickets.service.ticket_detail). */

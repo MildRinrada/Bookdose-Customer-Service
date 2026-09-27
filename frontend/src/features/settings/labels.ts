@@ -17,6 +17,7 @@ export const settingsParts = {
   profile: { tab: 'overview', label: 'ข้อมูลองค์กร', hint: 'ชื่อ โลโก้ รหัสองค์กร และลิงก์หน้าลูกค้า', icon: 'globe' },
   service: { tab: 'overview', label: 'มาตรฐานบริการ', hint: 'เวลาตอบกลับ (SLA) ข้อความต้อนรับ และคำตอบสำเร็จรูป', icon: 'clock' },
   categories: { tab: 'overview', label: 'หมวดเรื่อง', hint: 'หมวดที่ลูกค้าเลือกตอนเริ่มแชท และทีมที่ดูแล', icon: 'list' },
+  fields: { tab: 'overview', label: 'ช่องข้อมูลของเคส', hint: 'ช่องที่ทีมกรอกในเคส เช่น เลขคำสั่งซื้อ หรือสาขา', icon: 'file' },
   backup: { tab: 'overview', label: 'ข้อมูลและการสำรอง', hint: 'ไฟล์สำรอง ถังขยะ และระยะเวลาเก็บข้อมูล', icon: 'shield' },
   security: { tab: 'overview', label: 'ความปลอดภัยของทีม', hint: 'บังคับเจ้าหน้าที่ยืนยันตัวตน 2 ขั้น', icon: 'lock' },
   line: { tab: 'connections', label: 'LINE', hint: 'LINE Official Account ขององค์กร', icon: 'chat' },

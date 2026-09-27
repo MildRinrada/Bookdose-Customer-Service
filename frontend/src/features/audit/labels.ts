@@ -57,6 +57,7 @@ const auditIcons: Record<string, string> = {
   'ticket.updated': 'edit',
   'ticket.snoozed': 'clock',
   'ticket.tagged': 'tag',
+  'ticket.fields': 'file',
   'ticket.auto_assigned': 'users',
   'ticket.woken': 'bell',
   'ticket.quiet_reminded': 'send',

@@ -89,6 +89,8 @@ def upgrade_tenant(db):
     # How customers of open conversations feel, read once by the words of their latest message (ai/mood.py).
     from backend.modules.ai import mood
     mood.backfill(db)
+    # Each customer message's level, for the report's อารมณ์ลูกค้า: the older messages read once by their words.
+    mood.backfill_log(db)
     # The owner's AI on the overview (an article from unanswered questions, today's summary): wider job modes.
     from backend.modules.ai import repository as ai_repository
     ai_repository.widen_jobs(db)
@@ -169,8 +171,10 @@ def upgrade_tenant(db):
     db.execute(tickets.SNOOZE_INDEX)
     # ป้ายเคส: the organization's words for what a case is about, on its cases (tickets/tags.py); routing rules may
     # put them on. แจกเคสอัตโนมัติ: who each case went to (automation/distribution.py).
-    from backend.modules.tickets import tags
+    from backend.modules.tickets import fields, tags
     db.executescript(tags.TABLE)
+    # ช่องข้อมูลเพิ่มเติมของเคส: the values of the organization's own fields on its cases (tickets/fields.py).
+    db.executescript(fields.TABLE)
     from backend.modules.automation import distribution, repository as automation_repository
     automation_repository.add_rule_tags(db)
     db.executescript(distribution.TABLE)

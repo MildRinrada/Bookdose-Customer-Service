@@ -1,22 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { FilterPill } from '@/components/ui/filters';
 import { csvText, saveCSVFile } from '@/features/tickets/csv';
+import { useCaseFields } from '@/features/tickets/fields';
 import { useCaseTags } from '@/features/tickets/tags';
 import type { TicketRow } from '@/features/tickets/types';
 import { formatDuration } from '@/lib/format';
 import { useMemberName, useTeamName } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import {
+  dimensionLabel,
   dimensionLabels,
   FEW,
   measure,
-  orderedDimensions,
+  naturalOrder,
   pivot,
   sortRows,
   speedSatisfaction,
+  splittableFields,
   type Dimension,
   type Measures,
   type PivotColumn,
@@ -27,20 +30,90 @@ import {
    every measure beside it, sortable and downloadable; and how satisfaction moves with speed. Markup: pages/reports
    (pivot-*, speed-*). */
 
-const COLUMNS: Array<{ key: PivotColumn; label: string; title: string }> = [
-  { key: 'cases', label: 'เคส', title: 'จำนวนเคสที่เปิดในช่วงนี้ และสัดส่วนจากทั้งหมด' },
-  { key: 'responseMedian', label: 'ตอบครั้งแรก', title: 'ค่ากลางของเวลาตอบครั้งแรก: ครึ่งหนึ่งของเคสตอบภายในเวลานี้' },
-  { key: 'responseP90', label: '9 ใน 10 ตอบภายใน', title: 'P90: 9 ใน 10 เคสตอบครั้งแรกภายในเวลานี้' },
-  { key: 'responseSla', label: 'ตอบทัน SLA', title: 'สัดส่วนเคสที่ตอบครั้งแรกทันกำหนด' },
-  { key: 'resolutionMedian', label: 'แก้ไขเสร็จ', title: 'ค่ากลางของเวลาจากเปิดเคสจนแก้ไขเสร็จ' },
-  { key: 'csat', label: 'CSAT', title: 'คะแนนความพึงพอใจเฉลี่ย และจำนวนคำตอบ' },
-  { key: 'reopenRate', label: 'เปิดซ้ำ', title: 'สัดส่วนเคสที่แก้ไขแล้วแต่กลับมาเปิดใหม่' },
-];
+/** Two sets of figures, so the table stays readable: how fast (first reply, the next reply, solved) and how well
+    (solved in one reply, reopened, satisfied, upset). The case count leads both. */
+type ColumnSet = 'speed' | 'quality';
+const COLUMN_SETS: Record<ColumnSet, string> = { speed: 'ความเร็ว', quality: 'คุณภาพและความรู้สึก' };
 
 const pct = (value: number | null) => (value == null ? '-' : `${value.toFixed(0)}%`);
 
-function Cells({ m, label }: { m: Measures & { share?: number }; label: string }) {
-  const fewAnswered = m.answered < FEW;
+type Column = { key: PivotColumn; label: string; title: string; set: ColumnSet; cell: (m: Measures) => { text: ReactNode; tone: string } };
+
+const COLUMNS: Column[] = [
+  {
+    key: 'responseMedian',
+    label: 'ตอบครั้งแรก',
+    title: 'ค่ากลางของเวลาตอบครั้งแรก: ครึ่งหนึ่งของเคสตอบภายในเวลานี้',
+    set: 'speed',
+    cell: (m) => ({ text: formatDuration(m.responseMedian), tone: m.answered < FEW ? 'pivot-few' : '' }),
+  },
+  {
+    key: 'responseP90',
+    label: '9 ใน 10 ตอบภายใน',
+    title: 'P90: 9 ใน 10 เคสตอบครั้งแรกภายในเวลานี้',
+    set: 'speed',
+    cell: (m) => ({ text: formatDuration(m.responseP90), tone: m.answered < FEW ? 'pivot-few' : '' }),
+  },
+  {
+    key: 'responseSla',
+    label: 'ตอบทัน SLA',
+    title: 'สัดส่วนเคสที่ตอบครั้งแรกทันกำหนด',
+    set: 'speed',
+    cell: (m) => ({ text: pct(m.responseSla), tone: m.answered < FEW ? 'pivot-few' : m.responseSla != null && m.responseSla < 80 ? 'report-low' : '' }),
+  },
+  {
+    key: 'nextReplyMedian',
+    label: 'รอคำตอบถัดไป',
+    title: 'ค่ากลางของเวลาที่ลูกค้ารอคำตอบถัดไป หลังทีมตอบครั้งแรกแล้ว',
+    set: 'speed',
+    cell: (m) => ({ text: formatDuration(m.nextReplyMedian), tone: m.waits && m.waits < FEW ? 'pivot-few' : '' }),
+  },
+  {
+    key: 'resolutionMedian',
+    label: 'แก้ไขเสร็จ',
+    title: 'ค่ากลางของเวลาจากเปิดเคสจนแก้ไขเสร็จ',
+    set: 'speed',
+    cell: (m) => ({ text: formatDuration(m.resolutionMedian), tone: '' }),
+  },
+  {
+    key: 'oneTouchRate',
+    label: 'แก้จบครั้งเดียว',
+    title: 'สัดส่วนเคสที่แก้ไขเสร็จด้วยคำตอบเดียว และไม่กลับมาเปิดใหม่',
+    set: 'quality',
+    cell: (m) => ({ text: pct(m.oneTouchRate), tone: m.solvedReplied && m.solvedReplied < FEW ? 'pivot-few' : '' }),
+  },
+  {
+    key: 'reopenRate',
+    label: 'เปิดซ้ำ',
+    title: 'สัดส่วนเคสที่แก้ไขแล้วแต่กลับมาเปิดใหม่',
+    set: 'quality',
+    cell: (m) => ({ text: pct(m.reopenRate), tone: m.finished && m.finished < FEW ? 'pivot-few' : '' }),
+  },
+  {
+    key: 'csat',
+    label: 'CSAT',
+    title: 'คะแนนความพึงพอใจเฉลี่ย และจำนวนคำตอบ',
+    set: 'quality',
+    cell: (m) => ({
+      text: (
+        <span>
+          {m.csat == null ? '-' : `${m.csat.toFixed(1)} ★`}
+          {m.csatCount > 0 && <small className="muted"> ({m.csatCount} คำตอบ)</small>}
+        </span>
+      ),
+      tone: m.csatCount && m.csatCount < FEW ? 'pivot-few' : '',
+    }),
+  },
+  {
+    key: 'upsetRate',
+    label: 'ลูกค้าไม่พอใจ',
+    title: 'สัดส่วนเคสที่ลูกค้าไม่พอใจหรือโกรธอย่างน้อยหนึ่งข้อความ',
+    set: 'quality',
+    cell: (m) => ({ text: pct(m.upsetRate), tone: m.measured && m.measured < FEW ? 'pivot-few' : '' }),
+  },
+];
+
+function Cells({ m, label, columns }: { m: Measures & { share?: number }; label: string; columns: Column[] }) {
   return (
     <>
       <td data-label={label} className="pivot-name">
@@ -52,25 +125,14 @@ function Cells({ m, label }: { m: Measures & { share?: number }; label: string }
           {m.share != null && <small className="muted"> {m.share.toFixed(0)}%</small>}
         </span>
       </td>
-      <td data-label="ตอบครั้งแรก" className={fewAnswered ? 'pivot-few' : ''}>
-        {formatDuration(m.responseMedian)}
-      </td>
-      <td data-label="9 ใน 10 ตอบภายใน" className={fewAnswered ? 'pivot-few' : ''}>
-        {formatDuration(m.responseP90)}
-      </td>
-      <td data-label="ตอบทัน SLA" className={fewAnswered ? 'pivot-few' : m.responseSla != null && m.responseSla < 80 ? 'report-low' : ''}>
-        {pct(m.responseSla)}
-      </td>
-      <td data-label="แก้ไขเสร็จ">{formatDuration(m.resolutionMedian)}</td>
-      <td data-label="CSAT" className={m.csatCount && m.csatCount < FEW ? 'pivot-few' : ''}>
-        <span>
-          {m.csat == null ? '-' : `${m.csat.toFixed(1)} ★`}
-          {m.csatCount > 0 && <small className="muted"> ({m.csatCount} คำตอบ)</small>}
-        </span>
-      </td>
-      <td data-label="เปิดซ้ำ" className={m.finished && m.finished < FEW ? 'pivot-few' : ''}>
-        {pct(m.reopenRate)}
-      </td>
+      {columns.map((c) => {
+        const { text, tone } = c.cell(m);
+        return (
+          <td key={c.key} data-label={c.label} className={tone}>
+            {text}
+          </td>
+        );
+      })}
     </>
   );
 }
@@ -79,14 +141,25 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
   const teamName = useTeamName();
   const memberName = useMemberName();
   const tagList = useCaseTags();
+  const caseFields = useCaseFields();
   const [picked, setDimension] = useUiState<Dimension>('reports:pivot', 'channel');
-  // ป้ายเคส only once the organization has a list of them.
-  const dimensions = (Object.keys(dimensionLabels) as Dimension[]).filter((d) => d !== 'tag' || tagList.length > 0);
+  const [set, setSet] = useUiState<ColumnSet>('reports:pivot-set', 'speed');
+  const columns = COLUMNS.filter((c) => c.set === set);
+  // ป้ายเคส only once the organization has a list of them; its case fields that split cases into a few groups after.
+  const dimensions: Dimension[] = [
+    ...(Object.keys(dimensionLabels) as Dimension[]).filter((d) => d !== 'tag' || tagList.length > 0),
+    ...splittableFields(caseFields).map((f) => `field:${f.id}` as const),
+  ];
   const dimension = dimensions.includes(picked) ? picked : 'channel';
-  const natural = orderedDimensions.includes(dimension);
+  const label = dimensionLabel(dimension, caseFields);
+  const natural = naturalOrder(dimension);
   const [sort, setSort] = useState<{ column: PivotColumn | 'natural'; descending: boolean } | null>(null);
   const current = sort ?? (natural ? { column: 'natural' as const, descending: false } : { column: 'cases' as const, descending: true });
-  const rows = sortRows(pivot(tickets, dimension, { team: teamName, member: memberName, tags: tagList }), current.column, current.descending);
+  const rows = sortRows(
+    pivot(tickets, dimension, { team: teamName, member: memberName, tags: tagList, fields: caseFields }),
+    current.column,
+    current.descending,
+  );
   const total = measure(tickets);
   const worst = rows
     .filter((r) => r.answered >= FEW && r.responseSla != null && r.responseSla < 80)
@@ -98,16 +171,18 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
   };
   const sortBy = (column: PivotColumn) =>
     setSort({ column, descending: current.column === column ? !current.descending : column !== 'label' });
+  // The file has every figure, whichever set is on screen.
   const download = () => {
     const round = (n: number | null) => (n == null ? '' : Math.round(n * 10) / 10);
     saveCSVFile(
       csvText([
-        [dimensionLabels[dimension], 'เคส', 'สัดส่วน (%)', 'ตอบครั้งแรก ค่ากลาง (นาที)', 'ตอบครั้งแรก P90 (นาที)', 'ตอบทัน SLA (%)',
-          'แก้ไขเสร็จ ค่ากลาง (นาที)', 'CSAT เฉลี่ย', 'จำนวนคำตอบ CSAT', 'เปิดซ้ำ (%)'],
+        [label, 'เคส', 'สัดส่วน (%)', 'ตอบครั้งแรก ค่ากลาง (นาที)', 'ตอบครั้งแรก P90 (นาที)', 'ตอบทัน SLA (%)', 'รอคำตอบถัดไป ค่ากลาง (นาที)',
+          'แก้ไขเสร็จ ค่ากลาง (นาที)', 'แก้จบในครั้งเดียว (%)', 'CSAT เฉลี่ย', 'จำนวนคำตอบ CSAT', 'เปิดซ้ำ (%)', 'ลูกค้าไม่พอใจ (%)'],
         ...rows.map((r) => [r.label, r.cases, round(r.share), round(r.responseMedian), round(r.responseP90), round(r.responseSla),
-          round(r.resolutionMedian), round(r.csat), r.csatCount, round(r.reopenRate)]),
+          round(r.nextReplyMedian), round(r.resolutionMedian), round(r.oneTouchRate), round(r.csat), r.csatCount, round(r.reopenRate),
+          round(r.upsetRate)]),
       ]),
-      `report-by-${dimension}.csv`,
+      `report-by-${dimension.startsWith('field:') ? 'field' : dimension}.csv`,
     );
   };
 
@@ -126,14 +201,31 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
       <div className="card-body">
         <div className="filter-pills pivot-dimensions" role="group" aria-label="แยกตาม">
           {dimensions.map((d) => (
-            <FilterPill key={d} value={d} label={dimensionLabels[d]} pressed={d === dimension} onClick={pick} />
+            <FilterPill key={d} value={d} label={dimensionLabel(d, caseFields)} pressed={d === dimension} onClick={pick} />
           ))}
+        </div>
+        <div className="pivot-sets">
+          <span id="pivot-set-label">ตัวเลข</span>
+          <div className="filter-pills" role="group" aria-labelledby="pivot-set-label">
+            {(Object.keys(COLUMN_SETS) as ColumnSet[]).map((key) => (
+              <FilterPill
+                key={key}
+                value={key}
+                label={COLUMN_SETS[key]}
+                pressed={key === set}
+                onClick={(value) => {
+                  setSet(value as ColumnSet);
+                  if (sort && !['label', 'cases'].includes(sort.column) && !COLUMNS.some((c) => c.key === sort.column && c.set === value)) setSort(null);
+                }}
+              />
+            ))}
+          </div>
         </div>
         {worst && (
           <p className="notice warning report-hint">
             <Icon name="clock" />
             <span>
-              {dimensionLabels[dimension]} &ldquo;{worst.label}&rdquo; ตอบทัน SLA เพียง {worst.responseSla!.toFixed(0)}% ต่ำที่สุดในตารางนี้
+              {label} &ldquo;{worst.label}&rdquo; ตอบทัน SLA เพียง {worst.responseSla!.toFixed(0)}% ต่ำที่สุดในตารางนี้
             </span>
           </p>
         )}
@@ -143,11 +235,11 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
           <tr>
             <th aria-sort={current.column === 'label' ? (current.descending ? 'descending' : 'ascending') : 'none'}>
               <button type="button" className="pivot-sort" onClick={() => sortBy('label')}>
-                {dimensionLabels[dimension]}
+                {label}
                 {current.column === 'label' && <span aria-hidden="true">{current.descending ? ' ▼' : ' ▲'}</span>}
               </button>
             </th>
-            {COLUMNS.map((c) => (
+            {[{ key: 'cases' as const, label: 'เคส', title: 'จำนวนเคสที่เปิดในช่วงนี้ และสัดส่วนจากทั้งหมด' }, ...columns].map((c) => (
               <th key={c.key} aria-sort={current.column === c.key ? (current.descending ? 'descending' : 'ascending') : 'none'}>
                 <button type="button" className="pivot-sort" title={c.title} onClick={() => sortBy(c.key)}>
                   {c.label}
@@ -160,14 +252,14 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
         <tbody>
           {rows.map((r) => (
             <tr key={r.key || 'none'}>
-              <Cells m={r} label={r.label} />
+              <Cells m={r} label={r.label} columns={columns} />
             </tr>
           ))}
         </tbody>
         {rows.length > 1 && (
           <tfoot>
             <tr>
-              <Cells m={total} label="รวมทั้งหมด" />
+              <Cells m={total} label="รวมทั้งหมด" columns={columns} />
             </tr>
           </tfoot>
         )}

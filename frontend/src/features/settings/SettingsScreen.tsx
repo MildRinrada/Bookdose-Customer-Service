@@ -10,6 +10,7 @@ import { roleLabels } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
+import { CaseFieldsPanel } from './components/CaseFieldsPanel';
 import { GuestChatPanel } from './components/GuestChatPanel';
 import { JoinLinksPanel } from './components/JoinLinksPanel';
 import { BackupPanel, CategoriesPanel, ProfilePanel, ServicePanel } from './components/OverviewPanel';
@@ -192,6 +193,8 @@ function Part({ part }: { part: SettingsPart }) {
       return <ServicePanel />;
     case 'categories':
       return <CategoriesPanel />;
+    case 'fields':
+      return <CaseFieldsPanel />;
     case 'backup':
       return <BackupPanel />;
     case 'security':

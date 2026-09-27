@@ -1,5 +1,5 @@
 import { api, ApiError } from '@/lib/api/client';
-import type { AiJob, AiSettings, AssistantGathered, AssistantRunResult } from './types';
+import type { AiJob, AiSettings, AssistantFeedback, AssistantGathered, AssistantRunResult } from './types';
 
 /* AI endpoints (backend/modules/ai/routes.py and the conversation's ai-draft / ai-mode). */
 
@@ -39,6 +39,11 @@ export function stopAssistant(jobId: string) {
 /** ทำเลย: the picked actions of one answer, with the texts the member edited (by index). */
 export function runAssistantActions(jobId: string, picked: number[], texts: Record<number, string>) {
   return api<{ results: AssistantRunResult[] }>(`/api/ai/assistant/${jobId}/run`, { picked, texts });
+}
+
+/** ถูกใจ / ไม่ถูกใจ under one of the member's answers ('' takes it back); a reason and comment go with ไม่ถูกใจ. */
+export function rateAssistantAnswer(jobId: string, body: { rating: AssistantFeedback['rating']; reason?: string; comment?: string }) {
+  return api<AssistantFeedback>(`/api/ai/assistant/${jobId}/feedback`, body);
 }
 
 export function testAiConnection() {

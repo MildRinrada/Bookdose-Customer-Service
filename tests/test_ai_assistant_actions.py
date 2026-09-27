@@ -18,7 +18,7 @@ from backend.utils.dates import after
 def act(kind, case='', **fields):
     """One action as the provider writes it: every field there, unused ones empty."""
     return {'type':kind,'case':case,'status':'','priority':'','team':'','assignee':'','add_tags':[],'remove_tags':[],
-            'until':'','text':'','enabled':'','cap':0,**fields}
+            'until':'','text':'','enabled':'','cap':0,'macro':'','customers':[],'values':[],**fields}
 
 
 def ref(items, name):
@@ -246,6 +246,119 @@ class AssistantActionTests(unittest.TestCase):
         self.assertTrue(replies[-1]['body'].startswith('สวัสดีค่ะ ทีมงานรับเรื่องแล้ว'))
         events = [e['action'] for e in self.ok(self.admin,'/api/audit')['events']]
         self.assertIn('ai.actions_run',events)
+
+    def test_a_macro_of_the_organization_is_proposed_and_runs_as_its_button_does(self):
+        self.enable(chatbot_enabled=False)
+        self.ok(self.admin,'/api/automation/macros',{'name':'ขอเอกสารเพิ่ม','reply':'รบกวนส่งเอกสารเพิ่ม โทร 0812345678',
+                                                    'set_status':'pending_customer','followup_hours':24})
+        _,conv = self.visitor(subject='ขอคืนสินค้า',body='ขอคืนสินค้าค่ะ')
+        self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})
+        ticket = self.ok(self.admin,f'/api/conversations/{conv}')['ticket']
+        number = f"BD-{ticket['number']}"
+
+        def answer(p):
+            macro = ref(p['macros'],'ขอเอกสารเพิ่ม')
+            self.assertEqual((p['macros'][0]['sets_status'],p['macros'][0]['follow_up_hours']),('pending_customer',24))
+            self.assertNotIn('0812345678',p['macros'][0]['reply'])
+            return {'answer':'ใช้มาโครขอเอกสารเพิ่มได้','citations':[],'actions':[
+                act('macro',number,macro=macro),
+                act('reply',number,text='ส่งเอกสารด้วยค่ะ'),          # the macro already sends its reply
+                act('macro','BD-99999',macro=macro),                   # not shown
+                act('macro',number,macro='m99')]}                      # no such macro
+        job,_,found = self.ask(self.admin,f'{number} ขอเอกสารลูกค้าเพิ่ม',answer)
+        actions = found['result']['actions']
+        self.assertEqual([a['type'] for a in actions],['macro'])
+        self.assertEqual(actions[0]['macro'],{'name':'ขอเอกสารเพิ่ม','reply':True,'set_status':'pending_customer','followup_hours':24})
+        self.assertEqual(found['result']['dropped'],3)
+        results = self.ok(self.admin,f'/api/ai/assistant/{job}/run',{'picked':[0]})['results']
+        self.assertEqual(results,[{'index':0,'ok':True,'error':''}])
+        detail = self.ok(self.admin,f"/api/tickets/{ticket['id']}")
+        self.assertEqual(detail['ticket']['status'],'pending_customer')
+        replies = [m for c in detail['conversations'] for m in c['messages'] if m['kind']=='reply']
+        self.assertTrue(replies[-1]['body'].startswith('รบกวนส่งเอกสารเพิ่ม'))
+        with D.tenant(self.org) as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM followups WHERE ticket_id=?',(ticket['id'],)).fetchone()[0],1)
+
+        # On a chat that is not a case: the reply goes, the status and reminder cannot, and the member is told.
+        _,chat = self.visitor(email='second@example.com',subject='สอบถาม',body='สอบถามหน่อย')
+        job,_,found = self.ask(self.admin,'ใช้มาโครขอเอกสารกับแชทนี้',
+                               lambda p:{'answer':'ได้เลย','citations':[],'actions':[act('macro','current',macro=ref(p['macros'],'ขอเอกสารเพิ่ม'))]},
+                               page={'conversation_id':chat})
+        self.assertEqual(len(found['result']['actions']),1)
+        result = self.ok(self.admin,f'/api/ai/assistant/{job}/run',{'picked':[0]})['results'][0]
+        self.assertTrue(result['ok'])
+        self.assertEqual(result['note'],'ข้ามเปลี่ยนสถานะและตั้งเตือน (แชทนี้ยังไม่เป็นเคส)')
+
+    def test_an_owner_is_shown_records_that_look_like_one_person_and_merges_them_once_confirmed(self):
+        self.enable(chatbot_enabled=False)
+        contact = lambda **body:self.ok(self.admin,'/api/contacts',body)['id']
+        kept = contact(name='สมหญิง ใจดี',email='somying@example.com',phone='081-234-5678')
+        by_email = contact(name='Somying J',email='SOMYING@example.com')
+        by_phone = contact(name='คุณหญิง',phone='+66812345678')
+        name_only = [contact(name='สมชาย ขายดี'),contact(name='สมชาย  ขายดี')]
+        contact(name='ไม่ซ้ำใคร',email='alone@example.com')
+        self.ok(self.admin,'/api/tickets',{'subject':'ของมาไม่ครบ','contact_id':kept})
+
+        # A question about something else: the groups are only counted.
+        _,payload,_ = self.ask(self.admin,'เคสไหนด่วน',lambda p:{'answer':'ไม่มี','citations':[],'actions':[]})
+        self.assertEqual(payload['duplicate_customers'],{'groups':2,'listed':[]})
+
+        def answer(p):
+            first,second = p['duplicate_customers']['listed']
+            refs = [c['ref'] for c in first['customers']]
+            return {'answer':'พบลูกค้าซ้ำ 2 กลุ่ม','citations':[],'actions':[
+                act('merge_customers',customers=refs),
+                act('merge_customers',customers=[refs[1],second['customers'][0]['ref']]),   # a record already in a merge
+                act('merge_customers',customers=[second['customers'][0]['ref'],'c99'])]}    # not shown: one left
+        job,payload,found = self.ask(self.admin,'มีลูกค้าซ้ำไหม รวมให้หน่อย',answer)
+        text = json.dumps(payload,ensure_ascii=False)
+        for secret in ('สมหญิง','somying','0812345678','812345678','สมชาย',kept):
+            self.assertNotIn(secret,text.lower())
+        first,second = payload['duplicate_customers']['listed']
+        self.assertEqual((first['matched_by'],second['matched_by']),(['email','phone'],['name']))
+        self.assertEqual((first['customers'][0]['cases'],len(first['customers']),len(second['customers'])),(1,3,2))
+        actions = found['result']['actions']
+        self.assertEqual(([a['type'] for a in actions],found['result']['dropped']),(['merge_customers'],2))
+        self.assertEqual((actions[0]['keep'],set(actions[0]['merge'])),(kept,{by_email,by_phone}))
+        self.assertEqual((actions[0]['customers'][0]['name'],actions[0]['matched_by']),('สมหญิง ใจดี',['email','phone']))
+
+        # An agent is not shown them and cannot merge.
+        agent,_ = self.create_member()
+        _,payload,found = self.ask(agent,'มีลูกค้าซ้ำไหม',lambda p:{'answer':'ไม่ทราบ','citations':[],'actions':[act('merge_customers',customers=['c1','c2'])]})
+        self.assertNotIn('duplicate_customers',payload)
+        self.assertEqual(found['result']['actions'],[])
+
+        self.assertEqual(self.ok(self.admin,f'/api/ai/assistant/{job}/run',{'picked':[0]})['results'],[{'index':0,'ok':True,'error':''}])
+        left = {c['id'] for c in self.ok(self.admin,'/api/contacts')['contacts']}
+        self.assertIn(kept,left)
+        self.assertFalse({by_email,by_phone}&left)
+        self.assertTrue(set(name_only)<=left)
+
+    def test_members_rate_answers_and_the_owner_reads_how_the_assistant_does(self):
+        self.enable(chatbot_enabled=False)
+        agent,_ = self.create_member()
+        mine,_,_ = self.ask(self.admin,'สรุปงาน',lambda p:{'answer':'ได้เลย','citations':[],'actions':[]})
+        theirs,_,_ = self.ask(agent,'เคสไหนด่วน',lambda p:{'answer':'ไม่มี','citations':[],'actions':[]})
+        rate = lambda client,job,**body:client.call(f'/api/ai/assistant/{job}/feedback',body)
+        self.assertEqual(rate(agent,mine,rating='up')[0],404)
+        self.assertEqual(rate(self.admin,mine,rating='up',reason='wrong')[0],400)
+        self.assertEqual(rate(self.admin,mine,rating='so-so')[0],400)
+        self.assertEqual(rate(self.admin,mine,rating='down',comment='ก'*301)[0],400)
+        self.assertEqual(self.ok(self.admin,f'/api/ai/assistant/{mine}/feedback',{'rating':'up'}),{'rating':'up','reason':''})
+        # A change of mind replaces it; taking it back removes it.
+        self.ok(self.admin,f'/api/ai/assistant/{mine}/feedback',{'rating':'down','reason':'wrong','comment':'ตอบผิด ลูกค้าเบอร์ 0812345678'})
+        self.ok(agent,f'/api/ai/assistant/{theirs}/feedback',{'rating':'down','reason':'off_topic'})
+        self.ok(agent,f'/api/ai/assistant/{theirs}/feedback',{'rating':''})
+        self.ok(agent,f'/api/ai/assistant/{theirs}/feedback',{'rating':'up'})
+        day = dt.date.today()
+        path = f'/api/reports/extras?from={day-dt.timedelta(days=1)}&to={day+dt.timedelta(days=1)}&tz=0'
+        report = self.ok(self.admin,path)['assistant']
+        self.assertEqual({k:report[k] for k in ('asked','answered','failed','proposed','ran','people','up','down')},
+                         {'asked':2,'answered':2,'failed':0,'proposed':0,'ran':0,'people':2,'up':1,'down':1})
+        self.assertEqual(report['reasons'],[{'reason':'wrong','count':1}])
+        self.assertEqual([c['comment'] for c in report['comments']],['ตอบผิด ลูกค้าเบอร์ [เบอร์โทร]'])
+        self.assertNotIn('user_id',json.dumps(report))
+        self.assertIsNone(self.ok(agent,path)['assistant'])
 
 
 if __name__=='__main__':

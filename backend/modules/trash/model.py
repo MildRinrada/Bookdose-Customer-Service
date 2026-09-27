@@ -15,5 +15,5 @@ KEEP_DAYS = 30
 KINDS = {
     'article': {'label':'บทความ',     'tables':('knowledge_articles',),        'roles':('admin','manager')},
     'contact': {'label':'ข้อมูลลูกค้า', 'tables':('contacts','contact_names','contact_profiles'),   'roles':('admin','manager')},
-    'ticket':  {'label':'เคสบริการ',   'tables':('tickets','ticket_conversations','ticket_tags'),'roles':('admin',)},
+    'ticket':  {'label':'เคสบริการ',   'tables':('tickets','ticket_conversations','ticket_tags','ticket_field_values'),'roles':('admin',)},
 }

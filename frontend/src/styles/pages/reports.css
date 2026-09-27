@@ -226,3 +226,346 @@
     height: 130px;
   }
 }
+
+/* The heading: who gets the weekly summary (owners), and the print button beside the downloads. */
+.report-weekly-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.report-weekly-note .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.report-weekly-note a {
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ตัวเลขชุดไหน in the analysis table: speed or quality, on the same track as the dimensions above it. */
+.pivot-sets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.pivot-sets>span {
+  color: var(--muted);
+}
+.pivot-sets .filter-pills {
+  margin: 0;
+}
+/* The lowest-SLA line under the choices: already inside the card's padding, with room above it. */
+.pivot-card .report-hint {
+  margin: 16px 0 0;
+}
+
+/* เป้าหมาย (ReportGoals): one row per goal, its figure, reached or not, the target, then its tiles. */
+.report-goals-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 0 0 22px;
+  padding: 16px 20px;
+}
+.report-goals-empty>.icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+}
+.report-goals-empty p {
+  display: grid;
+  flex: 1 1 260px;
+  gap: 2px;
+  margin: 0;
+}
+.report-goals-empty span {
+  color: var(--muted);
+  font-size: .92rem;
+}
+.report-goal-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-goal-list li {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.report-goal-list li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.report-goal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.report-goal-name {
+  flex: 1 1 180px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.report-goal-head strong {
+  color: var(--ink);
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.report-goal-state {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.report-goal-state.ok {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.report-goal-state.miss {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.report-goal-target {
+  color: var(--muted);
+  font-size: .88rem;
+}
+.report-goal-tiles {
+  margin: 10px 0 0;
+}
+.report-goal-note {
+  margin: 10px 0 0;
+}
+.report-goal-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 0 16px;
+}
+.report-goal-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.report-goal-input input {
+  flex: 1;
+  min-width: 0;
+}
+.report-goal-input span {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+@media (max-width: 640px) {
+  .report-goal-fields {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+
+/* ระหว่างการคุย and อารมณ์ลูกค้า (ReportConversation). */
+.report-conversation-note {
+  margin: 14px 0 0;
+}
+.report-mood-label {
+  display: grid;
+  gap: 0;
+}
+.report-mood-label small {
+  font-size: .75rem;
+}
+.report-figures small+small {
+  margin-top: 2px;
+}
+
+/* รายงานผลการให้บริการลูกค้า (ReportDocument): what prints. Hidden on the screen; on paper it is the only thing
+   there - the app's frame and the web report stay behind - black on white in any theme, plain ruled tables, numbered
+   sections, a section never starting at the foot of a page, and the page number at the bottom. */
+.report-document {
+  display: none;
+}
+@page report {
+  size: A4;
+  margin: 18mm 16mm 20mm;
+  @bottom-right {
+    content: "หน้า " counter(page) " จาก " counter(pages);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 9pt;
+    color: #444;
+  }
+}
+@media print {
+  body:has(.report-document) {
+    background: #fff !important;
+  }
+  body:has(.report-document) :is(.sidebar,.mobile-overlay,.assistant-fab,.assistant-panel,.sidebar-tips) {
+    display: none !important;
+  }
+  body:has(.report-document) .app-main>:not(.content),
+  body:has(.report-document) .content>:not(.report-document) {
+    display: none !important;
+  }
+  body:has(.report-document) :is(.app-main,.content) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .report-document {
+    display: block;
+    page: report;
+    width: auto;
+    max-width: none;
+    color: #000;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+  /* Black on white whatever the theme: nothing in the document takes the screen's colours. */
+  .report-document,.report-document * {
+    color: #000 !important;
+    background: none;
+    box-shadow: none;
+  }
+  .report-doc-title {
+    display: block;
+    width: auto;
+    max-width: none;
+    margin-bottom: 8mm;
+    padding-bottom: 4mm;
+    border-bottom: 1.5pt solid #000;
+    text-align: center;
+  }
+  .report-doc-org {
+    margin: 0;
+    font-size: 13pt;
+    font-weight: 700;
+  }
+  .report-doc-title h1 {
+    margin: 2mm 0 1mm;
+    font-size: 18pt;
+    font-weight: 700;
+  }
+  .report-doc-title>p {
+    margin: 0;
+    font-size: 12pt;
+  }
+  .report-doc-title dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 1mm 6mm;
+    width: max-content;
+    max-width: 100%;
+    margin: 5mm auto 0;
+    text-align: left;
+  }
+  .report-doc-title dl div {
+    display: contents;
+  }
+  .report-doc-title dt {
+    font-weight: 700;
+  }
+  .report-doc-title dd {
+    margin: 0;
+  }
+  .report-document section {
+    margin-top: 7mm;
+  }
+  .report-document h2 {
+    margin: 0 0 3mm;
+    font-size: 13pt;
+    font-weight: 700;
+    break-after: avoid;
+  }
+  .report-document section>p {
+    margin: 0 0 3mm;
+    text-align: justify;
+  }
+  .report-doc-table {
+    width: 100%;
+    margin: 0 0 5mm;
+    border-collapse: collapse;
+    font-size: 10pt;
+    break-inside: auto;
+  }
+  .report-doc-table caption {
+    margin-bottom: 1.5mm;
+    font-weight: 700;
+    text-align: left;
+    break-after: avoid;
+  }
+  /* Above the app's own "tr:last-child td {border-bottom:0}" (components.css), or the last row prints open. */
+  .report-document .report-doc-table :is(th,td) {
+    white-space: normal;
+    padding: 1.6mm 2.2mm;
+    border: .6pt solid #000;
+    text-align: right;
+    vertical-align: top;
+  }
+  .report-document .report-doc-table th {
+    background: #eee !important;
+    font-weight: 700;
+    text-align: center;
+  }
+  .report-doc-table :is(th,td):first-child {
+    text-align: left;
+  }
+  .report-doc-table tr {
+    break-inside: avoid;
+  }
+  /* The summary's columns: the measure widest, then the figures, the goal and the result. */
+  .report-doc-summary col:first-child {
+    width: 34%;
+  }
+  .report-doc-summary col:nth-child(2),.report-doc-summary col:nth-child(3) {
+    width: 14%;
+  }
+  .report-doc-summary col:nth-child(4),.report-doc-summary col:nth-child(5) {
+    width: 19%;
+  }
+  /* Never wider than the page: fixed columns, the first (what the row is) wider than the figures. */
+  .report-doc-table {
+    table-layout: fixed;
+  }
+  .report-doc-table :is(th,td):first-child {
+    width: 30%;
+  }
+  .report-doc-summary :is(th,td):first-child {
+    width: auto;
+  }
+  .report-doc-table thead {
+    display: table-header-group;
+  }
+  .report-doc-figure {
+    margin: 0 0 6mm;
+    break-inside: avoid;
+  }
+  .report-doc-figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .report-doc-figure figcaption {
+    margin-top: 1.5mm;
+    font-size: 10pt;
+    text-align: center;
+  }
+  .report-doc-notes ol {
+    margin: 0;
+    padding-left: 6mm;
+    font-size: 10pt;
+  }
+  .report-doc-notes li+li {
+    margin-top: 1mm;
+  }
+}

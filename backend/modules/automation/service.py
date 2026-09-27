@@ -305,6 +305,10 @@ def run_macro(cd, db, ctx, macro_id, body):
         conv = get_scoped(db,'conversations',target,ctx)
         ticket = tickets.for_conversation(db,conv['id'])
     contact = contacts.find(db,(ticket or conv)['contact_id'])
+    if ticket and macro['set_status']:
+        # A macro that closes the case waits for its required fields (tickets/fields.py), before anything is sent.
+        from backend.modules.tickets import fields
+        fields.require_to_close(db,ticket,macro['set_status'])
     done,skipped = [],[]
     if macro['reply']:
         if conv and conv['channel'] in REPLYABLE:
@@ -596,6 +600,9 @@ class Worker:
                             from backend.modules.organization import retention
                             if retention.due(tenant_id):
                                 retention.run(db,tenant_id)
+                            # สรุปรายงานประจำสัปดาห์: Monday morning, once, to the owners (queued with the notices below).
+                            from backend.modules.reports import weekly
+                            weekly.run(cd,db,tenant_id)
                     except Exception as error:
                         print(f'Automation worker: {type(error).__name__}; retrying next round',flush=True)
                         monitor.error('automation',type(error).__name__)

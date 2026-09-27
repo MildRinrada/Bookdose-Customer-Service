@@ -20,11 +20,12 @@ import { NewTicketButton } from './components/NewTicket';
 import { DENSITY_KEY, TicketTable, type TicketSelection } from './components/TicketTable';
 import { useDownloadTicketsCSV } from './csv';
 import { BACKLOG_SCOPE, densityLabels, FILTER_KEYS, inScope, matchesTicketFilters, ticketScopes, ticketsHref, UNTAGGED, type TicketFilter } from './labels';
+import { fieldFilterChoices, useCaseFields } from './fields';
 import { useCaseTags } from './tags';
 import type { TicketChanges, TicketRow } from './types';
 
-/* The case list (the old ticketsPage): search, status, priority and tag filters (owners manage the tags from here),
-   quick scopes with counts, a customer
+/* The case list (the old ticketsPage): search, status, priority, tag and case field filters (owners manage the tags
+   from here; the fields in ตั้งค่าองค์กร), quick scopes with counts, a customer
    filter from the address, row density, selection with bulk assign / close / export, and the full CSV export.
    Filters live in the address (/tickets?q=&status=&priority=&contact=&filter=) so a filtered list can be shared;
    the global search in the top bar opens /tickets?q=<text>. Markup: pages/tickets/tickets, ticket-toolbar. */
@@ -41,6 +42,7 @@ export function TicketsScreen() {
   const saveCSV = useDownloadTicketsCSV();
   const tickets = useStaffTickets();
   const tagList = useCaseTags();
+  const caseFields = useCaseFields();
   const all = (tickets.data?.tickets ?? []) as TicketRow[];
 
   const fromAddress: TicketFilter = Object.fromEntries(FILTER_KEYS.map((key) => [key, toArray(params.get(key))]));
@@ -133,7 +135,14 @@ export function TicketsScreen() {
   const bulkMembers = teams.size === 1 ? work.members.filter((m) => m.active && teams.has(m.team_id)) : [];
 
   const filtered = Boolean(
-    filter.q || filter.status || filter.priority || filter.tag || filter.contact || filter.assignee || (filter.filter && filter.filter !== 'all'),
+    filter.q ||
+      filter.status ||
+      filter.priority ||
+      filter.tag ||
+      filter.field ||
+      filter.contact ||
+      filter.assignee ||
+      (filter.filter && filter.filter !== 'all'),
   );
   const contactName = filter.contact ? all.find((t) => t.contact_id === filter.contact)?.contact_name || 'ที่เลือก' : '';
   const backlog = filter.filter === BACKLOG_SCOPE;
@@ -164,7 +173,13 @@ export function TicketsScreen() {
       </div>
       <section className="card">
         <div className="filters">
-          <SearchInput id="ticket-search" label="ค้นหาเคส" placeholder="ค้นหาหมายเลขเคส เรื่อง หรือลูกค้า" value={q} onChange={(value) => setFilter('q', value)} />
+          <SearchInput
+            id="ticket-search"
+            label="ค้นหาเคส"
+            placeholder={caseFields.length ? 'ค้นหาเคส ลูกค้า หรือข้อมูลในเคส' : 'ค้นหาหมายเลขเคส เรื่อง หรือลูกค้า'}
+            value={q}
+            onChange={(value) => setFilter('q', value)}
+          />
           <FilterSelect
             id="ticket-status"
             label="กรองสถานะ"
@@ -189,6 +204,16 @@ export function TicketsScreen() {
               value={filter.tag ?? ''}
               options={[...tagList.map((t) => ({ value: t.id, label: t.name })), { value: UNTAGGED, label: 'ยังไม่ติดป้าย' }]}
               onChange={(value) => setFilter('tag', value)}
+            />
+          )}
+          {caseFields.length > 0 && (
+            <FilterSelect
+              id="ticket-field"
+              label="กรองตามข้อมูลในเคส"
+              any="ทุกข้อมูลในเคส"
+              value={filter.field ?? ''}
+              options={fieldFilterChoices(caseFields)}
+              onChange={(value) => setFilter('field', value)}
             />
           )}
           {work.role === 'admin' && !work.read_only && <ManageTagsButton first={!tagList.length} />}

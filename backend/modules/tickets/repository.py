@@ -1,5 +1,6 @@
 """Case queries. Functions taking team_id limit results to that team when it is given (agents)."""
 from backend.database.db import one, rows
+from backend.modules.tickets.fields import VALUES_COLUMN as FIELD_VALUES
 from backend.modules.tickets.tags import IDS_COLUMN as TAG_IDS
 from backend.utils.dates import now
 
@@ -24,7 +25,7 @@ def list_with_contacts(db, team_id=None):
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_at,
               (SELECT s.comment FROM csat_surveys s WHERE s.ticket_id=t.id AND s.answered_at IS NOT NULL
                ORDER BY s.answered_at DESC,s.rowid DESC LIMIT 1) AS csat_comment,
-              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,{MOOD_COLUMNS},{TAG_IDS},
+              (SELECT COUNT(*) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopens,{MOOD_COLUMNS},{TAG_IDS},{FIELD_VALUES},
               (SELECT MAX(r.reopened_at) FROM ticket_reopens r WHERE r.ticket_id=t.id) AS reopened_at
               FROM tickets t LEFT JOIN escalations e ON e.ticket_id=t.id JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.updated_at DESC,t.number DESC''',params)
 
@@ -105,10 +106,11 @@ def take(db, ticket_id, user_id):
 
 
 def export_rows(db, team_id=None):
-    """The CSV's rows; `tag_ids` is the ids of the case's tags (the service writes their names)."""
+    """The CSV's rows; `tag_ids` is the ids of the case's tags (the service writes their names) and `field_values` its
+    fields' values as JSON (the service writes one column per field)."""
     where,params = _team_filter(team_id)
     return rows(db,f'''SELECT t.number,t.subject,c.name AS customer,t.status,t.priority,t.category,t.created_at,t.first_response_at,t.resolved_at,
-        {TAG_IDS} FROM tickets t JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.number''',params)
+        {TAG_IDS},{FIELD_VALUES} FROM tickets t JOIN contacts c ON c.id=t.contact_id WHERE {where} ORDER BY t.number''',params)
 
 
 def next_number(db):
@@ -240,8 +242,13 @@ def tag_rows(db, ticket_id):
     return rows(db,'SELECT * FROM ticket_tags WHERE ticket_id=?',(ticket_id,))
 
 
+def field_rows(db, ticket_id):
+    return rows(db,'SELECT * FROM ticket_field_values WHERE ticket_id=?',(ticket_id,))
+
+
 def delete(db, ticket_id):
-    """The case row, its links and its tags. The conversations themselves stay: they are the customer's messages."""
+    """The case row, its links, tags and field values. The conversations themselves stay: they are the customer's messages."""
     db.execute('DELETE FROM ticket_conversations WHERE ticket_id=?',(ticket_id,))
     db.execute('DELETE FROM ticket_tags WHERE ticket_id=?',(ticket_id,))
+    db.execute('DELETE FROM ticket_field_values WHERE ticket_id=?',(ticket_id,))
     db.execute('DELETE FROM tickets WHERE id=?',(ticket_id,))

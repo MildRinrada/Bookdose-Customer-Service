@@ -106,6 +106,18 @@ def save_case_tags(req):
 
 
 @require_role('admin')
+def case_fields(req):
+    from backend.modules.tickets import fields
+    return req.send(200,fields.overview(req.db))
+
+
+@require_role('admin')
+def save_case_fields(req):
+    from backend.modules.tickets import fields
+    return req.send(200,fields.save(req.db,req.ctx,req.body))
+
+
+@require_role('admin')
 def create_team(req):
     return req.send(201,{'id':service.create_team(req.db,req.ctx,req.body)})
 

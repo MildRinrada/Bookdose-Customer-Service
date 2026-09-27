@@ -109,8 +109,56 @@ export function resolution(all: TicketRow[], f: ReportFilter, previous = false) 
   };
 }
 
+/** รอคำตอบถัดไป: of the cases opened in the period, each time the customer wrote again after the team's first reply
+    and waited for the next one (backend reports/stats.py): the typical wait (median), the time nine in ten were
+    answered within (P90), how many waits and in how many cases. The first reply is firstResponse's. */
+export function nextReply(all: TicketRow[], f: ReportFilter, previous = false) {
+  const r = periodOf(f, previous);
+  const opened = all.filter((t) => t.stats && inScope(t, f) && within(t.created_at, r));
+  const waits = opened.flatMap((t) => t.stats?.waits ?? []);
+  return { count: waits.length, cases: opened.filter((t) => t.stats?.waits.length).length, median: median(waits), p90: percentile(waits, 0.9) };
+}
+
+/** แก้จบในครั้งเดียว: of the cases solved in the period that the team answered, the share answered with one reply
+    that never went back to work. */
+export function oneTouch(all: TicketRow[], f: ReportFilter, previous = false) {
+  const r = periodOf(f, previous);
+  const solved = all.filter((t) => (t.stats?.replies ?? 0) >= 1 && inScope(t, f) && within(t.resolved_at, r));
+  const once = solved.filter((t) => t.stats?.replies === 1 && !(t.reopens ?? 0)).length;
+  return { finished: solved.length, once, rate: solved.length ? (100 * once) / solved.length : null };
+}
+
+/** อารมณ์ลูกค้า: of the cases opened in the period, how many had a customer who was upset (1) or angry (2) in at least
+    one message, read by the words of the message and, where the organization turned it on, by the AI (ai/mood.py). */
+export function customerMood(all: TicketRow[], f: ReportFilter, previous = false) {
+  const r = periodOf(f, previous);
+  const opened = all.filter((t) => t.stats && inScope(t, f) && within(t.created_at, r));
+  const upset = opened.filter((t) => (t.stats?.upset ?? 0) >= 1).length;
+  return { total: opened.length, upset, angry: opened.filter((t) => (t.stats?.upset ?? 0) >= 2).length, rate: opened.length ? (100 * upset) / opened.length : null };
+}
+
 /** How many days one tile of a trend covers: a day up to two weeks, a week up to four months, then 30 days. */
 export const tileDays = (days: number) => (days <= 14 ? 1 : days <= 120 ? 7 : 30);
+
+const dayText = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** The period cut into tiles (tileDays each, the last one shorter), each a filter of its own, so any figure can be
+    worked out tile by tile: [{start, f}]. */
+export function periodTiles(f: ReportFilter): Array<{ start: Date; f: ReportFilter }> {
+  const first = new Date(f.from + 'T00:00:00');
+  const last = new Date(f.to + 'T00:00:00');
+  const days = Math.round((last.getTime() - first.getTime()) / 86400000) + 1;
+  const width = tileDays(days);
+  const tiles = [];
+  for (let i = 0; i < days; i += width) {
+    const start = new Date(first);
+    start.setDate(first.getDate() + i);
+    const end = new Date(first);
+    end.setDate(first.getDate() + Math.min(i + width, days) - 1);
+    tiles.push({ start, f: { ...f, from: dayText(start), to: dayText(end) } });
+  }
+  return tiles;
+}
 
 export type SurveyAnswer = { ticket: TicketRow; rating: number; at: string; comment: string };
 

@@ -52,11 +52,12 @@ def snooze_form(body):
     return iso(moment),field(body,'note',SNOOZE_NOTE_MAX,False)
 
 
-def tickets_csv(records):
-    """UTF-8 CSV with a BOM for Excel. Cells a spreadsheet would run as formulas are prefixed with '."""
+def tickets_csv(records, extra=()):
+    """UTF-8 CSV with a BOM for Excel; `extra` headings (the organization's case fields) follow the fixed ones. Cells a
+    spreadsheet would run as formulas are prefixed with '."""
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(CSV_HEADER)
+    writer.writerow([*CSV_HEADER,*extra])
     for record in records:
         values = [str(v) if v is not None else '' for v in record.values()]
         writer.writerow(["'"+v if v.lstrip().startswith(('=','+','-','@')) or v.startswith(('\t','\r','\n')) else v for v in values])

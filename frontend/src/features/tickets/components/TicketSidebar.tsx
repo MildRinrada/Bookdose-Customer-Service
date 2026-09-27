@@ -21,11 +21,13 @@ import { useWork } from '@/lib/session';
 import { deleteTicket, TICKET_PREFIXES, TICKETS_PATH, updateTicket } from '../api';
 import type { TicketDetail } from '../types';
 import { SnoozeCard } from './SnoozeCard';
+import { TicketFieldsCard } from './TicketFieldsCard';
 import { TicketTagsCard } from './TicketTagsCard';
 import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers';
 
 /* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, managing the case,
-   follow-up reminders, macros and the CSAT result. The SLA clocks are in the case's head (CaseHero). */
+   the organization's own fields, tags, follow-up reminders, macros and the CSAT result. The SLA clocks are in the
+   case's head (CaseHero). */
 
 const noAutomation: TicketAutomation = { followups: [], escalation: null, survey: null };
 
@@ -68,6 +70,7 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
         </Link>
       </section>
       <TicketUpdateForm key={formKey} data={data} onSaved={() => setFormKey((k) => k + 1)} />
+      <TicketFieldsCard ticket={t} />
       <TicketTagsCard ticket={t} />
       <SnoozeCard ticket={t} />
       <section className="card info-block">

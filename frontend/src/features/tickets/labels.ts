@@ -1,6 +1,7 @@
 import { clockTime, date, isDone, overdue } from '@/lib/format';
 import { escalationReasons } from '@/lib/labels';
 import type { TicketEscalation } from '@/features/automation/types';
+import { matchesFieldFilter } from './fields';
 import type { Snooze, TicketRow } from './types';
 
 type Snoozeable = Snooze & Record<string, unknown>;
@@ -19,10 +20,11 @@ export const ticketScopes: Record<string, string> = {
 
 export const densityLabels: Record<string, string> = { comfortable: 'อ่านสบาย', compact: 'กระชับ' };
 
-/** The list's filters as they appear in the address: /tickets?q=&status=&priority=&tag=&contact=&assignee=&filter=<scope>. */
-export type TicketFilter = { q?: string; status?: string; priority?: string; tag?: string; contact?: string; assignee?: string; filter?: string };
+/** The list's filters as they appear in the address: /tickets?q=&status=&priority=&tag=&field=&contact=&assignee=&filter=<scope>.
+    field is "<field id>:<value>" (fields.ts fieldFilterChoices). */
+export type TicketFilter = { q?: string; status?: string; priority?: string; tag?: string; field?: string; contact?: string; assignee?: string; filter?: string };
 
-export const FILTER_KEYS = ['q', 'status', 'priority', 'tag', 'contact', 'assignee', 'filter'] as const;
+export const FILTER_KEYS = ['q', 'status', 'priority', 'tag', 'field', 'contact', 'assignee', 'filter'] as const;
 
 /** The tag filter's "cases with no tag yet", beside each tag's id. */
 export const UNTAGGED = 'none';
@@ -53,17 +55,20 @@ export function inScope(t: TicketRow, scope: string | undefined, me: string): bo
   );
 }
 
-/** Search, customer, status, priority and tag; the scope (all / mine / overdue …) is applied on top of them. */
+/** Search (the case fields' values too), customer, status, priority, tag and a case field; the scope (all / mine /
+    overdue …) is applied on top of them. */
 export function matchesTicketFilters(t: TicketRow, f: TicketFilter): boolean {
   const q = (f.q || '').toLowerCase();
   const tags = t.tags ?? [];
+  const words = [t.subject, t.contact_name, t.company, `BD-${t.number}`, t.category, ...Object.values(t.fields ?? {})];
   return (
-    (!q || [t.subject, t.contact_name, t.company, `BD-${t.number}`, t.category].some((v) => String(v).toLowerCase().includes(q))) &&
+    (!q || words.some((v) => String(v).toLowerCase().includes(q))) &&
     (!f.contact || t.contact_id === f.contact) &&
     (!f.assignee || t.assignee_id === f.assignee) &&
     (!f.status || t.status === f.status) &&
     (!f.priority || t.priority === f.priority) &&
-    (!f.tag || (f.tag === UNTAGGED ? !tags.length : tags.includes(f.tag)))
+    (!f.tag || (f.tag === UNTAGGED ? !tags.length : tags.includes(f.tag))) &&
+    (!f.field || matchesFieldFilter(t.fields, f.field))
   );
 }
 

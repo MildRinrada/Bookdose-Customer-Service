@@ -80,6 +80,29 @@ def stop(db, ctx, job_id):
     return {'status':'cancelled','started':job['status']=='running'}
 
 
+def feedback(db, ctx, job_id, body):
+    """ถูกใจ / ไม่ถูกใจ under an answer, by the member who asked it: {rating: 'up' | 'down' | '' (taken back), reason
+    (model.FEEDBACK_REASONS, with ไม่ถูกใจ), comment}. The organization's owner reads the counts, the reasons and the
+    comments in the service report, never who wrote them or what was asked; emails and phone numbers are masked."""
+    from backend.database import db as D
+    from backend.modules.ai import repository
+    from backend.modules.ai.model import FEEDBACK_COMMENT_MAX, FEEDBACK_REASONS
+    body = body if isinstance(body,dict) else {}
+    rating,reason,comment = body.get('rating'),body.get('reason') or '',body.get('comment') or ''
+    require(rating in ('up','down',''),'เลือกถูกใจหรือไม่ถูกใจ')
+    require(reason=='' or (rating=='down' and reason in FEEDBACK_REASONS),'เหตุผลไม่ถูกต้อง')
+    require(isinstance(comment,str) and len(comment.strip())<=FEEDBACK_COMMENT_MAX,f'ความเห็นยาวได้ไม่เกิน {FEEDBACK_COMMENT_MAX} ตัวอักษร')
+    D.begin(db)
+    job = repository.job_for_user(db,job_id,ctx['id'])
+    require(job and job['mode']=='ask' and job['status']=='done','ไม่พบคำตอบนี้ของผู้ช่วย',404)
+    if rating:
+        repository.save_feedback(db,job['id'],ctx['id'],rating,reason,insights._mask(comment.strip()) if rating=='down' else '')
+    else:
+        repository.delete_feedback(db,job['id'])
+    db.commit()
+    return {'rating':rating,'reason':reason if rating=='down' else ''}
+
+
 def finish(answer, citations, raw, payload):
     """The answer the member sees: its words and sources, the actions that passed (assistant_actions.resolve), how many
     did not, and {case number: case id} for every case it names that the member may open (the panel links them)."""

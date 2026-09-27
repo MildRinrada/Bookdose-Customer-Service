@@ -129,6 +129,11 @@ html[data-theme='dark'] .initial-loading img,html[data-theme='black'] .initial-l
   border-radius: 12px;
   background: #fff;
 }
+/* The same at the head of a page with no sidebar (/status, the support start page): the sidebar's white tile. */
+html[data-theme='dark'] .brand-logo,html[data-theme='black'] .brand-logo {
+  border-radius: 10px;
+  background: #fff;
+}
 
 /* The four swatches in the Aa panel: the letter T on that theme's own paper, as an e-reader shows them. */
 .theme-choices {

@@ -9,9 +9,10 @@ import { useBoot, useWork } from '@/lib/session';
 import { useToast } from '@/components/ui/Toast';
 import { ApiError } from '@/lib/api/client';
 import { askAssistant, stopAssistant, waitForAiJob } from '../api';
-import type { AiCitation, AssistantResult } from '../types';
+import type { AiCitation, AssistantFeedback, AssistantResult } from '../types';
 import { AiCitations } from './AiCitations';
 import { useWorkspaceAi } from './AiControls';
+import { AnswerRating } from './AnswerRating';
 import { AssistantActions } from './AssistantActions';
 import { afterCheck, AssistantProgress, AssistantTrace, traceOf, type AssistantTraceData, type AssistantWait } from './AssistantProgress';
 import { PersonaPicker, personaLabels } from './PersonaPicker';
@@ -37,6 +38,8 @@ type Turn = {
   result?: Pick<AssistantResult, 'actions' | 'dropped' | 'cases' | 'ran'>;
   /** How the answer came about: what was read, the wait, the thinking (folded under it). */
   trace?: AssistantTraceData;
+  /** What the member thought of the answer (ถูกใจ / ไม่ถูกใจ). */
+  feedback?: AssistantFeedback;
 };
 
 /** The case or chat open on the page: /tickets/<id> or /inbox/<id>. */
@@ -353,6 +356,7 @@ export function AiAssistant() {
   // What ทำเลย did stays with the answer (and in this tab's saved chat), so the list is never offered twice.
   const markRan = (index: number, ran: NonNullable<AssistantResult['ran']>) =>
     setTurns((all) => all.map((t, i) => (i === index && t.result ? { ...t, result: { ...t.result, ran } } : t)));
+  const markRated = (index: number, feedback: AssistantFeedback) => setTurns((all) => all.map((t, i) => (i === index ? { ...t, feedback } : t)));
   // On a phone the chat covers the page: following a case link gets it out of the way.
   const openedCase = () => {
     if (window.matchMedia('(max-width: 600px)').matches) setOpen(false);
@@ -522,6 +526,7 @@ export function AiAssistant() {
                           >
                             คัดลอก
                           </button>
+                          {t.job && <AnswerRating jobId={t.job} value={t.feedback} onChange={(feedback) => markRated(i, feedback)} />}
                           <AiCitations citations={t.citations} />
                           {t.trace && (
                             <AssistantTrace

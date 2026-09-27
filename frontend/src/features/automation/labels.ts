@@ -72,8 +72,8 @@ export function ruleActions(
     .join(' · ');
 }
 
-/** "ส่งข้อความแม่แบบ → เปลี่ยนสถานะเป็น “รอลูกค้า” → เตือนติดตามใน 1 วัน" */
-export function macroSteps(macro: Pick<Macro, 'reply' | 'set_status' | 'followup_hours'>): string {
+/** "ส่งข้อความแม่แบบ → เปลี่ยนสถานะเป็น “รอลูกค้า” → เตือนติดตามใน 1 วัน". reply: the template, or whether there is one. */
+export function macroSteps(macro: Pick<Macro, 'set_status' | 'followup_hours'> & { reply: string | boolean }): string {
   return [
     macro.reply && 'ส่งข้อความแม่แบบ',
     macro.set_status && `เปลี่ยนสถานะเป็น “${statusLabels[macro.set_status]}”`,

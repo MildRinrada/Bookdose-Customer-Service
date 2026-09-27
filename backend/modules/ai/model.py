@@ -11,6 +11,10 @@ JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary','tran
 OWNER_MODES = ('article','brief')
 # Jobs whose input was built when they were asked (the payload column), not read from a conversation.
 PAYLOAD_MODES = (*OWNER_MODES,'ask')
+# Why a member marked an assistant's answer ไม่ถูกใจ (ai_feedback.reason): wrong facts, not what was asked, the proposed
+# actions were wrong, hard to follow, something else.
+FEEDBACK_REASONS = ('wrong','off_topic','actions','unclear','other')
+FEEDBACK_COMMENT_MAX = 300
 
 JOBS_TABLE = '''CREATE TABLE IF NOT EXISTS {name} (
     id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
@@ -58,6 +62,19 @@ CREATE INDEX IF NOT EXISTS message_translations_status ON message_translations(s
 CREATE TABLE IF NOT EXISTS ai_message_meta (
     message_id TEXT PRIMARY KEY REFERENCES messages(id),
     source TEXT NOT NULL CHECK(source IN ('ai','system')), citations TEXT NOT NULL DEFAULT '[]'
+);
+-- How each customer message read (ai/mood.py), kept after a later message changes the conversation's reading: the
+-- service report's อารมณ์ลูกค้า counts a case whose customer was upset at any point. Levels only, no words.
+CREATE TABLE IF NOT EXISTS conversation_mood_log (
+    message_id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, level INTEGER NOT NULL, urgent INTEGER NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'words', created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS conversation_mood_log_conversation ON conversation_mood_log(conversation_id);
+-- ผู้ช่วย AI: what the member who asked thought of the answer (ai/assistant.py feedback); the owner reads the counts,
+-- reasons and comments in the service report, never who wrote them.
+CREATE TABLE IF NOT EXISTS ai_feedback (
+    job_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, rating TEXT NOT NULL CHECK(rating IN ('up','down')),
+    reason TEXT NOT NULL DEFAULT '', comment TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL
 );
 '''
 

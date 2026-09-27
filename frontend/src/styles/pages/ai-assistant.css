@@ -357,6 +357,86 @@ html:has(.composer) .assistant-panel {
 .assistant-tools .ai-citations[open] {
   flex-basis: 100%;
 }
+/* ถูกใจ / ไม่ถูกใจ (AnswerRating): two small icon buttons next to คัดลอก; ไม่ถูกใจ opens a short form on its own line. */
+.assistant-rate {
+  display: inline-flex;
+  gap: 2px;
+}
+.assistant-rate-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--link);
+  cursor: pointer;
+}
+.assistant-rate-btn .icon {
+  width: 16px;
+  height: 16px;
+}
+.assistant-rate-btn:hover,.assistant-rate-btn:focus-visible {
+  background: var(--soft);
+  color: var(--ink);
+}
+.assistant-rate-btn.up.on {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.assistant-rate-btn.down.on {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.assistant-rate-form {
+  order: 10;
+  flex-basis: 100%;
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.assistant-rate-form strong {
+  color: var(--ink);
+}
+.assistant-rate-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.assistant-rate-reason {
+  padding: 4px 12px;
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+}
+.assistant-rate-reason:hover,.assistant-rate-reason:focus-visible {
+  border-color: var(--ink);
+}
+.assistant-rate-reason.on {
+  border-color: var(--invert);
+  background: var(--invert);
+  color: var(--paper);
+}
+.assistant-rate-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
+.assistant-rate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .assistant-typing {
   display: inline-flex;
   gap: 4px;
@@ -719,6 +799,53 @@ textarea.assistant-action-text:focus-visible {
   color: var(--red);
   font-size: .875rem;
   line-height: 1.5;
+}
+/* What a done action left out (a macro's step that does not apply there). */
+.assistant-action-note {
+  margin: 0 0 0 30px;
+  color: var(--muted);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+/* The customer records of a merge: name, email or phone, cases; the one kept is marked. */
+.assistant-action-people {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+.assistant-action-list .assistant-action-people li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  font-size: .875rem;
+}
+.assistant-action-people strong {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.assistant-action-people span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.assistant-action-people .assistant-action-keep {
+  margin-left: auto;
+  color: var(--green);
+  font-weight: 700;
+}
+.assistant-action-match {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.assistant-action-match.warn {
+  color: var(--amber);
+  font-weight: 600;
 }
 .assistant-actions-note {
   margin: 0;

@@ -9,7 +9,7 @@ from backend.database.db import one, rows
 from backend.exceptions.errors import ChannelError
 from backend.extensions import channel_transport as T
 from backend.modules.staff_prefs import schema
-from backend.modules.staff_prefs.model import DAYS, EVENTS, NOTICE_ATTEMPTS, NOTICE_KEEP_DAYS, STATUSES, WORK_TZ
+from backend.modules.staff_prefs.model import DAYS, EVENTS, FORMAL_EVENTS, NOTICE_ATTEMPTS, NOTICE_KEEP_DAYS, STATUSES, WORK_TZ
 from backend.utils.dates import after, now, utc_now
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -117,13 +117,14 @@ def reply_parts(cd, user_id, name, text):
 
 
 # Emails about the member's work
-def queue(db, user_id, event, subject, detail='', path='', actor_id=None):
+def queue(db, user_id, event, subject, detail='', path='', actor_id=None, limit=500):
     """Queue an email for `user_id` inside the caller's transaction (the worker decides, with the member's
-    preferences, whether it goes). Nothing for nobody, or for the member who did it themselves."""
+    preferences, whether it goes). Nothing for nobody, or for the member who did it themselves. `limit`: the longest
+    detail (the weekly summary is longer than a line about one case)."""
     if not user_id or user_id==actor_id or event not in EVENTS:
         return
     db.execute('INSERT INTO staff_notices(id,user_id,event,subject,detail,path,created_at) VALUES(?,?,?,?,?,?,?)',
-               (uid(),user_id,event,subject[:200],(detail or '')[:500],path[:200],now()))
+               (uid(),user_id,event,subject[:200],(detail or '')[:limit],path[:200],now()))
 
 
 def _mail(cfg, secret, recipient, subject, text):
@@ -132,6 +133,12 @@ def _mail(cfg, secret, recipient, subject, text):
     mail['Date'],mail['Message-ID'],mail['Auto-Submitted'] = formatdate(localtime=False,usegmt=True),make_msgid(),'auto-generated'
     mail.set_content(text)
     T.send_email(cfg,secret,recipient,mail)
+
+
+def _formal_body(name, detail, link):
+    """A memo (FORMAL_EVENTS): the detail is the whole letter between the greeting and the closing."""
+    return (f'เรียน คุณ{name}\n\n{detail}\n\n'+(f'ดูรายงานฉบับเต็มได้ที่ {link}\n\n' if link else '')
+            +'จึงเรียนมาเพื่อโปรดทราบ\n\nยกเลิกการรับอีเมลฉบับนี้ได้ที่ ตั้งค่าบัญชี → การแจ้งเตือน\n')
 
 
 def _body(name, organization, detail, link, event):
@@ -166,9 +173,13 @@ def send_notices(tenant_id):
         base = (cfg.get('public_base_url') or '').rstrip('/')
         sent = 0
         for row,user in tasks:
+            link = base+row['path'] if base and row['path'] else ''
             try:
-                _mail(cfg,secret,user['email'],f"{row['subject']} · {organization}",
-                      _body(user['name'],organization,row['detail'] or row['subject'],base+row['path'] if base and row['path'] else '',row['event']))
+                if row['event'] in FORMAL_EVENTS:
+                    _mail(cfg,secret,user['email'],row['subject'],_formal_body(user['name'],row['detail'],link))
+                else:
+                    _mail(cfg,secret,user['email'],f"{row['subject']} · {organization}",
+                          _body(user['name'],organization,row['detail'] or row['subject'],link,row['event']))
             except ChannelError:
                 db.execute('UPDATE staff_notices SET attempts=attempts+1 WHERE id=?',(row['id'],))
             else:

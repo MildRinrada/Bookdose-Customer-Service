@@ -29,7 +29,10 @@ class PdpaTests(unittest.TestCase):
         self.ok(client,'/api/public/alpha/messages',{'body':'แนบใบเสร็จค่ะ','attachments':[{'name':'receipt.txt','data':base64.b64encode(b'RECEIPT 123').decode()}]})
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'NOTE ABOUT SOMSRI'})
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'reply','body':'ขออภัยค่ะ จะส่งเพิ่มให้'})
-        self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})
+        ticket = self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})['id']
+        # A case field the team filled in with what she told them (tickets/fields.py).
+        field = self.ok(self.admin,'/api/settings/fields',{'fields':[{'name':'เลขคำสั่งซื้อ','kind':'text'}]})['fields'][0]['id']
+        self.ok(self.admin,f'/api/tickets/{ticket}/fields',{'values':{field:'ORDER-SOMSRI-9'}})
         beta = self.ok(self.owner,'/api/platform/tenants',{'name':'องค์กร B','slug':'beta','email':'orgadmin@example.com'})['id']
         with D.tenant(beta) as db:
             db.execute("INSERT INTO contacts VALUES('b'||hex(randomblob(15)),'สมศรี','SOMSRI.PDPA@example.com','+66 81 234 5678','','','x','2026-01-01T00:00:00+00:00')")
@@ -63,6 +66,7 @@ class PdpaTests(unittest.TestCase):
         self.assertNotIn('password',data['accounts'][0])
         self.assertIn('สั่งหนังสือแล้วได้ไม่ครบค่ะ',text)
         self.assertIn('ขออภัยค่ะ จะส่งเพิ่มให้',text)
+        self.assertIn('"เลขคำสั่งซื้อ": "ORDER-SOMSRI-9"',text)
         self.assertNotIn('NOTE ABOUT SOMSRI',text)
         file = next(n for n in archive.namelist() if n.endswith('receipt.txt'))
         self.assertEqual(archive.read(file),b'RECEIPT 123')
@@ -85,6 +89,8 @@ class PdpaTests(unittest.TestCase):
             bodies = [r[0] for r in db.execute('SELECT body FROM messages WHERE conversation_id=?',(conv,))]
             subject = db.execute('SELECT subject FROM conversations WHERE id=?',(conv,)).fetchone()[0]
             cases = db.execute('SELECT COUNT(*) FROM tickets').fetchone()[0]
+            values = db.execute("SELECT COUNT(*) FROM ticket_field_values WHERE value='ORDER-SOMSRI-9'").fetchone()[0]
+        self.assertEqual(values,0)
         self.assertEqual(tuple(contact),(pdpa.ERASED_NAME,''))
         self.assertEqual(set(bodies),{''})
         self.assertEqual(subject,pdpa.ERASED_TEXT)

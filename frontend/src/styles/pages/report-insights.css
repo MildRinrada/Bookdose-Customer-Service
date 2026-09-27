@@ -17,6 +17,33 @@
   gap: 22px;
   align-content: start;
 }
+/* ผลงานของผู้ช่วย AI (ReportAi): the whole width under the two cards beside each other; its figures, then why the
+   answers were not liked beside the latest comments (one under the other when the card is narrow). */
+.report-grid>.report-card-wide {
+  grid-column: 1 / -1;
+}
+.report-assistant {
+  container-type: inline-size;
+}
+.report-assistant-why {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 0 22px;
+}
+@container (max-width: 640px) {
+  .report-assistant-why {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+/* A comment's mark is one icon, not a row of stars. */
+.report-assistant .report-comment-stars {
+  min-width: 0;
+}
+.report-assistant-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
 /* A card's icon says what the card is about, so it sits before its title like a label, not at the far end of the
    header where a button would be. */
 .report-title {

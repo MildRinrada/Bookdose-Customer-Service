@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { useOpenOnThisPage } from './chrome';
 
 /* Reading preferences shared by staff, sign-in and customer pages: html[data-text-size] scales the whole app
    (src/styles/text-size.css), html[data-theme] repaints it (src/styles/themes.css) and html[data-font] swaps the
    typeface (src/styles/themes.css, faces in src/styles/fonts.css). All are kept in this browser,
-   not on the account: it is how this person reads on this screen, and the screen at home is a different screen.
+   not on the account: it is how this person reads on this screen, and the screen at home is a different screen. The
+   sign-in pages take the size and the font but never the theme (SIGNED_OUT below).
 
    The layout's first script applies them before anything is drawn - a saved dark theme that arrived one paint late
    would flash the whole white page at somebody reading in the dark. */
@@ -26,6 +28,33 @@ export const THEMES = [
 const THEME_VALUES = THEMES.map((t) => t.value) as readonly string[];
 const validTheme = (value: string | null | undefined) => (value && THEME_VALUES.includes(value) ? value : 'light');
 
+/* The sign-in pages (app/(auth), app/customer/(link)) keep the app's own colours whatever theme this browser saved:
+   the theme is a signed-in person's choice, and nobody is signed in there yet. */
+const SIGNED_OUT = [
+  '/login',
+  '/register',
+  '/verify-email',
+  '/check-email',
+  '/resend-email',
+  '/forgot-password',
+  '/reset-password',
+  '/invite',
+  '/customer/verify',
+  '/customer/reset',
+  '/customer/forgot',
+];
+const signedOutPage = (path: string) => SIGNED_OUT.some((page) => path === page || path.startsWith(`${page}/`));
+/** The theme `path` is drawn in, from the one this browser saved. */
+const pageTheme = (path: string, saved: string | null | undefined) => (signedOutPage(path) ? 'light' : validTheme(saved));
+
+function savedTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY);
+  } catch {
+    return null;
+  }
+}
+
 const FONT_KEY = 'bookdose.font';
 export const FONTS = [
   { value: 'sarabun', label: 'Sarabun', title: 'Sarabun (ค่าเดิม)' },
@@ -39,9 +68,18 @@ export const EARLY_PREFERENCES_SCRIPT = `(function(){var d=document.documentElem
   LEGACY,
 )},v=localStorage.getItem('${KEY}');d.dataset.textSize=s.indexOf(v)>=0?v:(l[v]||'100');var t=${JSON.stringify(
   THEME_VALUES,
-)},k=localStorage.getItem('${THEME_KEY}');d.dataset.theme=t.indexOf(k)>=0?k:'light';var f=${JSON.stringify(
+)},o=${JSON.stringify(SIGNED_OUT)},p=location.pathname,k=localStorage.getItem('${THEME_KEY}');d.dataset.theme=!o.some(function(x){return p===x||p.indexOf(x+'/')===0})&&t.indexOf(k)>=0?k:'light';var f=${JSON.stringify(
   FONT_VALUES,
 )},n=localStorage.getItem('${FONT_KEY}');d.dataset.font=f.indexOf(n)>=0?n:'sarabun';if(localStorage.getItem('bookdose.sidebar')==='collapsed')d.classList.add('sidebar-collapsed');}catch(e){d.dataset.textSize='100';d.dataset.theme='light';d.dataset.font='sarabun';}})();`;
+
+/** Moving to another page without a reload (signing in, signing out): the theme follows the page before it is drawn. */
+export function PageTheme() {
+  const path = usePathname();
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = pageTheme(path, savedTheme());
+  }, [path]);
+  return null;
+}
 
 const listeners = new Set<() => void>();
 function subscribe(listener: () => void) {
@@ -49,7 +87,7 @@ function subscribe(listener: () => void) {
   // Another tab of the same app changed a preference: follow it, so two windows never disagree.
   const onStorage = (event: StorageEvent) => {
     if (event.key === KEY || event.key === null) document.documentElement.dataset.textSize = valid(event.newValue);
-    if (event.key === THEME_KEY || event.key === null) document.documentElement.dataset.theme = validTheme(event.newValue);
+    if (event.key === THEME_KEY || event.key === null) document.documentElement.dataset.theme = pageTheme(window.location.pathname, event.newValue);
     if (event.key === FONT_KEY || event.key === null) document.documentElement.dataset.font = validFont(event.newValue);
     if (event.key === KEY || event.key === THEME_KEY || event.key === FONT_KEY || event.key === null) listener();
   };

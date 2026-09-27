@@ -837,9 +837,56 @@ button.tag-chip.toggle:focus-visible {
 .case-tags-card p {
   margin: 0;
 }
-/* On a phone the tag filter takes a row of its own, so the status and priority filters keep theirs readable. */
+/* ข้อมูลเพิ่มเติม (TicketFieldsCard): the organization's own fields, one under another, saved with one button; the
+   required ones still empty are named at the top while the case is open. */
+.detail-sidebar .case-fields-card .btn {
+  width: 100%;
+  justify-content: center;
+}
+.case-fields-card input:not([type='checkbox']) {
+  width: 100%;
+}
+.case-fields-card .case-field-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 13px;
+}
+.case-fields-card>.tiny {
+  margin: 8px 0 0;
+}
+.case-fields-missing {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.case-fields-read {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.case-fields-read div {
+  display: grid;
+  gap: 1px;
+}
+.case-fields-read dt {
+  color: var(--muted);
+  font-size: .82rem;
+}
+.case-fields-read dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+/* On a phone the tag and case field filters take a row of their own, so the status and priority filters keep theirs
+   readable. */
 @media (max-width:760px) {
-  .filters #ticket-tag {
+  .filters #ticket-tag,.filters #ticket-field {
     flex: 1 1 100%;
   }
 }

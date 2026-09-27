@@ -66,5 +66,12 @@ def run_actions(req, job_id):
     return req.send(200,assistant_actions.run(req.cd,req.db,req.ctx,job_id,req.body))
 
 
+def rate_answer(req, job_id):
+    """ถูกใจ / ไม่ถูกใจ under one of the member's answers."""
+    from backend.modules.ai import assistant
+    limited(('ai-feedback',req.ctx['id']),120,3600)
+    return req.send(200,assistant.feedback(req.db,req.ctx,job_id,req.body))
+
+
 def job(req, job_id):
     return req.send(200,service.job_view(req.db,req.ctx,job_id))

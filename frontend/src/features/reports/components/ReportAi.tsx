@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { date, relative } from '@/lib/format';
 import { useUiState } from '@/lib/ui-state';
+import { feedbackReasonLabels } from '@/features/ai';
 import { botReasonLabels } from '@/features/dashboard/labels';
 import { tileDays } from '../insights';
 import type { ReportArticles, ReportBot, ReportExtras } from '../types';
 
 /* The report's AI and knowledge base part (admins; GET /api/reports/extras): what the chatbot solved alone and what it
-   handed on, day by day or week by week, and which articles the team leans on or marks as not helpful. The questions
-   no article answers are only counted here; writing the articles happens on the overview. Markup: pages/report-insights. */
+   handed on, day by day or week by week, how the staff's AI assistant did (liked or not and why, proposals done), and
+   which articles the team leans on or marks as not helpful. The questions no article answers are only counted here;
+   writing the articles happens on the overview. Markup: pages/report-insights. */
 
 type Slot = { start: Date; resolved: number; handed_off: number; waiting: number };
 
@@ -118,6 +120,95 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
               </>
             )}
           </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+const reasonLabel = (reason: string) => (reason === 'unsaid' ? 'ไม่ได้บอกเหตุผล' : (feedbackReasonLabels[reason] ?? reason));
+
+/** ผลงานของผู้ช่วย AI: how often the members who asked liked its answers and why not, how many of its proposals were
+    done, and the latest comments, never who wrote them or what was asked. */
+export function AssistantReportCard({ extras }: { extras: ReportExtras }) {
+  const a = extras.assistant;
+  if (!a) return null;
+  const rated = a.up + a.down;
+  const liked = rated ? Math.round((100 * a.up) / rated) : null;
+  const done = a.proposed ? Math.round((100 * a.ran) / a.proposed) : null;
+  return (
+    <section className="card report-card report-card-wide">
+      <div className="card-header">
+        <div>
+          <h2 className="report-title">
+            <Icon name="sparkle" />
+            ผลงานของผู้ช่วย AI
+          </h2>
+          <p>{a.asked ? `${a.asked} คำถามจากทีม ${a.people} คนในช่วงนี้` : 'คำถามที่ทีมถามผู้ช่วย AI มุมขวาล่าง'}</p>
+        </div>
+      </div>
+      <div className="card-body">
+        {!a.asked ? (
+          <p className="empty-mini">
+            {extras.ai?.drafts_enabled ? 'ทีมยังไม่ได้ถามผู้ช่วย AI ในช่วงนี้' : 'ยังไม่ได้เปิด AI ช่วยเจ้าหน้าที่'} <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
+          </p>
+        ) : (
+          <div className="report-assistant">
+            <div className="report-figures">
+              <div className={liked !== null && liked < 50 ? 'warn' : ''}>
+                <span>ถูกใจคำตอบ</span>
+                <strong>{liked === null ? '-' : `${liked}%`}</strong>
+                <small>{rated ? `ถูกใจ ${a.up} ไม่ถูกใจ ${a.down}` : 'ยังไม่มีใครกดถูกใจหรือไม่ถูกใจ'}</small>
+              </div>
+              <div>
+                <span>ทำตามรายการที่เสนอ</span>
+                <strong>{done === null ? '-' : `${done}%`}</strong>
+                <small>{a.proposed ? `กดทำเลย ${a.ran} จาก ${a.proposed} คำตอบ` : 'ยังไม่มีคำตอบที่เสนอรายการ'}</small>
+              </div>
+              <div className={a.failed * 10 > a.asked ? 'warn' : ''}>
+                <span>ตอบไม่สำเร็จ</span>
+                <strong>{a.failed}</strong>
+                <small>จาก {a.asked} คำถาม</small>
+              </div>
+            </div>
+            {(a.reasons.length > 0 || a.comments.length > 0) && (
+              <div className="report-assistant-why">
+                {a.reasons.length > 0 && (
+                  <div>
+                    <h3 className="report-subhead">เหตุผลที่ไม่ถูกใจ</h3>
+                    {a.reasons.map((r) => (
+                      <div key={r.reason} className="bar-row" title={`${r.count} คำตอบ`}>
+                        <span className="bar-label">{reasonLabel(r.reason)}</span>
+                        <progress value={r.count} max={Math.max(1, a.down)} aria-label={`${reasonLabel(r.reason)} ${r.count}`} />
+                        <span className="bar-value">{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {a.comments.length > 0 && (
+                  <div>
+                    <h3 className="report-subhead">ความเห็นล่าสุด (ไม่แสดงชื่อ)</h3>
+                    <ul className="report-comments">
+                      {a.comments.map((c) => (
+                        <li key={`${c.updated_at}-${c.comment}`} className="low">
+                          <span className="report-comment-stars report-votes">
+                            <Icon name="thumbDown" />
+                          </span>
+                          <span className="report-comment-body">
+                            <span>{c.comment}</span>
+                            <small className="muted report-assistant-meta">
+                              <span>{reasonLabel(c.reason || 'unsaid')}</span>
+                              <span>{relative(c.updated_at)}</span>
+                            </small>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </section>

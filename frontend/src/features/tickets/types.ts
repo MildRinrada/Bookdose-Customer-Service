@@ -26,7 +26,14 @@ export type TicketRow = TicketSummary & {
   reopened_at?: string | null;
   /** ป้ายเคส: ids from the organization's list (tags.ts). */
   tags?: string[];
+  /** ช่องข้อมูลเพิ่มเติม: {field id: value} (fields.ts). */
+  fields?: Record<string, string>;
+  /** The service report only (backend reports/stats.py, merged from /api/reports/extras): each wait for the team's
+      next reply after the first (minutes), the team's replies, and how upset the customer got (0-2). */
+  stats?: CaseStats;
 } & Snooze;
+
+export type CaseStats = { waits: number[]; replies: number; upset: number };
 
 /** พักเคส: when a paused case comes back, why it was paused and who paused it (null / '' when it is not paused). */
 export type Snooze = {
@@ -42,6 +49,8 @@ export type Ticket = TicketSummary &
     contact_id: string;
     /** ป้ายเคส: ids from the organization's list, in its order. */
     tags?: string[];
+    /** ช่องข้อมูลเพิ่มเติม: {field id: value} of fields still on the list (fields.ts). */
+    fields?: Record<string, string>;
   };
 
 /** A conversation of the case, with its messages (tickets.service.ticket_detail). */

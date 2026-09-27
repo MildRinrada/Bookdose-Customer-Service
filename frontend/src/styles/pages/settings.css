@@ -1017,3 +1017,50 @@ a.settings-nav-item,a.settings-nav-item:hover {
   font-size: .9rem;
   text-align: center;
 }
+
+/* ช่องข้อมูลของเคส (CaseFieldsPanel): each field's name, kind, a choice's options and how many cases have it; the
+   buttons wrap under it on a narrow screen. */
+.case-field-info strong {
+  overflow-wrap: anywhere;
+}
+.case-field-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+.case-field-options {
+  overflow-wrap: anywhere;
+}
+.case-field-required {
+  color: var(--amber);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.case-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.case-field-form {
+  display: grid;
+  gap: 4px;
+}
+.case-field-kind-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.case-field-kind {
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+@media (max-width: 760px) {
+  .case-field-list li {
+    flex-wrap: wrap;
+  }
+  .case-field-actions {
+    flex-basis: 100%;
+  }
+}

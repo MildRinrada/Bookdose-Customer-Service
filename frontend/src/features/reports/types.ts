@@ -1,5 +1,7 @@
 /* The report is built in the browser from GET /api/tickets; these are its own shapes. */
 
+import type { CaseStats } from '@/features/tickets/types';
+
 /** The period and filters (kept per session). `days` is the chosen quick range, 0 when dates were typed. */
 export type ReportFilter = { from: string; to: string; team: string; assignee: string; days: number };
 
@@ -13,6 +15,27 @@ export type ReportExtras = {
   articles: ReportArticles | null;
   gaps: { total: number; groups: Array<{ label: string; count: number; last_at: string }> } | null;
   ai: { drafts_enabled: boolean; chatbot_enabled: boolean; key_configured: boolean } | null;
+  assistant: ReportAssistant | null;
+  /** The cases touched in the period or the one before it: next-reply waits, replies, upset (stats.py). */
+  case_stats?: Record<string, CaseStats>;
+};
+
+/** The staff's AI assistant in the period (questions asked in it): answers, proposals done, and what the members who
+    asked thought (never who). */
+export type ReportAssistant = {
+  asked: number;
+  answered: number;
+  failed: number;
+  /** Answers that proposed something to do, and those whose proposals were done (ทำเลย). */
+  proposed: number;
+  ran: number;
+  people: number;
+  up: number;
+  down: number;
+  /** Why not liked ('unsaid' when no reason was picked), most first. */
+  reasons: Array<{ reason: string; count: number }>;
+  /** The latest comments with ไม่ถูกใจ. */
+  comments: Array<{ reason: string; comment: string; updated_at: string }>;
 };
 
 export type ReportBot = {

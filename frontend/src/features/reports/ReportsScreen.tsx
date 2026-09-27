@@ -9,6 +9,7 @@ import { Avatar, ChartColumn, EmptyState, StatCard } from '@/components/ui/displ
 import { FilterPill } from '@/components/ui/filters';
 import { Form } from '@/components/ui/Form';
 import { visibleTeams } from '@/components/ui/pickers';
+import { usePreferences } from '@/features/staff-account/prefs';
 import { useDownloadTicketsCSV } from '@/features/tickets/csv';
 import type { TicketRow } from '@/features/tickets/types';
 import { date, formatDuration } from '@/lib/format';
@@ -16,10 +17,14 @@ import { priorityLabels, statusLabels } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
-import { ArticlesCard, BotReportCard } from './components/ReportAi';
+import { ArticlesCard, AssistantReportCard, BotReportCard } from './components/ReportAi';
 import { HISTORY_NEEDED, HISTORY_WEEKS, unusualDays, type DayFlag } from './analysis';
 import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
+import { ConversationCard, MoodCard } from './components/ReportConversation';
+import { ReportDocument } from './components/ReportDocument';
 import { ForecastCard } from './components/ReportForecast';
+import { GoalsCard } from './components/ReportGoals';
+import { reaches, targetsFor, useGoals } from './goals';
 import { forecast } from './forecast';
 import { BacklogCard, FirstResponseCard, ResolutionCard, SatisfactionCard } from './components/ReportInsights';
 import { StaffingCard } from './components/ReportStaffing';
@@ -49,9 +54,15 @@ export function ReportsScreen() {
   const memberName = useMemberName();
   const saveCSV = useDownloadTicketsCSV();
   const loaded = useStaffTickets().data?.tickets as TicketRow[] | undefined;
-  const all = useMemo(() => loaded ?? [], [loaded]);
   const [f, setFilter] = useUiState<ReportFilter>('reports:filter', defaultReportFilter());
   const extras = useApi<ReportExtras>(reportExtrasPath(f), { keepPrevious: true }).data;
+  // Each case with what only its messages tell (next-reply waits, replies, how upset its customer got).
+  const caseStats = extras?.case_stats;
+  const all = useMemo(() => (loaded ?? []).map((t) => (caseStats?.[t.id] ? { ...t, stats: caseStats[t.id] } : t)), [loaded, caseStats]);
+  const owner = work.role === 'admin' && !work.read_only;
+  const prefs = usePreferences(owner).data;
+  const weeklyOn = Boolean(prefs?.preferences.notify.email && prefs.preferences.notify.events.weekly_report);
+  const slaTarget = targetsFor(useGoals(), f.team || (work.role === 'agent' ? (work.team_id ?? '') : '')).response_sla;
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
   // พยากรณ์จำนวนเคส of the team picked, from today whatever the period: the forecast card and the staffing card.
@@ -107,14 +118,30 @@ export function ReportsScreen() {
 
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading report-heading">
         <div>
           <h1>รายงานการบริการ</h1>
           <p>
             {date(f.from)} - {date(f.to)} · เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน
           </p>
+          {owner && prefs && (
+            <p className="report-weekly-note">
+              <Icon name="mail" />
+              {weeklyOn ? (
+                <span>ส่งสรุปรายสัปดาห์ทางอีเมลให้คุณทุกวันจันทร์ 8 โมง</span>
+              ) : (
+                <span>
+                  รับสรุปรายสัปดาห์ทางอีเมลทุกวันจันทร์ได้ เปิดที่ <Link href="/account?tab=notifications">ตั้งค่าบัญชี → การแจ้งเตือน</Link>
+                </span>
+              )}
+            </p>
+          )}
         </div>
-        <div className="flex wrap">
+        <div className="flex wrap report-actions">
+          <button type="button" className="btn subtle" onClick={() => window.print()}>
+            <Icon name="file" />
+            พิมพ์หรือบันทึก PDF
+          </button>
           <button type="button" className="btn subtle" onClick={() => saveCSV(tickets, 'report-tickets.csv')}>
             <Icon name="download" />
             ดาวน์โหลด CSV
@@ -204,12 +231,14 @@ export function ReportsScreen() {
               label="ตอบทัน SLA"
               value={m.sla == null ? '-' : m.sla.toFixed(1) + '%'}
               icon="checkCircle"
-              color={m.sla != null && m.sla >= 90 ? 'green' : 'amber'}
-              foot={reportTrend(m.sla, before.sla, '%')}
+              // Against the team's goal when there is one (เป้าหมาย below), else the usual 90%.
+              color={m.sla != null && (slaTarget != null ? reaches('response_sla', m.sla, slaTarget) : m.sla >= 90) ? 'green' : 'amber'}
+              foot={slaTarget != null ? `${reportTrend(m.sla, before.sla, '%')} เป้า ${slaTarget}%` : reportTrend(m.sla, before.sla, '%')}
               href="/tickets?filter=overdue"
             />
           </div>
-          <section className="card report-chart">
+          <GoalsCard all={all} f={f} />
+          <section className="card report-card report-chart">
             <div className="card-header">
               <h2>ปริมาณเคสต่อวัน</h2>
               <span className="muted">{busiest && busiest.count ? `วันที่มากที่สุด ${date(busiest.day)} · ${busiest.count} เคส` : ''}</span>
@@ -238,6 +267,10 @@ export function ReportsScreen() {
           <div className="report-grid">
             <FirstResponseCard all={all} f={f} />
             <ResolutionCard all={all} f={f} />
+          </div>
+          <div className="report-grid">
+            <ConversationCard all={all} f={f} loading={!caseStats} />
+            <MoodCard all={all} f={f} tickets={tickets} loading={!caseStats} />
           </div>
           <div className="report-grid">
             <SatisfactionCard all={all} f={f} />
@@ -276,6 +309,7 @@ export function ReportsScreen() {
               <div className="report-grid">
                 <BotReportCard extras={extras} from={f.from} to={f.to} />
                 <ArticlesCard extras={extras} />
+                <AssistantReportCard extras={extras} />
               </div>
             </>
           )}
@@ -311,6 +345,8 @@ export function ReportsScreen() {
         · การเปิดซ้ำโดยลูกค้านับตั้งแต่วันที่ 19 ก.ย. 2569 (ก่อนหน้านั้นนับเฉพาะที่ทีมเปิดเอง)
         ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
       </p>
+      {/* What prints: a formal document of the same figures, not this page. */}
+      <ReportDocument all={all} f={f} tickets={tickets} earlier={earlier} />
     </>
   );
 }

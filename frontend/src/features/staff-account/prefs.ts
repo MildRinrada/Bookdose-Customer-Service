@@ -9,7 +9,8 @@ import type { Availability, WorkStatus } from '@/lib/types';
 
 export const PREFS_PATH = '/api/account/preferences';
 
-export type NotifyEvent = 'assigned' | 'customer_reply' | 'sla' | 'snoozed';
+/** weekly_report: the service report's summary every Monday (the organization's owners; backend reports/weekly.py). */
+export type NotifyEvent = 'assigned' | 'customer_reply' | 'sla' | 'snoozed' | 'weekly_report';
 
 export type Snippet = { id?: string; shortcut: string; text: string };
 

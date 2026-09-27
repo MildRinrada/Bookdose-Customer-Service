@@ -92,6 +92,10 @@ def _restorable_row(db, table, row):
         # A tag taken off the organization's list meanwhile stays off.
         from backend.modules.tickets import tags
         return row.get('tag_id') in tags.known_ids(db)
+    if table=='ticket_field_values':
+        # So does a case field, with its value.
+        from backend.modules.tickets import fields
+        return row.get('field_id') in {f['id'] for f in fields.catalog(db)}
     if table in ('contact_names','contact_profiles'):
         return not repository.row_exists(db,table,row.get('contact_id'),'contact_id')
     return not repository.row_exists(db,table,row.get('id'))

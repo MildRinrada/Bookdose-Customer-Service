@@ -22,11 +22,14 @@ from backend.modules.tickets.model import PRIORITIES, SNOOZE_MAX_DAYS, SNOOZE_NO
 from backend.utils.dates import iso, now, utc_now
 from backend.utils.validation import require
 
-TYPES = ('update_case','tag_case','snooze_case','wake_case','note','reply','retry_send','auto_assign')
+TYPES = ('update_case','tag_case','snooze_case','wake_case','note','reply','retry_send','auto_assign','macro','merge_customers','set_fields')
 MAX_ACTIONS = 20
 TEXT_MAX = 5000
 RUN_MINUTES = 60
+MERGE_MOST = 6
 REPLY_CHANNELS = ('web','line','email','facebook','instagram')
+# A macro's steps that did not apply to where it ran (automation.service.run_macro).
+MACRO_SKIPPED = {'reply':'ส่งข้อความ (ไม่มีช่องทางส่งถึงลูกค้า)','ticket':'เปลี่ยนสถานะและตั้งเตือน (แชทนี้ยังไม่เป็นเคส)'}
 
 
 def _text(value, limit):
@@ -49,6 +52,18 @@ def _until(value):
     return iso(moment) if utc_now()<moment<=utc_now()+dt.timedelta(days=SNOOZE_MAX_DAYS) else None
 
 
+def _matched(cards, ids):
+    """How the records to merge match each other: 'email', 'phone', 'name' (none of them: the member picked them)."""
+    from backend.modules.ai.assistant_context import match_keys
+    seen,found = {},set()
+    for cid in ids:
+        for how,key in match_keys(cards[cid]):
+            if (how,key) in seen:
+                found.add(how)
+            seen[(how,key)] = cid
+    return [how for how in ('email','phone','name') if how in found]
+
+
 def _one(item, refs, owner):
     """The action as the system will do it, or None when it points at something the AI was not shown."""
     if not isinstance(item,dict) or item.get('type') not in TYPES:
@@ -60,6 +75,12 @@ def _one(item, refs, owner):
         change = {**({'enabled':enabled=='on'} if enabled in ('on','off') else {}),
                   **({'cap':cap} if type(cap) is int and CAP_MIN<=cap<=CAP_MAX else {})}
         return {'type':kind,**change} if owner and change else None
+    if kind=='merge_customers':
+        # Records the AI was shown (duplicates, or customers the question named), the one to keep first.
+        ids,cards = _refs(item.get('customers'),refs.get('customers',{})),refs.get('customer_cards',{})
+        if not owner or not 2<=len(ids)<=MERGE_MOST or not all(i in cards for i in ids):
+            return None
+        return {'type':kind,'keep':ids[0],'merge':ids[1:],'customers':[{'id':i,**cards[i]} for i in ids],'matched_by':_matched(cards,ids)}
     case = item.get('case')
     current = refs.get('current') or {}
     if case=='current':
@@ -67,7 +88,7 @@ def _one(item, refs, owner):
     else:
         key = case.strip().upper() if isinstance(case,str) else ''
         ticket_id,conversation_id = refs.get('cases',{}).get(key),None
-    if not ticket_id and not (conversation_id and kind in ('note','reply')):
+    if not ticket_id and not (conversation_id and kind in ('note','reply','macro')):
         return None
     number = next((k for k,v in refs.get('cases',{}).items() if v==ticket_id),'') if ticket_id else ''
     action = {'type':kind,'ticket_id':ticket_id,'case':number,**({'conversation_id':conversation_id} if conversation_id else {})}
@@ -99,12 +120,42 @@ def _one(item, refs, owner):
     if kind=='retry_send':
         messages = (refs.get('failed',{}).get(number) or {}).get('messages',[])
         return {**action,'messages':messages} if messages else None
+    if kind=='macro':
+        macro_id = refs.get('macros',{}).get(item.get('macro'))
+        card = refs.get('macro_cards',{}).get(macro_id)
+        return {**action,'macro_id':macro_id,'macro':card} if card else None
+    if kind=='set_fields':
+        values = _field_values(item.get('values'),refs)
+        return {**action,'values':values} if ticket_id and values else None
     return action
+
+
+def _field_values(items, refs):
+    """{field id: value} of the values the AI proposes, each one a field it was shown and a value that field takes (as
+    the case screen checks it); an empty or wrong one is left out."""
+    from backend.modules.tickets import fields
+    known,cards,found = refs.get('fields',{}),refs.get('field_cards',{}),{}
+    for entry in items if isinstance(items,list) else []:
+        field = cards.get(known.get(entry.get('field'))) if isinstance(entry,dict) else None
+        if not field:
+            continue
+        try:
+            value = fields.value_of(field,entry.get('value'))
+        except APIError:
+            continue
+        if value:
+            found[field['id']] = value
+    return found
+
+
+def _target(action):
+    return action.get('ticket_id') or action.get('conversation_id')
 
 
 def resolve(raw, payload):
     """(the actions that may be offered, how many were dropped) from the AI's answer. Each case appears in at most one
-    action of a kind: a second one would only undo or repeat the first."""
+    action of a kind: a second one would only undo or repeat the first. A message to a customer is left out where a
+    macro of the same case already sends one, and a customer record goes into one merge at most."""
     payload = payload or {}
     refs = payload.get('_refs') or {}
     owner = (payload.get('me') or {}).get('role')=='owner'
@@ -113,15 +164,28 @@ def resolve(raw, payload):
     listed = [*payload.get('cases',[]),*current.get('customer_other_cases',[]),*(c for n in payload.get('customers_named',[]) for c in n['cases'])]
     subjects = {c['case']:c['subject'] for c in listed}
     items = raw if isinstance(raw,list) else []
-    found,seen = [],set()
+    found,seen,merged = [],set(),set()
     for item in items[:MAX_ACTIONS]:
         action = _one(item,refs,owner)
-        key = action and (action['type'],action.get('ticket_id') or action.get('conversation_id'))
-        if action and key not in seen:
+        if not action:
+            continue
+        if action['type']=='merge_customers':
+            ids = {action['keep'],*action['merge']}
+            if ids&merged:
+                continue
+            merged |= ids
+        else:
+            key = (action['type'],_target(action))
+            if key in seen:
+                continue
             seen.add(key)
             if action['type']!='auto_assign':
                 action['subject'] = subjects.get(action['case'],'') if action['case'] else current.get('subject','')
-            found.append(action)
+        found.append(action)
+    replied = {_target(a) for a in found if a['type']=='macro' and a['macro']['reply']}
+    found = [a for a in found if not (a['type']=='reply' and _target(a) in replied)]
+    # Values go in first: a case closed by the same answer needs its required fields filled by then.
+    found.sort(key=lambda a:a['type']!='set_fields')
     return found,len(items)-len(found)
 
 
@@ -155,6 +219,7 @@ def _conversation(db, ctx, action, reply):
 
 
 def _do(cd, db, ctx, action):
+    """Do one action through its own service. Returns a word on what it did not do, or ''."""
     from backend.modules.tickets import service as tickets, tags
     kind = action['type']
     if kind=='update_case':
@@ -185,6 +250,23 @@ def _do(cd, db, ctx, action):
         from backend.modules.automation import distribution
         cfg = distribution.config(db)
         distribution.save(cd,db,ctx,{**cfg,**{k:action[k] for k in ('enabled','cap') if k in action}})
+    elif kind=='macro':
+        # As the macro button on the case screen: its steps that do not apply here are left out, and said so.
+        from backend.modules.automation import service as automation
+        target = {'ticket_id':action['ticket_id']} if action.get('ticket_id') else {'conversation_id':action['conversation_id']}
+        ran = automation.run_macro(cd,db,ctx,action['macro_id'],target)
+        if not ran['done'] and not ran['skipped']:
+            return 'เคสนี้เป็นสถานะที่มาโครตั้งไว้อยู่แล้ว'
+        skipped = ' และ'.join(MACRO_SKIPPED.get(s,s) for s in ran['skipped'])
+        require(ran['done'],f'ใช้มาโครนี้กับรายการนี้ไม่ได้: {skipped}')
+        return f'ข้าม{skipped}' if skipped else ''
+    elif kind=='merge_customers':
+        from backend.modules.contacts import service as contacts
+        contacts.merge_contacts(db,ctx,action['keep'],{'contact_ids':action['merge']})
+    elif kind=='set_fields':
+        from backend.modules.tickets import fields
+        fields.set_for_ticket(db,ctx,action['ticket_id'],{'values':action['values']})
+    return ''
 
 
 def _why(error):
@@ -218,8 +300,8 @@ def run(cd, db, ctx, job_id, body):
         if index in edited and action['type'] in ('note','reply'):
             action = {**action,'text':edited[index]}
         try:
-            _do(cd,db,ctx,action)
-            results.append({'index':index,'ok':True,'error':''})
+            note = _do(cd,db,ctx,action)
+            results.append({'index':index,'ok':True,'error':'',**({'note':note} if note else {})})
         except (APIError,ChannelError,ValueError,KeyError,TypeError) as error:
             if db.in_transaction:
                 db.rollback()

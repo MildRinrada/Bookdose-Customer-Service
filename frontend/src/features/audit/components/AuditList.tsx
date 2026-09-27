@@ -33,7 +33,7 @@ export function useAuditChanges() {
   const { data: work } = useWorkspace();
   return useCallback(
     (event: AuditEvent): string => {
-      if (!['ticket.updated', 'ticket.auto_assigned', 'ticket.tagged'].includes(event.action) || !event.detail) return '';
+      if (!['ticket.updated', 'ticket.auto_assigned', 'ticket.tagged', 'ticket.fields'].includes(event.action) || !event.detail) return '';
       let changes: unknown;
       try {
         changes = JSON.parse(event.detail);
@@ -41,6 +41,12 @@ export function useAuditChanges() {
         return event.detail;
       }
       if (!changes || typeof changes !== 'object') return '';
+      if (event.action === 'ticket.fields' && Array.isArray(changes)) {
+        // ช่องข้อมูลเพิ่มเติม by name, with the values in words as they were at the time ("-" for none).
+        return (changes as Array<{ field?: string; before?: string; after?: string }>)
+          .map((c) => `${c.field ?? ''}: ${c.before ?? '-'} → ${c.after ?? '-'}`)
+          .join(' · ');
+      }
       if (event.action === 'ticket.tagged') {
         // ป้ายเคส by name, as they were called at the time.
         const { added = [], removed = [] } = changes as { added?: string[]; removed?: string[] };

@@ -1,3 +1,4 @@
+import type { CaseField } from '@/features/tickets/fields';
 import type { TicketRow } from '@/features/tickets/types';
 import { channelNames, priorityLabels } from '@/lib/labels';
 import { median, percentile, RESOLVE_BUCKETS, RESPONSE_BUCKETS } from './insights';
@@ -5,9 +6,12 @@ import { median, percentile, RESOLVE_BUCKETS, RESPONSE_BUCKETS } from './insight
 /* The report for people who ask their own questions: the period's cases split by one dimension with every measure
    beside it (pivot), and how satisfaction moves with speed. Both from the case list already on screen. */
 
-export type Dimension = 'channel' | 'category' | 'tag' | 'team' | 'priority' | 'assignee' | 'weekday' | 'daypart';
+type FixedDimension = 'channel' | 'category' | 'tag' | 'team' | 'priority' | 'assignee' | 'weekday' | 'daypart';
+/** A fixed dimension, or one of the organization's case fields that has a few values to split by (a choice or a
+    tick): "field:<id>". */
+export type Dimension = FixedDimension | `field:${string}`;
 
-export const dimensionLabels: Record<Dimension, string> = {
+export const dimensionLabels: Record<FixedDimension, string> = {
   channel: 'ช่องทาง',
   category: 'หมวดเรื่อง',
   tag: 'ป้ายเคส',
@@ -20,6 +24,18 @@ export const dimensionLabels: Record<Dimension, string> = {
 
 /** Dimensions with an order of their own (Monday first, urgent first, night to evening), not largest first. */
 export const orderedDimensions: Dimension[] = ['priority', 'weekday', 'daypart'];
+
+/** The case fields a report can split by: a choice (by option) and a tick (ใช่ / ไม่ใช่). */
+export const splittableFields = (fields: CaseField[]) => fields.filter((f) => f.kind === 'select' || f.kind === 'checkbox');
+
+/** A dimension's name: the fixed one's, or the field's. */
+export function dimensionLabel(dimension: Dimension, fields: CaseField[]): string {
+  if (!dimension.startsWith('field:')) return dimensionLabels[dimension as FixedDimension];
+  return fields.find((f) => `field:${f.id}` === dimension)?.name ?? 'ช่องข้อมูล';
+}
+
+/** Whether the dimension keeps its own order: the fixed ones above, and a field's (its options, then ยังไม่กรอก). */
+export const naturalOrder = (dimension: Dimension) => orderedDimensions.includes(dimension) || dimension.startsWith('field:');
 
 const WEEKDAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
 const DAYPARTS: [string, number][] = [
@@ -44,6 +60,14 @@ export type Measures = {
   reopenRate: number | null;
   answered: number;
   finished: number;
+  /** รอคำตอบถัดไป (median of every wait) and how many waits; แก้จบในครั้งเดียว of the solved cases the team
+      answered, and how many; the share of cases whose customer was upset (stats from the report's extras). */
+  nextReplyMedian: number | null;
+  waits: number;
+  oneTouchRate: number | null;
+  solvedReplied: number;
+  upsetRate: number | null;
+  measured: number;
 };
 
 export type PivotRow = Measures & { key: string; label: string; order: number; share: number };
@@ -58,7 +82,16 @@ export function measure(list: TicketRow[]): Measures {
   const rated = list.filter((t) => typeof t.csat_rating === 'number');
   // Finished at least once: solved now, or solved and then reopened.
   const finished = list.filter((t) => t.resolved_at || (t.reopens ?? 0) > 0);
+  const waits = list.flatMap((t) => t.stats?.waits ?? []);
+  const solvedReplied = list.filter((t) => t.resolved_at && (t.stats?.replies ?? 0) >= 1);
+  const measured = list.filter((t) => t.stats);
   return {
+    nextReplyMedian: median(waits),
+    waits: waits.length,
+    oneTouchRate: solvedReplied.length ? (100 * solvedReplied.filter((t) => t.stats?.replies === 1 && !(t.reopens ?? 0)).length) / solvedReplied.length : null,
+    solvedReplied: solvedReplied.length,
+    upsetRate: measured.length ? (100 * measured.filter((t) => (t.stats?.upset ?? 0) >= 1).length) / measured.length : null,
+    measured: measured.length,
     cases: list.length,
     responseMedian: median(response),
     responseP90: percentile(response, 0.9),
@@ -79,12 +112,27 @@ type Names = {
   member: (id: string | null | undefined) => string;
   /** The organization's ป้ายเคส, in its order. */
   tags?: Array<{ id: string; name: string }>;
+  /** The organization's case fields. */
+  fields?: CaseField[];
 };
+
+/** [key, label, natural order] of a case in a case field: an option in the field's order, ใช่ / ไม่ใช่ for a tick, and
+    ยังไม่กรอก last. */
+function fieldGroup(t: TicketRow, dimension: string, fields: CaseField[]): [string, string, number] {
+  const field = fields.find((f) => `field:${f.id}` === dimension);
+  const value = field ? (t.fields?.[field.id] ?? '') : '';
+  if (field?.kind === 'checkbox') return value ? ['1', 'ใช่', 0] : ['', 'ไม่ใช่', 1];
+  const options = field?.options ?? [];
+  if (!value) return ['', 'ยังไม่กรอก', options.length + 1];
+  const at = options.indexOf(value);
+  return [value, value, at < 0 ? options.length : at];
+}
 
 /** The groups a case falls in: one for most dimensions, one per tag for ป้ายเคส (a case about two things counts in
     both), and "ยังไม่ติดป้าย" for a case with none. */
 function groupsOf(t: TicketRow, dimension: Dimension, names: Names): Array<[string, string, number]> {
-  if (dimension !== 'tag') return [groupOf(t, dimension, names)];
+  if (dimension.startsWith('field:')) return [fieldGroup(t, dimension, names.fields ?? [])];
+  if (dimension !== 'tag') return [groupOf(t, dimension as Exclude<FixedDimension, 'tag'>, names)];
   const list = names.tags ?? [];
   const have = new Set(t.tags ?? []);
   const found = list.flatMap((tag, i): Array<[string, string, number]> => (have.has(tag.id) ? [[tag.id, tag.name, i]] : []));
@@ -92,7 +140,7 @@ function groupsOf(t: TicketRow, dimension: Dimension, names: Names): Array<[stri
 }
 
 /** [key, label, natural order] of a case in a dimension. Days and hours are the viewer's own clock. */
-function groupOf(t: TicketRow, dimension: Exclude<Dimension, 'tag'>, names: Names): [string, string, number] {
+function groupOf(t: TicketRow, dimension: Exclude<FixedDimension, 'tag'>, names: Names): [string, string, number] {
   switch (dimension) {
     case 'channel': {
       const channel = String(t.channel || 'manual');
@@ -139,9 +187,30 @@ export function pivot(tickets: TicketRow[], dimension: Dimension, names: Names):
   }));
 }
 
+/** Where customers were upset most: the subjects, tags and channels (groups of at least FEW cases with a figure, the
+    unnamed group left out), the highest share first. */
+export function upsetHotspots(tickets: TicketRow[], names: Names, most = 5): Array<{ dimension: 'category' | 'tag' | 'channel'; row: PivotRow }> {
+  const dimensions: Array<'category' | 'tag' | 'channel'> = ['category', 'tag', 'channel'];
+  return dimensions
+    .filter((d) => d !== 'tag' || names.tags?.length)
+    .flatMap((d) => pivot(tickets, d, names).filter((row) => row.measured >= FEW && (row.upsetRate ?? 0) > 0 && row.key !== '').map((row) => ({ dimension: d, row })))
+    .sort((a, b) => (b.row.upsetRate ?? 0) - (a.row.upsetRate ?? 0) || b.row.measured - a.row.measured)
+    .slice(0, most);
+}
+
 export type PivotColumn = keyof Pick<
   PivotRow,
-  'label' | 'cases' | 'responseMedian' | 'responseP90' | 'responseSla' | 'resolutionMedian' | 'csat' | 'reopenRate'
+  | 'label'
+  | 'cases'
+  | 'responseMedian'
+  | 'responseP90'
+  | 'responseSla'
+  | 'resolutionMedian'
+  | 'csat'
+  | 'reopenRate'
+  | 'nextReplyMedian'
+  | 'oneTouchRate'
+  | 'upsetRate'
 >;
 
 /** Rows in a column's order; a group with nothing to measure goes last either way. `natural` keeps the dimension's own. */

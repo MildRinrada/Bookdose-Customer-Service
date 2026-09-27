@@ -12,7 +12,18 @@ export type AiDraftResult = { answer: string; summary: string; needs_human: bool
 /** Something the staff's assistant proposes to do, as the server checked it (ai/assistant_actions.py): ids, never the
     AI's own words for what it is, so the list says exactly what ทำเลย will do. */
 export type AssistantAction = {
-  type: 'update_case' | 'tag_case' | 'snooze_case' | 'wake_case' | 'note' | 'reply' | 'retry_send' | 'auto_assign';
+  type:
+    | 'update_case'
+    | 'tag_case'
+    | 'snooze_case'
+    | 'wake_case'
+    | 'note'
+    | 'reply'
+    | 'retry_send'
+    | 'auto_assign'
+    | 'macro'
+    | 'merge_customers'
+    | 'set_fields';
   /** The case ("BD-12") and its id; a note or message to a chat on screen that is not a case has neither. */
   case?: string;
   subject?: string;
@@ -26,10 +37,26 @@ export type AssistantAction = {
   messages?: string[];
   enabled?: boolean;
   cap?: number;
+  /** macro: the organization's macro as it was when the answer came. */
+  macro_id?: string;
+  macro?: { name: string; reply: boolean; set_status: string; followup_hours: number };
+  /** merge_customers: the records, the one kept first, and how they match ('email', 'phone', 'name'). */
+  keep?: string;
+  merge?: string[];
+  customers?: AssistantCustomer[];
+  matched_by?: string[];
+  /** set_fields: {case field id: value}, each checked against its field. */
+  values?: Record<string, string>;
 };
 
-/** What happened to each action picked when the member pressed ทำเลย. */
-export type AssistantRunResult = { index: number; ok: boolean; error: string };
+/** A customer record in a merge the assistant proposes (owners only). */
+export type AssistantCustomer = { id: string; name: string; email: string; phone: string; cases: number; conversations: number };
+
+/** What happened to each action picked when the member pressed ทำเลย; note: what it did not do (a macro's step). */
+export type AssistantRunResult = { index: number; ok: boolean; error: string; note?: string };
+
+/** ถูกใจ / ไม่ถูกใจ under an answer ('' = not rated), and why not. */
+export type AssistantFeedback = { rating: 'up' | 'down' | ''; reason: string };
 
 /** The assistant's answer (job.result of a finished 'ask' job). */
 export type AssistantResult = {

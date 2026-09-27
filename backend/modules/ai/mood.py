@@ -10,7 +10,11 @@ organization without an AI keeps the words' reading.
 A conversation holds one reading: that of the customer's latest message. A calmer message later is a calmer customer.
 The reading is a level - 0 ปกติ, 1 ไม่พอใจ, 2 โกรธมาก - and whether the customer says it cannot wait (urgent),
 with the reason in a few words. The queue uses it (tickets/service.py next_task, the lists): an upset customer's case
-comes before the calm ones that have only waited longer. """
+comes before the calm ones that have only waited longer.
+
+Each message's level is also kept (conversation_mood_log, no words), so the service report can say how many cases
+had an upset customer at some point, week by week, after a calmer message has replaced the conversation's reading.
+Messages from before the log existed are read once by their words (backfill_log). """
 import re
 
 from backend.database.db import one, rows
@@ -71,6 +75,11 @@ def save(db, conversation_id, message_id, level, urgent, reason, source):
                   ON CONFLICT(conversation_id) DO UPDATE SET level=excluded.level,urgent=excluded.urgent,reason=excluded.reason,
                   source=excluded.source,message_id=excluded.message_id,updated_at=excluded.updated_at''',
                (conversation_id,int(level),int(bool(urgent)),reason[:200],source,message_id,now()))
+    if message_id:
+        # The message's own reading, kept: the AI's replaces the words' for the same message, as it does above.
+        db.execute('''INSERT INTO conversation_mood_log(message_id,conversation_id,level,urgent,source,created_at) VALUES(?,?,?,?,?,?)
+                      ON CONFLICT(message_id) DO UPDATE SET level=excluded.level,urgent=excluded.urgent,source=excluded.source''',
+                   (message_id,conversation_id,int(level),int(bool(urgent)),source,now()))
 
 
 def of(db, conversation_id):
@@ -108,6 +117,27 @@ def backfill(db):
     for conv in found:
         level,urgent,reason = by_words(conv['body'])
         save(db,conv['id'],conv['message_id'],level,urgent,reason,'words')
+    return len(found)
+
+
+BACKFILL_DAYS = 400
+
+
+def backfill_log(db):
+    """Once: the customer messages of the last BACKFILL_DAYS from before the log existed, each read by its words (never
+    by the AI), dated when it was written. The conversation's current reading (maybe the AI's) wins for its message."""
+    if db.execute("SELECT 1 FROM settings WHERE key='mood_log_backfilled'").fetchone():
+        return 0
+    from backend.utils.dates import after
+    found = rows(db,'''SELECT id,conversation_id,body,created_at FROM messages WHERE kind='customer' AND created_at>=? AND body!=''
+                       AND id NOT IN (SELECT message_id FROM conversation_mood_log)''',(after(days=-BACKFILL_DAYS),))
+    for m in found:
+        level,urgent,_ = by_words(m['body'])
+        db.execute('INSERT OR IGNORE INTO conversation_mood_log VALUES(?,?,?,?,?,?)',(m['id'],m['conversation_id'],level,int(urgent),'words',m['created_at']))
+    db.execute('''UPDATE conversation_mood_log SET level=(SELECT c.level FROM conversation_moods c WHERE c.message_id=conversation_mood_log.message_id),
+                  source=(SELECT c.source FROM conversation_moods c WHERE c.message_id=conversation_mood_log.message_id)
+                  WHERE message_id IN (SELECT message_id FROM conversation_moods WHERE message_id IS NOT NULL)''')
+    db.execute("INSERT OR IGNORE INTO settings VALUES('mood_log_backfilled','1')")
     return len(found)
 
 

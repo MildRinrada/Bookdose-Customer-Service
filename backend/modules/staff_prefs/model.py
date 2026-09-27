@@ -19,7 +19,10 @@ WORK_TZ = dt.timezone(dt.timedelta(hours=7))
 
 STATUSES = {'online':'พร้อมรับเรื่อง','break':'พักเบรก / ทานข้าว','busy':'ยุ่งอยู่','offline':'ไม่อยู่'}
 EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าตอบกลับในเคสของฉัน','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA',
-          'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว'}
+          'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว','weekly_report':'สรุปรายงานประจำสัปดาห์ ทุกวันจันทร์ (เฉพาะเจ้าขององค์กร)'}
+# Emails written as a formal memo: the subject is the notice's own (it names the organization), and the body opens
+# with เรียน and closes with จึงเรียนมาเพื่อโปรดทราบ (reports/weekly.py).
+FORMAL_EVENTS = ('weekly_report',)
 DAYS = ('จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.')            # Monday first, as datetime.weekday()
 
 # หน้าภาพรวมของฉัน: which cards a member keeps on their overview, in what order and how wide.

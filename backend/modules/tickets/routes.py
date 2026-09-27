@@ -11,5 +11,6 @@ ROUTES = [
     ('POST',  f'/api/tickets/{ID}/snooze',controller.snooze_ticket, 'workspace'),
     ('DELETE',f'/api/tickets/{ID}/snooze',controller.wake_ticket,   'workspace'),
     ('POST',  f'/api/tickets/{ID}/tags', controller.tag_ticket,     'workspace'),
+    ('POST',  f'/api/tickets/{ID}/fields',controller.fill_fields,   'workspace'),
     ('GET',   '/api/export/tickets.csv', controller.export_tickets, 'workspace'),
 ]

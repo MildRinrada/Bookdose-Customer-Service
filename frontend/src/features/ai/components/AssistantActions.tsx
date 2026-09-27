@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useToast } from '@/components/ui/Toast';
+import { macroSteps } from '@/features/automation/labels';
+import { fieldText, useCaseFields } from '@/features/tickets/fields';
 import { useCaseTags } from '@/features/tickets/tags';
 import { date } from '@/lib/format';
 import { priorityLabels, statusLabels } from '@/lib/labels';
@@ -14,15 +16,49 @@ import type { AssistantAction, AssistantResult } from '../types';
 
 /* What the assistant proposes to do, under its answer (AiAssistant.tsx): one row per case with what will change, in
    the app's own words built from what the server checked (never the AI's description of it), so the list is exactly
-   what ทำเลย does. Every row is picked at first; a message to a customer or a note can be rewritten before it goes.
-   After the press each row says whether it was done, and why not. Markup: pages/ai-assistant.css (assistant-actions). */
+   what ทำเลย does. Every row is picked at first, except a merge of customer records that match by name alone; a
+   message to a customer or a note can be rewritten before it goes. After the press each row says whether it was done,
+   and why not. Markup: pages/ai-assistant.css (assistant-actions). */
 
-const REFRESH = ['/api/tickets', '/api/conversations', '/api/automation', '/api/workspace'];
+const REFRESH = ['/api/tickets', '/api/conversations', '/api/automation', '/api/workspace', '/api/contacts'];
+const MATCHED: Record<string, string> = { email: 'อีเมล', phone: 'เบอร์โทร', name: 'ชื่อ' };
+
+/** A merge of records that share an email or a phone number; a shared name alone may be two people. */
+const surelyOne = (a: AssistantAction) => a.type !== 'merge_customers' || Boolean(a.matched_by?.some((m) => m === 'email' || m === 'phone'));
+
+/** "อีเมลและเบอร์โทรตรงกัน", "อีเมล เบอร์โทร และชื่อตรงกัน", or why to look twice before merging. */
+function matchedText(a: AssistantAction): { text: string; warn: boolean } {
+  const parts = (a.matched_by ?? []).map((m) => MATCHED[m] ?? m);
+  if (!surelyOne(a)) return { text: parts.length ? 'ตรงกันแค่ชื่อ อาจเป็นคนละคน ตรวจก่อนเลือก' : 'ข้อมูลติดต่อไม่ตรงกัน ตรวจให้แน่ใจว่าเป็นคนเดียวกัน', warn: true };
+  const last = parts[parts.length - 1];
+  return { text: `${parts.length > 2 ? `${parts.slice(0, -1).join(' ')} และ${last}` : parts.join('และ')}ตรงกัน`, warn: false };
+}
+
+/** The records of a merge: the one kept first, each with how to tell it apart and its cases. */
+function MergePeople({ a }: { a: AssistantAction }) {
+  const { text, warn } = matchedText(a);
+  return (
+    <>
+      <ul className="assistant-action-people">
+        {(a.customers ?? []).map((c, i) => (
+          <li key={c.id}>
+            <strong>{c.name}</strong>
+            {(c.email || c.phone) && <span>{c.email || c.phone}</span>}
+            <span>{c.cases} เคส</span>
+            {i === 0 && <span className="assistant-action-keep">เก็บไว้</span>}
+          </li>
+        ))}
+      </ul>
+      <span className={`assistant-action-match${warn ? ' warn' : ''}`}>{text}</span>
+    </>
+  );
+}
 
 function useActionLines() {
   const memberName = useMemberName();
   const teamName = useTeamName();
   const tags = useCaseTags();
+  const caseFields = useCaseFields();
   const tagNames = (ids: string[] = []) => ids.map((id) => `“${tags.find((t) => t.id === id)?.name ?? 'ป้ายที่ถูกลบ'}”`).join(' ');
   return (a: AssistantAction): string[] => {
     switch (a.type) {
@@ -52,6 +88,18 @@ function useActionLines() {
           a.enabled === true ? 'เปิดแจกเคสอัตโนมัติ' : a.enabled === false ? 'ปิดแจกเคสอัตโนมัติ' : '',
           a.cap ? `เพดาน ${a.cap} เคสต่อคน` : '',
         ].filter(Boolean);
+      case 'macro':
+        return a.macro ? [`ใช้มาโคร “${a.macro.name}”`, macroSteps(a.macro)] : [];
+      case 'merge_customers':
+        return [
+          `รวม ${a.customers?.length ?? 0} รายชื่อเป็นรายชื่อเดียว`,
+          'เคสและบทสนทนาของรายชื่ออื่นจะย้ายมารายชื่อที่เก็บไว้ แล้วลบรายชื่ออื่น รวมแล้วแยกคืนไม่ได้',
+        ];
+      case 'set_fields':
+        return Object.entries(a.values ?? {}).map(([id, value]) => {
+          const field = caseFields.find((f) => f.id === id);
+          return field ? `กรอก ${field.name}: ${fieldText(field, value)}` : 'กรอกช่องที่ถูกลบไปแล้ว';
+        });
       default:
         return [];
     }
@@ -91,7 +139,7 @@ export function AssistantActions({
   const lines = useActionLines();
   const actions = result.actions ?? [];
   const ran = result.ran;
-  const [picked, setPicked] = useState<ReadonlySet<number>>(() => new Set(actions.map((_, i) => i)));
+  const [picked, setPicked] = useState<ReadonlySet<number>>(() => new Set(actions.flatMap((a, i) => (surelyOne(a) ? [i] : []))));
   const [texts, setTexts] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
   const outcome = new Map((ran?.results ?? []).map((r) => [r.index, r]));
@@ -143,23 +191,30 @@ export function AssistantActions({
                   <input id={id} type="checkbox" checked={picked.has(i)} onChange={() => toggle(i)} />
                 )}
                 <div className="assistant-action-body">
-                  {a.type !== 'auto_assign' && (
+                  {a.type === 'merge_customers' ? (
                     <span className="assistant-action-case">
-                      {a.case && a.ticket_id ? (
-                        <Link href={`/tickets/${a.ticket_id}`} onClick={onOpenCase}>
-                          {a.case}
-                        </Link>
-                      ) : (
-                        <span>แชทที่เปิดอยู่</span>
-                      )}
-                      {a.subject && <span className="assistant-action-subject">{a.subject}</span>}
+                      <span>ข้อมูลลูกค้า</span>
                     </span>
+                  ) : (
+                    a.type !== 'auto_assign' && (
+                      <span className="assistant-action-case">
+                        {a.case && a.ticket_id ? (
+                          <Link href={`/tickets/${a.ticket_id}`} onClick={onOpenCase}>
+                            {a.case}
+                          </Link>
+                        ) : (
+                          <span>แชทที่เปิดอยู่</span>
+                        )}
+                        {a.subject && <span className="assistant-action-subject">{a.subject}</span>}
+                      </span>
+                    )
                   )}
                   <label htmlFor={ran ? undefined : id}>
                     {lines(a).map((line) => (
                       <span key={line}>{line}</span>
                     ))}
                   </label>
+                  {a.type === 'merge_customers' && <MergePeople a={a} />}
                 </div>
               </div>
               {writes &&
@@ -173,6 +228,7 @@ export function AssistantActions({
                   />
                 ))}
               {done && !done.ok && <p className="assistant-action-error">{done.error}</p>}
+              {done?.ok && done.note && <p className="assistant-action-note">{done.note}</p>}
             </li>
           );
         })}

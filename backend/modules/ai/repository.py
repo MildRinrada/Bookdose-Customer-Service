@@ -246,6 +246,38 @@ def finish_job(db, job_id, status, result_json, error):
     db.execute('UPDATE ai_jobs SET status=?,result=?,error=?,updated_at=? WHERE id=?',(status,result_json,error,now(),job_id))
 
 
+# ถูกใจ / ไม่ถูกใจ under the assistant's answers
+def save_feedback(db, job_id, user_id, rating, reason, comment):
+    db.execute('''INSERT INTO ai_feedback(job_id,user_id,rating,reason,comment,updated_at) VALUES(?,?,?,?,?,?)
+                  ON CONFLICT(job_id) DO UPDATE SET rating=excluded.rating,reason=excluded.reason,comment=excluded.comment,
+                  updated_at=excluded.updated_at''',(job_id,user_id,rating,reason,comment,now()))
+
+
+def delete_feedback(db, job_id):
+    db.execute('DELETE FROM ai_feedback WHERE job_id=?',(job_id,))
+
+
+def assistant_report(db, since, until):
+    """The assistant's answers asked in the period: how many, how many proposed something and how many of those were
+    done, how many failed, and what the members who asked thought of them (counts, reasons, the latest comments)."""
+    asked = one(db,"""SELECT COUNT(*) AS asked,COALESCE(SUM(status='done'),0) AS answered,COALESCE(SUM(status='failed'),0) AS failed,
+                      COALESCE(SUM(status='done' AND json_array_length(result,'$.actions')>0),0) AS proposed,
+                      COALESCE(SUM(status='done' AND json_type(result,'$.ran') IS NOT NULL),0) AS ran,
+                      COUNT(DISTINCT requested_by) AS people
+                      FROM ai_jobs WHERE mode='ask' AND created_at>=? AND created_at<?""",(since,until))
+    marks = rows(db,"""SELECT f.rating,f.reason,COUNT(*) AS n FROM ai_feedback f JOIN ai_jobs j ON j.id=f.job_id
+                       WHERE j.created_at>=? AND j.created_at<? GROUP BY f.rating,f.reason""",(since,until))
+    comments = rows(db,"""SELECT f.reason,f.comment,f.updated_at FROM ai_feedback f JOIN ai_jobs j ON j.id=f.job_id
+                          WHERE j.created_at>=? AND j.created_at<? AND f.rating='down' AND f.comment!=''
+                          ORDER BY f.updated_at DESC LIMIT 5""",(since,until))
+    reasons = {}
+    for m in marks:
+        if m['rating']=='down':
+            reasons[m['reason'] or 'unsaid'] = reasons.get(m['reason'] or 'unsaid',0)+m['n']
+    return {**asked,'up':sum(m['n'] for m in marks if m['rating']=='up'),'down':sum(reasons.values()),
+            'reasons':[{'reason':k,'count':v} for k,v in sorted(reasons.items(),key=lambda item:-item[1])],'comments':comments}
+
+
 # What the model may read
 def articles(db, public_only):
     return rows(db,'SELECT id,title,body,visibility,updated_at FROM knowledge_articles'+(" WHERE visibility='public'" if public_only else ''))

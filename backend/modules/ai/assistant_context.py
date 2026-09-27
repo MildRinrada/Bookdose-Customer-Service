@@ -1,13 +1,14 @@
 """What the staff's AI assistant sees of the workspace (ai/assistant.py), so it can find a case, propose what to do with
-it and say why something does not work: the open cases the member may see, the people, teams and tags it may name in
-an action, the case open on the member's screen, the cases of a customer the question names, and how the
-organization's channels, case handing out and AI are doing.
+it and say why something does not work: the open cases the member may see, the people, teams, tags and macros it may
+name in an action, the case open on the member's screen, the cases of a customer the question names, customer records
+that look like one person (for an owner), and how the organization's channels, case handing out and AI are doing.
 
 It is what the member could see on their own screens: an agent sees their team's cases and people only, and who could
 be handed a case and why not goes to the organization's owners. No customer's name, email or phone reaches the
-provider: cases go by number and subject (masked), a customer is "the customer of BD-12". Members, teams and tags go by
-short refs (u1, t1, g1); the real ids stay in the job's `_refs`, which is never sent (service.process_one) and is what
-the answer's actions are checked against (ai/assistant_actions.py)."""
+provider: cases go by number and subject (masked), a customer is "the customer of BD-12" or a ref (c1). Members, teams,
+tags, macros, customers and case fields go by short refs (u1, t1, g1, m1, c1, f1); the real ids stay in the job's `_refs`, which is
+never sent (service.process_one) and is what the answer's actions are checked against (ai/assistant_actions.py). So
+does what the confirm list shows of a macro or a customer record (its name, email and phone for the owner)."""
 import datetime as dt
 import re
 
@@ -16,7 +17,7 @@ from backend.exceptions.errors import AI_ERRORS, CHANNEL_ERRORS, APIError
 from backend.middleware.access import get_scoped, visible_team
 from backend.modules.ai import insights, repository
 from backend.modules.staff_prefs.model import WORK_TZ
-from backend.modules.tickets import sla, tags
+from backend.modules.tickets import fields, sla, tags
 from backend.modules.tickets.model import PRIORITIES
 from backend.utils.dates import after, now, today
 
@@ -24,6 +25,10 @@ CASES = 60                   # open cases listed, most overdue first
 MESSAGES = 14                # of the conversation on screen
 CUSTOMER_CASES = 10
 FAILED_DAYS = 7
+MACROS = 40
+DUPLICATE_GROUPS = 10        # listed when the question is about duplicates; otherwise only counted
+GROUP_MOST = 6               # more records than this share a name or number: a shared line, not one person
+ABOUT_DUPLICATES = re.compile(r'ซ้ำ|รวม|duplicate|merge',re.I)
 ID = re.compile(r'[a-f0-9]{32}')
 NUMBER = re.compile(r'\bBD-(\d{1,9})\b',re.I)
 DONE = ('resolved','closed')
@@ -31,7 +36,7 @@ REPLY_CHANNELS = ('web','line','email','facebook','instagram')
 FROM = {'customer':'customer','reply':'team','note':'internal_note'}
 
 CASE_SQL = f'''SELECT t.id,t.number,t.subject,t.status,t.priority,t.category,t.team_id,t.assignee_id,t.contact_id,t.created_at,
-    t.updated_at,t.first_response_at,t.first_response_due_at,t.resolution_due_at,t.snoozed_until,{tags.IDS_COLUMN},
+    t.updated_at,t.first_response_at,t.first_response_due_at,t.resolution_due_at,t.snoozed_until,{tags.IDS_COLUMN},{fields.VALUES_COLUMN},
     (SELECT MAX(m.level) FROM ticket_conversations tc JOIN conversation_moods m ON m.conversation_id=tc.conversation_id
      WHERE tc.ticket_id=t.id) AS mood,
     (SELECT m.kind FROM ticket_conversations tc JOIN messages m ON m.conversation_id=tc.conversation_id
@@ -52,11 +57,16 @@ def _local(stamp):
 class Refs:
     """Short names for what an action may point at, and the ids behind them."""
     def __init__(self):
-        self.ids = {'u':{},'t':{},'g':{}}
+        self.ids = {'u':{},'t':{},'g':{},'m':{},'c':{},'f':{}}
         self.back = {}
         self.cases = {}
         self.failed = {}
         self.current = None
+        # What the confirm list shows of a macro and of a customer record, by id (never sent); the case fields as the
+        # organization set them, which a proposed value is checked against.
+        self.macros = {}
+        self.customers = {}
+        self.fields = {}
 
     def add(self, kind, entity_id):
         ref = f'{kind}{len(self.ids[kind])+1}'
@@ -67,9 +77,13 @@ class Refs:
     def of(self, kind, entity_id):
         return self.back.get((kind,entity_id),'')
 
+    def ref(self, kind, entity_id):
+        return self.of(kind,entity_id) or self.add(kind,entity_id)
+
     def dump(self):
-        return {'members':self.ids['u'],'teams':self.ids['t'],'tags':self.ids['g'],'cases':self.cases,
-                'failed':self.failed,'current':self.current}
+        return {'members':self.ids['u'],'teams':self.ids['t'],'tags':self.ids['g'],'macros':self.ids['m'],'customers':self.ids['c'],
+                'fields':self.ids['f'],'cases':self.cases,'failed':self.failed,'current':self.current,'macro_cards':self.macros,
+                'customer_cards':self.customers,'field_cards':self.fields}
 
 
 def _case(row, refs, moment):
@@ -80,6 +94,13 @@ def _case(row, refs, moment):
             'assignee':refs.of('u',row['assignee_id']) or ('other' if row['assignee_id'] else ''),
             'tags':[ref for ref in (refs.of('g',t) for t in tags.split_ids(row['tag_ids'])) if ref],
             'hours_open':_hours(row['created_at'],moment),'hours_since_activity':_hours(row['updated_at'],moment)}
+    # The organization's case fields by ref, what the team filled in (masked), and the required ones still empty.
+    values = fields.parse_values(row['field_values'],list(refs.fields.values()))
+    if values:
+        item['fields'] = {refs.of('f',k):insights._mask(v) for k,v in values.items()}
+    empty = [refs.of('f',f['id']) for f in refs.fields.values() if f['required'] and not values.get(f['id'])]
+    if empty and row['status'] not in DONE:
+        item['missing_to_close'] = empty
     if row['status'] not in DONE:
         replied = bool(row['first_response_at'])
         due = row['resolution_due_at'] if replied else row['first_response_due_at']
@@ -132,6 +153,104 @@ def _people(cd, db, ctx, refs):
             item.update(auto_assign_ready=ready[m['id']]['ready'],auto_assign_why_not='ลาพัก' if why.startswith('ลาพัก') else why)
         listed.append(item)
     return teams,listed,[{'ref':refs.add('g',t['id']),'name':t['name']} for t in tags.catalog(db)]
+
+
+def _macros(db, refs):
+    """The organization's macros (ระบบอัตโนมัติ → Macro): the team's standard way of doing a thing in one press - a
+    reply from its template, a status, a follow-up reminder. What the reply says goes too (masked), so the right one is
+    picked."""
+    from backend.modules.automation import repository as automation
+    found = []
+    for m in automation.macros(db)[:MACROS]:
+        refs.macros[m['id']] = {'name':m['name'],'reply':bool(m['reply']),'set_status':m['set_status'],'followup_hours':m['followup_hours']}
+        found.append({'ref':refs.add('m',m['id']),'name':insights._mask(m['name']),
+                      'reply':insights._mask(insights._plain(m['reply'],300)) if m['reply'] else '',
+                      'sets_status':m['set_status'],'follow_up_hours':m['followup_hours']})
+    return found
+
+
+def _fields(db, refs):
+    """The organization's case fields (ตั้งค่าองค์กร → ช่องข้อมูลของเคส): what the team records about each case, the
+    kind of value, a choice's options, and whether it must be filled before the case is closed."""
+    found = []
+    for f in fields.catalog(db):
+        refs.fields[f['id']] = f
+        found.append({'ref':refs.add('f',f['id']),'name':f['name'],'kind':f['kind'],**({'options':f['options']} if f['kind']=='select' else {}),
+                      'required_to_close':f['required']})
+    return found
+
+
+def phone_key(phone):
+    """A phone number as digits, +66 written as 0; '' when too short to tell anyone apart."""
+    digits = re.sub(r'\D','',phone or '')
+    if digits.startswith('66') and len(digits)==11:
+        digits = '0'+digits[2:]
+    return digits if len(digits)>=9 else ''
+
+
+def match_keys(row):
+    """(how, key) pairs two records of one person may share: the same email, phone number or name."""
+    name = ' '.join((row['name'] or '').casefold().split())
+    return [(how,key) for how,key in (('email',(row['email'] or '').strip().lower()),('phone',phone_key(row['phone'])),
+                                      ('name',name if len(name)>=4 else '')) if key]
+
+
+def _cards(db, refs, ids):
+    """Each record's history in numbers, and what the confirm list shows of it (kept in the refs, never sent)."""
+    marks = ','.join('?'*len(ids))
+    cases = dict(db.execute(f'SELECT contact_id,COUNT(*) FROM tickets WHERE contact_id IN ({marks}) GROUP BY contact_id',ids).fetchall())
+    still = dict(db.execute(f"SELECT contact_id,COUNT(*) FROM tickets WHERE contact_id IN ({marks}) AND status NOT IN {DONE} GROUP BY contact_id",ids).fetchall())
+    talks = {r['contact_id']:r for r in rows(db,f'''SELECT contact_id,COUNT(*) AS n,GROUP_CONCAT(DISTINCT channel) AS channels FROM conversations
+                                                   WHERE contact_id IN ({marks}) GROUP BY contact_id''',ids)}
+    found = {}
+    for r in rows(db,f'SELECT id,name,email,phone,created_at FROM contacts WHERE id IN ({marks})',ids):
+        talk = talks.get(r['id'])
+        found[r['id']] = {'cases':cases.get(r['id'],0),'open_cases':still.get(r['id'],0),'conversations':talk['n'] if talk else 0,
+                          'channels':sorted((talk['channels'] or '').split(',')) if talk else [],'added':r['created_at'][:10]}
+        refs.customers[r['id']] = {'name':r['name'],'email':r['email'],'phone':r['phone'],'cases':found[r['id']]['cases'],
+                                   'conversations':found[r['id']]['conversations']}
+    return found
+
+
+def _duplicates(db, ctx, refs, asked):
+    """Customer records that look like one person - the same email, phone number or name - for an owner (only they
+    merge records). Listed, the one with the most history first, when the question is about duplicates or merging;
+    otherwise only counted, so the assistant can say there are some. Their details stay here: the provider gets how
+    they match and their history in numbers."""
+    if ctx['role']!='admin':
+        return None
+    sharing = {}
+    for r in rows(db,'SELECT id,name,email,phone FROM contacts'):
+        for key in match_keys(r):
+            sharing.setdefault(key,[]).append(r['id'])
+    shared = [(key[0],ids) for key,ids in sharing.items() if 1<len(ids)<=GROUP_MOST]
+    parent = {}
+
+    def root(cid):
+        while parent.get(cid,cid)!=cid:
+            cid = parent[cid]
+        return cid
+    for _,ids in shared:
+        for other in ids[1:]:
+            a,b = root(ids[0]),root(other)
+            if a!=b:
+                parent[b] = a
+    groups,how = {},{}
+    for kind,ids in shared:
+        top = root(ids[0])
+        groups.setdefault(top,set()).update(ids)
+        how.setdefault(top,set()).add(kind)
+    # Matched by an email or a phone number before a name alone (two people may share a name).
+    ranked = sorted(((sorted(how[top],key=('email','phone','name').index),g) for top,g in groups.items() if len(g)<=GROUP_MOST),
+                    key=lambda item:(item[0]==['name'],-len(item[1])))
+    found = {'groups':len(ranked),'listed':[]}
+    if not ABOUT_DUPLICATES.search(asked):
+        return found
+    for matched,group in ranked[:DUPLICATE_GROUPS]:
+        cards = _cards(db,refs,list(group))
+        order = sorted(group,key=lambda c:(-(cards[c]['cases']+cards[c]['conversations']),cards[c]['added'],c))
+        found['listed'].append({'matched_by':matched,'customers':[{'ref':refs.ref('c',c),**cards[c]} for c in order]})
+    return found
 
 
 def _messages(db, conversation_id):
@@ -187,7 +306,8 @@ def _named_customers(db, ctx, question, refs, moment):
         where,params = _team_filter(ctx,'t.contact_id=?',(contact['id'],))
         cases = [_case(r,refs,moment) for r in rows(db,f'{CASE_SQL} WHERE {where} ORDER BY t.created_at DESC LIMIT ?',(*params,CUSTOMER_CASES))]
         if cases:
-            named.append({'customer':f'c{len(named)+1}','cases':cases})
+            _cards(db,refs,[contact['id']])
+            named.append({'customer':refs.ref('c',contact['id']),'cases':cases})
     return named
 
 
@@ -240,12 +360,17 @@ def build(cd, db, ctx, question, page):
     moment = now()
     refs = Refs()
     teams,members,tag_list = _people(cd,db,ctx,refs)
+    case_fields = _fields(db,refs)
     cases,not_listed = _cases(db,ctx,refs,moment,question)
     current = _current(db,ctx,page,refs,moment,cases)
     local = dt.datetime.fromisoformat(moment).astimezone(WORK_TZ)
     days = ('จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์','อาทิตย์')
     context = {'now':f"{local:%Y-%m-%dT%H:%M}+07:00 (วัน{days[local.weekday()]})",
                'me':{'ref':refs.of('u',ctx['id']),'role':'owner' if ctx['role']=='admin' else 'agent','team':refs.of('t',ctx['team_id'])},
-               'teams':teams,'members':members,'tags':tag_list,'cases':cases,'cases_not_listed':not_listed,'current':current,
-               'customers_named':_named_customers(db,ctx,question,refs,moment),'health':_health(db,ctx,refs,moment)}
+               'teams':teams,'members':members,'tags':tag_list,'macros':_macros(db,refs),'case_fields':case_fields,
+               'cases':cases,'cases_not_listed':not_listed,
+               'current':current,'customers_named':_named_customers(db,ctx,question,refs,moment),'health':_health(db,ctx,refs,moment)}
+    duplicates = _duplicates(db,ctx,refs,question)
+    if duplicates is not None:
+        context['duplicate_customers'] = duplicates
     return context,refs.dump()

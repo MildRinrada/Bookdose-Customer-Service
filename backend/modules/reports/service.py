@@ -5,6 +5,10 @@
   bot       (leads) the chatbot's conversations: answered alone, handed to a person and why, day by day
   articles  (leads) the articles the team copied, put in replies or sent as links, and the ones marked not helpful
   gaps      (the organization's owner) customers' questions that no public article answers, as on the overview
+  assistant (leads) the staff's AI assistant: questions answered, proposals done, and ถูกใจ / ไม่ถูกใจ with the reasons
+            and comments (never who wrote them)
+  case_stats  every member, the cases they may see touched in the period or the one before it: how long the customer
+            waited for each next reply, how many replies the team wrote and how upset the customer got (stats.py)
 
 Periods are whole local days: `from` and `to` (YYYY-MM-DD) and the browser's time zone offset."""
 import datetime as dt
@@ -127,10 +131,16 @@ def forget(tenant_id):
 def extras(db, ctx, query):
     since,until,tz,first = period(query)
     team = visible_team(ctx) or _arg(query,'team') or None
-    result = {'hours':busy_hours(db,since,until,tz,team),'bot':None,'articles':None,'gaps':None,'ai':None}
+    # The period before counts too: every figure is compared with it.
+    start,end = dt.datetime.fromisoformat(since),dt.datetime.fromisoformat(until)
+    before = iso(start-(end-start))
+    from backend.modules.reports import stats
+    result = {'hours':busy_hours(db,since,until,tz,team),'bot':None,'articles':None,'gaps':None,'ai':None,'assistant':None,
+              'case_stats':stats.case_stats(db,before,team)}
     if ctx['role'] in LEADS:
+        from backend.modules.ai import repository as ai_repository
         cfg = ai.config(db)
-        result.update(bot=bot(db,since,until,tz,first),articles=articles(db,since,until),
+        result.update(bot=bot(db,since,until,tz,first),articles=articles(db,since,until),assistant=ai_repository.assistant_report(db,since,until),
                       ai={'drafts_enabled':cfg['drafts_enabled'],'chatbot_enabled':cfg['chatbot_enabled'],'key_configured':ai.has_key(ctx['tenant_id'])})
     if ctx['role']=='admin' and not ctx.get('read_only'):
         result['gaps'] = gaps(db,ctx['tenant_id'],since,until)

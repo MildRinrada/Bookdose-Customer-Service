@@ -42,6 +42,7 @@ export const eventLabels: Record<string, string> = {
   'issue.removed': 'ลบประกาศปัญหา',
   'ticket.snoozed': 'พักเคสไว้ก่อน',
   'ticket.tagged': 'ติดป้ายเคส',
+  'ticket.fields': 'แก้ข้อมูลเพิ่มเติมของเคส',
   'ticket.auto_assigned': 'แจกเคสอัตโนมัติ',
   'ticket.woken': 'เคสกลับมาในคิว',
   'ticket.quiet_reminded': 'ถามลูกค้าที่เงียบไปว่ายังต้องการความช่วยเหลือไหม',

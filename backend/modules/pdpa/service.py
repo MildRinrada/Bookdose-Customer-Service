@@ -207,11 +207,15 @@ def _contact_data(db, tenant, contact_id, archive):
         data['conversations'].append({'subject':conv['subject'],'channel':conv['channel'],'status':conv['status'],
                                       'started_at':conv['created_at'],'last_at':conv['updated_at'],
                                       'channel_address':address['recipient'] if address else None,'messages':messages})
+    from backend.modules.tickets import fields
+    case_fields = fields.catalog(db)
     for case in rows(db,'''SELECT t.id,t.number,t.subject,t.status,t.priority,t.category,t.created_at,t.resolved_at FROM tickets t
                            WHERE t.contact_id=? ORDER BY t.created_at''',(contact_id,)):
         ratings = rows(db,'SELECT rating,comment,answered_at FROM csat_surveys WHERE ticket_id=? AND answered_at IS NOT NULL',(case['id'],))
+        # The organization's own case fields (tickets/fields.py) may hold what the customer told the team.
+        values = fields.values_of(db,case['id'])
         data['cases'].append({'case':f"BD-{case['number']}",**{k:case[k] for k in ('subject','status','priority','category','created_at','resolved_at')},
-                              'ratings':ratings})
+                              'fields':{f['name']:fields.display(f,values[f['id']]) for f in case_fields if values.get(f['id'])},'ratings':ratings})
     return data
 
 
@@ -266,13 +270,14 @@ def _erase_contact(db, contact_id, files):
         db.execute("""UPDATE messages SET body='',author_name=CASE WHEN kind='customer' THEN ? ELSE author_name END,
                       deleted_at=COALESCE(deleted_at,?),deleted_by='PDPA' WHERE conversation_id=?""",(ERASED_NAME,now(),conv))
         db.execute('UPDATE conversations SET subject=?,portal_token=NULL WHERE id=?',(ERASED_TEXT,conv))
-        for table in ('conversation_summaries','conversation_moods','conversation_languages','conversation_references',
+        for table in ('conversation_summaries','conversation_moods','conversation_mood_log','conversation_languages','conversation_references',
                       'conversation_moves','line_move_codes','ai_jobs','channel_conversations','line_threads','email_reply_refs',
                       'guest_conversations','guest_seen','guest_notifications','customer_seen','customer_notifications'):
             db.execute(f'DELETE FROM {table} WHERE conversation_id=?',(conv,))
         db.execute('UPDATE csat_surveys SET comment=NULL WHERE conversation_id=?',(conv,))
     for ticket in [r[0] for r in db.execute('SELECT id FROM tickets WHERE contact_id=?',(contact_id,))]:
         db.execute("UPDATE tickets SET subject=?,snooze_note='' WHERE id=?",(ERASED_TEXT,ticket))
+        db.execute('DELETE FROM ticket_field_values WHERE ticket_id=?',(ticket,))
         db.execute('UPDATE followups SET note=? WHERE ticket_id=?',(ERASED_TEXT,ticket))
         db.execute('UPDATE csat_surveys SET comment=NULL WHERE ticket_id=?',(ticket,))
     from backend.modules.guest import repository as guests

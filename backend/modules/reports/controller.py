@@ -1,4 +1,5 @@
 """HTTP handler for the parts of the service report that the case list cannot tell (reports/service.py)."""
+from backend.middleware.auth import require_role
 from backend.modules.reports import service
 
 
@@ -6,6 +7,13 @@ def extras(req):
     """Every member: the period's busy hours (an agent's own team). Leads also get the chatbot and the articles; the
     organization's owner also the questions no article answers."""
     return req.send(200,service.extras(req.db,req.ctx,req.query))
+
+
+@require_role('admin')
+def save_goals(req):
+    """The organization's owners: เป้าหมายของทีม for the report (reports/goals.py)."""
+    from backend.modules.reports import goals
+    return req.send(200,goals.save(req.db,req.ctx,req.body))
 
 
 def staffing(req):

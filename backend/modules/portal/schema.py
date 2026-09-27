@@ -12,10 +12,11 @@ def organization_view(org, welcome, ai_enabled, articles, response_hours='', ema
             'email_verification':email_verification,'channels':list(channels),'categories':list(categories)}
 
 
-def conversation_view(conv, messages, ticket, ai_state, survey=None, staff_read_at=None, queue=None, line=None):
+def conversation_view(conv, messages, ticket, ai_state, survey=None, staff_read_at=None, queue=None, line=None, thanks=None):
     """staff_read_at: when the team last opened the conversation after the customer wrote (read receipt). queue: the
     customer's place and expected wait while they wait for the team (conversations/queue.py), else None. line: whether
-    the chat can go on in the organization's LINE, or went there (channels/move.py), else None."""
+    the chat can go on in the organization's LINE, or went there (channels/move.py), else None. thanks: the thank-you
+    card of the finished case (automation/thanks.py), else None."""
     return {'conversation':{'id':conv['id'],'subject':conv['subject'],'status':conv['status']},'messages':messages,
             'ticket':{'id':ticket['id'],'number':ticket['number'],'status':ticket['status']} if ticket else None,'ai':ai_state,'survey':survey,
-            'staff_read_at':staff_read_at,'queue':queue,'line':line}
+            'staff_read_at':staff_read_at,'queue':queue,'line':line,'thanks':thanks}

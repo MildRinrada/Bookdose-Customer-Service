@@ -266,7 +266,7 @@ function AutomationView({ data }: { data: AutomationPage }) {
   );
 }
 
-/** SLA escalation and CSAT settings. Uncontrolled, so a refresh of the page data keeps what is being typed. */
+/** SLA escalation, CSAT and thank-you card settings. Uncontrolled, so a refresh of the page data keeps what is being typed. */
 function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
   const toast = useToast();
   const refresh = useInvalidate();
@@ -280,6 +280,8 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
           escalation_minutes: Number(values.escalation_minutes),
           csat_enabled: checked('csat_enabled'),
           csat_message: values.csat_message,
+          thanks_enabled: checked('thanks_enabled'),
+          thanks_message: values.thanks_message ?? '',
         });
         toast('บันทึกการตั้งค่าอัตโนมัติแล้ว');
         await refresh(AUTOMATION_PATH);
@@ -324,6 +326,34 @@ function SettingsForm({ settings: s }: { settings: AutomationSettings }) {
         </label>
         <TextArea id="csat-message" label="ข้อความแบบประเมิน" name="csat_message" max={1000} rows={4} defaultValue={s.csat_message} />
         <p className="tiny muted">หน้าลูกค้าแสดงปุ่มดาว 1-5 · ช่องทางอื่นตอบเป็นตัวเลขภายใน 7 วัน · คะแนนไม่เปิดเคสกลับ · เคสที่บันทึกเองส่งไม่ได้</p>
+      </div>
+      <div className="card-header auto-subhead">
+        <div>
+          <h2>การ์ดขอบคุณหลังปิดเคส</h2>
+          <p>ลูกค้าที่แชทบนเว็บเห็นการ์ดเล็ก ๆ มีชื่อและรูปของทีมงานที่ดูแลเคส</p>
+        </div>
+      </div>
+      <div className="card-body stack">
+        <label className="check">
+          <input type="checkbox" className="switch" name="thanks_enabled" defaultChecked={s.thanks_enabled} />
+          ให้ลูกค้าเห็นการ์ดขอบคุณเมื่อปิดเคส
+        </label>
+        <TextArea
+          id="thanks-message"
+          label="ข้อความขอบคุณขององค์กร"
+          name="thanks_message"
+          max={200}
+          rows={2}
+          required={false}
+          defaultValue={s.thanks_message}
+          placeholder="ขอบคุณที่ให้เราได้ดูแลเรื่องนี้ ถ้ามีอะไรเพิ่มเติม ทักมาได้เสมอ"
+          hint="เว้นว่างไว้เพื่อใช้ข้อความเริ่มต้นที่เห็นในช่อง"
+        />
+        <ul className="auto-notes">
+          <li>การ์ดขึ้นในแชทบนเว็บและหน้าลูกค้าเท่านั้น LINE อีเมล และ Facebook ไม่ได้รับอะไรเพิ่ม</li>
+          <li>ทีมงานแต่ละคนเลือกเองว่าจะให้ลูกค้าเห็นรูปไหม ถ้าไม่เลือก การ์ดแสดงตัวอักษรแรกของชื่อ และเขียนข้อความของตัวเองแทนข้อความนี้ได้ ที่ ตั้งค่าบัญชี → ข้อมูลส่วนตัว</li>
+          <li>ชื่อบนการ์ดคือชื่อที่ลูกค้าเห็นในคำตอบอยู่แล้ว การ์ดหายไปเมื่อลูกค้าพิมพ์ต่อหรือเคสเปิดใหม่</li>
+        </ul>
         <div className="settings-save">
           <span className="muted">มีผลทันทีหลังบันทึก</span>
           <button className="btn primary" type="submit">

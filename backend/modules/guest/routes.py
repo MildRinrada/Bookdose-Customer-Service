@@ -16,6 +16,7 @@ ROUTES = [
     ('POST',   GUEST+'/handoff',              controller.hand_off,            'guest'),
     ('POST',   GUEST+'/csat',                 controller.rate,                'guest'),
     ('GET',    GUEST+f'/attachments/{ID}',    controller.download_attachment, 'guest'),
+    ('GET',    GUEST+f'/thanks/{ID}/photo',   controller.thanks_photo,        'guest'),
     ('GET',    GUEST+f'/cases/{ID}',          controller.case_detail,         'guest'),
     ('POST',   GUEST+'/name',                 controller.rename,              'guest'),
     ('POST',   GUEST+'/remember',             controller.remember,            'guest'),

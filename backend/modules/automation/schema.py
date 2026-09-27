@@ -80,11 +80,18 @@ def macro_form(body):
 
 
 def settings_form(body):
-    """[(setting key, value)] for SLA escalation and the CSAT survey."""
+    """[(setting key, value)] for SLA escalation, the CSAT survey and, when sent, the thank-you card (thanks.py; its
+    message may be empty for the default one)."""
+    from backend.modules.automation.thanks import MESSAGE_MAX
     minutes = _number(body,'escalation_minutes','กรุณาระบุนาทีเป็นตัวเลข',int)
     require(1<=minutes<=1440,'เวลายกระดับต้องอยู่ระหว่าง 1-1,440 นาที')
-    return [('escalation_enabled','1' if _flag(body,'escalation_enabled',True) else '0'),('escalation_minutes',str(minutes)),
-            ('csat_enabled','1' if _flag(body,'csat_enabled',True) else '0'),('csat_message',field(body,'csat_message',1000))]
+    found = [('escalation_enabled','1' if _flag(body,'escalation_enabled',True) else '0'),('escalation_minutes',str(minutes)),
+             ('csat_enabled','1' if _flag(body,'csat_enabled',True) else '0'),('csat_message',field(body,'csat_message',1000))]
+    if 'thanks_enabled' in body:
+        found.append(('thanks_enabled','1' if _flag(body,'thanks_enabled',False) else '0'))
+    if 'thanks_message' in body:
+        found.append(('thanks_message',field(body,'thanks_message',MESSAGE_MAX,False)))
+    return found
 
 
 def followup_form(body):

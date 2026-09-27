@@ -63,6 +63,7 @@ const auditIcons: Record<string, string> = {
   'ticket.hand_raised': 'hand',
   'ticket.hand_helped': 'hand',
   'ticket.hand_lowered': 'hand',
+  'ticket.thanks_card': 'heart',
   'kudos.hidden': 'heart',
   'ticket.quiet_reminded': 'send',
   'ticket.quiet_closed': 'checkCircle',

@@ -185,3 +185,6 @@ def upgrade_tenant(db):
     db.executescript(kudos.TENANT_TABLES)
     db.executescript(hands.TABLE)
     db.executescript(achievements.TENANT_TABLES)
+    # การ์ดขอบคุณหลังปิดเคส: one per finished case with a web conversation (automation/thanks.py).
+    from backend.modules.automation import thanks
+    db.executescript(thanks.TABLE)

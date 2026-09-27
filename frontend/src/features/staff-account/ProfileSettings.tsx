@@ -6,6 +6,7 @@ import { TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { useToast } from '@/components/ui/Toast';
+import { ThanksCardView } from '@/features/customer/components/ThanksCard';
 import { useInvalidate } from '@/lib/query';
 import { useBoot, useStaffLogout } from '@/lib/session';
 import { saveStaffProfile } from './api';
@@ -62,6 +63,7 @@ export function ProfileSettings() {
         </Form>
       </section>
       {!user.platform_admin && <CustomerFacingCard />}
+      {!user.platform_admin && <ThanksPrefsCard />}
       <section className="card">
         <div className="card-header">
           <div>
@@ -77,6 +79,80 @@ export function ProfileSettings() {
         </div>
       </section>
     </div>
+  );
+}
+
+/* The member's part of การ์ดขอบคุณหลังปิดเคส (backend automation/thanks.py), in the organizations that give one:
+   whether customers see their photo on it - off until they say so, since the photo is theirs - and a thank-you in
+   their own words. The card below is what the customer sees. */
+function ThanksPrefsCard() {
+  const view = usePreferences();
+  const boot = useBoot().data!;
+  const user = boot.user!;
+  const refresh = useInvalidate();
+  const toast = useToast();
+  const [preview, setPreview] = useState<{ photo: boolean; message: string } | null>(null);
+  if (!view.data) return null;
+  const prefs = view.data.preferences;
+  const shown = preview ?? prefs.thanks;
+  const hasPhoto = boot.avatar.startsWith('data:image/');
+  return (
+    <section className="card">
+      <div className="card-header">
+        <div>
+          <h2>การ์ดขอบคุณหลังปิดเคส</h2>
+          <p>ในองค์กรที่เปิดการ์ดนี้ ลูกค้าที่แชทบนเว็บจะเห็นการ์ดจากคุณเมื่อปิดเคสที่คุณดูแล</p>
+        </div>
+      </div>
+      <Form
+        key={JSON.stringify(prefs.thanks)}
+        className="card-body"
+        data-form="thanks-card"
+        onChange={(event) => {
+          const form = event.currentTarget;
+          setPreview({
+            photo: Boolean((form.elements.namedItem('thanks_photo') as HTMLInputElement | null)?.checked),
+            message: (form.elements.namedItem('thanks_message') as HTMLTextAreaElement | null)?.value.trim() ?? '',
+          });
+        }}
+        onSubmit={async (values) => {
+          await savePreferences({ thanks: { photo: values.thanks_photo === 'on', message: values.thanks_message ?? '' } });
+          await refresh(PREFS_PATH);
+          setPreview(null);
+          toast('บันทึกแล้ว การ์ดที่ลูกค้าเห็นใช้ค่านี้ทันที');
+        }}
+      >
+        <label className="check">
+          <input type="checkbox" className="switch" name="thanks_photo" defaultChecked={prefs.thanks.photo} />
+          <span>
+            ให้ลูกค้าเห็นรูปของฉันในการ์ด
+            <span className="tiny muted block">
+              {hasPhoto ? 'ถ้าไม่เปิด การ์ดแสดงตัวอักษรแรกของชื่อแทน ปิดเมื่อไรรูปก็หายจากการ์ดที่ส่งไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน การ์ดจึงแสดงตัวอักษรแรกของชื่อ'}
+            </span>
+          </span>
+        </label>
+        <TextArea
+          label="ข้อความของฉัน (ไม่บังคับ)"
+          name="thanks_message"
+          max={200}
+          rows={2}
+          required={false}
+          defaultValue={prefs.thanks.message}
+          hint="เว้นว่างไว้เพื่อใช้ข้อความขององค์กร"
+        />
+        <div className="reply-preview" aria-live="polite">
+          <span className="tiny muted">ตัวอย่างที่ลูกค้าเห็น</span>
+          <ThanksCardView
+            card={{ name: prefs.alias || user.name, message: shown.message || 'ข้อความขอบคุณขององค์กรจะขึ้นตรงนี้', case: 1024 }}
+            src={shown.photo && hasPhoto ? boot.avatar : null}
+          />
+        </div>
+        <button className="btn primary" type="submit">
+          <Icon name="check" />
+          บันทึก
+        </button>
+      </Form>
+    </section>
   );
 }
 

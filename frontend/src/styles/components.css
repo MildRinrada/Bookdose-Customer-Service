@@ -932,6 +932,13 @@ label,.field>label {
   color: var(--muted);
   background: var(--paper);
 }
+/* A file box kept for screen readers only (the photo picker's) stays one pixel: at the full width above, the hidden
+   box reached past the window and gave the page a sideways scroll. */
+input[type=file].sr-only {
+  width: 1px;
+  padding: 0;
+  border: 0;
+}
 input[type=file]::file-selector-button {
   min-height: 40px;
   background: var(--soft);

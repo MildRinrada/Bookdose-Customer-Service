@@ -66,6 +66,10 @@ DEFAULTS = {
     'notify':{'desktop':False,'sound':False,'email':False,'celebrate':True,'recap':True,'events':{key:True for key in EVENTS}},
     'signature':{'enabled':False,'text':''},
     'alias':'',
+    # การ์ดขอบคุณหลังปิดเคส (automation/thanks.py), in the organizations that give one: whether customers see this
+    # member's photo on it (their initials until they say so), and a thank-you in their own words ('' for the
+    # organization's).
+    'thanks':{'photo':False,'message':''},
     'snippets':[],
     # Empty means "as the organization arranged it", which in turn means "as the screen ships".
     'dashboard':{'hidden':[],'box':{}},

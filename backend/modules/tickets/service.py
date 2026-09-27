@@ -120,12 +120,11 @@ def update_ticket(cd, db, ctx, ticket_id, body):
     if status not in ('resolved','closed'):
         repository.note_reopen(db,'id=?',(ticket['id'],),'staff')
     repository.update(db,ticket['id'],status,priority,team_id,assignee,resolved_at)
-    if status in ('resolved','closed'):
-        hands.lower_on_close(db,ticket['id'],ctx['name'])
     if priority!=ticket['priority']:
         sla.follow_priority(db,ticket['id'])
     conversations.set_team_for_ticket(db,ticket['id'],team_id)
-    automation.after_status_change(db,ctx,ticket,status)
+    # The owner as it is after this change: closing and assigning in one save thanks the new owner.
+    automation.after_status_change(db,ctx,{**ticket,'assignee_id':assignee},status)
     # Priority, team and assignee are for staff; the customer hears only about a new status. The team that had the
     # case until now hears about it moving away.
     realtime.ticket(db,ticket['id'],public=status!=ticket['status'],teams=(ticket['team_id'],),conversations_listed=True)

@@ -30,6 +30,9 @@ export type AutomationSettings = {
   escalation_minutes: number;
   csat_enabled: boolean;
   csat_message: string;
+  /** การ์ดขอบคุณหลังปิดเคส (backend automation/thanks.py): off until an owner turns it on; '' message for the default. */
+  thanks_enabled: boolean;
+  thanks_message: string;
 };
 
 /** A row of recent_escalations (automation page, dashboard manager view). */

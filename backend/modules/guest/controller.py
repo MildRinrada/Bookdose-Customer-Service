@@ -80,7 +80,13 @@ def resume(req):
 
 
 def conversation(req):
-    return req.send(200,portal.conversation_view(req.db,_current(req),req.guest))
+    return req.send(200,portal.conversation_view(req.db,_current(req),req.guest,req.cd))
+
+
+def thanks_photo(req, card_id):
+    """The photo on a thank-you card (automation/thanks.py), for the guest whose chat it is."""
+    from backend.modules.automation import thanks
+    return req.send(200,thanks.photo(req.cd,req.db,req.guest,card_id),'image/png',{'Cache-Control':'private, max-age=600'})
 
 
 def continue_on_line(req):

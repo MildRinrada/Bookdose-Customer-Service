@@ -7,7 +7,7 @@ from backend.modules.portal import controller
 from backend.utils.routing import ID
 
 # Every URL here; anything else under /api/public/ is answered "not found".
-PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues)(?:/[a-z0-9-]+){0,6})?')
+PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues|thanks)(?:/[a-z0-9-]+){0,6})?')
 PORTAL = '/api/public/[a-z0-9-]+'
 
 ROUTES = [
@@ -34,4 +34,6 @@ ROUTES = [
     ('POST', PORTAL+'/messages',            controller.post_message,        'customer'),
     ('POST', PORTAL+'/csat',                controller.rate,                'customer'),
     ('GET',  PORTAL+f'/attachments/{ID}',   controller.download_attachment, 'customer'),
+    # The team member's photo on the thank-you card of a finished case, for the customer whose chat it is.
+    ('GET',  PORTAL+f'/thanks/{ID}/photo',  controller.thanks_photo,        'customer'),
 ]

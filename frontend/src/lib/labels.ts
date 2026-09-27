@@ -48,6 +48,7 @@ export const eventLabels: Record<string, string> = {
   'ticket.hand_raised': 'ยกมือขอช่วย',
   'ticket.hand_helped': 'เข้าไปช่วยเพื่อนที่ยกมือ',
   'ticket.hand_lowered': 'เอามือลง',
+  'ticket.thanks_card': 'ลูกค้าได้การ์ดขอบคุณ',
   'kudos.hidden': 'นำคำชมออกจากกำแพงคำชม',
   'ticket.quiet_reminded': 'ถามลูกค้าที่เงียบไปว่ายังต้องการความช่วยเหลือไหม',
   'ticket.quiet_closed': 'ปิดเคสเพราะลูกค้าไม่ตอบกลับ',

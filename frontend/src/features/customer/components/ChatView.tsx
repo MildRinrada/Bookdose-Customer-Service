@@ -13,12 +13,14 @@ import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, sessionPath 
 import { chatView, ratingLabels } from '../labels';
 import type { PortalSession, PortalSurvey } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
+import { ThanksCard } from './ThanksCard';
 import { WaitQueue } from './WaitQueue';
 import { ContinueOnLineButton, ContinueOnLinePanel, MovedToLine } from './ContinueOnLine';
 import { ArticleReadPanel, TypingAnswers, type PeekArticle } from './ArticlePeek';
 
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
-   person serving it, the messages, the satisfaction survey once the case is closed, and the reply box. */
+   person serving it, the messages, the thank-you card and the satisfaction survey once the case is closed, and the
+   reply box. */
 
 /** After a case is closed the customer is asked how it went: stars, and a few words if they like. `slug` is the
     portal the answer goes to (a guest chat passes "<org>/guest"). */
@@ -163,10 +165,11 @@ export function ChatView({
         publicView
         publicSlug={slug}
         readAt={data.staff_read_at}
-        afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}`}
+        afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={
           <>
             <WaitQueue queue={data.queue} />
+            {data.thanks && <ThanksCard card={data.thanks} slug={slug} />}
             {survey && (
               <div id="customer-survey">
                 <CustomerSurvey survey={survey} slug={slug} conversationId={id} org={orgName} />

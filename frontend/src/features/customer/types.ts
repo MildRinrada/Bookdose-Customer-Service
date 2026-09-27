@@ -113,7 +113,13 @@ export type PortalSession = {
   /** While the customer waits for the team: their place and the expected wait (conversations/queue.py). */
   queue?: PortalQueue | null;
   line?: PortalLine | null;
+  /** การ์ดขอบคุณ of the finished case (backend automation/thanks.py), when the organization gives one. */
+  thanks?: ThanksCardData | null;
 };
+
+/** Who looked after the case, as the customer sees them: the name on their replies, whether their photo is shown
+    (else their initials), and the thank-you (theirs, or the organization's). */
+export type ThanksCardData = { id: string; name: string; photo: boolean; message: string; case: number; created_at: string };
 
 /** The customer's place in the team's queue; wait_minutes null when there is nothing to go by, away when nobody who
     could answer is available now. */

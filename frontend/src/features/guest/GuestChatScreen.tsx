@@ -13,6 +13,7 @@ import type { PublicOrgInfo } from '@/features/auth/types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerList, ArticleReadPanel, DropHint, TypingAnswers, askLine, useArticleDrop, type PeekArticle } from '@/features/customer/components/ArticlePeek';
 import { CustomerSurvey } from '@/features/customer/components/ChatView';
+import { ThanksCard } from '@/features/customer/components/ThanksCard';
 import { WaitQueue } from '@/features/customer/components/WaitQueue';
 import { ContinueOnLinePanel, MovedToLine } from '@/features/customer/components/ContinueOnLine';
 import { chatState, chatView } from '@/features/customer/labels';
@@ -599,10 +600,11 @@ function GuestChatView({
         publicView
         publicSlug={portal}
         readAt={data.staff_read_at}
-        afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}|${JSON.stringify(data.queue)}`}
+        afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={
           <>
             <WaitQueue queue={data.queue} />
+            {data.thanks && <ThanksCard card={data.thanks} slug={portal} />}
             {survey && (
               <div id="customer-survey">
                 <CustomerSurvey survey={survey} slug={portal} conversationId={id} org={orgName} />

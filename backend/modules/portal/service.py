@@ -95,8 +95,10 @@ def case_detail(db, viewer, case_id):
     return customers.case_detail(db,viewer,case_id)
 
 
-def conversation_view(db, conv, viewer):
-    """Opening the conversation counts as reading the team's replies (no notice for them)."""
+def conversation_view(db, conv, viewer, cd=None):
+    """Opening the conversation counts as reading the team's replies (no notice for them). `cd` (the control database)
+    lets the view carry the thank-you card of a finished case (automation/thanks.py)."""
+    from backend.modules.automation import thanks
     _mark_seen(db,viewer,conv['id'])
     # Where they stand while they wait for the team, so they do not write again only to ask. A guide only: should it
     # fail, the chat opens without it rather than not at all.
@@ -111,7 +113,7 @@ def conversation_view(db, conv, viewer):
     return schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
                                     tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
                                     automation.portal_survey(db,conv['id']),conversations.staff_read_at(db,conv['id']),
-                                    place,move.offer(db,D.tenant_id_of(db),conv))
+                                    place,move.offer(db,D.tenant_id_of(db),conv),thanks.card_for(cd,db,conv['id']))
 
 
 def hand_off_to_staff(db, conv):

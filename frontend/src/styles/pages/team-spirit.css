@@ -249,6 +249,71 @@
   color: #fff;
 }
 
+/* การ์ดขอบคุณหลังปิดเคส (customer/components/ThanksCard): in the customer's chat, and as a preview in the member's
+   settings. */
+.thanks-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(100%,420px);
+  margin: 14px auto;
+  padding: 16px 44px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.thanks-face {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.thanks-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thanks-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.thanks-body small {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.thanks-body strong {
+  color: var(--ink);
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.thanks-message {
+  color: var(--ink);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.thanks-heart {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  color: #e5484d;
+  fill: currentColor;
+}
+.reply-preview .thanks-card {
+  margin: 6px 0 0;
+}
+
 /* กล่องว่าง (inbox/components/AllClear) */
 .all-clear {
   display: grid;

@@ -37,7 +37,9 @@ def settings(db):
     values = organization.settings(db)
     return {'escalation_enabled':values.get('escalation_enabled','1')=='1',
             'escalation_minutes':int(float(values.get('escalation_minutes','15'))),
-            'csat_enabled':values.get('csat_enabled','1')=='1','csat_message':values.get('csat_message','')}
+            'csat_enabled':values.get('csat_enabled','1')=='1','csat_message':values.get('csat_message',''),
+            # การ์ดขอบคุณหลังปิดเคส (thanks.py): off until an owner turns it on.
+            'thanks_enabled':values.get('thanks_enabled','0')=='1','thanks_message':values.get('thanks_message','')}
 
 
 # Administration (admins and team leads)
@@ -359,9 +361,14 @@ def finish_followup(db, ctx, followup_id):
 
 # CSAT
 def after_status_change(db, ctx, before, status):
-    """Called in the transaction that changes a case's status; closing an open case sends the survey."""
+    """Called in the transaction that changes a case's status. Finishing an open case sends the survey, gives the web
+    customer the thank-you card when the organization has it (thanks.py) and lowers a hand raised on it (tickets/hands.py)."""
     if status in DONE and before['status'] not in DONE:
         send_survey(db,ctx,before)
+        from backend.modules.automation import thanks
+        from backend.modules.tickets import hands
+        thanks.on_close(db,ctx,before)
+        hands.lower_on_close(db,before['id'],ctx['name'])
 
 
 def send_survey(db, ctx, ticket):

@@ -38,7 +38,13 @@ def case_detail(req, case_id):
 
 
 def conversation(req):
-    return req.send(200,service.conversation_view(req.db,_current(req),req.customer))
+    return req.send(200,service.conversation_view(req.db,_current(req),req.customer,req.cd))
+
+
+def thanks_photo(req, card_id):
+    """The photo on a thank-you card (automation/thanks.py): kept by the browser for ten minutes."""
+    from backend.modules.automation import thanks
+    return req.send(200,thanks.photo(req.cd,req.db,req.customer,card_id),'image/png',{'Cache-Control':'private, max-age=600'})
 
 
 def hand_off(req):

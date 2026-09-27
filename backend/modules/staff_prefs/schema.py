@@ -113,6 +113,14 @@ def assistant(value):
     return {'persona':value['persona'],'custom':custom if value['persona']=='custom' else ''}
 
 
+def thanks(value):
+    """The member's part of the thank-you card: their photo on it or not, and their own words (plain text)."""
+    from backend.modules.automation.thanks import MESSAGE_MAX
+    require(isinstance(value,dict),'ข้อมูลการ์ดขอบคุณไม่ถูกต้อง')
+    return {'photo':_bool(value.get('photo',False),'การแสดงรูปในการ์ดขอบคุณ'),
+            'message':_text(value.get('message',''),MESSAGE_MAX,'ข้อความในการ์ดขอบคุณ')}
+
+
 def alias(value):
     value = _text(value,ALIAS_MAX,'ชื่อที่แสดงต่อลูกค้า')
     require(not value or any(c.isalpha() for c in value),'ชื่อที่แสดงต่อลูกค้าต้องมีตัวอักษร')
@@ -189,7 +197,7 @@ def dashboard(value):
 
 
 SECTIONS = {'status':lambda v:status({'status':v}),'hours':hours,'leave':leave,'notify':notify,'signature':signature,
-            'alias':alias,'snippets':snippets,'dashboard':dashboard,'assistant':assistant}
+            'alias':alias,'snippets':snippets,'dashboard':dashboard,'assistant':assistant,'thanks':thanks}
 
 
 def update(current, body):

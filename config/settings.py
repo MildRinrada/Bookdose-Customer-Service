@@ -49,3 +49,14 @@ def proxy_secret():
 def on_render():
     """True on Render, where first-run setup is refused without a strong setup token."""
     return os.environ.get('RENDER') == 'true'
+
+
+def platform_two_factor():
+    """Whether platform admins must have two-step sign-in or a passkey to use the console: True ('on'), False ('off'),
+    or None when not set, and the server decides by whether it runs in production (security/admin_guard.py)."""
+    value = os.environ.get('BOOKDOSE_PLATFORM_2FA', '').strip().lower()
+    if value in ('on', '1', 'true', 'yes'):
+        return True
+    if value in ('off', '0', 'false', 'no'):
+        return False
+    return None

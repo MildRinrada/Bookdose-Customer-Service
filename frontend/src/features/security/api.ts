@@ -1,5 +1,15 @@
 import { api } from '@/lib/api/client';
-import type { BlockDuration, HoneypotSettings, HoneytokenCreated, HoneytokenKind, Honeytoken, SecurityEventFilters, SecurityRange, SecuritySettings } from './types';
+import type {
+  BlockDuration,
+  HoneypotSettings,
+  HoneytokenCreated,
+  HoneytokenKind,
+  Honeytoken,
+  IpDataStatus,
+  SecurityEventFilters,
+  SecurityRange,
+  SecuritySettings,
+} from './types';
 
 /* Endpoints of the platform security API (docs/security/monitoring-and-traps.md, scope 'platform'). Every read lives under
    SECURITY_PREFIX, so refreshing it after a change redraws the whole page. */
@@ -12,6 +22,11 @@ export const SETTINGS_PATH = `${SECURITY_PREFIX}/settings`;
 export const HONEYTOKENS_PATH = `${SECURITY_PREFIX}/honeytokens`;
 /** ตรวจสุขภาพ: the platform's own security settings, checked when read (backend security/checkup.py). */
 export const CHECKUP_PATH = `${SECURITY_PREFIX}/checkup`;
+
+/** ข้อมูล IP (backend security/ip_intel.py): its state; POST downloads it now (on its own thread), DELETE stops using it. */
+export const IP_DATA_PATH = `${SECURITY_PREFIX}/ip-data`;
+export const updateIpData = () => api<IpDataStatus>(IP_DATA_PATH, {});
+export const removeIpData = () => api<IpDataStatus>(IP_DATA_PATH, undefined, 'DELETE');
 
 export const overviewPath = (range: SecurityRange) => `${SECURITY_PREFIX}/overview?range=${range}`;
 

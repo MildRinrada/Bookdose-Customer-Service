@@ -73,7 +73,7 @@ def bootstrap(session, setup_required, setup_token_required, registration_availa
             'registration_available':registration_available,
             'home':{'slug':home['slug'],'name':home['name']} if home else None,
             'user':{'id':session['user_id'],'name':session['name'],'email':session['email'],'platform_admin':bool(session['platform_admin']),
-                     'platform_owner':bool(session.get('platform_owner'))} if session else None,
+                     'platform_owner':bool(session.get('platform_owner')),'console_locked':bool(session.get('console_locked'))} if session else None,
             'avatar':avatar,
             'csrf':session['csrf'] if session else None,'tenant_id':session['tenant_id'] if session else None,
             'memberships':memberships}

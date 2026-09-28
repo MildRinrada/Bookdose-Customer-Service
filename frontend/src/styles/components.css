@@ -1507,6 +1507,45 @@ select:disabled {
   margin: 0 auto;
   padding: 32px 20px 48px;
 }
+/* /not-me (features/auth/NotMeScreen): which sign-in the email was about, then the two answers from the left. */
+.not-me-card .card-body {
+  padding: 26px 28px 28px;
+}
+.not-me-card h1 {
+  margin: 0 0 10px;
+  font-size: 1.45rem;
+  line-height: 1.4;
+}
+.not-me-card p {
+  line-height: 1.7;
+}
+@media (max-width: 480px) {
+  .not-me-card .card-body {
+    padding: 20px 18px 22px;
+  }
+}
+.not-me-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 18px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+}
+.not-me-facts dt {
+  color: var(--muted);
+}
+.not-me-facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.form-actions.start {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
 
 /* A customer's formatted message box in a form (features/rich/RichTextArea): the toolbar on top, a shorter area. */
 .rich-field .editor-toolbar {

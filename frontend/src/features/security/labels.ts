@@ -29,6 +29,9 @@ export const eventKindLabels: Record<string, string> = {
   honeypot_form: 'กรอกช่องซ่อนในฟอร์ม (บอท)',
   honeytoken_triggered: 'มีการใช้กับดัก (Honeytoken)',
   trap_ip_block: 'บล็อก IP อัตโนมัติจากกับดัก',
+  reauth_failed: 'ยืนยันรหัสผ่านก่อนทำรายการสำคัญไม่ถูกต้อง',
+  sign_in_disowned: 'ผู้ดูแลแพลตฟอร์มแจ้งว่าการเข้าสู่ระบบไม่ใช่ตัวเอง',
+  sign_in_new_place: 'ผู้ดูแลแพลตฟอร์มเข้าสู่ระบบจากที่ใหม่',
 };
 
 export const eventKindLabel = (kind: string) => eventKindLabels[kind] ?? kind;
@@ -53,6 +56,8 @@ export const alertRuleLabels: Record<string, string> = {
   ip_rate_limited: 'IP เดียวถูกจำกัดคำขอจำนวนมาก',
   webhook_failures: 'ลายเซ็น Webhook ไม่ถูกต้องต่อเนื่อง',
   honeytoken: 'มีการใช้กับดัก (Honeytoken)',
+  sign_in_disowned: 'ผู้ดูแลแพลตฟอร์มแจ้งว่าการเข้าสู่ระบบไม่ใช่ตัวเอง',
+  impossible_travel: 'ผู้ดูแลแพลตฟอร์มเข้าสู่ระบบจากต่างประเทศเร็วเกินกว่าจะเดินทางได้จริง',
 };
 
 /** Rule ids may carry their window (e.g. ip_failed_logins_10m): matched by the longest known prefix. */
@@ -118,6 +123,21 @@ export const detailKeyLabels: Record<string, string> = {
   window_minutes: 'ภายใน (นาที)',
   check: 'การตรวจ',
   trigger: 'สาเหตุ',
+  signed_out: 'ออกจากระบบให้แล้ว',
+  device: 'อุปกรณ์',
+  signed_in_at: 'เข้าสู่ระบบเมื่อ',
+  ended: 'ยุติเซสชันแล้ว',
+  country: 'ประเทศ',
+  network: 'ผู้ให้บริการเครือข่าย',
+  asn: 'หมายเลขเครือข่าย (ASN)',
+  hosting: 'เครือข่ายคลาวด์หรือ VPN',
+  new_device: 'อุปกรณ์ใหม่',
+  new_ip: 'IP ใหม่',
+  impossible_travel: 'เดินทางเป็นไปไม่ได้',
+  previous_country: 'ประเทศครั้งก่อน',
+  timezone: 'เขตเวลาของเบราว์เซอร์',
+  timezone_mismatch: 'เขตเวลาไม่ตรงกับประเทศ',
+  proxy: 'header ของพร็อกซีที่พบ',
 };
 
 export type SessionActor = keyof SecuritySettings['sessions'];

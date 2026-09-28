@@ -127,6 +127,17 @@ class AsgiTestServer:
         pass
 
 
+def protect_account(email):
+    """A staff account gets a passkey on file (a stand-in, never used to sign in): it then counts as protected, as the
+    platform console requires of its admins, and signing in with the password still asks for nothing more."""
+    with D.control() as cd:
+        user_id=cd.execute('SELECT id FROM users WHERE email=?',(email,)).fetchone()[0]
+        cd.execute('''INSERT INTO staff_passkeys(id,user_id,credential_id,public_key,alg,name,created_at)
+                      VALUES(?,?,?,?,?,?,?)''',(os.urandom(16).hex(),user_id,'test-'+os.urandom(8).hex(),'test',-7,'ทดสอบ','2026-01-01T00:00:00+00:00'))
+        cd.commit()
+    return user_id
+
+
 def start_server():
     """(server, thread) on a free local port: FastAPI on uvicorn, or the old http.server when BOOKDOSE_SERVER=legacy
     (the same switch as app.py)."""
@@ -148,6 +159,11 @@ class IntegrationTests(unittest.TestCase):
         D.DATA=Path(self.temporary.name)/'data'
         D.init()
         rate_limit.RATES.clear()
+        # The console's two-step rule follows this computer's .env otherwise (security/admin_guard.py); the tests of
+        # that rule turn it on themselves (test_admin_guard.py).
+        environment=patch.dict(os.environ,{'BOOKDOSE_PLATFORM_2FA':'off'})
+        environment.start()
+        self.addCleanup(environment.stop)
         self.server,self.thread=start_server()
         self.base=f'http://127.0.0.1:{self.server.server_port}'
         # The platform's owner looks after the server only (platform console); the organization is run by its own

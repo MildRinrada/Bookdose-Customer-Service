@@ -1,12 +1,15 @@
 """HTTP handlers for platform administrators, and the two that are not: the guides and the problem report any
-signed-in member of an organization may send."""
+signed-in member of an organization may send. The dangerous acts (@confirm_first) need the password proven within the
+last minutes (security/admin_guard.py)."""
 from backend.modules.platform import service
+from backend.modules.security.admin_guard import confirm_first
 
 
 def registration_settings(req):
     return req.send(200,service.registration_public_config(req.cd))
 
 
+@confirm_first
 def save_registration_settings(req):
     return req.send(200,service.save_registration_settings(req.cd,req.session,req.body))
 
@@ -15,6 +18,7 @@ def sms_settings(req):
     return req.send(200,service.sms_settings(req.cd))
 
 
+@confirm_first
 def save_sms_settings(req):
     return req.send(200,service.save_sms_settings(req.cd,req.session,req.body))
 
@@ -23,6 +27,7 @@ def turnstile_settings(req):
     return req.send(200,service.turnstile_settings(req.cd))
 
 
+@confirm_first
 def save_turnstile_settings(req):
     return req.send(200,service.save_turnstile_settings(req.cd,req.session,req.body))
 
@@ -43,6 +48,7 @@ def create_tenant(req):
     return req.send(201,{'id':service.add_tenant(req.cd,req.body)})
 
 
+@confirm_first
 def add_admin(req, tenant_id):
     """POST /api/platform/tenants/<id>/admins {email[, admin_name, password]}: invite (or make) an organization's admin."""
     from backend.middleware.rate_limit import limited
@@ -50,6 +56,7 @@ def add_admin(req, tenant_id):
     return req.send(201,service.add_admin(req.cd,req.session,tenant_id,req.body))
 
 
+@confirm_first
 def set_tenant_status(req, tenant_id):
     service.set_tenant_status(req.cd,req.session,tenant_id,req.body)
     return req.send(200,{'ok':True})
@@ -72,10 +79,12 @@ def platform_team(req):
     return req.send(200,{'admins':service.platform_team(req.cd),'me':req.session['user_id']})
 
 
+@confirm_first
 def add_platform_admin(req):
     return req.send(201,{'id':service.add_platform_admin(req.cd,req.session,req.body)})
 
 
+@confirm_first
 def remove_platform_admin(req, user_id):
     service.remove_platform_admin(req.cd,req.session,user_id)
     return req.send(200,{'ok':True})
@@ -174,6 +183,7 @@ def restore_preview(req):
     return req.send(200,R.preview(req.body.get('name')))
 
 
+@confirm_first
 def restore_backup(req):
     """Restore a backup, confirmed by its name typed out: everyone is signed out afterwards."""
     from backend.middleware.rate_limit import limited
@@ -182,6 +192,7 @@ def restore_backup(req):
     return req.send(200,R.restore(req.cd,req.session,req.body))
 
 
+@confirm_first
 def download_backup(req, name):
     """A whole-platform archive: its credentials are sealed, and the key never travels with it."""
     from backend.database import audit

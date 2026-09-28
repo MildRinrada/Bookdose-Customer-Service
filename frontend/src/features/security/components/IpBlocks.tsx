@@ -11,7 +11,8 @@ import { date, relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { blockIp, IP_BLOCKS_PATH, SECURITY_PREFIX, unblockIp } from '../api';
 import { durationLabels } from '../labels';
-import type { BlockDuration, IpBlock } from '../types';
+import type { BlockDuration, IpBlock, IpInfoMap } from '../types';
+import { IpWithInfo } from './IpInfo';
 
 /* The IP block list: requests from a blocked address get 403 before anything else runs. Add for 1 ชม. / 24 ชม. /
    7 วัน / ถาวร with a reason, remove any. The server refuses to block the address of the admin's own request. */
@@ -67,7 +68,7 @@ export function BlockIpDialog({ ip, reason }: { ip: string; reason?: string }) {
 }
 
 export function IpBlocksCard() {
-  const blocks = useApi<{ blocks: IpBlock[] }>(IP_BLOCKS_PATH);
+  const blocks = useApi<{ blocks: IpBlock[]; ip_info?: IpInfoMap }>(IP_BLOCKS_PATH);
   const refresh = useInvalidate();
   const toast = useToast();
   const run = useRunAction();
@@ -138,7 +139,9 @@ export function IpBlocksCard() {
             <tbody>
               {blocks.data.blocks.map((block) => (
                 <tr key={block.ip}>
-                  <td className="mono">{block.ip}</td>
+                  <td>
+                    <IpWithInfo ip={block.ip} info={blocks.data?.ip_info?.[block.ip]} />
+                  </td>
                   <td className="security-wrap">{block.reason || '-'}</td>
                   <td>{block.expires_at ? date(block.expires_at, true) : durationLabels.permanent}</td>
                   <td>

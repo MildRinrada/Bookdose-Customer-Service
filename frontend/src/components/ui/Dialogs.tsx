@@ -43,7 +43,8 @@ type Dialogs = {
   closeModal: (force?: boolean) => boolean;
   /** While set, closing the modal asks it first: return false to stay open (e.g. to ask "throw the draft away?"). */
   setCloseGuard: (guard: (() => boolean) | null) => void;
-  openSheet: (title: ReactNode, content: ReactNode) => void;
+  /** onClose: told once when this sheet goes, however it goes (closed, replaced, or left by moving to another page). */
+  openSheet: (title: ReactNode, content: ReactNode, onClose?: () => void) => void;
   closeSheet: () => void;
   /** One question, one answer: used wherever the old code asked window.confirm(). */
   confirm: (options: ConfirmOptions) => void;
@@ -74,15 +75,29 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     setModal(null);
     return true;
   }, []);
-  const closeSheet = useCallback(() => setSheet(null), []);
+  const sheetClosed = useRef<(() => void) | null>(null);
+  const tellSheetClosed = useCallback(() => {
+    const told = sheetClosed.current;
+    sheetClosed.current = null;
+    told?.();
+  }, []);
+  const closeSheet = useCallback(() => {
+    setSheet(null);
+    tellSheetClosed();
+  }, [tellSheetClosed]);
 
   const openModal = useCallback((title: ReactNode, content: ReactNode, options: ModalOptions = {}) => {
     guard.current = null;
     setModal({ title, content, options, key: ++counter.current });
   }, []);
-  const openSheet = useCallback((title: ReactNode, content: ReactNode) => {
-    setSheet({ title, content, options: {}, key: ++counter.current });
-  }, []);
+  const openSheet = useCallback(
+    (title: ReactNode, content: ReactNode, onClose?: () => void) => {
+      tellSheetClosed();
+      sheetClosed.current = onClose ?? null;
+      setSheet({ title, content, options: {}, key: ++counter.current });
+    },
+    [tellSheetClosed],
+  );
 
   const confirm = useCallback(
     ({ title, message, confirmLabel = 'ยืนยัน', cancelLabel = 'ยกเลิก', tone = 'primary', run }: ConfirmOptions) => {
@@ -186,7 +201,8 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     guard.current = null;
     setModal(null);
     setSheet(null);
-  }, [pathname, router]);
+    tellSheetClosed();
+  }, [pathname, router, tellSheetClosed]);
 
   const value = useMemo<Dialogs>(
     () => ({ openModal, closeModal, setCloseGuard: (g) => (guard.current = g), openSheet, closeSheet, confirm, confirmDelete }),

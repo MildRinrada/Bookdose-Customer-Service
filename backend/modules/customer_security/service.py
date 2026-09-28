@@ -16,6 +16,7 @@ The rules this file keeps:
     constant time."""
 import hmac
 import json
+import re
 import secrets
 
 from backend.database import db as D
@@ -38,9 +39,19 @@ NO_SESSION = 'คำขอเข้าสู่ระบบหมดอายุ
 
 
 # The caller's device, and the account's history
+TIME_ZONE = re.compile(r'[A-Za-z0-9_+\-]{1,40}(/[A-Za-z0-9_+\-]{1,40}){0,2}')
+PROXY_HEADERS = re.compile(r'[a-z0-9-]{1,40}(,[a-z0-9-]{1,40}){0,9}')
+
+
 def client_info(req):
-    """What is written next to an entry in the activity log and a session: the browser and its address."""
-    return {'ip':req.ip,'user_agent':(req.headers.get('User-Agent') or '')[:300]}
+    """What is written next to an entry in the activity log and a session: the browser and its address. Also, for the
+    signs read at a sign-in (security/sign_in_alerts.py), never stored as they come: the time zone the page says the
+    browser is in (X-Bookdose-Timezone) and the names of proxy headers the web app saw on the request."""
+    from backend.middleware.security import from_web_app
+    zone = (req.headers.get('X-Bookdose-Timezone') or '').strip()
+    proxy = (req.headers.get('X-Bookdose-Client-Proxy') or '').strip().lower() if from_web_app(req) else ''
+    return {'ip':req.ip,'user_agent':(req.headers.get('User-Agent') or '')[:300],
+            'timezone':zone if TIME_ZONE.fullmatch(zone) else '','proxy':proxy if PROXY_HEADERS.fullmatch(proxy) else ''}
 
 
 def record(cd, account_id, action, detail='', client=None):

@@ -61,6 +61,9 @@ def create_control_tables(db):
     # The devices a staff account is signed in on (ตั้งค่าบัญชี → ความปลอดภัย): an id and where each was opened.
     from backend.modules.staff_security import repository as staff_security_repository
     staff_security_repository.add_session_columns(db)
+    # Where each platform admin has signed in, and the "ไม่ใช่ฉัน" links of the mails about a new place.
+    from backend.modules.security import sign_in_alerts
+    sign_in_alerts.upgrade(db)
     # How much of the shared disk each organization may take. The ones made before quotas existed keep no ceiling
     # (0) until a platform admin gives them one: a ceiling appearing under a working organization would refuse
     # uploads it was making yesterday.

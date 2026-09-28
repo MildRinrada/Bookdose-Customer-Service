@@ -14,6 +14,7 @@ import { AlertsBanner } from './components/Alerts';
 import { CheckupPanel } from './components/Checkup';
 import { EventsLog } from './components/EventsLog';
 import { HoneypotSettingsCard } from './components/HoneypotSettingsCard';
+import { IpDataCard } from './components/IpDataCard';
 import { HoneytokensCard } from './components/Honeytokens';
 import { IpBlocksCard } from './components/IpBlocks';
 import { LocksCard } from './components/Locks';
@@ -116,7 +117,12 @@ export function SecurityScreen({ tab }: { tab?: string }) {
         )}
         {current === 'traps' && <Traps />}
         {current === 'vulns' && <VulnsCard />}
-        {current === 'settings' && <SettingsCard />}
+        {current === 'settings' && (
+          <>
+            <SettingsCard />
+            <IpDataCard />
+          </>
+        )}
       </div>
     </div>
   );
@@ -212,7 +218,7 @@ function Overview({ range }: { range: SecurityRange }) {
         </div>
       </section>
       <div className="security-grid security-section">
-        <TopIpsCard rows={top_ips} />
+        <TopIpsCard rows={top_ips} info={overview.data.ip_info} />
         <TopSubjectsCard rows={top_subjects} />
       </div>
     </>

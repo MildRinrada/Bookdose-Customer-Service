@@ -93,6 +93,8 @@ EVENT_KINDS = {
     'cross_tenant_denied':'warning','support_access':'info','webhook_signature_failed':'warning',
     'guest_link_invalid':'info','ip_blocked_request':'info','admin_unlock':'warning','admin_ip_block':'warning',
     'security_settings_changed':'critical',
+    # The platform admin's guards (admin_guard.py, sign_in_alerts.py)
+    'reauth_failed':'warning','sign_in_disowned':'critical','sign_in_new_place':'info',
     # Cloudflare Turnstile (backend/extensions/turnstile.py)
     'captcha_failed':'warning','captcha_unavailable':'warning',
     # Honeypots and honeytokens (docs/security/monitoring-and-traps.md)
@@ -118,6 +120,8 @@ ALERT_LABELS = {
     'ip_failed_logins':'เข้าสู่ระบบล้มเหลวจาก IP เดียวจำนวนมาก','platform_failed_logins':'เข้าสู่ระบบล้มเหลวทั้งแพลตฟอร์มจำนวนมาก',
     'locks':'บัญชีถูกล็อกจำนวนมาก','ip_rate_limited':'คำขอถี่ผิดปกติจาก IP เดียว','webhook_failures':'ลายเซ็น Webhook ไม่ถูกต้องจำนวนมาก',
     'honeytoken':'มีการใช้กับดัก (Honeytoken)',
+    'sign_in_disowned':'ผู้ดูแลแพลตฟอร์มแจ้งว่าการเข้าสู่ระบบไม่ใช่ตัวเอง',
+    'impossible_travel':'ผู้ดูแลแพลตฟอร์มเข้าสู่ระบบจากต่างประเทศเร็วเกินกว่าจะเดินทางได้จริง',
 }
 ALERT_MAIL_SECONDS = 3600
 

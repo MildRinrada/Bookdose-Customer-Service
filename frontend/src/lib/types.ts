@@ -14,8 +14,9 @@ export type Boot = {
   registration_available: boolean;
   /** The platform's own organization, where customers sign up on the main page. */
   home: { slug: string; name: string } | null;
-  /** platform_owner: the account made at first-run setup, the one who manages the platform admins. */
-  user: { id: string; name: string; email: string; platform_admin: boolean; platform_owner?: boolean } | null;
+  /** platform_owner: the account made at first-run setup, the one who manages the platform admins. console_locked: a
+      platform admin without two-step sign-in or a passkey, who reaches only ตั้งค่าบัญชี (backend security/admin_guard.py). */
+  user: { id: string; name: string; email: string; platform_admin: boolean; platform_owner?: boolean; console_locked?: boolean } | null;
   avatar: string;
   csrf: string | null;
   tenant_id: string | null;

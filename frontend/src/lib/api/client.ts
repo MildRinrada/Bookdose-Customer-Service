@@ -69,8 +69,22 @@ export type RequestOptions = {
   conversation?: string;
 };
 
+/** The browser's time zone, which a platform admin's sign-in is compared with (backend security/sign_in_alerts.py). */
+let timeZone: string | null = null;
+function browserTimeZone(): string {
+  if (timeZone === null) {
+    try {
+      timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch {
+      timeZone = '';
+    }
+  }
+  return timeZone;
+}
+
 function headers(hasBody: boolean, options: RequestOptions): Record<string, string> {
   const result: Record<string, string> = {};
+  if (browserTimeZone()) result['X-Bookdose-Timezone'] = browserTimeZone();
   if (credentials.csrf) result['X-CSRF-Token'] = credentials.csrf;
   if (credentials.tenantId) result['X-Tenant-ID'] = credentials.tenantId;
   if (credentials.customerCsrf) result['X-Customer-CSRF'] = credentials.customerCsrf;
@@ -81,7 +95,26 @@ function headers(hasBody: boolean, options: RequestOptions): Record<string, stri
   return result;
 }
 
-async function send(path: string, body?: unknown, method?: Method, options: RequestOptions = {}): Promise<Response> {
+/* ยืนยันรหัสผ่านอีกครั้ง (backend security/admin_guard.py): a dangerous act of the platform console answers 403 with
+   reason 'reauth_required' when the session has not proven its password in the last minutes. The page registers how
+   to ask for it (components/ui/ReauthPrompt); once the password is confirmed the same request goes again, once.
+   Several requests refused together share one question. */
+let askPassword: (() => Promise<boolean>) | null = null;
+let asking: Promise<boolean> | null = null;
+
+export function setReauthPrompt(prompt: (() => Promise<boolean>) | null) {
+  askPassword = prompt;
+}
+
+function confirmAgain(): Promise<boolean> {
+  if (!askPassword) return Promise.resolve(false);
+  asking ??= askPassword().finally(() => {
+    asking = null;
+  });
+  return asking;
+}
+
+async function send(path: string, body?: unknown, method?: Method, options: RequestOptions = {}, again = true): Promise<Response> {
   const hasBody = body !== undefined;
   const verb = method ?? (hasBody ? 'POST' : 'GET');
   let response: Response;
@@ -114,6 +147,10 @@ async function send(path: string, body?: unknown, method?: Method, options: Requ
       if (Number.isFinite(header) && header > 0) retryAfter = header;
     }
     if (response.status === 401 && (reason === 'idle' || reason === 'absolute')) noteExpired(reason);
+    if (response.status === 403 && reason === 'reauth_required' && again) {
+      if (await confirmAgain()) return send(path, body, method, options, false);
+      throw new ApiError('ยกเลิกการทำรายการแล้ว', 403, { reason: 'reauth_cancelled' });
+    }
     throw new ApiError(message, response.status, { reason, retryAfter });
   }
   if (verb !== 'GET') noteRequestActivity(path);

@@ -11,8 +11,10 @@ def session_cookie(req, token):
 
 
 def client(req):
-    """The caller's trusted address and browser (security events and the lockout)."""
-    return {'ip':req.ip,'user_agent':(req.headers.get('User-Agent') or '')[:300]}
+    """The caller's trusted address and browser (security events and the lockout), and the signs a platform admin's
+    sign-in is read for (customer_security.service.client_info)."""
+    from backend.modules.customer_security.service import client_info
+    return client_info(req)
 
 
 def cookie(req):
@@ -91,7 +93,7 @@ def sign_in(req):
 
 
 def bootstrap(req):
-    data = service.bootstrap_data(req.cd,req.session)
+    data = service.bootstrap_data(req.cd,req.session,req.server)
     if req.session:
         from backend.modules.platform import health
         data.update(service.session_times(req.cd,req.session))

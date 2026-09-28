@@ -1,13 +1,14 @@
 """The Superadmin security dashboard (/api/platform/security/...): overview, events, locked accounts, alerts, blocked
 addresses, ending an account's sessions, the security settings and the honeytokens (docs/security/monitoring-and-traps.md). Every change is written to the platform audit
-log and recorded as a security event."""
+log and recorded as a security event. Lists that show addresses carry ip_info: the country and network of each one the
+IP database knows (ip_intel.py; empty while it is off)."""
 import datetime as dt
 import json
 import secrets
 from urllib.parse import urlsplit
 
 from backend.database import audit
-from backend.modules.security import blocks, events, lockout, model, repository, schema, sessions, traps
+from backend.modules.security import blocks, events, ip_intel, lockout, model, repository, schema, sessions, traps
 from backend.modules.security.events import parse
 from backend.utils.dates import after, iso, now, utc_now
 from backend.utils.security import uid
@@ -67,7 +68,7 @@ def overview(cd, query):
     blocked = {b['ip'] for b in repository.live_blocks(cd)}
     top_ips = sorted(ips.values(),key=lambda e:(-e['events'],e['ip']))[:10]
     return {'cards':cards,'series':buckets,
-            'top_ips':[{**e,'blocked':e['ip'] in blocked} for e in top_ips],
+            'top_ips':[{**e,'blocked':e['ip'] in blocked} for e in top_ips],'ip_info':ip_intel.describe(e['ip'] for e in top_ips),
             'top_subjects':[{'subject':s,'actor':a,'failures':n} for (s,a),n in sorted(subjects.items(),key=lambda i:(-i[1],i[0]))[:10]]}
 
 
@@ -86,7 +87,8 @@ def list_events(cd, query):
     filters,limit = schema.event_filters(query)
     found = repository.search_events(cd,filters,limit+1)
     page = found[:limit]
-    return {'events':[event_view(r) for r in page],'next_before':page[-1]['id'] if len(found)>limit else None}
+    return {'events':[event_view(r) for r in page],'next_before':page[-1]['id'] if len(found)>limit else None,
+            'ip_info':ip_intel.describe(r['ip'] for r in page)}
 
 
 # Locked accounts
@@ -127,7 +129,8 @@ def alert_view(row):
 
 
 def list_alerts(cd, query):
-    return {'alerts':[alert_view(r) for r in repository.alerts(cd,schema.alerts_open(query))]}
+    found = repository.alerts(cd,schema.alerts_open(query))
+    return {'alerts':[alert_view(r) for r in found],'ip_info':ip_intel.describe(r['ip'] for r in found)}
 
 
 def acknowledge(req, alert_id):
@@ -145,7 +148,8 @@ def block_view(row):
 
 
 def list_blocks(cd):
-    return {'blocks':[block_view(r) for r in repository.live_blocks(cd)]}
+    found = repository.live_blocks(cd)
+    return {'blocks':[block_view(r) for r in found],'ip_info':ip_intel.describe(r['ip'] for r in found)}
 
 
 def add_block(req):

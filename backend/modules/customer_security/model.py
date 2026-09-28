@@ -39,6 +39,9 @@ ACTIVITY_LABELS = {
     'password':'เปลี่ยนรหัสผ่าน','password_reset':'ตั้งรหัสผ่านใหม่จากลิงก์',
     'profile':'แก้ไขข้อมูลส่วนตัว','session_revoked':'ออกจากระบบอุปกรณ์เครื่องหนึ่ง','sessions_revoked':'ออกจากระบบทุกอุปกรณ์',
     'account_linked':'มีบัญชีอื่นเข้าสู่ระบบร่วมในเบราว์เซอร์เดียวกัน','account_switched':'สลับเข้าบัญชีนี้จากบัญชีอื่น',
+    # Platform admins only (security/admin_guard.py, sign_in_alerts.py)
+    'reauth':'ยืนยันรหัสผ่านก่อนทำรายการสำคัญ','reauth_failed':'ยืนยันรหัสผ่านไม่ถูกต้อง',
+    'reauth_signed_out':'ออกจากระบบเพราะยืนยันรหัสผ่านผิดหลายครั้ง','sign_in_disowned':'แจ้งว่าไม่ใช่ฉัน และยุติการเข้าสู่ระบบครั้งนั้น',
 }
 
 CONTROL_TABLES = '''

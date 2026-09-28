@@ -34,6 +34,7 @@ LINK_USES = 20
 LINE_CODE_MINUTES = 10
 START_PER_IP_HOUR = 5
 START_PER_IP_DAY = 20                # counted in the database (guest_conversations.ip), so a restart does not reset it
+START_PER_HOSTING_IP_DAY = 5         # an address of a cloud or VPN network (security/ip_intel.py): few people behind it
 START_PER_VISITOR_DAY = 10
 IP_BLOCK_DAYS = 7                    # how long a blocked guest's addresses stay closed to new chats (blocks.py)
 IP_KEEP_DAYS = 30                    # the address a chat was started from is forgotten after this

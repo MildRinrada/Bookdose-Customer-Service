@@ -10,14 +10,15 @@ Blocking closes the guest's open chats, so they leave the queue and the open lis
 never held: it is the server itself, or every browser at once behind a proxy that does not pass the real one on.
 
 The address each guest chat was started from (guest_conversations.ip) is where the addresses come from. It also counts
-the new chats of one address over a day (START_PER_IP_DAY), which a restart does not reset the way it resets the
-hourly count kept in memory, and it is forgotten after IP_KEEP_DAYS."""
+the new chats of one address over a day (START_PER_IP_DAY, or START_PER_HOSTING_IP_DAY for an address of a cloud or a
+VPN when the IP database is on, security/ip_intel.py), which a restart does not reset the way it resets the hourly
+count kept in memory, and it is forgotten after IP_KEEP_DAYS."""
 import ipaddress
 
 from backend.database import audit, db as D
 from backend.database.db import one, rows
 from backend.modules.guest import repository
-from backend.modules.guest.model import GUEST_NAME, IP_BLOCK_DAYS, IP_KEEP_DAYS, START_PER_IP_DAY
+from backend.modules.guest.model import GUEST_NAME, IP_BLOCK_DAYS, IP_KEEP_DAYS, START_PER_HOSTING_IP_DAY, START_PER_IP_DAY
 from backend.utils.dates import after, now
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -84,7 +85,10 @@ def check_start(db, guest, ip):
         return
     require(not one(db,'SELECT 1 FROM guest_block_ips WHERE ip=? AND until>?',(found,now())),NETWORK_BLOCKED,403)
     started = db.execute('SELECT COUNT(*) FROM guest_conversations WHERE ip=? AND created_at>=?',(found,after(days=-1))).fetchone()[0]
-    require(started<START_PER_IP_DAY,TOO_MANY_TODAY,429)
+    # An address of a cloud or a VPN (the IP database, when on) has few real people behind it: a smaller day.
+    from backend.modules.security import ip_intel
+    info = ip_intel.lookup(found) if started>=START_PER_HOSTING_IP_DAY else None
+    require(started<(START_PER_HOSTING_IP_DAY if info and info['hosting'] else START_PER_IP_DAY),TOO_MANY_TODAY,429)
 
 
 def refuse(req, path):

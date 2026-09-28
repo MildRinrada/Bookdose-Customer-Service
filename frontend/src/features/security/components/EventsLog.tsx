@@ -12,7 +12,8 @@ import { useApi } from '@/lib/query';
 import { useUiState } from '@/lib/ui-state';
 import { eventsPath } from '../api';
 import { actorLabels, detailKeyLabels, eventKindLabel, eventKindLabels, severityLabels } from '../labels';
-import type { SecurityEvent, SecurityEventFilters, SecurityEventsPage } from '../types';
+import type { IpInfo, SecurityEvent, SecurityEventFilters, SecurityEventsPage } from '../types';
+import { countryName, IpWithInfo } from './IpInfo';
 import { SeverityBadge, severityClass } from './Alerts';
 import { BlockIpDialog } from './IpBlocks';
 
@@ -46,8 +47,8 @@ export function EventsLog() {
     update({ ...filters, ip: String(data.get('ip') ?? '').trim(), q: String(data.get('q') ?? '').trim() });
   };
   const filtered = Object.values(filters).some(Boolean);
-  const openDetail = (e: SecurityEvent) =>
-    openModal(eventKindLabel(e.kind), <EventDetail event={e} onFilterIp={(ip) => update({ ...filters, ip })} />, { drawer: true });
+  const openDetail = (e: SecurityEvent, info?: IpInfo) =>
+    openModal(eventKindLabel(e.kind), <EventDetail event={e} info={info} onFilterIp={(ip) => update({ ...filters, ip })} />, { drawer: true });
 
   return (
     <section className="card security-card security-section" id="security-events" aria-labelledby="security-events-title">
@@ -162,7 +163,7 @@ export function EventsLog() {
   );
 }
 
-function EventRows({ path, onOpen }: { path: string; onOpen: (event: SecurityEvent) => void }) {
+function EventRows({ path, onOpen }: { path: string; onOpen: (event: SecurityEvent, info?: IpInfo) => void }) {
   const page = useApi<SecurityEventsPage>(path);
   if (!page.data) return null;
   return (
@@ -175,7 +176,7 @@ function EventRows({ path, onOpen }: { path: string; onOpen: (event: SecurityEve
             </time>
           </td>
           <td>
-            <button type="button" className="security-event-open" onClick={() => onOpen(e)} aria-haspopup="dialog">
+            <button type="button" className="security-event-open" onClick={() => onOpen(e, e.ip ? page.data.ip_info?.[e.ip] : undefined)} aria-haspopup="dialog">
               {eventKindLabel(e.kind)}
             </button>
           </td>
@@ -185,7 +186,9 @@ function EventRows({ path, onOpen }: { path: string; onOpen: (event: SecurityEve
           <td>{actorLabels[e.actor] ?? e.actor}</td>
           <td>{e.subject || '-'}</td>
           <td>{e.tenant_name || '-'}</td>
-          <td className="mono">{e.ip || '-'}</td>
+          <td>
+            <IpWithInfo ip={e.ip} info={e.ip ? page.data.ip_info?.[e.ip] : undefined} />
+          </td>
           <td className="mono">{number(e.count || 1)}</td>
         </tr>
       ))}
@@ -193,14 +196,17 @@ function EventRows({ path, onOpen }: { path: string; onOpen: (event: SecurityEve
   );
 }
 
-function detailValue(value: unknown): string {
+/** A detail as a person reads it: yes / no for a flag, a country's name for its code (the sign-in signs). */
+function detailValue(key: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'boolean') return value ? 'ใช่' : 'ไม่ใช่';
+  if ((key === 'country' || key === 'previous_country') && typeof value === 'string') return countryName(value);
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 }
 
 /** The drawer behind a row: every field, the detail the server kept, and the IP's actions. */
-export function EventDetail({ event: e, onFilterIp }: { event: SecurityEvent; onFilterIp: (ip: string) => void }) {
+export function EventDetail({ event: e, info, onFilterIp }: { event: SecurityEvent; info?: IpInfo; onFilterIp: (ip: string) => void }) {
   const { openModal, closeModal } = useDialogs();
   const detail: Array<[string, unknown]> =
     e.detail && typeof e.detail === 'object' ? Object.entries(e.detail) : e.detail ? [['detail', e.detail]] : [];
@@ -211,6 +217,11 @@ export function EventDetail({ event: e, onFilterIp }: { event: SecurityEvent; on
     ['บัญชี', e.subject || '-'],
     ['องค์กร', e.tenant_name || '-'],
     ['IP', e.ip || '-'],
+    ...(info
+      ? ([['ประเทศและเครือข่าย', [countryName(info.country), info.org, info.hosting ? '(คลาวด์หรือ VPN)' : ''].filter(Boolean).join(' ') || '-']] as Array<
+          [string, string]
+        >)
+      : []),
     ['จำนวนครั้ง', number(e.count || 1)],
     ['ประเภท (รหัส)', e.kind],
   ];
@@ -240,7 +251,7 @@ export function EventDetail({ event: e, onFilterIp }: { event: SecurityEvent; on
             {detail.map(([key, value]) => (
               <div key={key}>
                 <dt>{detailKeyLabels[key] ?? key}</dt>
-                <dd className="security-wrap">{detailValue(value)}</dd>
+                <dd className="security-wrap">{detailValue(key, value)}</dd>
               </div>
             ))}
           </dl>

@@ -7,7 +7,8 @@ import { date, number, relative } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { acknowledgeAlert, OPEN_ALERTS_PATH, SECURITY_PREFIX } from '../api';
 import { alertRuleLabel, eventKindLabel, honeytokenKindLabel, honeytokenWhereLabels, severityLabels } from '../labels';
-import type { SecurityAlert } from '../types';
+import type { IpInfoMap, SecurityAlert } from '../types';
+import { IpInfoText } from './IpInfo';
 
 /* The open alerts, at the top of the page: one row per rule (and IP) coloured by severity, with "รับทราบ". Nothing
    is shown when all is quiet. Refreshes itself every minute. */
@@ -45,7 +46,7 @@ function detailText(detail: SecurityAlert['detail']): string {
 }
 
 export function AlertsBanner() {
-  const alerts = useApi<{ alerts: SecurityAlert[] }>(OPEN_ALERTS_PATH, { refetchInterval: 60000 });
+  const alerts = useApi<{ alerts: SecurityAlert[]; ip_info?: IpInfoMap }>(OPEN_ALERTS_PATH, { refetchInterval: 60000 });
   const refresh = useInvalidate();
   const toast = useToast();
   const run = useRunAction();
@@ -71,7 +72,8 @@ export function AlertsBanner() {
                 <SeverityBadge severity={alert.severity} /> {alertRuleLabel(alert.rule) === alert.rule && alert.label ? alert.label : alertRuleLabel(alert.rule)}
               </strong>
               <span>
-                {number(alert.count)} ครั้ง{alert.ip ? ` · IP ${alert.ip}` : ''} · เริ่ม {relative(alert.started_at)} · ล่าสุด{' '}
+                {number(alert.count)} ครั้ง{alert.ip ? ` · IP ${alert.ip}` : ''}
+                {alert.ip && <IpInfoText info={alerts.data?.ip_info?.[alert.ip]} />} · เริ่ม {relative(alert.started_at)} · ล่าสุด{' '}
                 <time dateTime={alert.last_seen_at} title={date(alert.last_seen_at, true)}>
                   {relative(alert.last_seen_at)}
                 </time>

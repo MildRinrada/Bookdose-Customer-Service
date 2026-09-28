@@ -1,5 +1,8 @@
-"""HTTP handlers of the Superadmin security dashboard (every route requires a platform admin: access 'platform')."""
-from backend.modules.security import service
+"""HTTP handlers of the Superadmin security dashboard (every route requires a platform admin: access 'platform'), and
+the platform admin's guards outside it: proving the password again (admin_guard) and the "ไม่ใช่ฉัน" link of a
+sign-in mail (sign_in_alerts)."""
+from backend.middleware.rate_limit import limited
+from backend.modules.security import admin_guard, ip_intel, service, sign_in_alerts
 
 
 def overview(req):
@@ -46,6 +49,7 @@ def settings(req):
     return req.send(200,service.get_settings(req.cd))
 
 
+@admin_guard.confirm_first
 def save_settings(req):
     return req.send(200,service.save_settings(req))
 
@@ -78,3 +82,40 @@ def checkup(req):
     host = req.headers.get('X-Forwarded-Host','') if from_web_app(req) else ''
     hint = 'http://'+host if host.split(':')[0] in C.LOCAL else ''
     return req.send(200,C.run(req.cd,hint))
+
+
+# The platform admin's guards
+def confirm_password(req):
+    """POST /api/account/confirm-password: the password again before a dangerous act of the console."""
+    limited(('confirm-password',req.session['id']),10,900)
+    return req.send(200,admin_guard.confirm_password(req))
+
+
+def sign_in_alert(req):
+    """POST /api/sign-in-alerts/check: what a "ไม่ใช่ฉัน" link from a sign-in mail is about (no sign-in needed)."""
+    from backend.database import db as D
+    limited(('sign-in-alert',req.ip),30,900)
+    with D.control() as cd:
+        return req.send(200,sign_in_alerts.check(cd,req.body))
+
+
+def disown_sign_in(req):
+    """POST /api/sign-in-alerts/not-me: end the session that link names."""
+    from backend.database import db as D
+    from backend.modules.staff_security.service import client_info
+    limited(('sign-in-alert',req.ip),30,900)
+    with D.control() as cd:
+        return req.send(200,sign_in_alerts.disown(cd,req.body,client_info(req)))
+
+
+# ข้อมูล IP (ip_intel.py): the free databases of countries and networks, kept on this server
+def ip_data(req):
+    return req.send(200,ip_intel.status())
+
+
+def update_ip_data(req):
+    return req.send(202,ip_intel.start_update(req.session['user_id']))
+
+
+def remove_ip_data(req):
+    return req.send(200,ip_intel.stop_using(req.session['user_id']))

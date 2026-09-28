@@ -41,8 +41,11 @@ const SEARCH_SHORTCUT = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.te
 export function StaffShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const boot = useBoot().data!;
+  const bootQuery = useBoot();
+  const boot = bootQuery.data!;
   const user = boot.user!;
+  // A platform admin without two-step sign-in or a passkey: the console stays shut, ตั้งค่าบัญชี opens to add one.
+  const consoleLocked = Boolean(user.platform_admin && user.console_locked);
   const membership = activeMembership(boot);
   const workspace = useWorkspace();
   const tickets = useStaffTickets();
@@ -148,6 +151,43 @@ export function StaffShell({ children }: { children: ReactNode }) {
   };
   let content: ReactNode = children;
   if (!allowed) content = <PageLoading />;
+  else if (consoleLocked && isAccountPath(pathname))
+    content = (
+      <>
+        <div className="notice warning two-factor-gate-notice">
+          <span className="grow">
+            ผู้ดูแลแพลตฟอร์มต้องเปิดการยืนยันตัวตน 2 ขั้น หรือเพิ่ม Passkey ก่อนใช้คอนโซลระบบกลาง เปิดได้ในส่วน &ldquo;ความปลอดภัย&rdquo; ด้านล่าง
+          </span>
+          <button
+            type="button"
+            className="btn sm"
+            onClick={async () => {
+              const fresh = await bootQuery.refetch();
+              if (fresh.data?.user?.console_locked) toast('ยังไม่พบการยืนยันตัวตน 2 ขั้นหรือ Passkey ในบัญชีนี้', true);
+              else router.push('/platform/system');
+            }}
+          >
+            ตั้งเสร็จแล้ว ไปที่คอนโซล
+          </button>
+        </div>
+        {children}
+      </>
+    );
+  else if (consoleLocked && isPlatformPath(pathname))
+    content = (
+      <EmptyState
+        title="เปิดการยืนยันตัวตน 2 ขั้นก่อนใช้คอนโซลระบบกลาง"
+        description="บัญชีผู้ดูแลแพลตฟอร์มเข้าถึงทุกองค์กรได้ จึงต้องมีรหัสยืนยันจากแอปในโทรศัพท์หรือ Passkey นอกจากรหัสผ่าน ตั้งเสร็จแล้วกลับมาใช้คอนโซลได้ทันที"
+        icon="lock"
+      >
+        <Link className="btn primary" href="/account?tab=security">
+          ไปตั้งค่าความปลอดภัย
+        </Link>
+        <button type="button" className="btn" onClick={() => void bootQuery.refetch()}>
+          ตั้งเสร็จแล้ว ลองอีกครั้ง
+        </button>
+      </EmptyState>
+    );
   else if (needsTwoFactor && isAccountPath(pathname))
     content = (
       <>
@@ -286,7 +326,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
                 <NotificationBell />
               </>
             )}
-            {platform && <PlatformBell />}
+            {platform && !consoleLocked && <PlatformBell />}
             {/* Switched per organization in the platform console (platform/model.py FEATURES). */}
             {work && work.features?.help_menu !== false && <HelpMenu />}
             <TextSizeMenu />

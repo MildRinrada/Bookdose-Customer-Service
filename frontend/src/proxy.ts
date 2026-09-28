@@ -55,6 +55,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 function vouch(headers: Headers, request: NextRequest) {
   headers.delete('x-bookdose-proxy');
   headers.delete('x-bookdose-client-ip');
+  headers.delete('x-bookdose-client-proxy');
   headers.delete(TRAP_HEADER);
   const secret = process.env.BOOKDOSE_PROXY_SECRET;
   if (secret) headers.set('x-bookdose-proxy', secret);
@@ -63,7 +64,15 @@ function vouch(headers: Headers, request: NextRequest) {
     const address = request.headers.get('x-forwarded-for')?.split(',').pop()?.trim();
     if (address) headers.set('x-bookdose-client-ip', address);
   }
+  // Which headers proxies and VPN add were on the request (names only): a sign the API writes down at a platform
+  // admin's sign-in, never a reason to refuse (backend security/sign_in_alerts.py).
+  const seen = PROXY_HEADERS.filter((name) => request.headers.has(name));
+  if (seen.length) headers.set('x-bookdose-client-proxy', seen.join(','));
 }
+
+/* Headers a proxy, a VPN browser add-on or a corporate gateway puts on a request. X-Forwarded-For is left out: the
+   load balancer in front of this app adds it to every request. */
+const PROXY_HEADERS = ['via', 'forwarded', 'x-proxy-id', 'proxy-connection', 'x-hola-version', 'x-hola-unblocker-bext', 'x-bluecoat-via', 'client-ip'];
 
 function toApi(request: NextRequest) {
   const headers = new Headers(request.headers);

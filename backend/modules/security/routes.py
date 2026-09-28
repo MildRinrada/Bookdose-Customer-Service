@@ -1,4 +1,5 @@
-"""/api/platform/security/... : the Superadmin security dashboard and its traps (platform admins only). POST /api/trap,
+"""/api/platform/security/... : the Superadmin security dashboard and its traps (platform admins only), and the two
+guards of a platform admin's account at the end of the table. POST /api/trap,
 the web app's own trap report, is not in this table: backend/http/dispatch.py answers it only for the web app."""
 from backend.modules.security import controller
 from backend.utils.routing import ID
@@ -25,4 +26,13 @@ ROUTES = [
     ('PATCH',  SECURITY+f'/honeytokens/{ID}',     controller.update_honeytoken, 'platform'),
     ('DELETE', SECURITY+f'/honeytokens/{ID}',     controller.delete_honeytoken, 'platform'),
     ('POST',   SECURITY+f'/honeytokens/{ID}/test', controller.test_honeytoken,  'platform'),
+    # ข้อมูล IP: the country and network of an address, from free databases downloaded to this server (ip_intel.py).
+    ('GET',    SECURITY+'/ip-data',               controller.ip_data,           'platform'),
+    ('POST',   SECURITY+'/ip-data',               controller.update_ip_data,    'platform'),
+    ('DELETE', SECURITY+'/ip-data',               controller.remove_ip_data,    'platform'),
+    # The platform admin's guards (admin_guard.py, sign_in_alerts.py): the password again before a dangerous act, and
+    # the "ไม่ใช่ฉัน" link of a mail about a sign-in from a new place (opened signed out, from the mail).
+    ('POST',   '/api/account/confirm-password',   controller.confirm_password,  'account'),
+    ('POST',   '/api/sign-in-alerts/check',       controller.sign_in_alert,     'public'),
+    ('POST',   '/api/sign-in-alerts/not-me',      controller.disown_sign_in,    'public'),
 ]

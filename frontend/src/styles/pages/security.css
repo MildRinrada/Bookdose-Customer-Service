@@ -1056,3 +1056,55 @@ p.card-body.muted .icon {
     padding: 18px 16px;
   }
 }
+
+/* ข้อมูล IP beside an address (features/security/components/IpInfo): the country and network under it, and a badge
+   when the network rents out servers. The card that turns the database on (IpDataCard). */
+.ip-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-family: inherit;
+}
+.security-alert-text .ip-info {
+  display: inline-flex;
+  margin: 0 0 0 6px;
+}
+.ip-info-place {
+  overflow-wrap: anywhere;
+}
+/* In a table the address keeps its line and what is known of it wraps under it, so the column stays narrow. */
+.security-table .ip-info {
+  white-space: normal;
+  max-width: 11rem;
+}
+.ip-info-hosting {
+  display: inline-block;
+  padding: 0 8px;
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  color: var(--amber);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ip-data-uses {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  line-height: 1.6;
+}
+.ip-data-state {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--soft);
+  line-height: 1.6;
+}
+.ip-data-credit {
+  margin: 12px 0 0;
+}

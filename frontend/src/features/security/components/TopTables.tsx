@@ -4,13 +4,14 @@ import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { number } from '@/lib/format';
 import { actorLabels } from '../labels';
-import type { SecurityOverview } from '../types';
+import type { IpInfoMap, SecurityOverview } from '../types';
+import { IpWithInfo } from './IpInfo';
 import { BlockIpDialog } from './IpBlocks';
 
 /* The addresses with the most security events in the range (with "บล็อก"), and the accounts most often targeted by
    wrong passwords (the email typed, whether or not the account exists). */
 
-export function TopIpsCard({ rows }: { rows: SecurityOverview['top_ips'] }) {
+export function TopIpsCard({ rows, info = {} }: { rows: SecurityOverview['top_ips']; info?: IpInfoMap }) {
   const { openModal } = useDialogs();
   return (
     <section className="card security-card" aria-labelledby="security-top-ips-title">
@@ -37,7 +38,9 @@ export function TopIpsCard({ rows }: { rows: SecurityOverview['top_ips'] }) {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.ip}>
-                  <td className="mono">{row.ip}</td>
+                  <td>
+                    <IpWithInfo ip={row.ip} info={info[row.ip]} />
+                  </td>
                   <td className="mono">{number(row.events)}</td>
                   <td className="mono">{number(row.failed_logins)}</td>
                   <td className="security-actions-cell">

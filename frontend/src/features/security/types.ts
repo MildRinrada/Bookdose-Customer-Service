@@ -22,6 +22,27 @@ export type SecurityOverview = {
   series: Array<{ at: string; failed_logins: number; rate_limited: number; rejected: number }>;
   top_ips: Array<{ ip: string; events: number; failed_logins: number; blocked: boolean }>;
   top_subjects: Array<{ subject: string; actor: SecurityActor | (string & {}); failures: number }>;
+  ip_info?: IpInfoMap;
+};
+
+/** The country and network of an address, from the IP database kept on the server (backend security/ip_intel.py).
+    hosting: the network rents out servers (a cloud, a VPN's exit). Only known addresses are in the map. */
+export type IpInfo = { country: string; asn: number | null; org: string; hosting: boolean };
+export type IpInfoMap = Record<string, IpInfo>;
+
+/** GET /api/platform/security/ip-data */
+export type IpDataStatus = {
+  enabled: boolean;
+  month: string | null;
+  updated_at: string | null;
+  countries: number;
+  networks: number;
+  last_try: string | null;
+  ok: boolean;
+  error: string;
+  running: boolean;
+  credit: string;
+  credit_url: string;
 };
 
 /** A row of GET /api/platform/security/events. */
@@ -41,7 +62,7 @@ export type SecurityEvent = {
 };
 
 /** `next_before`: the id the next (older) page starts before; null on the last page. */
-export type SecurityEventsPage = { events: SecurityEvent[]; next_before: string | number | null };
+export type SecurityEventsPage = { events: SecurityEvent[]; next_before: string | number | null; ip_info?: IpInfoMap };
 
 export type SecurityEventFilters = { kind?: string; severity?: string; actor?: string; ip?: string; tenant?: string; q?: string };
 

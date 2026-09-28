@@ -198,9 +198,13 @@ def workspace_context(db, session):
     return ctx
 
 
-def bootstrap_data(db, session):
+def bootstrap_data(db, session, server=None):
     if session:
-        session = {**session,'platform_owner':session['user_id']==tenants.owner_id(db)}
+        # console_locked: a platform admin without a second factor or passkey, on a server that asks for one, reaches
+        # only ตั้งค่าบัญชี (admin_guard).
+        from backend.modules.security import admin_guard
+        session = {**session,'platform_owner':session['user_id']==tenants.owner_id(db),
+                   'console_locked':admin_guard.console_locked(db,session,server)}
     return schema.bootstrap(session,
         setup_required=repository.count_users(db)==0,
         setup_token_required=bool(settings.setup_token()) or settings.on_render(),
@@ -382,7 +386,11 @@ def _replace_session(db, cookie_header, user_id, client=None, login='login'):
         staff_security.note(db,user_id,login,client=client)
     if others:
         _note_linked(db,user_id,others,client)
+    # A platform admin signing in from a new device or network is emailed a "ไม่ใช่ฉัน" link (security/sign_in_alerts).
+    from backend.modules.security import sign_in_alerts
+    notice = sign_in_alerts.noticed(db,user_id,repository.find_session(db,token_hash(token))['id'],client)
     db.commit()
+    sign_in_alerts.start(notice)
     return token
 
 

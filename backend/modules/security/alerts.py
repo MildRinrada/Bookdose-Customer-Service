@@ -156,3 +156,13 @@ class Worker:
             except Exception as error:
                 print(f'Vulnerability scan: {type(error).__name__}; retrying next round',flush=True)
                 monitor.error('security','vulns: '+type(error).__name__)
+            # The IP database, once a platform admin turned it on: the new month's files (security/ip_intel.py).
+            try:
+                from backend.modules.security import ip_intel
+                with D.control() as cd:
+                    due = ip_intel.due(cd)
+                if due and not ip_intel.busy():
+                    threading.Thread(target=ip_intel.auto_round,name='bookdose-ip-intel',daemon=True).start()
+            except Exception as error:
+                print(f'IP database: {type(error).__name__}; retrying next round',flush=True)
+                monitor.error('security','ip-intel: '+type(error).__name__)

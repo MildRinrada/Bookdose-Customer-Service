@@ -58,7 +58,7 @@ from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
 from backend.modules.reports import routes as report_routes
 from backend.modules.search import routes as search_routes
-from backend.modules.security import blocks, events as security_events, routes as security_routes, traps
+from backend.modules.security import admin_guard, blocks, events as security_events, routes as security_routes, traps
 from backend.modules.security.model import TRAP_PATH
 from backend.modules.staff_prefs import routes as staff_prefs_routes
 from backend.modules.staff_security import routes as staff_security_routes
@@ -220,6 +220,8 @@ def route_request(req, path):
             return
         if path.startswith('/api/platform'):
             auth.require_platform_admin(req)
+            # The console only with two-step sign-in or a passkey on the account (security/admin_guard.py).
+            admin_guard.require_protected(req)
             if not run(req,path,'platform'):
                 raise APIError(404,'ไม่พบรายการ')
             return

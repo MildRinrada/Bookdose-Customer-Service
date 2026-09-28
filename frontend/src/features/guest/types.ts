@@ -19,6 +19,8 @@ export type GuestConversation = {
   id: string;
   subject: string;
   status: string;
+  /** The status of the case the chat belongs to (null when none): the list reads it as the open chat does. */
+  ticket_status?: string | null;
   updated_at: string;
   /** Replies the visitor has not read (a count, or true/false). */
   unread: number | boolean;

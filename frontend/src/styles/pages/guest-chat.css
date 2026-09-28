@@ -119,8 +119,21 @@
 .guest-chat.has-list.has-aside {
   grid-template-columns: 240px minmax(0, 1fr) 320px;
 }
-/* Beside the conversation: the case, the ways to follow this chat, and answers to read while the team writes back. */
+/* The chat page is one window tall and no taller: the banner and the line at the foot take what they need (the line
+   wraps on a phone) and the chat card the rest, up to 880px. Only a window shorter than the card's least height
+   scrolls the page. */
+.guest-page-chat {
+  min-height: 100dvh;
+}
+.guest-page-chat>.guest-chat {
+  flex: 1 1 0;
+  height: auto;
+  max-height: 880px;
+}
+/* Beside the conversation: the case, the ways to follow this chat, and answers to read while the team writes back.
+   Positioned, so a hidden label in it (.sr-only is absolute) scrolls with the column instead of lengthening the page. */
 .guest-aside {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -223,16 +236,15 @@
   min-width: 0;
   font: inherit;
 }
-/* One line, like the signed-in customer's own list: the state chip gives way, the time keeps its place at the end. */
+/* The state chip is always read whole; when the narrow list has no room for it and the time, the time moves under it
+   (still at the end). */
 .guest-list .inbox-top {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  row-gap: 4px;
   min-width: 0;
 }
 .guest-list .inbox-top .customer-state {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 .guest-list .inbox-time {
@@ -899,6 +911,9 @@
     /* The banner on a phone: the organization's row, then its links (124px). */
     height: calc(100dvh - 140px);
     min-height: 440px;
+  }
+  .guest-page-chat>.guest-chat {
+    height: auto;
   }
   .guest-chat.has-list:not(.show-list) .guest-list,
   .guest-chat.show-list .guest-detail {

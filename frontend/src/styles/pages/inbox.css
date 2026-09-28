@@ -133,19 +133,34 @@
 .media-image-button {
   display: block;
   width: 100%;
+  /* As tall as the picture: the buttons' 44px least height would put a band above and below a wide, low one. */
+  min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: zoom-in;
 }
-.message-media img,.message-media video {
+/* A picture keeps its own shape: as wide as it is up to the frame and at most 240px tall, and once it has loaded the
+   frame shrinks around it, so a wide banner has no empty band above and below it and a tall photo none at its sides
+   (never narrower than 200px, for the name and the download button). A video keeps the fixed frame for its controls. */
+.message-media img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 240px;
+  margin-inline: auto;
+}
+.message-media[data-media-state="ready"]:has(.media-image-button) {
+  width: fit-content;
+  min-width: min(200px, 100%);
+  max-width: min(360px, 100%);
+}
+.message-media video {
   display: block;
   width: 100%;
   height: 240px;
   object-fit: contain;
-  background: var(--soft);
-}
-.message-media video {
   background: #1b1b1b;
 }
 .media-placeholder,.media-error {

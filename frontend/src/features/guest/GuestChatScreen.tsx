@@ -383,7 +383,8 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
               key={c.id}
               chat={c}
               selected={c.id === current}
-              state={c.id === current && session.data ? chatView(session.data) : chatState({ ticket_status: null, status: c.status })}
+              // The open chat reads its fresher session; the others the case status the list carries (same words).
+              state={c.id === current && session.data ? chatView(session.data) : chatState({ ticket_status: c.ticket_status ?? null, status: c.status })}
               onOpen={() => {
                 setOpenId(c.id);
                 setComposing(false);

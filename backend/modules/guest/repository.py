@@ -128,8 +128,10 @@ def conversation_count(db, visitor_id):
 
 
 def conversations_of(db, visitor_id, survey_since):
-    """Newest first; unread: the last message the guest can see is the team's and came after the guest last read it."""
+    """Newest first; unread: the last message the guest can see is the team's and came after the guest last read it.
+    ticket_status: the case the chat belongs to, whose state the list shows (as the open chat does)."""
     return rows(db,f'''SELECT c.id,c.subject,c.status,c.updated_at,
+        (SELECT t.status FROM ticket_conversations tc JOIN tickets t ON t.id=tc.ticket_id WHERE tc.conversation_id=c.id LIMIT 1) AS ticket_status,
         (SELECT m.kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' AND m.delivery!='translating' ORDER BY m.created_at DESC,m.rowid DESC LIMIT 1) AS last_kind,
         (SELECT s.seen_at FROM guest_seen s WHERE s.visitor_id=? AND s.conversation_id=c.id) AS seen_at,
         EXISTS(SELECT 1 FROM csat_surveys cs WHERE cs.conversation_id=c.id AND cs.answered_at IS NULL AND cs.sent_at>=?) AS survey_pending

@@ -157,7 +157,7 @@ def overview(cd, db, org, guest):
         view = {'name':visitor['name'],'email_masked':schema.mask_email(visitor['email']),'email_verified':bool(visitor['email_verified_at']),
                 'phone_masked':schema.mask_phone(visitor['phone']),'phone_verified':bool(visitor['phone_verified_at']),
                 'line_linked':bool(repository.line_link(db,visitor['id'])),'remember':bool(device['remember']),'csrf':device['csrf']}
-        conversations = [{'id':c['id'],'subject':c['subject'],'status':c['status'],'updated_at':c['updated_at'],
+        conversations = [{'id':c['id'],'subject':c['subject'],'status':c['status'],'ticket_status':c['ticket_status'],'updated_at':c['updated_at'],
                           'unread':c['last_kind']=='reply' and (not c['seen_at'] or c['seen_at']<c['updated_at']),
                           'survey_pending':bool(c['survey_pending'])}
                          for c in repository.conversations_of(db,visitor['id'],after(days=-SURVEY_DAYS))]

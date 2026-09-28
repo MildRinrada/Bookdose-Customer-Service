@@ -721,6 +721,21 @@ class GuestChatTests(unittest.TestCase):
                           key('+66812345678'),key('0066812345678'),key('66812345678')},{'+66812345678'})
         self.assertEqual(schema.link_target('email','  Somsri@Example.COM '),'somsri@example.com')
 
+    def test_the_list_reads_each_chat_by_its_case_like_the_open_chat(self):
+        """Every row of the guest's list carries the status of its case, so a chat reads the same whether it is the one
+        open (its session) or not (the list)."""
+        page = self.browser()
+        conv = self.started(page)
+        other = self.started(page,body='อีกเรื่องหนึ่งค่ะ')
+        rows = {c['id']:c for c in self.overview(page)['conversations']}
+        self.assertEqual((rows[conv]['ticket_status'],rows[other]['ticket_status']),(None,None))
+        case = self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})['id']
+        self.ok(self.admin,f'/api/tickets/{case}',{'status':'open'},'PATCH')
+        rows = {c['id']:c for c in self.overview(page)['conversations']}
+        page.conversation = conv
+        self.assertEqual(rows[conv]['ticket_status'],self.ok(page,GUEST+'/session')['ticket']['status'])
+        self.assertEqual((rows[conv]['ticket_status'],rows[other]['ticket_status']),('open',None))
+
     def test_existing_databases_upgrade_cleanly(self):
         with D.tenant(self.org) as db:
             for table in ('guest_visitors','guest_devices','guest_conversations','guest_seen','guest_links','guest_line_codes',

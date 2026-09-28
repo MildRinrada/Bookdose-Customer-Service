@@ -543,15 +543,20 @@ dialog.idle-dialog {
 .security-filters {
   border-top: 1px solid var(--line);
 }
+/* The search box, the IP box and "ค้นหา" have the first line to themselves and the selects the next, so picking a
+   long kind name never squeezes the button under the boxes or moves the row around. */
 .security-search {
   display: flex;
-  flex: 1 1 360px;
-  flex-wrap: wrap;
+  flex: 1 1 100%;
   gap: 8px;
   min-width: 0;
 }
 .security-search .input-wrap {
   flex: 1 1 200px;
+  min-width: 0;
+}
+.security-search .btn {
+  flex: none;
 }
 .security-ip-filter {
   flex: 0 1 150px;
@@ -572,6 +577,11 @@ dialog.idle-dialog {
 }
 .security-more .error-text {
   color: var(--red);
+}
+/* "ไม่พบเหตุการณ์…" sits in the card as the rows would, with room above it rather than against the filters' line. */
+.security-events-empty {
+  margin: 0;
+  padding: 18px 20px 22px;
 }
 
 /* Event detail drawer */
@@ -884,6 +894,12 @@ p.card-body.muted .icon {
   }
   .security-search,
   .security-filters .filter-select {
+    flex: 1 1 100%;
+  }
+  .security-search {
+    flex-wrap: wrap;
+  }
+  .security-search .input-wrap {
     flex: 1 1 100%;
   }
   .security-ip-filter {

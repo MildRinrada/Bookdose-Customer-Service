@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
@@ -23,6 +23,40 @@ import { BlockIpDialog } from './IpBlocks';
 
 const toChoices = (labels: Record<string, string>) => Object.entries(labels).map(([value, label]) => ({ value, label }));
 
+/* A filter with fewer rows shortens the page under an admin scrolled down to the log, and the browser pulls the whole
+   page down to fit, which looks like a reload. `hold()` (just before a filter changes) keeps the card as tall as it
+   was; after every render and scroll it gives back what staying in place does not need, all of it once the admin
+   scrolls back up. */
+function useHoldPlace() {
+  const ref = useRef<HTMLElement>(null);
+  const holding = useRef(false);
+  const fit = useCallback(() => {
+    const card = ref.current;
+    if (!card || !holding.current) return;
+    const top = card.getBoundingClientRect().top + window.scrollY;
+    const below = document.documentElement.scrollHeight - top - card.offsetHeight;
+    const needed = Math.floor(window.scrollY + window.innerHeight - top - below);
+    if (needed <= 0) {
+      card.style.minHeight = '';
+      holding.current = false;
+      return;
+    }
+    card.style.minHeight = `${Math.min(parseFloat(card.style.minHeight) || 0, needed)}px`;
+  }, []);
+  useLayoutEffect(fit);
+  useEffect(() => {
+    window.addEventListener('scroll', fit, { passive: true });
+    return () => window.removeEventListener('scroll', fit);
+  }, [fit]);
+  const hold = () => {
+    const card = ref.current;
+    if (!card) return;
+    card.style.minHeight = `${card.offsetHeight}px`;
+    holding.current = true;
+  };
+  return { ref, hold };
+}
+
 export function EventsLog() {
   const [filters, setFilters] = useUiState<SecurityEventFilters>('security:events', {});
   const [cursors, setCursors] = useState<string[]>(['']);
@@ -34,10 +68,13 @@ export function EventsLog() {
   }
   const tenants = useApi<TenantsPage>(TENANTS_PATH);
   const last = useApi<SecurityEventsPage>(eventsPath(filters, cursors[cursors.length - 1]));
-  const first = useApi<SecurityEventsPage>(eventsPath(filters));
+  // A changed filter keeps what is shown until its answer comes, instead of swapping the table for "กำลังโหลด…".
+  const first = useApi<SecurityEventsPage>(eventsPath(filters), { keepPrevious: true });
   const { openModal } = useDialogs();
+  const { ref: cardRef, hold: holdPlace } = useHoldPlace();
 
   const update = (next: SecurityEventFilters) => {
+    holdPlace();
     setFilters(next);
     setCursors(['']);
   };
@@ -51,7 +88,7 @@ export function EventsLog() {
     openModal(eventKindLabel(e.kind), <EventDetail event={e} info={info} onFilterIp={(ip) => update({ ...filters, ip })} />, { drawer: true });
 
   return (
-    <section className="card security-card security-section" id="security-events" aria-labelledby="security-events-title">
+    <section ref={cardRef} className="card security-card security-section" id="security-events" aria-labelledby="security-events-title">
       <div className="card-header">
         <div>
           <h2 id="security-events-title">บันทึกเหตุการณ์ความปลอดภัย</h2>
@@ -124,7 +161,7 @@ export function EventsLog() {
         <PageLoading />
       ) : first.data.events.length ? (
         <>
-          <div className="table-scroll">
+          <div className="table-scroll" aria-busy={first.isPlaceholderData}>
             <table className="security-table security-events">
               <thead>
                 <tr>
@@ -157,14 +194,16 @@ export function EventsLog() {
           </div>
         </>
       ) : (
-        <p className="card-body muted">{filtered ? 'ไม่พบเหตุการณ์ที่ตรงกับตัวกรอง' : 'ยังไม่มีเหตุการณ์ความปลอดภัย'}</p>
+        <p className="security-events-empty muted" aria-busy={first.isPlaceholderData}>
+          {filtered ? 'ไม่พบเหตุการณ์ที่ตรงกับตัวกรอง' : 'ยังไม่มีเหตุการณ์ความปลอดภัย'}
+        </p>
       )}
     </section>
   );
 }
 
 function EventRows({ path, onOpen }: { path: string; onOpen: (event: SecurityEvent, info?: IpInfo) => void }) {
-  const page = useApi<SecurityEventsPage>(path);
+  const page = useApi<SecurityEventsPage>(path, { keepPrevious: true });
   if (!page.data) return null;
   return (
     <tbody>

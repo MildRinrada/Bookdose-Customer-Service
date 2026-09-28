@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -51,12 +52,25 @@ export function ContactsScreen() {
   const { openModal, confirmDelete } = useDialogs();
   const contactModal = useContactModal();
   const openNewTicket = useOpenNewTicket();
-  // The search starts empty every time the screen opens (the other choices are kept).
-  const [query, setQuery] = useState('');
+  // The search starts empty every time the screen opens (the other choices are kept), unless the address names a
+  // customer (/contacts?q=, from ค้นหาด่วน in the top bar); a new one from there replaces what is typed.
+  const addressQ = useSearchParams().get('q') ?? '';
+  const [query, setQuery] = useState(addressQ);
+  const [seenQ, setSeenQ] = useState(addressQ);
+  if (seenQ !== addressQ) {
+    setSeenQ(addressQ);
+    setQuery(addressQ);
+  }
   const [tag, setTag] = useUiState('contacts:filter', 'all');
   const [company, setCompany] = useUiState('contacts:company', '');
   const [sort, setSort] = useUiState<{ key: ContactSortKey; direction: 1 | -1 }>('contacts:sort', { key: 'name', direction: 1 });
   const peek = useContactPeek();
+  // A customer named in the address is shown whatever quick filter or organization was chosen last time.
+  useEffect(() => {
+    if (!addressQ) return;
+    setTag('all');
+    setCompany('');
+  }, [addressQ, setTag, setCompany]);
 
   const contacts = list.data?.contacts ?? [];
   const stats = contactTicketStats(contacts, tickets);

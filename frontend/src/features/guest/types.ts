@@ -97,6 +97,19 @@ export type GuestChatSettings = {
   chat_qr?: string;
 };
 
+/** บล็อกผู้ก่อกวน (backend guest/blocks.py): a guest an owner blocked. network_until: until when nobody starts a new
+    guest chat from the addresses it came from (null when none were held, or their days are over). conversation_id is
+    '' once the chat it was blocked from is gone. */
+export type GuestBlock = {
+  id: string;
+  name: string;
+  subject: string;
+  blocked_by: string;
+  created_at: string;
+  network_until: string | null;
+  conversation_id: string;
+};
+
 /** GET /api/customer/guest-claims: chats this browser had with an organization before signing in. */
 export type GuestClaim = { org_slug: string; org_name: string; conversations: number };
 

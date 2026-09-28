@@ -67,7 +67,9 @@ def forget_visitor(db, visitor_id):
 
 
 def delete_visitor(db, visitor_id):
+    from backend.modules.guest import blocks
     forget_visitor(db,visitor_id)
+    blocks.forget_visitor(db,visitor_id)
     for table in ('guest_conversations','guest_seen','guest_notifications'):
         db.execute(f'DELETE FROM {table} WHERE visitor_id=?',(visitor_id,))
     db.execute('DELETE FROM guest_visitors WHERE id=?',(visitor_id,))
@@ -113,8 +115,8 @@ def delete_unused_devices(db, before):
 
 
 # Conversations
-def add_conversation(db, conversation_id, visitor_id):
-    db.execute('INSERT INTO guest_conversations VALUES(?,?,?)',(conversation_id,visitor_id,now()))
+def add_conversation(db, conversation_id, visitor_id, ip=''):
+    db.execute('INSERT INTO guest_conversations(conversation_id,visitor_id,created_at,ip) VALUES(?,?,?,?)',(conversation_id,visitor_id,now(),ip))
 
 
 def started_since(db, visitor_id, since):

@@ -1,23 +1,25 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { useCopyText } from '@/components/ui/actions';
+import { useCopyText, useRunAction } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { GUEST_SETTINGS_PATH, saveGuestSettings } from '@/features/guest/api';
+import { GUEST_BLOCKS_PATH, GUEST_SETTINGS_PATH, liftGuestBlock, saveGuestSettings } from '@/features/guest/api';
 import { widgetPositions, widgetThemes, websiteOrigin } from '@/features/guest/labels';
-import type { GuestChatSettings, WidgetPosition, WidgetTheme } from '@/features/guest/types';
+import type { GuestBlock, GuestChatSettings, WidgetPosition, WidgetTheme } from '@/features/guest/types';
+import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
 
 /* ตั้งค่าองค์กร → แชทบนเว็บไซต์ (admin): whether customers may chat without signing in, the public chat link with its QR,
    and the chat button for the organization's own website — on/off, the websites allowed to show it, where it sits,
    its colour (presets only) and title — with the code to paste into the website. GET/POST /api/settings/guest-chat.
-   Markup: pages/guest-chat.css. */
+   Last, the guests blocked for making trouble (GET /api/settings/guest-blocks). Markup: pages/guest-chat.css. */
 
 const MAX_ORIGINS = 10;
 
@@ -241,7 +243,74 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
           </div>
         </Form>
       </section>
+      <GuestBlocksCard />
     </div>
+  );
+}
+
+/** บล็อกผู้ก่อกวน (backend guest/blocks.py): the guests blocked from the inbox, each lifted here. */
+function GuestBlocksCard() {
+  const { data, error, refetch } = useApi<{ blocks: GuestBlock[] }>(GUEST_BLOCKS_PATH);
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const run = useRunAction();
+  return (
+    <section className="card mt">
+      <div className="card-header">
+        <div>
+          <h2>ผู้เยี่ยมชมที่บล็อกไว้</h2>
+          <p>
+            บล็อกผู้เยี่ยมชมที่ก่อกวนได้จากปุ่ม “บล็อก” ในกล่องข้อความ ผู้ที่ถูกบล็อกอ่านแชทเดิมได้ แต่ส่งข้อความหรือเริ่มแชทใหม่ไม่ได้ และเครือข่ายเดียวกันเริ่มแชทใหม่ไม่ได้ 7 วัน
+          </p>
+        </div>
+      </div>
+      <div className="card-body">
+        {error ? (
+          <ErrorState error={error} onRetry={() => void refetch()} />
+        ) : !data ? (
+          <PageLoading />
+        ) : data.blocks.length === 0 ? (
+          <p className="muted">ยังไม่ได้บล็อกใคร</p>
+        ) : (
+          <ul className="security-list guest-block-list">
+            {data.blocks.map((b) => (
+              <li key={b.id}>
+                <span className="security-list-icon">
+                  <Icon name="ban" />
+                </span>
+                <span className="grow">
+                  <strong>{b.name}</strong>
+                  <span className="muted">
+                    {b.subject && (
+                      <>
+                        จากแชท {b.conversation_id ? <Link href={`/inbox/${b.conversation_id}`}>“{b.subject}”</Link> : `“${b.subject}”`}{' '}
+                      </>
+                    )}
+                    บล็อกโดย {b.blocked_by} เมื่อ {date(b.created_at, true)}
+                  </span>
+                  <span className="muted">
+                    {b.network_until ? `เครือข่ายเดียวกันเริ่มแชทใหม่ไม่ได้ถึง ${date(b.network_until, true)}` : 'ตอนนี้ไม่ได้กันเครือข่าย'}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() =>
+                    run(async () => {
+                      await liftGuestBlock(b.id);
+                      toast(`ปลดบล็อก ${b.name} แล้ว`);
+                      await refresh(GUEST_BLOCKS_PATH, '/api/conversations');
+                    })
+                  }
+                >
+                  ปลดบล็อก
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
 

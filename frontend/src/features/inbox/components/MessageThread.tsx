@@ -1,8 +1,18 @@
 'use client';
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { Icon } from '@/components/Icon';
 import { Avatar, EmptyState } from '@/components/ui/display';
+import { useToast } from '@/components/ui/Toast';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AiCitations } from '@/features/ai/components/AiCitations';
 import { ChannelDelivery } from '@/features/channels/components/ChannelDelivery';
@@ -12,7 +22,7 @@ import { MessageFiles } from '@/features/rich/media';
 import { scrollThreadToEnd, useThreadPin } from '@/features/rich/thread';
 import { clockTime, date, dayLabel } from '@/lib/format';
 import { useReadAt, useRealtime, useTyping } from '@/lib/realtime-provider';
-import type { Message } from '../types';
+import type { Message, Reaction } from '../types';
 import { MessageTranslation, thaiSide } from './MessageTranslation';
 
 /** What the thread may do with a message of this conversation; absent on the customer's view and wherever the
@@ -28,10 +38,26 @@ export type ManageMessage = {
    internal notes, AI and survey tags, formatted team replies, attachments, AI sources and, for the team, where a
    reply's delivery stands. Markup: pages/inbox/message, thread-day. Used by the inbox, the case screen and the
    customer's chat (publicView). With live updates (lib/realtime-provider) the thread also shows the other side typing
-   and "อ่านแล้ว" under the reader's own latest message once the other side has read it. */
+   and "อ่านแล้ว" under the reader's own latest message once the other side has read it. On the customer's web chat,
+   resting the pointer on a team reply (or tapping it on a phone) offers a row of emoji: the one chosen sits under the
+   reply for both sides, an answer that is not a message and so reopens nothing (conversations/reactions.py). */
 
 type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'author_id' | 'kind' | 'body' | 'created_at' | 'attachments'> &
-  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation'>>;
+  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation' | 'reaction'>>;
+
+/** The customer reacts to a team reply (null takes it back); given on the customer's web chat only. */
+export type ReactToMessage = (m: ThreadMessage, reaction: Reaction | null) => Promise<unknown>;
+
+/** The emoji a customer may answer a reply with (backend conversations/reactions.py REACTIONS), in the row's order. */
+const REACTIONS: Record<Reaction, { emoji: string; label: string }> = {
+  like: { emoji: '👍', label: 'ถูกใจ' },
+  heart: { emoji: '❤️', label: 'รักเลย' },
+  laugh: { emoji: '😂', label: 'ขำ' },
+  wow: { emoji: '😮', label: 'ว้าว' },
+  sad: { emoji: '😢', label: 'เศร้า' },
+  thanks: { emoji: '🙏', label: 'ขอบคุณ' },
+};
+const REACTION_KEYS = Object.keys(REACTIONS) as Reaction[];
 
 type MessagesProps = {
   messages: ThreadMessage[];
@@ -39,6 +65,8 @@ type MessagesProps = {
   publicView?: boolean;
   /** The organization's slug (required with publicView: the customer's attachments are read through it). */
   publicSlug?: string | null;
+  /** The customer's web chat: they may react to the team's replies. */
+  onReact?: ReactToMessage;
 };
 
 /** The reader's latest message, when nothing from the other side came after it: its read mark. */
@@ -51,6 +79,7 @@ export function Messages({
   publicSlug,
   receipt,
   manage,
+  onReact,
 }: MessagesProps & { receipt?: Receipt | null; manage?: ManageMessage }) {
   if (!messages.length) return <EmptyState title="ยังไม่มีข้อความ" description="เริ่มบันทึกรายละเอียดการดูแลในเคสนี้" icon="chat" />;
   return (
@@ -71,6 +100,7 @@ export function Messages({
               publicSlug={publicSlug}
               receipt={receipt?.id === m.id ? receipt : null}
               manage={manage}
+              onReact={m.kind === 'reply' && !m.survey && !m.deleted_at ? onReact : undefined}
             />
           </Fragment>
         );
@@ -85,12 +115,14 @@ function MessageItem({
   publicSlug,
   receipt,
   manage,
+  onReact,
 }: {
   m: ThreadMessage;
   publicView: boolean;
   publicSlug?: string | null;
   receipt: Receipt | null;
   manage?: ManageMessage;
+  onReact?: ReactToMessage;
 }) {
   // A translated message (ai/translate.py) reads in Thai on the team's screens, the other side under it.
   const translation = publicView ? null : m.translation;
@@ -98,6 +130,12 @@ function MessageItem({
   // Both sides may format from their composer tools; a customer's links and images stay plain text (MarkdownBlocks).
   const rich = looksLikeMarkdown(body);
   const gone = Boolean(m.deleted_at);
+  const bubble = (
+    <div className={`bubble${rich ? ' rich' : ''}`}>
+      {rich ? <MarkdownBlocks text={body} plain={m.kind === 'customer'} /> : body}
+      <MessageFiles files={m.attachments} publicSlug={publicView ? publicSlug : undefined} />
+    </div>
+  );
   if (gone)
     return (
       <article className={`message ${m.kind} removed`} data-message-id={m.id}>
@@ -152,10 +190,19 @@ function MessageItem({
           )}
           {manage && <MessageMenu m={m} manage={manage} />}
         </div>
-        <div className={`bubble${rich ? ' rich' : ''}`}>
-          {rich ? <MarkdownBlocks text={body} plain={m.kind === 'customer'} /> : body}
-          <MessageFiles files={m.attachments} publicSlug={publicView ? publicSlug : undefined} />
-        </div>
+        {publicView && onReact ? (
+          <Reactable m={m} onReact={onReact}>
+            {bubble}
+          </Reactable>
+        ) : (
+          bubble
+        )}
+        {!publicView && m.reaction && (
+          <span className="reaction-chip" title={`ลูกค้ารีแอค ${REACTIONS[m.reaction].emoji} ${REACTIONS[m.reaction].label} แทนการพิมพ์ เคสจึงไม่ถูกเปิดกลับมา`}>
+            <span aria-hidden="true">{REACTIONS[m.reaction].emoji}</span>
+            <span className="sr-only">ลูกค้ารีแอค {REACTIONS[m.reaction].label}</span>
+          </span>
+        )}
         <AiCitations citations={m.citations} />
         {translation && <MessageTranslation translation={translation} body={m.body} />}
         {/* A reply held while it is translated has not gone anywhere yet: the line above says so. */}
@@ -187,6 +234,7 @@ export function MessageThread({
   afterKey = '',
   readAt: knownReadAt = null,
   manage,
+  onReact,
 }: MessagesProps & {
   /** data-thread: the conversation's id. */
   threadId: string;
@@ -221,12 +269,135 @@ export function MessageThread({
   }, [notesOnly]);
   return (
     <div ref={ref} className={`thread${notesOnly ? ' notes-only' : ''}`} id={id} data-thread={threadId}>
-      <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} receipt={receipt} manage={manage} />
+      <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} receipt={receipt} manage={manage} onReact={onReact} />
       <div className="typing-status" role="status">
         {typing !== null && <TypingBubble name={typing || (other === 'staff' ? 'ทีมงาน' : 'ลูกค้า')} side={other} />}
       </div>
       {after}
     </div>
+  );
+}
+
+/* The mouse rests this long on a reply before its row of emoji shows (passing over the thread does not flash it), and
+   the row stays this long after the mouse slips off, so a hand that overshoots finds it still there. */
+const REST_MS = 350;
+const LINGER_MS = 700;
+// The row still lingering on another reply, put away at once when the mouse rests on this one.
+let lingering: (() => void) | null = null;
+
+/** A team reply the customer may react to: resting the pointer on it for a moment (a tap on a phone, Tab from the
+    keyboard) shows the row of emoji above it; the one chosen sits under the reply and takes itself back when pressed.
+    Shown at once, put back if the server refuses. Markup: pages/reactions.css. */
+function Reactable({ m, onReact, children }: { m: ThreadMessage; onReact: ReactToMessage; children: ReactNode }) {
+  const toast = useToast();
+  const root = useRef<HTMLDivElement>(null);
+  const saved = m.reaction ?? null;
+  const [shown, setShown] = useState<Reaction | null>(saved);
+  const [seen, setSeen] = useState<Reaction | null>(saved);
+  const [pop, setPop] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [resting, setResting] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  if (seen !== saved) {
+    setSeen(saved);
+    setShown(saved);
+  }
+  const putAway = useCallback(() => setResting(false), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(timer.current);
+      if (lingering === putAway) lingering = null;
+    },
+    [putAway],
+  );
+  const enter = (event: ReactPointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
+    window.clearTimeout(timer.current);
+    if (resting) return;
+    timer.current = window.setTimeout(() => {
+      if (lingering !== putAway) lingering?.();
+      lingering = putAway;
+      setResting(true);
+    }, REST_MS);
+  };
+  const leave = (event: ReactPointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
+    window.clearTimeout(timer.current);
+    if (resting) timer.current = window.setTimeout(putAway, LINGER_MS);
+  };
+  // A phone has no pointer to rest: a tap opens the row, a tap anywhere else closes it.
+  useEffect(() => {
+    if (!open) return;
+    const away = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [open]);
+  const choose = async (reaction: Reaction) => {
+    const before = shown;
+    const next = shown === reaction ? null : reaction;
+    setShown(next);
+    setPop(Boolean(next));
+    setOpen(false);
+    if (root.current?.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
+    try {
+      await onReact(m, next);
+    } catch (error) {
+      setShown(before);
+      toast(error instanceof Error ? error.message : String(error), true);
+    }
+  };
+  // One stop for Tab; the arrow keys move along the row (a toolbar).
+  const onKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
+    const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    buttons[(at + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+    event.preventDefault();
+  };
+  return (
+    <>
+      <div
+        ref={root}
+        className={`reactable${open ? ' open' : ''}${resting ? ' resting' : ''}`}
+        onPointerEnter={enter}
+        onPointerLeave={leave}
+        onClick={(event) => {
+          if (window.matchMedia('(hover: none)').matches && !(event.target as HTMLElement).closest('a, button')) setOpen((o) => !o);
+        }}
+      >
+        {children}
+        <div className="reaction-picker" role="toolbar" aria-label={`รีแอคข้อความของ ${m.author_name}`} onKeyDown={onKey}>
+          {REACTION_KEYS.map((reaction, i) => (
+            <button
+              key={reaction}
+              type="button"
+              className={shown === reaction ? 'on' : undefined}
+              tabIndex={i === 0 ? 0 : -1}
+              aria-pressed={shown === reaction}
+              aria-label={REACTIONS[reaction].label}
+              title={REACTIONS[reaction].label}
+              onClick={() => void choose(reaction)}
+            >
+              <span aria-hidden="true">{REACTIONS[reaction].emoji}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {shown && (
+        <button
+          type="button"
+          className={`reaction-chip${pop ? ' pop' : ''}`}
+          aria-label={`คุณรีแอค ${REACTIONS[shown].label} กดเพื่อยกเลิก`}
+          title="กดเพื่อยกเลิก"
+          onClick={() => void choose(shown)}
+          onAnimationEnd={() => setPop(false)}
+        >
+          <span aria-hidden="true">{REACTIONS[shown].emoji}</span>
+        </button>
+      )}
+    </>
   );
 }
 

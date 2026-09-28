@@ -13,22 +13,25 @@
   color: var(--ink);
 }
 .wait-queue-place {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: var(--ink);
   color: var(--paper);
-  line-height: 1.1;
 }
 .wait-queue-place small {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
   opacity: 0.85;
 }
 .wait-queue-place strong {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
+  line-height: 1;
 }
 .wait-queue-text {
   min-width: 0;
@@ -63,7 +66,7 @@
     padding: 10px 12px;
   }
   .wait-queue-place {
-    width: 48px;
-    height: 48px;
+    width: 54px;
+    height: 54px;
   }
 }

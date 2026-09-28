@@ -183,8 +183,22 @@ def upgrade_tenant(db):
     from backend.modules.kudos import model as kudos
     from backend.modules.tickets import hands
     db.executescript(kudos.TENANT_TABLES)
+    # Hearts sent back from the thank-you card go up on the wall too (a new kudos source).
+    from backend.modules.kudos import service as kudos_service
+    kudos_service.widen_sources(db)
     db.executescript(hands.TABLE)
     db.executescript(achievements.TENANT_TABLES)
     # การ์ดขอบคุณหลังปิดเคส: one per finished case with a web conversation (automation/thanks.py).
     from backend.modules.automation import thanks
     db.executescript(thanks.TABLE)
+    # เส้นทางเคส: every change of a case's status and when (tickets/journey.py), with what older cases already say.
+    from backend.modules.tickets import journey
+    db.executescript(journey.TABLE)
+    journey.backfill(db)
+    # รีแอคข้อความ: the customer's emoji on a team reply of a web chat (conversations/reactions.py).
+    from backend.modules.conversations import reactions
+    db.executescript(reactions.TABLE)
+    reactions.widen(db)
+    # บล็อกผู้ก่อกวน: guests an owner blocked, and the address each guest chat was started from (guest/blocks.py).
+    from backend.modules.guest import blocks as guest_blocks
+    guest_blocks.upgrade(db)

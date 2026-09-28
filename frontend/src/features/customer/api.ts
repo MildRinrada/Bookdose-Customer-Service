@@ -1,3 +1,4 @@
+import type { Reaction } from '@/features/inbox/types';
 import { api } from '@/lib/api/client';
 import type { Upload } from '@/lib/files';
 import type { CustomerOrg } from '@/lib/types';
@@ -37,6 +38,15 @@ export const followIssue = (slug: string, id: string, follow: boolean) =>
 /** Answer the satisfaction survey of a chat (X-Conversation-ID). */
 export const rateService = (slug: string, conversationId: string, body: { rating: number; comment: string }) =>
   api<{ ok: true }>(`/api/public/${slug}/csat`, body, 'POST', { conversation: conversationId });
+
+/** An emoji on a team reply of the chat (null takes it back): tells the team without a message, so a finished case
+    stays finished. `slug` is "<org>/guest" for a guest chat. */
+export const reactToMessage = (slug: string, conversationId: string, messageId: string, reaction: Reaction | null) =>
+  api<{ reaction: Reaction | null }>(`/api/public/${slug}/messages/${messageId}/reaction`, { reaction }, 'POST', { conversation: conversationId });
+
+/** A heart back to the team member on the thank-you card: it goes up on the team's กำแพงคำชม. */
+export const sendThanksHeart = (slug: string, conversationId: string, cardId: string) =>
+  api<{ hearted: true }>(`/api/public/${slug}/thanks/${cardId}/heart`, {}, 'POST', { conversation: conversationId });
 
 /** A code that carries the chat (X-Conversation-ID) to the organization's LINE. */
 export const continueOnLine = (slug: string, conversationId: string) =>

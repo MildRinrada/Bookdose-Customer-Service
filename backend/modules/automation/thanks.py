@@ -13,13 +13,16 @@ takes their photo back, or an organization that turns the card off, is obeyed on
 while the case stays finished and the customer has not written again since; LINE, email and Facebook get nothing
 more than they did.
 
+The customer may send a heart back from the card (heart): the member it thanks gets it on กำแพงคำชม, and the staff
+frame celebrates it with them - once per card each time it is given.
+
   thanks_cards  (each organization's database) one per case: its web conversation, the member it thanks (the case's
                 owner, else whoever finished it) and when."""
 import base64
 import binascii
 
 from backend.database import audit
-from backend.database.db import one
+from backend.database.db import begin, one
 from backend.exceptions.errors import APIError
 from backend.modules.organization import repository as organization
 from backend.utils.dates import now
@@ -74,14 +77,43 @@ def card_for(cd, db, conversation_id):
     cfg = config(db)
     if cd is None or not cfg['enabled']:
         return None
-    card = one(db,'''SELECT k.id,k.user_id,k.created_at,t.number,t.status FROM thanks_cards k JOIN tickets t ON t.id=k.ticket_id
+    card = _shown(db,conversation_id)
+    if not card:
+        return None
+    from backend.modules.kudos import service as kudos
+    name,photo,message = _person(cd,card['user_id'])
+    return {'id':card['id'],'name':name,'photo':photo,'message':message or cfg['message'],'case':card['number'],
+            'created_at':card['created_at'],'hearted':kudos.hearted(db,card)}
+
+
+def _shown(db, conversation_id):
+    """The conversation's card while it shows: its case still finished, and nothing written by the customer since."""
+    card = one(db,'''SELECT k.*,t.number,t.status FROM thanks_cards k JOIN tickets t ON t.id=k.ticket_id
                      WHERE k.conversation_id=? ORDER BY k.created_at DESC LIMIT 1''',(conversation_id,))
     if not card or card['status'] not in DONE:
         return None
     if one(db,"SELECT 1 FROM messages WHERE conversation_id=? AND kind='customer' AND created_at>? LIMIT 1",(conversation_id,card['created_at'])):
         return None
-    name,photo,message = _person(cd,card['user_id'])
-    return {'id':card['id'],'name':name,'photo':photo,'message':message or cfg['message'],'case':card['number'],'created_at':card['created_at']}
+    return card
+
+
+def heart(cd, db, viewer, card_id):
+    """The customer whose chat it is sends a heart back from the card they see now: กำแพงคำชม gets it for the member
+    the card thanks (kudos.on_thanks_heart). Tapping again changes nothing."""
+    from backend.modules.kudos import service as kudos
+    from backend.modules.portal import service as portal
+    from backend.realtime import events as realtime
+    found = one(db,'SELECT conversation_id FROM thanks_cards WHERE id=?',(card_id,))
+    require(found,'ไม่พบการ์ดนี้',404)
+    portal.owned_conversation(db,viewer,found['conversation_id'])
+    begin(db)
+    card = _shown(db,found['conversation_id']) if config(db)['enabled'] else None
+    require(card and card['id']==card_id,'การ์ดนี้ปิดไปแล้ว',409)
+    kudos.on_thanks_heart(db,card,_person(cd,card['user_id'])[0])
+    # The customer's other tabs show the heart as sent; the wall and the member's celebration follow the alerts.
+    realtime.conversation(db,card['conversation_id'],listed=False)
+    db.commit()
+    return {'hearted':True}
 
 
 def photo(cd, db, viewer, card_id):

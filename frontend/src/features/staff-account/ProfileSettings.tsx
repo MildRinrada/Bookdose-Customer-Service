@@ -145,6 +145,7 @@ function ThanksPrefsCard() {
           <ThanksCardView
             card={{ name: prefs.alias || user.name, message: shown.message || 'ข้อความขอบคุณขององค์กรจะขึ้นตรงนี้', case: 1024 }}
             src={shown.photo && hasPhoto ? boot.avatar : null}
+            heart={{ sent: false }}
           />
         </div>
         <button className="btn primary" type="submit">

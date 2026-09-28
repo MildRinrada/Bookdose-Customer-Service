@@ -1169,6 +1169,28 @@ body:has(.guest-embed) {
   align-items: center;
   gap: 8px;
 }
+/* ผู้เยี่ยมชมที่บล็อกไว้ (GuestChatPanel GuestBlocksCard): security-list rows with the lift button at the end. */
+.guest-block-list li .grow {
+  flex: 1;
+}
+.guest-block-list .security-list-icon {
+  color: var(--red);
+}
+.guest-block-list li > .btn {
+  flex: none;
+}
+/* A phone gives the words the whole row and puts the button under them. */
+@media (max-width: 560px) {
+  .guest-block-list li {
+    flex-wrap: wrap;
+  }
+  .guest-block-list li .grow {
+    flex-basis: calc(100% - 48px);
+  }
+  .guest-block-list li > .btn {
+    margin-left: 48px;
+  }
+}
 @media (max-width: 760px) {
   .guest-settings .form-grid {
     grid-template-columns: minmax(0, 1fr);

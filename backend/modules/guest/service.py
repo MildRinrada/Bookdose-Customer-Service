@@ -198,6 +198,9 @@ def start(cd, db, org, guest, body, client, base):
     require(guest or remember or email or phone,'เลือก “จำแชทในเครื่องนี้” หรือกรอกอีเมลหรือเบอร์โทรเพื่อรับลิงก์ติดตามแชท')
     request = schema.request_body(body,body.get('body'))
     subject,category = customers.request_form(db,request)
+    # A blocked guest or address, or an address that started too many chats today (blocks.py).
+    from backend.modules.guest import blocks
+    blocks.check_start(db,guest,client.get('ip',''))
     D.begin(db)
     token = None
     if guest:
@@ -217,7 +220,7 @@ def start(cd, db, org, guest, body, client, base):
         visitor = repository.visitor(db,visitor_id)
     contact_id = _contact_of(db,visitor)
     conv_id = customers.new_web_conversation(db,org,contact_id,schema.display_name(visitor),subject,category,request)
-    repository.add_conversation(db,conv_id,visitor['id'])
+    repository.add_conversation(db,conv_id,visitor['id'],blocks.address(client.get('ip','')))
     repository.mark_seen(db,visitor['id'],conv_id)
     if reference:
         accounts.set_reference(db,conv_id,reference)
@@ -251,8 +254,10 @@ def case_detail(db, guest, case_id):
     visitor_id = guest['visitor']['id']
     ticket = repository.owned_case(db,visitor_id,case_id) if customer_schema.ID.fullmatch(case_id or '') else None
     require(ticket,'ไม่พบเคสนี้ในแชทของคุณ',404)
+    from backend.modules.tickets import journey
     return customer_schema.case_view(ticket,repository.case_conversations(db,visitor_id,ticket['id']),
-                                     accounts.case_followups(db,ticket['id']),accounts.case_rating(db,ticket['id']))
+                                     accounts.case_followups(db,ticket['id']),accounts.case_rating(db,ticket['id']),
+                                     journey.of(db,ticket))
 
 
 def set_name(db, guest, body):
@@ -525,7 +530,9 @@ def send_notices(tenant_id):
 
 
 def cleanup(tenant_id, force=False):
-    """Browsers unused for 400 days, dead links and expired LINE codes are deleted (at most every 10 minutes)."""
+    """Browsers unused for 400 days, dead links, expired LINE codes, held addresses whose days are over and the
+    addresses of older chats are deleted (at most every 10 minutes)."""
+    from backend.modules.guest import blocks
     import time
     moment = time.monotonic()
     if not force and moment-_cleaned.get(tenant_id,-CLEANUP_SECONDS)<CLEANUP_SECONDS:
@@ -536,6 +543,7 @@ def cleanup(tenant_id, force=False):
         repository.delete_unused_devices(db,after(days=-DEVICE_UNUSED_DAYS))
         repository.delete_dead_links(db)
         repository.delete_expired_codes(db)
+        blocks.cleanup(db)
         db.commit()
 
 

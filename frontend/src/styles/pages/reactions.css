@@ -1,0 +1,191 @@
+/* รีแอคข้อความ (inbox/components/MessageThread): resting the pointer on a team reply in the customer's chat (a tap on a
+   phone, Tab from the keyboard) shows a row of emoji above it; the one chosen sits on the reply's lower edge, for the
+   customer and the team alike. */
+.reactable {
+  position: relative;
+  max-width: 100%;
+}
+.reaction-picker {
+  position: absolute;
+  left: 10px;
+  bottom: calc(100% - 10px);
+  z-index: 6;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px #1e293b26;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px) scale(.96);
+  transform-origin: left bottom;
+  transition: opacity .12s ease, transform .12s ease;
+}
+/* A margin around the row that still counts as on it, so the mouse can wander a little off its edge. */
+.reaction-picker::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -14px -18px 0;
+}
+/* Shown once the mouse has rested a moment and kept a moment after it leaves (MessageThread Reactable), at once from
+   the keyboard or a tap. */
+.reactable.resting .reaction-picker,
+.reactable:focus-within .reaction-picker,
+.reactable.open .reaction-picker {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.reaction-picker button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.reaction-picker button span {
+  font-size: 1.4rem;
+  line-height: 1;
+  transition: transform .12s ease;
+}
+.reaction-picker button:hover,
+.reaction-picker button.on {
+  background: var(--soft);
+}
+.reaction-picker button:hover span,
+.reaction-picker button:focus-visible span {
+  transform: scale(1.25);
+}
+.reaction-picker button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+/* The chosen emoji, on the reply's lower edge. */
+.reaction-chip {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 26px;
+  min-height: 0;
+  margin: -9px 12px 0;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 0 2px 6px #1e293b1f;
+  font: inherit;
+  line-height: 1;
+}
+.reaction-chip span[aria-hidden] {
+  font-size: 1rem;
+}
+button.reaction-chip {
+  cursor: pointer;
+}
+/* Small to look at, still easy to tap. */
+button.reaction-chip::after {
+  content: "";
+  position: absolute;
+  inset: -9px -7px;
+}
+button.reaction-chip:hover {
+  border-color: var(--control-line);
+  background: var(--paper);
+}
+button.reaction-chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.reaction-chip.pop span[aria-hidden],
+.thanks-heart.pop .icon {
+  animation: reaction-pop .45s ease-out;
+}
+@keyframes reaction-pop {
+  0% { transform: scale(.4); }
+  55% { transform: scale(1.35); }
+  80% { transform: scale(.92); }
+  100% { transform: scale(1); }
+}
+
+/* The heart in the thank-you card's corner (customer/components/ThanksCard): pressed, it turns red and goes up on the
+   team's กำแพงคำชม. */
+.thanks-card {
+  padding-right: 56px;
+}
+.thanks-heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #c7353c;
+}
+.thanks-heart .icon {
+  width: 21px;
+  height: 21px;
+}
+button.thanks-heart {
+  cursor: pointer;
+}
+button.thanks-heart:hover {
+  background: #fdf1f1;
+}
+button.thanks-heart:hover .icon {
+  transform: scale(1.12);
+}
+button.thanks-heart:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.thanks-heart.sent .icon {
+  fill: currentColor;
+}
+html[data-theme='dark'] .thanks-heart,
+html[data-theme='black'] .thanks-heart {
+  color: #ff8a90;
+}
+html[data-theme='dark'] button.thanks-heart:hover,
+html[data-theme='black'] button.thanks-heart:hover {
+  background: #3a2224;
+}
+/* A finger needs a bigger target than a pointer. */
+@media (hover: none) {
+  .reaction-picker button {
+    width: 42px;
+    height: 42px;
+  }
+  .thanks-heart {
+    width: 44px;
+    height: 44px;
+    top: 6px;
+    right: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reaction-picker,
+  .reaction-picker button span {
+    transition: none;
+  }
+  .reaction-chip.pop span[aria-hidden],
+  .thanks-heart.pop .icon {
+    animation: none;
+  }
+}

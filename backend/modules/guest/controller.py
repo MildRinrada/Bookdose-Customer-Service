@@ -109,6 +109,16 @@ def rate(req):
     return req.send(200,{'ok':True})
 
 
+def react(req, message_id):
+    from backend.modules.conversations import reactions
+    return req.send(200,reactions.react(req.db,_current(req),message_id,req.body))
+
+
+def thanks_heart(req, card_id):
+    from backend.modules.automation import thanks
+    return req.send(200,thanks.heart(req.cd,req.db,req.guest,card_id))
+
+
 def download_attachment(req, file_id):
     return req.send_download(*portal.public_attachment(req.db,req.org['id'],req.guest,file_id))
 
@@ -167,6 +177,38 @@ def settings(req):
 def save_settings(req):
     service.save_settings(req.db,req.ctx,req.body)
     return settings(req)
+
+
+# บล็อกผู้ก่อกวน (blocks.py): the organization's owners only
+OWNERS_ONLY = 'เฉพาะเจ้าขององค์กรที่บล็อกหรือปลดบล็อกผู้เยี่ยมชมได้'
+
+
+@require_role('admin',message=OWNERS_ONLY)
+def block_guest(req, conversation_id):
+    from backend.modules.conversations.service import visible_conversation
+    from backend.modules.guest import blocks
+    return req.send(200,blocks.block(req.db,req.ctx,visible_conversation(req.db,req.ctx,conversation_id)))
+
+
+@require_role('admin',message=OWNERS_ONLY)
+def unblock_guest(req, conversation_id):
+    from backend.modules.conversations.service import visible_conversation
+    from backend.modules.guest import blocks
+    blocks.unblock_conversation(req.db,req.ctx,visible_conversation(req.db,req.ctx,conversation_id))
+    return req.send(200,{'ok':True})
+
+
+@require_role('admin',message=OWNERS_ONLY)
+def guest_blocks(req):
+    from backend.modules.guest import blocks
+    return req.send(200,{'blocks':blocks.listing(req.db)})
+
+
+@require_role('admin',message=OWNERS_ONLY)
+def lift_guest_block(req, block_id):
+    from backend.modules.guest import blocks
+    blocks.unblock(req.db,req.ctx,block_id)
+    return req.send(200,{'ok':True})
 
 
 # The signed-in customer

@@ -55,6 +55,9 @@ def conversation_detail(db, conv):
     # A guest of guest web chat: the inbox shows a badge and how the team's reply can reach them.
     from backend.modules.guest import service as guest
     conv['guest'] = guest.reach(db,[conv['contact_id']]).get(conv['contact_id'])
+    # บล็อกผู้ก่อกวน (guest/blocks.py): {'block': the block or null} when a guest started this chat, else null.
+    from backend.modules.guest import blocks
+    conv['guest_block'] = blocks.state(db,conv['id'])
     contact = contacts.find(db,conv['contact_id'])
     if contact:
         contact['guest'] = conv['guest']
@@ -196,13 +199,16 @@ def attachment_content(tenant_id, file):
 
 
 def message_list(db, conversation_id, public=False):
-    """Messages with attachments, delivery state (staff only), whether AI or the system wrote them, and whether a
-    message is the satisfaction survey."""
+    """Messages with attachments, delivery state (staff only), whether AI or the system wrote them, whether a
+    message is the satisfaction survey, and the customer's reaction to a reply."""
     result = repository.list_messages(db,conversation_id,public)
     surveys = automation.survey_message_ids(db,conversation_id)
     # The team's copy: each translated message's Thai side (ai/translate.py). The customer's copy is what they got.
     from backend.modules.ai import translate
     translations = {} if public else translate.of_conversation(db,conversation_id)
+    # The customer's emoji on the team's replies (reactions.py): both sides see it on the reply.
+    from backend.modules.conversations import reactions
+    reacted = reactions.of_conversation(db,conversation_id)
     for message in result:
         message['attachments'] = repository.attachments_of(db,message['id'])
         meta = repository.ai_meta(db,message['id'])
@@ -210,6 +216,7 @@ def message_list(db, conversation_id, public=False):
         message['source'] = meta['source'] if meta else 'human'
         message['citations'] = json.loads(meta['citations']) if meta else []
         message['survey'] = message['id'] in surveys
+        message['reaction'] = reacted.get(message['id'])
         if not public:
             message['translation'] = translations.get(message['id'])
     return result

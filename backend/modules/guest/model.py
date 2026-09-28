@@ -7,7 +7,8 @@ or SMS, or LINE notices. Everything a guest is lives in that organization's data
                        moved into a customer account (a merged visitor is kept only as history).
   guest_devices        a browser holding the guest's cookie g_<org slug>: the token (hashed), the CSRF token the page
                        sends back, and whether the cookie outlives the browser (remember).
-  guest_conversations  the conversations a visitor started (only these are theirs, even after staff merge contacts).
+  guest_conversations  the conversations a visitor started (only these are theirs, even after staff merge contacts),
+                       and the address each was started from (ip, added by blocks.upgrade; kept IP_KEEP_DAYS).
   guest_seen           when the visitor last read each conversation (a reply read in time is never notified).
   guest_links          follow links /support/<org>/resume#t=<token> (hashed): 30 days, 20 uses, revoked by a newer link
                        of the same way or by a merge. 'line' links travel inside LINE notices.
@@ -15,6 +16,8 @@ or SMS, or LINE notices. Everything a guest is lives in that organization's data
   guest_line_links     the LINE user of the organization's official account a visitor is linked with.
   guest_notifications  notices waiting for the automation worker: a team reply ('reply', one per conversation per
                        unread spell per proven channel) or the confirmation of LINE linking ('linked').
+  guest_blocks,        guests an owner blocked for making trouble, and the addresses they came from, closed to new
+  guest_block_ips      chats for IP_BLOCK_DAYS (blocks.py).
 
 Control database: guest_verified_emails lists the organizations holding a guest with a proven email, so a customer
 account with that verified email takes those chats over when it signs in without opening every organization."""
@@ -30,7 +33,10 @@ LINK_DAYS = 30
 LINK_USES = 20
 LINE_CODE_MINUTES = 10
 START_PER_IP_HOUR = 5
+START_PER_IP_DAY = 20                # counted in the database (guest_conversations.ip), so a restart does not reset it
 START_PER_VISITOR_DAY = 10
+IP_BLOCK_DAYS = 7                    # how long a blocked guest's addresses stay closed to new chats (blocks.py)
+IP_KEEP_DAYS = 30                    # the address a chat was started from is forgotten after this
 LINKS_PER_VISITOR_HOUR = 3
 LINKS_PER_TARGET_HOUR = 3
 LINKS_PER_IP_HOUR = 10

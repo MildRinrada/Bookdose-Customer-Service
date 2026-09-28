@@ -162,12 +162,18 @@ def for_conversation(db, conversation_id):
 
 
 def states_for_conversation(db, conversation_id):
-    return rows(db,'SELECT t.id,t.status,t.resolved_at,t.updated_at FROM tickets t JOIN ticket_conversations tc ON tc.ticket_id=t.id WHERE tc.conversation_id=?',(conversation_id,))
+    """Each case's status, finish and last change, and how far its status log went (journey.py), to put back."""
+    return rows(db,'''SELECT t.id,t.status,t.resolved_at,t.updated_at,
+                      (SELECT COALESCE(MAX(l.id),0) FROM ticket_status_log l WHERE l.ticket_id=t.id) AS log_mark
+                      FROM tickets t JOIN ticket_conversations tc ON tc.ticket_id=t.id WHERE tc.conversation_id=?''',(conversation_id,))
 
 
 def restore_state(db, state):
-    """Put back status/resolved_at/updated_at saved by states_for_conversation."""
+    """Put back status/resolved_at/updated_at saved by states_for_conversation; the status changes in between come off
+    the case's log (journey.py), since nobody saw them."""
+    from backend.modules.tickets import journey
     db.execute('UPDATE tickets SET status=?,resolved_at=?,updated_at=? WHERE id=?',(state['status'],state['resolved_at'],state['updated_at'],state['id']))
+    journey.forget_after(db,state['id'],state['log_mark'])
 
 
 def first_staff_reply_time(db, conversation_id):

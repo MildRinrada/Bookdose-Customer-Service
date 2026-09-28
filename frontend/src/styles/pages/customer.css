@@ -289,49 +289,92 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   background: #eef8f2;
   border-color: #a8d7bd;
 }
-.customer-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* เส้นทางเคส (customer/components/CaseJourney): four steps with the time each was reached, like tracking a parcel;
+   one under the other on a phone. */
+.case-journey {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  width: 460px;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.customer-progress-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.case-journey-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  padding: 0 4px;
+  text-align: center;
   color: var(--muted);
 }
-.customer-progress-step+.customer-progress-step::before {
+.case-journey-step+.case-journey-step::before {
   content: "";
-  width: 22px;
+  position: absolute;
+  top: 14px;
+  left: calc(-50% + 20px);
+  right: calc(50% + 20px);
   height: 2px;
+  border-radius: 2px;
   background: #d6d6d6;
 }
-.customer-progress-dot {
+.case-journey-step.done::before,
+.case-journey-step.skipped::before,
+.case-journey-step.current::before {
+  background: var(--green);
+}
+.case-journey-dot {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 2px solid #d6d6d6;
+  border: 2px solid #cfcfcf;
   background: var(--paper);
+  color: var(--muted);
   font-weight: 700;
 }
-.customer-progress-dot .icon {
+.case-journey-dot .icon {
   width: 16px;
   height: 16px;
 }
-.customer-progress-step.done .customer-progress-dot,
-.customer-progress-step.current .customer-progress-dot {
-  border-color: var(--invert);
-  background: var(--invert);
+.case-journey-step.done .case-journey-dot {
+  border-color: var(--green);
+  background: var(--green);
   color: #fff;
 }
-.customer-progress-step.current .customer-progress-label {
+.case-journey-step.skipped .case-journey-dot {
+  border-style: dashed;
+  border-color: #a9b3ae;
+}
+.case-journey-step.current .case-journey-dot {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--green-soft);
+}
+.case-journey-step.current.tone-waiting .case-journey-dot {
+  border-color: var(--amber);
+  background: var(--amber);
+  box-shadow: 0 0 0 4px #f6dfae;
+}
+.case-journey-label {
+  font-weight: 600;
   color: var(--ink);
-  font-weight: 650;
+}
+.case-journey-step.next .case-journey-label {
+  font-weight: 500;
+  color: var(--muted);
+}
+.case-journey-step.current .case-journey-label {
+  font-weight: 700;
+}
+.case-journey-time {
+  font-size: .82rem;
+  line-height: 1.35;
+  color: var(--muted);
 }
 .customer-case-grid {
   display: grid;
@@ -691,20 +734,33 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   .customer-banner h1 {
     font-size: 1.3rem;
   }
-  /* On a phone the steps keep their dots and drop the words, so they still fit on one line. */
-  .customer-progress-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0,0,0,0);
-    white-space: nowrap;
+  /* On a phone the steps go one under the other: dot, name, and the time at the end of the row. */
+  .customer-banner-side {
+    width: 100%;
   }
-  .customer-progress-step.current .customer-progress-label {
-    position: static;
-    width: auto;
-    height: auto;
-    clip: auto;
+  .case-journey {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+  .case-journey-step {
+    grid-template-columns: 30px auto minmax(0,1fr);
+    justify-items: start;
+    align-items: center;
+    column-gap: 10px;
+    padding: 0;
+    text-align: left;
+  }
+  .case-journey-step+.case-journey-step::before {
+    top: -12px;
+    left: 14px;
+    right: auto;
+    width: 2px;
+    height: 12px;
+  }
+  .case-journey-time {
+    justify-self: end;
+    text-align: right;
   }
   .customer-article-excerpt {
     white-space: normal;

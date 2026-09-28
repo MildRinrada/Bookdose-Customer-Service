@@ -1,5 +1,6 @@
 import type { AiState } from '@/features/ai/types';
 import type { Message } from '@/features/inbox/types';
+import type { CustomerTone } from '@/lib/labels';
 
 /* Shapes of the customer's API answers (backend/modules/customers and portal), snake_case as the server sends them. */
 
@@ -118,8 +119,8 @@ export type PortalSession = {
 };
 
 /** Who looked after the case, as the customer sees them: the name on their replies, whether their photo is shown
-    (else their initials), and the thank-you (theirs, or the organization's). */
-export type ThanksCardData = { id: string; name: string; photo: boolean; message: string; case: number; created_at: string };
+    (else their initials), the thank-you (theirs, or the organization's), and whether the customer sent a heart back. */
+export type ThanksCardData = { id: string; name: string; photo: boolean; message: string; case: number; created_at: string; hearted: boolean };
 
 /** The customer's place in the team's queue; wait_minutes null when there is nothing to go by, away when nobody who
     could answer is available now. */
@@ -141,7 +142,12 @@ export type CaseDetail = {
   rating: number | null;
   /** ยังไม่หาย: whether the finished case can be sent back now, and until when (signed-in customers only). */
   reopen?: { allowed: boolean; until: string | null; days: number };
+  /** เส้นทางเคส: each step it reached and when, oldest first (backend tickets/journey.py). */
+  journey: CaseJourneyStep[];
 };
+
+/** One step of a case as its customer reads it (lib/labels caseState). */
+export type CaseJourneyStep = { state: CustomerTone; at: string };
 
 /** A row of GET /api/customer/faq: a public article of an organization the customer can contact. */
 export type CustomerArticle = OrgLabel & {

@@ -2,7 +2,7 @@
 
 import type { AiCitation, AiState } from '@/features/ai/types';
 import type { ChannelDeliveryState } from '@/features/channels/types';
-import type { GuestReach } from '@/features/guest/types';
+import type { GuestBlock, GuestReach } from '@/features/guest/types';
 import type { MessageFile } from '@/lib/types';
 
 export type Channel = 'web' | 'line' | 'email' | 'facebook' | 'instagram' | 'manual';
@@ -61,6 +61,8 @@ export type Message = {
   citations: AiCitation[];
   /** The satisfaction survey message. */
   survey: boolean;
+  /** The customer's emoji on a team reply of a web chat (conversations/reactions.py): it reopens nothing. */
+  reaction?: Reaction | null;
   /** When the writer last corrected it; the thread says "แก้ไขแล้ว" from then on. */
   edited_at?: string | null;
   /** Set when the message was taken back: the words are gone, the marker stays for the team (never sent to a customer). */
@@ -70,6 +72,9 @@ export type Message = {
       the Thai a member wrote before it went out in the customer's language (the body is what the customer got). */
   translation?: MessageTranslation | null;
 };
+
+/** 👍 ❤️ 😂 😮 😢 🙏 (backend conversations/reactions.py REACTIONS). */
+export type Reaction = 'like' | 'heart' | 'laugh' | 'wow' | 'sad' | 'thanks';
 
 export type MessageTranslation = {
   direction: 'in' | 'out';
@@ -100,6 +105,8 @@ export type Conversation = {
   reference?: string;
   /** A web chat without an account (see ConversationSummary.guest). */
   guest?: GuestReach | null;
+  /** A guest started this chat: whether the organization blocked that guest (guest/blocks.py); null for any other chat. */
+  guest_block?: { block: GuestBlock | null } | null;
   /** A signed-in customer's chat, and the earlier chat of theirs they said this one carries on from (customers/perks.py). */
   member?: boolean;
   follows?: { id: string; subject: string; status: string; updated_at: string; ticket_number: number | null } | null;

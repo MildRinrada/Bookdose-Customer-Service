@@ -26,7 +26,7 @@ const MAX = 4000;
 const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
 
 const SHORTCUTS: { keys: string; what: string; where: string }[] = [
-  { keys: `${MOD} K`, what: 'ไปที่ช่องค้นหาเคส', where: 'ทุกหน้า' },
+  { keys: `${MOD} K`, what: 'ค้นหาเคส ลูกค้า บทความ และหน้าต่าง ๆ แล้วไปที่นั่นทันที', where: 'ทุกหน้า' },
   { keys: '/', what: 'แทรกคำตอบสำเร็จรูป พิมพ์ต่อเพื่อค้นหา', where: 'ช่องพิมพ์ตอบ' },
   { keys: '↑ ↓', what: 'เลือกคำตอบในเมนูที่ขึ้นมา', where: 'ช่องพิมพ์ตอบ' },
   { keys: 'Enter หรือ Tab', what: 'แทรกคำตอบที่เลือกไว้', where: 'ช่องพิมพ์ตอบ' },

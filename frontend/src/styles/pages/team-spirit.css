@@ -103,6 +103,23 @@
 .kudos-quote p::after {
   content: '”';
 }
+/* A heart from the thank-you card: no words of the customer's to quote. */
+.kudos-heart {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+.kudos-heart .icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: #d8353c;
+  fill: currentColor;
+}
 .kudos-stars {
   color: #d49a2a;
   font-size: .95rem;
@@ -258,7 +275,7 @@
   gap: 14px;
   width: min(100%,420px);
   margin: 14px auto;
-  padding: 16px 44px 16px 16px;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--paper);
@@ -300,15 +317,6 @@
   color: var(--ink);
   line-height: 1.5;
   overflow-wrap: anywhere;
-}
-.thanks-heart {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 18px;
-  height: 18px;
-  color: #e5484d;
-  fill: currentColor;
 }
 .reply-preview .thanks-card {
   margin: 6px 0 0;
@@ -599,6 +607,13 @@
 .badge-progress span {
   color: var(--muted);
   font-size: .8rem;
+}
+.celebration-card.heart .celebration-icon {
+  background: #e5484d;
+  color: #fff;
+}
+.celebration-card.heart .celebration-icon .icon {
+  fill: currentColor;
 }
 .celebration-card.badge .celebration-icon {
   background: #f5b942;

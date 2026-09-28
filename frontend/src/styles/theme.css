@@ -168,9 +168,6 @@ a.audit-entity:hover { background: var(--info-soft); color: var(--link); }
 .hero-strip { background: var(--soft); border-color: var(--line); }
 .hero-strip h2 { color: var(--ink); }
 .hero-strip p { color: var(--muted); }
-.customer-progress-step.done .customer-progress-dot,.customer-progress-step.current .customer-progress-dot {
-  background: var(--green); border-color: var(--green); color: #fff;
-}
 #customer-thread .message.customer .bubble { background: var(--invert); border-color: var(--invert); color: #fff; }
 #customer-thread .message.reply .bubble { background: var(--paper); border-color: var(--line); color: var(--ink); }
 @media (hover:none) { .row-actions { background: none; } }

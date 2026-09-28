@@ -67,6 +67,18 @@ def rate(req):
     return req.send(200,{'ok':True})
 
 
+def react(req, message_id):
+    """An emoji on a team reply of the customer's chat (conversations/reactions.py)."""
+    from backend.modules.conversations import reactions
+    return req.send(200,reactions.react(req.db,_current(req),message_id,req.body))
+
+
+def thanks_heart(req, card_id):
+    """A heart sent back from the thank-you card (automation/thanks.py)."""
+    from backend.modules.automation import thanks
+    return req.send(200,thanks.heart(req.cd,req.db,req.customer,card_id))
+
+
 def download_attachment(req, file_id):
     return req.send_download(*service.public_attachment(req.db,req.org['id'],req.customer,file_id))
 

@@ -32,8 +32,12 @@ ROUTES = [
     ('GET',  PORTAL+'/session',             controller.conversation,        'customer'),
     ('POST', PORTAL+'/handoff',             controller.hand_off,            'customer'),
     ('POST', PORTAL+'/messages',            controller.post_message,        'customer'),
+    # An emoji on a team reply: tells the team without a message, so a finished case stays finished.
+    ('POST', PORTAL+f'/messages/{ID}/reaction', controller.react,           'customer'),
     ('POST', PORTAL+'/csat',                controller.rate,                'customer'),
     ('GET',  PORTAL+f'/attachments/{ID}',   controller.download_attachment, 'customer'),
     # The team member's photo on the thank-you card of a finished case, for the customer whose chat it is.
     ('GET',  PORTAL+f'/thanks/{ID}/photo',  controller.thanks_photo,        'customer'),
+    # ...and the heart the customer sends back from it, for กำแพงคำชม.
+    ('POST', PORTAL+f'/thanks/{ID}/heart',  controller.thanks_heart,        'customer'),
 ]

@@ -38,6 +38,8 @@ const paths = {
   chat: 'M21 11a9 9 0 0 1-9 9H3l1-5a9 9 0 1 1 17-4 M8 10h8 M8 14h5',
   sparkle: 'M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z',
   lock: 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4',
+  // บล็อกผู้ก่อกวน: a circle struck through.
+  ban: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M4.9 4.9l14.2 14.2',
   menu: 'M3 6h18 M3 12h18 M3 18h18',
   // Three dots stacked: each is a stroke that goes nowhere, so it stays round at every size.
   kebab: 'M12 5.5v.01 M12 12v.01 M12 18.5v.01',

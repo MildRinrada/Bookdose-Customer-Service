@@ -11,13 +11,13 @@ import { useToast } from '@/components/ui/Toast';
 import { date, relative, starsText } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { caseExportUrl, casePath, OVERVIEW_PATH, reopenCase } from './api';
-import { ProgressSteps } from './components/common';
+import { CaseJourney, journeyEvents } from './components/CaseJourney';
 import { useOrgs, useOverview } from './hooks';
 import { caseState, chatState } from './labels';
 import type { CaseDetail } from './types';
 
-/* One case (pages/customer/customer-case.html): where it stands, what the team did and promised, its facts, and the
-   chats that belong to it. The signed-in customer's page; a guest follows a case of their chat with the same view
+/* One case (pages/customer/customer-case.html): where it stands (เส้นทางเคส, like tracking a parcel), what the team
+   did and when, what it promised, its facts, and the chats that belong to it. The signed-in customer's page; a guest follows a case of their chat with the same view
    (features/guest/GuestCaseScreen). */
 
 export function CaseScreen({ slug, id }: { slug: string; id: string }) {
@@ -116,15 +116,12 @@ export function CaseView({ data, orgName, back, chatHref, newChatHref, actions }
   const reference = `BD-${t.number}`;
   const replyChat = view.tone === 'waiting' ? data.conversations[0]?.id || '' : '';
 
+  // What happened, each change with its time (เส้นทางเคส), then what the team has promised and not done yet.
   const timeline = [
-    { title: 'เปิดเคส', detail: date(t.created_at, true), done: true },
-    t.first_response_at
-      ? { title: 'ทีมงานตอบครั้งแรก', detail: date(t.first_response_at, true), done: true }
-      : { title: 'ทีมงานตอบครั้งแรก', detail: `ภายใน ${date(t.first_response_due_at, true)}`, done: false },
+    ...journeyEvents(data.journey, t.first_response_at).map((e) => ({ title: e.title, detail: date(e.at, true), done: true })),
+    ...(t.first_response_at ? [] : [{ title: 'ทีมงานตอบครั้งแรก', detail: `ภายใน ${date(t.first_response_due_at, true)}`, done: false }]),
     ...(done ? [] : data.followups.map((at) => ({ title: 'ทีมงานนัดติดตาม', detail: date(at, true), done: false }))),
-    done
-      ? { title: 'ดำเนินการเรียบร้อย', detail: date(t.resolved_at || t.updated_at, true), done: true }
-      : { title: 'กำหนดดำเนินการเสร็จ', detail: `ภายใน ${date(t.resolution_due_at, true)}`, done: false },
+    ...(done ? [] : [{ title: 'กำหนดดำเนินการเสร็จ', detail: `ภายใน ${date(t.resolution_due_at, true)}`, done: false }]),
   ];
   const facts: Array<[string, string]> = [
     ['องค์กร', orgName],
@@ -163,7 +160,7 @@ export function CaseView({ data, orgName, back, chatHref, newChatHref, actions }
           )}
         </div>
         <div className="customer-banner-side">
-          <ProgressSteps steps={['ส่งเรื่องแล้ว', 'ทีมงานดูแล', 'เรียบร้อย']} step={view.step} />
+          <CaseJourney journey={data.journey} />
         </div>
       </section>
       <div className="customer-case-grid">

@@ -5,7 +5,8 @@ from backend.database import audit
 from backend.database.db import begin, one, rows
 from backend.exceptions.errors import APIError
 from backend.modules.ai import mood
-from backend.modules.kudos.model import CARD_SHOWN, REPLY_DAYS, TEXT_MAX, THANKS_MIN_LETTERS, WALL_DAYS, WALL_MAX
+from backend.modules.kudos.model import (CARD_SHOWN, HEART_TEXT, KUDOS_TABLE, REPLY_DAYS, TEXT_MAX, THANKS_MIN_LETTERS,
+                                         WALL_DAYS, WALL_MAX)
 from backend.utils.dates import after, now
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -90,6 +91,22 @@ def on_rating(db, survey, rating, comment):
     _insert(db,'csat',survey['id'],ticket['assignee_id'],named['author_name'] if named else '',comment,5,survey['conversation_id'],ticket['id'])
 
 
+def on_thanks_heart(db, card, name):
+    """The customer sent a heart back from the thank-you card `card` (a thanks_cards row, automation/thanks.py): the
+    member it thanks is praised - once per card and closing, however often it is tapped. Inside the caller's
+    transaction."""
+    _insert(db,'thanks',heart_key(card),card['user_id'],name,HEART_TEXT,None,card['conversation_id'],card['ticket_id'])
+
+
+def heart_key(card):
+    """The card as it was given this time: a case finished again gives the card anew, and a new heart with it."""
+    return f"{card['id']}@{card['created_at']}"
+
+
+def hearted(db, card):
+    return bool(one(db,"SELECT 1 FROM kudos WHERE source='thanks' AND source_id=?",(heart_key(card),)))
+
+
 # The wall
 def _visible(where='1=1'):
     # An item whose conversation is in the recycle bin is not shown (the conversation row is gone until restored).
@@ -126,10 +143,10 @@ def card(db, ctx):
 
 
 def mine_since(db, user_id, since):
-    """Praise from customers' messages to this member since `since` (the staff frame celebrates new ones; five stars
-    are celebrated from the survey already)."""
-    return rows(db,f"SELECT k.id,k.text,k.created_at {_visible('k.user_id=? AND k.source=?')} ORDER BY k.created_at DESC LIMIT 10",
-                (since,user_id,'message'))
+    """Praise from customers' messages and hearts from the thank-you card to this member since `since` (the staff
+    frame celebrates new ones; five stars are celebrated from the survey already)."""
+    return rows(db,f"SELECT k.id,k.source,k.text,k.created_at {_visible('k.user_id=? AND k.source IN (?,?)')} ORDER BY k.created_at DESC LIMIT 10",
+                (since,user_id,'message','thanks'))
 
 
 def _find(db, kudos_id):
@@ -163,6 +180,32 @@ def hide(db, ctx, kudos_id):
     audit.record(db,ctx['name'],'kudos.hidden',kudos_id,found['text'][:120])
     db.commit()
     return {'ok':True}
+
+
+def widen_sources(db):
+    """Databases from before hearts from the thank-you card rebuild kudos with the current source list; SQLite cannot
+    change a CHECK in place. Every item is kept. Runs once."""
+    row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='kudos'").fetchone()
+    if not row or "'thanks'" in row[0]:
+        return
+    columns = ','.join(r[1] for r in db.execute('PRAGMA table_info(kudos)').fetchall())
+    db.commit()
+    db.execute('PRAGMA foreign_keys=OFF')
+    try:
+        db.execute('BEGIN IMMEDIATE')
+        db.execute('DROP TABLE IF EXISTS kudos_wide')
+        db.execute(KUDOS_TABLE.format(name='kudos_wide'))
+        db.execute(f'INSERT INTO kudos_wide({columns}) SELECT {columns} FROM kudos')
+        db.execute('DROP TABLE kudos')
+        db.execute('ALTER TABLE kudos_wide RENAME TO kudos')
+        db.execute('CREATE INDEX IF NOT EXISTS kudos_recent ON kudos(created_at)')
+        db.execute('CREATE INDEX IF NOT EXISTS kudos_user ON kudos(user_id,created_at)')
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.execute('PRAGMA foreign_keys=ON')
 
 
 def forget_conversations(db, conversation_ids):

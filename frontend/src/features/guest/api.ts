@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client';
-import type { GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, GuestStartLink, SmsSettings, SmsSettingsBody } from './types';
+import type { GuestBlock, GuestChatSettings, GuestClaim, GuestLineCode, GuestStartBody, GuestStartLink, SmsSettings, SmsSettingsBody } from './types';
 import type { LineMoveCode } from '@/features/customer/types';
 
 /* Endpoints of the guest web chat (docs/features/support-page-and-guest-chat.md). The visitor's routes live under
@@ -68,6 +68,13 @@ export const forgetGuest = (slug: string) => api<{ ok: true }>(`${guestBase(slug
 export const GUEST_SETTINGS_PATH = '/api/settings/guest-chat';
 export const saveGuestSettings = (body: Pick<GuestChatSettings, 'guest_chat' | 'widget'> | { members_first: boolean }) =>
   api<GuestChatSettings>(GUEST_SETTINGS_PATH, body);
+
+/* บล็อกผู้ก่อกวน (owners only): from the open conversation in the inbox, and the list in ตั้งค่าองค์กร → แชทบนเว็บไซต์. */
+export const GUEST_BLOCKS_PATH = '/api/settings/guest-blocks';
+export const blockGuest = (conversationId: string) =>
+  api<{ block: GuestBlock; closed: number }>(`/api/conversations/${conversationId}/guest-block`, {});
+export const unblockGuest = (conversationId: string) => api<{ ok: true }>(`/api/conversations/${conversationId}/guest-block`, undefined, 'DELETE');
+export const liftGuestBlock = (id: string) => api<{ ok: true }>(`${GUEST_BLOCKS_PATH}/${id}`, undefined, 'DELETE');
 
 /* Signed-in customer: chats from before signing in */
 export const GUEST_CLAIMS_PATH = '/api/customer/guest-claims';

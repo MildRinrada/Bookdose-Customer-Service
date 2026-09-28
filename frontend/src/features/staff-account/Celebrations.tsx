@@ -9,8 +9,8 @@ import { celebrate, onCelebrate, setFeedbackPrefs, type Celebration } from './ce
 import { usePreferences } from './prefs';
 
 /* The staff frame's celebrations: confetti over the page and a card at the bottom when the member closes a case (one
-   card for several closed together), a customer gives their case five stars or praises them in a message (กำแพงคำชม),
-   or they earn a badge (ผลงานของฉัน). Five stars and praise given while the page was closed are celebrated the next
+   card for several closed together), a customer gives their case five stars, praises them in a message or sends a
+   heart back from the thank-you card (กำแพงคำชม), or they earn a badge (ผลงานของฉัน). Five stars and praise given while the page was closed are celebrated the next
    time it opens; the first visit only remembers what is already there. A badge is celebrated once, on whichever
    screen the alerts bring it, and the server is told it was seen even when celebrations are off. Reduced motion
    keeps the card without confetti. Styles: styles/pages/celebrations.css. */
@@ -68,7 +68,7 @@ export function Celebrations({ userId }: { userId: string }) {
       {card && (
         <div className={`celebration-card ${card.kind}`} role="status">
           <span className="celebration-icon" aria-hidden="true">
-            <Icon name={card.kind === 'praise' ? 'star' : card.kind === 'badge' ? 'award' : 'checkCircle'} />
+            <Icon name={card.kind === 'praise' ? 'star' : card.kind === 'badge' ? 'award' : card.kind === 'heart' ? 'heart' : 'checkCircle'} />
           </span>
           <span className="celebration-text">
             <small>{card.label ?? (card.kind === 'praise' ? 'ลูกค้าให้ ★★★★★' : card.kind === 'badge' ? 'เหรียญใหม่!' : card.cheer)}</small>
@@ -116,7 +116,11 @@ function usePraise(userId: string, enabled: boolean) {
     if (!enabled || !kudos) return;
     const fresh = freshIds(`bd-kudos-seen:${userId}`, kudos.map((k) => k.id));
     for (const k of kudos.filter((k) => fresh.has(k.id)).slice(0, 2))
-      celebrate({ kind: 'praise', label: 'คำชมจากลูกค้า', title: 'ลูกค้าชมคุณ ขึ้นกำแพงคำชมแล้ว', detail: `“${k.text.slice(0, 80)}”` });
+      celebrate(
+        k.source === 'thanks'
+          ? { kind: 'heart', label: 'หัวใจจากลูกค้า', title: 'ลูกค้าส่งหัวใจขอบคุณกลับมา', detail: 'จากการ์ดขอบคุณหลังปิดเคส ขึ้นกำแพงคำชมแล้ว' }
+          : { kind: 'praise', label: 'คำชมจากลูกค้า', title: 'ลูกค้าชมคุณ ขึ้นกำแพงคำชมแล้ว', detail: `“${k.text.slice(0, 80)}”` },
+      );
   }, [kudos, userId, enabled]);
 }
 

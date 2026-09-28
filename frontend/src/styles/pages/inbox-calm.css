@@ -179,6 +179,15 @@
 .conv-urgent {
   color: var(--red);
 }
+/* บล็อกผู้ก่อกวน: the guest who started this chat was blocked (ConversationView). */
+.conv-fact.conv-blocked {
+  color: var(--red);
+  font-weight: 600;
+}
+/* The same struck circle lifts the block: red while the block is on, so the two read apart as icons alone. */
+.conv-actions .conv-unblock .icon {
+  color: var(--red);
+}
 /* The header in two short lines - the subject, then the facts on one line (the name gives way first) - so the thread
    keeps the height. */
 .staff-chats .inbox-detail>.conv-header {

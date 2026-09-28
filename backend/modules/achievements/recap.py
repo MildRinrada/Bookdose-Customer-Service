@@ -153,7 +153,7 @@ def recap(db, ctx, month):
     waits = reply_waits(db,user_id,since,until)
     ratings = [r[0] for r in db.execute('''SELECT s.rating FROM csat_surveys s JOIN tickets t ON t.id=s.ticket_id WHERE t.assignee_id=?
                                            AND s.answered_at>=? AND s.answered_at<? AND s.rating IS NOT NULL''',(user_id,since,until))]
-    praise = rows(db,'''SELECT k.text,k.rating FROM kudos k JOIN conversations c ON c.id=k.conversation_id WHERE k.user_id=?
+    praise = rows(db,'''SELECT k.source,k.text,k.rating FROM kudos k JOIN conversations c ON c.id=k.conversation_id WHERE k.user_id=?
                         AND k.hidden_at IS NULL AND k.created_at>=? AND k.created_at<? ORDER BY k.created_at DESC''',(user_id,since,until))
     found = {
         'month':month,'label':label(month),'partial':month==this_month(),'name':ctx['name'],
@@ -162,7 +162,8 @@ def recap(db, ctx, month):
         'fastest_minutes':round(min(waits),2) if waits else None,
         'median_minutes':round(median(waits),1) if waits else None,'waits':len(waits),
         'five_star':sum(1 for r in ratings if r==5),'csat':round(sum(ratings)/len(ratings),2) if ratings else None,'csat_count':len(ratings),
-        'praise':{'count':len(praise),'texts':[p['text'] for p in praise[:2]]},
+        # A heart from the thank-you card counts as praise; only customers' own words are quoted.
+        'praise':{'count':len(praise),'texts':[p['text'] for p in praise if p['source']!='thanks'][:2]},
         'one_touch':db.execute(badges.one_touch_sql('t.resolved_at>=? AND t.resolved_at<?'),(user_id,since,until)).fetchone()[0],
         'night':night,'early':early,'weekend':weekend,
         'helped':db.execute('SELECT COUNT(*) FROM help_requests WHERE helper_id=? AND raised_by!=? AND helped_at>=? AND helped_at<?',

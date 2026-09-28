@@ -12,6 +12,7 @@ import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import type { PublicOrgInfo } from '@/features/auth/types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerList, ArticleReadPanel, DropHint, TypingAnswers, askLine, useArticleDrop, type PeekArticle } from '@/features/customer/components/ArticlePeek';
+import { reactToMessage } from '@/features/customer/api';
 import { CustomerSurvey } from '@/features/customer/components/ChatView';
 import { ThanksCard } from '@/features/customer/components/ThanksCard';
 import { WaitQueue } from '@/features/customer/components/WaitQueue';
@@ -600,11 +601,12 @@ function GuestChatView({
         publicView
         publicSlug={portal}
         readAt={data.staff_read_at}
+        onReact={(m, reaction) => reactToMessage(portal, id, m.id, reaction).then(() => refresh(guestSessionPath(slug)))}
         afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={
           <>
             <WaitQueue queue={data.queue} />
-            {data.thanks && <ThanksCard card={data.thanks} slug={portal} />}
+            {data.thanks && <ThanksCard card={data.thanks} slug={portal} conversationId={id} />}
             {survey && (
               <div id="customer-survey">
                 <CustomerSurvey survey={survey} slug={portal} conversationId={id} org={orgName} />

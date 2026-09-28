@@ -664,8 +664,9 @@ def case_detail(db, session, case_id):
     ticket = repository.owned_case(db,session['account_id'],schema.case_id(case_id))
     require(ticket,'ไม่พบเคสนี้ในบัญชีของคุณ',404)
     from backend.modules.customers import perks
+    from backend.modules.tickets import journey
     view = schema.case_view(ticket,repository.case_conversations(db,session['account_id'],ticket['id']),
-                            repository.case_followups(db,ticket['id']),repository.case_rating(db,ticket['id']))
+                            repository.case_followups(db,ticket['id']),repository.case_rating(db,ticket['id']),journey.of(db,ticket))
     # ยังไม่หาย: a finished case can go back to the team from its page for a few days (perks.reopen_case).
     view['reopen'] = {'allowed':perks.can_reopen(ticket),'until':perks.reopen_until(ticket),'days':perks.REOPEN_DAYS}
     return view

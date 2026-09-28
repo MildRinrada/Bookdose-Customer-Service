@@ -12,6 +12,7 @@ import { RecapPopup } from '@/features/achievements/components/RecapPopup';
 import { Celebrations } from '@/features/staff-account/Celebrations';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { PlatformBell } from '@/features/platform/components/PlatformBell';
+import { QuickSearch } from '@/features/search/QuickSearch';
 import { StatusSwitch } from '@/features/staff-account/StatusSwitch';
 import { useWorkAlerts } from '@/features/staff-account/useWorkAlerts';
 import { isDone } from '@/lib/format';
@@ -94,7 +95,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
     switchTenant(tenant, pathname).catch((error: Error) => toast(error.message, true));
   }, [membership, pathname, boot.memberships, switchTenant, toast]);
 
-  // Ctrl+K / ⌘K jumps to case search (by key position, so it also works with a Thai keyboard layout).
+  // Ctrl+K / ⌘K puts the cursor in ค้นหาด่วน (by key position, so it also works with a Thai keyboard layout).
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && !event.altKey && event.code === 'KeyK' && search.current && !document.querySelector('dialog[open]')) {
@@ -280,22 +281,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           <div className="top-actions">
             {work && (
               <>
-                <form
-                  id="global-search"
-                  className="global-search"
-                  role="search"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const q = new FormData(e.currentTarget).get('q');
-                    router.push(`/tickets?q=${encodeURIComponent(String(q ?? ''))}`);
-                  }}
-                >
-                  <Icon name="search" />
-                  <input ref={search} aria-label="ค้นหาเคสทั้งหมด" aria-keyshortcuts="Control+K Meta+K" name="q" placeholder="ค้นหาเคส ลูกค้า…" />
-                  <span className="kbd" aria-hidden="true" title={`กด ${SEARCH_SHORTCUT} เพื่อค้นหาได้ทันที`}>
-                    {SEARCH_SHORTCUT}
-                  </span>
-                </form>
+                <QuickSearch inputRef={search} role={work.role} platformAdmin={Boolean(user.platform_admin)} shortcut={SEARCH_SHORTCUT} />
                 {!readOnly && <StatusSwitch />}
                 <NotificationBell />
               </>

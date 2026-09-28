@@ -9,7 +9,7 @@ import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import { Composer, MessageThread } from '@/features/inbox';
 import { starsText } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, sessionPath } from '../api';
+import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, reactToMessage, sessionPath } from '../api';
 import { chatView, ratingLabels } from '../labels';
 import type { PortalSession, PortalSurvey } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
@@ -19,8 +19,8 @@ import { ContinueOnLineButton, ContinueOnLinePanel, MovedToLine } from './Contin
 import { ArticleReadPanel, TypingAnswers, type PeekArticle } from './ArticlePeek';
 
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
-   person serving it, the messages, the thank-you card and the satisfaction survey once the case is closed, and the
-   reply box. */
+   person serving it, the messages (an emoji on the team's replies), the thank-you card and the satisfaction
+   survey once the case is closed, and the reply box. */
 
 /** After a case is closed the customer is asked how it went: stars, and a few words if they like. `slug` is the
     portal the answer goes to (a guest chat passes "<org>/guest"). */
@@ -165,11 +165,12 @@ export function ChatView({
         publicView
         publicSlug={slug}
         readAt={data.staff_read_at}
+        onReact={(m, reaction) => reactToMessage(slug, id, m.id, reaction).then(() => refresh(sessionPath(slug)))}
         afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={
           <>
             <WaitQueue queue={data.queue} />
-            {data.thanks && <ThanksCard card={data.thanks} slug={slug} />}
+            {data.thanks && <ThanksCard card={data.thanks} slug={slug} conversationId={id} />}
             {survey && (
               <div id="customer-survey">
                 <CustomerSurvey survey={survey} slug={slug} conversationId={id} org={orgName} />

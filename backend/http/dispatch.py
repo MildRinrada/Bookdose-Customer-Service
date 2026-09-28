@@ -45,7 +45,7 @@ from backend.modules.channels import routes as channel_routes
 from backend.modules.contacts import routes as contact_routes
 from backend.modules.customer_security import routes as customer_security_routes
 from backend.modules.customers import routes as customer_routes
-from backend.modules.guest import routes as guest_routes, service as guest_service
+from backend.modules.guest import blocks as guest_blocks, routes as guest_routes, service as guest_service
 from backend.modules.incidents import routes as incident_routes
 from backend.modules.pdpa import routes as pdpa_routes
 from backend.modules.invitations import routes as invitation_routes
@@ -57,6 +57,7 @@ from backend.modules.organization import routes as organization_routes, team_sec
 from backend.modules.platform import routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
 from backend.modules.reports import routes as report_routes
+from backend.modules.search import routes as search_routes
 from backend.modules.security import blocks, events as security_events, routes as security_routes, traps
 from backend.modules.security.model import TRAP_PATH
 from backend.modules.staff_prefs import routes as staff_prefs_routes
@@ -73,7 +74,8 @@ ROUTES = [*auth_routes.ROUTES, *platform_routes.ROUTES, *pdpa_routes.ROUTES, *po
           *ai_routes.ROUTES, *channel_routes.ROUTES, *trash_routes.ROUTES, *automation_routes.ROUTES, *customer_routes.ROUTES,
           *customer_security_routes.ROUTES, *org_link_routes.ROUTES, *guest_routes.ROUTES, *security_routes.ROUTES,
           *support_access_routes.ROUTES, *staff_security_routes.ROUTES, *invitation_routes.ROUTES, *staff_prefs_routes.ROUTES,
-          *board_routes.ROUTES, *report_routes.ROUTES, *incident_routes.ROUTES, *kudos_routes.ROUTES, *achievement_routes.ROUTES]
+          *board_routes.ROUTES, *report_routes.ROUTES, *incident_routes.ROUTES, *kudos_routes.ROUTES, *achievement_routes.ROUTES,
+          *search_routes.ROUTES]
 MAX_JSON_BYTES = 8*1024*1024
 # The methods the route table uses; other methods are refused by the server before dispatch.
 METHODS = ('GET','POST','PATCH','DELETE')
@@ -270,6 +272,8 @@ def route_guest(req, path):
         return
     auth.refuse_stale_guest(req)
     require(req.guest,'ไม่พบแชทของคุณในเบราว์เซอร์นี้',401)
+    # A guest the organization blocked reads its chats and writes nothing (guest/blocks.py).
+    guest_blocks.refuse(req,path)
     if not run(req,path,'guest'):
         raise APIError(404,'ไม่พบรายการ')
 

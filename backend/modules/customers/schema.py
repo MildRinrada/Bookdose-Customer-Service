@@ -125,5 +125,7 @@ def case_row(ticket):
     return {key:ticket[key] for key in CASE_FIELDS}
 
 
-def case_view(ticket, conversations, followups, rating):
-    return {'case':case_row(ticket),'conversations':[dict(c) for c in conversations],'followups':followups,'rating':rating}
+def case_view(ticket, conversations, followups, rating, journey):
+    """One case for its customer; `journey` is where it has been and when (tickets/journey.py)."""
+    return {'case':case_row(ticket),'conversations':[dict(c) for c in conversations],'followups':followups,'rating':rating,
+            'journey':journey}

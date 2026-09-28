@@ -47,20 +47,27 @@ function KudosItem({ k, readOnly }: { k: Kudos; readOnly: boolean }) {
   const count = k.cheers.length;
   return (
     <li className={`kudos-item${k.mine ? ' mine' : ''}`}>
-      <blockquote className="kudos-quote">
-        {k.rating ? (
-          <span className="kudos-stars" aria-label={`${k.rating} ดาว`}>
-            {'★'.repeat(k.rating)}
-          </span>
-        ) : null}
-        <p>{k.text}</p>
-      </blockquote>
+      {k.source === 'thanks' ? (
+        <p className="kudos-heart">
+          <Icon name="heart" />
+          ลูกค้าส่งหัวใจขอบคุณกลับมาจากการ์ดขอบคุณ
+        </p>
+      ) : (
+        <blockquote className="kudos-quote">
+          {k.rating ? (
+            <span className="kudos-stars" aria-label={`${k.rating} ดาว`}>
+              {'★'.repeat(k.rating)}
+            </span>
+          ) : null}
+          <p>{k.text}</p>
+        </blockquote>
+      )}
       <div className="kudos-meta">
         <UserAvatar id={k.user_id} name={name} index={k.mine ? 0 : 3} />
         <span className="kudos-who">
           <strong>{k.mine ? 'ชมคุณ' : `ชม ${name}`}</strong>
           <time dateTime={k.created_at} title={clockTime(k.created_at)}>
-            {k.source === 'csat' ? 'ให้ 5 ดาว' : 'ในแชท'} · {shortAgo(k.created_at)}
+            {k.source === 'csat' ? 'ให้ 5 ดาว' : k.source === 'thanks' ? 'การ์ดขอบคุณ' : 'ในแชท'} · {shortAgo(k.created_at)}
           </time>
         </span>
         <span className="kudos-actions">
@@ -133,7 +140,7 @@ function KudosEmpty() {
     <div className="board-empty kudos-empty">
       <Icon name="heart" />
       <strong>ยังไม่มีคำชม</strong>
-      <span>เมื่อลูกค้าชมในแชทหรือให้ 5 ดาวพร้อมความเห็น คำชมจะขึ้นที่นี่ให้ทั้งทีมเห็น</span>
+      <span>เมื่อลูกค้าชมในแชท ให้ 5 ดาวพร้อมความเห็น หรือส่งหัวใจจากการ์ดขอบคุณ คำชมจะขึ้นที่นี่ให้ทั้งทีมเห็น</span>
     </div>
   );
 }

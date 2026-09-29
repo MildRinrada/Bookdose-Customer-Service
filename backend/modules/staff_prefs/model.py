@@ -18,7 +18,7 @@ import datetime as dt
 WORK_TZ = dt.timezone(dt.timedelta(hours=7))
 
 STATUSES = {'online':'พร้อมรับเรื่อง','break':'พักเบรก / ทานข้าว','busy':'ยุ่งอยู่','offline':'ไม่อยู่'}
-EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าตอบกลับในเคสของฉัน','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA',
+EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าส่งข้อความในเคสของฉัน หรือในแชทที่ยังไม่มีใครดูแล (แชทที่ยังไม่มีใครดูแลเตือนเฉพาะในระบบ ไม่ส่งอีเมล)','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA',
           'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว','help':'เพื่อนยกมือขอช่วยในเคสที่ฉันเห็น (บนหน้าจอและเสียงเท่านั้น)',
           'weekly_report':'สรุปรายงานประจำสัปดาห์ ทุกวันจันทร์ (เฉพาะเจ้าขององค์กร)'}
 # Emails written as a formal memo: the subject is the notice's own (it names the organization), and the body opens
@@ -63,7 +63,9 @@ DEFAULTS = {
     'leave':[],
     # celebrate: confetti and a card when the member closes a case, a customer gives their case 5 stars or praises
     # them, or they earn a badge. recap: last month's summary pops up the first time they open the app in a month.
-    'notify':{'desktop':False,'sound':False,'email':False,'celebrate':True,'recap':True,'events':{key:True for key in EVENTS}},
+    # popup: the app's own card at the bottom right for a new customer message or the member's work, while they are
+    # on the page (desktop is the browser's notification, for when they are in another tab).
+    'notify':{'desktop':False,'sound':False,'email':False,'celebrate':True,'recap':True,'popup':True,'events':{key:True for key in EVENTS}},
     'signature':{'enabled':False,'text':''},
     'alias':'',
     # การ์ดขอบคุณหลังปิดเคส (automation/thanks.py), in the organizations that give one: whether customers see this

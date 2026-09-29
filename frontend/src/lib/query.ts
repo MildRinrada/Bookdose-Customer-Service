@@ -45,6 +45,8 @@ export type ApiQueryOptions = {
   enabled?: boolean;
   /** Keep showing the previous answer while a new path loads (e.g. paging through a list). */
   keepPrevious?: boolean;
+  /** Keep asking every refetchInterval while the tab is in the background (what a desktop notification watches). */
+  background?: boolean;
 };
 
 /** GET `path` (null: not yet). */
@@ -57,7 +59,7 @@ export function useApi<T>(path: string | null, options: ApiQueryOptions = {}) {
       typeof options.refetchInterval === 'function'
         ? ((interval) => (query: { state: { data: unknown } }) => interval(query.state.data))(options.refetchInterval)
         : options.refetchInterval,
-    refetchIntervalInBackground: false,
+    refetchIntervalInBackground: Boolean(options.background),
     placeholderData: options.keepPrevious ? (previous) => previous : undefined,
   });
 }

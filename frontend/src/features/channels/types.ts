@@ -42,6 +42,8 @@ export type ChannelSetting = {
   enabled: boolean;
   config: LineConfig & EmailConfig;
   credentials_configured: boolean;
+  /** LINE: the channel ID as saved (not a secret, so it is shown back). */
+  channel_id?: string;
   oauth_client_configured: boolean;
   route_id: string | null;
   last_error: string;

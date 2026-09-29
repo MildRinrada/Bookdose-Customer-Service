@@ -77,11 +77,16 @@ export type LineOrg = OrgLabel & {
     due meanwhile goes out when it ends. */
 export type QuietHours = { enabled: boolean; start: string; end: string };
 
+/** The page's own alerts while it is open: a pop-up when the team answers, and a sound with it. */
+export type PageAlerts = { popup: boolean; sound: boolean };
+
 export type NotificationSettings = {
   events: NotifyEvent[];
   email: { ready: boolean; verified: boolean; address: string };
   line: LineOrg[];
   quiet?: QuietHours;
+  /** Absent from a server older than the choice: both on. */
+  page?: PageAlerts;
 };
 
 /** GET /api/public/<org>/line */

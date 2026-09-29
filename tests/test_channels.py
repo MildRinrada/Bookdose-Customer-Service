@@ -1,5 +1,6 @@
 """Isolated HTTP + channel-worker tests. Providers are mocked; no external messages."""
 import base64
+import contextlib
 import datetime as dt
 from email.message import EmailMessage
 import hashlib
@@ -11,6 +12,7 @@ import smtplib
 import unittest
 from unittest.mock import patch, MagicMock
 import urllib.error
+import urllib.parse
 import zipfile
 import test_app as base
 from test_app import app, D
@@ -275,6 +277,19 @@ class ChannelTests(unittest.TestCase):
         with patch.object(T,'send_email') as send:C.process_outbox(self.org);send.assert_not_called()
         self.assertEqual(self.job(stale)['status'],'unknown')
 
+    def test_line_takes_the_channel_id_and_secret(self):
+        with patch.object(T,'verify_line',return_value={'identity':BOT,'display_name':'Test OA'}) as verify:
+            status,body=self.admin.call('/api/channels/line',{'team_id':self.team,'enabled':True,'channel_secret':'secret-for-tests'},'PATCH')
+            self.assertEqual((status,body.get('error')),(400,'กรุณาระบุแชนแนล ID และความลับแชนแนล'))
+            self.configure()  # connected earlier with a hand-copied token
+            status,body=self.admin.call('/api/channels/line',{'team_id':self.team,'enabled':True,'channel_id':'2001-abc','channel_secret':'secret-for-tests'},'PATCH')
+            self.assertEqual((status,body.get('error')),(400,'แชนแนล ID ต้องเป็นตัวเลข'))
+            rows=self.ok(self.admin,'/api/channels/line',{'team_id':self.team,'enabled':True,'channel_id':' 2001234567 ','channel_secret':'secret-for-tests'},'PATCH')
+        line=next(c for c in rows if c['kind']=='line')
+        self.assertTrue(line['credentials_configured']);self.assertEqual(line['channel_id'],'2001234567')
+        # The old token is dropped: from now on the token comes from LINE.
+        self.assertEqual(verify.call_args.args[0],{'channel_id':'2001234567','channel_secret':'secret-for-tests'})
+
 class TransportTests(unittest.TestCase):
     def test_public_hosts_only(self):
         for address in ('127.0.0.1','10.0.0.1','169.254.169.254','::1'):
@@ -290,6 +305,28 @@ class TransportTests(unittest.TestCase):
         request=opener.open.call_args.args[0]
         self.assertEqual(request.get_header('X-line-retry-key'),'stable-uuid')
         self.assertEqual(json.loads(request.data)['to'],SENDER)
+
+    def test_line_token_from_the_channel_id_and_secret(self):
+        T.LINE_TOKENS.clear()
+        sent=[]
+        def answer(req,timeout):
+            sent.append(req)
+            body={'access_token':'stateless-token','expires_in':900} if req.full_url.endswith('/oauth2/v3/token') else {'userId':BOT,'displayName':'OA'}
+            response=MagicMock();response.read.return_value=json.dumps(body).encode();response.headers={}
+            return contextlib.nullcontext(response)
+        secret={'channel_id':'2001234567','channel_secret':'secret-for-tests'}
+        with patch.object(T,'open_without_redirects',side_effect=answer):
+            T.verify_line(secret);T.verify_line(secret)
+        issued=[r for r in sent if r.full_url.endswith('/oauth2/v3/token')]
+        self.assertEqual(len(issued),1)  # kept for the next call
+        self.assertEqual(urllib.parse.parse_qs(issued[0].data.decode()),{'grant_type':['client_credentials'],'client_id':['2001234567'],'client_secret':['secret-for-tests']})
+        self.assertEqual(sent[-1].get_header('Authorization'),'Bearer stateless-token')
+        # A wrong channel ID or secret: LINE answers 400, the settings say the credentials are wrong.
+        T.LINE_TOKENS.clear()
+        refused=urllib.error.HTTPError('https://api.line.me/oauth2/v3/token',400,'invalid_client',{},io.BytesIO(b'{}'))
+        with patch.object(T,'open_without_redirects',side_effect=refused):
+            with self.assertRaises(T.ChannelError) as raised:T.verify_line(secret)
+        self.assertEqual(raised.exception.code,'credentials')
 
     def test_smtp_negative_ack_vs_lost_ack(self):
         cfg={'address':'support@example.com'}

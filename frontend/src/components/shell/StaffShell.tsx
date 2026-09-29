@@ -10,8 +10,10 @@ import { AiAssistant } from '@/features/ai/components/AiAssistant';
 import { HelpMenu } from '@/features/help/HelpMenu';
 import { RecapPopup } from '@/features/achievements/components/RecapPopup';
 import { Celebrations } from '@/features/staff-account/Celebrations';
+import { Popups } from '@/components/ui/Popups';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { PlatformBell } from '@/features/platform/components/PlatformBell';
+import { usePlatformAlerts } from '@/features/platform/usePlatformAlerts';
 import { QuickSearch } from '@/features/search/QuickSearch';
 import { StatusSwitch } from '@/features/staff-account/StatusSwitch';
 import { useWorkAlerts } from '@/features/staff-account/useWorkAlerts';
@@ -60,6 +62,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const readOnly = Boolean(work?.read_only);
   // The member's own desktop notifications and sound (ตั้งค่าบัญชี → การแจ้งเตือน), while an organization is open.
   useWorkAlerts(user.id, Boolean(work) && !readOnly);
+  // A platform admin's: the server or its security needing them now, wherever they are (also looking into an organization).
+  usePlatformAlerts(Boolean(user.platform_admin) && !consoleLocked);
   const page = staffPageOf(pathname);
   // A platform admin looking into an organization on support access; anywhere else they are in the console.
   const supportView = user.platform_admin && Boolean(work) && !isPlatformPath(pathname) && !isAccountPath(pathname);
@@ -284,6 +288,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
       {/* ผู้ช่วย AI: for the organization's own team, not the console or a look in on support access. */}
       {work && !readOnly && !platform && <AiAssistant />}
       {work && !readOnly && !platform && <Celebrations userId={user.id} />}
+      {((work && !readOnly) || user.platform_admin) && <Popups />}
       {/* Last month's summary, once, the first time the member opens the app in a new month. */}
       {work && !readOnly && !platform && <RecapPopup />}
       <div className="app-main">

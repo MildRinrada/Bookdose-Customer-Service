@@ -223,7 +223,8 @@ sequenceDiagram
     participant W as งานเบื้องหลัง bookdose-channels
     participant IB as กล่องข้อความทีมงาน
 
-    AB->>API: บันทึก Channel Secret และ Access Token
+    AB->>API: บันทึกแชนแนล ID และความลับแชนแนล
+    API->>LINE: ขอโทเค็นอายุ 15 นาที (POST /oauth2/v3/token)
     API->>LINE: ตรวจบัญชี (GET /v2/bot/info)
     API->>CDB: ผูกบัญชี LINE กับองค์กรนี้
     API->>TDB: บันทึกการตั้งค่า และเก็บความลับแบบเข้ารหัส

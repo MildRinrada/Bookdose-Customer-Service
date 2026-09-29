@@ -7,12 +7,19 @@ let audio: AudioContext | null = null;
 type Tone = { frequency: number; at: number; length: number; to?: number; type?: OscillatorType; volume?: number };
 
 /** The page's sounds, each a few tones made on the spot:
-    alert - new work (two soft rising tones); urgent - a case escalated to the member, past its SLA or urgent (three
-    quick firm beeps, then higher); claim - the member takes a case (a short upward pop); success - a case closed or
-    five stars (a bright rising chord). */
-export type SoundKind = 'alert' | 'urgent' | 'claim' | 'success';
+    alert - new work (two soft rising tones); message - a new message with its pop-up (a quick "bloop" sliding up
+    into a bell-like ding that rings on, a faint octave above it); urgent - a case escalated to the member, past its
+    SLA or urgent (three quick firm beeps, then higher); claim - the member takes a case (a short upward pop);
+    success - a case closed or five stars (a bright rising chord). */
+export type SoundKind = 'alert' | 'message' | 'urgent' | 'claim' | 'success';
 
 const SOUNDS: Record<SoundKind, Tone[]> = {
+  message: [
+    { frequency: 520, to: 780, at: 0, length: 0.08, volume: 0.2 },
+    { frequency: 1047, at: 0.08, length: 0.42, volume: 0.24 },
+    { frequency: 2094, at: 0.08, length: 0.16, volume: 0.05 },
+    { frequency: 1568, at: 0.09, length: 0.3, type: 'triangle', volume: 0.04 },
+  ],
   alert: [
     { frequency: 880, at: 0, length: 0.14 },
     { frequency: 1175, at: 0.16, length: 0.14 },

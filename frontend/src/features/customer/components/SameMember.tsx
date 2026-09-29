@@ -5,18 +5,18 @@ import type { AskedMember, LastMember } from '../types';
 
 /* ขอคนเดิม (backend portal/same_member.py), on the start forms of the signed-in customer and the visitor: within 30
    days of a finished case, the customer may ask for the member who looked after them, named as the thank-you card
-   names them. When that member is here the chat goes to them; when not, to the team as usual. Markup:
-   styles/pages/chat-answers.css (same-member). */
+   names them. When that member is here the chat goes to them; when not, to the team as usual. Markup: the card of
+   "จำแชทไว้ในเครื่องนี้" on the visitor's form (styles/pages/guest-chat.css start-remember). */
 
 /** The tick box, sent as `same_member` ("on" when ticked); nothing when there is nobody to ask for. */
 export function SameMemberChoice({ member, id }: { member: LastMember | null | undefined; id: string }) {
   if (!member) return null;
   return (
-    <label className="check same-member" htmlFor={id}>
+    <label className="start-remember" htmlFor={id}>
       <input id={id} type="checkbox" name="same_member" />
       <span>
-        ให้ {member.name} ดูแลต่อ
-        <span className="tiny muted block">เคยดูแลเรื่องของคุณ {relative(member.finished_at)} ถ้าตอนนี้ไม่อยู่ ระบบส่งถึงทีมงานตามปกติ</span>
+        <strong>ให้ {member.name} ดูแลต่อ</strong>
+        <small>เคยดูแลเรื่องของคุณ {relative(member.finished_at)} ถ้าตอนนี้ไม่อยู่ ระบบส่งถึงทีมงานตามปกติ</small>
       </span>
     </label>
   );

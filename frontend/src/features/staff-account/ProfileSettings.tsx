@@ -123,15 +123,17 @@ function ThanksPrefsCard() {
           toast('บันทึกแล้ว การ์ดที่ลูกค้าเห็นใช้ค่านี้ทันที');
         }}
       >
-        <label className="check">
-          <input type="checkbox" className="switch" name="thanks_photo" defaultChecked={prefs.thanks.photo} />
-          <span>
-            ให้ลูกค้าเห็นรูปของฉันในการ์ด
-            <span className="tiny muted block">
-              {hasPhoto ? 'ถ้าไม่เปิด การ์ดแสดงตัวอักษรแรกของชื่อแทน ปิดเมื่อไรรูปก็หายจากการ์ดที่ส่งไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน การ์ดจึงแสดงตัวอักษรแรกของชื่อ'}
+        <div className="switch-group">
+          <label className="check">
+            <input type="checkbox" className="switch" name="thanks_photo" defaultChecked={prefs.thanks.photo} />
+            <span className="check-text">
+              <strong>ให้ลูกค้าเห็นรูปของฉันในการ์ด</strong>
+              <small>
+                {hasPhoto ? 'ถ้าไม่เปิด การ์ดแสดงตัวอักษรแรกของชื่อแทน ปิดเมื่อไรรูปก็หายจากการ์ดที่ส่งไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน การ์ดจึงแสดงตัวอักษรแรกของชื่อ'}
+              </small>
             </span>
-          </span>
-        </label>
+          </label>
+        </div>
         <TextArea
           label="ข้อความของฉัน (ไม่บังคับ)"
           name="thanks_message"
@@ -210,19 +212,23 @@ function CustomerFacingCard() {
           placeholder={user.name}
           hint="เว้นว่างไว้เพื่อใช้ชื่อจริง ใส่ชื่อเล่นหรือชื่อกลางได้ เช่น “ทีมบริการลูกค้า” เพื่อความเป็นส่วนตัว"
         />
-        <label className="check">
-          <input type="checkbox" className="switch" name="chat_photo" defaultChecked={prefs.chat_photo} />
-          <span>
-            ให้ลูกค้าเห็นรูปของฉันข้างข้อความตอบกลับในแชทบนเว็บ
-            <span className="tiny muted block">
-              {hasPhoto ? 'ถ้าปิด ลูกค้าเห็นตัวอักษรแรกของชื่อแทน และรูปหายจากข้อความที่ตอบไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน ลูกค้าจึงเห็นตัวอักษรแรกของชื่อ'}
+        <div className="switch-group">
+          <label className="check">
+            <input type="checkbox" className="switch" name="chat_photo" defaultChecked={prefs.chat_photo} />
+            <span className="check-text">
+              <strong>ให้ลูกค้าเห็นรูปของฉันข้างข้อความตอบกลับในแชทบนเว็บ</strong>
+              <small>
+                {hasPhoto ? 'ถ้าปิด ลูกค้าเห็นตัวอักษรแรกของชื่อแทน และรูปหายจากข้อความที่ตอบไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน ลูกค้าจึงเห็นตัวอักษรแรกของชื่อ'}
+              </small>
             </span>
-          </span>
-        </label>
-        <label className="check">
-          <input type="checkbox" className="switch" name="signature_on" defaultChecked={prefs.signature.enabled} />
-          ต่อท้ายลายเซ็นในข้อความตอบกลับลูกค้าอัตโนมัติ
-        </label>
+          </label>
+          <label className="check">
+            <input type="checkbox" className="switch" name="signature_on" defaultChecked={prefs.signature.enabled} />
+            <span className="check-text">
+              <strong>ต่อท้ายลายเซ็นในข้อความตอบกลับลูกค้าอัตโนมัติ</strong>
+            </span>
+          </label>
+        </div>
         <TextArea
           label="ลายเซ็น"
           name="signature"

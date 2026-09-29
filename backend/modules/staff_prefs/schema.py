@@ -94,6 +94,7 @@ def notify(value):
             'email':_bool(value.get('email',False),'การแจ้งเตือนทางอีเมล'),
             'celebrate':_bool(value.get('celebrate',True),'การฉลองเมื่อปิดเคส'),
             'recap':_bool(value.get('recap',True),'สรุปผลงานประจำเดือน'),
+            'popup':_bool(value.get('popup',True),'ป๊อปอัปในระบบ'),
             'events':{key:_bool(events.get(key,True),'เหตุการณ์แจ้งเตือน') for key in EVENTS}}
 
 

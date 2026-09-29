@@ -7,7 +7,9 @@ import { Icon } from '@/components/Icon';
 import { HelpMenu } from '@/features/help/HelpMenu';
 import { Avatar, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
-import { useCustomer, useCustomerLogout, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
+import { Popups } from '@/components/ui/Popups';
+import { useReplyPopups } from '@/features/customer/useReplyPopups';
+import { customerUnread, useCustomer, useCustomerLogout, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
 import { RealtimeProvider } from '@/lib/realtime-provider';
 import { customerAccountPages, customerPageOf, customerServicePages, type CustomerPage } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
@@ -19,11 +21,6 @@ import { TextSizeMenu } from './TextSize';
 /* The customer's frame: the team's side menu and top bar, with the customer's own menu (overview, chats, cases,
    frequently asked questions; notifications and account settings). Every chat and case inside says which
    organization it is with. */
-
-/** The team replied after the customer last opened the chat. */
-export function customerUnread(c: { last_kind?: string | null; seen_at?: string | null; updated_at: string }): boolean {
-  return c.last_kind === 'reply' && (!c.seen_at || c.seen_at < c.updated_at);
-}
 
 function menuCounts(d: CustomerOverview): Record<string, number> {
   return {
@@ -43,6 +40,8 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
   const page = customerPageOf(pathname);
   const counts = menuCounts(overview);
+  // A pop-up (and a short sound) when the team answers while the page is open.
+  useReplyPopups();
 
   useEffect(() => {
     document.title = `${page?.label ?? 'บัญชีลูกค้า'} · ${home?.name ?? 'Bookdose'}`;
@@ -57,6 +56,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
     // Live updates of the customer's chats, cases and alerts in every organization.
     <RealtimeProvider kind="customer" identity={me.email}>
       <SessionGuard kind="customer" times={me} onLogout={() => logout()} />
+      <Popups />
       <div className={`mobile-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
       <aside className={`sidebar customer-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-top">

@@ -36,6 +36,8 @@ import { GuestMenu } from './components/GuestMenu';
 import { OrgBanner, PoweredBy } from './components/OrgBanner';
 import { GuestStartForm, linksMessage } from './components/GuestStartForm';
 import { useGuestOverview, useGuestSession } from './hooks';
+import { useGuestReplyAlerts, useGuestSound } from './useGuestReplyAlerts';
+import { Popups } from '@/components/ui/Popups';
 import { byNewest, isWidgetTheme, unreadCount } from './labels';
 import type { GuestConversation, GuestOverview, WidgetInfo } from './types';
 
@@ -138,6 +140,7 @@ function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
         </OrgBanner>
       )}
       {!embed && <SignedInClaims slug={slug} />}
+      {!embed && <Popups />}
       {body}
       {!embed && (
         // Beside the chat (the right column holds it) it is not repeated here; on a phone only who runs the service stays.
@@ -203,6 +206,18 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
     [toast, refresh, slug],
   );
   const session = useGuestSession(slug, panelOpen ? current : null, gone);
+
+  // A sound when the team answers here, a pop-up (with the sound) when they answer in another chat of this browser.
+  const openChat = useCallback((id: string) => {
+    setComposing(false);
+    setShowList(false);
+    setOpenId(id);
+  }, []);
+  const shown = useMemo(
+    () => (session.data ? { id: session.data.conversation.id, messages: session.data.messages } : undefined),
+    [session.data],
+  );
+  useGuestReplyAlerts({ orgName: data.organization.name, list, current, shown, embed, panelOpen, onOpen: openChat });
 
   // The open chat is in the address, so a reload (or a link) opens it again: /support/<org>/tickets/<id> on the page,
   // ?c=<id> inside the website's frame (whose address stays /support/<org>/embed).
@@ -564,6 +579,8 @@ function GuestChatView({
   const [phoneOpen, setPhoneOpen] = useState(false);
   const { openModal, closeModal } = useDialogs();
   const refresh = useInvalidate();
+  const toast = useToast();
+  const [soundOn, setSound] = useGuestSound();
   const canMove = Boolean(data.line && !data.line.moved);
   return (
     <>
@@ -622,6 +639,15 @@ function GuestChatView({
               : []),
             ...(canMove ? [{ key: 'line', label: 'คุยต่อใน LINE', icon: 'chat', onSelect: () => setLineOpen(true) }] : []),
             { key: 'new', label: 'เริ่มแชทเรื่องใหม่', icon: 'plus', onSelect: onNewChat },
+            {
+              key: 'sound',
+              label: soundOn ? 'ปิดเสียงเมื่อทีมงานตอบ' : 'เปิดเสียงเมื่อทีมงานตอบ',
+              icon: soundOn ? 'bellOff' : 'bell',
+              onSelect: () => {
+                setSound(!soundOn);
+                toast(soundOn ? 'ปิดเสียงแล้ว เบราว์เซอร์นี้จะจำไว้' : 'เปิดเสียงแล้ว');
+              },
+            },
             ...(embed ? [{ key: 'window', label: 'เปิดในหน้าต่างใหม่', icon: 'link', onSelect: () => window.open(guestPages.chat(slug, id), '_blank', 'noopener') }] : []),
           ]}
         />

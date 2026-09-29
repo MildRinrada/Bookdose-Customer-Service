@@ -35,7 +35,7 @@ export function lineSteps(c: ChannelSetting): Step[] {
   const hook = c.webhook ?? {};
   const ours = Boolean(c.route_id && hook.endpoint?.endsWith(`/api/webhooks/line/${c.route_id}`));
   return [
-    { label: 'ใส่ Channel Secret และ Channel Access Token แล้วกดบันทึก', done: c.credentials_configured, hint: 'คัดลอกจากหน้า Messaging API ใน LINE Developers' },
+    { label: 'ใส่แชนแนล ID และความลับแชนแนล แล้วกดบันทึก', done: c.credentials_configured, hint: 'ทั้งสองค่าอยู่หน้าเดียวกันใน LINE Developers' },
     {
       label: 'ระบบเข้าบัญชี LINE ได้',
       done: Boolean(c.config.identity) && signedIn(c),

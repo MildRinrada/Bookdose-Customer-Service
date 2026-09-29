@@ -47,6 +47,7 @@ const paths = {
   edit: 'M15 5l4 4 M3 21l5-1L21 7l-5-5L3 15z',
   file: 'M5 2h9l5 5v15H5z M14 2v6h5 M8 13h8 M8 17h6',
   bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
+  bellOff: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4 M3 3l18 18',
   sidebar: 'M3 4h18v16H3z M9 4v16 M15 10l-2 2 2 2',
   bolt: 'M13 2L4 14h7l-1 8 9-12h-7z',
   // Article editor toolbar

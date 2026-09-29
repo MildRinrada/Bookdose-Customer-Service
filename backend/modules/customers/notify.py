@@ -28,6 +28,9 @@ MAX_ATTEMPTS = 3
 CLAIM_SECONDS = 300          # a notice taken for sending by a worker that stopped is tried again after this
 THAI = dt.timezone(dt.timedelta(hours=7))
 QUIET_DEFAULT = {'enabled':False,'start':'21:00','end':'08:00'}
+# On the page itself, while the customer has it open: a pop-up at the bottom right when the team answers, and a
+# short sound with it (frontend features/customer/useReplyPopups).
+PAGE_DEFAULT = {'popup':True,'sound':True}
 
 
 # Preferences
@@ -55,6 +58,12 @@ def quiet_of(account):
     """{enabled, start, end} of the account's ช่วงเวลาห้ามรบกวน (the default, off, until they set it)."""
     saved = prefs_of(account).get('quiet') if account else None
     return {**QUIET_DEFAULT,**saved} if isinstance(saved,dict) else dict(QUIET_DEFAULT)
+
+
+def page_of(account):
+    """{popup, sound} of the page's own alerts (the default, both on, until they choose)."""
+    saved = prefs_of(account).get('page') if account else None
+    return {**PAGE_DEFAULT,**saved} if isinstance(saved,dict) else dict(PAGE_DEFAULT)
 
 
 def quiet_until(account, moment=None):

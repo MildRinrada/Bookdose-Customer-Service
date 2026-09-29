@@ -511,22 +511,26 @@ def notification_settings(cd, session):
                       for key,label,_ in NOTIFY_EVENTS],
             'email':{'ready':email_ready(cd),'verified':bool(account['email_verified']),'address':account['email']},'line':lines,
             # ช่วงเวลาห้ามรบกวน (notify.py): Thai time.
-            'quiet':notify.quiet_of(account)}
+            'quiet':notify.quiet_of(account),
+            'page':notify.page_of(account)}
 
 
 def save_notification_settings(cd, session, body):
-    """Merge the choices sent ({events: {event: {email, line}}} and/or {quiet: {enabled, start, end}}) into the
-    account's; a chat reply by email is the old notify_email switch, so both settings pages agree."""
+    """Merge the choices sent ({events: {event: {email, line}}}, {quiet: {enabled, start, end}} and/or {page: {popup,
+    sound}}) into the account's; a chat reply by email is the old notify_email switch, so both settings pages agree."""
     from backend.modules.customers import notify
     from backend.modules.customers.model import NOTIFY_EVENTS
     body = body if isinstance(body,dict) else {}
-    require('events' in body or 'quiet' in body,'ข้อมูลการแจ้งเตือนไม่ถูกต้อง')
+    require(any(key in body for key in ('events','quiet','page')),'ข้อมูลการแจ้งเตือนไม่ถูกต้อง')
     chosen = schema.notify_prefs_form(body,[key for key,_,_ in NOTIFY_EVENTS]) if 'events' in body else {}
     quiet = schema.quiet_form(body['quiet']) if 'quiet' in body else None
+    page = schema.page_form(body['page']) if 'page' in body else None
     account = repository.find(cd,session['account_id'])
     prefs = notify.prefs_of(account)
     if quiet:
         prefs['quiet'] = quiet
+    if page:
+        prefs['page'] = page
     for event,channels in chosen.items():
         if event=='reply' and 'email' in channels:
             repository.set_notify_email(cd,account['id'],channels.pop('email'))

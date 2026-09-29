@@ -38,6 +38,7 @@ class StaffPrefsTests(unittest.TestCase):
         view = self.ok(agent,PREFS)
         self.assertEqual((view['preferences']['status'],view['availability']['available']),('online',True))
         self.assertTrue(view['preferences']['notify']['celebrate'])
+        self.assertTrue(view['preferences']['notify']['popup'])  # the in-app pop-up is on until the member turns it off
         saved = self.ok(agent,PREFS,{'hours':{'enabled':True,'days':[0,1,2,3,4],'start':'08:30','end':'17:30'},
                                      'leave':[{'from':'2026-12-28','to':'2026-12-31','note':'พักร้อน'}],
                                      'notify':{'desktop':True,'sound':True,'email':False,'events':{'assigned':True,'customer_reply':False,'sla':True}},
@@ -47,6 +48,7 @@ class StaffPrefsTests(unittest.TestCase):
         self.assertEqual([s['shortcut'] for s in saved['snippets']],['thanks','รอสักครู่'])
         self.assertFalse(saved['notify']['events']['customer_reply'])
         self.assertFalse(self.ok(agent,PREFS,{'notify':{**saved['notify'],'celebrate':False}})['preferences']['notify']['celebrate'])
+        self.assertFalse(self.ok(agent,PREFS,{'notify':{**saved['notify'],'popup':False}})['preferences']['notify']['popup'])
         # A later save of one section keeps the others.
         self.ok(agent,PREFS,{'alias':''})
         self.assertEqual(self.ok(agent,PREFS)['preferences']['signature']['text'],'ขอบคุณค่ะ\nฝ่ายบริการลูกค้า')

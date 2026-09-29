@@ -13,8 +13,10 @@ export const staffAccountTabs = {
 
 export type StaffAccountTab = keyof typeof staffAccountTabs;
 
-/** A platform admin takes no cases and answers no customers: these sections are only for the organizations' staff. */
-export const platformHiddenTabs: StaffAccountTab[] = ['status', 'notifications', 'replies', 'achievements'];
+/** A platform admin takes no cases and answers no customers: these sections are only for the organizations' staff.
+    Their การแจ้งเตือน is about the server instead (platformNotifyHint). */
+export const platformHiddenTabs: StaffAccountTab[] = ['status', 'replies', 'achievements'];
+export const platformNotifyHint = 'ป๊อปอัป เสียง และเบราว์เซอร์ เมื่อระบบมีเรื่องด่วน';
 
 export const isStaffAccountTab = (value: string | null | undefined): value is StaffAccountTab =>
   typeof value === 'string' && Object.prototype.hasOwnProperty.call(staffAccountTabs, value);

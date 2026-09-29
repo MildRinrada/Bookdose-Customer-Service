@@ -2,7 +2,7 @@ import type { Reaction } from '@/features/inbox/types';
 import { api } from '@/lib/api/client';
 import type { Upload } from '@/lib/files';
 import type { CustomerOrg } from '@/lib/types';
-import type { LineCode, LineMoveCode, NotificationSettings, QuietHours } from './types';
+import type { LineCode, LineMoveCode, NotificationSettings, PageAlerts, QuietHours } from './types';
 
 /* Endpoints of backend/modules/customers (/api/customer/...) and portal (/api/public/<org>/...) used by the signed-in
    customer. */
@@ -81,8 +81,8 @@ export const saveNotifications = (email: boolean) => api<{ ok: true }>('/api/cus
 
 /** Which events go to email / LINE; the answer is the settings as saved. */
 export const NOTIFY_SETTINGS_PATH = '/api/customer/notification-settings';
-export const saveNotifySettings = (events: Record<string, { email?: boolean; line?: boolean }>, quiet?: QuietHours) =>
-  api<NotificationSettings>(NOTIFY_SETTINGS_PATH, quiet ? { events, quiet } : { events });
+export const saveNotifySettings = (events: Record<string, { email?: boolean; line?: boolean }>, quiet?: QuietHours, page?: PageAlerts) =>
+  api<NotificationSettings>(NOTIFY_SETTINGS_PATH, { events, ...(quiet ? { quiet } : {}), ...(page ? { page } : {}) });
 
 /** Linking the account with one organization's LINE (a 6-digit code sent there in a 1:1 chat). */
 export const linePath = (slug: string) => `/api/public/${slug}/line`;

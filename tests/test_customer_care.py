@@ -109,6 +109,17 @@ class CustomerCareTests(guest_tests.GuestChatTests):
             self.assertFalse(db.execute('SELECT 1 FROM known_issue_reports WHERE reporter=?',(REPORTER,)).fetchone())
 
     # ช่วงเวลาห้ามรบกวน
+    def test_page_alerts_stay_on_until_the_customer_turns_them_off(self):
+        client,_ = base_visitor(self)
+        path = '/api/customer/notification-settings'
+        self.assertEqual(self.ok(client,path)['page'],{'popup':True,'sound':True})
+        self.assertEqual(self.status(client,path,{'page':{'popup':'yes','sound':True}}),400)
+        self.assertEqual(self.ok(client,path,{'page':{'popup':True,'sound':False}})['page'],{'popup':True,'sound':False})
+        # The quiet hours and the events stay as they were.
+        view = self.ok(client,path)
+        self.assertFalse(view['quiet']['enabled'])
+        self.assertTrue(all(e['email'] for e in view['events']))
+
     def test_quiet_hours_hold_notices_until_they_end(self):
         from backend.modules.customers import notify, repository as accounts, service as customers
         client,conv = base_visitor(self)

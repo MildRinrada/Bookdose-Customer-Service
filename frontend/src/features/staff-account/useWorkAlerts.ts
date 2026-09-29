@@ -4,24 +4,44 @@ import { useEffect, useRef } from 'react';
 import { needsReply } from '@/features/inbox/hooks';
 import type { ConversationSummary } from '@/features/inbox/types';
 import { isDone, overdue, plainText } from '@/lib/format';
+import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
 import { useStaffAlerts, useStaffTickets } from '@/lib/session';
+import { showPopup } from '@/components/ui/Popups';
 import { playSound, showDesktop } from './alerts';
 import { usePreferences, type NotifyEvent } from './prefs';
 
-/* The desktop notification and sound of ตั้งค่าบัญชี → การแจ้งเตือน, run by the staff frame while a workspace is open.
-   It watches what the page already loads (the cases, the member's alerts, and - when customer answers are wanted -
-   the conversation list) and speaks up only about something new since the page opened: a case now assigned to the
-   member or escalated to them, their case past its SLA, a customer answering on their case, a colleague raising
-   their hand for help on a case they can see (or coming to help with their own). */
+/* The pop-up, desktop notification and sound of ตั้งค่าบัญชี → การแจ้งเตือน, run by the staff frame while a workspace
+   is open. It watches what the page already loads (the cases, the member's alerts, and - when customer answers are
+   wanted - the conversation list) and speaks up only about something new since the page opened: a case now assigned
+   to the member or escalated to them, their case past its SLA, a customer writing in a chat that is theirs or nobody's
+   yet (not one a colleague looks after, and not the one on screen), a colleague raising their hand for help on a case
+   they can see (or coming to help with their own). On the page it is the app's own pop-up; in another tab, the
+   browser's notification. */
 
-/** urgent: escalated to the member, past its SLA or an urgent case - it gets the firmer sound. */
-type WorkEvent = { key: string; event: NotifyEvent; title: string; body: string; href: string; urgent?: boolean };
+/** urgent: escalated to the member, past its SLA or an urgent case - it gets the firmer sound. message: a customer's
+    message, popped up with who wrote (popupTitle) under where it came from (label). */
+type WorkEvent = {
+  key: string;
+  event: NotifyEvent;
+  title: string;
+  body: string;
+  href: string;
+  urgent?: boolean;
+  message?: { popupTitle: string; label: string };
+};
+
+/** The channel after "ทาง": a Latin name (LINE, Facebook) is set off by a space, a Thai one is not. */
+const channelLabel = (channel: string) => {
+  const name = channelNames[channel] || channel;
+  return /^[A-Za-z]/.test(name) ? ` ${name}` : name;
+};
 
 export function useWorkAlerts(userId: string, enabled: boolean) {
   const notify = usePreferences(enabled).data?.preferences.notify;
-  const active = Boolean(enabled && notify && (notify.desktop || notify.sound));
+  const popup = notify?.popup !== false;
+  const active = Boolean(enabled && notify && (notify.desktop || notify.sound || popup));
   const tickets = useStaffTickets().data?.tickets;
   const alerts = useStaffAlerts().data;
   const interval = useRealtimeInterval(30000);
@@ -48,16 +68,25 @@ export function useWorkAlerts(userId: string, enabled: boolean) {
     const conversationEvents: (WorkEvent & { mine: boolean })[] = [];
     if (conversations) {
       const owner = new Map(tickets.map((t) => [t.id, t.assignee_id]));
+      // The chat already on screen needs no pop-up: its new message is right there.
+      const path = document.visibilityState === 'visible' ? window.location.pathname : '';
       for (const c of conversations)
-        if (needsReply(c))
+        if (needsReply(c)) {
+          const assignee = c.ticket_id ? owner.get(c.ticket_id) : null;
+          const onScreen = path === `/inbox/${c.id}` || Boolean(c.ticket_id && path === `/tickets/${c.ticket_id}`);
           conversationEvents.push({
             key: `reply:${c.id}:${c.updated_at}`,
             event: 'customer_reply',
-            title: `${c.contact_name} ตอบกลับในเคสของคุณ`,
+            title: assignee === userId ? `${c.contact_name} ตอบกลับในเคสของคุณ` : `ข้อความใหม่จาก ${c.contact_name}`,
             body: plainText(c.preview || c.subject).slice(0, 120),
             href: `/inbox/${c.id}`,
-            mine: Boolean(c.ticket_id && owner.get(c.ticket_id) === userId),
+            message: {
+              popupTitle: c.contact_name,
+              label: assignee === userId ? 'ข้อความใหม่ในเคสของคุณ' : `ข้อความใหม่ทาง${channelLabel(c.channel)}`,
+            },
+            mine: (assignee === userId || !assignee) && !onScreen,
           });
+        }
     }
     // ยกมือขอช่วย: a colleague stuck on a case this member can see, and who is coming to their own.
     const handEvents: (WorkEvent & { mine: boolean })[] = (alerts?.hands ?? []).map((h) =>
@@ -81,7 +110,15 @@ export function useWorkAlerts(userId: string, enabled: boolean) {
       }
     }
     if (!found.length) return;
-    if (notify.sound) playSound(found.some((item) => item.urgent) ? 'urgent' : 'alert');
-    if (notify.desktop) for (const item of found.slice(0, 3)) showDesktop(item.title, item.body, item.href, item.key);
-  }, [active, notify, tickets, alerts, conversations, userId]);
+    if (notify.sound) playSound(found.some((item) => item.urgent) ? 'urgent' : found.some((item) => item.message) ? 'message' : 'alert');
+    const onPage = popup && document.visibilityState === 'visible';
+    if (onPage)
+      for (const item of found.slice(-3))
+        showPopup(
+          item.message
+            ? { key: item.key, kind: 'message', label: item.message.label, title: item.message.popupTitle, body: item.body, href: item.href }
+            : { key: item.key, kind: 'work', label: item.urgent ? 'ด่วน' : 'งานของคุณ', title: item.title, body: item.body, href: item.href, urgent: item.urgent },
+        );
+    else if (notify.desktop) for (const item of found.slice(0, 3)) showDesktop(item.title, item.body, item.href, item.key);
+  }, [active, notify, popup, tickets, alerts, conversations, userId]);
 }

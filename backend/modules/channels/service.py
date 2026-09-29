@@ -48,7 +48,8 @@ def write_secret(tenant_id, kind, value):
 
 def credentials_ready(kind, cfg, secret):
     if kind=='line':
-        return all(secret.get(key) for key in ('channel_secret','access_token'))
+        # The secret also checks the signature of every webhook.
+        return bool(secret.get('channel_secret')) and T.line_can_send(secret)
     return O.configured(cfg,secret)
 
 
@@ -66,6 +67,8 @@ def overview(db, tenant_id):
         secret = read_secret(tenant_id,kind)
         output.append({'kind':kind,'enabled':bool(row and row['enabled']),'config':cfg,
             'credentials_configured':credentials_ready(kind,cfg,secret),
+            # Not a secret: shown back in its field, as LINE Developers shows it.
+            **({'channel_id':secret.get('channel_id','')} if kind=='line' else {}),
             'oauth_client_configured':bool(secret.get('oauth_client_secret')),'route_id':row['route_id'] if row else None,
             'last_error':CHANNEL_ERRORS.get(row['last_error'],'') if row else '',
             'last_checked':row['last_checked'] if row else None,'last_received':row['last_received'] if row else None,
@@ -115,7 +118,7 @@ def save_channel(cd, db, ctx, kind, body):
     else:
         schema.line_options(body,cfg)
         if enabled:
-            require(bool(secret.get('access_token') and secret.get('channel_secret')),'กรุณาระบุ Channel Secret และ Channel Access Token')
+            require(credentials_ready(kind,cfg,secret),'กรุณาระบุแชนแนล ID และความลับแชนแนล')
             info = T.verify_line(secret)
             cfg.update(info)
     cfg['chatbot_enabled'] = schema.chatbot_flag(body,cfg)
@@ -614,7 +617,7 @@ def process_outbox(tenant_id):
             finish(db,job,'failed','changed')
             return True
         secret = read_secret(tenant_id,job['kind'])
-        if job['kind']=='line' and not secret.get('access_token') or job['kind']=='email' and not O.configured(row['config'],secret):
+        if job['kind']=='line' and not T.line_can_send(secret) or job['kind']=='email' and not O.configured(row['config'],secret):
             finish(db,job,'failed','credentials')
             return True
         lease = uid()

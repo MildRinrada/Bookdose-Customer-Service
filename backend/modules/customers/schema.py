@@ -99,6 +99,12 @@ def quiet_form(value):
     return {'enabled':enabled,'start':start,'end':end}
 
 
+def page_form(value):
+    """{popup, sound} of the alerts on the page itself."""
+    require(isinstance(value,dict) and all(type(value.get(key)) is bool for key in ('popup','sound')),'ข้อมูลการแจ้งเตือนบนหน้าเว็บไม่ถูกต้อง')
+    return {'popup':value['popup'],'sound':value['sound']}
+
+
 def password_change_form(body):
     """(current password, new password hash)"""
     return existing_password(body,'current_password'),new_password(body)

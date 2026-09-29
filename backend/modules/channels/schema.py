@@ -30,7 +30,9 @@ def remove_credentials(body, enabled):
     return remove
 
 
-CREDENTIAL_KEYS = {'line':('channel_secret','access_token'),'facebook':('page_access_token','app_secret'),'email':('password',)}
+# LINE asks for the channel ID and its secret, as LINE Developers shows them; access_token is the channel access
+# token copied by hand before that, still accepted and used when there is no channel ID.
+CREDENTIAL_KEYS = {'line':('channel_id','channel_secret','access_token'),'facebook':('page_access_token','app_secret'),'email':('password',)}
 
 
 def credentials(body, kind, secret):
@@ -38,8 +40,14 @@ def credentials(body, kind, secret):
     for key in CREDENTIAL_KEYS[kind]:
         value = body.get(key,'')
         require(isinstance(value,str) and len(value)<=2000 and not any(ord(c)<32 for c in value),f'ข้อมูล {key} ไม่ถูกต้อง')
+        if key=='channel_id':
+            value = value.strip()
+            require(not value or re.fullmatch(r'[0-9]{1,20}',value),'แชนแนล ID ต้องเป็นตัวเลข')
         if value:
             secret[key] = value
+    # With a channel ID the token comes from LINE; a hand-copied one kept beside it would only confuse.
+    if kind=='line' and body.get('channel_id'):
+        secret.pop('access_token',None)
 
 
 def email_account(body, cfg):

@@ -33,8 +33,9 @@ export function useUiState<T>(key: string, initial: T): [T, (next: T | ((previou
   return [value, set];
 }
 
-/** Forget every screen's choices, e.g. after switching to another organization. */
+/** Forget every screen's choices, e.g. after switching to another organization. Screens are not told: each caller
+    clears the query cache next and the frame reopens them from scratch, while a screen told now would redraw before
+    the frame and find the workspace already gone (useWork() throws). */
 export function resetUiState() {
   store.clear();
-  emit();
 }

@@ -3,19 +3,19 @@
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { AchievementsSettings } from './AchievementsSettings';
-import { NotificationSettings } from './NotificationSettings';
+import { NotificationSettings, PlatformNotificationSettings } from './NotificationSettings';
 import { OrganizationsSettings } from './OrganizationsSettings';
 import { ProfileSettings } from './ProfileSettings';
 import { RepliesSettings } from './RepliesSettings';
 import { SecuritySettings } from './SecuritySettings';
 import { StatusSettings } from './StatusSettings';
 import { useBoot } from '@/lib/session';
-import { isStaffAccountTab, platformHiddenTabs, staffAccountTabPath, staffAccountTabs, type StaffAccountTab } from './tabs';
+import { isStaffAccountTab, platformHiddenTabs, platformNotifyHint, staffAccountTabPath, staffAccountTabs, type StaffAccountTab } from './tabs';
 
 /* ตั้งค่าบัญชี of a staff account - a member of any role, or a platform admin (/account?tab=): laid out as a
    customer's (features/customer/AccountScreen.tsx), a menu of sections beside a column of cards. One account works
    in every organization it belongs to, so nothing here depends on the organization selected. A platform admin
-   takes no cases, so their account has no work status, work notifications or quick replies.
+   takes no cases, so their account has no work status or quick replies, and its notifications are about the server.
    Markup: pages/settings.css (.settings-nav), pages/account-settings.css. */
 
 export function StaffAccountScreen({ tab }: { tab?: string }) {
@@ -25,7 +25,7 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
   const content = {
     profile: () => <ProfileSettings />,
     status: () => <StatusSettings />,
-    notifications: () => <NotificationSettings />,
+    notifications: () => (platformAdmin ? <PlatformNotificationSettings /> : <NotificationSettings />),
     replies: () => <RepliesSettings />,
     achievements: () => <AchievementsSettings />,
     security: () => <SecuritySettings />,
@@ -59,7 +59,7 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
                 </span>
                 <span className="settings-nav-text">
                   <strong>{meta.label}</strong>
-                  <span className="settings-nav-hint">{meta.hint}</span>
+                  <span className="settings-nav-hint">{platformAdmin && key === 'notifications' ? platformNotifyHint : meta.hint}</span>
                 </span>
               </Link>
             );

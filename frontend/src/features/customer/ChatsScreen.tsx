@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
-import { customerUnread } from '@/components/shell/CustomerShell';
+import { customerUnread } from '@/lib/customer-session';
 import { CustomerNone, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { SearchInput } from '@/components/ui/filters';
 import { useSinglePane } from '@/features/inbox';

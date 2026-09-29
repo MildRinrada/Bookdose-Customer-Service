@@ -20,8 +20,10 @@ export type StaffPreferences = {
   hours: { enabled: boolean; days: number[]; start: string; end: string };
   leave: { from: string; to: string; note: string }[];
   /** celebrate: confetti and a card when the member closes a case, gets five stars or praise, or earns a badge
-      (Celebrations). recap: last month's summary pops up the first time they open the app in a month (RecapPopup). */
-  notify: { desktop: boolean; sound: boolean; email: boolean; celebrate: boolean; recap: boolean; events: Record<NotifyEvent, boolean> };
+      (Celebrations). recap: last month's summary pops up the first time they open the app in a month (RecapPopup).
+      popup: the app's own card at the bottom right while the member is on the page (WorkPopups); absent from a
+      server older than the switch, which counts as on. */
+  notify: { desktop: boolean; sound: boolean; email: boolean; celebrate: boolean; recap: boolean; popup?: boolean; events: Record<NotifyEvent, boolean> };
   signature: { enabled: boolean; text: string };
   alias: string;
   /** การ์ดขอบคุณหลังปิดเคส, in organizations that give one: customers see this member's photo on it (else their

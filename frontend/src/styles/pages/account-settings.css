@@ -288,6 +288,14 @@ html.platform-mode .status-switch {
 .notify-group .check .switch {
   margin-top: 2px;
 }
+/* ผู้ดูแลแพลตฟอร์ม: what counts is fixed, so it is a list, not switches */
+.notify-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink);
+}
 .block {
   display: block;
 }
@@ -298,6 +306,19 @@ html.platform-mode .status-switch {
   margin: 0 0 10px;
 }
 /* ชื่อและลายเซ็นที่ลูกค้าเห็น */
+/* Switches with a line under each (ข้อมูลส่วนตัว): the switch level with the first line, room before the next field. */
+.switch-group {
+  display: grid;
+  gap: 14px;
+  margin: 2px 0 18px;
+}
+.switch-group .check {
+  align-items: flex-start;
+}
+.switch-group .check .switch {
+  flex: none;
+  margin-top: 2px;
+}
 .reply-preview {
   display: grid;
   gap: 6px;

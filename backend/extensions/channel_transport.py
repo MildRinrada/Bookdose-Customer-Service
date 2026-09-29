@@ -7,6 +7,7 @@ from email.headerregistry import Address
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import formatdate, parseaddr
+import hashlib
 from html.parser import HTMLParser
 import imaplib
 import ipaddress
@@ -15,6 +16,7 @@ import re
 import smtplib
 import socket
 import ssl
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -48,8 +50,45 @@ def line_request(token,path,body=None,retry_key=None,data_host=False,maximum=1_0
         raise ChannelError('network',retryable=True) from None
 
 
+LINE_TOKENS={}  # (channel ID, hash of its secret) -> (token, time to stop using it)
+
+
+def line_can_send(secret):
+    """Whether these credentials can call LINE: the channel ID with its secret, or a channel access token saved by hand
+    before the channel ID was asked for."""
+    return bool(secret.get('channel_id') and secret.get('channel_secret') or secret.get('access_token'))
+
+
+def line_token(secret):
+    """A channel access token. From the channel ID and secret LINE issues a stateless one (15 minutes, any number of
+    them), kept here until a minute before it runs out; an older setup has its hand-copied token."""
+    channel_id,channel_secret=secret.get('channel_id'),secret.get('channel_secret')
+    if not (channel_id and channel_secret):return secret.get('access_token','')
+    key=(channel_id,hashlib.sha256(channel_secret.encode()).hexdigest())
+    token,until=LINE_TOKENS.get(key,('',0))
+    if until>time.time():return token
+    form=urllib.parse.urlencode({'grant_type':'client_credentials','client_id':channel_id,'client_secret':channel_secret}).encode()
+    req=urllib.request.Request('https://api.line.me/oauth2/v3/token',data=form,headers={'Content-Type':'application/x-www-form-urlencoded'})
+    try:
+        with open_without_redirects(req,15) as response:
+            data=json.loads(response.read(100_000))
+        token,lifetime=data['access_token'],int(data.get('expires_in',900))
+        if not isinstance(token,str) or not token or any(ord(c)<33 for c in token):raise ValueError()
+    except urllib.error.HTTPError as error:
+        code=error.code
+        error.close()
+        # A wrong channel ID or secret is a 400 (invalid_client).
+        raise ChannelError('credentials' if code in (400,401,403) else 'temporary' if code>=500 or code==429 else 'rejected',retryable=code>=500 or code==429) from None
+    except (OSError,urllib.error.URLError,TimeoutError):
+        raise ChannelError('network',retryable=True) from None
+    except (ValueError,TypeError,KeyError):
+        raise ChannelError('rejected') from None
+    LINE_TOKENS[key]=(token,time.time()+max(60,lifetime)-60)
+    return token
+
+
 def verify_line(secret):
-    raw,_,_=line_request(secret['access_token'],'/v2/bot/info')
+    raw,_,_=line_request(line_token(secret),'/v2/bot/info')
     try:
         data=json.loads(raw)
         if not re.fullmatch(r'U[a-fA-F0-9]{32}',data.get('userId','')):raise ValueError()
@@ -62,7 +101,7 @@ def verify_line(secret):
 
 def line_webhook_info(secret):
     """Where LINE sends this bot's events and whether "Use webhook" is on: {'endpoint','active'}."""
-    raw,_,_=line_request(secret['access_token'],'/v2/bot/channel/webhook/endpoint')
+    raw,_,_=line_request(line_token(secret),'/v2/bot/channel/webhook/endpoint')
     try:
         data=json.loads(raw)
         return {'endpoint':str(data.get('endpoint',''))[:500],'active':data.get('active') is True}
@@ -72,11 +111,11 @@ def line_webhook_info(secret):
 def reply_line(secret,reply_token,text):
     """Answer one webhook event with its reply token: free (a push counts against the monthly quota), once, and only
     shortly after the event."""
-    line_request(secret['access_token'],'/v2/bot/message/reply',{'replyToken':reply_token,'messages':[{'type':'text','text':text}]})
+    line_request(line_token(secret),'/v2/bot/message/reply',{'replyToken':reply_token,'messages':[{'type':'text','text':text}]})
 
 
 def send_line(secret,recipient,text,retry_key):
-    _,_,provider_id=line_request(secret['access_token'],'/v2/bot/message/push',
+    _,_,provider_id=line_request(line_token(secret),'/v2/bot/message/push',
         {'to':recipient,'messages':text if isinstance(text,list) else [{'type':'text','text':text}]},retry_key)
     return provider_id
 
@@ -92,7 +131,7 @@ def valid_attachment(name,content):
 def line_media(secret,message):
     message_id=message.get('id','')
     if not isinstance(message_id,str) or not re.fullmatch(r'[0-9]{1,50}',message_id):raise ChannelError('media')
-    content,mime,_=line_request(secret['access_token'],f'/v2/bot/message/{message_id}/content',data_host=True,maximum=MAX_FILES)
+    content,mime,_=line_request(line_token(secret),f'/v2/bot/message/{message_id}/content',data_host=True,maximum=MAX_FILES)
     names={'image/png':'image.png','image/jpeg':'image.jpg','image/gif':'image.gif',
            'image/webp':'image.webp','video/mp4':'video.mp4','video/webm':'video.webm'}
     name=message.get('fileName') or names.get(mime.split(';')[0],'attachment.bin')

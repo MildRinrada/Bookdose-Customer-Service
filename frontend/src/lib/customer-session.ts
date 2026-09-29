@@ -52,6 +52,11 @@ export type CustomerOverview = {
   alert_count: number;
 } & Record<string, unknown>;
 
+/** The team replied after the customer last opened the chat. */
+export function customerUnread(c: { last_kind?: string | null; seen_at?: string | null; updated_at: string }): boolean {
+  return c.last_kind === 'reply' && (!c.seen_at || c.seen_at < c.updated_at);
+}
+
 export function useCustomerOverview<T extends CustomerOverview = CustomerOverview>() {
   const { data } = useCustomerAccount();
   return useApi<T>('/api/customer/overview', { enabled: Boolean(data?.signed_in) });

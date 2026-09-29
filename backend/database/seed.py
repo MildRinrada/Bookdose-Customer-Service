@@ -85,7 +85,7 @@ GLOBAL_ARTICLES = [
      'เคสที่ไม่ตรงกฎใดจะเข้าทีมแรกขององค์กร เจ้าขององค์กรมอบหมายต่อได้จากหน้าเคส'),
     ('เชื่อมต่อช่องทาง LINE, Facebook และ Email','ช่องทางติดต่อ','staff',
      'ผู้ดูแลองค์กรตั้งค่าได้ที่ **ตั้งค่าองค์กร → LINE / อีเมล / Facebook / Instagram**\n\n'
-     '- **LINE Official Account:** กรอก Channel secret และ Channel access token จาก LINE Developers แล้วคัดลอก Webhook URL ไปใส่ในหน้า Messaging API\n'
+     '- **LINE Official Account:** กรอกแชนแนล ID และความลับแชนแนลจาก LINE Developers แล้วคัดลอก Webhook URL ไปใส่ในหน้า Messaging API\n'
      '- **Facebook Messenger:** กรอก Page access token, App secret และ Verify token แล้วตั้ง Webhook ของแอปให้ชี้มาที่ URL ที่ระบบแสดง\n'
      '- **Email:** กรอก IMAP สำหรับรับและ SMTP สำหรับส่ง หรือเชื่อมบัญชีด้วย OAuth\n\n'
      'LINE และ Facebook ต้องใช้โดเมน HTTPS ที่เข้าถึงจากอินเทอร์เน็ตได้ กด **ทดสอบการเชื่อมต่อ** หลังบันทึกทุกครั้ง'),

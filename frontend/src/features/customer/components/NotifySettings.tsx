@@ -9,10 +9,10 @@ import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { ACCOUNT_PATH, NOTIFY_SETTINGS_PATH, linePath, requestLineCode, saveNotifySettings, unlinkLine } from '../api';
-import type { LineCode, LineOrg, LineStatus, NotificationSettings, QuietHours } from '../types';
+import type { LineCode, LineOrg, LineStatus, NotificationSettings, PageAlerts, QuietHours } from '../types';
 
 /* ตั้งค่าบัญชี → การแจ้งเตือน: which events go to email and to LINE (the bell on the page always shows everything),
-   the hours when neither may reach the customer (ช่วงเวลาห้ามรบกวน),
+   the hours when neither may reach the customer (ช่วงเวลาห้ามรบกวน), the page's own pop-up and sound while it is open,
    and linking the account with each organization's LINE by a 6-digit code sent there in a 1:1 chat
    (GET/POST /api/customer/notification-settings, /api/public/<org>/line). Markup: pages/alerts-customer.css. */
 
@@ -186,6 +186,31 @@ function QuietHoursField({ quiet }: { quiet: QuietHours }) {
   );
 }
 
+const PAGE: PageAlerts = { popup: true, sound: true };
+
+/** While the page is open (features/customer/useReplyPopups): a pop-up at the bottom right when the team answers, and
+    a short sound with it. Saved with the table above. */
+function PageAlertsField({ page }: { page: PageAlerts }) {
+  return (
+    <fieldset className="quiet-hours">
+      <legend>ขณะเปิดหน้าเว็บนี้อยู่</legend>
+      <label className="check">
+        <input type="checkbox" className="switch" name="page_popup" defaultChecked={page.popup} />
+        <span>
+          ป๊อปอัปมุมขวาล่างเมื่อทีมงานตอบ
+          <span className="tiny muted block">กดที่ป๊อปอัปเพื่อเปิดแชทนั้น ไม่ขึ้นเมื่อเปิดแชทนั้นอยู่แล้ว</span>
+        </span>
+      </label>
+      <label className="check">
+        <input type="checkbox" className="switch" name="page_sound" defaultChecked={page.sound} />
+        <span>
+          เสียงเตือนสั้น ๆ พร้อมป๊อปอัป
+        </span>
+      </label>
+    </fieldset>
+  );
+}
+
 export function NotifySettingsCard() {
   const { data } = useApi<NotificationSettings>(NOTIFY_SETTINGS_PATH);
   const refresh = useInvalidate();
@@ -207,7 +232,7 @@ export function NotifySettingsCard() {
       ) : (
         <>
           <Form
-            key={JSON.stringify([data.events, data.quiet])}
+            key={JSON.stringify([data.events, data.quiet, data.page])}
             className="card-body"
             data-form="customer-notify"
             onSubmit={async (values, form) => {
@@ -215,7 +240,7 @@ export function NotifySettingsCard() {
               const events = Object.fromEntries(data.events.map((e) => [e.key, { email: checked(`${e.key}:email`), line: checked(`${e.key}:line`) }]));
               const quiet = { enabled: checked('quiet_on'), start: values.quiet_start || QUIET.start, end: values.quiet_end || QUIET.end };
               if (quiet.enabled && quiet.start === quiet.end) throw new Error('เวลาเริ่มและเวลาสิ้นสุดของช่วงห้ามรบกวนต้องไม่ใช่เวลาเดียวกัน');
-              await saveNotifySettings(events, quiet);
+              await saveNotifySettings(events, quiet, { popup: checked('page_popup'), sound: checked('page_sound') });
               toast('บันทึกการแจ้งเตือนแล้ว');
               await refresh(NOTIFY_SETTINGS_PATH, ACCOUNT_PATH);
             }}
@@ -256,6 +281,7 @@ export function NotifySettingsCard() {
             {!lineOk && <p className="tiny muted">ตัวเลือก LINE ใช้เมื่อเชื่อม LINE ขององค์กรด้านล่างแล้ว</p>}
             <p className="tiny muted">อีเมลและ LINE มีแค่หัวเรื่องและลิงก์ให้เข้ามาดู ไม่มีเนื้อหาข้อความแชท</p>
             <QuietHoursField quiet={data.quiet ?? QUIET} />
+            <PageAlertsField page={data.page ?? PAGE} />
             <button className="btn" type="submit">
               <Icon name="check" />
               บันทึกการแจ้งเตือน

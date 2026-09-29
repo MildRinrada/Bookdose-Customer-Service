@@ -919,6 +919,13 @@ input[type=file].attach-input {
   border-color: #ffffffa0;
   color: #fff;
 }
+/* The chat pages (this inbox and the customer's แชทของฉัน) give the top bar's height to the conversation; the sidebar
+   still leads everywhere. On a phone the bar stays: it holds the menu button. */
+@media (min-width:761px) {
+  .app-main:has(.inbox-layout)>.topbar {
+    display: none;
+  }
+}
 /* Full-height workspace: list and conversation scroll on their own, composer always in view. */
 @media (min-width:1001px) and (min-height:560px) {
   /* clip, not hidden: nothing (a focused field, a scrollIntoView) can scroll the locked page out of place. */
@@ -1218,6 +1225,16 @@ input[type=file].attach-input {
 }
 .message.reply .message-footer {
   text-align: right;
+}
+/* ถอนลิงก์ไฟล์ / ลองส่งอีกครั้ง (channels/components/ChannelDelivery), under the delivery status. */
+.message-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.message.reply .message-footer-actions {
+  justify-content: flex-end;
 }
 .message-tag {
   display: inline-flex;

@@ -28,35 +28,40 @@ export function ChannelDelivery({
       {deliveryNames[message.delivery] || message.delivery}
       {message.delivery === 'accepted' && ' · ยังไม่ยืนยันการส่งถึงหรืออ่าน'}
       {delivery.error && <p>{delivery.error}</p>}
-      {delivery.has_file_links && (
-        <button
-          type="button"
-          className="btn sm"
-          onClick={() =>
-            run(async () => {
-              await revokeFileLinks(message.id);
-              await refresh(...MESSAGE_PREFIXES);
-              toast('ถอนลิงก์ไฟล์แล้ว');
-            })
-          }
-        >
-          ถอนลิงก์ไฟล์
-        </button>
-      )}
-      {delivery.retryable && (
-        <button
-          type="button"
-          className="btn sm"
-          onClick={() =>
-            run(async () => {
-              await retryDelivery(message.id);
-              await refresh(...MESSAGE_PREFIXES);
-              toast('นำข้อความกลับเข้าคิวแล้ว');
-            })
-          }
-        >
-          ลองส่งอีกครั้ง
-        </button>
+      {/* A row of their own: beside the status they landed in the middle of its wrapped text. */}
+      {(delivery.has_file_links || delivery.retryable) && (
+        <div className="message-footer-actions">
+          {delivery.has_file_links && (
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() =>
+                run(async () => {
+                  await revokeFileLinks(message.id);
+                  await refresh(...MESSAGE_PREFIXES);
+                  toast('ถอนลิงก์ไฟล์แล้ว');
+                })
+              }
+            >
+              ถอนลิงก์ไฟล์
+            </button>
+          )}
+          {delivery.retryable && (
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() =>
+                run(async () => {
+                  await retryDelivery(message.id);
+                  await refresh(...MESSAGE_PREFIXES);
+                  toast('นำข้อความกลับเข้าคิวแล้ว');
+                })
+              }
+            >
+              ลองส่งอีกครั้ง
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

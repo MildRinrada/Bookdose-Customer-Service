@@ -160,7 +160,7 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
       </div>
       <Form
         // After saving, the form shows the saved settings again and the secret boxes start empty.
-        key={JSON.stringify([c.enabled, c.config, c.credentials_configured, c.route_id])}
+        key={JSON.stringify([c.enabled, c.config, c.credentials_configured, c.channel_id, c.route_id])}
         className="card-body"
         data-form="channel-settings"
         data-kind={k}
@@ -192,8 +192,9 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
         <div className="form-grid">
           {k === 'line' && (
             <>
-              <ChannelField kind={k} name="channel_secret" label="Channel Secret" type="password" />
-              <ChannelField kind={k} name="access_token" label="Channel Access Token" type="password" />
+              {/* The two values LINE Developers shows on the channel's page; the server asks LINE for the token itself. */}
+              <ChannelField kind={k} name="channel_id" label="แชนแนล ID" value={c.channel_id || ''} />
+              <ChannelField kind={k} name="channel_secret" label="ความลับแชนแนล" type="password" />
               <ChannelField kind={k} name="public_base_url" label="โดเมน HTTPS สำหรับส่งไฟล์" type="url" value={v.public_base_url || ''} />
               <label className="check">
                 <input name="groups_enabled" type="checkbox" className="switch" defaultChecked={Boolean(v.groups_enabled)} />

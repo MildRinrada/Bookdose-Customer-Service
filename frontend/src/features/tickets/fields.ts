@@ -9,8 +9,18 @@ import { useWork } from '@/lib/session';
    the case. Staff only. */
 
 export type CaseFieldKind = 'text' | 'number' | 'date' | 'select' | 'checkbox';
-/** ask: the chatbot asks the customer for it while they wait for a person (backend ai/gather.py). */
-export type CaseField = { id: string; name: string; kind: CaseFieldKind; options: string[]; required: boolean; ask?: boolean };
+/** ask: the chatbot asks the customer for it while they wait for a person (backend ai/gather.py). customer: the start
+    form asks for it, in the categories listed (none: every category). */
+export type CaseField = {
+  id: string;
+  name: string;
+  kind: CaseFieldKind;
+  options: string[];
+  required: boolean;
+  ask?: boolean;
+  customer?: boolean;
+  categories?: string[];
+};
 
 export const fieldKindLabels: Record<CaseFieldKind, string> = {
   text: 'ข้อความ',
@@ -79,7 +89,8 @@ export function matchesFieldFilter(values: Record<string, string> | undefined, f
 
 /** The owner's list with how many cases have a value in each field (ตั้งค่าองค์กร → ช่องข้อมูลของเคส). */
 export const CASE_FIELDS_PATH = '/api/settings/fields';
-export type CaseFieldsOverview = { fields: CaseField[]; counts: Record<string, number>; max: number };
+/** categories: the ones customers pick from when they start a chat. */
+export type CaseFieldsOverview = { fields: CaseField[]; counts: Record<string, number>; max: number; categories?: string[] };
 export const saveCaseFields = (fields: Array<Omit<CaseField, 'id'> & { id?: string }>) => api<CaseFieldsOverview>(CASE_FIELDS_PATH, { fields });
 
 /** Those fields of the case take these values ('' or false clears one); anyone who may see the case. */

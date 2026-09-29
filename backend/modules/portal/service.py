@@ -56,7 +56,7 @@ def portal_info(cd, db, org):
     return schema.organization_view(org,organization.setting(db,'welcome'),
                                     ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
                                     # The organization's own public articles, then the platform's articles for every customer.
-                                    knowledge.list_public(db)+tenants.global_articles(cd,'customer'),organization.setting(db,'response_hours'),
+                                    knowledge.list_public(db)+[{**g,'global':True} for g in tenants.global_articles(cd,'customer')],organization.setting(db,'response_hours'),
                                     customers.email_ready(cd),contact_channels(db),[c['name'] for c in customers.categories(db)],
                                     hours.sla_in_opening_time(db),banner.config(db))
 
@@ -110,10 +110,14 @@ def conversation_view(db, conv, viewer, cd=None):
     except Exception as error:
         print(f'Wait queue: {type(error).__name__}',flush=True)
         place = None
-    return schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
+    view = schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
                                     tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
                                     automation.portal_survey(db,conv['id']),conversations.staff_read_at(db,conv['id']),
                                     place,move.offer(db,D.tenant_id_of(db),conv),thanks.card_for(cd,db,conv['id']))
+    # ขอให้ติดต่อกลับ: the request waiting and the times to pick from (portal/callback.py).
+    from backend.modules.portal import callback
+    view['callback'] = callback.state(db,conv,viewer)
+    return view
 
 
 def hand_off_to_staff(db, conv):

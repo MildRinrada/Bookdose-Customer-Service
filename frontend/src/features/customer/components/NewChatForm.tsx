@@ -20,6 +20,7 @@ import type { CustomerArticle } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from './ArticlePeek';
 import { OrgPicker } from './OrgPicker';
+import { StartFields, startFieldValues } from './StartFields';
 
 /* A new chat starts with who it is for: the platform itself (problems with the system) or one of the organizations
    the customer deals with (their services and their own cases). The welcome, the reply promise and the categories
@@ -64,6 +65,8 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
   // What has been typed so far, searched against the chosen organization's published answers before this is sent.
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  // แบบฟอร์มตามหมวดเรื่อง: the fields asked for follow the category picked.
+  const [category, setCategory] = useState('');
   const faq = useApi<{ articles: CustomerArticle[] }>(FAQ_PATH);
   const articles: PeekArticle[] = (faq.data?.articles ?? []).filter((a) => a.org_slug === slug);
 
@@ -90,6 +93,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
             body: values.body ?? '',
             category: values.category || '',
             attachments,
+            fields: startFieldValues(values, org?.form_fields, values.category || ''),
             ...(values.follows ? { follows: values.follows } : {}),
           });
           toast(`ส่งถึง ${orgs.find((o) => o.slug === values.org)?.name || 'ทีมงาน'} แล้ว ติดตามคำตอบได้ในแชทนี้`);
@@ -125,7 +129,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
           </SelectField>
         )}
         {/* Another organization has its own categories: the choice starts over. */}
-        <SelectField key={slug} label="หมวดเรื่อง" name="category" id="request-category" required defaultValue="">
+        <SelectField key={slug} label="หมวดเรื่อง" name="category" id="request-category" required defaultValue="" onChange={(e) => setCategory(e.target.value)}>
           <option value="">เลือกหมวดเรื่อง</option>
           {(org?.categories ?? []).map((name) => (
             <option key={name} value={name}>
@@ -133,6 +137,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
             </option>
           ))}
         </SelectField>
+        <StartFields key={`fields-${slug}`} fields={org?.form_fields} category={category} idPrefix="request-field" />
         <TextField
           label="เรื่องที่ต้องการความช่วยเหลือ"
           name="subject"
@@ -148,7 +153,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
           onChange={setBody}
         />
         {/* Their question may already have an answer: it is offered here, while they write, rather than after a wait. */}
-        <AnswerSuggestions articles={articles} hrefOf={(a) => `/customer/faq/${a.id}`} text={`${subject} ${body}`} />
+        <AnswerSuggestions articles={articles} hrefOf={(a) => `/customer/faq/${a.id}`} text={`${subject} ${body}`} slug={slug} />
         <AttachmentsField />
         <p className="tiny muted">เพื่อความปลอดภัย กรุณาอย่าส่งรหัสผ่านหรือข้อมูลส่วนตัวที่สำคัญในแชท</p>
         <button className="btn primary" type="submit">

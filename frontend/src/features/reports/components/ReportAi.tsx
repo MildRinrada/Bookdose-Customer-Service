@@ -301,6 +301,31 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
             </ul>
           </>
         )}
+        {a.customers && a.customers.helpful + a.customers.unhelpful > 0 && (
+          <>
+            <h3 className="report-subhead">ลูกค้าบอกว่าบทความช่วยได้ไหม</h3>
+            <p className="muted report-customer-votes">
+              ช่วยได้ {a.customers.helpful} ครั้ง ไม่ช่วย {a.customers.unhelpful} ครั้ง จากหน้าคำถามที่พบบ่อยและคำตอบที่แนะนำตอนเริ่มแชท
+            </p>
+            {a.customers.unhelpful_articles.length > 0 && (
+              <ul className="report-comments">
+                {a.customers.unhelpful_articles.map((u) => (
+                  <li key={u.id} className="low">
+                    <span className="report-comment-stars report-votes">
+                      <Icon name="thumbDown" /> {u.unhelpful}
+                    </span>
+                    <span className="report-comment-body">
+                      <ArticleLink title={u.title} />
+                      <small className="muted">
+                        {u.category} ลูกค้าบอกว่าช่วยได้ {u.helpful} ไม่ช่วย {u.unhelpful}
+                      </small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
         {gaps && (
           <div className={`report-gaps${gaps.total ? ' has' : ''}`}>
             <Icon name="chat" />

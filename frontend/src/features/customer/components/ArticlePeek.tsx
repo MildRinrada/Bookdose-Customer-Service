@@ -7,6 +7,7 @@ import { SearchInput } from '@/components/ui/filters';
 import { Highlighted, searchArticles } from '@/features/knowledge';
 import { Markdown } from '@/features/rich/Markdown';
 import { date, plainText } from '@/lib/format';
+import { ArticleFeedback } from './ArticleFeedback';
 
 /* Published answers beside a chat, readable without leaving it (the visitor's chat and the signed-in customer's).
 
@@ -20,7 +21,8 @@ import { date, plainText } from '@/lib/format';
    attributes - backend/middleware/security.py). Markup: styles/pages/chat-answers.css. */
 
 /** An answer as both chats' APIs send it (GET /api/public/<org>, GET /api/customer/faq). */
-export type PeekArticle = { id: string; title: string; category?: string; body: string; updated_at?: string };
+/** global: a platform article (no บทความนี้ช่วยได้ไหม: it is not the organization's). */
+export type PeekArticle = { id: string; title: string; category?: string; body: string; updated_at?: string; global?: boolean };
 
 /** What a dragged row carries: the article's id. The list that started the drag is the one that holds the article,
     so the id is all that has to travel (and nothing readable is dropped into another website by accident). */
@@ -211,11 +213,14 @@ export function AnswerSuggestions({
   articles,
   hrefOf,
   text,
+  slug,
 }: {
   articles: PeekArticle[];
   hrefOf: (article: PeekArticle) => string;
   /** What has been typed so far (the subject and the message together). */
   text: string;
+  /** The organization's code, for บทความนี้ช่วยได้ไหม under an answer read here. */
+  slug?: string;
 }) {
   // Searched once the typing settles, not on every letter.
   const [asked, setAsked] = useState('');
@@ -259,6 +264,7 @@ export function AnswerSuggestions({
               {shown && (
                 <div className="qa-suggest-body">
                   <Markdown className="article-content" text={article.body} />
+                  {slug && !article.global && <ArticleFeedback slug={slug} articleId={article.id} />}
                   <p className="qa-suggest-foot">
                     {/* A new window: what has been typed into the form must still be there afterwards. */}
                     <Link className="btn sm subtle" href={hrefOf(article)} target="_blank" rel="noopener">

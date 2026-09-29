@@ -107,6 +107,8 @@ export type Conversation = {
   guest?: GuestReach | null;
   /** A guest started this chat: whether the organization blocked that guest (guest/blocks.py); null for any other chat. */
   guest_block?: { block: GuestBlock | null } | null;
+  /** แบบฟอร์มตามหมวดเรื่อง: the case fields the customer filled in on the start form (tickets/fields.py). */
+  form_values?: Array<{ field: string; name: string; value: string }>;
   /** A signed-in customer's chat, and the earlier chat of theirs they said this one carries on from (customers/perks.py). */
   member?: boolean;
   follows?: { id: string; subject: string; status: string; updated_at: string; ticket_number: number | null } | null;

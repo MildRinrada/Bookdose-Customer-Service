@@ -22,7 +22,16 @@ export const casePath = (slug: string, id: string) => `/api/public/${slug}/cases
 /** The public page of an organization (name, articles, whether sign-up email works). */
 export const publicInfoPath = (slug: string) => `/api/public/${slug}`;
 
-export const openChat = (slug: string, body: { subject: string; body: string; category: string; attachments: Upload[]; follows?: string }) =>
+/** ขอให้ติดต่อกลับ in a chat (X-Conversation-ID): ask ({method, phone, start, note}) or call it off ({cancel: true}).
+    `base` is /api/public/<org> for a signed-in customer, …/guest for a visitor. */
+export const requestCallback = (base: string, conversationId: string, body: Record<string, unknown>) =>
+  api<{ waiting: import('./types').CallbackRequest | null }>(`${base}/callback`, body, 'POST', { conversation: conversationId });
+
+/** บทความนี้ช่วยได้ไหม on an organization's published article; `voter` is this browser's own random token. */
+export const sendArticleFeedback = (slug: string, articleId: string, helpful: boolean, voter: string) =>
+  api<{ ok: true }>(`/api/public/${slug}/articles/${articleId}/feedback`, { helpful, voter });
+
+export const openChat = (slug: string, body: { subject: string; body: string; category: string; attachments: Upload[]; follows?: string; fields?: Record<string, string> }) =>
   api<{ id: string }>(`/api/public/${slug}/conversations`, body);
 
 /* What signing in gives (backend customers/perks.py, incidents/follow.py): send a finished case back, keep a chat or

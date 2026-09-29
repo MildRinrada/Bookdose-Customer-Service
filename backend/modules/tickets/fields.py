@@ -10,6 +10,11 @@ Each field has a kind, so what is typed can be checked and later filtered and co
   select    one of the owner's options (the report can split cases by it)
   checkbox  ticked ("1") or not (no value)
 
+A field may be asked of the customer when they start a web chat (แบบฟอร์มตามหมวดเรื่อง: `customer`, for every
+category or only the ones in `categories`): what they type is kept on the chat (conversation_field_values) and becomes
+the case's value when a case opens from it; the team sees it on the chat before that. Never required of the customer:
+a form that cannot be sent is a customer who gives up.
+
 A field may be required before the case is closed (resolved or closed): a member closing it - from the case screen,
 the case list, a macro or the assistant - is told which fields are still empty. Closes that nobody could fill anything
 for first (the customer closing their own case, ปิดเคสเมื่อลูกค้าเงียบ) are not stopped. A required checkbox must be
@@ -48,7 +53,12 @@ CREATE TABLE IF NOT EXISTS ticket_field_values (
     updated_by TEXT NOT NULL DEFAULT '', PRIMARY KEY(ticket_id,field_id)
 );
 CREATE INDEX IF NOT EXISTS ticket_field_values_field ON ticket_field_values(field_id);
+CREATE TABLE IF NOT EXISTS conversation_field_values (
+    conversation_id TEXT NOT NULL, field_id TEXT NOT NULL, value TEXT NOT NULL, created_at TEXT NOT NULL,
+    PRIMARY KEY(conversation_id,field_id)
+);
 '''
+CATEGORIES_MAX = 30
 
 # A case's values as {field id: value} (JSON), for the case list (repository.list_with_contacts) and the assistant.
 VALUES_COLUMN = "(SELECT json_group_object(v.field_id,v.value) FROM ticket_field_values v WHERE v.ticket_id=t.id) AS field_values"
@@ -112,7 +122,14 @@ def form(body, before):
         # ให้ Chatbot ถามลูกค้า: asked for while the customer waits after the chatbot hands over (ai/gather.py).
         ask = item.get('ask',False)
         require(type(ask) is bool,'การให้ Chatbot ถามต้องเป็นใช่หรือไม่')
-        found.append({'id':field_id,'name':name,'kind':kind,'options':options,'required':required,'ask':ask})
+        # ให้ลูกค้ากรอกตอนเริ่มแชท: on the start form, for these categories only (none: every category).
+        customer = item.get('customer',False)
+        require(type(customer) is bool,'การให้ลูกค้ากรอกต้องเป็นใช่หรือไม่')
+        raw = item.get('categories',[]) if customer else []
+        require(isinstance(raw,list) and len(raw)<=CATEGORIES_MAX,'หมวดเรื่องของช่องไม่ถูกต้อง')
+        categories = list(dict.fromkeys(c for c in (_line(c,'หมวดเรื่อง',OPTION_MAX) for c in raw) if c))
+        found.append({'id':field_id,'name':name,'kind':kind,'options':options,'required':required,'ask':ask,
+                      'customer':customer,'categories':categories})
     require(len({f['id'] for f in found})==len(found),'ข้อมูลช่องไม่ถูกต้อง')
     return found
 
@@ -123,7 +140,9 @@ def counts(db):
 
 
 def overview(db):
-    return {'fields':catalog(db),'counts':counts(db),'max':MAX_FIELDS}
+    # The categories customers pick from, for a field asked only in some of them.
+    from backend.modules.customers import service as customers
+    return {'fields':catalog(db),'counts':counts(db),'max':MAX_FIELDS,'categories':[c['name'] for c in customers.categories(db)]}
 
 
 def save(db, ctx, body):
@@ -206,6 +225,44 @@ def values_form(db, body):
     fields = {f['id']:f for f in catalog(db)}
     require(set(sent)<=set(fields),'บางช่องถูกลบไปแล้ว กรุณาโหลดหน้าใหม่')
     return {field_id:value_of(fields[field_id],raw) for field_id,raw in sent.items()}
+
+
+def customer_fields(db, category=None):
+    """The fields the start form asks for (all categories' with `category` None), as the form needs them."""
+    return [{'id':f['id'],'name':f['name'],'kind':f['kind'],'options':f['options'],'categories':f.get('categories') or []}
+            for f in catalog(db) if f.get('customer') and (category is None or not f.get('categories') or category in f['categories'])]
+
+
+def customer_values(db, category, sent):
+    """{field id: value} of what the customer filled in on the start form, each checked against its field; a field not
+    on the form for this category is refused, an empty one left out."""
+    if sent in (None,{}):
+        return {}
+    require(isinstance(sent,dict) and len(sent)<=MAX_FIELDS,'ข้อมูลในแบบฟอร์มไม่ถูกต้อง')
+    asked = {f['id']:f for f in catalog(db) if f['id'] in {c['id'] for c in customer_fields(db,category)}}
+    require(set(sent)<=set(asked),'แบบฟอร์มเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่')
+    found = {field_id:value_of(asked[field_id],raw) for field_id,raw in sent.items()}
+    return {k:v for k,v in found.items() if v}
+
+
+def keep_for_conversation(db, conversation_id, values):
+    db.executemany('INSERT OR REPLACE INTO conversation_field_values VALUES(?,?,?,?)',
+                   [(conversation_id,field_id,value,now()) for field_id,value in values.items()])
+
+
+def of_conversation(db, conversation_id):
+    """What the customer filled in on the start form, for the team: [{'field','name','value'}] in the list's order."""
+    have = {r[0]:r[1] for r in db.execute('SELECT field_id,value FROM conversation_field_values WHERE conversation_id=?',(conversation_id,))}
+    return [{'field':f['id'],'name':f['name'],'value':display(f,have[f['id']])} for f in catalog(db) if have.get(f['id'])]
+
+
+def copy_to_ticket(db, conversation_id, ticket_id):
+    """A case opened from the chat takes what the customer filled in, into the fields it has no value in yet."""
+    known = {f['id'] for f in catalog(db)}
+    have = values_of(db,ticket_id)
+    for field_id,value in db.execute('SELECT field_id,value FROM conversation_field_values WHERE conversation_id=?',(conversation_id,)).fetchall():
+        if field_id in known and not have.get(field_id):
+            db.execute('INSERT OR IGNORE INTO ticket_field_values VALUES(?,?,?,?,?)',(ticket_id,field_id,value,now(),'ลูกค้า'))
 
 
 def set_for_ticket(db, ctx, ticket_id, body):

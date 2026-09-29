@@ -178,6 +178,11 @@ def upgrade_tenant(db):
     db.executescript(tags.TABLE)
     # ช่องข้อมูลเพิ่มเติมของเคส: the values of the organization's own fields on its cases (tickets/fields.py).
     db.executescript(fields.TABLE)
+    # บทความนี้ช่วยได้ไหม from customers (knowledge/feedback.py); ขอให้ติดต่อกลับ (portal/callback.py).
+    from backend.modules.knowledge import feedback as knowledge_feedback
+    from backend.modules.portal import callback
+    db.executescript(knowledge_feedback.TABLE)
+    db.executescript(callback.TABLE)
     from backend.modules.automation import distribution, repository as automation_repository
     automation_repository.add_rule_tags(db)
     db.executescript(distribution.TABLE)

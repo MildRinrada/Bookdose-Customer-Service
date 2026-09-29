@@ -103,8 +103,10 @@ def articles(db, since, until):
                            ORDER BY SUM(m.vote=-1)-SUM(m.vote=1) DESC,SUM(m.vote=-1) DESC LIMIT ?''',(UNHELPFUL_ARTICLES,))
     totals = db.execute('''SELECT COUNT(*),COUNT(DISTINCT article_id) FROM knowledge_uses WHERE created_at>=? AND created_at<?''',
                         (since,until)).fetchone()
+    # What customers said of the published ones in the period (knowledge/feedback.py).
+    from backend.modules.knowledge import feedback
     return {'top':used,'unhelpful':unhelpful,'uses':totals[0],'used_articles':totals[1],
-            'articles':db.execute('SELECT COUNT(*) FROM knowledge_articles').fetchone()[0]}
+            'articles':db.execute('SELECT COUNT(*) FROM knowledge_articles').fetchone()[0],'customers':feedback.report(db,since,until)}
 
 
 def gaps(db, tenant_id, since, until):

@@ -68,4 +68,10 @@ export type ReportArticles = {
   uses: number;
   used_articles: number;
   articles: number;
+  /** บทความนี้ช่วยได้ไหม from customers in the period (backend knowledge/feedback.py). */
+  customers?: {
+    helpful: number;
+    unhelpful: number;
+    unhelpful_articles: Array<{ id: string; title: string; category: string; helpful: number; unhelpful: number }>;
+  };
 };

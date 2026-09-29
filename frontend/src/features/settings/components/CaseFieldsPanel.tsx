@@ -54,6 +54,7 @@ function CaseFieldsCard({ data }: { data: CaseFieldsOverview }) {
     openModal(
       index === undefined ? 'เพิ่มช่องข้อมูลของเคส' : `แก้ไขช่อง “${fields[index].name}”`,
       <FieldForm
+        categories={data.categories ?? []}
         field={index === undefined ? undefined : fields[index]}
         taken={fields.filter((_, i) => i !== index).map((f) => f.name.toLowerCase())}
         onSave={async (field) => {
@@ -114,6 +115,11 @@ function CaseFieldsCard({ data }: { data: CaseFieldsOverview }) {
                       <span>{data.counts[field.id] ? `กรอกแล้ว ${data.counts[field.id]} เคส` : 'ยังไม่มีเคสที่กรอก'}</span>
                     </span>
                     {field.required && <span className="case-field-required">{field.kind === 'checkbox' ? 'ต้องติ๊กก่อนปิดเคส' : 'ต้องกรอกก่อนปิดเคส'}</span>}
+                    {field.customer && (
+                      <span className="case-field-ask">
+                        ลูกค้ากรอกตอนเริ่มแชท{field.categories?.length ? ` (${field.categories.join(', ')})` : ''}
+                      </span>
+                    )}
                     {field.ask && <span className="case-field-ask">Chatbot ถามลูกค้าก่อนถึงเจ้าหน้าที่</span>}
                   </span>
                   <span className="case-field-actions">
@@ -154,9 +160,20 @@ function CaseFieldsCard({ data }: { data: CaseFieldsOverview }) {
 
 /** One field: its name, its kind (only when it is new), a choice's options (one a line) and whether it must be filled
     before the case is closed. */
-function FieldForm({ field, taken, onSave }: { field?: CaseField; taken: string[]; onSave: (field: Draft) => Promise<void> }) {
+function FieldForm({
+  field,
+  taken,
+  categories,
+  onSave,
+}: {
+  field?: CaseField;
+  taken: string[];
+  categories: string[];
+  onSave: (field: Draft) => Promise<void>;
+}) {
   const { closeModal } = useDialogs();
   const [kind, setKind] = useState<CaseFieldKind>(field?.kind ?? 'text');
+  const [customer, setCustomer] = useState(Boolean(field?.customer));
   return (
     <Form
       className="case-field-form"
@@ -169,7 +186,9 @@ function FieldForm({ field, taken, onSave }: { field?: CaseField; taken: string[
         if (options.some((o) => o.length > FIELD_LIMITS.option)) throw new Error(`แต่ละตัวเลือกยาวไม่เกิน ${FIELD_LIMITS.option} ตัวอักษร`);
         const required = (form.elements.namedItem('required') as HTMLInputElement).checked;
         const ask = (form.elements.namedItem('ask') as HTMLInputElement).checked;
-        await onSave({ name, kind, options, required, ask });
+        // None ticked: asked in every category.
+        const picked = customer ? categories.filter((c) => (form.elements.namedItem(`category-${c}`) as HTMLInputElement | null)?.checked) : [];
+        await onSave({ name, kind, options, required, ask, customer, categories: picked.length === categories.length ? [] : picked });
       }}
     >
       <TextField label="ชื่อช่อง" name="name" max={FIELD_LIMITS.name} defaultValue={field?.name} placeholder="เช่น หมายเลขอ้างอิง" autoFocus />
@@ -202,6 +221,24 @@ function FieldForm({ field, taken, onSave }: { field?: CaseField; taken: string[
         <input type="checkbox" name="required" defaultChecked={field?.required} />
         {kind === 'checkbox' ? 'ต้องติ๊กก่อนปิดเคส' : 'ต้องกรอกก่อนปิดเคส'}
       </label>
+      <label className="check case-field-ask-check">
+        <input type="checkbox" name="customer" checked={customer} onChange={(e) => setCustomer(e.target.checked)} />
+        <span>
+          ให้ลูกค้ากรอกตอนเริ่มแชท
+          <small className="tiny muted">ขึ้นในแบบฟอร์มเริ่มแชท ทั้งลูกค้าที่เข้าสู่ระบบและไม่เข้าสู่ระบบ ไม่บังคับกรอก ค่าที่กรอกจะอยู่ในเคสที่เปิดจากแชทนั้น</small>
+        </span>
+      </label>
+      {customer && categories.length > 0 && (
+        <fieldset className="case-field-categories">
+          <legend>ถามในหมวดเรื่อง (ไม่ติ๊กเลย เท่ากับทุกหมวด)</legend>
+          {categories.map((c) => (
+            <label key={c} className="check">
+              <input type="checkbox" name={`category-${c}`} defaultChecked={Boolean(field?.categories?.includes(c))} />
+              {c}
+            </label>
+          ))}
+        </fieldset>
+      )}
       <label className="check case-field-ask-check">
         <input type="checkbox" name="ask" defaultChecked={field?.ask} />
         <span>

@@ -37,7 +37,7 @@
 หน้าเริ่มแชทมีหัวบอกคำสัญญาเวลาตอบของทีม ข้อความต้อนรับ และบทความยอดนิยมให้ลองหาคำตอบก่อน ฟอร์มมี 3 ขั้น
 
 1. **เรื่องที่ต้องการติดต่อ** หมวดเรื่องขององค์กรเป็นช่องให้เลือก หมวดส่งเรื่องเข้าทีมที่องค์กรกำหนด
-2. **เล่าเรื่องให้ทีมงานฟัง** หัวข้อ (ไม่บังคับ) ข้อความจัดรูปแบบได้ และไฟล์แนบ
+2. **เล่าเรื่องให้ทีมงานฟัง** ช่องข้อมูลที่องค์กรให้ลูกค้ากรอกของหมวดที่เลือก (ไม่บังคับ ดู [แบบฟอร์มตามหมวดเรื่อง](customer-portal.md#แบบฟอร์มตามหมวดเรื่อง)) หัวข้อ (ไม่บังคับ) ข้อความจัดรูปแบบได้ และไฟล์แนบ ระหว่างพิมพ์ระบบแนะนำบทความที่อาจตอบได้
 3. **ติดตามคำตอบอย่างไร** จำในเบราว์เซอร์นี้ ลิงก์ทางอีเมล หรือ SMS ชื่อ และเลขอ้างอิงให้ทีม
 
 ผู้เยี่ยมชมใหม่ที่ไม่ให้เบราว์เซอร์จำ ต้องให้อีเมลหรือเบอร์โทร ไม่อย่างนั้นแชทจะหาย
@@ -77,6 +77,7 @@
 - ประกาศปัญหาที่องค์กรแจ้งอยู่แสดงก่อนลูกค้าถาม ดู [ประกาศปัญหาและหน้าสถานะ](known-issues-and-status.md)
 - ลูกค้าที่รอทีมเห็น **ลำดับคิวและเวลารอโดยประมาณ** (หัวข้อถัดไป)
 - ย้ายแชทไปคุยต่อใน LINE ขององค์กรได้ ดู [หน้าลูกค้า](customer-portal.md#คุยต่อใน-line)
+- ขอให้ทีมโทรหรือส่ง LINE กลับในเวลาที่สะดวก จากเมนูของแชท ดู [ขอให้ติดต่อกลับ](customer-portal.md#ขอให้ติดต่อกลับ)
 
 ## ลำดับคิวและเวลารอโดยประมาณ
 
@@ -187,5 +188,7 @@
 | บล็อกผู้ก่อกวนและเพดานต่อ IP ต่อวัน | `backend/modules/guest/blocks.py`, ปุ่มใน `frontend/src/features/inbox/components/ConversationView.tsx`, รายการใน `frontend/src/features/settings/components/GuestChatPanel.tsx` |
 | แบนเนอร์ | `backend/modules/organization/banner.py`, `frontend/src/features/guest/components/OrgBanner.tsx` |
 | SMS | `backend/extensions/sms.py` |
+| ขอให้ติดต่อกลับ | `backend/modules/portal/callback.py`, `frontend/src/features/customer/components/CallbackRequest.tsx` |
+| แบบฟอร์มตามหมวดเรื่อง | `backend/modules/tickets/fields.py`, `frontend/src/features/customer/components/StartFields.tsx` |
 | หน้าจอ | `frontend/src/features/guest/` |
 | ปุ่มแชท | `frontend/public/widget.js` |

@@ -52,6 +52,18 @@ def hand_off(req):
     return req.send(200,{'ok':True})
 
 
+def request_callback(req):
+    from backend.modules.portal import callback
+    return req.send(200,callback.request(req.db,_current(req),req.customer,req.customer['name'],req.body))
+
+
+def article_feedback(req, article_id):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.knowledge import feedback
+    limited(('kb-feedback',req.ip),feedback.VOTES_PER_IP_HOUR,3600)
+    return req.send(200,feedback.vote(req.db,article_id,req.body))
+
+
 def continue_on_line(req):
     """POST /api/public/<org>/line/continue: a code that carries this chat to the organization's LINE."""
     from backend.modules.channels import move

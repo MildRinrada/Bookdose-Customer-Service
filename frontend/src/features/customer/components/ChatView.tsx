@@ -16,6 +16,7 @@ import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { ThanksCard } from './ThanksCard';
 import { WaitQueue } from './WaitQueue';
 import { ContinueOnLineButton, ContinueOnLinePanel, MovedToLine } from './ContinueOnLine';
+import { CallbackButton, CallbackPanel } from './CallbackRequest';
 import { ArticleReadPanel, TypingAnswers, type PeekArticle } from './ArticlePeek';
 
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
@@ -108,6 +109,7 @@ export function ChatView({
   const reference = data.ticket ? `BD-${data.ticket.number}` : '';
   const survey = data.survey && (data.survey.pending || data.survey.rating) ? data.survey : null;
   const [lineOpen, setLineOpen] = useState(false);
+  const [callbackOpen, setCallbackOpen] = useState(false);
   const refresh = useInvalidate();
   // The AI bar stays while the bot answers (it holds คุยกับเจ้าหน้าที่); once a person has the chat that is one chip.
   const bot = data.ai?.mode === 'bot';
@@ -141,8 +143,20 @@ export function ChatView({
         <a className="icon-btn conv-download" href={chatExportUrl(slug, id)} download title="ดาวน์โหลดประวัติการคุย" aria-label="ดาวน์โหลดประวัติการคุย">
           <Icon name="download" />
         </a>
+        {data.callback && !data.line?.moved && (
+          <CallbackButton open={callbackOpen} waiting={Boolean(data.callback.waiting)} onToggle={() => setCallbackOpen(!callbackOpen)} />
+        )}
         <ContinueOnLineButton line={data.line} open={lineOpen} onToggle={() => setLineOpen(!lineOpen)} />
       </div>
+      {callbackOpen && data.callback && (
+        <CallbackPanel
+          base={`/api/public/${slug}`}
+          conversationId={id}
+          state={data.callback}
+          onDone={() => refresh(sessionPath(slug))}
+          onClose={() => setCallbackOpen(false)}
+        />
+      )}
       {lineOpen && data.line && !data.line.moved && (
         <ContinueOnLinePanel
           line={data.line}

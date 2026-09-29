@@ -367,3 +367,101 @@
   font-size: .85rem;
   font-weight: 700;
 }
+
+/* บทความนี้ช่วยได้ไหม (features/customer/components/ArticleFeedback.tsx): under an article, one line; the answer picked
+   stays marked. */
+.article-feedback {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.article-feedback-question {
+  margin-right: 4px;
+  font-weight: 600;
+}
+.article-feedback .btn.active {
+  border-color: var(--link);
+  background: var(--info-soft);
+  color: var(--link);
+}
+.qa-suggest-body .article-feedback {
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+/* แบบฟอร์มตามหมวดเรื่อง (StartFields.tsx): the organization's case fields on the start forms, one under another. */
+.start-fields {
+  display: grid;
+  gap: 12px;
+}
+.start-fields input:not([type=checkbox]),.start-fields select {
+  width: 100%;
+}
+
+/* ขอให้ติดต่อกลับ (CallbackRequest.tsx): a panel under the chat's head, like คุยต่อใน LINE. */
+.conv-callback.waiting {
+  color: var(--link);
+}
+.callback-panel {
+  display: grid;
+  gap: 12px;
+  margin: 10px 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.callback-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.callback-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.callback-head .icon {
+  width: 18px;
+  height: 18px;
+}
+.callback-close {
+  margin-left: auto;
+}
+.callback-summary {
+  margin: 0;
+  line-height: 1.55;
+}
+.callback-methods,.callback-slots,.callback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.callback-slots {
+  gap: 8px;
+}
+.callback-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--control-line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.callback-slot:has(input:checked) {
+  border-color: var(--link);
+  background: var(--info-soft);
+  color: var(--link);
+}
+.callback-panel .field input,.callback-panel .field select {
+  width: 100%;
+}
+.callback-panel .error-text {
+  margin: 0;
+  color: var(--red);
+}

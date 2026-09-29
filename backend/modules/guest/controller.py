@@ -99,6 +99,13 @@ def post_message(req):
     return req.send(201,{'id':portal.post_customer_message(req.db,req.org['id'],_current(req),req.guest,req.body)})
 
 
+def request_callback(req):
+    """ขอให้ติดต่อกลับ, as a guest (portal/callback.py)."""
+    from backend.modules.guest import schema as guest_schema
+    from backend.modules.portal import callback
+    return req.send(200,callback.request(req.db,_current(req),req.guest,guest_schema.display_name(req.guest['visitor']),req.body))
+
+
 def hand_off(req):
     portal.hand_off_to_staff(req.db,_current(req))
     return req.send(200,{'ok':True})

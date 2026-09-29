@@ -20,6 +20,7 @@ from backend.modules.customers.model import CONSENT_VERSION, DEFAULT_CATEGORIES
 from backend.modules.knowledge import repository as knowledge
 from backend.modules.organization import hours, repository as organization
 from backend.modules.platform import repository as tenants, service as platform
+from backend.modules.tickets import fields
 from backend.utils.dates import after, now
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import require
@@ -155,7 +156,7 @@ def _org_view(org, home):
                 'welcome':organization.setting(db,'welcome'),'response_hours':organization.setting(db,'response_hours'),
                 'response_in_opening_time':hours.sla_in_opening_time(db),
                 'ai_enabled':ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
-                'categories':[c['name'] for c in categories(db)]}
+                'categories':[c['name'] for c in categories(db)],'form_fields':fields.customer_fields(db)}
 
 
 def organizations(cd, session):
@@ -625,8 +626,11 @@ def new_web_conversation(db, org, contact_id, author_name, subject, category, bo
     routing rules take the first message. Returns the conversation id."""
     from backend.modules.ai import service as ai
     from backend.modules.conversations.service import store_message
+    # แบบฟอร์มตามหมวดเรื่อง: checked before anything is written.
+    values = fields.customer_values(db,category,body.get('fields'))
     conv_id = uid()
     conversations.insert(db,conv_id,contact_id,subject,'web',_team_for(db,category))
+    fields.keep_for_conversation(db,conv_id,values)
     if category:
         repository.set_category(db,conv_id,category)
     store_message(db,org['id'],conv_id,None,author_name,'customer',body)

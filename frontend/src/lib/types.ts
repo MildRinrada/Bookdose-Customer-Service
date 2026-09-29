@@ -227,5 +227,7 @@ export type CustomerOrg = {
   /** The reply time counts only while the organization is open (backend organization/hours.sla_in_opening_time). */
   response_in_opening_time?: boolean;
   categories?: string[];
+  /** แบบฟอร์มตามหมวดเรื่อง: the case fields the start form asks for (backend tickets/fields.py customer_fields). */
+  form_fields?: import('@/features/customer/types').StartField[];
   ai_enabled?: boolean;
 } & Record<string, unknown>;

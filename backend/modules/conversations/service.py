@@ -58,6 +58,9 @@ def conversation_detail(db, conv):
     # บล็อกผู้ก่อกวน (guest/blocks.py): {'block': the block or null} when a guest started this chat, else null.
     from backend.modules.guest import blocks
     conv['guest_block'] = blocks.state(db,conv['id'])
+    # แบบฟอร์มตามหมวดเรื่อง: what the customer filled in when they started it (tickets/fields.py).
+    from backend.modules.tickets import fields
+    conv['form_values'] = fields.of_conversation(db,conv['id'])
     contact = contacts.find(db,conv['contact_id'])
     if contact:
         contact['guest'] = conv['guest']

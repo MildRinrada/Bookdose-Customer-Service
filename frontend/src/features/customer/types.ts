@@ -115,8 +115,17 @@ export type PortalSession = {
   queue?: PortalQueue | null;
   line?: PortalLine | null;
   /** การ์ดขอบคุณ of the finished case (backend automation/thanks.py), when the organization gives one. */
-  thanks?: ThanksCardData | null;
+  thanks?: ThanksCardData | null;  /** ขอให้ติดต่อกลับ (backend portal/callback.py): the request waiting, the times to pick from, whether LINE is there. */
+  callback?: CallbackState;
 };
+
+/** start / end: UTC ISO; day (YYYY-MM-DD) and label ("09:00-12:00") in Thai time. */
+export type CallbackSlot = { start: string; end: string; day: string; label: string };
+export type CallbackRequest = { id: string; method: 'phone' | 'line'; phone: string; start: string; end: string; note: string };
+export type CallbackState = { waiting: CallbackRequest | null; slots: CallbackSlot[]; line_ready: boolean; phone: string };
+
+/** แบบฟอร์มตามหมวดเรื่อง: a case field the start form asks for (categories [] = every category). */
+export type StartField = { id: string; name: string; kind: 'text' | 'number' | 'date' | 'select' | 'checkbox'; options: string[]; categories: string[] };
 
 /** Who looked after the case, as the customer sees them: the name on their replies, whether their photo is shown
     (else their initials), the thank-you (theirs, or the organization's), and whether the customer sent a heart back. */

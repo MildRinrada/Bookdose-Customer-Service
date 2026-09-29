@@ -9,6 +9,7 @@ import { date, plainText } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { useUiState } from '@/lib/ui-state';
 import { FAQ_PATH } from './api';
+import { ArticleFeedback } from './components/ArticleFeedback';
 import { CustomerAsk } from './components/common';
 import type { CustomerArticle } from './types';
 
@@ -129,6 +130,7 @@ export function ArticleScreen({ id }: { id: string }) {
           </div>
           <h1>{a.title}</h1>
           <Markdown className="article-content" text={a.body} />
+          {!a.global && <ArticleFeedback slug={a.org_slug} articleId={a.id} />}
         </div>
       </article>
       <CustomerAsk />

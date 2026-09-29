@@ -16,6 +16,7 @@ ROUTES = [
     ('POST',   GUEST+'/messages',             controller.post_message,        'guest'),
     ('POST',   GUEST+f'/messages/{ID}/reaction', controller.react,            'guest'),
     ('POST',   GUEST+'/handoff',              controller.hand_off,            'guest'),
+    ('POST',   GUEST+'/callback',             controller.request_callback,    'guest'),
     ('POST',   GUEST+'/csat',                 controller.rate,                'guest'),
     ('GET',    GUEST+f'/attachments/{ID}',    controller.download_attachment, 'guest'),
     ('GET',    GUEST+f'/thanks/{ID}/photo',   controller.thanks_photo,        'guest'),

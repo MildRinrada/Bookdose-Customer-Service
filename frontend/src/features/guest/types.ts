@@ -45,6 +45,8 @@ export type GuestOverview = {
   conversations: GuestConversation[];
   follow: GuestFollow;
   categories: string[];
+  /** แบบฟอร์มตามหมวดเรื่อง: the case fields the start form asks for (backend tickets/fields.py customer_fields). */
+  form_fields?: import('@/features/customer/types').StartField[];
   organization: { name: string; slug: string };
   captcha?: GuestCaptcha;
 };
@@ -68,6 +70,8 @@ export type GuestStartBody = {
   /** The Turnstile token of this send, when the platform asks for one (used once; a retry needs a fresh one). */
   captcha_token?: string;
   attachments: Array<{ name: string; data: string }>;
+  /** แบบฟอร์มตามหมวดเรื่อง: {field id: value} of what was filled in. */
+  fields?: Record<string, string>;
 };
 
 /** A follow link asked for with the start of a chat: where it went (masked) and whether it went. */

@@ -28,6 +28,7 @@ from backend.modules.guest.model import (CONTACT_SOURCE, COOKIE_PREFIX, COOKIE_R
                                          DEVICE_UNUSED_DAYS, GUEST_NAME, LINE_CODE_MINUTES, LINK_DAYS, MAX_NOTICE_ATTEMPTS,
                                          START_PER_VISITOR_DAY)
 from backend.modules.platform import repository as tenants, service as platform
+from backend.modules.tickets import fields
 from backend.utils.dates import after
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
@@ -165,6 +166,7 @@ def overview(cd, db, org, guest):
             'follow':{'email_ready':customers.email_ready(cd),'sms_ready':sms.ready(cd),'line_ready':bool(line_row),
                       'line_oa_name':_oa_name(line_row),'line_add_url':_line_add_url(line_row)},
             'categories':[c['name'] for c in customers.categories(db)],
+            'form_fields':fields.customer_fields(db),
             'organization':{'name':org['name'],'slug':org['slug'],'logo':org.get('logo','')},
             # The public key of the bot check on the start form ('' when the platform has not switched it on).
             'captcha':{'site_key':turnstile.site_key(cd),'action':turnstile.START_ACTION}}

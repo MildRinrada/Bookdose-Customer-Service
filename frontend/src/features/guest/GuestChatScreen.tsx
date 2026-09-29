@@ -17,6 +17,7 @@ import { CustomerSurvey } from '@/features/customer/components/ChatView';
 import { ThanksCard } from '@/features/customer/components/ThanksCard';
 import { WaitQueue } from '@/features/customer/components/WaitQueue';
 import { ContinueOnLinePanel, MovedToLine } from '@/features/customer/components/ContinueOnLine';
+import { CallbackPanel } from '@/features/customer/components/CallbackRequest';
 import { chatState, chatView } from '@/features/customer/labels';
 import type { PortalSession } from '@/features/customer/types';
 import { Composer, MessageThread } from '@/features/inbox';
@@ -541,6 +542,7 @@ function GuestChatView({
   const orgName = overview.organization.name;
   const guest = overview.guest;
   const [lineOpen, setLineOpen] = useState(false);
+  const [callbackOpen, setCallbackOpen] = useState(false);
   const refresh = useInvalidate();
   const canMove = Boolean(data.line && !data.line.moved);
   return (
@@ -576,12 +578,24 @@ function GuestChatView({
         <GuestMenu
           items={[
             { key: 'follow', label: 'ติดตามแชทนี้', icon: 'bell', onSelect: onShowFollow },
+            ...(data.callback && !data.line?.moved
+              ? [{ key: 'callback', label: data.callback.waiting ? 'ดูคำขอให้ติดต่อกลับ' : 'ขอให้ติดต่อกลับ', icon: 'phone', onSelect: () => setCallbackOpen(true) }]
+              : []),
             ...(canMove ? [{ key: 'line', label: 'คุยต่อใน LINE', icon: 'chat', onSelect: () => setLineOpen(true) }] : []),
             { key: 'new', label: 'เริ่มแชทเรื่องใหม่', icon: 'plus', onSelect: onNewChat },
             ...(embed ? [{ key: 'window', label: 'เปิดในหน้าต่างใหม่', icon: 'link', onSelect: () => window.open(guestPages.chat(slug, id), '_blank', 'noopener') }] : []),
           ]}
         />
       </div>
+      {callbackOpen && data.callback && (
+        <CallbackPanel
+          base={`/api/public/${slug}/guest`}
+          conversationId={id}
+          state={data.callback}
+          onDone={() => refresh(guestSessionPath(slug))}
+          onClose={() => setCallbackOpen(false)}
+        />
+      )}
       {lineOpen && canMove && data.line && (
         <ContinueOnLinePanel
           line={data.line}

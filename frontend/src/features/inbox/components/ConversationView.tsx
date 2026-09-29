@@ -85,6 +85,12 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
                 {c.category}
               </span>
             )}
+            {/* แบบฟอร์มตามหมวดเรื่อง: what the customer filled in when they started the chat. */}
+            {c.form_values?.map((v) => (
+              <span key={v.field} className="conv-fact" title="ลูกค้ากรอกตอนเริ่มแชท">
+                {v.name}: {v.value}
+              </span>
+            ))}
             {t && (
               <Link className="conv-case-link" href={`/tickets/${t.id}`} title={`เปิดรายละเอียดเคส BD-${t.number}`}>
                 BD-{t.number} · {statusLabels[t.status] ?? t.status}

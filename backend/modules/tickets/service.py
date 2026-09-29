@@ -29,6 +29,8 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
                       *sla.deadlines(db,priority,timestamp))
     if conversation_id:
         repository.link_conversation(db,ticket_id,conversation_id)
+        # What the customer filled in on the start form becomes the case's (fields.py).
+        fields.copy_to_ticket(db,conversation_id,ticket_id)
         response = repository.first_staff_reply_time(db,conversation_id)
         if response:
             repository.set_first_response(db,ticket_id,response)

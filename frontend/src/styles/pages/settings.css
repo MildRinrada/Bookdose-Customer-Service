@@ -1077,3 +1077,17 @@ a.settings-nav-item,a.settings-nav-item:hover {
     flex-basis: 100%;
   }
 }
+.case-field-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.case-field-categories legend {
+  padding: 0 6px;
+  font-size: .9rem;
+  font-weight: 600;
+}

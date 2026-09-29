@@ -9,6 +9,7 @@ import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { CAPTCHA_FIELD, CAPTCHA_WAIT, TurnstileField, type TurnstileHandle } from '@/components/ui/Turnstile';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from '@/features/customer/components/ArticlePeek';
+import { StartFields, startFieldValues } from '@/features/customer/components/StartFields';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextArea } from '@/features/rich/RichTextArea';
@@ -150,6 +151,7 @@ export function GuestStartForm({
             started_ms: shownAt,
             captcha_token: captchaToken,
             attachments,
+            fields: startFieldValues(values, overview.form_fields, category),
           });
         const result = await start().catch((reason: unknown) => {
           // Whatever refused this send, the Turnstile token went with it: the next try needs a fresh one.
@@ -182,6 +184,7 @@ export function GuestStartForm({
         </Step>
       )}
       <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง" hint="ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด แนบภาพหน้าจอได้">
+        <StartFields fields={overview.form_fields} category={category} idPrefix="guest-field" />
         <TextField
           label="หัวข้อ (ไม่บังคับ)"
           name="subject"
@@ -199,7 +202,7 @@ export function GuestStartForm({
           onChange={setBody}
         />
         {/* Their question may already have an answer: it is offered here, while they write, rather than after a wait. */}
-        <AnswerSuggestions articles={articles} hrefOf={(a) => guestPages.article(slug, a.id)} text={`${subject} ${body}`} />
+        <AnswerSuggestions articles={articles} hrefOf={(a) => guestPages.article(slug, a.id)} text={`${subject} ${body}`} slug={slug} />
         <div className="field start-files">
           <input
             ref={inputRef}

@@ -837,6 +837,43 @@ button.tag-chip.toggle:focus-visible {
 .case-tags-card p {
   margin: 0;
 }
+/* AI เสนอสำหรับเคสนี้ (TriageCard): the parts of the proposal, each ticked to use, then ใช้ที่เลือก / ไม่ใช้. */
+.triage-card {
+  display: grid;
+  gap: 10px;
+}
+.triage-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.triage-card h3 .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--link);
+}
+.triage-reason {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.triage-parts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.triage-parts .check {
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.triage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 /* ข้อมูลเพิ่มเติม (TicketFieldsCard): the organization's own fields, one under another, saved with one button; the
    required ones still empty are named at the top while the case is open. */
 .detail-sidebar .case-fields-card .btn {

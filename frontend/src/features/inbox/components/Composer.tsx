@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { AiControls } from '@/features/ai/components/AiControls';
 import { languageName } from '@/features/ai/languages';
 import { AiDraftButton, AiDraftPanel, useAiDraft } from '@/features/ai/components/AiDraft';
+import { PolishButton, PolishPanel, usePolish } from '@/features/ai/components/AiPolish';
 import type { AiConversation } from '@/features/ai/types';
 import { useMacroMenu } from '@/features/automation';
 import { ArticleRead, useArticleActions, type Article } from '@/features/knowledge';
@@ -260,6 +261,7 @@ function StaffComposer({
   const editor = useRichEditor();
   const pills = useFilePills();
   const draft = useAiDraft(id);
+  const polish = usePolish(useCallback(() => editor.getValue(), [editor]));
   const drop = useDrop(pills.add);
   const [drafts, setDrafts] = useUiState<Record<string, string>>('inbox:drafts', {});
   // The saved draft is where the text box starts; after that the box itself is the truth.
@@ -459,6 +461,14 @@ function StaffComposer({
           if (!manual) chooseKind('reply');
         }}
       />
+      <PolishPanel
+        polish={polish}
+        onUse={(polished) => {
+          editor.setValue(polished);
+          polish.close();
+          editor.focus();
+        }}
+      />
       <Destination
         kind={kind}
         recipient={recipient}
@@ -540,6 +550,7 @@ function StaffComposer({
             <span>แท็กทีม</span>
           </button>
           <AiDraftButton draft={draft} />
+          <PolishButton polish={polish} />
           <FileProblem problem={pills.problem} />
         </div>
         <SendButton manual={manual} />

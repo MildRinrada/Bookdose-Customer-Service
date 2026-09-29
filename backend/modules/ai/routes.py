@@ -12,4 +12,6 @@ ROUTES = [
     ('POST',  f'/api/ai/assistant/{ID}/run', controller.run_actions, 'workspace'),
     ('POST',  f'/api/ai/assistant/{ID}/feedback', controller.rate_answer, 'workspace'),
     ('DELETE',f'/api/ai/assistant/{ID}',  controller.stop_ask,      'workspace'),
+    ('POST',  '/api/ai/polish',           controller.polish,        'workspace'),
+    ('POST',  f'/api/tickets/{ID}/triage', controller.triage,       'workspace'),
 ]

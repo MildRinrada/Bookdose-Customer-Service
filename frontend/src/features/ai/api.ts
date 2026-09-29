@@ -46,6 +46,18 @@ export function rateAssistantAnswer(jobId: string, body: { rating: AssistantFeed
   return api<AssistantFeedback>(`/api/ai/assistant/${jobId}/feedback`, body);
 }
 
+export type PolishStyle = 'polite' | 'short' | 'fix';
+
+/** เกลาข้อความ: the member's own text made more polite, shorter or free of typos; the answer is a job ({text}). */
+export function requestPolish(style: PolishStyle, text: string) {
+  return api<{ id: string; status: string }>('/api/ai/polish', { style, text });
+}
+
+/** ใช้ (the parts ticked) or ไม่ใช้ (none) what the AI proposed for a new case. */
+export function decideTriage(ticketId: string, use: Array<'priority' | 'team' | 'tags'>) {
+  return api<{ ok: true }>(`/api/tickets/${ticketId}/triage`, { use });
+}
+
 export function testAiConnection() {
   return api<{ id: string; status: string }>('/api/ai/test', {});
 }

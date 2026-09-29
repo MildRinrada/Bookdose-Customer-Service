@@ -55,7 +55,7 @@ VALUES_COLUMN = "(SELECT json_group_object(v.field_id,v.value) FROM ticket_field
 
 
 def catalog(db):
-    """[{'id','name','kind','options','required'}] in the order the owner put them."""
+    """[{'id','name','kind','options','required','ask'}] in the order the owner put them."""
     row = db.execute('SELECT value FROM settings WHERE key=?',(KEY,)).fetchone()
     try:
         value = json.loads(row[0]) if row and row[0] else []
@@ -109,7 +109,10 @@ def form(body, before):
             require(1<=len(options)<=OPTIONS_MAX,f'ช่อง “{name}” ต้องมีตัวเลือก 1-{OPTIONS_MAX} ข้อ')
         required = item.get('required',False)
         require(type(required) is bool,'การบังคับกรอกต้องเป็นใช่หรือไม่')
-        found.append({'id':field_id,'name':name,'kind':kind,'options':options,'required':required})
+        # ให้ Chatbot ถามลูกค้า: asked for while the customer waits after the chatbot hands over (ai/gather.py).
+        ask = item.get('ask',False)
+        require(type(ask) is bool,'การให้ Chatbot ถามต้องเป็นใช่หรือไม่')
+        found.append({'id':field_id,'name':name,'kind':kind,'options':options,'required':required,'ask':ask})
     require(len({f['id'] for f in found})==len(found),'ข้อมูลช่องไม่ถูกต้อง')
     return found
 

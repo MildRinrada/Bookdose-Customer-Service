@@ -388,6 +388,18 @@
   gap: 8px 14px;
   margin-top: 10px;
 }
+/* เกลาข้อความ (features/ai/components/AiPolish.tsx): how to polish, then the result, in the draft's frame. */
+.ai-polish-note {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+.ai-polish-styles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .ai-result-actions .ai-citations {
   margin: 0;
   font-size: .9375rem;

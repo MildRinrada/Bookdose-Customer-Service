@@ -73,5 +73,20 @@ def rate_answer(req, job_id):
     return req.send(200,assistant.feedback(req.db,req.ctx,job_id,req.body))
 
 
+def polish(req):
+    """เกลาข้อความ: a member's own reply made more polite, shorter or free of typos (ai/polish.py)."""
+    from backend.modules.ai import polish as polishing
+    from backend.utils.validation import require
+    require(not req.ctx.get('read_only'),'ใช้ได้เฉพาะทีมงานขององค์กร',403)
+    limited(('ai-polish',req.ctx['id']),60,3600)
+    return req.send(201,{'id':polishing.request(req.db,req.ctx,req.body),'status':'pending'})
+
+
+def triage(req, ticket_id):
+    """ใช้ / ไม่ใช้ what the AI proposed for a new case (ai/triage.py)."""
+    from backend.modules.ai import triage as triaging
+    return req.send(200,triaging.decide(req.cd,req.db,req.ctx,ticket_id,req.body))
+
+
 def job(req, job_id):
     return req.send(200,service.job_view(req.db,req.ctx,job_id))

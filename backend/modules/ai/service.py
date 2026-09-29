@@ -15,8 +15,8 @@ from backend.database import audit, db as D
 from backend.exceptions.errors import AIError
 from backend.extensions import ai_webhook, gemini_client, openai_client
 from backend.middleware.access import get_scoped
-from backend.modules.ai import mood, repository, schema, summary, translate
-from backend.modules.ai.model import DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
+from backend.modules.ai import gather, mood, polish, repository, schema, summary, translate, triage
+from backend.modules.ai.model import BACKGROUND_MODES, DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
 from backend.modules.channels import service as channels
 from backend.modules.conversations import repository as conversations
 from backend.modules.organization import repository as memberships
@@ -41,7 +41,7 @@ def config(db):
             'conversation_limit':int(values.get('ai_conversation_limit',20)),
             'max_output_tokens':int(values.get('ai_max_output_tokens',1000)),
             'version':values.get('ai_version','0'),'mood_enabled':values.get('ai_mood','1')=='1',
-            'translate_enabled':values.get('ai_translate','0')=='1'}
+            'translate_enabled':values.get('ai_translate','0')=='1','triage_enabled':values.get('ai_triage','0')=='1'}
 
 
 def has_key(tenant_id):
@@ -134,6 +134,10 @@ def handoff(db, conversation_id, reason='customer'):
     if previous['mode']=='bot':
         # Whoever takes it over from the chatbot finds the summary ready (ai/summary.py).
         summary.ahead(db,D.tenant_id_of(db),conversation_id)
+        # While the customer waits, the chatbot asks for the case fields the team needs (ai/gather.py); not when a
+        # member took it over: they are writing to the customer themselves.
+        if reason!='staff':
+            gather.start(db,D.tenant_id_of(db),conversation_id,tid)
     realtime.conversation(db,conversation_id)
     return tid
 
@@ -158,7 +162,8 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
     The owner's jobs (article, brief) and the assistant's (ask) carry their input in `payload` and count like a staff
     draft."""
     cfg = config(db)
-    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary',*PAYLOAD_MODES) and not cfg['drafts_enabled'])             or (mode=='translate' and not cfg['translate_enabled']):
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary','polish',*PAYLOAD_MODES) and not cfg['drafts_enabled']) \
+            or (mode=='translate' and not cfg['translate_enabled']) or (mode=='triage' and not cfg['triage_enabled']):
         raise AIError('disabled')
     if not has_key(tenant_id):
         raise AIError('not_configured')
@@ -185,7 +190,8 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
     # Reading a customer's mood happens on every message they send: a row in the activity log each time would bury
     # everything else in it.
     # A summary written ahead of time (nobody asked) and a message's translation are the same kind of background work.
-    if mode not in ('mood','translate') and not (mode=='summary' and not requested_by):
+    # A reply polished before it is sent is the member's own writing, not something to log either.
+    if mode not in (*BACKGROUND_MODES,'polish') and not (mode=='summary' and not requested_by):
         audit.record(db,requested_by or 'Bookdose AI','ai.queued',conversation_id or job_id,mode)
     return job_id
 
@@ -199,6 +205,8 @@ def on_customer_message(db, tenant_id, conversation_id, body, is_new=False):
         handoff(db,conversation_id)
         return
     if conversation_state(db,conversation_id)['mode']!='bot':
+        # Answers to what the chatbot asked for while the customer waits (ai/gather.py).
+        gather.on_customer_message(db,tenant_id,conversation_id)
         return
     latest = conversations.latest_message_id(db,conversation_id)
     if latest and conversations.has_attachment(db,latest):
@@ -329,7 +337,7 @@ def permitted(cd, tenant_id, job, db):
     """The job may still run: organization active, bot still on, or the requester still has access."""
     if not tenants.is_active(cd,tenant_id):
         return False
-    if job['mode'] in ('mood','translate') or (job['mode']=='summary' and not job['requested_by']):
+    if job['mode'] in BACKGROUND_MODES or (job['mode']=='summary' and not job['requested_by']):
         return conversations.find(db,job['conversation_id']) is not None
     if job['mode']=='bot':
         return bot_enabled(db,job['conversation_id']) and conversation_state(db,job['conversation_id'])['mode']=='bot'
@@ -338,7 +346,7 @@ def permitted(cd, tenant_id, job, db):
         return False
     if job['mode']=='test' or job['mode'] in OWNER_MODES:
         return membership['role']=='admin' and not membership.get('expires_at')
-    if job['mode']=='ask':
+    if job['mode'] in ('ask','polish'):
         return not membership.get('expires_at')
     conv = conversations.find(db,job['conversation_id'])
     return bool(conv and (membership['role']!='agent' or membership['team_id']==conv['team_id']))
@@ -363,14 +371,15 @@ def process_one(tenant_id):
         if not job:
             return False
         cfg = config(db)
-        enabled = job['mode']=='test' or (cfg['mood_enabled'] if job['mode']=='mood' else cfg['translate_enabled'] if job['mode']=='translate' else
-                                          bot_enabled(db,job['conversation_id']) if job['mode']=='bot' else cfg['drafts_enabled'])
+        enabled = job['mode'] in ('test','gather') or (cfg['mood_enabled'] if job['mode']=='mood' else cfg['translate_enabled'] if job['mode']=='translate' else
+                                                     cfg['triage_enabled'] if job['mode']=='triage' else
+                                                     bot_enabled(db,job['conversation_id']) if job['mode']=='bot' else cfg['drafts_enabled'])
         if not permitted(cd,tenant_id,job,db) or cfg['version']!=job['config_version'] or not enabled:
             repository.set_job_state(db,job['id'],'cancelled','stale')
             return True
         lease = uid()
         repository.claim(db,job['id'],lease)
-        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in ('mood','summary','translate')
+        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in (*BACKGROUND_MODES,'summary','polish')
         if job['mode']=='test':
             payload,articles,signature = {'test':'Bookdose connection check'},[],None
         elif owner:
@@ -406,6 +415,9 @@ def process_one(tenant_id):
         elif job['mode']=='translate':
             raw,usage = ask()
             result = translate.validate(raw,payload)
+        elif job['mode'] in ('polish','triage','gather'):
+            raw,usage = ask()
+            result = {'polish':polish,'triage':triage,'gather':gather}[job['mode']].validate(raw,payload)
         elif owner:
             raw,usage = ask()
             result = validate_owner_result(raw,job['mode'],payload)
@@ -454,6 +466,19 @@ def process_one(tenant_id):
             if conversation_id:
                 realtime.conversation(db,conversation_id)
             return True
+        if job['mode']=='triage':
+            ticket_id = None if error else triage.apply(db,job,result)
+            repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            if ticket_id:
+                realtime.ticket(db,ticket_id,public=False)
+            return True
+        if job['mode']=='gather':
+            repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            gather.apply(db,job,result,error or '')
+            return True
+        if job['mode']=='polish':
+            repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            return True
         if job['mode']=='summary':
             if not error:
                 summary.apply(db,job,result)
@@ -497,7 +522,7 @@ def save_settings(db, ctx, body):
     repository.save_settings(db,[('ai_drafts',str(int(cfg['drafts_enabled']))),('ai_chatbot',str(int(cfg['chatbot_enabled']))),
         ('ai_model',model),('ai_daily_limit',str(cfg['daily_limit'])),('ai_conversation_limit',str(cfg['conversation_limit'])),
         ('ai_max_output_tokens',str(cfg['max_output_tokens'])),('ai_mood',str(int(cfg['mood_enabled']))),
-        ('ai_translate',str(int(cfg['translate_enabled']))),('ai_version',uid())])
+        ('ai_translate',str(int(cfg['translate_enabled']))),('ai_triage',str(int(cfg['triage_enabled']))),('ai_version',uid())])
     # An edit invalidates in-flight work, including key/model changes.
     waiting = repository.waiting_bot_conversations(db)
     repository.cancel_all_in_flight(db)
@@ -557,7 +582,7 @@ def job_view(db, ctx, job_id):
     if job['conversation_id']:
         get_scoped(db,'conversations',job['conversation_id'],ctx)
     else:
-        require(ctx['role']=='admin' or job['mode']=='ask','เฉพาะผู้ดูแลองค์กร',403)
+        require(ctx['role']=='admin' or job['mode'] in ('ask','polish'),'เฉพาะผู้ดูแลองค์กร',403)
     result = json.loads(job['result'])
     signature = result.pop('_context_hash',None)
     if job['mode']=='draft' and job['status']=='done' and (signature!=snapshot(db,job)[2] or job['config_version']!=config(db)['version']):

@@ -114,6 +114,7 @@ function CaseFieldsCard({ data }: { data: CaseFieldsOverview }) {
                       <span>{data.counts[field.id] ? `กรอกแล้ว ${data.counts[field.id]} เคส` : 'ยังไม่มีเคสที่กรอก'}</span>
                     </span>
                     {field.required && <span className="case-field-required">{field.kind === 'checkbox' ? 'ต้องติ๊กก่อนปิดเคส' : 'ต้องกรอกก่อนปิดเคส'}</span>}
+                    {field.ask && <span className="case-field-ask">Chatbot ถามลูกค้าก่อนถึงเจ้าหน้าที่</span>}
                   </span>
                   <span className="case-field-actions">
                     <button className="btn sm" type="button" disabled={index === 0} aria-label={`เลื่อน ${field.name} ขึ้น`} title="เลื่อนขึ้น" onClick={() => move(index, -1)}>
@@ -167,7 +168,8 @@ function FieldForm({ field, taken, onSave }: { field?: CaseField; taken: string[
         if (options.length > FIELD_LIMITS.options) throw new Error(`ใส่ตัวเลือกได้ไม่เกิน ${FIELD_LIMITS.options} ข้อ`);
         if (options.some((o) => o.length > FIELD_LIMITS.option)) throw new Error(`แต่ละตัวเลือกยาวไม่เกิน ${FIELD_LIMITS.option} ตัวอักษร`);
         const required = (form.elements.namedItem('required') as HTMLInputElement).checked;
-        await onSave({ name, kind, options, required });
+        const ask = (form.elements.namedItem('ask') as HTMLInputElement).checked;
+        await onSave({ name, kind, options, required, ask });
       }}
     >
       <TextField label="ชื่อช่อง" name="name" max={FIELD_LIMITS.name} defaultValue={field?.name} placeholder="เช่น หมายเลขอ้างอิง" autoFocus />
@@ -199,6 +201,15 @@ function FieldForm({ field, taken, onSave }: { field?: CaseField; taken: string[
       <label className="check">
         <input type="checkbox" name="required" defaultChecked={field?.required} />
         {kind === 'checkbox' ? 'ต้องติ๊กก่อนปิดเคส' : 'ต้องกรอกก่อนปิดเคส'}
+      </label>
+      <label className="check case-field-ask-check">
+        <input type="checkbox" name="ask" defaultChecked={field?.ask} />
+        <span>
+          ให้ Chatbot ถามลูกค้า
+          <small className="tiny muted">
+            เมื่อ Chatbot ส่งต่อเจ้าหน้าที่ ระหว่างรอจะถามลูกค้าช่องที่ยังว่าง แล้วกรอกคำตอบให้ในหน้าเคส หยุดถามทันทีที่ทีมงานตอบลูกค้า
+          </small>
+        </span>
       </label>
       <FormActions label={field ? 'บันทึก' : 'เพิ่มช่อง'} onCancel={() => closeModal()} />
     </Form>

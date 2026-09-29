@@ -4,7 +4,7 @@ import json
 
 from backend.database import audit, db as D
 from backend.middleware.access import visible_team, get_scoped, validate_team, validate_assignee
-from backend.modules.ai import mood, service as ai
+from backend.modules.ai import mood, service as ai, triage as ai_triage
 from backend.modules.automation import service as automation
 from backend.modules.automation.service import SYSTEM_ACTOR
 from backend.modules.contacts import repository as contacts, service as contact_service
@@ -35,6 +35,8 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
     automation.apply_rules(db,ticket_id)
     from backend.modules.automation import distribution
     distribution.assign_new(db,ticket_id)
+    # The tags, priority and team the AI would give it, for staff to confirm (ai/triage.py).
+    ai_triage.request(db,D.tenant_id_of(db),ticket_id,conversation_id)
     # A new case: staff lists, and the customer's cases; its conversation now shows the case (and may have moved team).
     realtime.ticket(db,ticket_id,public=True,teams=(team_id,),conversations_listed=True)
     if conversation_id:
@@ -101,7 +103,7 @@ def ticket_detail(db, ctx, ticket_id):
         conv['translation'] = translate.state(db,conv['id'])
         conv.pop('portal_token',None)
     return {'ticket':{**ticket,'tags':tags.of_ticket(db,ticket['id']),'fields':fields.values_of(db,ticket['id']),
-                      'hand':hands.open_for(db,ticket['id'])},
+                      'hand':hands.open_for(db,ticket['id']),'triage':ai_triage.of_ticket(db,ticket['id'])},
             'contact':contacts.find(db,ticket['contact_id']),
             'conversations':convs,'events':audit.for_entity(db,ticket['id']),
             'automation':automation.ticket_extras(db,ticket['id'])}

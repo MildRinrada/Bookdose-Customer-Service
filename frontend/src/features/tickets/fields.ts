@@ -9,7 +9,8 @@ import { useWork } from '@/lib/session';
    the case. Staff only. */
 
 export type CaseFieldKind = 'text' | 'number' | 'date' | 'select' | 'checkbox';
-export type CaseField = { id: string; name: string; kind: CaseFieldKind; options: string[]; required: boolean };
+/** ask: the chatbot asks the customer for it while they wait for a person (backend ai/gather.py). */
+export type CaseField = { id: string; name: string; kind: CaseFieldKind; options: string[]; required: boolean; ask?: boolean };
 
 export const fieldKindLabels: Record<CaseFieldKind, string> = {
   text: 'ข้อความ',

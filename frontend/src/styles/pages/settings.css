@@ -1038,6 +1038,19 @@ a.settings-nav-item,a.settings-nav-item:hover {
   font-size: .82rem;
   font-weight: 600;
 }
+.case-field-ask {
+  color: var(--link);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.case-field-ask-check {
+  align-items: flex-start;
+}
+.case-field-ask-check small {
+  display: block;
+  margin-top: 2px;
+  line-height: 1.5;
+}
 .case-field-actions {
   display: flex;
   flex-wrap: wrap;

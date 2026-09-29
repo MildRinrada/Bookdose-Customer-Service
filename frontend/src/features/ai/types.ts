@@ -114,6 +114,8 @@ export type AiSettings = {
   mood_enabled: boolean;
   /** Two-way translation for customers who do not write Thai (ai/translate.py). */
   translate_enabled: boolean;
+  /** Propose the tags, priority and team of each new case for staff to confirm (ai/triage.py). */
+  triage_enabled: boolean;
   model: string;
   daily_limit: number;
   conversation_limit: number;

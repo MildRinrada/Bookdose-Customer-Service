@@ -55,7 +55,12 @@ export type Ticket = TicketSummary &
     fields?: Record<string, string>;
     /** ยกมือขอช่วย: the hand up on it now, if any. */
     hand?: Hand | null;
+    /** What the AI proposed for it when it opened, while nobody has used or set it aside (backend ai/triage.py). */
+    triage?: TriageProposal | null;
   };
+
+/** '' / [] propose no change of that part. */
+export type TriageProposal = { priority: string; team_id: string; team_name: string; tags: string[]; reason: string };
 
 /** A conversation of the case, with its messages (tickets.service.ticket_detail). */
 /** customer_read_at: web chats, when the customer last opened it ("อ่านแล้ว"), if the server includes it. */

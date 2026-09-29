@@ -24,6 +24,7 @@ import { HandCard } from './HandCard';
 import { SnoozeCard } from './SnoozeCard';
 import { TicketFieldsCard } from './TicketFieldsCard';
 import { TicketTagsCard } from './TicketTagsCard';
+import { TriageCard } from './TriageCard';
 import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers';
 
 /* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, ยกมือขอช่วย, managing the case,
@@ -71,6 +72,7 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
         </Link>
       </section>
       <HandCard ticket={t} />
+      <TriageCard ticket={t} />
       <TicketUpdateForm key={formKey} data={data} onSaved={() => setFormKey((k) => k + 1)} />
       <TicketFieldsCard ticket={t} />
       <TicketTagsCard ticket={t} />

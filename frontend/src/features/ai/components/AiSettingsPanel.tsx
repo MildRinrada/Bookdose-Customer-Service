@@ -88,7 +88,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
         onSubmit={async (values, form) => {
           const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
           const body: Record<string, unknown> = { ...values };
-          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'remove_key']) body[key] = checked(key);
+          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'triage_enabled', 'remove_key']) body[key] = checked(key);
           body.remove_webhook = n8n && checked('remove_webhook');
           for (const key of ['daily_limit', 'conversation_limit', 'max_output_tokens']) body[key] = Number(values[key]);
           await saveAiSettings(body);
@@ -188,7 +188,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           />
           <label className="check">
             <input type="checkbox" className="switch" name="drafts_enabled" defaultChecked={a.drafts_enabled} />
-            เปิด AI ช่วยเจ้าหน้าที่ (ร่างคำตอบ และผู้ช่วย AI มุมขวาล่าง)
+            เปิด AI ช่วยเจ้าหน้าที่ (ร่างคำตอบ เกลาข้อความ และผู้ช่วย AI มุมขวาล่าง)
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />
@@ -209,6 +209,15 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
               แปลภาษาอัตโนมัติสองทาง
               <small className="tiny muted">
                 ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยแปลเป็นภาษาของลูกค้าก่อนส่ง ส่งไปแค่ตัวข้อความ ไม่มีชื่อหรือข้อมูลติดต่อ (นับโควตาแยกจากงานอื่น)
+              </small>
+            </span>
+          </label>
+          <label className="check ai-mood-switch">
+            <input type="checkbox" className="switch" name="triage_enabled" defaultChecked={a.triage_enabled} />
+            <span>
+              เสนอป้าย ความเร่งด่วน และทีม เมื่อมีเคสใหม่
+              <small className="tiny muted">
+                AI อ่านข้อความแรกของลูกค้าแล้วเสนอบนหน้าเคส ทีมงานกดใช้หรือไม่ใช้เอง ระบบไม่เปลี่ยนให้เอง ส่งไปแค่หัวเรื่องและข้อความของลูกค้า ไม่มีชื่อหรือข้อมูลติดต่อ
               </small>
             </span>
           </label>

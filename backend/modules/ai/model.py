@@ -6,11 +6,16 @@ DEFAULT_MODEL = 'gpt-4.1-mini'
 # questions no article answers; brief: the overview's summary of today (the last two for an organization's owner);
 # ask: a question to the staff's AI assistant (ai/assistant.py); mood: how a customer's latest message reads (ai/mood.py);
 # summary: a conversation in a few points for the member taking it over (ai/summary.py); translate: a customer's message
-# into Thai or the team's reply into the customer's language (ai/translate.py).
-JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary','translate')
+# into Thai or the team's reply into the customer's language (ai/translate.py); polish: a member's own reply made
+# more polite, shorter or free of typos before they send it (ai/polish.py); triage: the tags, priority and team a new
+# case looks like it needs, for staff to confirm (ai/triage.py); gather: what the customer said for the case fields the
+# chatbot asks for while they wait for a person (ai/gather.py).
+JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary','translate','polish','triage','gather')
 OWNER_MODES = ('article','brief')
 # Jobs whose input was built when they were asked (the payload column), not read from a conversation.
 PAYLOAD_MODES = (*OWNER_MODES,'ask')
+# Background jobs nobody waits on, whose input is also in the payload column, checked only for their conversation.
+BACKGROUND_MODES = ('mood','translate','triage','gather')
 # Why a member marked an assistant's answer ไม่ถูกใจ (ai_feedback.reason): wrong facts, not what was asked, the proposed
 # actions were wrong, hard to follow, something else.
 FEEDBACK_REASONS = ('wrong','off_topic','actions','unclear','other')
@@ -19,7 +24,7 @@ FEEDBACK_COMMENT_MAX = 300
 JOBS_TABLE = '''CREATE TABLE IF NOT EXISTS {name} (
     id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
     trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
-    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask','mood','summary','translate')),
+    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask','mood','summary','translate','polish','triage','gather')),
     status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
     result TEXT NOT NULL DEFAULT '{{}}', error TEXT NOT NULL DEFAULT '',
     lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,
@@ -70,6 +75,20 @@ CREATE TABLE IF NOT EXISTS conversation_mood_log (
     source TEXT NOT NULL DEFAULT 'words', created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS conversation_mood_log_conversation ON conversation_mood_log(conversation_id);
+-- เสนอป้ายและความเร่งด่วน (ai/triage.py): what the AI proposed for a new case, until a member uses it or sets it aside.
+-- team_id '' and priority '' propose no change; tags is a JSON list of tag ids to add.
+CREATE TABLE IF NOT EXISTS ticket_triage (
+    ticket_id TEXT PRIMARY KEY, priority TEXT NOT NULL DEFAULT '', team_id TEXT NOT NULL DEFAULT '',
+    tags TEXT NOT NULL DEFAULT '[]', reason TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL CHECK(status IN ('proposed','applied','dismissed')), decided_by TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL
+);
+-- Chatbot ถามข้อมูลก่อนถึงเจ้าหน้าที่ (ai/gather.py): the case fields asked for after a handoff, and how far it got.
+CREATE TABLE IF NOT EXISTS conversation_gather (
+    conversation_id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL, fields TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL CHECK(status IN ('reading','asking','done','stopped')), rounds INTEGER NOT NULL DEFAULT 0,
+    asked_rowid INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
+);
 -- ผู้ช่วย AI: what the member who asked thought of the answer (ai/assistant.py feedback); the owner reads the counts,
 -- reasons and comments in the service report, never who wrote them.
 CREATE TABLE IF NOT EXISTS ai_feedback (
@@ -85,4 +104,6 @@ DEFAULT_SETTINGS = [
     # Read how customers feel with the AI (ai/mood.py) once it is connected; the words' reading runs regardless.
     ('ai_mood','1'),
     # Two-way translation for customers who do not write Thai (ai/translate.py): off until the owner turns it on.
-    ('ai_translate','0')]
+    ('ai_translate','0'),
+    # Propose the tags, priority and team of each new case (ai/triage.py): off until the owner turns it on.
+    ('ai_triage','0')]

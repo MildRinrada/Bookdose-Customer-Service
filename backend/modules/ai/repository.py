@@ -61,7 +61,7 @@ def widen_jobs(db):
     every column it already had. Runs once per new mode list."""
     from backend.modules.ai.model import JOBS_TABLE
     row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_jobs'").fetchone()
-    if not row or "'translate'" in row[0]:
+    if not row or "'gather'" in row[0]:
         return
     columns = ','.join(r[1] for r in db.execute('PRAGMA table_info(ai_jobs)').fetchall())
     db.commit()

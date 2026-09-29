@@ -29,7 +29,8 @@ export function WaitingChats({ now }: { now: number }) {
   const waiting = (conversations.data?.conversations ?? [])
     .filter(needsReply)
     .map((c) => ({ c, since: waitedSince(c.last_public_at, c.updated_at) }))
-    .sort((a, b) => a.since - b.since);
+    // A customer who said ไม่รีบ (portal/no_rush.py) comes after the ones in a hurry.
+    .sort((a, b) => Number(Boolean(a.c.no_rush)) - Number(Boolean(b.c.no_rush)) || a.since - b.since);
   const longest = waiting[0];
   const noCase = waiting.filter((w) => !w.c.ticket_id).length;
 
@@ -54,7 +55,10 @@ export function WaitingChats({ now }: { now: number }) {
                     <Icon name={channelIcons[c.channel] || 'chat'} />
                     <span className="waiting-who">
                       <strong className="truncate">{c.contact_name}</strong>
-                      <span className="tiny muted truncate">{plainText(c.preview ?? c.subject).slice(0, 80)}</span>
+                      <span className="tiny muted truncate">
+                        {c.no_rush ? 'ลูกค้าไม่รีบ: ' : ''}
+                        {plainText(c.preview ?? c.subject).slice(0, 80)}
+                      </span>
                     </span>
                     <span className="tiny waiting-time">{waitText(now - since)}</span>
                   </Link>

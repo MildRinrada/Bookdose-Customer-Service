@@ -79,6 +79,40 @@
   height: 18px;
   cursor: pointer;
 }
+/* ช่วงเวลาห้ามรบกวน: a switch, and the two times beside each other while it is on. */
+.quiet-hours {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 16px;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.quiet-hours legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 700;
+}
+.quiet-times {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.quiet-times[hidden] {
+  display: none;
+}
+.quiet-times label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.quiet-times input {
+  width: auto;
+}
 .line-links h3 {
   margin: 0 0 10px;
   font-size: 1rem;

@@ -106,6 +106,13 @@ export function CaseHero({
               {escalation}
             </span>
           )}
+          {/* ไม่รีบ (portal/no_rush.py): why the first-reply deadline is later than the SLA. */}
+          {t.no_rush && !isDone(t) && (
+            <span className="case-hero-flag" title="ลูกค้าบอกว่าไม่รีบ กำหนดตอบครั้งแรกจึงเลื่อนไปถึงเวลานี้ โดยไม่นับว่าเกิน SLA">
+              <Icon name="clock" />
+              ลูกค้าไม่รีบ ตอบได้ถึง{t.no_rush.text}
+            </span>
+          )}
         </div>
       </div>
       <div className="case-sla" title="SLA นับเวลาต่อเนื่อง 24 ชั่วโมง ไม่หยุดนับระหว่างรอลูกค้า">

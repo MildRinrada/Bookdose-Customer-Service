@@ -30,9 +30,12 @@ def list_conversations(db, ctx):
     from backend.modules.guest import service as guest
     found = repository.list_with_previews(db,visible_team(ctx))
     from backend.modules.customers import perks
+    from backend.modules.portal import no_rush
     reach = guest.reach(db,[c['contact_id'] for c in found])
     members = perks.member_contacts(db)
-    return [{**c,'guest':reach.get(c['contact_id']),'member':c['contact_id'] in members} for c in found]
+    # ไม่รีบ (portal/no_rush.py): the reply promised by, while the customer waits unhurried.
+    unhurried = no_rush.active_map(db)
+    return [{**c,'guest':reach.get(c['contact_id']),'member':c['contact_id'] in members,'no_rush':unhurried.get(c['id'])} for c in found]
 
 
 def conversation_detail(db, conv):
@@ -61,6 +64,10 @@ def conversation_detail(db, conv):
     # แบบฟอร์มตามหมวดเรื่อง: what the customer filled in when they started it (tickets/fields.py).
     from backend.modules.tickets import fields
     conv['form_values'] = fields.of_conversation(db,conv['id'])
+    # ไม่รีบ and ขอคนเดิม (portal/no_rush.py, same_member.py): what the customer asked of the team in this chat.
+    from backend.modules.portal import no_rush, same_member
+    conv['no_rush'] = no_rush.state(db,conv['id'])
+    conv['asked_member'] = same_member.of_conversation(db,conv['id'])
     contact = contacts.find(db,conv['contact_id'])
     if contact:
         contact['guest'] = conv['guest']

@@ -18,6 +18,7 @@ ROUTES = [
     ('POST',   GUEST+f'/messages/{ID}/reaction', controller.react,            'guest'),
     ('POST',   GUEST+'/handoff',              controller.hand_off,            'guest'),
     ('POST',   GUEST+'/callback',             controller.request_callback,    'guest'),
+    ('POST',   GUEST+'/no-rush',              controller.no_rush,             'guest'),
     # คุยต่อบนมือถือ: a QR that opens this chat on the guest's phone (handoff.py).
     ('POST',   GUEST+'/handoff-qr',           controller.handoff_qr,          'guest'),
     ('POST',   GUEST+'/csat',                 controller.rate,                'guest'),

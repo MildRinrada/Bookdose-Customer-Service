@@ -327,12 +327,15 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
           slug={slug}
           overview={data}
           info={info}
-          onStarted={async (id, links) => {
+          onStarted={async (id, links, asked) => {
             await refresh(guestPath(slug));
             setOpenId(id);
             setComposing(false);
             setShowList(false);
-            toast(links.length ? linksMessage(data.organization.name, links) : `ส่งข้อความถึงทีมงาน ${data.organization.name} แล้ว ติดตามคำตอบได้ในแชทนี้`, links.some((l) => !l.sent));
+            toast(
+              links.length || asked ? linksMessage(data.organization.name, links, asked) : `ส่งข้อความถึงทีมงาน ${data.organization.name} แล้ว ติดตามคำตอบได้ในแชทนี้`,
+              links.some((l) => !l.sent),
+            );
           }}
         />
       </>
@@ -648,7 +651,7 @@ function GuestChatView({
         afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={
           <>
-            <WaitQueue queue={data.queue} />
+            <WaitQueue queue={data.queue} base={`/api/public/${slug}/guest`} conversationId={id} onChanged={() => refresh(guestSessionPath(slug))} />
             {data.thanks && <ThanksCard card={data.thanks} slug={portal} conversationId={id} />}
             {survey && (
               <div id="customer-survey">

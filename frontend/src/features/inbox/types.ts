@@ -39,6 +39,8 @@ export type ConversationSummary = {
   mood_source?: string | null;
   /** A signed-in customer's chat (สมาชิก; customers/perks.py). */
   member?: boolean;
+  /** ไม่รีบ (portal/no_rush.py): the reply promised by (UTC ISO) while the customer waits unhurried, else null. */
+  no_rush?: string | null;
 };
 
 export type MessageKind = 'customer' | 'reply' | 'note';
@@ -117,6 +119,10 @@ export type Conversation = {
   follows?: { id: string; subject: string; status: string; updated_at: string; ticket_number: number | null } | null;
   /** Two-way translation: on for the organization, and the language replies go out in ('' when not known). */
   translation?: { enabled: boolean; language: string };
+  /** ไม่รีบ (portal/no_rush.py): the reply promised by, while the customer waits unhurried. */
+  no_rush?: { until: string; text: string } | null;
+  /** ขอคนเดิม (portal/same_member.py): the member the customer asked for, whether it went to them, and if not why. */
+  asked_member?: { name: string; given: boolean; reason: string } | null;
 };
 
 export type ConversationContact = {

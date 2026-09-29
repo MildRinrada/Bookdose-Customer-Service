@@ -26,4 +26,11 @@ CREATE TABLE IF NOT EXISTS known_issue_followers (
     issue_id TEXT NOT NULL, account_id TEXT NOT NULL, created_at TEXT NOT NULL, told_at TEXT,
     PRIMARY KEY(issue_id,account_id)
 );
+-- ฉันก็เจอ (service.affected): one row per browser that said it hit the issue too; only the hash of its token.
+CREATE TABLE IF NOT EXISTS known_issue_reports (
+    issue_id TEXT NOT NULL, reporter TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(issue_id,reporter)
+);
 '''
+
+# ฉันก็เจอ: a press counts at most this many times an hour from one address, so nobody can blow a number up.
+REPORTS_PER_IP_HOUR = 60

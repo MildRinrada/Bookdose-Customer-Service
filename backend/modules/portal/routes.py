@@ -7,7 +7,7 @@ from backend.modules.portal import controller
 from backend.utils.routing import ID
 
 # Every URL here; anything else under /api/public/ is answered "not found".
-PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues|thanks|articles|callback|team)(?:/[a-z0-9-]+){0,6})?')
+PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues|thanks|articles|callback|team|no-rush)(?:/[a-z0-9-]+){0,6})?')
 PORTAL = '/api/public/[a-z0-9-]+'
 
 ROUTES = [
@@ -20,6 +20,8 @@ ROUTES = [
     # What of the organization's is down right now (incidents/model.py): every chat page shows it, so nobody has
     # to ask. Asked again every minute by an open page.
     ('GET',  PORTAL+'/issues',              controller.known_issues,        'portal'),
+    # ฉันก็เจอ: anyone reading a notice says they hit it too (incidents/service.py).
+    ('POST', PORTAL+f'/issues/{ID}/affected', controller.issue_affected,    'portal'),
     # บทความนี้ช่วยได้ไหม: anyone reading a published article (knowledge/feedback.py).
     ('POST', PORTAL+f'/articles/{ID}/feedback', controller.article_feedback, 'portal'),
     ('POST', PORTAL+'/conversations',       controller.open_conversation,   'customer'),
@@ -35,6 +37,8 @@ ROUTES = [
     ('POST', PORTAL+'/handoff',             controller.hand_off,            'customer'),
     # ขอให้ติดต่อกลับ (portal/callback.py).
     ('POST', PORTAL+'/callback',            controller.request_callback,    'customer'),
+    # ไม่รีบ: a reply tomorrow is fine (portal/no_rush.py).
+    ('POST', PORTAL+'/no-rush',             controller.no_rush,             'customer'),
     ('POST', PORTAL+'/messages',            controller.post_message,        'customer'),
     # An emoji on a team reply: tells the team without a message, so a finished case stays finished.
     ('POST', PORTAL+f'/messages/{ID}/reaction', controller.react,           'customer'),

@@ -84,3 +84,6 @@ def follow_priority(db, ticket_id):
         db.execute('UPDATE tickets SET resolution_due_at=? WHERE id=?',(resolution,ticket_id))
     else:
         db.execute('UPDATE tickets SET first_response_due_at=?,resolution_due_at=? WHERE id=?',(response,resolution,ticket_id))
+        # A customer who said ไม่รีบ was promised a reply by a time; a new priority does not take that back.
+        from backend.modules.portal import no_rush
+        no_rush.floor(db,ticket_id)

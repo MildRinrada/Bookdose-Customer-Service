@@ -89,6 +89,16 @@ def notify_prefs_form(body, events):
     return found
 
 
+def quiet_form(value):
+    """{enabled, start, end} of ช่วงเวลาห้ามรบกวน (Thai time, HH:MM; start and end differ, e.g. 21:00 and 08:00)."""
+    require(isinstance(value,dict),'ข้อมูลช่วงเวลาห้ามรบกวนไม่ถูกต้อง')
+    enabled,start,end = value.get('enabled'),value.get('start'),value.get('end')
+    require(type(enabled) is bool,'ข้อมูลช่วงเวลาห้ามรบกวนไม่ถูกต้อง')
+    require(all(isinstance(t,str) and re.fullmatch(r'([01][0-9]|2[0-3]):[0-5][0-9]',t) for t in (start,end)),'เวลาเริ่มและเวลาสิ้นสุดต้องเป็นแบบ 21:00')
+    require(start!=end,'เวลาเริ่มและเวลาสิ้นสุดต้องไม่ใช่เวลาเดียวกัน')
+    return {'enabled':enabled,'start':start,'end':end}
+
+
 def password_change_form(body):
     """(current password, new password hash)"""
     return existing_password(body,'current_password'),new_password(body)

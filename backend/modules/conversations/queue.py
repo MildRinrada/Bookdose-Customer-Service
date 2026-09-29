@@ -5,7 +5,8 @@ A customer is waiting from their first message after the team's last reply (the 
 notices do not count as the team answering) until a member of the team replies, while the conversation is open and
 with a person rather than the chatbot. Their place is the number of the same team's customers who have been waiting
 longer, on any channel, plus one - the order the queue would clear in if taken first come first served; the team may
-take an upset customer or a close deadline first, so it is a guide, and the page says "about".
+take an upset customer or a close deadline first, so it is a guide, and the page says "about". A customer who said
+ไม่รีบ (portal/no_rush.py) is behind everyone who did not, and is told the reply promised instead of a wait.
 
 The wait comes from what the team really did, over the last seven days (answered waits: from the customer's first
 unanswered message to the reply):
@@ -36,27 +37,30 @@ _cache = {}
 _lock = threading.Lock()
 
 # The team's last reply to a customer: a message written by a member (not the chatbot or a notice), and gone out.
-_HUMAN_REPLY = "r.kind='reply' AND r.delivery!='translating' AND r.id NOT IN (SELECT message_id FROM ai_message_meta)"
+HUMAN_REPLY = "r.kind='reply' AND r.delivery!='translating' AND r.id NOT IN (SELECT message_id FROM ai_message_meta)"
 
 
 def _waiting(db, conversation_id=None):
-    """[{id, team_id, since, n}] for every conversation waiting for the team (or only that one), longest waiting first;
-    n is the rowid of the first waiting message, which orders two customers who wrote in the same second."""
+    """[{id, team_id, since, n, no_rush, key}] for every conversation waiting for the team (or only that one), in the
+    order the queue clears; n is the rowid of the first waiting message, which orders two customers who wrote in the
+    same second. A customer who said ไม่รีบ (portal/no_rush.py) waits behind everyone who did not; with คิวก่อนสำหรับ
+    สมาชิก on (customers/perks.py) signed-in customers go ahead of guests."""
+    from backend.modules.customers import perks
+    from backend.modules.portal import no_rush
     only,params = (' AND c.id=?',(conversation_id,)) if conversation_id else ('',())
     found = rows(db,f'''SELECT c.id,c.team_id,c.contact_id,
         (SELECT MIN(m.rowid) FROM messages m WHERE m.conversation_id=c.id AND m.kind='customer' AND m.rowid>
-            COALESCE((SELECT MAX(r.rowid) FROM messages r WHERE r.conversation_id=c.id AND {_HUMAN_REPLY}),0)) AS n
+            COALESCE((SELECT MAX(r.rowid) FROM messages r WHERE r.conversation_id=c.id AND {HUMAN_REPLY}),0)) AS n
         FROM conversations c LEFT JOIN ai_conversations a ON a.conversation_id=c.id
         WHERE c.status='open' AND c.channel!='manual' AND COALESCE(a.mode,'human')='human'{only}''',params)
     found = [c for c in found if c['n']]
+    unhurried = no_rush.active_map(db)
+    members = perks.member_contacts(db) if perks.members_first(db) else None
     for c in found:
         c['since'] = db.execute('SELECT created_at FROM messages WHERE rowid=?',(c['n'],)).fetchone()[0]
-    # The organization lets its signed-in customers go first (customers/perks.py): they queue ahead of guests.
-    from backend.modules.customers import perks
-    if perks.members_first(db):
-        members = perks.member_contacts(db)
-        return sorted(found,key=lambda c:(c['contact_id'] not in members,c['since'],c['n']))
-    return sorted(found,key=lambda c:(c['since'],c['n']))
+        c['no_rush'] = c['id'] in unhurried
+        c['key'] = (c['no_rush'],members is not None and c['contact_id'] not in members,c['since'],c['n'])
+    return sorted(found,key=lambda c:c['key'])
 
 
 def _answered(db, moment):
@@ -136,13 +140,16 @@ def of(db, tenant_id, conversation):
     mine = _waiting(db,conversation['id'])
     if not mine:
         return None
-    since,key = mine[0]['since'],(mine[0]['since'],mine[0]['n'])
+    since,key = mine[0]['since'],mine[0]['key']
     value = _organization(db,tenant_id)
     ahead = sum(1 for c in value['waiting'] if c['team_id']==conversation['team_id'] and c['id']!=conversation['id']
-                and (c['since'],c['n'])<key)
+                and c['key']<key)
+    # ไม่รีบ (portal/no_rush.py): the reply promised by then, which is what the page tells them instead of a guess.
+    from backend.modules.portal import no_rush
+    unhurried = no_rush.state(db,conversation['id']) if mine[0]['no_rush'] else None
     teams,owner = value['available']
     if not owner and conversation['team_id'] not in teams:
-        return {'position':ahead+1,'wait_minutes':None,'away':True}
+        return {'position':ahead+1,'wait_minutes':None,'away':True,'no_rush':unhurried}
     usual,rate = value['pace'].get(conversation['team_id'],value['overall'])
     waited = max(0,(utc_now()-dt.datetime.fromisoformat(since)).total_seconds())
-    return {'position':ahead+1,'wait_minutes':estimate(ahead+1,waited,usual,rate),'away':False}
+    return {'position':ahead+1,'wait_minutes':estimate(ahead+1,waited,usual,rate),'away':False,'no_rush':unhurried}

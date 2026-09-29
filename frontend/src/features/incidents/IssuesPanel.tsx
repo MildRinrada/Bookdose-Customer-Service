@@ -93,6 +93,8 @@ export function IssuesPanel() {
                 <span className="tiny muted">
                   ประกาศโดย {issue.author_name} · {relative(issue.created_at)}
                 </span>
+                {/* ฉันก็เจอ: how many customers said they hit it (incidents/service.py). */}
+                <span className="tiny">{issue.affected ? `ลูกค้าแจ้งว่าเจอปัญหานี้ ${issue.affected.toLocaleString('th-TH')} คน` : 'ยังไม่มีลูกค้ากดว่าเจอปัญหานี้'}</span>
               </div>
               <button type="button" className="btn sm primary" onClick={() => void send(`${PATH}/${issue.id}`, { status: 'resolved' }, 'PATCH', 'แจ้งลูกค้าว่าแก้ไขแล้ว')}>
                 <Icon name="check" />
@@ -113,7 +115,10 @@ export function IssuesPanel() {
               <li key={issue.id}>
                 <div className="grow">
                   <strong>{issue.title}</strong>
-                  <span className="tiny muted">แก้ไขแล้ว {relative(issue.resolved_at)}</span>
+                  <span className="tiny muted">
+                    แก้ไขแล้ว {relative(issue.resolved_at)}
+                    {issue.affected ? ` ลูกค้าแจ้งว่าเจอ ${issue.affected.toLocaleString('th-TH')} คน` : ''}
+                  </span>
                 </div>
                 <button type="button" className="btn sm" onClick={() => void send(`${PATH}/${issue.id}`, { status: 'active' }, 'PATCH', 'ประกาศอีกครั้งแล้ว')}>
                   ประกาศอีกครั้ง

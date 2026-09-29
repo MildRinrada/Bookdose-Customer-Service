@@ -277,7 +277,13 @@ def insert_notification(db, notification_id, account_id, conversation_id, event=
 def due_notifications(db, created_before):
     return rows(db,'''SELECT n.*,c.subject,s.seen_at FROM customer_notifications n JOIN conversations c ON c.id=n.conversation_id
         LEFT JOIN customer_seen s ON s.account_id=n.account_id AND s.conversation_id=n.conversation_id
-        WHERE n.sent_at IS NULL AND n.attempts<3 AND n.created_at<=? ORDER BY n.created_at LIMIT 20''',(created_before,))
+        WHERE n.sent_at IS NULL AND n.attempts<3 AND n.created_at<=? AND n.held_until<=? ORDER BY n.created_at LIMIT 20''',
+        (created_before,now()))
+
+
+def hold_notification(db, notification_id, until):
+    """Not before `until` (the customer's quiet hours); still told then unless they read the chat meanwhile."""
+    db.execute('UPDATE customer_notifications SET held_until=? WHERE id=?',(until,notification_id))
 
 
 def claim_notification(db, notification_id):
@@ -369,3 +375,8 @@ def finish_alert(db, alert_id, error=''):
 
 def retry_alert(db, alert_id, error, next_at):
     db.execute('UPDATE customer_alert_outbox SET error=?,next_at=? WHERE id=?',(error,next_at,alert_id))
+
+
+def defer_alert(db, alert_id, next_at):
+    """Not now (the customer's quiet hours): due again at next_at, not counted as a try."""
+    db.execute('UPDATE customer_alert_outbox SET next_at=? WHERE id=?',(next_at,alert_id))

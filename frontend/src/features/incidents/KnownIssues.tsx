@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useSyncExternalStore } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { useToast } from '@/components/ui/Toast';
-import { followingPath, followIssue } from '@/features/customer/api';
+import { followingPath, followIssue, reportAffected } from '@/features/customer/api';
+import { readerToken } from '@/features/customer/components/ArticleFeedback';
 import { useApi, useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
 
@@ -12,8 +14,9 @@ import { useWork } from '@/lib/session';
    anybody asks - "ตอนนี้ระบบชำระเงินมีปัญหา ทีมกำลังแก้ไข" - so a hundred customers do not each write in to ask the
    same thing. Once it is fixed it shows as back for an hour, so the ones who saw the problem see it end.
    A signed-in customer can ask to hear when an active one is fixed (แจ้งฉันเมื่อแก้แล้ว, incidents/follow.py) instead
-   of writing in to ask. The team sees the same notices over the inbox, so they know what customers are being told. Markup:
-   pages/known-issues.css. */
+   of writing in to ask. Anyone reading an active one can say ฉันก็เจอ (incidents/service.py): everyone sees how many
+   did, and the team sees how many customers it touches. The team sees the same notices over the inbox, so they know
+   what customers are being told. Markup: pages/known-issues.css. */
 
 export type KnownIssue = {
   id: string;
@@ -22,12 +25,61 @@ export type KnownIssue = {
   status: 'active' | 'resolved';
   updated_at: string;
   resolved_at: string | null;
+  /** ฉันก็เจอ: how many browsers said they hit it. */
+  affected?: number;
   author_name?: string;
   created_at?: string;
 };
 
 // An open chat page asks again every minute: a notice posted during a problem reaches the customers already there.
 const POLL_MS = 60000;
+const SAID_KEY = 'bookdose:issues-affected';
+
+function saidAffected(issueId: string): boolean {
+  try {
+    return (JSON.parse(localStorage.getItem(SAID_KEY) || '[]') as string[]).includes(issueId);
+  } catch {
+    return false;
+  }
+}
+
+function rememberAffected(issueId: string, on: boolean) {
+  try {
+    const kept = (JSON.parse(localStorage.getItem(SAID_KEY) || '[]') as string[]).filter((id) => id !== issueId);
+    localStorage.setItem(SAID_KEY, JSON.stringify(on ? [...kept, issueId].slice(-50) : kept));
+  } catch {
+    /* Remembered for this page only. */
+  }
+}
+
+const noChange = () => () => {};
+
+/** ฉันก็เจอ at the end of an active notice, with how many said so; pressing again takes it back. */
+function AffectedButton({ slug, issue }: { slug: string; issue: KnownIssue }) {
+  // What this browser said before, read after the page is drawn (the server keeps only a hash of the token).
+  const before = useSyncExternalStore(noChange, () => saidAffected(issue.id), () => false);
+  const [pressed, setPressed] = useState<boolean | null>(null);
+  const on = pressed ?? before;
+  const run = useRunAction();
+  const refresh = useInvalidate();
+  const press = () =>
+    run(async () => {
+      await reportAffected(slug, issue.id, !on, readerToken());
+      rememberAffected(issue.id, !on);
+      setPressed(!on);
+      await refresh(`/api/public/${slug}/issues`);
+    });
+  const count = issue.affected ?? 0;
+  return (
+    <span className="known-issue-affected">
+      {count > 0 && <span className="known-issue-count">ลูกค้าเจอปัญหานี้ {count.toLocaleString('th-TH')} คน</span>}
+      <button type="button" className={`btn sm known-issue-follow${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => void press()}>
+        <Icon name={on ? 'check' : 'users'} />
+        {on ? 'คุณแจ้งว่าเจอแล้ว' : 'ฉันก็เจอ'}
+      </button>
+    </span>
+  );
+}
 
 /** The notices on a customer's chat page (the visitor's and the signed-in customer's), for the organization `slug`. */
 export function KnownIssuesBar({ slug, follow = false }: { slug: string; follow?: boolean }) {
@@ -63,6 +115,7 @@ export function KnownIssuesBar({ slug, follow = false }: { slug: string; follow?
             )}
             {issue.detail && issue.status === 'active' && <span className="known-issue-detail">{issue.detail}</span>}
           </span>
+          {issue.status === 'active' && <AffectedButton slug={slug} issue={issue} />}
           {active && issue.status === 'active' && following.data && (
             mine.includes(issue.id) ? (
               <button type="button" className="btn sm known-issue-follow is-on" aria-pressed="true" onClick={() => void toggle(issue, false)}>
@@ -93,7 +146,8 @@ export function StaffIssuesBanner() {
       <p className="known-issue active">
         <Icon name="bell" />
         <span>
-          <strong>ลูกค้าเห็นประกาศอยู่:</strong> {active.map((i) => `${i.title}มีปัญหา`).join(' · ')}
+          <strong>ลูกค้าเห็นประกาศอยู่:</strong>{' '}
+          {active.map((i) => `${i.title}มีปัญหา${i.affected ? ` (ลูกค้าแจ้งว่าเจอ ${i.affected.toLocaleString('th-TH')} คน)` : ''}`).join(' · ')}
         </span>
         {work.role === 'admin' && !work.read_only && (
           <Link className="known-issue-manage" href="/settings?tab=issues">

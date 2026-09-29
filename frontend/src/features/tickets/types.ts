@@ -57,6 +57,8 @@ export type Ticket = TicketSummary &
     hand?: Hand | null;
     /** What the AI proposed for it when it opened, while nobody has used or set it aside (backend ai/triage.py). */
     triage?: TriageProposal | null;
+    /** ไม่รีบ (backend portal/no_rush.py): the customer said a reply by then is fine, so the deadline moved there. */
+    no_rush?: { until: string; text: string } | null;
   };
 
 /** '' / [] propose no change of that part. */

@@ -125,6 +125,13 @@ def last_close(cfg, moment):
     return max((end for _,end in _spans(cfg,moment,HOLIDAYS_MAX+7,0) if end<=moment),default=None)
 
 
+def next_day_close(cfg, moment):
+    """When the next working day after `moment`'s ends: the closing time of the first open day after today (holidays
+    and closed days skipped), or None when nothing is open ahead."""
+    today = moment.astimezone(TZ).date()
+    return next((end for _,end in _spans(cfg,moment,0,HOLIDAYS_MAX+14) if end.date()>today),None)
+
+
 def deadline(cfg, start, hours):
     """The moment `hours` of opening time after `start`: the clock stops while closed (nights, closed days, holidays)."""
     left = dt.timedelta(hours=hours)

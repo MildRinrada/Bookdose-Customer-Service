@@ -34,6 +34,9 @@ def open_ticket(db, contact_id, team_id, subject, priority, assignee_id=None, ca
         response = repository.first_staff_reply_time(db,conversation_id)
         if response:
             repository.set_first_response(db,ticket_id,response)
+        # The customer said ไม่รีบ while waiting: the case keeps that promise (portal/no_rush.py).
+        from backend.modules.portal import no_rush
+        no_rush.apply_to_ticket(db,ticket_id,conversation_id)
     automation.apply_rules(db,ticket_id)
     from backend.modules.automation import distribution
     distribution.assign_new(db,ticket_id)
@@ -104,8 +107,11 @@ def ticket_detail(db, ctx, ticket_id):
         from backend.modules.ai import translate
         conv['translation'] = translate.state(db,conv['id'])
         conv.pop('portal_token',None)
+    # ไม่รีบ (portal/no_rush.py): why the first-reply deadline is later than the SLA says.
+    from backend.modules.portal import no_rush
     return {'ticket':{**ticket,'tags':tags.of_ticket(db,ticket['id']),'fields':fields.values_of(db,ticket['id']),
-                      'hand':hands.open_for(db,ticket['id']),'triage':ai_triage.of_ticket(db,ticket['id'])},
+                      'hand':hands.open_for(db,ticket['id']),'triage':ai_triage.of_ticket(db,ticket['id']),
+                      'no_rush':no_rush.of_ticket(db,ticket['id'])},
             'contact':contacts.find(db,ticket['contact_id']),
             'conversations':convs,'events':audit.for_entity(db,ticket['id']),
             'automation':automation.ticket_extras(db,ticket['id'])}

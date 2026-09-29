@@ -5,7 +5,12 @@
 LINE goes to an account linked with this organization's LINE (customers/line.py) while its LINE channel is on.
 Nothing is sent inside a transaction: a notice is queued in customer_alert_outbox (inside the caller's transaction) and
 sent afterwards by the automation worker. A failed delivery is retried up to 3 times (a LINE push carries a retry
-key, so LINE drops a repeat). A LINE message is short: the subject and a link, never the messages themselves."""
+key, so LINE drops a repeat). A LINE message is short: the subject and a link, never the messages themselves.
+
+ช่วงเวลาห้ามรบกวน: the customer may set hours (Thai time, e.g. 21:00 to 08:00) when nothing reaches them by email or
+LINE. What falls due meanwhile waits and goes out when the hours end - a chat reply they read on the page by then is not
+sent at all, as at any other time. Stored in notify_prefs as 'quiet': {enabled, start, end}."""
+import datetime as dt
 import json
 import uuid
 
@@ -15,12 +20,14 @@ from backend.extensions import channel_transport as T
 from backend.modules.customers import repository as customer_accounts
 from backend.modules.customers.model import NOTIFY_EVENTS
 from backend.modules.platform import service as platform
-from backend.utils.dates import after
+from backend.utils.dates import after, iso, utc_now
 from backend.utils.security import uid
 
 EMAILED = {key for key,_,on in NOTIFY_EVENTS if on}
 MAX_ATTEMPTS = 3
 CLAIM_SECONDS = 300          # a notice taken for sending by a worker that stopped is tried again after this
+THAI = dt.timezone(dt.timedelta(hours=7))
+QUIET_DEFAULT = {'enabled':False,'start':'21:00','end':'08:00'}
 
 
 # Preferences
@@ -42,6 +49,30 @@ def wants(account, event, channel):
     if isinstance(value,bool):
         return value
     return channel=='line' or event in EMAILED
+
+
+def quiet_of(account):
+    """{enabled, start, end} of the account's ช่วงเวลาห้ามรบกวน (the default, off, until they set it)."""
+    saved = prefs_of(account).get('quiet') if account else None
+    return {**QUIET_DEFAULT,**saved} if isinstance(saved,dict) else dict(QUIET_DEFAULT)
+
+
+def quiet_until(account, moment=None):
+    """When the account's quiet hours end (UTC), while they are on now; else None. Hours past midnight (21:00 to
+    08:00) run into the next morning."""
+    quiet = quiet_of(account)
+    if not quiet['enabled'] or quiet['start']==quiet['end']:
+        return None
+    local = (moment or utc_now()).astimezone(THAI)
+    clock = local.strftime('%H:%M')
+    inside = quiet['start']<=clock<quiet['end'] if quiet['start']<quiet['end'] else clock>=quiet['start'] or clock<quiet['end']
+    if not inside:
+        return None
+    hour,minute = map(int,quiet['end'].split(':'))
+    end = local.replace(hour=hour,minute=minute,second=0,microsecond=0)
+    if end<=local:
+        end += dt.timedelta(days=1)
+    return end.astimezone(dt.timezone.utc)
 
 
 def line_channel(db, tenant_id):
@@ -96,7 +127,11 @@ def send(tenant_id):
         for row in customer_accounts.due_alerts(db):
             account = customer_accounts.find(cd,row['account_id'])
             link = customer_accounts.line_link(db,row['account_id'])
-            if row['attempts']>=MAX_ATTEMPTS:
+            quiet = quiet_until(account)
+            if quiet and row['attempts']<MAX_ATTEMPTS:
+                # ช่วงเวลาห้ามรบกวน: it waits for the morning, without counting as a try.
+                customer_accounts.defer_alert(db,row['id'],iso(quiet))
+            elif row['attempts']>=MAX_ATTEMPTS:
                 customer_accounts.finish_alert(db,row['id'],row['error'] or 'failed')
             elif row['channel']=='email':
                 # Only to an address the customer proved, while the platform can send at all.

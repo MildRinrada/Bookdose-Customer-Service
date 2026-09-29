@@ -60,6 +60,14 @@
 .wait-queue.is-away .wait-queue-title {
   color: var(--amber);
 }
+/* ไม่รีบ: the customer's own choice, under what the card says. */
+.wait-queue-rush {
+  margin-top: 8px;
+}
+.wait-queue.is-unhurried .wait-queue-place {
+  background: var(--soft);
+  color: var(--ink);
+}
 @media (max-width: 480px) {
   .wait-queue {
     gap: 10px;

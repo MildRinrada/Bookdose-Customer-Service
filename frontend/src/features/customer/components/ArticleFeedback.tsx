@@ -12,7 +12,9 @@ import { sendArticleFeedback } from '../api';
 const TOKEN_KEY = 'bookdose:reader';
 const SAID_KEY = 'bookdose:article-feedback';
 
-function readerToken(): string {
+/** This browser's own random token (never who they are), for the one-say-per-browser buttons: this one and ฉันก็เจอ
+    on a known issue (features/incidents). */
+export function readerToken(): string {
   try {
     const kept = localStorage.getItem(TOKEN_KEY);
     if (kept && /^[a-f0-9]{32}$/.test(kept)) return kept;

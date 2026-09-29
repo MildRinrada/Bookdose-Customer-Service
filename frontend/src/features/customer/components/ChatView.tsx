@@ -194,7 +194,7 @@ export function ChatView({
         afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={
           <>
-            <WaitQueue queue={data.queue} />
+            <WaitQueue queue={data.queue} base={`/api/public/${slug}`} conversationId={id} onChanged={() => refresh(sessionPath(slug))} />
             {data.thanks && <ThanksCard card={data.thanks} slug={slug} conversationId={id} />}
             {survey && (
               <div id="customer-survey">

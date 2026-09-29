@@ -106,6 +106,13 @@ def handoff_qr(req):
     return req.send(201,handoff.create(req.db,req.org,req.guest,_current(req),base_url(req.cd,req)))
 
 
+def no_rush(req):
+    """ไม่รีบ, as a guest (portal/no_rush.py)."""
+    from backend.modules.guest import schema as guest_schema
+    from backend.modules.portal import no_rush
+    return req.send(200,no_rush.request(req.db,_current(req),guest_schema.display_name(req.guest['visitor']),req.body))
+
+
 def request_callback(req):
     """ขอให้ติดต่อกลับ, as a guest (portal/callback.py)."""
     from backend.modules.guest import schema as guest_schema

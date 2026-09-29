@@ -21,7 +21,7 @@ from backend.modules.knowledge import repository as knowledge
 from backend.modules.organization import hours, repository as organization
 from backend.modules.platform import repository as tenants, service as platform
 from backend.modules.tickets import fields
-from backend.utils.dates import after, now
+from backend.utils.dates import after, iso, now
 from backend.utils.security import password_ok, token_hash, uid
 from backend.utils.validation import require
 
@@ -148,27 +148,31 @@ def _connected(cd, session):
     return found,home
 
 
-def _org_view(org, home):
+def _org_view(org, home, cd=None, account_id=None):
+    """With the customer's account (and the control database): ขอคนเดิม, the member of their last case there whom the
+    start form offers (portal/same_member.py)."""
     from backend.modules.ai import service as ai
+    from backend.modules.portal import same_member
     with D.tenant(org['id']) as db:
         # has_logo, not the picture: a customer with ten organizations would carry a megabyte of them in every answer.
         return {'slug':org['slug'],'name':org['name'],'home':bool(home) and org['id']==home['id'],'has_logo':bool(org['logo']),
                 'welcome':organization.setting(db,'welcome'),'response_hours':organization.setting(db,'response_hours'),
                 'response_in_opening_time':hours.sla_in_opening_time(db),
                 'ai_enabled':ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
-                'categories':[c['name'] for c in categories(db)],'form_fields':fields.customer_fields(db)}
+                'categories':[c['name'] for c in categories(db)],'form_fields':fields.customer_fields(db),
+                'last_member':same_member.offer(cd,db,same_member.account_contacts(db,account_id)) if cd is not None and account_id else None}
 
 
 def organizations(cd, session):
     found,home = _connected(cd,session)
-    return [_org_view(org,home) for org in found]
+    return [_org_view(org,home,cd,session['account_id']) for org in found]
 
 
 def join_by_code(cd, session, body):
     """The customer adds an organization by its code (the one in the organization's link)."""
     org = _org_by_code(cd,body.get('slug',''))
     _join(cd,session['account_id'],org)
-    return _org_view(org,tenants.home_organization(cd))
+    return _org_view(org,tenants.home_organization(cd),cd,session['account_id'])
 
 
 # Sign-up and email confirmation
@@ -505,17 +509,24 @@ def notification_settings(cd, session):
                           'linked_at':link['linked_at'] if link else None,'oa_name':(row['config'].get('display_name') or '') if row else ''})
     return {'events':[{'key':key,'label':label,'email':notify.wants(account,key,'email'),'line':notify.wants(account,key,'line')}
                       for key,label,_ in NOTIFY_EVENTS],
-            'email':{'ready':email_ready(cd),'verified':bool(account['email_verified']),'address':account['email']},'line':lines}
+            'email':{'ready':email_ready(cd),'verified':bool(account['email_verified']),'address':account['email']},'line':lines,
+            # ช่วงเวลาห้ามรบกวน (notify.py): Thai time.
+            'quiet':notify.quiet_of(account)}
 
 
 def save_notification_settings(cd, session, body):
-    """Merge the choices sent ({events: {event: {email, line}}}) into the account's; a chat reply by email is the
-    old notify_email switch, so both settings pages agree."""
+    """Merge the choices sent ({events: {event: {email, line}}} and/or {quiet: {enabled, start, end}}) into the
+    account's; a chat reply by email is the old notify_email switch, so both settings pages agree."""
     from backend.modules.customers import notify
     from backend.modules.customers.model import NOTIFY_EVENTS
-    chosen = schema.notify_prefs_form(body,[key for key,_,_ in NOTIFY_EVENTS])
+    body = body if isinstance(body,dict) else {}
+    require('events' in body or 'quiet' in body,'ข้อมูลการแจ้งเตือนไม่ถูกต้อง')
+    chosen = schema.notify_prefs_form(body,[key for key,_,_ in NOTIFY_EVENTS]) if 'events' in body else {}
+    quiet = schema.quiet_form(body['quiet']) if 'quiet' in body else None
     account = repository.find(cd,session['account_id'])
     prefs = notify.prefs_of(account)
+    if quiet:
+        prefs['quiet'] = quiet
     for event,channels in chosen.items():
         if event=='reply' and 'email' in channels:
             repository.set_notify_email(cd,account['id'],channels.pop('email'))
@@ -641,8 +652,10 @@ def new_web_conversation(db, org, contact_id, author_name, subject, category, bo
 
 def open_conversation(cd, db, org, session, body):
     """Start a chat with this organization as the signed-in customer (connecting it if this is the first contact).
-    Returns the conversation id."""
+    Returns {id, asked_member}: with same_member true, whether the member of their last case took it (ขอคนเดิม,
+    portal/same_member.py)."""
     from backend.modules.customers import perks
+    from backend.modules.portal import same_member
     subject,category = request_form(db,body)
     account = repository.find(cd,session['account_id'])
     follows = perks.follows_form(db,account['id'],body)
@@ -651,11 +664,12 @@ def open_conversation(cd, db, org, session, body):
     conv_id = new_web_conversation(db,org,contact_id,account['name'],subject,category,body)
     if follows:
         perks.set_follow(db,conv_id,follows)
+    asked = same_member.ask(cd,db,conv_id,same_member.account_contacts(db,account['id']),account['name']) if body.get('same_member') is True else None
     repository.mark_seen(db,account['id'],conv_id)
     db.commit()
     repository.join_org(cd,account['id'],org['id'])
     cd.commit()
-    return conv_id
+    return {'id':conv_id,'asked_member':asked}
 
 
 def mark_seen(db, session, conversation_id):
@@ -738,6 +752,11 @@ def send_notices(tenant_id):
                 account = repository.find(cd,notice['account_id'])
                 if notice['seen_at'] and notice['seen_at']>=notice['created_at']:
                     repository.finish_notification(db,notice['id'],'seen')
+                    continue
+                quiet = notify.quiet_until(account)
+                if quiet:
+                    # ช่วงเวลาห้ามรบกวน (notify.py): it waits until the hours end, and is looked at again then.
+                    repository.hold_notification(db,notice['id'],iso(quiet))
                     continue
                 event = notice.get('event') or 'reply'
                 by_line = notify.line_wanted(db,tenant_id,account,event)

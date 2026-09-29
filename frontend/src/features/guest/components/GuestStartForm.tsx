@@ -9,7 +9,9 @@ import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
 import { CAPTCHA_FIELD, CAPTCHA_WAIT, TurnstileField, type TurnstileHandle } from '@/components/ui/Turnstile';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from '@/features/customer/components/ArticlePeek';
+import { askedMemberText, SameMemberChoice } from '@/features/customer/components/SameMember';
 import { StartFields, startFieldValues } from '@/features/customer/components/StartFields';
+import type { AskedMember } from '@/features/customer/types';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { ScreenRecorder } from '@/features/rich/ScreenRecorder';
@@ -83,10 +85,11 @@ function Step({ n, title, hint, children }: { n: number; title: string; hint?: s
 }
 
 /** What the toast says after the start: where the follow links went, and which could not be sent. */
-export function linksMessage(orgName: string, links: GuestStartLink[] | undefined): string {
+export function linksMessage(orgName: string, links: GuestStartLink[] | undefined, asked?: AskedMember | null): string {
   const sent = (links ?? []).filter((l) => l.sent).map((l) => l.to_masked);
   const failed = (links ?? []).filter((l) => !l.sent).map((l) => l.to_masked);
-  const parts = [`ส่งข้อความถึงทีมงาน ${orgName} แล้ว`];
+  // ขอคนเดิม: whether the member asked for took it.
+  const parts = [asked ? askedMemberText(asked) : `ส่งข้อความถึงทีมงาน ${orgName} แล้ว`];
   if (sent.length) parts.push(`ส่งลิงก์ติดตามแชทไปที่ ${sent.join(' และ ')} แล้ว`);
   if (failed.length) parts.push(`ส่งลิงก์ไปที่ ${failed.join(' และ ')} ไม่สำเร็จ ขอใหม่ได้ที่ “ติดตามแชทนี้”`);
   return parts.join(' · ');
@@ -103,7 +106,7 @@ export function GuestStartForm({
   overview: GuestOverview;
   info: PublicOrgInfo | undefined;
   intro?: boolean;
-  onStarted: (id: string, links: GuestStartLink[]) => Promise<void> | void;
+  onStarted: (id: string, links: GuestStartLink[], asked: AskedMember | null) => Promise<void> | void;
 }) {
   // When the form appeared, for the server's "too fast to be a person" check.
   const [shownAt] = useState(() => Date.now());
@@ -153,6 +156,7 @@ export function GuestStartForm({
             captcha_token: captchaToken,
             attachments,
             fields: startFieldValues(values, overview.form_fields, category),
+            ...(values.same_member === 'on' ? { same_member: true } : {}),
           });
         const result = await start().catch((reason: unknown) => {
           // Whatever refused this send, the Turnstile token went with it: the next try needs a fresh one.
@@ -161,7 +165,7 @@ export function GuestStartForm({
         });
         setGuestCredentials(result.csrf);
         clear();
-        await onStarted(result.id, result.links ?? []);
+        await onStarted(result.id, result.links ?? [], result.asked_member ?? null);
       }}
     >
       <KnownIssuesBar slug={slug} />
@@ -185,6 +189,8 @@ export function GuestStartForm({
         </Step>
       )}
       <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง" hint="ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด แนบภาพหน้าจอได้">
+        {/* ขอคนเดิม: the member of this browser's last case, when there was one in the last 30 days. */}
+        <SameMemberChoice member={overview.last_member} id="guest-same-member" />
         <StartFields fields={overview.form_fields} category={category} idPrefix="guest-field" />
         <TextField
           label="หัวข้อ (ไม่บังคับ)"

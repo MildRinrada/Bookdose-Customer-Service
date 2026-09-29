@@ -24,13 +24,21 @@ def known_issues(req):
     return req.send(200,{'issues':incidents.public(req.db)},headers={'Cache-Control':'no-store'})
 
 
+def issue_affected(req, issue_id):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.incidents import service as incidents
+    from backend.modules.incidents.model import REPORTS_PER_IP_HOUR
+    limited(('issue-affected',req.ip),REPORTS_PER_IP_HOUR,3600)
+    return req.send(200,incidents.affected(req.db,issue_id,req.body))
+
+
 def canonical_code(req):
     """The code this organization goes by now (a former code leads here too: platform/model.py tenant_slugs)."""
     return req.send(200,{'slug':req.org['slug']})
 
 
 def open_conversation(req):
-    return req.send(201,{'id':customers.open_conversation(req.cd,req.db,req.org,req.customer,req.body)})
+    return req.send(201,customers.open_conversation(req.cd,req.db,req.org,req.customer,req.body))
 
 
 def case_detail(req, case_id):
@@ -62,6 +70,11 @@ def hand_off(req):
 def request_callback(req):
     from backend.modules.portal import callback
     return req.send(200,callback.request(req.db,_current(req),req.customer,req.customer['name'],req.body))
+
+
+def no_rush(req):
+    from backend.modules.portal import no_rush
+    return req.send(200,no_rush.request(req.db,_current(req),req.customer['name'],req.body))
 
 
 def article_feedback(req, article_id):

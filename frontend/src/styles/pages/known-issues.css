@@ -66,12 +66,34 @@
   border-color: var(--green);
   color: var(--green);
 }
+/* ฉันก็เจอ: how many said so, and this browser's own say. */
+.known-issue-affected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 10px;
+  flex-shrink: 0;
+  align-self: center;
+}
+.known-issue-count {
+  color: var(--muted);
+  font-size: .92rem;
+  white-space: nowrap;
+}
 @media (max-width: 560px) {
   .known-issue {
     flex-wrap: wrap;
   }
   .known-issue-follow {
     margin-left: 28px;
+  }
+  .known-issue-affected {
+    justify-content: flex-start;
+    margin-left: 28px;
+  }
+  .known-issue-affected .known-issue-follow {
+    margin-left: 0;
   }
 }
 /* The settings panel */

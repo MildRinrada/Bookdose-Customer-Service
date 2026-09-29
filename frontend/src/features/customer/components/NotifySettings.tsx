@@ -9,9 +9,10 @@ import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { ACCOUNT_PATH, NOTIFY_SETTINGS_PATH, linePath, requestLineCode, saveNotifySettings, unlinkLine } from '../api';
-import type { LineCode, LineOrg, LineStatus, NotificationSettings } from '../types';
+import type { LineCode, LineOrg, LineStatus, NotificationSettings, QuietHours } from '../types';
 
 /* ตั้งค่าบัญชี → การแจ้งเตือน: which events go to email and to LINE (the bell on the page always shows everything),
+   the hours when neither may reach the customer (ช่วงเวลาห้ามรบกวน),
    and linking the account with each organization's LINE by a 6-digit code sent there in a 1:1 chat
    (GET/POST /api/customer/notification-settings, /api/public/<org>/line). Markup: pages/alerts-customer.css. */
 
@@ -154,6 +155,37 @@ function LineLink({ org }: { org: LineOrg }) {
   );
 }
 
+const QUIET: QuietHours = { enabled: false, start: '21:00', end: '08:00' };
+
+/** ช่วงเวลาห้ามรบกวน (backend customers/notify.py): no email or LINE between two times; what falls due meanwhile goes
+    out when it ends (a chat reply read on the page by then is not sent at all). Saved with the table above. */
+function QuietHoursField({ quiet }: { quiet: QuietHours }) {
+  const [on, setOn] = useState(quiet.enabled);
+  return (
+    <fieldset className="quiet-hours">
+      <legend>ช่วงเวลาห้ามรบกวน</legend>
+      <label className="check">
+        <input type="checkbox" className="switch" name="quiet_on" defaultChecked={quiet.enabled} onChange={(e) => setOn(e.target.checked)} />
+        <span>
+          ไม่ส่งอีเมลและ LINE ในช่วงเวลานี้
+          <span className="tiny muted block">เรื่องที่เกิดระหว่างนั้นจะส่งให้เมื่อพ้นช่วง ถ้าเปิดอ่านบนหน้าเว็บไปก่อนแล้ว จะไม่ส่งซ้ำ</span>
+        </span>
+      </label>
+      <div className="quiet-times" hidden={!on}>
+        <label>
+          ตั้งแต่
+          <input type="time" name="quiet_start" defaultValue={quiet.start} step={60} required={on} />
+        </label>
+        <label>
+          ถึง
+          <input type="time" name="quiet_end" defaultValue={quiet.end} step={60} required={on} />
+        </label>
+        <span className="tiny muted">เวลาประเทศไทย ข้ามเที่ยงคืนได้ เช่น 21:00 ถึง 08:00</span>
+      </div>
+    </fieldset>
+  );
+}
+
 export function NotifySettingsCard() {
   const { data } = useApi<NotificationSettings>(NOTIFY_SETTINGS_PATH);
   const refresh = useInvalidate();
@@ -175,13 +207,15 @@ export function NotifySettingsCard() {
       ) : (
         <>
           <Form
-            key={JSON.stringify(data.events)}
+            key={JSON.stringify([data.events, data.quiet])}
             className="card-body"
             data-form="customer-notify"
-            onSubmit={async (_values, form) => {
+            onSubmit={async (values, form) => {
               const checked = (name: string) => Boolean((form.elements.namedItem(name) as HTMLInputElement | null)?.checked);
               const events = Object.fromEntries(data.events.map((e) => [e.key, { email: checked(`${e.key}:email`), line: checked(`${e.key}:line`) }]));
-              await saveNotifySettings(events);
+              const quiet = { enabled: checked('quiet_on'), start: values.quiet_start || QUIET.start, end: values.quiet_end || QUIET.end };
+              if (quiet.enabled && quiet.start === quiet.end) throw new Error('เวลาเริ่มและเวลาสิ้นสุดของช่วงห้ามรบกวนต้องไม่ใช่เวลาเดียวกัน');
+              await saveNotifySettings(events, quiet);
               toast('บันทึกการแจ้งเตือนแล้ว');
               await refresh(NOTIFY_SETTINGS_PATH, ACCOUNT_PATH);
             }}
@@ -221,6 +255,7 @@ export function NotifySettingsCard() {
             )}
             {!lineOk && <p className="tiny muted">ตัวเลือก LINE ใช้เมื่อเชื่อม LINE ขององค์กรด้านล่างแล้ว</p>}
             <p className="tiny muted">อีเมลและ LINE มีแค่หัวเรื่องและลิงก์ให้เข้ามาดู ไม่มีเนื้อหาข้อความแชท</p>
+            <QuietHoursField quiet={data.quiet ?? QUIET} />
             <button className="btn" type="submit">
               <Icon name="check" />
               บันทึกการแจ้งเตือน

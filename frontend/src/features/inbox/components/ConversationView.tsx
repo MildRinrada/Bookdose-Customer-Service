@@ -91,6 +91,23 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
                 {v.name}: {v.value}
               </span>
             ))}
+            {/* ขอคนเดิม and ไม่รีบ: what the customer asked of the team (portal/same_member.py, no_rush.py). */}
+            {c.asked_member && (
+              <span
+                className="conv-fact"
+                title={c.asked_member.given ? 'ลูกค้าขอให้คนเดิมดูแลต่อ ระบบมอบเคสให้แล้ว' : `ลูกค้าขอให้คนเดิมดูแลต่อ แต่ตอนนั้น${c.asked_member.reason} จึงส่งเข้าทีมตามปกติ`}
+              >
+                <Icon name="users" />
+                ขอ {c.asked_member.name}
+                {c.asked_member.given ? '' : ' (ไม่อยู่)'}
+              </span>
+            )}
+            {open && c.no_rush && (
+              <span className="conv-fact" title="ลูกค้าบอกว่าไม่รีบ คิวถอยไปหลังลูกค้าที่รีบ และกำหนดตอบของเคสเลื่อนตามโดยไม่นับว่าเกิน SLA">
+                <Icon name="clock" />
+                ไม่รีบ ตอบได้ถึง{c.no_rush.text}
+              </span>
+            )}
             {t && (
               <Link className="conv-case-link" href={`/tickets/${t.id}`} title={`เปิดรายละเอียดเคส BD-${t.number}`}>
                 BD-{t.number} · {statusLabels[t.status] ?? t.status}

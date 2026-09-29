@@ -141,9 +141,9 @@ export function SupportStartScreen({ slug }: { slug: string }) {
               overview={overview.data}
               info={info.data}
               intro={false}
-              onStarted={async (id, links) => {
+              onStarted={async (id, links, asked) => {
                 await refresh(guestPath(slug));
-                toast(links.length ? linksMessage(name, links) : `ส่งข้อความถึงทีมงาน ${name} แล้ว ติดตามคำตอบได้ในแชทนี้`, links.some((l) => !l.sent));
+                toast(links.length || asked ? linksMessage(name, links, asked) : `ส่งข้อความถึงทีมงาน ${name} แล้ว ติดตามคำตอบได้ในแชทนี้`, links.some((l) => !l.sent));
                 router.push(guestPages.chat(slug, id));
               }}
             />

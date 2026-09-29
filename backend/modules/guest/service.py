@@ -28,6 +28,7 @@ from backend.modules.guest.model import (CONTACT_SOURCE, COOKIE_PREFIX, COOKIE_R
                                          DEVICE_UNUSED_DAYS, GUEST_NAME, LINE_CODE_MINUTES, LINK_DAYS, MAX_NOTICE_ATTEMPTS,
                                          START_PER_VISITOR_DAY)
 from backend.modules.platform import repository as tenants, service as platform
+from backend.modules.portal import same_member
 from backend.modules.tickets import fields
 from backend.utils.dates import after
 from backend.utils.security import token_hash, uid
@@ -167,6 +168,8 @@ def overview(cd, db, org, guest):
                       'line_oa_name':_oa_name(line_row),'line_add_url':_line_add_url(line_row)},
             'categories':[c['name'] for c in customers.categories(db)],
             'form_fields':fields.customer_fields(db),
+            # ขอคนเดิม: the member of this browser's last case, whom the start form offers (portal/same_member.py).
+            'last_member':same_member.offer(cd,db,[guest['visitor']['contact_id']]) if guest else None,
             'organization':{'name':org['name'],'slug':org['slug'],'logo':org.get('logo','')},
             # The public key of the bot check on the start form ('' when the platform has not switched it on).
             'captcha':{'site_key':turnstile.site_key(cd),'action':turnstile.START_ACTION}}
@@ -227,6 +230,8 @@ def start(cd, db, org, guest, body, client, base):
     if reference:
         accounts.set_reference(db,conv_id,reference)
     audit.record(db,schema.display_name(visitor),'guest.started',conv_id,'ผู้เยี่ยมชมใหม่' if token else '')
+    # ขอคนเดิม: only a guest this browser already knows has a last case (portal/same_member.py).
+    asked = same_member.ask(cd,db,conv_id,[contact_id],schema.display_name(visitor)) if guest and body.get('same_member') is True else None
     db.commit()
     links = []
     for via,target in (('email',email),('sms',phone)):
@@ -235,7 +240,7 @@ def start(cd, db, org, guest, body, client, base):
                 links.append({'via':via,'to_masked':_deliver_link(cd,db,org,visitor,via,target,base),'sent':True})
             except APIError as failure:
                 links.append({'via':via,'to_masked':schema.mask(via,target),'sent':False,'error':failure.message})
-    return {'id':conv_id,'csrf':csrf,'links':links},token,remember
+    return {'id':conv_id,'csrf':csrf,'links':links,'asked_member':asked},token,remember
 
 
 def current_conversation(db, guest, conversation_id):

@@ -2,7 +2,7 @@ import type { Reaction } from '@/features/inbox/types';
 import { api } from '@/lib/api/client';
 import type { Upload } from '@/lib/files';
 import type { CustomerOrg } from '@/lib/types';
-import type { LineCode, LineMoveCode, NotificationSettings } from './types';
+import type { LineCode, LineMoveCode, NotificationSettings, QuietHours } from './types';
 
 /* Endpoints of backend/modules/customers (/api/customer/...) and portal (/api/public/<org>/...) used by the signed-in
    customer. */
@@ -27,12 +27,22 @@ export const publicInfoPath = (slug: string) => `/api/public/${slug}`;
 export const requestCallback = (base: string, conversationId: string, body: Record<string, unknown>) =>
   api<{ waiting: import('./types').CallbackRequest | null }>(`${base}/callback`, body, 'POST', { conversation: conversationId });
 
+/** ไม่รีบ while waiting for the team (X-Conversation-ID): say it, or take it back. `base` as for requestCallback. */
+export const setNoRush = (base: string, conversationId: string, on: boolean) =>
+  api<{ no_rush: import('./types').NoRush | null }>(`${base}/no-rush`, { on }, 'POST', { conversation: conversationId });
+
 /** บทความนี้ช่วยได้ไหม on an organization's published article; `voter` is this browser's own random token. */
 export const sendArticleFeedback = (slug: string, articleId: string, helpful: boolean, voter: string) =>
   api<{ ok: true }>(`/api/public/${slug}/articles/${articleId}/feedback`, { helpful, voter });
 
-export const openChat = (slug: string, body: { subject: string; body: string; category: string; attachments: Upload[]; follows?: string; fields?: Record<string, string> }) =>
-  api<{ id: string }>(`/api/public/${slug}/conversations`, body);
+/** ฉันก็เจอ on a known issue (or take it back); `reporter` is this browser's own random token. */
+export const reportAffected = (slug: string, issueId: string, affected: boolean, reporter: string) =>
+  api<{ affected: number }>(`/api/public/${slug}/issues/${issueId}/affected`, { affected, reporter });
+
+export const openChat = (
+  slug: string,
+  body: { subject: string; body: string; category: string; attachments: Upload[]; follows?: string; fields?: Record<string, string>; same_member?: boolean },
+) => api<{ id: string; asked_member: import('./types').AskedMember | null }>(`/api/public/${slug}/conversations`, body);
 
 /* What signing in gives (backend customers/perks.py, incidents/follow.py): send a finished case back, keep a chat or
    a case as a file (plain links: the browser downloads with the session cookie), hear when a known issue is fixed. */
@@ -71,8 +81,8 @@ export const saveNotifications = (email: boolean) => api<{ ok: true }>('/api/cus
 
 /** Which events go to email / LINE; the answer is the settings as saved. */
 export const NOTIFY_SETTINGS_PATH = '/api/customer/notification-settings';
-export const saveNotifySettings = (events: Record<string, { email?: boolean; line?: boolean }>) =>
-  api<NotificationSettings>(NOTIFY_SETTINGS_PATH, { events });
+export const saveNotifySettings = (events: Record<string, { email?: boolean; line?: boolean }>, quiet?: QuietHours) =>
+  api<NotificationSettings>(NOTIFY_SETTINGS_PATH, quiet ? { events, quiet } : { events });
 
 /** Linking the account with one organization's LINE (a 6-digit code sent there in a 1:1 chat). */
 export const linePath = (slug: string) => `/api/public/${slug}/line`;

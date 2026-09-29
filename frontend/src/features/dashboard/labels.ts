@@ -104,6 +104,7 @@ export const botReasonLabels: Record<string, string> = {
   insufficient_knowledge: 'ไม่มีบทความที่ตอบได้',
   attachment_requires_staff: 'ลูกค้าส่งไฟล์แนบ',
   staff: 'เจ้าหน้าที่รับเรื่องเอง',
+  member_asked: 'ลูกค้าขอเจ้าหน้าที่คนเดิม',
   timeout: 'AI ตอบช้าเกินเวลา',
   changed: 'ลูกค้าส่งข้อความเพิ่มระหว่างรอคำตอบ',
   settings_changed: 'มีการเปลี่ยนการตั้งค่า AI',

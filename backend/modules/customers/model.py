@@ -115,5 +115,6 @@ NOTIFY_EVENTS = (('reply','ทีมงานตอบกลับในแช�
 # Columns added to the organization's tables after the first release (customers.migrate.tenant_columns adds them). A
 # notice of a web conversation says what happened there: 'reply' (the team wrote), 'ai' (the chatbot answered) or
 # 'handoff' (the chatbot passed the conversation to the team) - a customer who closed the page hears about each.
-ADDED_TENANT_COLUMNS = {'customer_notifications':{'event':"TEXT NOT NULL DEFAULT 'reply'"},
+# held_until: a notice waiting out the customer's quiet hours (notify.py) is not due before then.
+ADDED_TENANT_COLUMNS = {'customer_notifications':{'event':"TEXT NOT NULL DEFAULT 'reply'",'held_until':"TEXT NOT NULL DEFAULT ''"},
                         'guest_notifications':{'event':"TEXT NOT NULL DEFAULT 'reply'"}}

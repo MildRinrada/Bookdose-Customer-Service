@@ -186,6 +186,10 @@ def upgrade_tenant(db):
     # คุยต่อบนมือถือ: the QR links a guest shows to open a chat on their phone (guest/handoff.py).
     from backend.modules.guest import handoff
     db.executescript(handoff.TABLE)
+    # ไม่รีบ (portal/no_rush.py) and ขอคนเดิม (portal/same_member.py) from customers starting or waiting in a chat.
+    from backend.modules.portal import no_rush, same_member
+    db.executescript(no_rush.TABLE)
+    db.executescript(same_member.TABLE)
     from backend.modules.automation import distribution, repository as automation_repository
     automation_repository.add_rule_tags(db)
     db.executescript(distribution.TABLE)

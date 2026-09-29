@@ -73,10 +73,15 @@ export type LineOrg = OrgLabel & {
 };
 
 /** GET /api/customer/notification-settings */
+/** ช่วงเวลาห้ามรบกวน (backend customers/notify.py): no email or LINE from start to end (Thai time, HH:MM); what falls
+    due meanwhile goes out when it ends. */
+export type QuietHours = { enabled: boolean; start: string; end: string };
+
 export type NotificationSettings = {
   events: NotifyEvent[];
   email: { ready: boolean; verified: boolean; address: string };
   line: LineOrg[];
+  quiet?: QuietHours;
 };
 
 /** GET /api/public/<org>/line */
@@ -133,7 +138,16 @@ export type ThanksCardData = { id: string; name: string; photo: boolean; message
 
 /** The customer's place in the team's queue; wait_minutes null when there is nothing to go by, away when nobody who
     could answer is available now. */
-export type PortalQueue = { position: number; wait_minutes: number | null; away: boolean };
+/** ไม่รีบ (backend portal/no_rush.py): the reply promised by (UTC ISO) and the same in words ("พรุ่งนี้ 18:00 น."). */
+export type NoRush = { until: string; text: string };
+
+export type PortalQueue = { position: number; wait_minutes: number | null; away: boolean; no_rush?: NoRush | null };
+
+/** ขอคนเดิม (backend portal/same_member.py): the member of the customer's last case, as the start form offers them. */
+export type LastMember = { name: string; finished_at: string };
+
+/** ขอคนเดิม after starting: whether that member took the chat. */
+export type AskedMember = { name: string; given: boolean };
 
 /** Whether the chat can go on in the organization's LINE, or went there (channels/move.py). open_url opens the chat
     with the organization's LINE ('' when it has not set its LINE ID). */

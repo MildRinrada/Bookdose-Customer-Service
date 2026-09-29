@@ -72,6 +72,11 @@ def _person(cd, user_id):
     return (prefs['alias'] or (user['name'] if user else 'ทีมงาน')),photo,prefs['thanks']['message']
 
 
+def member_name(cd, user_id):
+    """The name a customer sees for a member, as on the card (ขอคนเดิม names them the same way: portal/same_member.py)."""
+    return _person(cd,user_id)[0]
+
+
 def card_for(cd, db, conversation_id):
     """The card the customer sees at the end of this conversation now, or None."""
     cfg = config(db)

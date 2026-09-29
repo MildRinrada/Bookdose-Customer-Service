@@ -21,6 +21,7 @@ import type { CustomerArticle } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from './ArticlePeek';
 import { OrgPicker } from './OrgPicker';
+import { askedMemberText, SameMemberChoice } from './SameMember';
 import { StartFields, startFieldValues } from './StartFields';
 
 /* A new chat starts with who it is for: the platform itself (problems with the system) or one of the organizations
@@ -96,8 +97,10 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
             attachments,
             fields: startFieldValues(values, org?.form_fields, values.category || ''),
             ...(values.follows ? { follows: values.follows } : {}),
+            ...(values.same_member === 'on' ? { same_member: true } : {}),
           });
-          toast(`ส่งถึง ${orgs.find((o) => o.slug === values.org)?.name || 'ทีมงาน'} แล้ว ติดตามคำตอบได้ในแชทนี้`);
+          const sentTo = `ส่งถึง ${orgs.find((o) => o.slug === values.org)?.name || 'ทีมงาน'} แล้ว`;
+          toast(result.asked_member ? `${sentTo} ${askedMemberText(result.asked_member)}` : `${sentTo} ติดตามคำตอบได้ในแชทนี้`);
           // The new chat must be in the list when its page opens.
           await refresh(OVERVIEW_PATH);
           router.push(`/customer/chats/${values.org}/${result.id}`);
@@ -129,6 +132,8 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
             ))}
           </SelectField>
         )}
+        {/* ขอคนเดิม: the member of the last case with this organization, when there was one in the last 30 days. */}
+        <SameMemberChoice key={`member-${slug}`} member={org?.last_member} id="request-same-member" />
         {/* Another organization has its own categories: the choice starts over. */}
         <SelectField key={slug} label="หมวดเรื่อง" name="category" id="request-category" required defaultValue="" onChange={(e) => setCategory(e.target.value)}>
           <option value="">เลือกหมวดเรื่อง</option>

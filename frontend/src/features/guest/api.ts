@@ -41,7 +41,10 @@ export const guestSessionPath = (slug: string) => `${guestBase(slug)}/session`;
 export const widgetPath = (slug: string) => `/api/public/${slug}/widget`;
 
 export const startGuestChat = (slug: string, body: GuestStartBody) =>
-  api<{ id: string; csrf: string; links?: GuestStartLink[] }>(`${guestBase(slug)}/conversations`, body);
+  api<{ id: string; csrf: string; links?: GuestStartLink[]; asked_member?: import('@/features/customer/types').AskedMember | null }>(
+    `${guestBase(slug)}/conversations`,
+    body,
+  );
 
 export const setGuestName = (slug: string, name: string) => api<{ ok: true }>(`${guestBase(slug)}/name`, { name });
 

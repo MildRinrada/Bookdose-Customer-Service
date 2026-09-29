@@ -229,5 +229,7 @@ export type CustomerOrg = {
   categories?: string[];
   /** แบบฟอร์มตามหมวดเรื่อง: the case fields the start form asks for (backend tickets/fields.py customer_fields). */
   form_fields?: import('@/features/customer/types').StartField[];
+  /** ขอคนเดิม: the member of the customer's last case with this organization (backend portal/same_member.py). */
+  last_member?: import('@/features/customer/types').LastMember | null;
   ai_enabled?: boolean;
 } & Record<string, unknown>;

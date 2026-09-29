@@ -47,6 +47,8 @@ export type GuestOverview = {
   categories: string[];
   /** แบบฟอร์มตามหมวดเรื่อง: the case fields the start form asks for (backend tickets/fields.py customer_fields). */
   form_fields?: import('@/features/customer/types').StartField[];
+  /** ขอคนเดิม: the member of this browser's last case, whom the start form offers (backend portal/same_member.py). */
+  last_member?: import('@/features/customer/types').LastMember | null;
   organization: { name: string; slug: string };
   captcha?: GuestCaptcha;
 };
@@ -72,6 +74,8 @@ export type GuestStartBody = {
   attachments: Array<{ name: string; data: string }>;
   /** แบบฟอร์มตามหมวดเรื่อง: {field id: value} of what was filled in. */
   fields?: Record<string, string>;
+  /** ขอคนเดิม: give the chat to the member of the last case, when they are here. */
+  same_member?: boolean;
 };
 
 /** A follow link asked for with the start of a chat: where it went (masked) and whether it went. */

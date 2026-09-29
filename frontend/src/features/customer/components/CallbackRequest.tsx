@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { useToast } from '@/components/ui/Toast';
 import { requestCallback } from '../api';
 import type { CallbackRequest, CallbackState } from '../types';
 
 /* ขอให้ติดต่อกลับ in a chat (the signed-in customer's and the visitor's; backend portal/callback.py): how - by phone or
    the organization's LINE (only once linked) - and a time from the ones offered. The team gets it as a follow-up
-   reminder on the chat's case. A request waiting is shown with its time and can be called off or changed.
-   Markup: styles/pages/chat-answers.css (callback-*). */
+   reminder on the chat's case. A request waiting is shown with its time and can be called off or changed. In a dialog:
+   inside the chat, whose height is the window's, the form had no room. Markup: styles/pages/chat-answers.css (callback-*). */
 
 const DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -31,19 +32,39 @@ export function callbackWhen(request: Pick<CallbackRequest, 'start' | 'end'>): s
   return `${dayWords(start.slice(0, 10))} ${start.slice(11, 16)}-${thai(request.end).slice(11, 16)} น.`;
 }
 
-export function CallbackButton({ open, waiting, onToggle }: { open: boolean; waiting: boolean; onToggle: () => void }) {
+export function CallbackButton({ waiting, onOpen }: { waiting: boolean; onOpen: () => void }) {
   return (
     <button
       type="button"
       className={`icon-btn conv-callback${waiting ? ' waiting' : ''}`}
-      aria-expanded={open}
+      aria-haspopup="dialog"
       aria-label={waiting ? 'ดูคำขอให้ติดต่อกลับ' : 'ขอให้ติดต่อกลับ'}
       title={waiting ? 'ดูคำขอให้ติดต่อกลับ' : 'ขอให้ทีมงานโทรหรือส่ง LINE กลับในเวลาที่สะดวก'}
-      onClick={onToggle}
+      onClick={onOpen}
     >
       <Icon name="phone" />
     </button>
   );
+}
+
+const SHORT_DAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+const PHONE = /^(?:0\d{8,9}|\+\d{9,14})$/;
+
+/** A day on its button: วันนี้, พรุ่งนี้, or พ. 1 ต.ค. */
+function dayChip(day: string): string {
+  const words = dayWords(day);
+  if (!words.startsWith('วัน')) return words;
+  const [y, m, d] = day.split('-').map(Number);
+  return `${SHORT_DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${MONTHS[m - 1]}`;
+}
+
+type Problems = { phone?: string; slot?: string; form?: string };
+
+/** Which field a refusal from the server is about, so it shows under that field. */
+function placeProblem(message: string): Problems {
+  if (message.includes('เบอร์')) return { phone: message };
+  if (message.includes('ช่วงเวลา')) return { slot: message };
+  return { form: message };
 }
 
 export function CallbackPanel({
@@ -60,160 +81,173 @@ export function CallbackPanel({
   onDone: () => Promise<unknown> | void;
   onClose: () => void;
 }) {
+  const toast = useToast();
   const waiting = state.waiting;
   const [editing, setEditing] = useState(!waiting);
   const [method, setMethod] = useState<'phone' | 'line'>('phone');
-  const [day, setDay] = useState(state.slots[0]?.day ?? '');
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState('');
+  const [phone, setPhone] = useState(state.phone);
   const days = [...new Set(state.slots.map((s) => s.day))];
+  const [day, setDay] = useState(days[0] ?? '');
+  const [start, setStart] = useState(state.slots[0]?.start ?? '');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [problems, setProblems] = useState<Problems>({});
+  const id = (part: string) => `callback-${part}-${conversationId}`;
 
   const send = async (body: Record<string, unknown>) => {
     setBusy(true);
-    setProblem('');
+    setProblems({});
     try {
       const result = await requestCallback(base, conversationId, body);
       await onDone();
-      if (result.waiting) setEditing(false);
-      else onClose();
+      toast(result.waiting ? `ขอให้ติดต่อกลับแล้ว ${callbackWhen(result.waiting)}` : 'ยกเลิกคำขอให้ติดต่อกลับแล้ว');
+      onClose();
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : String(error));
+      setProblems(placeProblem(error instanceof Error ? error.message : String(error)));
     } finally {
       setBusy(false);
     }
   };
 
-  const close = (
-    <button type="button" className="icon-btn callback-close" aria-label="ปิด" onClick={onClose}>
-      <Icon name="close" />
-    </button>
-  );
-
   if (waiting && !editing)
     return (
-      <section className="callback-panel" aria-label="คำขอให้ติดต่อกลับ">
-        <div className="callback-head">
-          <strong>
-            <Icon name="phone" />
-            ขอให้ติดต่อกลับแล้ว
-          </strong>
-          {close}
+      <section className="callback-form" aria-label="คำขอให้ติดต่อกลับ">
+        {problems.form && <p className="notice warning callback-problem">{problems.form}</p>}
+        <div className="callback-waiting">
+          <Icon name="phone" />
+          <p>
+            <strong>{waiting.method === 'phone' ? `โทรหา ${waiting.phone}` : 'ส่งข้อความทาง LINE'}</strong>
+            <span>{callbackWhen(waiting)}</span>
+            {waiting.note && <span className="muted">{waiting.note}</span>}
+          </p>
         </div>
-        <p className="callback-summary">
-          {waiting.method === 'phone' ? `โทรหา ${waiting.phone}` : 'ส่งข้อความทาง LINE'} {callbackWhen(waiting)}
-          {waiting.note && <span className="muted"> ({waiting.note})</span>}
-        </p>
-        <div className="callback-actions">
-          <button type="button" className="btn sm" disabled={busy} onClick={() => setEditing(true)}>
-            เปลี่ยนเวลา
-          </button>
-          <button type="button" className="btn sm danger" disabled={busy} onClick={() => void send({ cancel: true })}>
+        <div className="form-actions">
+          <button type="button" className="btn danger" disabled={busy} onClick={() => void send({ cancel: true })}>
             ยกเลิกคำขอ
           </button>
+          <button type="button" className="btn primary" disabled={busy} onClick={() => setEditing(true)}>
+            เปลี่ยนเวลา
+          </button>
         </div>
-        {problem && <p className="error-text">{problem}</p>}
       </section>
     );
 
   if (!state.slots.length)
     return (
-      <section className="callback-panel" aria-label="ขอให้ติดต่อกลับ">
-        <div className="callback-head">
-          <strong>
-            <Icon name="phone" />
-            ขอให้ติดต่อกลับ
-          </strong>
-          {close}
-        </div>
-        <p className="callback-summary">ตอนนี้ไม่มีช่วงเวลาให้เลือกใน 7 วันข้างหน้า พิมพ์ถึงทีมงานในแชทนี้ได้เลย</p>
+      <section className="callback-form" aria-label="ขอให้ติดต่อกลับ">
+        <p className="callback-intro">ตอนนี้ไม่มีช่วงเวลาให้เลือกใน 7 วันข้างหน้า พิมพ์ถึงทีมงานในแชทนี้ได้เลย</p>
       </section>
     );
 
+  const slots = state.slots.filter((s) => s.day === day);
   return (
     <form
-      className="callback-panel"
+      className="callback-form"
       aria-label="ขอให้ติดต่อกลับ"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        void send({
-          method,
-          phone: String(data.get('phone') ?? ''),
-          start: String(data.get('start') ?? ''),
-          note: String(data.get('note') ?? ''),
-        });
+        const digits = phone.replace(/[\s()-]/g, '');
+        if (method === 'phone' && !PHONE.test(digits)) {
+          setProblems({ phone: digits ? 'เบอร์โทรไม่ถูกต้อง กรอก 9 หรือ 10 หลัก' : 'กรอกเบอร์โทรที่ให้ทีมงานโทรกลับ' });
+          document.getElementById(id('phone'))?.focus();
+          return;
+        }
+        void send({ method, phone: digits, start, note });
       }}
     >
-      <div className="callback-head">
-        <strong>
-          <Icon name="phone" />
-          ขอให้ติดต่อกลับ
-        </strong>
-        {close}
-      </div>
-      <p className="callback-summary muted">เลือกช่องทางและเวลาที่สะดวก ทีมงานจะติดต่อกลับในช่วงเวลานั้น</p>
-      <div className="callback-methods" role="radiogroup" aria-label="ให้ติดต่อกลับทาง">
-        <label className="check">
-          <input type="radio" name="method" checked={method === 'phone'} onChange={() => setMethod('phone')} />
-          โทรศัพท์
-        </label>
-        {state.line_ready && (
-          <label className="check">
-            <input type="radio" name="method" checked={method === 'line'} onChange={() => setMethod('line')} />
-            LINE
-          </label>
-        )}
-      </div>
+      {problems.form && <p className="notice warning callback-problem">{problems.form}</p>}
+      {/* A choice only when there is one: without a linked LINE it is by phone. */}
+      {state.line_ready && (
+        <fieldset className="callback-group">
+          <legend>ติดต่อกลับทาง</legend>
+          <div className="choice-chips">
+            {(
+              [
+                ['phone', 'โทรศัพท์'],
+                ['line', 'LINE'],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key} className="choice-chip">
+                <input className="sr-only" type="radio" name="method" checked={method === key} onChange={() => setMethod(key)} />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {method === 'phone' && (
-        <div className="field">
-          <label htmlFor={`callback-phone-${conversationId}`}>เบอร์โทร</label>
+        <div className="field callback-phone">
+          <label htmlFor={id('phone')}>เบอร์โทร</label>
           <input
-            id={`callback-phone-${conversationId}`}
-            name="phone"
+            id={id('phone')}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             maxLength={20}
-            defaultValue={state.phone}
-            required
+            value={phone}
+            aria-invalid={Boolean(problems.phone)}
+            aria-describedby={problems.phone ? id('phone-problem') : undefined}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              if (problems.phone) setProblems((p) => ({ ...p, phone: undefined }));
+            }}
           />
+          {problems.phone && (
+            <p className="field-error" id={id('phone-problem')} role="alert">
+              {problems.phone}
+            </p>
+          )}
         </div>
       )}
-      <div className="field">
-        <label htmlFor={`callback-day-${conversationId}`}>วัน</label>
-        <select id={`callback-day-${conversationId}`} value={day} onChange={(e) => setDay(e.target.value)}>
+      <fieldset className="callback-group">
+        <legend>วันที่สะดวก</legend>
+        <div className="choice-chips">
           {days.map((d) => (
-            <option key={d} value={d}>
-              {dayWords(d)}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="callback-slots" role="radiogroup" aria-label="ช่วงเวลา">
-        {state.slots
-          .filter((s) => s.day === day)
-          .map((s, i) => (
-            <label key={s.start} className="callback-slot">
-              <input type="radio" name="start" value={s.start} defaultChecked={i === 0} />
-              <span>{s.label} น.</span>
+            <label key={d} className="choice-chip">
+              <input
+                className="sr-only"
+                type="radio"
+                name="day"
+                checked={day === d}
+                onChange={() => {
+                  setDay(d);
+                  setStart(state.slots.find((s) => s.day === d)?.start ?? '');
+                }}
+              />
+              {dayChip(d)}
             </label>
           ))}
-      </div>
+        </div>
+      </fieldset>
+      <fieldset className="callback-group">
+        <legend>ช่วงเวลา</legend>
+        <div className="choice-chips">
+          {slots.map((s) => (
+            <label key={s.start} className="choice-chip">
+              <input className="sr-only" type="radio" name="start" checked={start === s.start} onChange={() => setStart(s.start)} />
+              {s.label} น.
+            </label>
+          ))}
+        </div>
+        {problems.slot && (
+          <p className="field-error" role="alert">
+            {problems.slot}
+          </p>
+        )}
+      </fieldset>
       <div className="field">
-        <label htmlFor={`callback-note-${conversationId}`}>รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
-        <input id={`callback-note-${conversationId}`} name="note" maxLength={300} autoComplete="off" />
+        <label htmlFor={id('note')}>รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+        <input id={id('note')} maxLength={300} autoComplete="off" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
-      <div className="callback-actions">
-        <button type="submit" className="btn primary sm" disabled={busy}>
+      <div className="form-actions">
+        <button type="button" className="btn" disabled={busy} onClick={() => (waiting ? setEditing(false) : onClose())}>
+          {waiting ? 'ไม่เปลี่ยน' : 'ยกเลิก'}
+        </button>
+        <button type="submit" className="btn primary" disabled={busy}>
           ขอให้ติดต่อกลับ
         </button>
-        {waiting && (
-          <button type="button" className="btn sm" disabled={busy} onClick={() => setEditing(false)}>
-            ไม่เปลี่ยน
-          </button>
-        )}
       </div>
-      {problem && <p className="error-text">{problem}</p>}
     </form>
   );
 }

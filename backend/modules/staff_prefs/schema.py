@@ -197,7 +197,8 @@ def dashboard(value):
 
 
 SECTIONS = {'status':lambda v:status({'status':v}),'hours':hours,'leave':leave,'notify':notify,'signature':signature,
-            'alias':alias,'snippets':snippets,'dashboard':dashboard,'assistant':assistant,'thanks':thanks}
+            'alias':alias,'snippets':snippets,'dashboard':dashboard,'assistant':assistant,'thanks':thanks,
+            'chat_photo':lambda v:_bool(v,'การแสดงรูปในแชทของลูกค้า')}
 
 
 def update(current, body):

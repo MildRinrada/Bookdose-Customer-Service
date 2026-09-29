@@ -60,6 +60,10 @@ export const requestGuestLineCode = (slug: string) => api<GuestLineCode>(`${gues
 export const continueGuestOnLine = (slug: string, conversationId: string) =>
   api<LineMoveCode>(`${guestBase(slug)}/line-continue`, {}, 'POST', { conversation: conversationId });
 
+/** คุยต่อบนมือถือ: a QR that opens this chat on the guest's phone (backend guest/handoff.py): once, for 10 minutes. */
+export const requestHandoffQr = (slug: string, conversationId: string) =>
+  api<{ url: string; qr: string; expires_at: string }>(`${guestBase(slug)}/handoff-qr`, {}, 'POST', { conversation: conversationId });
+
 export const unlinkGuestLine = (slug: string) => api<{ ok: true }>(`${guestBase(slug)}/line`, undefined, 'DELETE');
 
 export const forgetGuest = (slug: string) => api<{ ok: true }>(`${guestBase(slug)}/forget`, {});

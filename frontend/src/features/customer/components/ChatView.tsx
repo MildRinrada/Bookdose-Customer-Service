@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { useState, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import { Composer, MessageThread } from '@/features/inbox';
+import { useCustomer } from '@/lib/customer-session';
 import { starsText } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
 import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, reactToMessage, sessionPath } from '../api';
@@ -109,8 +111,9 @@ export function ChatView({
   const reference = data.ticket ? `BD-${data.ticket.number}` : '';
   const survey = data.survey && (data.survey.pending || data.survey.rating) ? data.survey : null;
   const [lineOpen, setLineOpen] = useState(false);
-  const [callbackOpen, setCallbackOpen] = useState(false);
+  const { openModal, closeModal } = useDialogs();
   const refresh = useInvalidate();
+  const me = useCustomer();
   // The AI bar stays while the bot answers (it holds คุยกับเจ้าหน้าที่); once a person has the chat that is one chip.
   const bot = data.ai?.mode === 'bot';
   return (
@@ -144,19 +147,26 @@ export function ChatView({
           <Icon name="download" />
         </a>
         {data.callback && !data.line?.moved && (
-          <CallbackButton open={callbackOpen} waiting={Boolean(data.callback.waiting)} onToggle={() => setCallbackOpen(!callbackOpen)} />
+          <CallbackButton
+            waiting={Boolean(data.callback.waiting)}
+            onOpen={() =>
+              openModal(
+                'ขอให้ติดต่อกลับ',
+                <CallbackPanel
+                  base={`/api/public/${slug}`}
+                  conversationId={id}
+                  state={data.callback!}
+                  onDone={() => refresh(sessionPath(slug))}
+                  onClose={() => closeModal(true)}
+                />,
+                { narrow: true },
+              )
+            }
+          />
         )}
         <ContinueOnLineButton line={data.line} open={lineOpen} onToggle={() => setLineOpen(!lineOpen)} />
       </div>
-      {callbackOpen && data.callback && (
-        <CallbackPanel
-          base={`/api/public/${slug}`}
-          conversationId={id}
-          state={data.callback}
-          onDone={() => refresh(sessionPath(slug))}
-          onClose={() => setCallbackOpen(false)}
-        />
-      )}
+
       {lineOpen && data.line && !data.line.moved && (
         <ContinueOnLinePanel
           line={data.line}
@@ -178,6 +188,7 @@ export function ChatView({
         id="customer-thread"
         publicView
         publicSlug={slug}
+        ownPhoto={me.avatar}
         readAt={data.staff_read_at}
         onReact={(m, reaction) => reactToMessage(slug, id, m.id, reaction).then(() => refresh(sessionPath(slug)))}
         afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}

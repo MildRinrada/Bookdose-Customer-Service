@@ -46,6 +46,11 @@
 .customer-state-hint {
   color: var(--muted);
 }
+/* The open chat's card is tinted: a plain state's tinted chip would vanish into it, so it takes the paper there. */
+.customer-chats .inbox-item.selected .customer-state:not(.tone-waiting):not(.tone-done) {
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
 
 /* แชทของฉัน, and the team's inbox laid out the same way (features/inbox, .staff-chats) */
 .customer-chat-tools {

@@ -303,7 +303,17 @@ html.platform-mode .status-switch {
   gap: 6px;
   margin-bottom: 15px;
 }
+/* The reply as the customer's chat draws it: the picture (or the initials) beside the bubble. */
+.reply-preview-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.reply-preview-row>.avatar {
+  flex: none;
+}
 .reply-preview-bubble {
+  min-width: 0;
   max-width: 460px;
   padding: 10px 14px;
   border-radius: 12px;

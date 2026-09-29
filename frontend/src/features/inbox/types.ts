@@ -49,6 +49,9 @@ export type Message = {
   author_name: string;
   /** The team member who wrote it (staff screens only; a customer's copy never carries it). */
   author_id?: string | null;
+  /** The customer's copy only: the key of the writer's photo beside a team reply, when they let customers see it
+      (backend portal/photos.py; /api/public/<org>/team/<key>/photo), else null. */
+  photo?: string | null;
   kind: MessageKind | string;
   body: string;
   /** 'stored' for messages read on the support page; the outbox state for LINE / Email / Facebook replies. */

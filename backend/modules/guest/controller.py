@@ -99,6 +99,13 @@ def post_message(req):
     return req.send(201,{'id':portal.post_customer_message(req.db,req.org['id'],_current(req),req.guest,req.body)})
 
 
+def handoff_qr(req):
+    """คุยต่อบนมือถือ (handoff.py)."""
+    from backend.modules.guest import handoff
+    limited(('guest-handoff',req.org['id'],req.guest['visitor']['id']),handoff.PER_VISITOR_15_MIN,900)
+    return req.send(201,handoff.create(req.db,req.org,req.guest,_current(req),base_url(req.cd,req)))
+
+
 def request_callback(req):
     """ขอให้ติดต่อกลับ, as a guest (portal/callback.py)."""
     from backend.modules.guest import schema as guest_schema

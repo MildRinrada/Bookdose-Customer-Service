@@ -111,6 +111,31 @@ class CustomerExtrasTests(guest_tests.GuestChatTests):
         self.assertIsNone(self.ok(client,f'{ORG}/session')['callback']['waiting'])
 
 
+    # คุยต่อบนมือถือ
+    def test_a_qr_opens_the_chat_on_screen_on_the_phone_once(self):
+        computer,phone,stranger = self.browser(),self.browser(),self.browser()
+        first = self.started(computer)
+        second = self.started(computer,body='อีกเรื่องหนึ่งค่ะ')
+        computer.conversation = first
+        made = self.ok(computer,GUEST+'/handoff-qr',{})
+        self.assertIn('/support/alpha/resume#t=',made['url'])
+        self.assertTrue(made['qr'].startswith('data:image/svg+xml'))
+        token = made['url'].split('#t=',1)[1]
+        # The chat on screen opens on the phone, not the newest one.
+        status,data,_ = phone.raw(GUEST+'/resume',{'token':token})
+        self.assertEqual((status,data['conversation_id']),(200,first))
+        self.assertEqual(self.ok(phone,GUEST)['conversations'][0]['id'] in (first,second),True)
+        # Once only.
+        self.assertEqual(self.status(stranger,GUEST+'/resume',{'token':token}),410)
+        # A newer QR replaces the one still on screen.
+        older = self.ok(computer,GUEST+'/handoff-qr',{})['url'].split('#t=',1)[1]
+        newer = self.ok(computer,GUEST+'/handoff-qr',{})['url'].split('#t=',1)[1]
+        self.assertEqual(self.status(stranger,GUEST+'/resume',{'token':older}),410)
+        self.assertEqual(stranger.raw(GUEST+'/resume',{'token':newer})[0],200)
+        with D.tenant(self.org) as db:
+            self.assertFalse(db.execute('SELECT 1 FROM guest_handoffs WHERE token_hash=?',(newer,)).fetchone())
+
+
 def base_visitor(test):
     import test_app as base
     return base.IntegrationTests.visitor(test)

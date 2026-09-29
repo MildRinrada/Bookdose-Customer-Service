@@ -183,6 +183,9 @@ def upgrade_tenant(db):
     from backend.modules.portal import callback
     db.executescript(knowledge_feedback.TABLE)
     db.executescript(callback.TABLE)
+    # คุยต่อบนมือถือ: the QR links a guest shows to open a chat on their phone (guest/handoff.py).
+    from backend.modules.guest import handoff
+    db.executescript(handoff.TABLE)
     from backend.modules.automation import distribution, repository as automation_repository
     automation_repository.add_rule_tags(db)
     db.executescript(distribution.TABLE)

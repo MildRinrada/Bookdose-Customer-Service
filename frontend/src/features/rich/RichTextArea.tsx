@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { RequiredStar } from '@/components/ui/fields';
 import { RichTextField, RichToolbar, useRichEditor } from './RichEditor';
+import { maskSensitive } from './sensitive';
+import { SensitiveWarning } from './SensitiveWarning';
 import type { RichFormat } from './types';
 
 /* A form field for a customer's message with simple formatting (the start forms of a chat, signed in or not): a label,
-   the tools and the writing area. The form sends the Markdown in `name` like a textarea. Markup: components
+   the tools and the writing area, and the warning while what is typed looks like an ID card number, a card number or
+   a password (SensitiveWarning). The form sends the Markdown in `name` like a textarea. Markup: components
    (rich-box), knowledge (editor-toolbar). */
 
 /** What a customer may format: emphasis and lists. No links or images (MessageThread shows a customer's as text). */
@@ -32,6 +36,7 @@ export function RichTextArea({
   onChange?: (value: string) => void;
 }) {
   const editor = useRichEditor();
+  const [text, setText] = useState('');
   return (
     <div className="field rich-field">
       <label htmlFor={id}>
@@ -49,8 +54,12 @@ export function RichTextArea({
         sourcePlaceholder={placeholder}
         className="editor-input rich-box"
         keyShortcuts="Control+Enter Meta+Enter"
-        onChange={onChange}
+        onChange={(value) => {
+          setText(value);
+          onChange?.(value);
+        }}
       />
+      <SensitiveWarning text={text} onMask={() => editor.setValue(maskSensitive(editor.getValue()))} />
       {hint && <p className="tiny muted">{hint}</p>}
     </div>
   );

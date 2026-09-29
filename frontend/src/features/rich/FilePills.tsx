@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { fileProblem, FILE_LIMITS } from '@/lib/files';
+import { ImageMarkup } from './ImageMarkup';
 
 /* The files chosen in a composer, as pills under the text with a button to take one out again (the old
    renderFilePills + file-remove + checkFileInput + drop handling). The composer's own <input type="file"> stays the
@@ -45,6 +47,12 @@ export function useFilePills() {
       onChange: () => accept([...(inputRef.current?.files ?? [])]),
       /** Files dropped on the composer join the ones already chosen. */
       add: (dropped: FileList | File[]) => accept([...(inputRef.current?.files ?? []), ...dropped]),
+      /** Say why something could not be added (the screen recorder), in the same place. */
+      report: (message: string) => setProblem(message),
+      /** The bytes of the files chosen. */
+      used: files.reduce((total, file) => total + file.size, 0),
+      /** Put a file in place of one (a picture after เบลอ / วงกลม), checked like any other. */
+      replace: (index: number, file: File) => accept([...(inputRef.current?.files ?? [])].map((f, i) => (i === index ? file : f))),
       /** Take one file out (the pill's button). */
       remove: (index: number) => {
         const input = inputRef.current;
@@ -63,7 +71,25 @@ export function useFilePills() {
   );
 }
 
-export function FilePills({ files, onRemove }: { files: File[]; onRemove: (index: number) => void }) {
+/** A picture the markup can open (a GIF would lose its movement). */
+const MARKABLE = ['image/png', 'image/jpeg', 'image/webp'];
+
+/** `onReplace`: a picture's pill also offers เบลอหรือวงกลม (ImageMarkup), the edited picture taking its place. */
+export function FilePills({ files, onRemove, onReplace }: { files: File[]; onRemove: (index: number) => void; onReplace?: (index: number, file: File) => void }) {
+  const { openModal, closeModal } = useDialogs();
+  const mark = (index: number, file: File) =>
+    openModal(
+      'เบลอหรือวงกลมบนภาพ',
+      <ImageMarkup
+        file={file}
+        onCancel={() => closeModal()}
+        onSave={(edited) => {
+          onReplace?.(index, edited);
+          closeModal(true);
+        }}
+      />,
+      { wide: true },
+    );
   return (
     <div className="file-list" data-file-list="" aria-live="polite">
       {files.map((file, index) => (
@@ -72,6 +98,12 @@ export function FilePills({ files, onRemove }: { files: File[]; onRemove: (index
           <span className="file-name">
             {file.name} · {Math.ceil(file.size / 1024)} KB
           </span>
+          {onReplace && MARKABLE.includes(file.type) && (
+            <button type="button" className="file-pill-mark" onClick={() => mark(index, file)} aria-label={`เบลอหรือวงกลมบนภาพ ${file.name}`} title="เบลอข้อมูลส่วนตัว หรือวงกลมจุดที่มีปัญหา">
+              <Icon name="edit" />
+              เบลอ/วงกลม
+            </button>
+          )}
           <button type="button" onClick={() => onRemove(index)} aria-label={`นำไฟล์ ${file.name} ออก`} title="นำออก">
             <Icon name="close" />
           </button>

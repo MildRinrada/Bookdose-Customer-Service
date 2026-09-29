@@ -47,6 +47,13 @@ def thanks_photo(req, card_id):
     return req.send(200,thanks.photo(req.cd,req.db,req.customer,card_id),'image/png',{'Cache-Control':'private, max-age=600'})
 
 
+def team_photo(req, key):
+    """The photo beside a team reply (portal/photos.py). The key changes with the picture, so the browser keeps it a
+    day; the guest chat's route answers the same."""
+    from backend.modules.portal import photos
+    return req.send(200,photos.photo(req.cd,req.db,key),'image/png',{'Cache-Control':'private, max-age=86400'})
+
+
 def hand_off(req):
     service.hand_off_to_staff(req.db,_current(req))
     return req.send(200,{'ok':True})

@@ -70,6 +70,9 @@ DEFAULTS = {
     # member's photo on it (their initials until they say so), and a thank-you in their own words ('' for the
     # organization's).
     'thanks':{'photo':False,'message':''},
+    # รูปทีมงานในแชทของลูกค้า (portal/photos.py): whether customers see this member's photo beside their replies on
+    # the web chat. On until they turn it off; without a photo the customer sees the initials either way.
+    'chat_photo':True,
     'snippets':[],
     # Empty means "as the organization arranged it", which in turn means "as the screen ships".
     'dashboard':{'hidden':[],'box':{}},

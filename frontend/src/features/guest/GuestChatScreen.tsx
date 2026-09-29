@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Icon } from '@/components/Icon';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { TextSizeMenu } from '@/components/shell/TextSize';
 import { EmptyState, ErrorState, InitialLoading, PageLoading } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
@@ -18,6 +19,7 @@ import { ThanksCard } from '@/features/customer/components/ThanksCard';
 import { WaitQueue } from '@/features/customer/components/WaitQueue';
 import { ContinueOnLinePanel, MovedToLine } from '@/features/customer/components/ContinueOnLine';
 import { CallbackPanel } from '@/features/customer/components/CallbackRequest';
+import { PhoneHandoffPanel } from './components/PhoneHandoff';
 import { chatState, chatView } from '@/features/customer/labels';
 import type { PortalSession } from '@/features/customer/types';
 import { Composer, MessageThread } from '@/features/inbox';
@@ -138,8 +140,12 @@ function GuestChatPage({ slug, initialId = '', embed = false }: Props) {
       {!embed && <SignedInClaims slug={slug} />}
       {body}
       {!embed && (
+        // Beside the chat (the right column holds it) it is not repeated here; on a phone only who runs the service stays.
         <p className="guest-foot tiny muted">
-          <Icon name="lock" /> ข้อความส่งถึงทีมงานของ {orgName || 'องค์กร'} โดยตรง · อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท · <PoweredBy />
+          <span className="guest-foot-note">
+            <Icon name="lock" /> ข้อความส่งถึงทีมงานของ {orgName || 'องค์กร'} โดยตรง อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+          </span>
+          <PoweredBy />
         </p>
       )}
     </main>
@@ -452,6 +458,13 @@ function GuestAside({
       )}
       <AnswerList articles={articles} hrefOf={(a) => guestPages.article(slug, a.id)} allHref={guestPages.faq(slug)} onRead={onRead} />
       <FollowCard slug={slug} overview={overview} expanded={followOpen} onToggle={onFollowToggle} onForgotten={onForgotten} />
+      {/* The page's foot line, here instead of under the chat: the column has the room. */}
+      <div className="guest-aside-foot tiny muted">
+        <p>
+          <Icon name="lock" /> ข้อความส่งถึงทีมงานของ {overview.organization.name} โดยตรง อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+        </p>
+        <PoweredBy />
+      </div>
     </>
   );
 }
@@ -475,19 +488,22 @@ function GuestChatItem({
       aria-current={selected ? 'true' : undefined}
       onClick={onOpen}
     >
+      {/* The subject first, the time beside it; where it stands underneath, as on the signed-in list. */}
       <span className="inbox-top">
+        <h3>{c.subject}</h3>
+        <time className="inbox-time" dateTime={c.updated_at}>
+          {relative(c.updated_at)}
+        </time>
+      </span>
+      <span className="customer-chat-meta">
         <span className={`customer-state tone-${state.tone}`}>{state.label}</span>
         {unread && (
           <span className="unread-dot" title="มีคำตอบใหม่">
             <span className="sr-only">มีคำตอบใหม่</span>
           </span>
         )}
-        <time className="inbox-time" dateTime={c.updated_at}>
-          {relative(c.updated_at)}
-        </time>
       </span>
-      <h3>{c.subject}</h3>
-      {c.survey_pending && <span className="tiny muted">รอคะแนนความพึงพอใจจากคุณ</span>}
+      {c.survey_pending && <span className="tiny muted guest-chat-survey">รอคะแนนความพึงพอใจจากคุณ</span>}
     </button>
   );
 }
@@ -542,7 +558,8 @@ function GuestChatView({
   const orgName = overview.organization.name;
   const guest = overview.guest;
   const [lineOpen, setLineOpen] = useState(false);
-  const [callbackOpen, setCallbackOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const { openModal, closeModal } = useDialogs();
   const refresh = useInvalidate();
   const canMove = Boolean(data.line && !data.line.moved);
   return (
@@ -578,8 +595,27 @@ function GuestChatView({
         <GuestMenu
           items={[
             { key: 'follow', label: 'ติดตามแชทนี้', icon: 'bell', onSelect: onShowFollow },
+            ...(!data.line?.moved ? [{ key: 'phone', label: 'คุยต่อบนมือถือ (สแกน QR)', icon: 'camera', onSelect: () => setPhoneOpen(true) }] : []),
             ...(data.callback && !data.line?.moved
-              ? [{ key: 'callback', label: data.callback.waiting ? 'ดูคำขอให้ติดต่อกลับ' : 'ขอให้ติดต่อกลับ', icon: 'phone', onSelect: () => setCallbackOpen(true) }]
+              ? [
+                  {
+                    key: 'callback',
+                    label: data.callback.waiting ? 'ดูคำขอให้ติดต่อกลับ' : 'ขอให้ติดต่อกลับ',
+                    icon: 'phone',
+                    onSelect: () =>
+                      openModal(
+                        'ขอให้ติดต่อกลับ',
+                        <CallbackPanel
+                          base={`/api/public/${slug}/guest`}
+                          conversationId={id}
+                          state={data.callback!}
+                          onDone={() => refresh(guestSessionPath(slug))}
+                          onClose={() => closeModal(true)}
+                        />,
+                        { narrow: true },
+                      ),
+                  },
+                ]
               : []),
             ...(canMove ? [{ key: 'line', label: 'คุยต่อใน LINE', icon: 'chat', onSelect: () => setLineOpen(true) }] : []),
             { key: 'new', label: 'เริ่มแชทเรื่องใหม่', icon: 'plus', onSelect: onNewChat },
@@ -587,15 +623,7 @@ function GuestChatView({
           ]}
         />
       </div>
-      {callbackOpen && data.callback && (
-        <CallbackPanel
-          base={`/api/public/${slug}/guest`}
-          conversationId={id}
-          state={data.callback}
-          onDone={() => refresh(guestSessionPath(slug))}
-          onClose={() => setCallbackOpen(false)}
-        />
-      )}
+      {phoneOpen && <PhoneHandoffPanel slug={slug} conversationId={id} onClose={() => setPhoneOpen(false)} />}
       {lineOpen && canMove && data.line && (
         <ContinueOnLinePanel
           line={data.line}

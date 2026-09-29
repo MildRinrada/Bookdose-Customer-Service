@@ -529,6 +529,11 @@ dialog {
   box-shadow: 0 30px 100px #1f1f1f33;
   width: min(880px,calc(100vw - 32px));
 }
+/* A short form (a few fields): not stretched across a wide screen. */
+dialog.narrow {
+  width: min(560px,calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
 /* A roomier dialog for screens that work side by side (the article editor and its preview). */
 dialog.wide {
   width: min(1180px,calc(100vw - 32px));
@@ -552,13 +557,16 @@ dialog[open],#modal-content {
   min-height: 0;
   overflow: auto;
 }
-/* Save and cancel stay in view while a long form scrolls under them. */
+/* Save and cancel stay in view while a long form scrolls under them. They reach down over the body's own bottom
+   padding (--modal-pad-bottom), so nothing scrolling under them shows through the gap below; in place (a short form)
+   they sit exactly where they did. */
 .modal-body .form-actions {
   position: sticky;
-  bottom: 0;
+  bottom: calc(-1 * var(--modal-pad-bottom));
   z-index: 1;
   margin-top: 22px;
-  padding: 16px 0;
+  margin-bottom: calc(-1 * var(--modal-pad-bottom));
+  padding: 16px 0 calc(16px + var(--modal-pad-bottom));
   background: var(--paper);
 }
 dialog.drawer {
@@ -714,7 +722,8 @@ dialog::backdrop {
   overflow-wrap: anywhere;
 }
 .modal-body {
-  padding: 24px 26px;
+  --modal-pad-bottom: 24px;
+  padding: 24px 26px var(--modal-pad-bottom);
 }
 .modal-body .notice {
   margin-bottom: 18px;
@@ -831,6 +840,7 @@ dialog::backdrop {
     padding: 8px 12px;
   }
   .modal-body {
+    --modal-pad-bottom: 18px;
     padding: 18px;
   }
   .modal-header {

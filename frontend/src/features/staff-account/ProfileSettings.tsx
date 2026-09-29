@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { Avatar, ProfilePhoto } from '@/components/ui/display';
 import { TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { PhotoPicker } from '@/components/ui/PhotoPicker';
@@ -157,17 +158,20 @@ function ThanksPrefsCard() {
   );
 }
 
-/* What the customer sees of the member on a reply: the name (a chosen alias instead of the real one, for privacy) and
-   a signature added under every reply. Internal notes and the team always show the real name. */
+/* What the customer sees of the member on a reply: the name (a chosen alias instead of the real one, for privacy), a
+   signature added under every reply, and on the web chat their photo beside it (on until they turn it off). Internal
+   notes and the team always show the real name. */
 function CustomerFacingCard() {
   const view = usePreferences();
-  const user = useBoot().data!.user!;
+  const boot = useBoot().data!;
+  const user = boot.user!;
   const refresh = useInvalidate();
   const toast = useToast();
-  const [preview, setPreview] = useState<{ alias: string; signature: string; on: boolean } | null>(null);
+  const [preview, setPreview] = useState<{ alias: string; signature: string; on: boolean; photo: boolean } | null>(null);
   if (!view.data) return null;
   const prefs = view.data.preferences;
-  const shown = preview ?? { alias: prefs.alias, signature: prefs.signature.text, on: prefs.signature.enabled };
+  const shown = preview ?? { alias: prefs.alias, signature: prefs.signature.text, on: prefs.signature.enabled, photo: prefs.chat_photo };
+  const hasPhoto = boot.avatar.startsWith('data:image/');
   return (
     <section className="card">
       <div className="card-header">
@@ -177,16 +181,21 @@ function CustomerFacingCard() {
         </div>
       </div>
       <Form
-        key={JSON.stringify([prefs.alias, prefs.signature])}
+        key={JSON.stringify([prefs.alias, prefs.signature, prefs.chat_photo])}
         className="card-body"
         data-form="customer-facing"
         onChange={(event) => {
           const form = event.currentTarget;
           const read = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null);
-          setPreview({ alias: read('alias')?.value.trim() ?? '', signature: read('signature')?.value.trim() ?? '', on: Boolean((read('signature_on') as HTMLInputElement | null)?.checked) });
+          const checked = (name: string) => Boolean((read(name) as HTMLInputElement | null)?.checked);
+          setPreview({ alias: read('alias')?.value.trim() ?? '', signature: read('signature')?.value.trim() ?? '', on: checked('signature_on'), photo: checked('chat_photo') });
         }}
         onSubmit={async (values) => {
-          await savePreferences({ alias: values.alias ?? '', signature: { enabled: values.signature_on === 'on', text: values.signature ?? '' } });
+          await savePreferences({
+            alias: values.alias ?? '',
+            signature: { enabled: values.signature_on === 'on', text: values.signature ?? '' },
+            chat_photo: values.chat_photo === 'on',
+          });
           await refresh(PREFS_PATH);
           setPreview(null);
           toast('บันทึกแล้ว ข้อความตอบกลับถัดไปจะใช้ค่านี้');
@@ -202,6 +211,15 @@ function CustomerFacingCard() {
           hint="เว้นว่างไว้เพื่อใช้ชื่อจริง ใส่ชื่อเล่นหรือชื่อกลางได้ เช่น “ทีมบริการลูกค้า” เพื่อความเป็นส่วนตัว"
         />
         <label className="check">
+          <input type="checkbox" className="switch" name="chat_photo" defaultChecked={prefs.chat_photo} />
+          <span>
+            ให้ลูกค้าเห็นรูปของฉันข้างข้อความตอบกลับในแชทบนเว็บ
+            <span className="tiny muted block">
+              {hasPhoto ? 'ถ้าปิด ลูกค้าเห็นตัวอักษรแรกของชื่อแทน และรูปหายจากข้อความที่ตอบไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน ลูกค้าจึงเห็นตัวอักษรแรกของชื่อ'}
+            </span>
+          </span>
+        </label>
+        <label className="check">
           <input type="checkbox" className="switch" name="signature_on" defaultChecked={prefs.signature.enabled} />
           ต่อท้ายลายเซ็นในข้อความตอบกลับลูกค้าอัตโนมัติ
         </label>
@@ -216,12 +234,15 @@ function CustomerFacingCard() {
         />
         <div className="reply-preview" aria-live="polite">
           <span className="tiny muted">ตัวอย่างที่ลูกค้าเห็น</span>
-          <div className="reply-preview-bubble">
-            <strong>{shown.alias || user.name}</strong>
-            <p>
-              ขอบคุณที่แจ้งเข้ามาค่ะ ทีมงานตรวจสอบให้แล้ว
-              {shown.on && shown.signature ? `\n\n${shown.signature}` : ''}
-            </p>
+          <div className="reply-preview-row">
+            {shown.photo && hasPhoto ? <ProfilePhoto src={boot.avatar} alt="รูปของคุณที่ลูกค้าเห็น" /> : <Avatar name={shown.alias || user.name} />}
+            <div className="reply-preview-bubble">
+              <strong>{shown.alias || user.name}</strong>
+              <p>
+                ขอบคุณที่แจ้งเข้ามาค่ะ ทีมงานตรวจสอบให้แล้ว
+                {shown.on && shown.signature ? `\n\n${shown.signature}` : ''}
+              </p>
+            </div>
           </div>
         </div>
         <button className="btn primary" type="submit">

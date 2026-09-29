@@ -15,6 +15,9 @@ import type { AiConversation } from '@/features/ai/types';
 import { useMacroMenu } from '@/features/automation';
 import { ArticleRead, useArticleActions, type Article } from '@/features/knowledge';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
+import { maskSensitive } from '@/features/rich/sensitive';
+import { ScreenRecorder } from '@/features/rich/ScreenRecorder';
+import { SensitiveWarning } from '@/features/rich/SensitiveWarning';
 import { RichTextField, RichToolbar, useRichEditor } from '@/features/rich/RichEditor';
 import { CUSTOMER_TOOLS } from '@/features/rich/RichTextArea';
 import { usePreferences, type Snippet } from '@/features/staff-account/prefs';
@@ -658,12 +661,14 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
           setText(value);
         }}
       />
-      <FilePills files={pills.files} onRemove={pills.remove} />
+      <SensitiveWarning text={text} onMask={() => editor.setValue(maskSensitive(editor.getValue()))} />
+      <FilePills files={pills.files} onRemove={pills.remove} onReplace={pills.replace} />
       <div className="composer-bottom">
         <div className="composer-actions">
           <RichToolbar editor={editor} tools={CUSTOMER_TOOLS} label="จัดรูปแบบข้อความ" className="composer-format" role="group" />
           <span className="tool-divider" aria-hidden="true" />
           <AttachButton id={id} inputRef={pills.inputRef} onChange={pills.onChange} />
+          <ScreenRecorder used={pills.used} onFile={(file) => pills.add([file])} onProblem={pills.report} />
           <FileProblem problem={pills.problem} />
         </div>
         <SendButton manual={false} />

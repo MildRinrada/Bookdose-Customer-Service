@@ -10,6 +10,7 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
 import { RichTextArea } from '@/features/rich/RichTextArea';
+import { ScreenRecorder } from '@/features/rich/ScreenRecorder';
 import { readFiles } from '@/lib/files';
 import { useApi, useInvalidate } from '@/lib/query';
 import type { CustomerOrg } from '@/lib/types';
@@ -168,7 +169,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
 /** The attachments field: it owns the file input, its ref and the pills. The form reads the files from the input
     itself when it is sent (filesOf), so nothing above needs them. */
 function AttachmentsField() {
-  const { inputRef, files, problem, onChange, remove } = useFilePills();
+  const { inputRef, files, problem, onChange, remove, replace, add, used, report } = useFilePills();
   return (
     <div className="field">
       <span className="file-field-title">แนบไฟล์ (ไม่บังคับ)</span>
@@ -189,10 +190,11 @@ function AttachmentsField() {
         <Icon name="paperclip" />
         เลือกไฟล์จากเครื่อง
       </label>
+      <ScreenRecorder look="button" used={used} onFile={(file) => add([file])} onProblem={report} />
       <p className="tiny muted" id="request-files-help">
         แนบภาพหรือวิดีโออธิบายปัญหาได้ · สูงสุด 3 ไฟล์ รวม 5 MB · PNG, JPG, GIF, WebP, MP4, WebM, PDF และ TXT
       </p>
-      <FilePills files={files} onRemove={remove} />
+      <FilePills files={files} onRemove={remove} onReplace={replace} />
       <FileProblem problem={problem} />
     </div>
   );

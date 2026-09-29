@@ -11,7 +11,7 @@ import type { LineMoveCode, PortalLine } from '../types';
    every 5 seconds; once it arrives the page says the chat goes on in LINE and the box to write in makes way for a link
    there. Used by the signed-in customer's chat and the guest's. Markup: pages/continue-line.css. */
 
-function useSecondsLeft(until: string | undefined) {
+export function useSecondsLeft(until: string | undefined) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!until) return;
@@ -21,7 +21,7 @@ function useSecondsLeft(until: string | undefined) {
   return until ? Math.max(0, Math.round((Date.parse(until) - now) / 1000)) : 0;
 }
 
-const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+export const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 /** The header's button: shown while the chat can still go to LINE. */
 export function ContinueOnLineButton({ line, open, onToggle }: { line: PortalLine | null | undefined; open: boolean; onToggle: () => void }) {

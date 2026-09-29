@@ -43,7 +43,7 @@ export type ManageMessage = {
    reply for both sides, an answer that is not a message and so reopens nothing (conversations/reactions.py). */
 
 type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'author_id' | 'kind' | 'body' | 'created_at' | 'attachments'> &
-  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation' | 'reaction'>>;
+  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation' | 'reaction' | 'photo'>>;
 
 /** The customer reacts to a team reply (null takes it back); given on the customer's web chat only. */
 export type ReactToMessage = (m: ThreadMessage, reaction: Reaction | null) => Promise<unknown>;
@@ -67,6 +67,8 @@ type MessagesProps = {
   publicSlug?: string | null;
   /** The customer's web chat: they may react to the team's replies. */
   onReact?: ReactToMessage;
+  /** A signed-in customer's own picture (a data URL from their account), beside their own messages. */
+  ownPhoto?: string | null;
 };
 
 /** The reader's latest message, when nothing from the other side came after it: its read mark. */
@@ -80,6 +82,7 @@ export function Messages({
   receipt,
   manage,
   onReact,
+  ownPhoto,
 }: MessagesProps & { receipt?: Receipt | null; manage?: ManageMessage }) {
   if (!messages.length) return <EmptyState title="ยังไม่มีข้อความ" description="เริ่มบันทึกรายละเอียดการดูแลในเคสนี้" icon="chat" />;
   return (
@@ -101,12 +104,25 @@ export function Messages({
               receipt={receipt?.id === m.id ? receipt : null}
               manage={manage}
               onReact={m.kind === 'reply' && !m.survey && !m.deleted_at ? onReact : undefined}
+              ownPhoto={ownPhoto}
             />
           </Fragment>
         );
       })}
     </>
   );
+}
+
+/** The picture beside a message. On the customer's chat: the team member's photo by the key their reply carries
+    (backend portal/photos.py), and a signed-in customer's own beside theirs. On the team's screens: a colleague's.
+    The initials whenever there is no photo, or it stops loading (turned off since the page last asked). */
+function MessageAvatar({ m, publicSlug, ownPhoto }: { m: ThreadMessage; publicSlug?: string | null; ownPhoto?: string | null }) {
+  const [broken, setBroken] = useState<string | null>(null);
+  const src = m.kind === 'customer' ? ownPhoto : publicSlug && m.photo ? `/api/public/${publicSlug}/team/${m.photo}/photo` : null;
+  if (!src || src === broken) return <UserAvatar id={m.author_id} name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />;
+  // A picture served by this app (or the customer's own data URL); next/image adds nothing for it.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className="avatar profile-avatar" src={src} alt={`รูปโปรไฟล์ของ ${m.author_name}`} loading="lazy" onError={() => setBroken(src)} />;
 }
 
 function MessageItem({
@@ -116,6 +132,7 @@ function MessageItem({
   receipt,
   manage,
   onReact,
+  ownPhoto,
 }: {
   m: ThreadMessage;
   publicView: boolean;
@@ -123,6 +140,7 @@ function MessageItem({
   receipt: Receipt | null;
   manage?: ManageMessage;
   onReact?: ReactToMessage;
+  ownPhoto?: string | null;
 }) {
   // A translated message (ai/translate.py) reads in Thai on the team's screens, the other side under it.
   const translation = publicView ? null : m.translation;
@@ -139,7 +157,7 @@ function MessageItem({
   if (gone)
     return (
       <article className={`message ${m.kind} removed`} data-message-id={m.id}>
-        <UserAvatar id={m.author_id} name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
+        <MessageAvatar m={m} publicSlug={publicView ? publicSlug : null} ownPhoto={ownPhoto} />
         <div className="grow">
           <div className="message-header">
             <strong>{m.author_name}</strong>
@@ -158,7 +176,7 @@ function MessageItem({
     );
   return (
     <article className={`message ${m.kind}`} data-message-id={m.id}>
-      <UserAvatar id={m.author_id} name={m.author_name} index={m.kind === 'customer' ? 2 : 0} />
+      <MessageAvatar m={m} publicSlug={publicView ? publicSlug : null} ownPhoto={ownPhoto} />
       <div className="grow">
         <div className="message-header">
           <strong>{m.author_name}</strong>
@@ -235,6 +253,7 @@ export function MessageThread({
   readAt: knownReadAt = null,
   manage,
   onReact,
+  ownPhoto,
 }: MessagesProps & {
   /** data-thread: the conversation's id. */
   threadId: string;
@@ -269,7 +288,7 @@ export function MessageThread({
   }, [notesOnly]);
   return (
     <div ref={ref} className={`thread${notesOnly ? ' notes-only' : ''}`} id={id} data-thread={threadId}>
-      <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} receipt={receipt} manage={manage} onReact={onReact} />
+      <Messages messages={messages} publicView={publicView} publicSlug={publicSlug} receipt={receipt} manage={manage} onReact={onReact} ownPhoto={ownPhoto} />
       <div className="typing-status" role="status">
         {typing !== null && <TypingBubble name={typing || (other === 'staff' ? 'ทีมงาน' : 'ลูกค้า')} side={other} />}
       </div>

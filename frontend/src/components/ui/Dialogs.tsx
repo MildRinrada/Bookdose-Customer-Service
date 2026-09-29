@@ -14,7 +14,8 @@ import { useToast } from './Toast';
    setCloseGuard. Moving to another screen closes both; if the modal's guard refuses (unsaved work), the previous
    address is put back, as the old hashchange handler did. */
 
-export type ModalOptions = { drawer?: boolean; wide?: boolean };
+/** narrow: a short form (a few fields), not stretched across the page. */
+export type ModalOptions = { drawer?: boolean; wide?: boolean; narrow?: boolean };
 
 export type ConfirmOptions = {
   title: ReactNode;
@@ -215,7 +216,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       <dialog
         id="modal"
         ref={modalRef}
-        className={[modal?.options.drawer && 'drawer', modal?.options.wide && 'wide'].filter(Boolean).join(' ') || undefined}
+        className={[modal?.options.drawer && 'drawer', modal?.options.wide && 'wide', modal?.options.narrow && 'narrow'].filter(Boolean).join(' ') || undefined}
         onCancel={(e) => {
           e.preventDefault();
           closeModal();

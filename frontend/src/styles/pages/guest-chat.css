@@ -236,26 +236,35 @@
   min-width: 0;
   font: inherit;
 }
-/* The state chip is always read whole; when the narrow list has no room for it and the time, the time moves under it
-   (still at the end). */
+/* The subject and the time share the first line (the time never wraps, the subject takes two lines at most); the
+   state chip reads whole on the line under it. */
 .guest-list .inbox-top {
-  flex-wrap: wrap;
-  row-gap: 4px;
+  align-items: flex-start;
   min-width: 0;
-}
-.guest-list .inbox-top .customer-state {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 .guest-list .inbox-time {
   flex: none;
   margin-left: auto;
+  padding-top: 1px;
+  font-size: .875rem;
 }
 .guest-list .inbox-item h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   white-space: normal;
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.guest-list .customer-chat-meta .unread-dot {
+  margin: 0;
+}
+.guest-chat-survey {
+  display: block;
+  margin-top: 6px;
 }
 .guest-detail {
   display: flex;
@@ -1368,5 +1377,36 @@ html:is([data-theme='dark'],[data-theme='black']) :is(.org-banner,.banner-swatch
   }
   .org-banner-tagline {
     font-size: .88rem;
+  }
+}
+
+/* The foot line of the chat page: in the right column when there is one (guest-aside-foot); on a phone only who runs
+   the service, since the warning under the box speaks up when something private is typed. */
+.guest-page-chat:has(.guest-aside)>.guest-foot {
+  display: none;
+}
+.guest-foot-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.guest-aside-foot {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding: 4px 2px 0;
+  line-height: 1.55;
+}
+.guest-aside-foot p {
+  margin: 0;
+}
+.guest-aside-foot .icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+}
+@media (max-width: 760px) {
+  .guest-page-chat .guest-foot-note {
+    display: none;
   }
 }

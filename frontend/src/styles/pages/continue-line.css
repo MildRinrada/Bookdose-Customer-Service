@@ -63,3 +63,30 @@
 .moved-to-line strong {
   display: block;
 }
+
+/* คุยต่อบนมือถือ (features/guest/components/PhoneHandoff.tsx): the QR beside how long it works. */
+.phone-handoff-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.phone-handoff-qr {
+  display: block;
+  width: 180px;
+  height: 180px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.phone-handoff-text {
+  display: grid;
+  flex: 1 1 200px;
+  gap: 8px;
+  min-width: 0;
+}
+.phone-handoff-text p {
+  margin: 0;
+  line-height: 1.55;
+}

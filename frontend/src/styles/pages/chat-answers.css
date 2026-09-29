@@ -402,66 +402,116 @@
   width: 100%;
 }
 
-/* ขอให้ติดต่อกลับ (CallbackRequest.tsx): a panel under the chat's head, like คุยต่อใน LINE. */
-.conv-callback.waiting {
-  color: var(--link);
-}
-.callback-panel {
+/* ขอให้ติดต่อกลับ (CallbackRequest.tsx), in a narrow dialog: each choice a row of buttons, a field only as wide as what
+   goes in it, and what is wrong said under the field it is about. */
+.callback-form {
   display: grid;
   gap: 12px;
-  margin: 10px 16px 0;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--paper);
 }
-.callback-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.callback-head strong {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.callback-head .icon {
-  width: 18px;
-  height: 18px;
-}
-.callback-close {
-  margin-left: auto;
-}
-.callback-summary {
+.callback-intro {
   margin: 0;
+  color: var(--muted);
   line-height: 1.55;
 }
-.callback-methods,.callback-slots,.callback-actions {
+.callback-problem {
+  margin: 0;
+}
+.callback-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.callback-group legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+}
+.choice-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
-}
-.callback-slots {
   gap: 8px;
 }
-.callback-slot {
+.choice-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  min-height: 34px;
+  padding: 4px 14px;
   border: 1px solid var(--control-line);
-  border-radius: 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
   cursor: pointer;
 }
-.callback-slot:has(input:checked) {
+.choice-chip:hover {
+  border-color: var(--link);
+}
+.choice-chip:has(input:checked) {
   border-color: var(--link);
   background: var(--info-soft);
   color: var(--link);
 }
-.callback-panel .field input,.callback-panel .field select {
-  width: 100%;
+.choice-chip:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
-.callback-panel .error-text {
+.callback-phone input {
+  width: min(16rem, 100%);
+}
+.callback-form input[aria-invalid=true] {
+  border-color: var(--red);
+}
+.callback-form .field-error {
   margin: 0;
-  color: var(--red);
+}
+.callback-waiting {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+}
+.callback-waiting .icon {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--link);
+}
+.callback-waiting p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  line-height: 1.55;
+}
+.callback-form .form-actions {
+  margin-top: 0;
+}
+
+/* เตือนก่อนส่งข้อมูลที่ไม่ควรส่ง (features/rich/SensitiveWarning.tsx): under a customer's text box. */
+.sensitive-warning {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #efc98d;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  color: #7a4705;
+  line-height: 1.5;
+}
+.sensitive-warning .icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.sensitive-warning .grow {
+  flex: 1 1 220px;
+  min-width: 0;
 }

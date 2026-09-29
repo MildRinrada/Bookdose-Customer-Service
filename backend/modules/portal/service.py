@@ -97,7 +97,7 @@ def case_detail(db, viewer, case_id):
 
 def conversation_view(db, conv, viewer, cd=None):
     """Opening the conversation counts as reading the team's replies (no notice for them). `cd` (the control database)
-    lets the view carry the thank-you card of a finished case (automation/thanks.py)."""
+    lets the view carry the thank-you card of a finished case (automation/thanks.py) and the team's photos."""
     from backend.modules.automation import thanks
     _mark_seen(db,viewer,conv['id'])
     # Where they stand while they wait for the team, so they do not write again only to ask. A guide only: should it
@@ -110,7 +110,10 @@ def conversation_view(db, conv, viewer, cd=None):
     except Exception as error:
         print(f'Wait queue: {type(error).__name__}',flush=True)
         place = None
-    view = schema.conversation_view(conv,conversation_service.message_list(db,conv['id'],True),
+    # Each team reply with its writer's photo, when they let customers see it (portal/photos.py).
+    from backend.modules.portal import photos
+    messages = photos.mark(cd,db,conv['id'],conversation_service.message_list(db,conv['id'],True))
+    view = schema.conversation_view(conv,messages,
                                     tickets.for_conversation(db,conv['id']),ai.conversation_state(db,conv['id']),
                                     automation.portal_survey(db,conv['id']),conversations.staff_read_at(db,conv['id']),
                                     place,move.offer(db,D.tenant_id_of(db),conv),thanks.card_for(cd,db,conv['id']))

@@ -705,6 +705,61 @@ input[type=file].attach-input {
 .file-pill button:hover {
   background: var(--soft);
 }
+/* เบลอ/วงกลม on a picture's pill (FilePills → ImageMarkup): a word, not only an icon, so it is found. */
+.file-pill .file-pill-mark {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--link);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+}
+.file-pill .file-pill-mark:hover {
+  background: var(--info-soft);
+}
+
+/* อัดหน้าจอ (ScreenRecorder) while recording: red, with the time. */
+.screen-record.recording,.screen-record.recording:hover {
+  border-color: #e11d2e;
+  color: #b3141f;
+}
+.screen-record.recording .icon {
+  color: #e11d2e;
+}
+
+/* เบลอหรือวงกลมบนภาพ (ImageMarkup): the tools, the picture at the width of the window, then the buttons. */
+.image-markup {
+  display: grid;
+  gap: 10px;
+}
+.image-markup-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.image-markup-tools .btn.active {
+  border-color: var(--link);
+  background: var(--info-soft);
+  color: var(--link);
+}
+.image-markup-hint {
+  margin: 0;
+}
+/* The whole picture fits in the dialog with its tools and buttons (94vh less about 340px of them): no scrolling to
+   reach a corner, and nothing of it under the buttons. */
+.image-markup-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: max(200px, calc(94vh - 340px));
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: crosshair;
+  touch-action: none;
+}
 .composer.drag-over {
   outline: 3px dashed #7c7c7c;
   outline-offset: -6px;

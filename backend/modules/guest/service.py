@@ -349,6 +349,10 @@ def resume(cd, db, org, guest, body, client):
     value = schema.token(body)
     D.begin(db)
     link = repository.live_link(db,token_hash(value))
+    # คุยต่อบนมือถือ: a QR shown on the guest's other screen (handoff.py), used up here.
+    from backend.modules.guest import handoff
+    qr = None if link else handoff.take(db,token_hash(value))
+    link = link or qr
     visitor = repository.visitor(db,link['visitor_id']) if link else None
     require(link and visitor and not visitor['account_id'],schema.LINK_GONE,410)
     # This browser is following someone else's chats: they are not thrown away for whoever sent this link.
@@ -356,11 +360,12 @@ def resume(cd, db, org, guest, body, client):
     if other and body.get('replace') is not True:
         db.rollback()
         raise APIError(409,'เบราว์เซอร์นี้มีแชทของคุณอยู่แล้ว เปิดลิงก์นี้เพื่อดูแชทอีกรายการหรือไม่',extra={'code':'guest_other_chats'})
-    repository.use_link(db,link['token_hash'])
+    if not qr:
+        repository.use_link(db,link['token_hash'])
     # Proven only when the address is the one this guest itself gave (_deliver_link recorded it unproven); a link
-    # sent to someone else's address never makes that address the guest's.
-    own_address = ((visitor['email'] or '').lower()==link['target'].lower() if link['via']=='email'
-                   else (visitor['phone'] or '')==link['target'])
+    # sent to someone else's address never makes that address the guest's. A QR proves no address at all.
+    own_address = not qr and ((visitor['email'] or '').lower()==link['target'].lower() if link['via']=='email'
+                              else (visitor['phone'] or '')==link['target'])
     if own_address and link['via']=='email':
         repository.set_email(db,visitor['id'],link['target'],True)
     elif own_address and link['via']=='sms':
@@ -373,7 +378,9 @@ def resume(cd, db, org, guest, body, client):
         repository.insert_device(db,token_hash(token),visitor['id'],secrets.token_urlsafe(24),True,client.get('user_agent',''),client.get('ip',''))
     repository.touch_visitor(db,visitor['id'])
     audit.record(db,schema.display_name(visitor),'guest.resumed',visitor['contact_id'],f"{link['via']} {schema.mask(link['via'],link['target'])}".strip())
-    conversation_id = repository.latest_conversation(db,visitor['id'])
+    # A QR opens the chat that was on screen, while it is still theirs.
+    shown = qr and repository.owned_conversation(db,visitor['id'],qr['conversation_id'])
+    conversation_id = qr['conversation_id'] if shown else repository.latest_conversation(db,visitor['id'])
     db.commit()
     # Only a proven address of this guest goes into the index a customer account takes its chats over by.
     if own_address and link['via']=='email':

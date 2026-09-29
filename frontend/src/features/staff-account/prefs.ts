@@ -27,6 +27,8 @@ export type StaffPreferences = {
   /** การ์ดขอบคุณหลังปิดเคส, in organizations that give one: customers see this member's photo on it (else their
       initials), and their own thank-you ('' for the organization's). */
   thanks: { photo: boolean; message: string };
+  /** Customers see this member's photo beside their replies on the web chat (backend portal/photos.py); on by default. */
+  chat_photo: boolean;
   snippets: Snippet[];
   /** How this member arranged their overview (features/dashboard/layout.ts); empty = as the organization arranged it. */
   dashboard: DashboardLayout;

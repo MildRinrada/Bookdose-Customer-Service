@@ -12,6 +12,7 @@ import { AnswerSuggestions, type PeekArticle } from '@/features/customer/compone
 import { StartFields, startFieldValues } from '@/features/customer/components/StartFields';
 import { replyPromise } from '@/features/customer/labels';
 import { FilePills, FileProblem, useFilePills } from '@/features/rich/FilePills';
+import { ScreenRecorder } from '@/features/rich/ScreenRecorder';
 import { RichTextArea } from '@/features/rich/RichTextArea';
 import { setGuestCredentials } from '@/lib/api/client';
 import { readFiles } from '@/lib/files';
@@ -114,7 +115,7 @@ export function GuestStartForm({
   // Cloudflare Turnstile, when the platform asks for it: its token is used once, so a refused send asks for another.
   const captcha = overview.captcha?.site_key ? overview.captcha : null;
   const captchaRef = useRef<TurnstileHandle | null>(null);
-  const { inputRef, files, problem, onChange, remove, clear } = useFilePills();
+  const { inputRef, files, problem, onChange, remove, clear, replace, add, used, report } = useFilePills();
   const orgName = overview.organization.name;
   const known = overview.guest;
   // A way to follow the chat away from this browser is offered only where it can really be sent: the email and SMS
@@ -221,10 +222,11 @@ export function GuestStartForm({
             <Icon name="paperclip" />
             แนบไฟล์
           </label>
+          <ScreenRecorder look="button" used={used} onFile={(file) => add([file])} onProblem={report} />
           <span className="tiny muted" id="guest-files-help">
             สูงสุด 3 ไฟล์ รวม 5 MB · รูป วิดีโอ PDF หรือ TXT
           </span>
-          <FilePills files={files} onRemove={remove} />
+          <FilePills files={files} onRemove={remove} onReplace={replace} />
           <FileProblem problem={problem} />
         </div>
       </Step>

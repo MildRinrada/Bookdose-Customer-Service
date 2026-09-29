@@ -4,6 +4,7 @@ need the organization's guest chat switched on (backend/http/dispatch.py checks)
 /api/settings/guest-chat, /api/settings/guest-blocks and /api/conversations/<id>/guest-block are the organization
 admin's; /api/customer/guest-claims the signed-in customer's."""
 from backend.modules.guest import controller
+from backend.modules.portal import controller as portal
 from backend.utils.routing import ID
 
 GUEST = '/api/public/[a-z0-9-]+/guest'
@@ -17,10 +18,14 @@ ROUTES = [
     ('POST',   GUEST+f'/messages/{ID}/reaction', controller.react,            'guest'),
     ('POST',   GUEST+'/handoff',              controller.hand_off,            'guest'),
     ('POST',   GUEST+'/callback',             controller.request_callback,    'guest'),
+    # คุยต่อบนมือถือ: a QR that opens this chat on the guest's phone (handoff.py).
+    ('POST',   GUEST+'/handoff-qr',           controller.handoff_qr,          'guest'),
     ('POST',   GUEST+'/csat',                 controller.rate,                'guest'),
     ('GET',    GUEST+f'/attachments/{ID}',    controller.download_attachment, 'guest'),
     ('GET',    GUEST+f'/thanks/{ID}/photo',   controller.thanks_photo,        'guest'),
     ('POST',   GUEST+f'/thanks/{ID}/heart',   controller.thanks_heart,        'guest'),
+    # The photo beside a team reply (portal/photos.py), as on the signed-in pages.
+    ('GET',    GUEST+f'/team/{ID}/photo',     portal.team_photo,              'guest'),
     ('GET',    GUEST+f'/cases/{ID}',          controller.case_detail,         'guest'),
     ('POST',   GUEST+'/name',                 controller.rename,              'guest'),
     ('POST',   GUEST+'/remember',             controller.remember,            'guest'),

@@ -659,7 +659,7 @@ html.sidebar-collapsed .platform-scope>.grow {
   padding: 7px 13px;
   border-radius: 9px;
   background: var(--soft);
-  color: #2c2c2c;
+  color: var(--ink);
   font-size: .9375rem;
   font-weight: 500;
   line-height: 1.3;

@@ -18,6 +18,18 @@ import { erasePerson, exportPerson, PDPA_PATH, searchPerson, type PdpaChoice, ty
 
 const kindWords = { email: 'อีเมล', phone: 'เบอร์โทร', name: 'ชื่อ' };
 
+/* The ways a request usually arrives. The last one asks for the words instead. */
+const OTHER = 'อื่น ๆ';
+const SOURCES = [
+  'เจ้าของข้อมูลขอทางอีเมล',
+  'เจ้าของข้อมูลขอทางแชทหรือเคส',
+  'เจ้าของข้อมูลขอทางโทรศัพท์',
+  'เจ้าของข้อมูลยื่นหนังสือหรือแบบฟอร์ม',
+  'องค์กรแจ้งแทนเจ้าของข้อมูล',
+  'คำสั่งของหน่วยงานรัฐหรือตามกฎหมาย',
+  OTHER,
+];
+
 function save(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -66,20 +78,40 @@ export function PdpaScreen() {
                 if (query.trim().length >= 3) find(query);
               }}
             >
-              <label className="field">
-                <span>อีเมล เบอร์โทร หรือชื่อของเจ้าของข้อมูล</span>
-                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="เช่น somsri@example.com หรือ 081-234-5678" autoComplete="off" />
+              <label className="pdpa-search-label" htmlFor="pdpa-query">
+                ค้นหาเจ้าของข้อมูล
               </label>
-              <button className="btn primary" type="submit" disabled={query.trim().length < 3}>
-                <Icon name="search" />
-                ค้นหาในทุกองค์กร
-              </button>
+              <div className="pdpa-search-row">
+                <input id="pdpa-query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="อีเมล เบอร์โทร หรือชื่อ (อย่างน้อย 3 ตัวอักษร)" autoComplete="off" />
+                <button className="btn primary" type="submit" disabled={query.trim().length < 3}>
+                  <Icon name="search" />
+                  ค้นหาในทุกองค์กร
+                </button>
+              </div>
               <p className="tiny muted">
                 ผลการค้นหาแสดงเฉพาะจำนวน ไม่แสดงเนื้อหาบทสนทนา เนื้อหาจะออกไปเฉพาะในไฟล์ที่ออกให้เจ้าของข้อมูล และทุกครั้งถูกบันทึกไว้
               </p>
             </form>
           </section>
-          {found && <Results key={searched} found={found} query={searched} confirmWord={confirm_word} onDone={() => find(searched)} />}
+          {found ? (
+            <Results key={searched} found={found} query={searched} confirmWord={confirm_word} onDone={() => find(searched)} />
+          ) : (
+            // Before the first search: the three steps of the tool, so the empty page says what it is for.
+            <ol className="pdpa-steps" aria-label="ขั้นตอนการใช้เครื่องมือ">
+              <li>
+                <strong>ค้นหา</strong>
+                <span>พิมพ์อีเมล เบอร์โทร หรือชื่อ ระบบค้นในทุกองค์กรพร้อมกัน</span>
+              </li>
+              <li>
+                <strong>เลือกรายการ</strong>
+                <span>ติ๊กเฉพาะรายการที่เป็นของเจ้าของข้อมูลจริง</span>
+              </li>
+              <li>
+                <strong>ออกไฟล์หรือลบ</strong>
+                <span>ออกไฟล์ ZIP ให้เจ้าของข้อมูล หรือลบถาวร ทุกครั้งบันทึกในประวัติ</span>
+              </li>
+            </ol>
+          )}
         </div>
         <div className="stack">
           <section className="card">
@@ -156,7 +188,10 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
   const key = (r: PdpaRecord) => `${r.tenant_id}:${r.contact_id}`;
   const [accounts, setAccounts] = useState(() => new Set(found.accounts.map((a) => a.id)));
   const [records, setRecords] = useState(() => new Set(found.records.filter((r) => !r.erased).map(key)));
-  const [reason, setReason] = useState('');
+  const [source, setSource] = useState('');
+  const [detail, setDetail] = useState('');
+  // What the history keeps: the way it came, then the detail typed (the server asks for 5-300 letters).
+  const reason = source === OTHER ? detail.trim() : [source, detail.trim()].filter(Boolean).join(' · ');
   const toggle = <T,>(set: Set<T>, value: T, apply: (next: Set<T>) => void) => {
     const next = new Set(set);
     if (next.has(value)) next.delete(value);
@@ -171,7 +206,7 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
     records: chosen.map((r) => ({ tenant_id: r.tenant_id, contact_id: r.contact_id })),
   };
   const nothing = !accounts.size && !chosen.length;
-  const reasonOk = reason.trim().length >= 5;
+  const reasonOk = Boolean(source) && reason.length >= 5;
   const total = (field: 'conversations' | 'cases' | 'files') => chosen.reduce((sum, r) => sum + r[field], 0);
 
   if (!found.accounts.length && !found.records.length)
@@ -269,32 +304,68 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
             </ul>
           </>
         )}
-        <label className="field pdpa-reason">
-          <span>ที่มาของคำขอ (บันทึกไว้ในประวัติ)</span>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} placeholder="เช่น ลูกค้าส่งอีเมลขอข้อมูลเมื่อ 25 ก.ย. 2569" />
-        </label>
-        <div className="flex wrap pdpa-actions">
-          <button
-            type="button"
-            className="btn primary"
-            disabled={nothing || !reasonOk}
-            onClick={() =>
-              void run(async () => {
-                const blob = await exportPerson({ ...choice, reason: reason.trim() });
-                save(blob, `pdpa-export-${new Date().toISOString().slice(0, 10)}.zip`);
-                toast('ออกไฟล์ข้อมูลแล้ว ส่งให้เจ้าของข้อมูลทางช่องทางที่ยืนยันตัวตนแล้ว');
-                await refresh(PDPA_PATH);
-              })
-            }
-          >
-            <Icon name="download" />
-            ออกไฟล์ข้อมูลทั้งหมด (ZIP)
-          </button>
-          <button type="button" className="btn danger" disabled={nothing || !reasonOk} onClick={askErase}>
-            <Icon name="trash" />
-            ลบข้อมูล…
-          </button>
-          {!reasonOk && !nothing && <span className="tiny muted">ใส่ที่มาของคำขอก่อน</span>}
+        {/* What is ticked, where the request came from, then the two acts. */}
+        <div className="pdpa-footer">
+          <p className="pdpa-summary">
+            {nothing ? (
+              <span>ยังไม่ได้เลือกรายการ</span>
+            ) : (
+              <>
+                เลือกแล้ว{' '}
+                <span>
+                  บัญชีลูกค้า {accounts.size} · ข้อมูลลูกค้า {chosen.length} รายการ · บทสนทนา {number(total('conversations'))} · เคส {number(total('cases'))} · ไฟล์{' '}
+                  {number(total('files'))}
+                </span>
+              </>
+            )}
+          </p>
+          {/* Where the request came from: picked from the ways it usually arrives, so nobody faces an empty box
+              wondering what to write. The detail is a reference to find it again, and only needed for "อื่น ๆ". */}
+          <div className="pdpa-reason">
+            <label className="field">
+              <span>คำขอนี้มาทางไหน</span>
+              <select value={source} onChange={(e) => setSource(e.target.value)}>
+                <option value="">เลือกที่มาของคำขอ</option>
+                {SOURCES.map((label) => (
+                  <option key={label} value={label}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>{source === OTHER ? 'ระบุที่มา' : 'รายละเอียดเพิ่มเติม (ไม่ใส่ก็ได้)'}</span>
+              <input value={detail} onChange={(e) => setDetail(e.target.value)} maxLength={200} placeholder="วันที่ได้รับ หรือเลขอ้างอิงของเรื่อง" />
+            </label>
+            <p className="tiny muted">บันทึกไว้ในประวัติการใช้เครื่องมือ เผื่อต้องตรวจย้อนหลังว่าทำตามคำขอของใคร</p>
+          </div>
+          <div className="flex wrap pdpa-actions">
+            <button
+              type="button"
+              className="btn primary"
+              disabled={nothing || !reasonOk}
+              onClick={() =>
+                void run(async () => {
+                  const blob = await exportPerson({ ...choice, reason });
+                  save(blob, `pdpa-export-${new Date().toISOString().slice(0, 10)}.zip`);
+                  toast('ออกไฟล์ข้อมูลแล้ว ส่งให้เจ้าของข้อมูลทางช่องทางที่ยืนยันตัวตนแล้ว');
+                  await refresh(PDPA_PATH);
+                })
+              }
+            >
+              <Icon name="download" />
+              ออกไฟล์ข้อมูลทั้งหมด (ZIP)
+            </button>
+            <button type="button" className="btn danger" disabled={nothing || !reasonOk} onClick={askErase}>
+              <Icon name="trash" />
+              ลบข้อมูล…
+            </button>
+            {nothing ? (
+              <span className="tiny muted">เลือกอย่างน้อย 1 รายการก่อน</span>
+            ) : (
+              !reasonOk && <span className="tiny muted">{source === OTHER ? 'ระบุที่มาอย่างน้อย 5 ตัวอักษรก่อน' : 'เลือกที่มาของคำขอก่อน'}</span>
+            )}
+          </div>
         </div>
       </div>
     </section>

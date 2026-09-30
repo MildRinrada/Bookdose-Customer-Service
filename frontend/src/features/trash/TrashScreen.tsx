@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -73,6 +74,10 @@ function TrashView({ data, onRefresh }: { data: TrashPage; onRefresh: () => void
 
   return (
     <>
+      <Link href="/settings" className="back-link">
+        <Icon name="back" />
+        ตั้งค่าองค์กร
+      </Link>
       <div className="page-heading">
         <div>
           <h1>ถังขยะ</h1>

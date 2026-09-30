@@ -178,24 +178,28 @@ function AttachmentsField() {
   return (
     <div className="field">
       <span className="file-field-title">แนบไฟล์ (ไม่บังคับ)</span>
-      <input
-        ref={inputRef}
-        id="request-files"
-        className="attach-input"
-        name="files"
-        type="file"
-        multiple
-        accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt"
-        aria-label="แนบไฟล์"
-        aria-describedby="request-files-help"
-        data-file-ready="1"
-        onChange={onChange}
-      />
-      <label className="btn subtle customer-attach" htmlFor="request-files">
-        <Icon name="paperclip" />
-        เลือกไฟล์จากเครื่อง
-      </label>
-      <ScreenRecorder look="button" used={used} onFile={(file) => add([file])} onProblem={report} />
+      {/* The two ways to attach side by side, as buttons of their own width (the field is a column that stretched
+          each of them across the form). */}
+      <div className="attach-row">
+        <input
+          ref={inputRef}
+          id="request-files"
+          className="attach-input"
+          name="files"
+          type="file"
+          multiple
+          accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt"
+          aria-label="แนบไฟล์"
+          aria-describedby="request-files-help"
+          data-file-ready="1"
+          onChange={onChange}
+        />
+        <label className="btn subtle customer-attach" htmlFor="request-files">
+          <Icon name="paperclip" />
+          เลือกไฟล์จากเครื่อง
+        </label>
+        <ScreenRecorder look="button" used={used} onFile={(file) => add([file])} onProblem={report} />
+      </div>
       <p className="tiny muted" id="request-files-help">
         แนบภาพหรือวิดีโออธิบายปัญหาได้ · สูงสุด 3 ไฟล์ รวม 5 MB · PNG, JPG, GIF, WebP, MP4, WebM, PDF และ TXT
       </p>

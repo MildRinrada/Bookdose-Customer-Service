@@ -616,11 +616,26 @@ html.sidebar-collapsed .platform-scope>.grow {
     clip-path: inset(50%);
     white-space: nowrap;
   }
+  /* A small mark on the icon's corner, not a full-size chip covering half of it. */
   html.sidebar-collapsed .nav-count {
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: 4px;
+    right: 4px;
+    min-width: 18px;
     margin: 0;
+    padding: 0 4px;
+    border-radius: 999px;
+    font-size: .75rem;
+    line-height: 18px;
+    text-align: center;
+  }
+  /* The list keeps room for its scrollbar on the right only, which pushed every icon left of the logo and the
+     collapse button above them. The same room on both sides puts them back on one centre line. */
+  html.sidebar-collapsed .sidebar>nav {
+    scrollbar-gutter: stable both-edges;
+  }
+  html.sidebar-collapsed .sidebar-top {
+    align-items: center;
   }
   html.sidebar-collapsed .profile {
     flex-direction: column;

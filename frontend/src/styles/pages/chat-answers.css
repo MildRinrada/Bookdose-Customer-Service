@@ -370,14 +370,19 @@
 
 /* บทความนี้ช่วยได้ไหม (features/customer/components/ArticleFeedback.tsx): under an article, one line; the answer picked
    stays marked. */
-.article-feedback {
+/* [role=group] tells it from the team's own .article-feedback (pages/knowledge.css: a grey box with its figures on
+   one side and the votes on the other), whose rules were reaching this one and pushing the two buttons apart. */
+.article-feedback[role=group] {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 8px 10px;
   margin-top: 18px;
-  padding-top: 14px;
+  padding: 14px 0 0;
   border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
 }
 .article-feedback-question {
   margin-right: 4px;
@@ -388,7 +393,7 @@
   background: var(--info-soft);
   color: var(--link);
 }
-.qa-suggest-body .article-feedback {
+.qa-suggest-body .article-feedback[role=group] {
   margin-top: 12px;
   padding-top: 10px;
 }

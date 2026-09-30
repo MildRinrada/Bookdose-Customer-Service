@@ -8,6 +8,7 @@ import { HelpMenu } from '@/features/help/HelpMenu';
 import { Avatar, ProfilePhoto } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { Popups } from '@/components/ui/Popups';
+import { CustomerBell } from '@/features/customer/components/CustomerBell';
 import { useReplyPopups } from '@/features/customer/useReplyPopups';
 import { customerUnread, useCustomer, useCustomerLogout, useCustomerOverview, type CustomerOverview } from '@/lib/customer-session';
 import { RealtimeProvider } from '@/lib/realtime-provider';
@@ -91,10 +92,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
                 เริ่มแชทใหม่
               </Link>
             )}
-            <Link className="icon-btn bell customer-bell" href="/customer/alerts" aria-label="การแจ้งเตือน" title="การแจ้งเตือน">
-              <Icon name="bell" />
-              {counts.alerts > 0 && <span className="bell-count">{counts.alerts}</span>}
-            </Link>
+            <CustomerBell />
             <HelpMenu audience="customer" />
             <TextSizeMenu />
             <ProfileMenu

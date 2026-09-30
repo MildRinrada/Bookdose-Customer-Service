@@ -200,9 +200,22 @@
   color: var(--muted);
   font-weight: 600;
 }
-.customer-attach {
+/* A button that looks like one: the borderless kind read as two stray lines of text in the middle of the form. */
+.customer-attach,.btn.subtle.customer-attach {
   display: inline-flex;
+  padding: 8px 14px;
+  border: 1px solid var(--control-line);
+  background: var(--paper);
+  color: var(--ink);
   cursor: pointer;
+}
+.customer-attach:hover {
+  background: var(--soft);
+}
+.attach-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 input[type=file].attach-input:focus-visible+.customer-attach {
   outline: 3px solid #b4b4b4;
@@ -581,11 +594,14 @@ input[type=file].attach-input:focus-visible+.customer-attach {
 .customer-ask {
   margin-top: 22px;
 }
+/* The card has no header, and the shared card body has no top padding: the row sat against the top edge with all
+   its space underneath. */
 .customer-ask .card-body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+  padding: 18px 22px;
 }
 .customer-ask p {
   margin: 2px 0 0;
@@ -910,6 +926,17 @@ main .customer-link-head>.text-size-controls {
 }
 .org-picker-list .avatar,.org-picker-list .org-add-icon {
   flex: none;
+}
+/* The chosen organization is marked by its tick, not by the grey of the row being pointed at: with both painted grey
+   the two rows of a short list looked hovered at once. */
+.org-picker-list li[role=option][aria-selected=true]:not(.active):not(:hover) {
+  background: none;
+}
+.org-picker-list li[role=option]>.icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
 }
 .org-picker-list li[role=option] span {
   display: grid;

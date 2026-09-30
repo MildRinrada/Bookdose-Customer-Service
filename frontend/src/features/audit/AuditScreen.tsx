@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
@@ -76,6 +77,10 @@ function AuditView({ events }: { events: AuditEvent[] }) {
 
   return (
     <>
+      <Link href="/settings" className="back-link">
+        <Icon name="back" />
+        ตั้งค่าองค์กร
+      </Link>
       <div className="page-heading">
         <div>
           <h1>ประวัติการทำงาน</h1>

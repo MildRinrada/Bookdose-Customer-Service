@@ -161,6 +161,8 @@ export function OrgPicker({
               {o.name}
               <small>{o.home ? 'ผู้ให้บริการระบบ · ปัญหาระบบ แจ้ง Bug' : `องค์กรคู่ค้า · ${o.slug}`}</small>
             </span>
+            {/* The chosen one is ticked; the grey row is only the one the pointer or the arrow keys are on. */}
+            {o.slug === value && <Icon name="check" />}
           </li>
         ))}
         {newCode && (

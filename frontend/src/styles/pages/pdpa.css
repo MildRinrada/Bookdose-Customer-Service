@@ -11,19 +11,81 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* The search: what to type as the card's title, the box and its button on one line, the promise under them. (Also
+   the search of บัญชีผู้ใช้, features/platform/AccountsScreen.) The card has no header, so the body pads its own top. */
 .pdpa-search {
   display: grid;
   gap: 10px;
+  padding-top: 22px;
 }
-.pdpa-search .field,
-.pdpa-reason {
+.pdpa-search .field {
   margin: 0;
+}
+.pdpa-search-label {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.pdpa-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pdpa-search-row input {
+  flex: 1 1 260px;
+  min-width: 0;
 }
 .pdpa-search .btn {
   justify-self: start;
 }
 .pdpa-search p {
   margin: 0;
+}
+/* Before the first search: the three steps of the tool, so the empty page says what it is for. */
+.pdpa-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(200px,100%),1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: pdpa-step;
+}
+.pdpa-steps li {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  counter-increment: pdpa-step;
+}
+.pdpa-steps li::before {
+  content: counter(pdpa-step);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--soft);
+  font-weight: 800;
+}
+.pdpa-steps span {
+  color: var(--muted);
+  font-size: .92rem;
+}
+/* Where the request came from: the choice, and a detail beside it (under it on a narrow card). */
+.pdpa-reason {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(240px,100%),1fr));
+  gap: 8px 14px;
+}
+.pdpa-reason .field,.pdpa-reason p {
+  margin: 0;
+}
+.pdpa-reason p {
+  grid-column: 1 / -1;
 }
 .pdpa-results {
   display: grid;
@@ -32,6 +94,26 @@
 .pdpa-results h3 {
   margin: 4px 0 0;
   font-size: 1rem;
+}
+/* What is ticked, where the request came from, then the two acts: set apart from the list above by a line. */
+.pdpa-footer {
+  display: grid;
+  gap: 14px;
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.pdpa-summary {
+  margin: 0;
+  font-weight: 600;
+}
+.pdpa-summary span {
+  font-weight: 400;
+  color: var(--muted);
+}
+.pdpa-list li:has(input:checked) {
+  border-color: var(--control-line);
+  background: var(--soft);
 }
 .pdpa-list,
 .pdpa-requests,

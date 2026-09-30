@@ -52,14 +52,22 @@ export function AccountsScreen() {
             if (query.trim().length >= 3) find(query);
           }}
         >
-          <label className="field">
-            <span>อีเมลของบัญชี (พิมพ์บางส่วนได้)</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="อย่างน้อย 3 ตัวอักษร" autoComplete="off" />
+          <label className="pdpa-search-label" htmlFor="account-query">
+            ค้นหาบัญชีด้วยอีเมล
           </label>
-          <button className="btn primary" type="submit" disabled={query.trim().length < 3}>
-            <Icon name="search" />
-            ค้นหา
-          </button>
+          <div className="pdpa-search-row">
+            <input
+              id="account-query"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="พิมพ์บางส่วนได้ อย่างน้อย 3 ตัวอักษร"
+              autoComplete="off"
+            />
+            <button className="btn primary" type="submit" disabled={query.trim().length < 3}>
+              <Icon name="search" />
+              ค้นหา
+            </button>
+          </div>
           <p className="tiny muted">บัญชีผู้ดูแลแพลตฟอร์มแสดงในผลค้นหา แต่จัดการที่ ทีมผู้ดูแลระบบ</p>
         </form>
       </section>

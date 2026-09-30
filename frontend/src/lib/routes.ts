@@ -21,19 +21,25 @@ export const workspacePages: StaffPage[] = [
   { key: 'contacts', href: '/contacts', label: 'ข้อมูลลูกค้า', icon: 'users' },
   { key: 'knowledge', href: '/knowledge', label: 'คลังความรู้', icon: 'book' },
   { key: 'reports', href: '/reports', label: 'รายงาน', icon: 'chart' },
-  { key: 'guides', href: '/guides', label: 'คู่มือจาก Bookdose', icon: 'list' },
 ];
 
 export const managePages: StaffPage[] = [
   { key: 'members', href: '/members', label: 'ทีมและสมาชิก', icon: 'users', roles: ['admin'] },
-  { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin'] },
-  { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin'] },
-  { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin'] },
   { key: 'settings', href: '/settings', label: 'ตั้งค่าองค์กร', icon: 'settings', roles: ['admin'] },
 ];
 
-/** Screens outside the menu. */
+/** Screens opened from ตั้งค่าองค์กร (its menu lists them under its own sections), which stays lit in the side menu
+    while one of them is open. */
+export const settingsPages: StaffPage[] = [
+  { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin'] },
+  { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin'] },
+  { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin'] },
+];
+
+/** Screens outside the menu. The guides open from the ? in the top bar (features/help/HelpMenu). */
 export const otherStaffPages: StaffPage[] = [
+  ...settingsPages,
+  { key: 'guides', href: '/guides', label: 'คู่มือจาก Bookdose', icon: 'list' },
   { key: 'notifications', href: '/notifications', label: 'การแจ้งเตือน', icon: 'bell' },
   { key: 'account', href: '/account', label: 'ตั้งค่าบัญชี', icon: 'settings' },
 ];

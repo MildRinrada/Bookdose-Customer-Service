@@ -72,6 +72,8 @@ export function ContinueOnLinePanel({
     });
 
   return (
+    // The anchor takes no height: the panel lies over the messages instead of pushing them down.
+    <div className="continue-line-anchor">
     <section className="continue-line" aria-label="คุยต่อใน LINE">
       <div className="continue-line-head">
         <p>
@@ -126,6 +128,7 @@ export function ContinueOnLinePanel({
         </button>
       )}
     </section>
+    </div>
   );
 }
 

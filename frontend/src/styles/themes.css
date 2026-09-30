@@ -44,6 +44,14 @@ html[data-theme='cream'] .sidebar .nav-item.active { background: var(--paper); c
 html[data-theme='cream'] .sidebar .help-card { background: #55412e; border-color: #8a7258; color: #f3e9d8; }
 html[data-theme='cream'] .sidebar .nav-help,html[data-theme='cream'] .sidebar .profile,html[data-theme='cream'] .sidebar-bottom { border-color: #6e5940; }
 html[data-theme='cream'] .sidebar { border-right-color: #6e5940; }
+/* The count on the chosen item sits on paper, where the item's dark ink on the brown chip could not be read. */
+html[data-theme='cream'] .sidebar .nav-item.active .nav-count { background: var(--invert); }
+/* The dark heads (the bell's panel, pop-ups, the account menu, the heroes) are written as near-black, which sat on
+   the warm paper like a piece of another theme: here they are the theme's own dark brown, as the buttons are. */
+html[data-theme='cream'] :is(.note-menu-head,.celebration-card,.popup-card,.account-current,.kb-hero,.case-hero,.recap-card) {
+  background: radial-gradient(120% 150% at 100% 0,color-mix(in srgb,var(--invert) 82%,#fff) 0,var(--invert) 60%);
+}
+html[data-theme='cream'] .note-menu-foot:hover { background: var(--accent); }
 
 /* ดาร์ก: a warm charcoal, the same family as the sidebar the app already had. */
 html[data-theme='dark'] {

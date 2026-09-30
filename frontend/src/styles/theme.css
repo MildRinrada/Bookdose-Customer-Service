@@ -16,7 +16,7 @@
 .sidebar .nav-item.active { background: #f6f7f3; color: var(--accent); box-shadow: none; }
 .sidebar .nav-item.active:hover { background: #fff; }
 .sidebar .nav-item .nav-count { background: #595959; color: #fff; }
-.sidebar .nav-item.active .nav-count { background: var(--info-soft); color: var(--link); }
+.sidebar .nav-item.active .nav-count { background: var(--invert); color: #fff; }
 .sidebar .workspace-select { background: #30373a; border-color: #505c5c; }
 .sidebar .workspace-select:hover { border-color: #839f9d; }
 .sidebar .workspace-select:focus-within { border-color: #b3b3b3; outline-color: #b3b3b3; }

@@ -9,6 +9,7 @@ import { AiSettingsPanel } from '@/features/ai';
 import { ChannelSettingsPanel, CHANNELS_PATH, FACEBOOK_PATH, FacebookSettingsPanel, type ChannelSetting, type FacebookSetting } from '@/features/channels';
 import { roleLabels } from '@/lib/labels';
 import { useApi } from '@/lib/query';
+import { settingsPages } from '@/lib/routes';
 import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { CaseFieldsPanel } from './components/CaseFieldsPanel';
@@ -24,7 +25,13 @@ import { partsOf, settingsPlaceOf, settingsParts, settingsTabs, type SettingsPar
    that part alone (/settings?tab=<part>), with the way back to the icons above it. Markup: pages/settings.css
    (settings-frame, settings-nav, settings-tiles, settings-part). */
 
-type Status = { label: string; tone: 'on' | 'off' | 'warn' } | null;
+const PAGE_HINTS: Record<string, string> = {
+  automation: 'กฎที่ทำงานแทนทีมเมื่อมีเคสหรือข้อความเข้า',
+  audit: 'ใครทำอะไร เมื่อไร ในองค์กรนี้',
+  trash: 'รายการที่ลบไว้ กู้คืนหรือลบถาวร',
+};
+
+type Status ={ label: string; tone: 'on' | 'off' | 'warn' } | null;
 
 /** Whether each channel is connected, from what its page reads anyway (cached, so opening it is instant). */
 function useChannelStatuses(): Partial<Record<SettingsPart, Status>> {
@@ -92,6 +99,18 @@ export function SettingsScreen({ tab }: { tab?: string }) {
               </Link>
             );
           })}
+          {/* Screens of their own that are set up once and looked at now and then: reached from here, not the side menu. */}
+          {settingsPages.map((p) => (
+            <Link key={p.key} href={p.href} className="settings-nav-item">
+              <span className="settings-nav-icon">
+                <Icon name={p.icon} />
+              </span>
+              <span className="settings-nav-text">
+                <strong>{p.label}</strong>
+                <span className="settings-nav-hint">{PAGE_HINTS[p.key]}</span>
+              </span>
+            </Link>
+          ))}
         </nav>
         <div className="settings-panels" id={`settings-${place.part ?? current}`}>
           <Section tab={current} part={place.part} />

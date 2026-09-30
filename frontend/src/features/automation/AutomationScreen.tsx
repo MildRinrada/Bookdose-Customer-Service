@@ -83,6 +83,10 @@ function AutomationView({ data, tab }: { data: AutomationPage; tab?: string }) {
 
   return (
     <>
+      <Link href="/settings" className="back-link">
+        <Icon name="back" />
+        ตั้งค่าองค์กร
+      </Link>
       <div className="page-heading">
         <div>
           <h1>ระบบอัตโนมัติ</h1>

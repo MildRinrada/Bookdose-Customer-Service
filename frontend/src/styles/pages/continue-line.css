@@ -4,15 +4,38 @@
   flex-shrink: 0;
   align-self: center;
 }
+/* The panel lies over the top of the messages (its anchor has no height), so opening it moves nothing. */
+.continue-line-anchor {
+  position: relative;
+  z-index: 5;
+  height: 0;
+}
 .continue-line {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  right: 16px;
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
   display: grid;
   gap: 12px;
-  margin: 8px 16px;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--paper);
   color: var(--ink);
+  box-shadow: var(--pop);
+}
+/* While the panel is open the messages under it go grey, so the eye stays on the panel. Only the thread: the rest of
+   the page, the header and the box to write in stay as they are. */
+.continue-line-anchor~.thread,.continue-line-anchor~* .thread {
+  filter: brightness(.78) saturate(.5);
+  transition: filter .15s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .continue-line-anchor~.thread,.continue-line-anchor~* .thread {
+    transition: none;
+  }
 }
 .continue-line-head {
   display: flex;

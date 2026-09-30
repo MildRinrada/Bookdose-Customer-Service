@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { useCopyText } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
@@ -33,6 +33,20 @@ import type { OrgUsage, SupportSummary, Tenant, TenantsPage } from './types';
 
    It reads the same two answers the console already has (the organizations and the usage figures), so opening this
    page asks the server for nothing new. Markup: pages/platform (org-page). */
+
+/** One fact about the organization: its name, what it is now, a word of context, and the button that changes it. */
+function Row({ label, hint, action, children }: { label: string; hint?: ReactNode; action?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="org-row">
+      <div className="org-row-text">
+        <span className="org-row-label">{label}</span>
+        {children && <div className="org-row-body">{children}</div>}
+        {hint && <span className="tiny muted">{hint}</span>}
+      </div>
+      {action && <div className="org-row-action">{action}</div>}
+    </div>
+  );
+}
 
 export function OrganizationScreen({ id }: { id: string }) {
   const tenants = useApi<TenantsPage>(TENANTS_PATH);
@@ -104,211 +118,260 @@ function OrganizationView({
       </div>
 
       <div className="org-page">
-        <section className="card info-block">
-          <h2>หน้าลูกค้า</h2>
-          <p className="tiny muted">ลิงก์ที่ลูกค้าขององค์กรนี้ใช้เข้าหน้าช่วยเหลือ</p>
-          <p className="org-page-link">
-            <a href={url} target="_blank" rel="noopener">
-              {url}
-            </a>
-            <button type="button" className="icon-btn sm" aria-label="คัดลอกลิงก์หน้าลูกค้า" title="คัดลอกลิงก์" onClick={() => void copyText(url)}>
-              <Icon name="link" />
-            </button>
-          </p>
-        </section>
-
-        {/* The thing this page exists for: a switch that says what it does, not a count in a table cell. */}
-        <section className="card info-block org-page-wide">
-          <h2>ฟีเจอร์ของ {t.name}</h2>
-          <FeatureForm tenant={t} catalogue={page.feature_catalogue ?? []} />
-        </section>
-
-        <section className="card info-block">
-          <h2>พื้นที่ดิสก์</h2>
-          {usage ? (
-            <>
-              <p className="org-page-figure">
-                {bytesText(usage.used_bytes)}
-                <span className="muted"> / {usage.quota_mb ? `${usage.quota_mb >= 1024 ? `${Math.round(usage.quota_mb / 1024)} GB` : `${usage.quota_mb} MB`}` : 'ยังไม่ได้กำหนด'}</span>
-              </p>
-              <p className="tiny muted">
-                ไฟล์แนบ {bytesText(usage.storage_bytes)} · ฐานข้อมูล {bytesText(usage.database_bytes)}
-                {!usage.quota_mb && ' · องค์กรที่ไม่มีโควตาใช้ดิสก์ได้ไม่จำกัด และทำให้ทุกองค์กรเขียนข้อมูลไม่ได้เมื่อดิสก์เต็ม'}
-              </p>
-              <button type="button" className="btn sm" onClick={() => openModal(`โควตาพื้นที่ของ ${t.name}`, <QuotaForm org={usage} />)}>
-                <Icon name="settings" />
-                {usage.quota_mb ? 'เปลี่ยนโควตา' : 'กำหนดโควตา'}
-              </button>
-            </>
-          ) : (
-            <p className="tiny muted">กำลังอ่านตัวเลขการใช้งาน…</p>
-          )}
-        </section>
-
-        <section className="card info-block">
-          <h2>รหัสองค์กร</h2>
-          <p className="tiny muted">รหัสนี้อยู่ในลิงก์ที่ลูกค้าได้รับไปแล้วทั้งหมด · เปลี่ยนได้ ลิงก์เดิมยังพามาที่นี่</p>
-          <p className="org-page-figure mono">{t.slug}</p>
-          {t.former_slugs?.length > 0 && <p className="tiny muted">รหัสเดิมที่ยังใช้ได้: {t.former_slugs.join(', ')}</p>}
-          <button type="button" className="btn sm" onClick={() => openModal(`รหัสองค์กรของ ${t.name}`, <SlugForm tenant={t} />)}>
-            <Icon name="edit" />
-            เปลี่ยนรหัสองค์กร
-          </button>
-        </section>
-
-        <section className="card info-block">
-          <h2>ผู้ดูแลองค์กร</h2>
-          <div className="org-page-admins">
-            {t.admins.map((a) => (
-              <span key={a.email} className="org-admin" title={a.email}>
-                {a.name}
-              </span>
-            ))}
-            {t.admin_invites.map((email) => (
-              <span key={email} className="org-admin muted" title="ส่งคำเชิญแล้ว ยังไม่ตอบรับ">
-                <Icon name="clock" />
-                {email}
-              </span>
-            ))}
-            {!t.admins.length && !t.admin_invites.length && <span className="org-admin-missing">ยังไม่มีผู้ดูแล</span>}
-          </div>
-          <button
-            type="button"
-            className="btn sm"
-            onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={page.can_invite} />)}
-          >
-            <Icon name="plus" />
-            {t.admins.length ? 'เพิ่มผู้ดูแล' : 'เชิญผู้ดูแล'}
-          </button>
-        </section>
-
-        <section className="card info-block">
-          <h2>การยืนยันสองขั้นตอนของทีมงาน</h2>
-          <p className="tiny muted">รีเซ็ตให้ทีมงานที่ทำโทรศัพท์และรหัสสำรองหาย โดยไม่ต้องเข้าเซิร์ฟเวอร์</p>
-          <button type="button" className="btn sm" onClick={() => openModal(`การยืนยันสองขั้นตอนของทีมงาน ${t.name}`, <StaffSecurityList id={t.id} />)}>
-            <Icon name="shield" />
-            ดูและรีเซ็ต
-          </button>
-        </section>
-
-        <section className="card info-block">
-          <h2>สิทธิ์เข้าช่วยเหลือ</h2>
-          <p className="tiny muted">เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติ และดูได้อย่างเดียว</p>
-          {'current' in access && (
-            <p className="org-access">
-              <Icon name="check" />
-              กำลังดูอยู่ (อ่านอย่างเดียว)
-            </p>
-          )}
-          {'pending' in access && (
-            <>
-              <p className="org-access org-support-pending">
-                <Icon name="clock" />
-                รอผู้ดูแลองค์กรอนุมัติ · ขอ {access.pending.hours} ชม.
-              </p>
-              <button type="button" className="btn sm subtle" onClick={() => void withdraw(access.pending, false)}>
-                ยกเลิกคำขอ
-              </button>
-            </>
-          )}
-          {'canOpen' in access && (
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => switchTenant(t.id).catch((error: unknown) => toast(error instanceof Error ? error.message : String(error), true))}
+        <div className="org-column">
+          {/* The facts about the organization, one row each: what it is on the left, the one thing to do about it on the right. */}
+          <section className="card">
+            <div className="card-header">
+              <div>
+                <h2>ข้อมูลองค์กร</h2>
+                <p>ลิงก์ รหัส พื้นที่ และผู้ดูแลขององค์กรนี้</p>
+              </div>
+            </div>
+            <Row
+              label="หน้าลูกค้า"
+              hint="ลิงก์ที่ลูกค้าขององค์กรนี้ใช้เข้าหน้าช่วยเหลือ"
+              action={
+                <button type="button" className="btn sm" onClick={() => void copyText(url)}>
+                  <Icon name="link" />
+                  คัดลอกลิงก์
+                </button>
+              }
             >
-              <Icon name="arrow" />
-              ดูแบบอ่านอย่างเดียว
-            </button>
-          )}
-          {'noAccess' in access &&
-            (access.canRequest ? (
-              <button type="button" className="btn sm" onClick={() => openModal('ขอสิทธิ์ Support Access', <SupportAccessForm id={t.id} name={t.name} />)}>
-                <Icon name="shield" />
-                ขอเข้าช่วยเหลือ
-              </button>
-            ) : (
-              <p className="org-access muted">
-                <Icon name="lock" />
-                {access.noAccess}
-              </p>
-            ))}
-        </section>
+              <a className="org-page-link" href={url} target="_blank" rel="noopener">
+                {url}
+              </a>
+            </Row>
+            <Row
+              label="รหัสองค์กร"
+              hint={
+                t.former_slugs?.length > 0
+                  ? `รหัสเดิมที่ยังใช้ได้: ${t.former_slugs.join(', ')}`
+                  : 'อยู่ในลิงก์ที่ลูกค้าได้รับไปแล้วทั้งหมด เปลี่ยนได้ ลิงก์เดิมยังพามาที่นี่'
+              }
+              action={
+                <button type="button" className="btn sm" onClick={() => openModal(`รหัสองค์กรของ ${t.name}`, <SlugForm tenant={t} />)}>
+                  <Icon name="edit" />
+                  เปลี่ยนรหัส
+                </button>
+              }
+            >
+              <span className="org-page-figure mono">{t.slug}</span>
+            </Row>
+            <Row
+              label="พื้นที่ดิสก์"
+              hint={
+                usage
+                  ? `ไฟล์แนบ ${bytesText(usage.storage_bytes)} · ฐานข้อมูล ${bytesText(usage.database_bytes)}${usage.quota_mb ? '' : ' · ไม่มีโควตา ใช้ดิสก์ได้ไม่จำกัด และทำให้ทุกองค์กรเขียนข้อมูลไม่ได้เมื่อดิสก์เต็ม'}`
+                  : undefined
+              }
+              action={
+                usage && (
+                  <button type="button" className="btn sm" onClick={() => openModal(`โควตาพื้นที่ของ ${t.name}`, <QuotaForm org={usage} />)}>
+                    <Icon name="settings" />
+                    {usage.quota_mb ? 'เปลี่ยนโควตา' : 'กำหนดโควตา'}
+                  </button>
+                )
+              }
+            >
+              {usage ? (
+                <span className="org-page-figure">
+                  {bytesText(usage.used_bytes)}
+                  <span className="muted"> / {usage.quota_mb ? `${usage.quota_mb >= 1024 ? `${Math.round(usage.quota_mb / 1024)} GB` : `${usage.quota_mb} MB`}` : 'ยังไม่ได้กำหนด'}</span>
+                </span>
+              ) : (
+                <span className="tiny muted">กำลังอ่านตัวเลขการใช้งาน…</span>
+              )}
+            </Row>
+            <Row
+              label="ผู้ดูแลองค์กร"
+              action={
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={page.can_invite} />)}
+                >
+                  <Icon name="plus" />
+                  {t.admins.length ? 'เพิ่มผู้ดูแล' : 'เชิญผู้ดูแล'}
+                </button>
+              }
+            >
+              <span className="org-page-admins">
+                {t.admins.map((a) => (
+                  <span key={a.email} className="org-admin" title={a.email}>
+                    {a.name}
+                  </span>
+                ))}
+                {t.admin_invites.map((email) => (
+                  <span key={email} className="org-admin muted" title="ส่งคำเชิญแล้ว ยังไม่ตอบรับ">
+                    <Icon name="clock" />
+                    {email}
+                  </span>
+                ))}
+                {!t.admins.length && !t.admin_invites.length && <span className="org-admin-missing">ยังไม่มีผู้ดูแล</span>}
+              </span>
+            </Row>
+          </section>
 
-        <section className="card info-block">
-          <h2>สถานะองค์กร</h2>
-          {isHome && t.status === 'active' ? (
-            <p className="org-access muted">
-              <Icon name="globe" />
-              องค์กรหลัก · ลูกค้าทุกคนสมัครและเข้าสู่ระบบผ่านองค์กรนี้ จึงระงับไม่ได้
-            </p>
-          ) : t.status === 'active' ? (
-            <>
-              <p className="tiny muted">ระงับแล้วทีมงานและลูกค้าใช้งานไม่ได้จนกว่าจะเปิดอีกครั้ง</p>
-              <button type="button" className="btn sm org-suspend" onClick={() => openModal(`ระงับองค์กร ${t.name}`, <SuspendTenantForm id={t.id} name={t.name} />)}>
-                <Icon name="lock" />
-                ระงับองค์กร
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="tiny muted">องค์กรนี้ถูกระงับอยู่ · ทีมงานเข้าพื้นที่ทำงานไม่ได้ และหน้าลูกค้าปิด</p>
-              <button
-                type="button"
-                className="btn sm"
-                onClick={() =>
-                  confirm({
-                    title: `เปิดใช้งาน ${t.name} อีกครั้ง`,
-                    message: 'ทีมงานกลับเข้าพื้นที่ทำงานได้ หน้าลูกค้าและช่องทาง LINE / Facebook กลับมารับเรื่องทันที',
-                    cancelLabel: 'ยกเลิก',
-                    confirmLabel: 'เปิดใช้งาน',
-                    run: async () => {
-                      await setTenantStatus(t.id, 'active');
-                      toast(`เปิดใช้งาน ${t.name} แล้ว`);
-                      await refresh(PLATFORM_PREFIX, '/api/bootstrap');
-                    },
-                  })
+          {/* The thing this page exists for: a switch that says what it does, not a count in a table cell. */}
+          <section className="card">
+            <div className="card-header">
+              <div>
+                <h2>ฟีเจอร์ของ {t.name}</h2>
+              </div>
+            </div>
+            <div className="card-body">
+              <FeatureForm tenant={t} catalogue={page.feature_catalogue ?? []} />
+            </div>
+          </section>
+        </div>
+
+        <div className="org-column">
+          <section className="card">
+            <div className="card-header">
+              <div>
+                <h2>ทีมงานและการเข้าถึง</h2>
+              </div>
+            </div>
+            <Row
+              label="สิทธิ์เข้าช่วยเหลือ"
+              hint="เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติ และดูได้อย่างเดียว"
+              action={
+                'pending' in access ? (
+                  <button type="button" className="btn sm subtle" onClick={() => void withdraw(access.pending, false)}>
+                    ยกเลิกคำขอ
+                  </button>
+                ) : 'canOpen' in access ? (
+                  <button
+                    type="button"
+                    className="btn sm"
+                    onClick={() => switchTenant(t.id).catch((error: unknown) => toast(error instanceof Error ? error.message : String(error), true))}
+                  >
+                    <Icon name="arrow" />
+                    ดูแบบอ่านอย่างเดียว
+                  </button>
+                ) : 'noAccess' in access && access.canRequest ? (
+                  <button type="button" className="btn sm" onClick={() => openModal('ขอสิทธิ์ Support Access', <SupportAccessForm id={t.id} name={t.name} />)}>
+                    <Icon name="shield" />
+                    ขอเข้าช่วยเหลือ
+                  </button>
+                ) : null
+              }
+            >
+              {'current' in access && (
+                <span className="org-access">
+                  <Icon name="check" />
+                  กำลังดูอยู่ (อ่านอย่างเดียว)
+                </span>
+              )}
+              {'pending' in access && (
+                <span className="org-access org-support-pending">
+                  <Icon name="clock" />
+                  รอผู้ดูแลองค์กรอนุมัติ · ขอ {access.pending.hours} ชม.
+                </span>
+              )}
+              {'canOpen' in access && <span className="org-access">ได้รับอนุมัติแล้ว</span>}
+              {'noAccess' in access && (
+                <span className="org-access muted">
+                  <Icon name="lock" />
+                  {access.canRequest ? 'ยังไม่มีสิทธิ์' : access.noAccess}
+                </span>
+              )}
+            </Row>
+            <Row
+              label="การยืนยันสองขั้นตอนของทีมงาน"
+              hint="รีเซ็ตให้ทีมงานที่ทำโทรศัพท์และรหัสสำรองหาย โดยไม่ต้องเข้าเซิร์ฟเวอร์"
+              action={
+                <button type="button" className="btn sm" onClick={() => openModal(`การยืนยันสองขั้นตอนของทีมงาน ${t.name}`, <StaffSecurityList id={t.id} />)}>
+                  <Icon name="shield" />
+                  ดูและรีเซ็ต
+                </button>
+              }
+            />
+          </section>
+
+          <section className="card">
+            <div className="card-header">
+              <div>
+                <h2>ระงับและปิดองค์กร</h2>
+              </div>
+            </div>
+            <Row
+              label="สถานะ"
+              hint={
+                isHome && t.status === 'active'
+                  ? 'องค์กรหลัก ลูกค้าทุกคนสมัครและเข้าสู่ระบบผ่านองค์กรนี้ จึงระงับไม่ได้'
+                  : t.status === 'active'
+                    ? 'ระงับแล้วทีมงานและลูกค้าใช้งานไม่ได้จนกว่าจะเปิดอีกครั้ง'
+                    : 'ทีมงานเข้าพื้นที่ทำงานไม่ได้ และหน้าลูกค้าปิด'
+              }
+              action={
+                isHome ? null : t.status === 'active' ? (
+                  <button type="button" className="btn sm org-suspend" onClick={() => openModal(`ระงับองค์กร ${t.name}`, <SuspendTenantForm id={t.id} name={t.name} />)}>
+                    <Icon name="lock" />
+                    ระงับองค์กร
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn sm"
+                    onClick={() =>
+                      confirm({
+                        title: `เปิดใช้งาน ${t.name} อีกครั้ง`,
+                        message: 'ทีมงานกลับเข้าพื้นที่ทำงานได้ หน้าลูกค้าและช่องทาง LINE / Facebook กลับมารับเรื่องทันที',
+                        cancelLabel: 'ยกเลิก',
+                        confirmLabel: 'เปิดใช้งาน',
+                        run: async () => {
+                          await setTenantStatus(t.id, 'active');
+                          toast(`เปิดใช้งาน ${t.name} แล้ว`);
+                          await refresh(PLATFORM_PREFIX, '/api/bootstrap');
+                        },
+                      })
+                    }
+                  >
+                    <Icon name="restore" />
+                    เปิดใช้งานอีกครั้ง
+                  </button>
+                )
+              }
+            >
+              <Badge status={t.status} />
+            </Row>
+            {!isHome && (
+              <Row
+                label="ปิดองค์กรถาวร"
+                hint={
+                  t.status !== 'suspended'
+                    ? 'ระงับองค์กรก่อน จึงส่งออกข้อมูลและปิดถาวรได้'
+                    : t.exported_at && !exportedRecently
+                      ? 'ไฟล์ส่งออกเก่ากว่า 30 วัน ส่งออกใหม่ก่อนปิดถาวร'
+                      : 'ลบข้อมูลทั้งหมดจริงตาม PDPA และคืนพื้นที่ดิสก์ ย้อนกลับไม่ได้'
+                }
+                action={
+                  t.status === 'suspended' && (
+                    <>
+                      <button type="button" className="btn sm" onClick={() => void exportAll()}>
+                        <Icon name="download" />
+                        {t.exported_at ? 'ส่งออกอีกครั้ง' : 'ส่งออกข้อมูล'}
+                      </button>
+                      {exportedRecently && (
+                        <button type="button" className="btn sm danger" onClick={closeForGood}>
+                          <Icon name="close" />
+                          ปิดถาวร
+                        </button>
+                      )}
+                    </>
+                  )
                 }
               >
-                <Icon name="restore" />
-                เปิดใช้งานอีกครั้ง
-              </button>
-            </>
-          )}
-        </section>
-
-        {!isHome && (
-          <section className="card info-block">
-            <h2>ปิดองค์กรถาวร</h2>
-            <p className="tiny muted">สำหรับองค์กรที่เลิกใช้แล้ว ลบข้อมูลทั้งหมดจริงตาม PDPA และคืนพื้นที่ดิสก์ ย้อนกลับไม่ได้</p>
-            {t.status !== 'suspended' ? (
-              <p className="org-access muted">
-                <Icon name="lock" />
-                ระงับองค์กรก่อน จึงส่งออกข้อมูลและปิดถาวรได้
-              </p>
-            ) : (
-              <>
-                <p className="tiny">
-                  {t.exported_at ? `ส่งออกข้อมูลล่าสุด ${date(t.exported_at, true)}` : 'ขั้นแรก ส่งออกข้อมูลทั้งองค์กรเป็นไฟล์เดียว แล้วส่งให้เจ้าขององค์กรเก็บไว้'}
-                </p>
-                <div className="flex">
-                  <button type="button" className="btn sm" onClick={() => void exportAll()}>
-                    <Icon name="download" />
-                    {t.exported_at ? 'ส่งออกอีกครั้ง' : 'ส่งออกข้อมูลทั้งองค์กร'}
-                  </button>
-                  {exportedRecently ? (
-                    <button type="button" className="btn sm danger" onClick={closeForGood}>
-                      <Icon name="close" />
-                      ปิดถาวร
-                    </button>
-                  ) : (
-                    t.exported_at && <span className="tiny muted">ไฟล์ส่งออกเก่ากว่า 30 วัน ส่งออกใหม่ก่อนปิดถาวร</span>
-                  )}
-                </div>
-              </>
+                {t.status === 'suspended' && (
+                  <span className="tiny">
+                    {t.exported_at ? `ส่งออกข้อมูลล่าสุด ${date(t.exported_at, true)}` : 'ขั้นแรก ส่งออกข้อมูลทั้งองค์กรเป็นไฟล์เดียว แล้วส่งให้เจ้าขององค์กรเก็บไว้'}
+                  </span>
+                )}
+              </Row>
             )}
           </section>
-        )}
+        </div>
       </div>
     </>
   );

@@ -1,13 +1,23 @@
 /* ภาพรวมระบบ (features/platform/SystemScreen.tsx, components/HealthCards.tsx): what needs doing first, then the
-   numbers, then the cards that look across every organization. Cards lift slightly off the page, the key numbers are
-   large, and colour says the state: green normal, amber worth a look, red broken. */
+   numbers, then the cards that look across every organization. The cards are the plain cards of every other screen;
+   colour is kept for the numbers and the chips that say a state (green normal, amber worth a look, red broken), never
+   for bars or tints on the cards themselves. */
 
-.system-page .card,
-.system-page .stat-card {
-  box-shadow: 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
-}
 .system-page .card-header {
   border-bottom: 1px solid var(--line);
+}
+/* The header's line needs air under it: the shared card body starts with no top padding. */
+.system-page .card-header+.card-body {
+  padding-top: 18px;
+}
+/* The backup card is several things in a row (the last backup, the daily one, the copy away, restoring, the files):
+   one gap between them, instead of each carrying its own margin and some of them touching. */
+#backups .card-body {
+  display: grid;
+  gap: 18px;
+}
+#backups .card-body>* {
+  margin: 0;
 }
 .system-page .stats-grid {
   gap: 16px;
@@ -19,18 +29,14 @@
   line-height: 1.15;
   letter-spacing: -.01em;
 }
-.system-page .stat-card:has(.stat-icon.green) {
-  box-shadow: inset 4px 0 #1f9d63, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
-}
 .system-page .stat-card:has(.stat-icon.green) .stat-value {
   color: var(--green);
 }
-.system-page .stat-card:has(.stat-icon.blue) {
-  box-shadow: inset 4px 0 #6a6a6a, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a0f;
-}
+/* An urgent number is red; the card itself stays the plain card (the shared .stat-card.urgent paints a red bar). */
 .system-page .stat-card.urgent {
-  background: #fff6f3;
-  box-shadow: inset 4px 0 #c2410c, 0 1px 2px #0f172a0d, 0 4px 14px #0f172a14;
+  background: var(--paper);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
 }
 .system-page .stat-card.urgent .stat-value {
   color: var(--red);
@@ -41,15 +47,11 @@
 
 /* ต้องจัดการ: compact rows, the level as a coloured chip, the fix on the right. */
 .todo-card {
-  margin-bottom: 20px;
-  border-left: 4px solid #d97706;
+  margin-bottom: 22px;
 }
 .todo-card .tag-count {
   background: #fde3b0;
   color: var(--amber);
-}
-.todo-clear {
-  border-left-color: #1f9d63;
 }
 .todo-clear .card-body {
   display: flex;
@@ -132,6 +134,10 @@
   display: grid;
   gap: 4px;
   margin-bottom: 0;
+}
+/* The switch has no label above it, so it is lifted to the middle of the boxes beside it instead of their bottom. */
+.backup-settings>.check {
+  padding-bottom: 12px;
 }
 .backup-files td .muted {
   font-weight: 400;

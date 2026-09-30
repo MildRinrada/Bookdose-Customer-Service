@@ -125,11 +125,13 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           href="/platform/organizations"
         />
       </div>
+      {/* Pairs of cards that are about the same height sit side by side; a tall one (backups, the tables) takes the
+          whole width, so nothing is left facing a column of empty space. */}
       <div className="system-grid">
         <section className="card" id="health">
           <div className="card-header">
             <div>
-              <h2>Server Health</h2>
+              <h2>เซิร์ฟเวอร์</h2>
               <p>เปิดทำงานเมื่อ {date(data.started_at, true)}</p>
             </div>
             <Icon name="shield" />
@@ -181,64 +183,12 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
         </section>
       </div>
       {health && (
-        <>
-          <div className="system-grid system-section">
-            <BackupsCard view={health.backups} />
-            <SecurityCard summary={health.security} />
-          </div>
-          <div className="system-section">
-            <ChannelsCard orgs={health.channels} />
-          </div>
-          <div className="system-section">
-            <UsageCard orgs={health.usage} />
-          </div>
-        </>
+        <div className="system-section">
+          <BackupsCard view={health.backups} />
+        </div>
       )}
-      <section className="card system-section">
-        <div className="card-header">
-          <div>
-            <h2>API Usage</h2>
-            <p>คำขอ API ของทุกองค์กร 24 ชั่วโมงล่าสุด แท่งละหนึ่งชั่วโมง · นับตั้งแต่เปิดโปรแกรม</p>
-          </div>
-          <Icon name="chart" />
-        </div>
-        <div className="card-body system-usage">
-          <div>
-            <div className="system-chart" role="group" aria-label="คำขอ API รายชั่วโมง">
-              {data.hours.map((h, i) => {
-                const hour = new Date(h.start).getHours();
-                const tip = `${pad(hour)}:00 · ${number(h.requests)} คำขอ${h.errors ? ` · ผิดพลาด ${h.errors}` : ''}`;
-                return <ChartColumn key={h.start} tip={tip} count={h.requests} max={max} day={i % 3 === 2 || i === 23 ? pad(hour) : ''} />;
-              })}
-            </div>
-            <p className="tiny muted">
-              ชี้หรือแตะที่แท่งเพื่อดูจำนวน · สูงสุด {number(max === 1 && !data.hours.some((h) => h.requests) ? 0 : max)} คำขอต่อชั่วโมง
-            </p>
-          </div>
-          <div className="system-usage-side">
-            <h3>แยกตามส่วนของระบบ</h3>
-            <dl className="system-facts">
-              {Object.entries(apiAreaLabels).map(([key, label]) => (
-                <Fact key={key} label={label} value={number(data.areas[key] || 0)} />
-              ))}
-            </dl>
-            <h3>องค์กรที่ใช้มากที่สุด</h3>
-            {data.tenant_usage.length ? (
-              <ol className="system-tenants">
-                {data.tenant_usage.map((t) => (
-                  <li key={t.id}>
-                    <span className="truncate">{t.name}</span>
-                    <strong>{number(t.requests)}</strong>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="muted">ยังไม่มีคำขอจากองค์กร</p>
-            )}
-          </div>
-        </div>
-      </section>
       <div className="system-grid system-section">
+        {health && <SecurityCard summary={health.security} />}
         <section className="card">
           <div className="card-header">
             <div>
@@ -280,25 +230,75 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
             )}
           </div>
         </section>
-        <section className="card">
-          <div className="card-header">
-            <div>
-              <h2>กิจกรรมล่าสุด</h2>
-              <p>ใครทำอะไรในคอนโซล</p>
-            </div>
-            <Link className="btn subtle small" href="/platform/organizations?tab=activity">
-              ดูทั้งหมด <Icon name="arrow" />
-            </Link>
-          </div>
-          <div className="card-body">
-            <AuditList events={data.audit.slice(0, LOG_ROWS)} />
-          </div>
-        </section>
       </div>
       {health && (
-        <div className="system-section">
-        </div>
+        <>
+          <div className="system-section">
+            <ChannelsCard orgs={health.channels} />
+          </div>
+          <div className="system-section">
+            <UsageCard orgs={health.usage} />
+          </div>
+        </>
       )}
+      <section className="card system-section">
+        <div className="card-header">
+          <div>
+            <h2>การใช้ API</h2>
+            <p>คำขอ API ของทุกองค์กร 24 ชั่วโมงล่าสุด แท่งละหนึ่งชั่วโมง · นับตั้งแต่เปิดโปรแกรม</p>
+          </div>
+          <Icon name="chart" />
+        </div>
+        <div className="card-body system-usage">
+          <div>
+            <div className="system-chart" role="group" aria-label="คำขอ API รายชั่วโมง">
+              {data.hours.map((h, i) => {
+                const hour = new Date(h.start).getHours();
+                const tip = `${pad(hour)}:00 · ${number(h.requests)} คำขอ${h.errors ? ` · ผิดพลาด ${h.errors}` : ''}`;
+                return <ChartColumn key={h.start} tip={tip} count={h.requests} max={max} day={i % 3 === 2 || i === 23 ? pad(hour) : ''} />;
+              })}
+            </div>
+            <p className="tiny muted">
+              ชี้หรือแตะที่แท่งเพื่อดูจำนวน · สูงสุด {number(max === 1 && !data.hours.some((h) => h.requests) ? 0 : max)} คำขอต่อชั่วโมง
+            </p>
+          </div>
+          <div className="system-usage-side">
+            <h3>แยกตามส่วนของระบบ</h3>
+            <dl className="system-facts">
+              {Object.entries(apiAreaLabels).map(([key, label]) => (
+                <Fact key={key} label={label} value={number(data.areas[key] || 0)} />
+              ))}
+            </dl>
+            <h3>องค์กรที่ใช้มากที่สุด</h3>
+            {data.tenant_usage.length ? (
+              <ol className="system-tenants">
+                {data.tenant_usage.map((t) => (
+                  <li key={t.id}>
+                    <span className="truncate">{t.name}</span>
+                    <strong>{number(t.requests)}</strong>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="muted">ยังไม่มีคำขอจากองค์กร</p>
+            )}
+          </div>
+        </div>
+      </section>
+      <section className="card system-section">
+        <div className="card-header">
+          <div>
+            <h2>กิจกรรมล่าสุด</h2>
+            <p>ใครทำอะไรในคอนโซล</p>
+          </div>
+          <Link className="btn subtle small" href="/platform/organizations?tab=activity">
+            ดูทั้งหมด <Icon name="arrow" />
+          </Link>
+        </div>
+        <div className="card-body">
+          <AuditList events={data.audit.slice(0, LOG_ROWS)} />
+        </div>
+      </section>
     </div>
   );
 }

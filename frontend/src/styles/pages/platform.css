@@ -6,24 +6,24 @@
 .platform-filters .filter-pills {
   margin: 0;
 }
+/* Six columns that share the width, so the list never scrolls sideways: the organization, who runs it, members,
+   status, support access, and the way to its own page (where everything else about it lives). */
 #platform-organizations table {
   table-layout: fixed;
   width: 100%;
 }
-#platform-organizations th:nth-child(1) {
-  width: 22%;
+#platform-organizations th:nth-child(1) { width: 28%; }
+#platform-organizations th:nth-child(2) { width: 22%; }
+#platform-organizations th:nth-child(3) { width: 9%; }
+#platform-organizations th:nth-child(4) { width: 12%; }
+#platform-organizations th:nth-child(5) { width: 18%; }
+#platform-organizations th:nth-child(6) { width: 11%; }
+/* The way to the organization's page: one short word, never broken into letters like the wrapping buttons. */
+.org-open {
+  text-align: right;
 }
-#platform-organizations th:nth-child(2) {
-  width: 20%;
-}
-#platform-organizations th:nth-child(3) {
-  width: 8%;
-}
-#platform-organizations th:nth-child(4) {
-  width: 11%;
-}
-#platform-organizations th:nth-child(5) {
-  width: 22%;
+#platform-organizations .org-open .btn {
+  white-space: nowrap;
 }
 .org-access {
   display: inline-flex;
@@ -45,20 +45,6 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-}
-.org-portal {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-.org-portal a {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.org-portal .icon-btn {
-  flex-shrink: 0;
 }
 .org-members {
   font-variant-numeric: tabular-nums;
@@ -85,10 +71,10 @@
   height: 18px;
   flex-shrink: 0;
 }
-@media (max-width: 900px) {
+/* A phone is the one place it scrolls: six columns cannot share 400px. */
+@media (max-width: 760px) {
   #platform-organizations table {
-    table-layout: auto;
-    min-width: 700px;
+    min-width: 640px;
   }
 }
 
@@ -409,11 +395,7 @@
   }
 }
 
-/* Suspending an organization: a quiet button in the row that still reads as the dangerous one. */
-.org-status-action {
-  white-space: nowrap;
-  text-align: right;
-}
+/* Suspending an organization (its own page, and องค์กรที่หลับ): a quiet button that still reads as the dangerous one. */
 .btn.org-suspend {
   color: var(--red);
   border-color: #f1b8b0;
@@ -636,18 +618,6 @@
   margin-top: 0;
 }
 
-/* จัดการองค์กร with the ผู้ดูแลองค์กร column: seven columns. The widths add up to 100%; below the table's minimum width
-   it scrolls sideways instead of letting buttons run into the next column. */
-#platform-organizations table {
-  min-width: 1080px;
-}
-#platform-organizations th:nth-child(1) { width: 18%; }
-#platform-organizations th:nth-child(2) { width: 17%; }
-#platform-organizations th:nth-child(3) { width: 17%; }
-#platform-organizations th:nth-child(4) { width: 7%; }
-#platform-organizations th:nth-child(5) { width: 10%; }
-#platform-organizations th:nth-child(6) { width: 18%; }
-#platform-organizations th:nth-child(7) { width: 13%; }
 #platform-organizations td {
   overflow-wrap: anywhere;
 }
@@ -655,12 +625,6 @@
   max-width: 100%;
   white-space: normal;
   text-align: left;
-}
-#platform-organizations .org-status-action {
-  white-space: normal;
-}
-#platform-organizations .org-status-action .org-access {
-  justify-content: flex-end;
 }
 
 /* รายงานปัญหา: one card per report, the member's own words first and the facts for reproducing it underneath.
@@ -755,50 +719,55 @@
   margin: -4px 0 16px;
 }
 
-/* เปิด/ปิดฟีเจอร์รายองค์กร (จัดการองค์กร): how many are on, and the switches behind it. */
-/* In the list, what is switched off for an organization - which is the only part of it anybody acts on - and the way
-   through to that organization's own page, where it is switched. */
-.feature-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink);
-  font-size: .85rem;
-  text-decoration: none;
-}
-.feature-cell .icon {
-  flex-shrink: 0;
-  width: 15px;
-  height: 15px;
-  color: var(--muted);
-}
-.feature-off {
-  color: var(--amber);
-  font-weight: 600;
-}
-
 /* One organization's own page: everything about it, each setting with room to say what it does. */
+/* Two columns of grouped cards (the facts and the features; the team, then suspending and closing), each card a list
+   of rows: the fact on the left, its one button on the right. Nine small cards of uneven height read as a mess. */
 .org-page {
   display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(min(320px,100%),1fr));
+  grid-template-columns: minmax(0,1.45fr) minmax(0,1fr);
   gap: 18px;
   align-items: start;
 }
-.org-page-wide {
-  grid-column: 1 / -1;
+.org-column {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
 }
-.org-page .info-block {
-  padding: 18px 20px;
+.org-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--line);
 }
-.org-page .info-block h2 {
-  margin: 0 0 4px;
-  font-size: 1rem;
+.org-row-text {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 240px;
+  min-width: 0;
 }
-.org-page .info-block>*+* {
-  margin-top: 10px;
+.org-row-label {
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--muted);
 }
-.org-page .btn {
-  align-self: start;
+.org-row-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.org-row-action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+@media (max-width:1100px) {
+  .org-page {
+    grid-template-columns: minmax(0,1fr);
+  }
 }
 .org-page-heading {
   align-items: flex-start;
@@ -821,9 +790,6 @@
   flex-wrap: wrap;
 }
 .org-page-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   overflow-wrap: anywhere;
 }
 .org-page-figure {
@@ -842,13 +808,6 @@
 }
 .feature-row {
   align-items: flex-start;
-}
-
-/* The codes an organization used to be reached by, under its current help-centre address. */
-.org-former {
-  display: block;
-  margin-top: 2px;
-  overflow-wrap: anywhere;
 }
 
 /* คลังบทความแม่แบบ: one card per ready-made answer, its text shown as written so it can be judged at a glance. */

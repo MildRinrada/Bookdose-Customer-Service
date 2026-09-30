@@ -13,21 +13,19 @@ import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
 import { useToast } from '@/components/ui/Toast';
 import { AuditList } from '@/features/audit';
-import { useCopyText } from '@/components/ui/actions';
 import { date } from '@/lib/format';
 import { tenantStatusLabels } from '@/lib/labels';
 import { useApi, useInvalidate } from '@/lib/query';
-import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import type { Boot } from '@/lib/types';
-import { DORMANT_PATH, PLATFORM_PREFIX, renameTenantSlug, setTenantFeature, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { DORMANT_PATH, PLATFORM_PREFIX, renameTenantSlug, setTenantFeature, TENANTS_PATH, withdrawSupportAccess } from './api';
 import { DormantList } from './components/DormantList';
-import { SupportAccessForm, SuspendTenantForm, TenantAdminForm, TenantForm } from './components/TenantForms';
+import { SupportAccessForm, TenantAdminForm, TenantForm } from './components/TenantForms';
 import type { DormantPage, FeatureInfo, SupportSummary, Tenant, TenantFilters, TenantsPage } from './types';
 
-/* Platform console, จัดการองค์กร: every organization on this installation - who is running, how many people are
-   inside, the link to its customer side, and suspending or reopening it. Two tabs: the list (search, pills and the
+/* Platform console, จัดการองค์กร: every organization on this installation - who is running it, how many people are
+   inside, whether it is open, and the way to its own page (OrganizationScreen), where it is configured. Two tabs: the list (search, pills and the
    pager every other screen uses) and the platform's own activity, paged too (?tab=activity). A link from ภาพรวมระบบ
    → ต้องจัดการ (?admin=<id>) opens that organization's "invite admin" dialog once. The sign-up email and SMS
    settings live on ตั้งค่าระบบ (/platform/settings). Markup: pages/platform/platform*.html. */
@@ -217,14 +215,12 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
                   <thead>
                     <tr>
                       <th>องค์กร</th>
-                      <th>หน้าลูกค้า</th>
                       <th>ผู้ดูแลองค์กร</th>
                       <th>สมาชิก</th>
-                      <th>ฟีเจอร์</th>
                       <th>สถานะ</th>
                       <th>สิทธิ์เข้าช่วยเหลือ</th>
                       <th>
-                        <span className="sr-only">จัดการสถานะ</span>
+                        <span className="sr-only">ตั้งค่า</span>
                       </th>
                     </tr>
                   </thead>
@@ -236,7 +232,6 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
                         index={slice.start + i}
                         support={data.support?.[t.id]}
                         canInvite={data.can_invite}
-                        catalogue={data.feature_catalogue ?? []}
                       />
                     ))}
                   </tbody>
@@ -257,7 +252,7 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
       <p className="muted platform-note">
         <Icon name="lock" />
         <span>
-          ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น ไม่รับเคสและไม่ตอบลูกค้า แต่ละองค์กรมีผู้ดูแลองค์กรของตัวเอง (เชิญได้จากคอลัมน์ “ผู้ดูแลองค์กร”)
+          ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น ไม่รับเคสและไม่ตอบลูกค้า แต่ละองค์กรมีผู้ดูแลองค์กรของตัวเอง (เชิญได้จากหน้าขององค์กรนั้น)
           เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
         </span>
       </p>
@@ -265,27 +260,15 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
   );
 }
 
-function TenantRow({
-  tenant: t,
-  index,
-  support,
-  canInvite,
-  catalogue,
-}: {
-  tenant: Tenant;
-  index: number;
-  support?: SupportSummary;
-  canInvite: boolean;
-  catalogue: FeatureInfo[];
-}) {
+/* One row: enough to find the organization and see whether it needs someone (no admin, suspended, a support request
+   waiting). The customer link, the code, the features and suspending are on its own page. */
+function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; index: number; support?: SupportSummary; canInvite: boolean }) {
   const boot = useBoot().data!;
   const { data: work } = useWorkspace();
   const switchTenant = useSwitchTenant();
-  const copyText = useCopyText();
   const toast = useToast();
   const { openModal, confirm } = useDialogs();
   const refresh = useInvalidate();
-  const url = customerHomeUrl(t.slug, boot.home?.slug);
   const access = tenantAccess(t, boot, Boolean(work), support);
   const inForce = support?.status === 'approved' && support.expires_at ? support : null;
   const withdraw = (summary: SupportSummary, leaving: boolean) =>
@@ -315,38 +298,6 @@ function TenantRow({
           </div>
         </div>
       </td>
-      <td>
-        <div className="org-portal">
-          <a href={url} target="_blank" rel="noopener" title={`เปิดหน้าลูกค้าของ ${t.name} ในแท็บใหม่`}>
-            {url.slice(window.location.origin.length)}
-          </a>
-          <button
-            type="button"
-            className="icon-btn sm"
-            aria-label={`คัดลอกลิงก์หน้าลูกค้าของ ${t.name}`}
-            title="คัดลอกลิงก์"
-            onClick={() => void copyText(url)}
-          >
-            <Icon name="link" />
-          </button>
-          {/* The code is in every link this organization's customers were given; a typo at creation used to be for
-              good. Changing it keeps the old code leading here, so nothing already sent out breaks. */}
-          <button
-            type="button"
-            className="icon-btn sm"
-            aria-label={`แก้ไขรหัสองค์กรของ ${t.name}`}
-            title="แก้ไขรหัสองค์กร"
-            onClick={() => openModal(`รหัสองค์กรของ ${t.name}`, <SlugForm tenant={t} />)}
-          >
-            <Icon name="edit" />
-          </button>
-        </div>
-        {t.former_slugs?.length > 0 && (
-          <span className="tiny muted org-former" title="รหัสเดิมที่ยังใช้เปิดหน้านี้ได้">
-            เดิม: {t.former_slugs.join(', ')}
-          </span>
-        )}
-      </td>
       <td className="org-admins">
         {t.admins.map((a) => (
           <span key={a.email} className="org-admin" title={a.email}>
@@ -359,20 +310,22 @@ function TenantRow({
             {email}
           </span>
         ))}
-        {!t.admins.length && !t.admin_invites.length && <span className="org-admin-missing">ยังไม่มีผู้ดูแล</span>}
-        <button
-          type="button"
-          className="btn sm"
-          onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={canInvite} />)}
-        >
-          <Icon name="plus" />
-          {t.admins.length ? 'เพิ่มผู้ดูแล' : 'เชิญผู้ดูแล'}
-        </button>
+        {!t.admins.length && !t.admin_invites.length && (
+          <>
+            <span className="org-admin-missing">ยังไม่มีผู้ดูแล</span>
+            {/* Adding a second admin is on the organization's page; an organization nobody runs is fixed from here. */}
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={canInvite} />)}
+            >
+              <Icon name="plus" />
+              เชิญผู้ดูแล
+            </button>
+          </>
+        )}
       </td>
       <td className="org-members">{t.member_count}</td>
-      <td>
-        <FeatureCell tenant={t} catalogue={catalogue} />
-      </td>
       <td>
         <Badge status={t.status} />
       </td>
@@ -429,64 +382,13 @@ function TenantRow({
             </span>
           ))}
       </td>
-      <td className="org-status-action">
-        {t.status === 'active' && t.slug === boot.home?.slug ? (
-          // The platform's own organization: every customer signs up and signs in through it (the server refuses too).
-          <span className="org-access muted" title="ลูกค้าทุกคนสมัครและเข้าสู่ระบบผ่านองค์กรนี้ จึงระงับไม่ได้">
-            <Icon name="globe" />
-            องค์กรหลัก
-          </span>
-        ) : t.status === 'active' ? (
-          <button
-            type="button"
-            className="btn sm org-suspend"
-            title={`ระงับ ${t.name}: ทีมงานและลูกค้าใช้งานไม่ได้จนกว่าจะเปิดอีกครั้ง`}
-            onClick={() => openModal(`ระงับองค์กร ${t.name}`, <SuspendTenantForm id={t.id} name={t.name} />)}
-          >
-            <Icon name="lock" />
-            ระงับ
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn sm"
-            title={`เปิดใช้งาน ${t.name} อีกครั้ง`}
-            onClick={() =>
-              confirm({
-                title: `เปิดใช้งาน ${t.name} อีกครั้ง`,
-                message: 'ทีมงานกลับเข้าพื้นที่ทำงานได้ หน้าลูกค้าและช่องทาง LINE / Facebook กลับมารับเรื่องทันที',
-                cancelLabel: 'ยกเลิก',
-                confirmLabel: 'เปิดใช้งาน',
-                run: async () => {
-                  await setTenantStatus(t.id, 'active');
-                  toast(`เปิดใช้งาน ${t.name} แล้ว`);
-                  await refresh(PLATFORM_PREFIX, '/api/bootstrap');
-                },
-              })
-            }
-          >
-            <Icon name="restore" />
-            เปิดใช้งานอีกครั้ง
-          </button>
-        )}
+      <td className="org-open">
+        <Link className="btn sm" href={`${BASE}/${t.id}`} title={`ตั้งค่า ${t.name}: ฟีเจอร์ รหัส พื้นที่ ผู้ดูแล การระงับ`}>
+          <Icon name="settings" />
+          ตั้งค่า
+        </Link>
       </td>
     </tr>
-  );
-}
-
-/* Which features this organization has, and the way to change them. Something new is added to the registry
-   (backend platform/model.py FEATURES) switched off, turned on for one organization here, and only made everyone's
-   default once it has been lived with. */
-function FeatureCell({ tenant: t, catalogue }: { tenant: Tenant; catalogue: FeatureInfo[] }) {
-  if (!catalogue.length) return <span className="muted">-</span>;
-  const on = catalogue.filter((f) => t.features?.[f.key] ?? f.default).length;
-  const off = catalogue.filter((f) => !(t.features?.[f.key] ?? f.default));
-  return (
-    <Link className="feature-cell" href={`${BASE}/${t.id}`} title={`เปิด ${on} จาก ${catalogue.length} ฟีเจอร์ · เปิดหน้าตั้งค่าของ ${t.name}`}>
-      <Icon name="bolt" />
-      {/* What is off is the news; a count on its own says nothing anybody acts on. */}
-      {off.length ? <span className="feature-off">ปิด {off.map((f) => f.label).join(', ')}</span> : `ครบทั้ง ${catalogue.length}`}
-    </Link>
   );
 }
 

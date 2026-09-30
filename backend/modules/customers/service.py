@@ -261,7 +261,10 @@ def verify(cd, body, client=None):
 def _new_session(cd, account_id, client=None):
     """A new session cookie for this device; the device and address are kept so the customer can see and sign out
     each one (customer_security)."""
+    from backend.modules.platform import accounts
     from backend.modules.security import sessions
+    # A suspended account gets no session, whatever the way in (platform/accounts.py).
+    accounts.refuse_suspended(cd,'customer_accounts',account_id)
     token = secrets.token_urlsafe(32)
     repository.delete_expired_sessions(cd)
     repository.insert_session(cd,token_hash(token),account_id,secrets.token_urlsafe(24),after(seconds=sessions.limits(cd,'customer')[1]),

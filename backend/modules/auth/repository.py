@@ -17,7 +17,8 @@ def password_of(db, user_id):
 
 
 def insert_user(db, user_id, name, email, encoded_password, platform_admin=False):
-    db.execute('INSERT INTO users VALUES(?,?,?,?,?,?)',(user_id,name,email,encoded_password,int(platform_admin),now()))
+    db.execute('INSERT INTO users(id,name,email,password,platform_admin,created_at) VALUES(?,?,?,?,?,?)',
+               (user_id,name,email,encoded_password,int(platform_admin),now()))
 
 
 def set_user_name(db, user_id, name):

@@ -1,5 +1,17 @@
 import { api } from '@/lib/api/client';
-import type { Announcement, AnnouncementInput, BackupSettings, BackupsView, GlobalArticleInput, RestorePreview, RestoreResult, TurnstileSettings, VulnsView } from './types';
+import type {
+  Announcement,
+  AnnouncementInput,
+  BackupSettings,
+  BackupsView,
+  GlobalArticleInput,
+  OffsiteSettings,
+  OffsiteView,
+  RestorePreview,
+  RestoreResult,
+  TurnstileSettings,
+  VulnsView,
+} from './types';
 
 /* Endpoints of backend/modules/platform/routes.py. Every platform read lives
    under /api/platform, so refreshing PLATFORM_PREFIX after a write also redraws the histories shown on the
@@ -32,6 +44,24 @@ export const setTenantStatus = (tenantId: string, status: 'active' | 'suspended'
 export const tenantMembersPath = (tenantId: string) => `${TENANTS_PATH}/${tenantId}/members`;
 export const resetStaffSecurity = (userId: string, reason: string) =>
   api<{ emailed: boolean }>(`/api/platform/users/${userId}/reset-security`, { reason });
+/** บัญชีผู้ใช้ (backend platform/accounts.py): any account by its email; suspended everywhere or made to change its password. */
+export type AccountKind = 'staff' | 'customer';
+export type FoundAccount = {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  platform_admin?: boolean;
+  suspended_at: string | null;
+  suspended_reason: string;
+  organizations: { id: string; name: string; slug: string; status: string; role?: string }[];
+};
+export type AccountSearch = { staff: FoundAccount[]; customers: FoundAccount[]; limit: number };
+export const searchAccounts = (email: string) => api<AccountSearch>('/api/platform/accounts/search', { email });
+export const suspendAccount = (kind: AccountKind, id: string, suspended: boolean, reason: string) =>
+  api<{ ok: true }>(`/api/platform/accounts/${kind}/${id}/suspend`, { suspended, reason });
+export const forceAccountReset = (kind: AccountKind, id: string, reason: string) =>
+  api<{ emailed: boolean }>(`/api/platform/accounts/${kind}/${id}/force-reset`, { reason });
 /** ปิดองค์กรถาวร (backend platform/closing.py): the whole organization's archive, then deleting it for good. */
 export const tenantExportPath = (tenantId: string) => `${TENANTS_PATH}/${tenantId}/export`;
 export const closeTenant = (tenantId: string, confirmation: string) =>
@@ -61,6 +91,10 @@ export const retryChannels = (tenantId: string) =>
   api<{ retried: number; skipped: number; reasons: string[] }>(`${TENANTS_PATH}/${tenantId}/channels/retry`, {});
 export const runBackup = () => api<BackupsView>(BACKUPS_PATH, {});
 export const saveBackupSettings = (body: BackupSettings) => api<BackupsView>(`${BACKUPS_PATH}/settings`, body);
+/** Where every backup is copied away from this machine (backend platform/offsite.py); a blank secret keeps the saved one. */
+export const saveOffsite = (body: OffsiteSettings & { secret_key?: string }) => api<OffsiteView>(`${BACKUPS_PATH}/offsite`, body);
+export const testOffsite = () => api<{ ok: true }>(`${BACKUPS_PATH}/offsite/test`, {});
+export const sendOffsiteNow = () => api<{ ok: true; name: string }>(`${BACKUPS_PATH}/offsite/send`, {});
 /** A plain link: the browser downloads the archive with the session cookie (GET needs no CSRF token). */
 export const backupFileUrl = (name: string) => `${BACKUPS_PATH}/${encodeURIComponent(name)}`;
 

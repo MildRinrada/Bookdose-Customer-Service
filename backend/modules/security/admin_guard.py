@@ -9,8 +9,8 @@ it than an organization asks of its members.
   cookies, or Render) and off on a developer's computer, where nobody should have to set up an authenticator to try
   the console.
 - The password again before a dangerous act: restoring or downloading a backup, the PDPA tools, suspending an
-  organization, exporting or closing one for good, resetting a staff member's two-step sign-in, making an organization
-  admin, adding or removing platform admins, the platform's email, SMS and
+  organization, exporting or closing one for good, resetting a staff member's two-step sign-in, suspending an account
+  or forcing its password to change, where backups are copied, making an organization admin, adding or removing platform admins, the platform's email, SMS and
   Turnstile, and the security settings. The session must have proven its password within CONFIRM_SECONDS (signing in
   counts), else 403 with reason 'reauth_required'; the web app asks for the password (POST
   /api/account/confirm-password) and sends the request again. A console left open on a borrowed computer can be

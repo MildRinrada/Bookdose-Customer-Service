@@ -77,6 +77,9 @@ def create_control_tables(db):
     # console tells a customer from a team member. Every report before this came from a team.
     if 'reporter' not in {row[1] for row in db.execute('PRAGMA table_info(problem_reports)')}:
         db.execute("ALTER TABLE problem_reports ADD COLUMN reporter TEXT NOT NULL DEFAULT 'staff'")
+    # An account suspended by a platform admin, staff or customer (platform/accounts.py).
+    from backend.modules.platform import accounts
+    accounts.upgrade(db)
 
 
 def create_tenant_tables(db):

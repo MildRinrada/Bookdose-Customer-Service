@@ -6,6 +6,7 @@ someone. Providers and email are mocked; nothing leaves the machine."""
 import datetime as dt
 import io
 import os
+from pathlib import Path
 import tempfile
 import unittest
 import zipfile
@@ -264,6 +265,85 @@ class PlatformHealthTests(unittest.TestCase):
             home = platform.home_tenant_id(cd)
         self.assertEqual(self.owner.call(f'/api/platform/tenants/{home}/export')[0],409)
         self.assertEqual(self.admin.call(f'/api/platform/tenants/{self.org}',{'confirmation':'alpha'},'DELETE')[0],403)
+
+    def test_an_account_is_found_by_email_and_suspended_everywhere(self):
+        self.enable_registration_mail()
+        visitor,_ = self.visitor()
+        found = self.ok(self.owner,'/api/platform/accounts/search',{'email':'orgadmin@'})
+        staff = found['staff'][0]
+        self.assertEqual([o['id'] for o in staff['organizations']],[self.org])
+        customer = self.ok(self.owner,'/api/platform/accounts/search',{'email':'visitor@example'})['customers'][0]
+        self.assertEqual(customer['organizations'][0]['slug'],'alpha')
+        self.assertEqual(self.owner.call('/api/platform/accounts/search',{'email':'ab'})[0],400)
+        # Suspended: signed out, and the right password no longer signs in, on either kind of account.
+        self.ok(self.owner,f"/api/platform/accounts/staff/{staff['id']}/suspend",{'suspended':True,'reason':'รหัสผ่านรั่ว'})
+        self.assertEqual(self.admin.call('/api/bootstrap')[1].get('user'),None)
+        base.rate_limit.RATES.clear()
+        status,answer = base.Client(self.base).call('/api/sign-in',{'email':'orgadmin@example.com','password':'Test-password-123!'})
+        self.assertEqual((status,answer.get('reason')),(403,'account_suspended'))
+        self.ok(self.owner,f"/api/platform/accounts/customer/{customer['id']}/suspend",{'suspended':True})
+        self.assertEqual(visitor.call('/api/customer/account')[1].get('account'),None)
+        self.assertEqual(base.Client(self.base).call('/api/customer/login',{'email':'visitor@example.com','password':self.CUSTOMER_PASSWORD})[0],403)
+        # Lifted: the password works again.
+        self.ok(self.owner,f"/api/platform/accounts/staff/{staff['id']}/suspend",{'suspended':False})
+        self.assertEqual(base.Client(self.base).call('/api/sign-in',{'email':'orgadmin@example.com','password':'Test-password-123!'})[0],200)
+        # A forced reset: the old password is dead and the owner gets the link.
+        self.mailer.reset_mock()
+        self.assertTrue(self.ok(self.owner,f"/api/platform/accounts/staff/{staff['id']}/force-reset",{})['emailed'])
+        self.assertEqual([c.args[2] for c in self.mailer.call_args_list],['orgadmin@example.com'])
+        base.rate_limit.RATES.clear()
+        self.assertEqual(base.Client(self.base).call('/api/sign-in',{'email':'orgadmin@example.com','password':'Test-password-123!'})[0],401)
+        # Never a platform admin's account from here, and only a platform admin may do any of it.
+        me = self.ok(self.owner,'/api/bootstrap')['user']['id']
+        self.assertEqual(self.owner.call(f'/api/platform/accounts/staff/{me}/suspend',{'suspended':True})[0],400)
+        with D.control() as cd:
+            actions = {r['action'] for r in D.rows(cd,"SELECT action FROM audit_logs WHERE action LIKE 'account.%'")}
+        self.assertTrue({'account.suspended','account.unsuspended','account.password_forced'}<=actions)
+
+    def test_every_backup_is_copied_away_from_this_machine(self):
+        import threading
+        from backend.modules.platform import offsite
+        wait = lambda: [t.join(10) for t in threading.enumerate() if t.name.startswith('bookdose-offsite')]
+        self.assertIn('offsite',self.todo())
+        away = tempfile.TemporaryDirectory(prefix='bookdose-away-')
+        self.addCleanup(away.cleanup)
+        for body in ({'kind':'folder','folder':'relative/path'},{'kind':'folder','folder':str(D.DATA)},
+                     {'kind':'s3','endpoint':'http://s3.example.com','bucket':'b-1','access_key':'A','secret_key':'S'},
+                     {'kind':'s3','endpoint':'https://s3.example.com','bucket':'B!','access_key':'A','secret_key':'S'}):
+            self.assertEqual(self.owner.call('/api/platform/backups/offsite',body)[0],400,body)
+        self.ok(self.owner,'/api/platform/backups/offsite',{'kind':'folder','folder':away.name})
+        self.ok(self.owner,'/api/platform/backups/offsite/test',{})
+        name = self.ok(self.owner,'/api/platform/backups',{})['files'][0]['name']
+        wait()
+        self.assertTrue((Path(away.name)/name).is_file())
+        view = self.ok(self.owner,'/api/platform/backups')['offsite']
+        self.assertEqual((view['last']['ok'],view['last']['name']),(True,name))
+        self.assertNotIn('offsite',self.todo())
+        # S3-compatible storage: a signed PUT to <endpoint>/<bucket>/<prefix><file>; a refusal is urgent and emailed.
+        self.ok(self.owner,'/api/platform/backups/offsite',{'kind':'s3','endpoint':'https://acc.r2.cloudflarestorage.com',
+                                                            'bucket':'bookdose-backups','prefix':'daily','access_key':'AKIDEXAMPLE','secret_key':'Secret-key'})
+        self.assertFalse(self.ok(self.owner,'/api/platform/backups')['offsite']['settings'].get('secret_key'))
+        sent = []
+        def accept(request, timeout):
+            sent.append(request)
+            return io.BytesIO(b'')
+        with patch.object(offsite.urllib.request,'urlopen',side_effect=accept):
+            self.ok(self.owner,'/api/platform/backups/offsite/send',{})
+            wait()
+        request = sent[-1]
+        self.assertEqual((request.get_method(),request.full_url),('PUT',f'https://acc.r2.cloudflarestorage.com/bookdose-backups/daily/{name}'))
+        self.assertTrue(request.get_header('Authorization').startswith('AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/'))
+        self.assertNotIn('Secret-key',str(request.headers))
+        refused = offsite.urllib.error.HTTPError('u',403,'Forbidden',{},None)
+        with patch.object(offsite.urllib.request,'urlopen',side_effect=refused):
+            self.assertEqual(self.owner.call('/api/platform/backups/offsite/test',{})[0],502)
+            self.ok(self.owner,'/api/platform/backups/offsite/send',{})
+            wait()
+        self.assertEqual(self.ok(self.owner,'/api/platform/backups')['offsite']['last']['error'],'HTTP 403')
+        self.assertEqual(self.todo()['offsite-failed']['level'],'critical')
+        with D.control() as cd:
+            self.assertIn('offsite',watch.conditions(cd))
+        self.assertEqual(self.admin.call('/api/platform/backups/offsite',{'kind':''})[0],403)
 
     def test_maintenance_closes_changes_until_the_notice_comes_down(self):
         visitor,conv = self.visitor()

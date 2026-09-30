@@ -31,6 +31,11 @@ def conditions(cd):
     if last and not last.get('ok'):
         kind = {'auto':'อัตโนมัติ','before':'ก่อนกู้คืน'}.get(last.get('kind'),'ที่สั่งจากคอนโซล')
         found['backup'] = f"สำรองข้อมูล{kind}ไม่สำเร็จ ({last.get('error') or 'ไม่ทราบสาเหตุ'}) ตรวจพื้นที่ดิสก์และสิทธิ์เขียนโฟลเดอร์ {backups.folder()}"
+    # The copy away from this machine failed (offsite.py); clears once one goes through.
+    from backend.modules.platform import offsite
+    sent = offsite.last(cd)
+    if offsite.settings(cd)['kind'] and sent and not sent.get('ok'):
+        found['offsite'] = f"ส่งไฟล์สำรอง {sent.get('name','')} ออกนอกเครื่องไม่สำเร็จ ({sent.get('error') or 'ไม่ทราบสาเหตุ'}) ตรวจปลายทางที่ ภาพรวมระบบ → การสำรองข้อมูล"
     snap = monitor.snapshot()
     stopped = [w['name'] for w in snap['workers'] if not w['running']]
     if stopped:

@@ -76,6 +76,27 @@ def reset_security(req, user_id):
     return req.send(200,staff_security.reset_from_console(req.cd,req.session,user_id,req.body,staff_security.client_info(req)))
 
 
+def search_accounts(req):
+    from backend.modules.platform import accounts
+    return req.send(200,accounts.search(req.cd,req.body))
+
+
+@confirm_first
+def suspend_account(req, kind, account_id):
+    from backend.modules.platform import accounts
+    from backend.modules.staff_security import service as staff_security
+    return req.send(200,accounts.set_suspended(req.cd,req.session,kind,account_id,req.body,staff_security.client_info(req)))
+
+
+@confirm_first
+def force_password_reset(req, kind, account_id):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import accounts
+    from backend.modules.staff_security import service as staff_security
+    limited(('platform-force-reset',req.session['user_id']),20,3600)
+    return req.send(200,accounts.force_reset(req.cd,req.session,kind,account_id,req.body,staff_security.client_info(req)))
+
+
 @confirm_first
 def export_tenant(req, tenant_id):
     from backend.modules.platform import closing
@@ -182,6 +203,27 @@ def run_backup(req):
 def save_backup_settings(req):
     from backend.modules.platform import backups as B
     return req.send(200,B.save_settings(req.cd,req.session,req.body))
+
+
+@confirm_first
+def save_offsite(req):
+    """Where every backup is copied: it takes a key to storage outside, so the password is asked again."""
+    from backend.modules.platform import offsite
+    return req.send(200,offsite.save(req.cd,req.session,req.body))
+
+
+def test_offsite(req):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import offsite
+    limited(('platform-offsite-test',req.session['user_id']),10,600)
+    return req.send(200,offsite.test(req.cd))
+
+
+def send_offsite(req):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import offsite
+    limited(('platform-offsite-send',req.session['user_id']),10,3600)
+    return req.send(200,offsite.send_newest(req.cd))
 
 
 def vulnerabilities(req):

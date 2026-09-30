@@ -422,6 +422,89 @@
   background: #fdecea;
 }
 
+/* สำเนานอกเครื่อง (HealthCards OffsiteBlock): its own block inside the backup card. */
+.offsite {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.offsite-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.offsite-head p {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.offsite-ok {
+  margin: 0;
+  color: var(--green);
+  font-size: .875rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.offsite .notice {
+  margin: 0;
+}
+
+/* บัญชีผู้ใช้ (AccountsScreen): one row per account - who, where, then what can be done. */
+.account-results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.account-results li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+}
+.account-results li:first-child {
+  border-top: 0;
+}
+.account-who {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 320px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.account-orgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.account-suspended {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red);
+  font-size: .875rem;
+  font-weight: 600;
+}
+.account-suspended .icon {
+  width: 15px;
+  height: 15px;
+}
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.account-more {
+  margin: 0;
+  padding: 0 20px 16px;
+}
+
 /* การยืนยันสองขั้นตอนของทีมงาน (TenantForms StaffSecurityList): who, what protects the account, and the reset. */
 .staff-security {
   display: grid;

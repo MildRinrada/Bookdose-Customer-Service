@@ -19,6 +19,10 @@ ROUTES = [
     # Its staff and whether each has two-step sign-in; resetting one who lost their phone (staff_security).
     ('GET',   f'/api/platform/tenants/{ID}/members', controller.tenant_members,      'platform'),
     ('POST',  f'/api/platform/users/{ID}/reset-security', controller.reset_security, 'platform'),
+    # Any account by its email, staff or customer: suspended everywhere, or its password made to change (accounts.py).
+    ('POST',  '/api/platform/accounts/search', controller.search_accounts,           'platform'),
+    ('POST',  f'/api/platform/accounts/(staff|customer)/{ID}/suspend', controller.suspend_account, 'platform'),
+    ('POST',  f'/api/platform/accounts/(staff|customer)/{ID}/force-reset', controller.force_password_reset, 'platform'),
     # ปิดองค์กรถาวร (closing.py): the whole organization exported for its owner, then deleted for good.
     ('GET',   f'/api/platform/tenants/{ID}/export', controller.export_tenant,        'platform'),
     ('DELETE',f'/api/platform/tenants/{ID}',  controller.close_tenant,               'platform'),
@@ -33,6 +37,10 @@ ROUTES = [
     ('GET',   '/api/platform/backups',        controller.backups,                    'platform'),
     ('POST',  '/api/platform/backups',        controller.run_backup,                 'platform'),
     ('POST',  '/api/platform/backups/settings', controller.save_backup_settings,     'platform'),
+    # A copy of every backup away from this machine (offsite.py): where, a test, and sending the newest now.
+    ('POST',  '/api/platform/backups/offsite', controller.save_offsite,              'platform'),
+    ('POST',  '/api/platform/backups/offsite/test', controller.test_offsite,         'platform'),
+    ('POST',  '/api/platform/backups/offsite/send', controller.send_offsite,         'platform'),
     ('GET',   r'/api/platform/backups/(bookdose-(?:auto|manual|upload|before)-\d{8}-\d{6}\.zip)', controller.download_backup, 'platform'),
     # Restoring from the console (restore.py): a backup sent in pieces, what restoring it would replace, and the restore.
     ('POST',  '/api/platform/restore/upload', controller.upload_backup,          'platform'),

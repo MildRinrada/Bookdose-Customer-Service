@@ -44,6 +44,9 @@ ACTIVITY_LABELS = {
     'reauth_signed_out':'ออกจากระบบเพราะยืนยันรหัสผ่านผิดหลายครั้ง','sign_in_disowned':'แจ้งว่าไม่ใช่ฉัน และยุติการเข้าสู่ระบบครั้งนั้น',
     # Staff only: a platform admin (or the server owner) removed the second factors (staff_security.reset_user)
     'security_reset':'ผู้ดูแลระบบรีเซ็ตการยืนยันสองขั้นตอนและ Passkey',
+    # Either kind: a platform admin acted on the account (platform/accounts.py)
+    'suspended':'ผู้ดูแลระบบระงับบัญชี','unsuspended':'ผู้ดูแลระบบยกเลิกการระงับบัญชี',
+    'password_forced':'ผู้ดูแลระบบบังคับตั้งรหัสผ่านใหม่',
 }
 
 CONTROL_TABLES = '''

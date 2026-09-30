@@ -84,10 +84,11 @@ def overview(cd):
     from backend.utils import secret_box
     where = folder()
     data = D.DATA.resolve()
+    from backend.modules.platform import offsite
     return {'folder':str(where),'inside_data':data in where.parents or where==data,
             'same_disk':_same_disk(where,data),'from_environment':bool(os.environ.get('BOOKDOSE_BACKUP_DIR')),
             'settings':settings(cd),'last':last(cd),'files':files(),'running':_running.locked(),
-            'key_id':secret_box.current_key_id()}
+            'key_id':secret_box.current_key_id(),'offsite':offsite.view(cd)}
 
 
 def _same_disk(where, data):
@@ -136,8 +137,13 @@ def write(kind, by):
         cd.commit()
         keep = settings(cd)['keep']
     if result['ok']:
-        for old in [f for f in files() if f['kind']=='auto'][keep:]:
-            (where/old['name']).unlink(missing_ok=True)
+        from backend.modules.platform import offsite
+        # A copy away from this machine's disk, when a place is set (offsite.py); the old ones go there too.
+        offsite.send_later(where/name)
+        removed = [f['name'] for f in files() if f['kind']=='auto'][keep:]
+        for old in removed:
+            (where/old).unlink(missing_ok=True)
+        offsite.forget_later(removed)
     return result
 
 

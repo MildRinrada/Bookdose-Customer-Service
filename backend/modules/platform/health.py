@@ -217,6 +217,16 @@ def checklist(cd, session, snapshot):
             items.append(_item('backup','warning','ยังไม่มีการสำรองข้อมูลใน 2 วันที่ผ่านมา' if newest else 'ยังไม่เคยสำรองข้อมูล',
                                'เปิดการสำรองอัตโนมัติรายวัน หรือกดสำรองตอนนี้ แล้วคัดลอกไฟล์ไปเก็บนอกเครื่อง',
                                'สำรองตอนนี้','#backups'))
+    # A copy away from this machine (offsite.py): failing is urgent, missing is advice.
+    from backend.modules.platform import offsite
+    away,sent = offsite.settings(cd),offsite.last(cd)
+    if away['kind'] and sent and not sent.get('ok'):
+        items.append(_item('offsite-failed','critical','ส่งไฟล์สำรองออกนอกเครื่องไม่สำเร็จ',f"เมื่อ {sent['at']} ({sent.get('error','')})",
+                           'ตรวจปลายทาง','#backups'))
+    elif not away['kind']:
+        items.append(_item('offsite','warning','ไฟล์สำรองอยู่เครื่องเดียวกับระบบ',
+                           'ถ้าเครื่องหรือดิสก์เสีย ไฟล์สำรองจะหายไปด้วย ตั้งปลายทางนอกเครื่องให้ระบบส่งสำเนาไปเองทุกครั้งที่สำรอง',
+                           'ตั้งปลายทาง','#backups'))
     if secret_box.key_source()=='file' and repository.setting(cd,KEY_SAVED)!=secret_box.current_key_id():
         items.append(_item('key','warning','กุญแจเข้ารหัสยังอยู่ในโฟลเดอร์ข้อมูลเท่านั้น',
                            f"คัดลอกไฟล์ data/keys/secret.key (รหัส {secret_box.current_key_id()}) ไปเก็บนอกเครื่อง เช่น ตัวจัดการรหัสผ่าน "

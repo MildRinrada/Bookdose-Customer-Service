@@ -34,7 +34,10 @@ export function useFilePills() {
     setProblem(reason);
     let kept = all;
     if (reason) kept = all.filter((file) => !fileProblem([file])).slice(0, FILE_LIMITS.count);
-    if (input && (kept.length !== all.length || input.files?.length !== all.length)) setInputFiles(input, kept);
+    // The input is what is sent, so it must hold exactly these files. Comparing counts alone missed a picture swapped
+    // for its blurred copy (same count): the pill showed the blurred one and the original was sent.
+    const current = [...(input?.files ?? [])];
+    if (input && (current.length !== kept.length || current.some((file, i) => file !== kept[i]))) setInputFiles(input, kept);
     setFiles(kept);
   }, []);
 

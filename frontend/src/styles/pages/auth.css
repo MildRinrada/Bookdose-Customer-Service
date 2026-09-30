@@ -21,6 +21,17 @@
   position: relative;
   overflow: hidden;
 }
+/* The panel is the screen's height and stays put: the taller sign-up tab used to stretch the grid row and the
+   panel with it. (Sticky also holds the photos positioned inside it.) */
+@media (min-width:761px) {
+  .auth-story {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
 .auth-story::after {
   content: '';
   width: 520px;

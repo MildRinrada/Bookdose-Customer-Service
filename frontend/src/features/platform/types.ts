@@ -142,6 +142,25 @@ export type BackupsView = {
   files: BackupFile[];
   running: boolean;
   key_id: string;
+  /** The copy of every backup away from this machine (backend platform/offsite.py). */
+  offsite: OffsiteView;
+};
+
+export type OffsiteSettings = {
+  kind: '' | 'folder' | 's3';
+  folder: string;
+  endpoint: string;
+  region: string;
+  bucket: string;
+  prefix: string;
+  access_key: string;
+};
+export type OffsiteView = {
+  settings: OffsiteSettings;
+  secret_saved: boolean;
+  last: { at: string; ok: boolean; name: string; error?: string } | null;
+  sending: boolean;
+  same_disk: boolean;
 };
 
 export type Announcement = {

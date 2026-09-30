@@ -5,13 +5,28 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
+import { FormActions, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { date, number, relative } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { backupFileUrl, clearAnnouncement, HEALTH_PATH, markKeySaved, PLATFORM_PREFIX, retryChannels, runBackup, saveAnnouncement, saveBackupSettings, setTenantQuota } from '../api';
+import {
+  backupFileUrl,
+  clearAnnouncement,
+  HEALTH_PATH,
+  markKeySaved,
+  PLATFORM_PREFIX,
+  retryChannels,
+  runBackup,
+  saveAnnouncement,
+  saveBackupSettings,
+  saveOffsite,
+  sendOffsiteNow,
+  setTenantQuota,
+  testOffsite,
+} from '../api';
 import { bytesText } from '../labels';
-import type { Announcement, BackupFile, BackupsView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
+import type { Announcement, BackupFile, BackupsView, OffsiteSettings, OffsiteView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
 import { RestoreDialog, uploadBackupFile } from './RestoreDialog';
 
 /* The cards of ภาพรวมระบบ that look across the whole platform (backend platform/health.py and backups.py): what needs
@@ -186,9 +201,10 @@ export function BackupsCard({ view }: { view: BackupsView }) {
         <p className="tiny muted">
           เก็บที่ <code>{view.folder}</code>
           {view.from_environment ? ' (BOOKDOSE_BACKUP_DIR)' : ' · เปลี่ยนได้ด้วย BOOKDOSE_BACKUP_DIR'}
-          {view.same_disk && ' · อยู่บนดิสก์เดียวกับข้อมูล ถ้าดิสก์เสียจะเสียทั้งคู่ ควรคัดลอกไฟล์ไปเก็บที่อื่นด้วย'}
+          {view.same_disk && !view.offsite.settings.kind && ' · อยู่บนดิสก์เดียวกับข้อมูล ถ้าดิสก์เสียจะเสียทั้งคู่'}
           {' '}ไฟล์ที่สั่งเองไม่ถูกลบอัตโนมัติ
         </p>
+        <OffsiteBlock view={view.offsite} hasFiles={view.files.length > 0} />
         <div className="restore-upload">
           <input
             id="restore-upload"
@@ -256,6 +272,147 @@ export function BackupsCard({ view }: { view: BackupsView }) {
         )}
       </div>
     </section>
+  );
+}
+
+/* ส่งไฟล์สำรองออกนอกเครื่อง (backend platform/offsite.py): where every backup is copied as soon as it is made, how the
+   last copy went, a test and "send the newest now". Markup: pages/platform.css (offsite-*). */
+function OffsiteBlock({ view, hasFiles }: { view: OffsiteView; hasFiles: boolean }) {
+  const toast = useToast();
+  const run = useRunAction();
+  const refresh = useInvalidate();
+  const { openModal } = useDialogs();
+  const s = view.settings;
+  const where = s.kind === 'folder' ? `โฟลเดอร์ ${s.folder}` : s.kind === 's3' ? `${s.bucket}/${s.prefix} ที่ ${s.endpoint}` : '';
+  const open = () => openModal('ส่งไฟล์สำรองออกนอกเครื่อง', <OffsiteForm view={view} />);
+  return (
+    <div className="offsite">
+      <div className="offsite-head">
+        <div>
+          <strong>สำเนานอกเครื่อง</strong>
+          <p className="tiny muted">
+            {s.kind ? `ทุกครั้งที่สำรอง ระบบส่งสำเนาไปที่ ${where} เอง` : 'ยังไม่ได้ตั้ง · ถ้าเครื่องหรือดิสก์เสีย ไฟล์สำรองจะหายไปพร้อมกัน'}
+          </p>
+        </div>
+        <button type="button" className="btn sm" onClick={open}>
+          <Icon name="settings" />
+          {s.kind ? 'แก้ปลายทาง' : 'ตั้งปลายทาง'}
+        </button>
+      </div>
+      {s.kind && (
+        <>
+          {view.last ? (
+            <p className={view.last.ok ? 'offsite-ok' : 'notice warning'}>
+              {view.last.ok
+                ? `ส่งสำเนาล่าสุด ${relative(view.last.at)} · ${view.last.name}`
+                : `ส่งสำเนาไม่สำเร็จเมื่อ ${date(view.last.at, true)} (${view.last.error}) กดทดสอบเพื่อตรวจปลายทาง`}
+            </p>
+          ) : (
+            <p className="tiny muted">ยังไม่ได้ส่งไฟล์ไปปลายทางนี้</p>
+          )}
+          {view.same_disk && <p className="tiny muted">โฟลเดอร์นี้อยู่ดิสก์เดียวกับข้อมูล ถ้าดิสก์เสียจะเสียทั้งคู่ ควรใช้ดิสก์อื่นหรือไดรฟ์บนเครือข่าย</p>}
+          <div className="flex">
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() =>
+                void run(async () => {
+                  await testOffsite();
+                  toast('ส่งไฟล์ทดสอบไปปลายทางได้');
+                })
+              }
+            >
+              <Icon name="check" />
+              ทดสอบ
+            </button>
+            {hasFiles ? (
+              <button
+                type="button"
+                className="btn sm"
+                disabled={view.sending}
+                onClick={() =>
+                  void run(async () => {
+                    const answer = await sendOffsiteNow();
+                    toast(`กำลังส่ง ${answer.name} · ผลขึ้นที่นี่เมื่อเสร็จ`);
+                    await refresh(HEALTH_PATH);
+                  })
+                }
+              >
+                <Icon name="send" />
+                {view.sending ? 'กำลังส่ง…' : 'ส่งไฟล์ล่าสุดตอนนี้'}
+              </button>
+            ) : (
+              <span className="tiny muted">ยังไม่มีไฟล์ให้ส่ง กดสำรองตอนนี้ก่อน</span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function OffsiteForm({ view }: { view: OffsiteView }) {
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const { closeModal } = useDialogs();
+  const [kind, setKind] = useState<OffsiteSettings['kind']>(view.settings.kind);
+  const s = view.settings;
+  return (
+    <Form
+      data-form="offsite"
+      onSubmit={async (values) => {
+        await saveOffsite({
+          kind,
+          folder: values.folder ?? '',
+          endpoint: values.endpoint ?? '',
+          region: values.region ?? '',
+          bucket: values.bucket ?? '',
+          prefix: values.prefix ?? '',
+          access_key: values.access_key ?? '',
+          secret_key: values.secret_key ?? '',
+        });
+        closeModal();
+        toast(kind ? 'บันทึกปลายทางแล้ว · กดทดสอบเพื่อตรวจว่าส่งได้' : 'ปิดการส่งไฟล์ออกนอกเครื่องแล้ว');
+        await refresh(HEALTH_PATH);
+      }}
+    >
+      <div className="field">
+        <label htmlFor="offsite-kind">ปลายทาง</label>
+        <select id="offsite-kind" value={kind} onChange={(e) => setKind(e.target.value as OffsiteSettings['kind'])}>
+          <option value="">ไม่ส่ง</option>
+          <option value="folder">โฟลเดอร์บนดิสก์อื่นหรือไดรฟ์บนเครือข่าย</option>
+          <option value="s3">พื้นที่เก็บไฟล์แบบ S3 (Amazon S3, Cloudflare R2, Backblaze B2, Wasabi)</option>
+        </select>
+      </div>
+      {kind === 'folder' && (
+        <>
+          <p className="notice">ใช้ดิสก์อีกลูก ไดรฟ์ที่แชร์บนเครือข่าย หรือไดรฟ์คลาวด์ที่เชื่อมไว้กับเครื่องเซิร์ฟเวอร์ โฟลเดอร์ต้องมีอยู่แล้วและระบบเขียนได้</p>
+          <TextField label="ตำแหน่งโฟลเดอร์บนเซิร์ฟเวอร์ (แบบเต็ม)" name="folder" defaultValue={s.folder} max={500} />
+        </>
+      )}
+      {kind === 's3' && (
+        <>
+          <p className="notice">สร้าง Bucket และกุญแจที่เขียนและลบไฟล์ใน Bucket นั้นได้เท่านั้น ไฟล์ที่ส่งไปมี Token ที่เข้ารหัสแล้ว แต่ไม่มีกุญแจเปิด</p>
+          <TextField label="Endpoint (ขึ้นต้นด้วย https://)" name="endpoint" defaultValue={s.endpoint} max={300} />
+          <div className="form-grid">
+            <TextField label="Bucket" name="bucket" defaultValue={s.bucket} max={63} />
+            <TextField label="Region (R2 ใช้ auto)" name="region" defaultValue={s.region || 'auto'} max={40} required={false} />
+            <TextField label="โฟลเดอร์ใน Bucket" name="prefix" defaultValue={s.prefix} max={100} required={false} />
+            <TextField label="Access key" name="access_key" defaultValue={s.access_key} max={200} />
+          </div>
+          <TextField
+            label={view.secret_saved ? 'Secret key (เว้นว่างเพื่อใช้ค่าที่บันทึกไว้)' : 'Secret key'}
+            name="secret_key"
+            type="password"
+            max={200}
+            required={!view.secret_saved}
+            minLength={1}
+            autoComplete="new-password"
+          />
+        </>
+      )}
+      <FormActions label="บันทึก" onCancel={() => closeModal()} />
+    </Form>
   );
 }
 

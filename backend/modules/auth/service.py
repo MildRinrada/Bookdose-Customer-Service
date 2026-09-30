@@ -101,7 +101,10 @@ def create_session(db, user_id, client=None, browser=None):
     """Store a session on the user's first active organization and return the raw cookie token. It lasts as long as
     the security settings allow for the user (platform admins have shorter limits). `client` (address and browser) is
     what the account's device list shows for it; `browser` the group of accounts it joins (a new one by default)."""
+    from backend.modules.platform import accounts
     from backend.modules.security import sessions
+    # Whatever the way in (password, second step, passkey), a suspended account gets no session.
+    accounts.refuse_suspended(db,'users',user_id)
     token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
     tenant_id = memberships.first_active_tenant(db,user_id)
     user = D.one(db,'SELECT platform_admin FROM users WHERE id=?',(user_id,))

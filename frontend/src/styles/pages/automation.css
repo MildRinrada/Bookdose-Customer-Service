@@ -1,33 +1,7 @@
 /* Automation page, the dashboard's "ถึงคุณ" card and manager view, macros, follow-ups, CSAT, @mentions,
    knowledge search in the composer, the notes-only thread view and the Facebook channel colours. */
 
-/* Automation page */
-.automation-layout {
-  display: grid;
-  grid-template-columns: minmax(0,1.5fr) minmax(0,1fr);
-  gap: 22px;
-  align-items: start;
-}
-/* The list of escalated cases sits under both columns: what the team keeps (rules, macros) and what it sets once
-   (SLA, the survey) are nowhere near the same height, so stacking the log under the shorter one left the page with
-   a column of nothing beside it. A log is also the one thing here that reads better wide than narrow. */
-.automation-wide {
-  grid-column: 1 / -1;
-}
-.auto-more {
-  padding: 0 20px 14px;
-  margin-top: -6px;
-  font-size: .9rem;
-  color: var(--muted);
-}
-.auto-more summary {
-  cursor: pointer;
-  color: var(--link);
-  font-weight: 600;
-}
-.auto-more p {
-  margin: 6px 0 0;
-}
+/* Automation page: laid out with the settings page's frame and menu (pages/settings.css), one part at a time. */
 .auto-list {
   padding-top: 4px;
   padding-bottom: 4px;
@@ -105,14 +79,6 @@
 }
 .auto-subhead {
   border-top: 1px solid var(--line);
-}
-.auto-notes {
-  margin: 0;
-  padding-left: 1.2rem;
-  color: var(--muted);
-}
-.auto-notes li + li {
-  margin-top: 4px;
 }
 .auto-fieldset {
   border: 1px solid var(--line);
@@ -403,9 +369,10 @@
   padding: 10px 20px;
   border-bottom: 1px solid var(--line);
 }
+/* The same grey head as every table (refresh.css th): the page's own colour inside a card read as a hole in it. */
 .agent-head {
   color: var(--muted);
-  background: var(--bg);
+  background: var(--soft);
 }
 .agent-who {
   position: relative;
@@ -563,17 +530,18 @@ a.auto-stat:hover {
   border-radius: 4px;
   background: var(--soft);
 }
+/* The busy-hours map: one blue, deeper as the hour gets busier (the steps are base.css --heat-*, per theme). */
 .lv-1 {
-  background: #e1e1e1 !important;
+  background: var(--heat-1) !important;
 }
 .lv-2 {
-  background: #bfbfbf !important;
+  background: var(--heat-2) !important;
 }
 .lv-3 {
-  background: #8e8e8e !important;
+  background: var(--heat-3) !important;
 }
 .lv-4 {
-  background: #5d5d5d !important;
+  background: var(--heat-4) !important;
 }
 .heat-legend {
   display: flex;

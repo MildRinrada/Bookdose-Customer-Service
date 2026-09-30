@@ -68,12 +68,21 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
         </span>
         {(waiting || urgent || upset || foot.length > 0) && (
           <span className="inbox-foot">
-            {waiting && <span className="inbox-waiting">รอเราตอบ</span>}
-            {upset && <MoodTag mood={c} />}
-            {urgent && <span className={`inbox-urgent ${c.ticket_priority}`}>{priorityLabels[c.ticket_priority!]}</span>}
-            {foot.map((part) => (
-              <span key={part}>{part}</span>
-            ))}
+            {/* What needs the team on its own line; the plain facts under it, so neither wraps into the other. */}
+            {(waiting || upset || urgent) && (
+              <span className="inbox-tags">
+                {waiting && <span className="inbox-waiting">รอเราตอบ</span>}
+                {upset && <MoodTag mood={c} />}
+                {urgent && <span className={`inbox-urgent ${c.ticket_priority}`}>{priorityLabels[c.ticket_priority!]}</span>}
+              </span>
+            )}
+            {foot.length > 0 && (
+              <span className="inbox-facts">
+                {foot.map((part) => (
+                  <span key={part}>{part}</span>
+                ))}
+              </span>
+            )}
           </span>
         )}
       </span>

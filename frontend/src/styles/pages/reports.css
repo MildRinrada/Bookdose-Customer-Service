@@ -159,6 +159,20 @@
 .report-chart .chart-col small {
   color: var(--muted);
 }
+/* ปริมาณเคสต่อวัน: the report's blue (base.css --chart-bar), deeper under the pointer; an unusual day keeps its
+   amber or red below. */
+.report-chart .chart-col progress::-webkit-progress-value {
+  background: var(--chart-bar);
+}
+.report-chart .chart-col progress::-moz-progress-bar {
+  background: var(--chart-bar);
+}
+.report-chart .chart-col:is(:hover,:focus-visible) progress::-webkit-progress-value {
+  background: var(--chart-bar-hover);
+}
+.report-chart .chart-col:is(:hover,:focus-visible) progress::-moz-progress-bar {
+  background: var(--chart-bar-hover);
+}
 /* วันที่ผิดปกติ: a busier day's bar in amber; a quieter day's column tinted red (its bar may be nearly empty). */
 .report-chart .chart-col.high progress::-webkit-progress-value {
   background: #d49a2a;

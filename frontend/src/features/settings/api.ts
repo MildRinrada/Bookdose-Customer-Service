@@ -39,6 +39,9 @@ export type TeamSecurity = {
 export const saveTeamSecurity = (on: boolean) => api<TeamSecurity>(TEAM_SECURITY_PATH, { require_two_factor: on });
 export type QuietClose ={ enabled: boolean; remind_days: number; close_days: number; remind_message: string; close_message: string };
 export const saveQuietClose = (value: QuietClose) => api<{ quiet_close: QuietClose }>('/api/settings/quiet-close', value);
+/** ข้อความรับเรื่องทาง LINE Facebook และ Instagram (backend channels/receipt.py). */
+export type ChannelReceipt = { enabled: boolean; message: string };
+export const saveReceipt = (value: ChannelReceipt) => api<{ channel_receipt: ChannelReceipt }>('/api/settings/receipt', value);
 export const saveSupportBanner = (value: SupportBanner) => api<{ support_banner: SupportBanner }>('/api/settings/banner', value);
 export const saveBusinessHours =(hours: BusinessHours) => api<{ business_hours: BusinessHours }>('/api/settings/hours', hours);
 

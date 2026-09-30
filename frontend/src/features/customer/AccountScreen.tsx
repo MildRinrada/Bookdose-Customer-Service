@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef } from 'react';
 import { Icon } from '@/components/Icon';
+import { usePinnedMenu } from '@/components/ui/usePinnedMenu';
 import { NotificationsSettings } from './settings/NotificationsSettings';
 import { OrganizationsSettings } from './settings/OrganizationsSettings';
 import { ProfileSettings } from './settings/ProfileSettings';
@@ -19,6 +21,8 @@ export function AccountScreen({ tab }: { tab?: string }) {
     organizations: () => <OrganizationsSettings />,
     notifications: () => <NotificationsSettings />,
   }[current]();
+  const nav = useRef<HTMLElement>(null);
+  usePinnedMenu(nav);
   return (
     <>
       <div className="page-heading">
@@ -28,7 +32,7 @@ export function AccountScreen({ tab }: { tab?: string }) {
         </div>
       </div>
       <div className="settings-frame account-frame">
-        <nav className="settings-nav" aria-label="หมวดการตั้งค่าบัญชี">
+        <nav ref={nav} className="settings-nav" aria-label="หมวดการตั้งค่าบัญชี">
           {(Object.keys(accountTabs) as AccountTab[]).map((key) => {
             const meta = accountTabs[key];
             const active = key === current;

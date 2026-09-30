@@ -162,7 +162,9 @@
   border-color: var(--line);
   color: var(--muted);
 }
-tbody tr:hover .contact-actions .btn,tbody tr:focus-within .contact-actions .btn {
+/* Keyboard focus only: after the delete or edit dialog closes, focus comes back to the button the mouse pressed, and
+   :focus-within kept the row lit long after the pointer had left. */
+tbody tr:hover .contact-actions .btn,tbody tr:has(:focus-visible) .contact-actions .btn {
   border-color: #b6bac7;
   color: #454545;
 }

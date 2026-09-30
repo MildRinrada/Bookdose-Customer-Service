@@ -338,7 +338,11 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
         kudos.on_customer_message(db,conversation_id,mid,text)
         # Outside the organization's hours the customer hears when the team is back (organization/hours.py).
         from backend.modules.organization import hours
-        hours.after_customer_message(db,tenant_id,conversation_id)
+        notice = hours.after_customer_message(db,tenant_id,conversation_id)
+        # A new matter on LINE / Facebook / Instagram hears it arrived, and about when (channels/receipt.py): told
+        # before the chat reopens, sent once routing below has chosen the team.
+        from backend.modules.channels import receipt
+        new_matter = not notice and receipt.is_new_matter(db,conversation_id)
         repository.reopen(db,conversation_id)
         tickets.reopen_for_conversation(db,conversation_id)
         # A case paused waiting for the customer is unpaused by the customer: the thing it was waiting for is here.
@@ -353,4 +357,6 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
             if ticket and ticket['assignee_id']:
                 staff_prefs.queue(db,ticket['assignee_id'],'customer_reply',f"ลูกค้าตอบกลับในเคส BD-{ticket['number']}",
                                   f"{ticket['subject']}\n\n{text[:300]}",f"/tickets/{ticket['id']}")
+        if new_matter:
+            receipt.after_customer_message(db,tenant_id,conversation_id)
     return mid

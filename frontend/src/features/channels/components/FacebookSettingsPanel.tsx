@@ -38,7 +38,11 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
     <section className="card mt" id="channel-facebook">
       <div className="card-header">
         <h2>Facebook และ Instagram · เชื่อมเพจจริง</h2>
-        <span className="badge">{c.credentials_configured ? 'บันทึกข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่มีข้อมูลเชื่อมต่อ'}</span>
+        {/* Saved is good news: green with a tick, not a grey that reads like "nothing here". */}
+        <span className={`badge${c.credentials_configured ? ' resolved' : ''}`}>
+          <Icon name={c.credentials_configured ? 'checkCircle' : 'clock'} />
+          {c.credentials_configured ? 'บันทึกข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่มีข้อมูลเชื่อมต่อ'}
+        </span>
       </div>
       <Form
         key={JSON.stringify([c.enabled, c.config, c.credentials_configured, c.route_id])}
@@ -59,7 +63,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
         <SetupSteps steps={facebookSteps(c)} />
         <div className="notice mb">
           รับข้อความจากเพจ Facebook เข้ากล่องข้อความเดียวกับแชทบนเว็บ LINE และอีเมล แล้วตอบกลับจากที่นี่ ต้องมี Meta App ที่เปิด Messenger และ
-          Page Access Token ที่มีสิทธิ์ pages_messaging · ตอบได้ภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้าตามนโยบาย Messenger · ส่งได้เฉพาะข้อความ
+          Page Access Token ที่มีสิทธิ์ pages_messaging และ pages_manage_metadata · ตอบได้ภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้าตามนโยบาย Messenger · ส่งได้เฉพาะข้อความ
         </div>
         {v.page_name && (
           <p className="small">
@@ -107,7 +111,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
             onClick={() =>
               run(async () => {
                 await testFacebook();
-                toast('เชื่อมต่อเพจสำเร็จ (ยังไม่ได้ส่งข้อความจริง)');
+                toast('เชื่อมต่อเพจสำเร็จ และเพจพร้อมส่งข้อความเข้าระบบ (ยังไม่ได้ส่งข้อความจริง)');
                 await refresh(...CHANNEL_SETTINGS_PREFIXES);
               })
             }
@@ -130,8 +134,8 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
               </button>
             </div>
             <p>
-              ใส่ทั้งสองค่าใน Meta for Developers → Messenger → Webhooks แล้ว Subscribe เหตุการณ์ messages ของเพจ ถ้ารับ DM Instagram ด้วย
-              ให้ใส่ค่าเดียวกันที่ Webhooks ของ Instagram แล้วติ๊ก messages · ถ้าเปิดผ่าน localhost ให้ใช้โดเมน HTTPS
+              ใส่ทั้งสองค่าในหน้าการตั้งค่า Messenger API ของแอป ส่วนกำหนดค่า Webhooks เมื่อเปิดใช้ช่องทาง ระบบจะสั่งให้เพจส่งข้อความเข้ามาเอง ถ้ารับ
+              DM Instagram ด้วย ให้ใส่ค่าเดียวกันที่ Webhooks ของ Instagram แล้วติ๊ก messages · ถ้าเปิดผ่าน localhost ให้ใช้โดเมน HTTPS
               สาธารณะที่ชี้มายังเซิร์ฟเวอร์นี้แทน
             </p>
           </div>

@@ -303,6 +303,10 @@ html.sidebar-collapsed .platform-scope>.grow {
   margin: auto;
   padding: 31px 36px 36px;
 }
+/* Cards stacked straight on a page never touch (the gap of the settings pages); one that sets its own .mt keeps it. */
+.content>.card+.card:not(.mt) {
+  margin-top: 18px;
+}
 .page-heading {
   display: flex;
   justify-content: space-between;
@@ -511,6 +515,15 @@ html.sidebar-collapsed .platform-scope>.grow {
 .topbar {
   height: auto;
   padding-block: 14px;
+}
+/* The staff top bar stays put while the page scrolls under it (its height is --topbar-h, StaffShell); on a phone it
+   scrolls away to leave the room to the page. */
+@media (min-width:761px) {
+  .app-main>.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
 }
 .sidebar-top {
   display: flex;

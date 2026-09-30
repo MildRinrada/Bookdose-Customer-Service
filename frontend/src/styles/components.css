@@ -10,6 +10,14 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* An icon taken as it is from an outside set (Icon.tsx `filled`): its shape is filled, never outlined. */
+.icon.filled {
+  fill: currentColor;
+  stroke: none;
+}
+.icon .icon-solid {
+  fill: currentColor;
+}
 .pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1596,14 +1604,6 @@ select:disabled {
   margin-right: 4px;
 }
 /* ตั้งค่า AI: the mood switch's line of explanation under its label. */
-.ai-mood-switch>span {
-  display: grid;
-  gap: 2px;
-}
-.ai-mood-switch small {
-  font-weight: 400;
-}
-
 /* The organization requires two-step sign-in (StaffShell): on ตั้งค่าบัญชี, the reason and the way back to work. */
 .two-factor-gate-notice {
   display: flex;

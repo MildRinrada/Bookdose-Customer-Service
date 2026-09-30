@@ -111,19 +111,30 @@
 .staff-chats .inbox-item.needs-reply .inbox-preview {
   color: var(--ink);
 }
+/* Two lines: what needs the team (the waiting mark, the mood, the urgency), then the plain facts with dots between. */
 .inbox-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 0;
+  display: grid;
+  gap: 5px;
   margin: 5px 0 0;
   font-size: .8438rem;
   color: var(--muted);
 }
-.inbox-foot>span+span::before {
+.inbox-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.inbox-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 0;
+}
+.inbox-facts>span+span::before {
   content: '·';
-  margin: 0 7px;
-  color: #b3b9b2;
+  margin: 0 8px;
+  color: var(--control-line);
 }
 .inbox-waiting {
   display: inline-flex;

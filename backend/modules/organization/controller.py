@@ -76,6 +76,12 @@ def save_quiet_close(req):
 
 
 @require_role('admin')
+def save_receipt(req):
+    from backend.modules.channels import receipt
+    return req.send(200,{'channel_receipt':receipt.save(req.db,req.ctx,req.body)})
+
+
+@require_role('admin')
 def save_team_snippets(req):
     service.save_team_snippets(req.db,req.ctx,req.body)
     return req.send(200,{'ok':True})

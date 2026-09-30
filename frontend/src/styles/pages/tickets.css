@@ -157,7 +157,8 @@
   pointer-events: none;
   transition: opacity .12s;
 }
-tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
+/* Keyboard focus only, so a dialog handing focus back to the pressed button does not leave the actions showing. */
+tbody tr:hover .row-actions,tbody tr:has(:focus-visible) .row-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -289,7 +290,7 @@ tbody tr:hover .row-actions,tbody tr:focus-within .row-actions {
   background-color: var(--paper);
 }
 .ticket-list tbody tr:hover .quick-cell,
-.ticket-list tbody tr:focus-within .quick-cell {
+.ticket-list tbody tr:has(:focus-visible) .quick-cell {
   background-color: var(--soft);
 }
 .ticket-list .ticket-title {

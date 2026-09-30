@@ -123,6 +123,38 @@ class ChannelTests(unittest.TestCase):
         media=self.ok(self.admin,'/api/conversations/'+conv['id'])['messages'][-1]['attachments'][0]
         self.assertEqual((media['name'],media['mime']),('video.mp4','video/mp4'))
 
+    def test_line_receipt_once_per_matter_and_its_buttons(self):
+        self.ok(self.admin,'/api/settings/receipt',{'enabled':True,'message':'ได้รับข้อความแล้ว ทีมงานจะตอบกลับ{เวลารอ}'})
+        conv=self.incoming_line()
+        cfg=next(c for c in self.ok(self.admin,'/api/channels') if c['kind']=='line')
+        def messages(author=None,kind=None):
+            found=self.ok(self.admin,'/api/conversations/'+conv['id'])['messages']
+            return [m for m in found if (author is None or m['author_name']==author) and (kind is None or m['kind']==kind)]
+        def line(key,**event):
+            self.webhook(cfg['route_id'],[self.event(key,**event)]);C.process_line(self.org,app.store_message)
+        receipt=messages('ระบบ')
+        self.assertEqual(len(receipt),1)
+        self.assertRegex(receipt[0]['body'],r'^ได้รับข้อความแล้ว ทีมงานจะตอบกลับ(ภายใน|โดยเร็วที่สุด)')
+        with patch.object(T,'send_line',return_value='provider-id') as send:
+            self.assertTrue(C.process_outbox(self.org))
+        sent=send.call_args.args[2][0]
+        self.assertEqual(sent['text'],receipt[0]['body'])
+        self.assertEqual([i['action']['data'] for i in sent['quickReply']['items']],['bookdose:queue','bookdose:no_rush'])
+        # Another message while waiting is the same matter.
+        line('event-2',message={'id':'124','type':'text','text':'ขอเพิ่มเติม'})
+        self.assertEqual(len(messages('ระบบ')),1)
+        # The buttons: answered in the chat, never stored as the customer's message.
+        written=len(messages(kind='customer'))
+        line('press-1',type='postback',postback={'data':'bookdose:queue'})
+        self.assertRegex(messages('ระบบ')[-1]['body'],r'^ตอนนี้คุณอยู่ประมาณลำดับที่ \d+ ')
+        line('press-2',type='postback',postback={'data':'bookdose:no_rush'})
+        self.assertTrue(messages('ระบบ')[-1]['body'].startswith('รับทราบ ทีมงานจะตอบกลับภายใน'))
+        self.assertEqual(len(messages(kind='customer')),written)
+        # The team answers, the customer writes on: still the same matter.
+        self.reply(conv)
+        line('event-3',message={'id':'125','type':'text','text':'ขอบคุณ'})
+        self.assertEqual(len(messages('ระบบ')),3)
+
     def test_line_late_event_does_not_reopen(self):
         conv=self.incoming_line();self.ok(self.admin,'/api/conversations/'+conv['id'],{'status':'closed'},'PATCH')
         cfg=next(c for c in self.ok(self.admin,'/api/channels') if c['kind']=='line')
@@ -327,6 +359,40 @@ class TransportTests(unittest.TestCase):
         with patch.object(T,'open_without_redirects',side_effect=refused):
             with self.assertRaises(T.ChannelError) as raised:T.verify_line(secret)
         self.assertEqual(raised.exception.code,'credentials')
+
+    def test_facebook_page_token_app_secret_and_page_subscription(self):
+        asked=[]
+        def graph(kind='PAGE',app='900',secret_ok=True,fields=()):
+            def answer(token,path,body=None,sending=False):
+                asked.append((token,path,body))
+                if path.startswith('/app'):return {'id':'900'}
+                if path.startswith('/debug_token'):
+                    if not secret_ok:raise T.ChannelError('rejected')
+                    return {'data':{'is_valid':True,'app_id':app,'type':kind}}
+                if path.startswith('/me'):return {'id':'123','name':'Bookdose Page'}
+                if path=='/123/subscribed_apps':return {'data':[{'id':'900','subscribed_fields':list(fields)}]}
+                return {'success':True}
+            return answer
+        with patch.object(T,'facebook_request',side_effect=graph()):
+            self.assertEqual(T.verify_facebook('page-token','app-secret'),{'identity':'123','display_name':'Bookdose Page','app_id':'900'})
+        # Meta is asked with the app's own token, so a secret of another app cannot pass.
+        self.assertEqual(asked[1][0],'900|app-secret')
+        self.assertEqual(urllib.parse.parse_qs(asked[1][1].split('?',1)[1]),{'input_token':['page-token']})
+        for answer,code in ((graph(kind='USER'),'not_page'),(graph(secret_ok=False),'app_secret'),(graph(app='901'),'app_secret')):
+            with patch.object(T,'facebook_request',side_effect=answer):
+                with self.assertRaises(T.ChannelError) as raised:T.verify_facebook('page-token','app-secret')
+            self.assertEqual(raised.exception.code,code)
+        # The Page's other fields for this app are kept; nothing is asked once messages is there.
+        asked.clear()
+        with patch.object(T,'facebook_request',side_effect=graph(fields=['message_reads'])):
+            self.assertTrue(T.subscribe_facebook('page-token','123','900'))
+        self.assertEqual(urllib.parse.parse_qs(asked[-1][1].split('?',1)[1]),{'subscribed_fields':['message_reads,messages']})
+        self.assertEqual(asked[-1][2],{})
+        with patch.object(T,'facebook_request',side_effect=graph(fields=['messages'])):
+            self.assertFalse(T.subscribe_facebook('page-token','123','900'))
+        with patch.object(T,'facebook_request',side_effect=T.ChannelError('credentials')):
+            with self.assertRaises(T.ChannelError) as raised:T.subscribe_facebook('page-token','123','900')
+        self.assertEqual(raised.exception.code,'subscribe')
 
     def test_smtp_negative_ack_vs_lost_ack(self):
         cfg={'address':'support@example.com'}

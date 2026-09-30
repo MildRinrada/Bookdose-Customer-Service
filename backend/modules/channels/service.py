@@ -16,7 +16,7 @@ from backend.extensions import channel_transport as T
 from backend.modules.platform import repository as platform_repository, service as platform_service
 from backend.middleware.access import get_scoped
 from backend.modules.ai import service as ai
-from backend.modules.channels import email_oauth as O, facebook, file_links as F, health, repository, schema
+from backend.modules.channels import email_oauth as O, facebook, file_links as F, health, receipt, repository, schema
 from backend.modules.channels.model import KINDS
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations, service as conversation_service
@@ -284,6 +284,13 @@ def ingest_line(db, tenant_id, row, event, attachment, store_message):
     except (ValueError,TypeError,OverflowError,OSError):
         raise ChannelError('ignored') from None
     event_type = event.get('type')
+    # A button under a receipt (channels/receipt.py), pressed in a one-to-one chat: answered, never a message.
+    if event_type=='postback':
+        data = (event.get('postback') or {}).get('data') if isinstance(event.get('postback'),dict) else None
+        if not link or kind!='user' or data not in receipt.BUTTONS:
+            raise ChannelError('ignored')
+        receipt.on_button(db,tenant_id,link['conversation_id'],data)
+        return None
     if event_type!='message':
         if link and event_type in ('join','leave','memberJoined','memberLeft') and (not link['last_event_time'] or occurred>=link['last_event_time']):
             repository.save_line_membership(db,link['conversation_id'],kind,source_id,int(event_type!='leave'),occurred)
@@ -495,7 +502,7 @@ def check_reply(db, tenant_id, conv, body):
 
 
 def enqueue_reply(db, ctx, conv, mid):
-    """Queue a stored reply for the delivery worker (same transaction as the message)."""
+    """Queue a stored reply for the delivery worker (same transaction as the message). Returns the job's id."""
     row = setting(db,conv['channel'])
     job_id = uid()
     reference = f'<bookdose.{job_id}@{row["config"]["address"].split("@")[1]}>' if conv['channel']=='email' else ''
@@ -505,6 +512,7 @@ def enqueue_reply(db, ctx, conv, mid):
     if reference:
         repository.insert_reply_ref(db,reference,conv['id'],row['route_id'])
     conversations.set_delivery(db,mid,'queued')
+    return job_id
 
 
 def delivery(db, mid):

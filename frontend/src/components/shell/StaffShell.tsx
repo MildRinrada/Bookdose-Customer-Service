@@ -84,6 +84,23 @@ export function StaffShell({ children }: { children: ReactNode }) {
     document.title = `${page?.label ?? 'Bookdose'} · Bookdose`;
   }, [page]);
 
+  // The pinned top bar's height (--topbar-h), so what sticks below it (the settings menu) starts under it; it grows
+  // when the bar wraps, and is 0 while hidden (the chat pages).
+  const topbar = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const bar = topbar.current;
+    if (!bar) return;
+    const root = document.documentElement;
+    const measure = () => root.style.setProperty('--topbar-h', `${getComputedStyle(bar).position === 'sticky' ? bar.offsetHeight : 0}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    measure();
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--topbar-h');
+    };
+  });
+
   useEffect(() => {
     if (allowed) return;
     // A platform admin's home is the console; a member's is the overview of their organization.
@@ -314,7 +331,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           </div>
         )}
         {user.platform_admin && <PlatformBanner />}
-        <header className="topbar">
+        <header className="topbar" ref={topbar}>
           <div className="breadcrumb">
             <MobileToggle onClick={() => setMobileOpen((o) => !o)} />
             <Link className="crumb-root" href={crumb.href}>

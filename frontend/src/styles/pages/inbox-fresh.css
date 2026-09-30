@@ -11,9 +11,11 @@
   gap: 10px;
   background: var(--paper);
 }
+/* One row, each choice as wide as its words need (equal thirds squeezed "รอเราตอบ" against the edges); the count is a
+   plain number beside the words, not a chip, which is what leaves them room. */
 .inbox-tabs {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
@@ -21,43 +23,38 @@
 }
 .inbox-tab {
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   gap: 5px;
   min-width: 0;
-  min-height: 32px;
-  padding: 0 6px;
+  min-height: 34px;
+  padding: 0 8px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   white-space: nowrap;
   color: var(--ink);
   font: inherit;
-  font-size: .9rem;
+  font-size: .875rem;
   font-weight: 700;
   cursor: pointer;
 }
 .inbox-tab:hover {
-  background: #ffffffb3;
+  background: var(--paper);
 }
 .inbox-tab[aria-pressed="true"] {
   background: var(--invert);
   color: #fff;
 }
 .inbox-tab-count {
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: .78rem;
-  line-height: 20px;
-  text-align: center;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .inbox-tab[aria-pressed="true"] .inbox-tab-count {
-  background: #ffffff2e;
-  color: #fff;
+  color: #ffffffcc;
 }
 .staff-chats .staff-chat-filters {
   grid-template-columns: minmax(0,1fr);
@@ -90,7 +87,7 @@
 }
 .inbox-row-body {
   display: grid;
-  gap: 1px;
+  gap: 3px;
   min-width: 0;
 }
 .inbox-row .inbox-top {
@@ -111,7 +108,7 @@
   font-weight: 600;
 }
 .staff-chats .inbox-row .inbox-foot {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .staff-chats .inbox-item.inbox-row.needs-reply .inbox-time {
   color: #8a4b06;

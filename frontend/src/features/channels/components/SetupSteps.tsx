@@ -97,11 +97,15 @@ export function instagramSteps(c: FacebookSetting): Step[] {
 
 export function facebookSteps(c: FacebookSetting): Step[] {
   return [
-    { label: 'ใส่ Page Access Token และ App Secret แล้วกดบันทึก', done: c.credentials_configured, hint: 'คัดลอกจาก Meta App ที่เปิด Messenger ไว้' },
+    {
+      label: 'ใส่ Page Access Token และ App Secret แล้วกดบันทึก',
+      done: c.credentials_configured,
+      hint: 'Token ของเพจจากหน้าการตั้งค่า Messenger API (ไม่ใช่ของบัญชีส่วนตัว) และ App Secret จาก การตั้งค่าแอป → ข้อมูลพื้นฐาน',
+    },
     { label: 'ระบบเข้าเพจได้', done: Boolean(c.config.page_id) && signedIn(c), hint: c.last_error || 'กด "ทดสอบ" ด้านล่าง' },
     { label: 'เปิดใช้ช่องทางนี้', done: c.enabled, hint: 'เปิดสวิตช์ "เปิดใช้ช่องทาง" แล้วกดบันทึก' },
     {
-      label: 'วาง Callback URL และ Verify Token ใน Meta App แล้วติ๊ก messages',
+      label: 'วาง Callback URL และ Verify Token ใน Meta App',
       done: Boolean(c.last_received),
       hint: 'ระบบยืนยันขั้นนี้ได้เมื่อข้อความแรกจากเพจเข้ามา',
     },

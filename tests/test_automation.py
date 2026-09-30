@@ -9,12 +9,14 @@ from unittest.mock import patch
 
 import test_app as base
 from test_app import D
+from backend.exceptions.errors import CHANNEL_ERRORS
 from backend.extensions import channel_transport as T
 from backend.modules.automation import service as A
 from backend.modules.channels import facebook as F, service as C
 from backend.utils.dates import after, utc_now
 
 PAGE = '1234567890'
+APP = '5550001112'              # the Meta app the Page token was made for
 PSID = '9876543210'
 IG = '17841400000000001'        # the Instagram professional account connected to the Page
 IGSID = '9876543210'            # an Instagram user; the same digits as the Messenger user on purpose
@@ -257,10 +259,33 @@ class FacebookTests(unittest.TestCase):
     ok = base.IntegrationTests.ok
     create_member = base.IntegrationTests.create_member
 
-    def configure(self, **changes):
+    def configure(self, page=PAGE, **changes):
         data = {'team_id':self.team,'enabled':True,'page_access_token':'page-token','app_secret':'app-secret',**changes}
-        with patch.object(T,'verify_facebook',return_value={'identity':PAGE,'display_name':'Bookdose Page'}):
-            return self.ok(self.admin,'/api/channels/facebook',data,'PATCH')
+        with patch.object(T,'verify_facebook',return_value={'identity':page,'display_name':'Bookdose Page','app_id':APP}):
+            with patch.object(T,'subscribe_facebook',return_value=True):
+                return self.ok(self.admin,'/api/channels/facebook',data,'PATCH')
+
+    def test_page_changes_until_a_message_came_and_is_subscribed(self):
+        # A person's own token, or the secret of another app, is refused with what to do.
+        with patch.object(T,'verify_facebook',side_effect=T.ChannelError('not_page')):
+            status,body = self.admin.call('/api/channels/facebook',{'team_id':self.team,'enabled':True,'page_access_token':'user-token','app_secret':'app-secret'},'PATCH')
+        self.assertEqual((status,body['error']),(400,CHANNEL_ERRORS['not_page']))
+        # A first save taken for a Page by mistake can still be corrected: no message came yet.
+        self.configure(page='111')
+        with patch.object(T,'verify_facebook',return_value={'identity':PAGE,'display_name':'Bookdose Page','app_id':APP}):
+            with patch.object(T,'subscribe_facebook',return_value=True) as subscribe:
+                cfg = self.ok(self.admin,'/api/channels/facebook',{'enabled':True},'PATCH')
+        self.assertEqual(cfg['config']['page_id'],PAGE)
+        self.assertEqual(subscribe.call_args.args,('page-token',PAGE,APP))
+        # Saved even when the Page would not subscribe; the settings say what to do.
+        with patch.object(T,'verify_facebook',return_value={'identity':PAGE,'display_name':'Bookdose Page','app_id':APP}):
+            with patch.object(T,'subscribe_facebook',side_effect=T.ChannelError('subscribe')):
+                cfg = self.ok(self.admin,'/api/channels/facebook',{'enabled':True},'PATCH')
+        self.assertEqual((cfg['enabled'],cfg['last_error']),(True,CHANNEL_ERRORS['subscribe']))
+        # Once a message came in, the Page stays.
+        self.assertEqual(self.webhook(cfg['route_id'],[self.event()])[0],200)
+        with patch.object(T,'verify_facebook',return_value={'identity':'222','display_name':'Other Page','app_id':APP}):
+            self.assertEqual(self.admin.call('/api/channels/facebook',{'enabled':True},'PATCH')[0],400)
 
     def webhook(self, route, events, secret=b'app-secret', page=PAGE):
         payload = {'object':'page','entry':[{'id':page,'time':1,'messaging':events}]}
@@ -294,7 +319,7 @@ class FacebookTests(unittest.TestCase):
         self.assertFalse(C.process_outbox(self.org))   # the LINE / Email round leaves Facebook jobs alone
         with patch.object(T,'send_facebook',return_value='mid.out') as send:
             self.assertTrue(F.process_outbox(self.org))
-            self.assertEqual(send.call_args.args,('page-token',PSID,'ได้รับเรื่องแล้วค่ะ'))
+            self.assertEqual(send.call_args.args,('page-token',PSID,'ได้รับเรื่องแล้วค่ะ',None))
             self.assertFalse(F.process_outbox(self.org))
         data = self.ok(self.admin,f'/api/conversations/{conv}')
         self.assertEqual(next(m for m in data['messages'] if m['id']==mid)['delivery'],'accepted')
@@ -302,6 +327,22 @@ class FacebookTests(unittest.TestCase):
         # A second message in the same chat joins the conversation.
         self.webhook(route,[self.event('m-2','ขอบคุณค่ะ')])
         self.assertEqual(len([c for c in self.ok(self.admin,'/api/conversations')['conversations'] if c['channel']=='facebook']),1)
+
+    def test_receipt_with_buttons_on_messenger(self):
+        self.ok(self.admin,'/api/settings/receipt',{'enabled':True,'message':'ได้รับแล้ว ทีมงานจะตอบกลับ{เวลารอ}'})
+        route = self.configure()['route_id']
+        self.webhook(route,[self.event()])
+        conv = self.channel_convs('facebook')[0]['id']
+        system = lambda: [m for m in self.ok(self.admin,f'/api/conversations/{conv}')['messages'] if m['author_name']=='ระบบ']
+        self.assertEqual(len(system()),1)
+        with patch.object(T,'send_facebook',return_value='mid.out') as send:
+            self.assertTrue(F.process_outbox(self.org))
+        self.assertEqual([q['payload'] for q in send.call_args.args[3]],['bookdose:queue','bookdose:no_rush'])
+        # A press arrives as a message carrying the button's payload: answered, not stored as the customer's.
+        self.webhook(route,[self.event('press-1','ดูลำดับคิวตอนนี้',quick_reply={'payload':'bookdose:queue'})])
+        detail = self.ok(self.admin,f'/api/conversations/{conv}')['messages']
+        self.assertEqual(len([m for m in detail if m['kind']=='customer']),1)
+        self.assertRegex(system()[-1]['body'],r'^ตอนนี้คุณอยู่ประมาณลำดับที่ \d+ ')
 
     def ticket_priority(self, conversation):
         return self.ok(self.admin,f'/api/conversations/{conversation}')['ticket']['priority']
@@ -321,7 +362,7 @@ class FacebookTests(unittest.TestCase):
         self.ok(self.admin,'/api/automation/rules',{'name':'ของไม่ถึงจาก IG','channel':'instagram','keywords':'ยังไม่ได้รับ','set_priority':'high'})
         # The Page must have an Instagram professional account connected.
         with patch.object(T,'facebook_instagram',return_value=None):
-            with patch.object(T,'verify_facebook',return_value={'identity':PAGE,'display_name':'Bookdose Page'}):
+            with patch.object(T,'verify_facebook',return_value={'identity':PAGE,'display_name':'Bookdose Page','app_id':APP}):
                 status,_ = self.admin.call('/api/channels/facebook',{'team_id':self.team,'enabled':True,'page_access_token':'page-token',
                                                                      'app_secret':'app-secret','instagram_enabled':True},'PATCH')
         self.assertEqual(status,400)
@@ -351,7 +392,7 @@ class FacebookTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT kind FROM channel_outbox WHERE message_id=?',(mid,)).fetchone()[0],'instagram')
         with patch.object(T,'send_facebook',return_value='ig.out') as send:
             self.assertTrue(F.process_outbox(self.org))
-        self.assertEqual(send.call_args.args,('page-token',IGSID,'กำลังตรวจสอบให้ค่ะ'))
+        self.assertEqual(send.call_args.args,('page-token',IGSID,'กำลังตรวจสอบให้ค่ะ',None))
         self.assertEqual(next(m for m in self.ok(self.admin,path.rsplit('/',1)[0])['messages'] if m['id']==mid)['delivery'],'accepted')
         # The customer's help page lists Instagram beside the Page.
         kinds = {c['kind']:c['label'] for c in self.admin.call('/api/public/alpha')[1]['channels']}

@@ -7,7 +7,7 @@ export const settingsTabs = {
   webchat: { label: 'แชทบนเว็บไซต์', hint: 'แชทโดยไม่ต้องเข้าสู่ระบบ และปุ่มแชทบนเว็บองค์กร', icon: 'chat' },
   issues: { label: 'ประกาศปัญหาถึงลูกค้า', hint: 'แจ้งบนหน้าแชทเมื่อระบบมีปัญหา ลดการถามเรื่องเดิมซ้ำ', icon: 'bell' },
   connections: { label: 'LINE / อีเมล / Facebook / Instagram', hint: 'ช่องทางที่ลูกค้าติดต่อเข้ามา', icon: 'inbox' },
-  ai: { label: 'AI Assistant', hint: 'ผู้ช่วยร่างคำตอบและแชทบอทหน้าลูกค้า', icon: 'sparkle' },
+  ai: { label: 'AI Assistant', hint: 'การเชื่อมต่อ สิ่งที่ให้ AI ทำ และเพดานการใช้งาน', icon: 'sparkle' },
 } as const;
 
 export type SettingsTab = keyof typeof settingsTabs;

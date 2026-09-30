@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef } from 'react';
 import { Icon } from '@/components/Icon';
+import { usePinnedMenu } from '@/components/ui/usePinnedMenu';
 import { AchievementsSettings } from './AchievementsSettings';
 import { NotificationSettings, PlatformNotificationSettings } from './NotificationSettings';
 import { OrganizationsSettings } from './OrganizationsSettings';
@@ -31,6 +33,8 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
     security: () => <SecuritySettings />,
     organizations: () => <OrganizationsSettings />,
   }[current]();
+  const nav = useRef<HTMLElement>(null);
+  usePinnedMenu(nav);
   return (
     <>
       <div className="page-heading">
@@ -40,7 +44,7 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
         </div>
       </div>
       <div className="settings-frame account-frame">
-        <nav className="settings-nav" aria-label="หมวดการตั้งค่าบัญชี">
+        <nav ref={nav} className="settings-nav" aria-label="หมวดการตั้งค่าบัญชี">
           {tabs.map((key) => {
             const meta = staffAccountTabs[key];
             const active = key === current;

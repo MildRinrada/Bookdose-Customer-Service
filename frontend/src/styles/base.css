@@ -17,6 +17,13 @@
   --amber-soft: #fbf0db;
   /* Compatibility for existing components; new theme rules use semantic tokens. */
   --purple: var(--accent);
+  /* The report's charts (pages/reports.css, the busy-hours map): one blue, from pale to deep as the number grows. */
+  --chart-bar: #3d86b0;
+  --chart-bar-hover: #1f5e84;
+  --heat-1: #d6e8f2;
+  --heat-2: #9ec9df;
+  --heat-3: #4f94bb;
+  --heat-4: #1f5e84;
   --purple-light: var(--surface-hover);
   --shadow: 0 3px 14px #26292d04;
   --font: 'Sarabun',-apple-system,BlinkMacSystemFont,'Thonburi','Leelawadee UI',sans-serif;

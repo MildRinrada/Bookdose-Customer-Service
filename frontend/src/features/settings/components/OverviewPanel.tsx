@@ -20,6 +20,7 @@ import type { SettingsBody, SlaPriority } from '../types';
 import { BusinessHoursCard, savedHours } from './BusinessHoursCard';
 import { CategoriesForm } from './CategoriesForm';
 import { QuietCloseCard } from './QuietCloseCard';
+import { ReceiptCard } from './ReceiptCard';
 import { RetentionCard } from './RetentionCard';
 import { SupportBannerCard } from './SupportBannerCard';
 
@@ -250,6 +251,7 @@ export function ServicePanel() {
       </div>
     </Form>
     <BusinessHoursCard />
+    <ReceiptCard />
     <QuietCloseCard />
     <TeamRepliesCard snippets={work.snippets} />
     </>

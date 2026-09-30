@@ -385,14 +385,58 @@ def facebook_request(token,path,body=None,sending=False):
         raise ChannelError('unknown' if sending else 'network',retryable=not sending,uncertain=sending) from None
 
 
-def verify_facebook(token):
-    """The Page behind a Page access token: {'identity': page id, 'display_name': page name}."""
+def verify_facebook(token,app_secret=''):
+    """The Page behind a Page access token: {'identity': page id, 'display_name': page name}. With the App Secret it
+    is also checked against the app the token was made for (+ 'app_id'), since two mistakes sign in fine and yet no
+    message would ever arrive: a token of a person's own account ('not_page': "the Page" is then that person), and the
+    secret of another app ('app_secret': Meta signs a Page's webhooks with the secret of the app it sends them to)."""
+    app_id=_facebook_token_app(token,app_secret) if app_secret else None
     try:data=facebook_request(token,'/me?fields=id,name')
     except ChannelError as error:
         if error.code=='rejected':raise ChannelError('credentials') from None
         raise
     if not isinstance(data,dict) or not re.fullmatch(r'[0-9]{1,40}',str(data.get('id',''))):raise ChannelError('credentials')
-    return {'identity':str(data['id']),'display_name':str(data.get('name') or 'Facebook Page')[:100]}
+    return {'identity':str(data['id']),'display_name':str(data.get('name') or 'Facebook Page')[:100],**({'app_id':app_id} if app_id else {})}
+
+
+def _facebook_token_app(token,app_secret):
+    """The id of the app a Page token was made for, after Meta confirmed (debug_token, asked with that app's own
+    access token "app id|App Secret") that the token is a Page's and the secret is that app's."""
+    try:app=facebook_request(token,'/app?fields=id')
+    except ChannelError as error:
+        if error.code=='rejected':raise ChannelError('credentials') from None
+        raise
+    app_id=str(app.get('id','')) if isinstance(app,dict) else ''
+    if not re.fullmatch(r'[0-9]{1,40}',app_id):raise ChannelError('credentials')
+    try:data=facebook_request(f'{app_id}|{app_secret}','/debug_token?'+urllib.parse.urlencode({'input_token':token}))
+    except ChannelError as error:
+        # The app's access token is refused only when the secret is not this app's.
+        if error.code in ('rejected','credentials'):raise ChannelError('app_secret') from None
+        raise
+    info=data.get('data') if isinstance(data,dict) else None
+    if not isinstance(info,dict) or not info.get('is_valid'):raise ChannelError('credentials')
+    if str(info.get('app_id',''))!=app_id:raise ChannelError('app_secret')
+    if str(info.get('type','')).upper()!='PAGE':raise ChannelError('not_page')
+    return app_id
+
+
+def subscribe_facebook(token,page_id,app_id):
+    """Have Meta send the Page's messages to the app's webhook - the dashboard's "Add subscriptions" for the Page.
+    Without it the webhook URL verifies and nothing ever arrives. The Page's other fields for this app are kept;
+    nothing is asked when `messages` is already there. True when it was added. Needs pages_manage_metadata."""
+    try:
+        data=facebook_request(token,f'/{page_id}/subscribed_apps')
+        apps=data.get('data') if isinstance(data,dict) else None
+        mine=next((a for a in apps or [] if isinstance(a,dict) and str(a.get('id',''))==app_id),None)
+        fields=[f for f in (mine or {}).get('subscribed_fields') or [] if isinstance(f,str)]
+        if 'messages' in fields:return False
+        query=urllib.parse.urlencode({'subscribed_fields':','.join(fields+['messages'])})
+        done=facebook_request(token,f'/{page_id}/subscribed_apps?{query}',{})
+    except ChannelError as error:
+        if error.code in ('rejected','credentials'):raise ChannelError('subscribe') from None
+        raise
+    if not (isinstance(done,dict) and done.get('success') is True):raise ChannelError('subscribe')
+    return True
 
 
 def facebook_instagram(token,page_id):
@@ -408,10 +452,12 @@ def facebook_instagram(token,page_id):
     return {'identity':str(account['id']),'display_name':str(account.get('username') or 'Instagram')[:100]}
 
 
-def send_facebook(token,recipient,text):
+def send_facebook(token,recipient,text,quick_replies=None):
     """A text reply through the Page: to a Messenger user by PSID, or to an Instagram user by IGSID (the Page's
-    connected Instagram account answers)."""
-    data=facebook_request(token,'/me/messages',{'recipient':{'id':recipient},'messaging_type':'RESPONSE','message':{'text':text}},sending=True)
+    connected Instagram account answers). quick_replies: buttons under it, each pressed back as a message carrying
+    its payload."""
+    message={'text':text,**({'quick_replies':quick_replies} if quick_replies else {})}
+    data=facebook_request(token,'/me/messages',{'recipient':{'id':recipient},'messaging_type':'RESPONSE','message':message},sending=True)
     return str(data.get('message_id',''))[:200] if isinstance(data,dict) else ''
 
 

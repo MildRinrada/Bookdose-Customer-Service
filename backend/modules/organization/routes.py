@@ -20,6 +20,7 @@ ROUTES = [
     ('POST',  '/api/settings/snippets', controller.save_team_snippets, 'workspace'),
     ('POST',  '/api/settings/hours', controller.save_business_hours, 'workspace'),
     ('POST',  '/api/settings/quiet-close', controller.save_quiet_close, 'workspace'),
+    ('POST',  '/api/settings/receipt', controller.save_receipt, 'workspace'),
     ('GET',   '/api/settings/retention', controller.data_retention, 'workspace'),
     ('POST',  '/api/settings/retention', controller.save_data_retention, 'workspace'),
     ('GET',   '/api/settings/security', controller.team_security, 'workspace'),

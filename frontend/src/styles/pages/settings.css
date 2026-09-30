@@ -418,11 +418,21 @@
 }
 
 /* ตั้งค่าองค์กร → AI: the n8n webhook, then OpenAI and the limits. */
+/* AI Assistant: the connection card's second way in (n8n) and its two "take out" boxes, each set off from the rest. */
+.ai-n8n,.ai-remove {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.ai-remove {
+  display: grid;
+  gap: 10px;
+}
 .ai-settings-heading {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 20px 0 4px;
+  margin: 0 0 4px;
   font-size: 1rem;
 }
 .ai-settings-heading+.tiny {
@@ -448,16 +458,41 @@
 a.settings-nav-item,a.settings-nav-item:hover {
   text-decoration: none;
 }
-/* ตั้งค่าองค์กร: the menu scrolls by itself (its scrollbar hidden), so scrolling it never moves the page beside it. */
+/* The settings menus stay where they start and end at the bottom of the screen (usePinnedMenu sets top and height);
+   a longer menu scrolls by itself (a thin bar says so), so scrolling it never moves the page beside it. */
 @media (min-width: 1101px) {
-  .settings-frame:not(.account-frame) .settings-nav {
+  /* The page's title stays too, exactly where it starts: it takes over the page's top padding and the gap below it,
+     so the band from the top bar to the menu is solid and the page scrolls under it. */
+  .page-heading:has(+ .settings-frame) {
+    position: sticky;
+    top: var(--topbar-h, 0px);
+    z-index: 5;
+    margin-top: -31px;
+    margin-bottom: 0;
+    padding: 31px 0 19px;
+    background: var(--bg);
+  }
+  /* The rest of the old gap stays open, so the cards' top edge and shadow are not under the title's background. */
+  .page-heading+.settings-frame {
+    padding-top: 8px;
+  }
+  .settings-nav {
     max-height: calc(100vh - 24px);
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-width: none;
+    /* A thin bar, so a menu longer than the screen shows there is more below. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--control-line) transparent;
   }
-  .settings-frame:not(.account-frame) .settings-nav::-webkit-scrollbar {
-    display: none;
+  .settings-nav::-webkit-scrollbar {
+    width: 6px;
+  }
+  .settings-nav::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: var(--control-line);
+  }
+  .settings-nav::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 .settings-part-list h2 {
@@ -603,7 +638,8 @@ a.settings-nav-item,a.settings-nav-item:hover {
   margin: 2px 0 0;
   color: var(--muted);
 }
-.settings-panels>.card+.card,.settings-panels>*+.card,.settings-panels>form+* {
+.settings-panels>.card+.card,.settings-panels>*+.card,.settings-panels>form+*,
+.settings-panels form>.card+.card {
   margin-top: 18px;
 }
 @media (max-width: 560px) {

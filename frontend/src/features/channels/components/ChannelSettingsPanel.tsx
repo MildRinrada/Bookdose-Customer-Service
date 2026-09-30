@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useState, type ChangeEvent } from 'react';
+import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { useRunAction } from '@/components/ui/actions';
 import { NumberField, SelectField } from '@/components/ui/fields';
@@ -156,7 +157,11 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
     <section className="card mt" id={`channel-${k}`}>
       <div className="card-header">
         <h2>{name} · เชื่อมบัญชีจริง</h2>
-        <span className="badge">{c.credentials_configured ? 'บันทึกข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่มีข้อมูลเชื่อมต่อ'}</span>
+        {/* Saved is good news: green with a tick, not a grey that reads like "nothing here". */}
+        <span className={`badge${c.credentials_configured ? ' resolved' : ''}`}>
+          <Icon name={c.credentials_configured ? 'checkCircle' : 'clock'} />
+          {c.credentials_configured ? 'บันทึกข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่มีข้อมูลเชื่อมต่อ'}
+        </span>
       </div>
       <Form
         // After saving, the form shows the saved settings again and the secret boxes start empty.

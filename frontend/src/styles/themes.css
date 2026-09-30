@@ -135,6 +135,89 @@ html[data-theme='dark'] .brand-logo,html[data-theme='black'] .brand-logo {
   background: #fff;
 }
 
+/* ---- The dark themes, rule by rule: what was still painted with a light-theme colour ----
+
+   The accent is the sidebar's near-black. Behind white letters that is right; as a line, an icon, a tick or the
+   chosen day on dark paper it vanishes. What uses it as a highlight (--purple, the old name) takes the ink instead,
+   and the few places that fill with it keep dark letters on it. */
+:is(html[data-theme='dark'],html[data-theme='black']) {
+  --purple: var(--ink);
+  --surface-alt: #ffffff12;
+}
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.customer-timeline-item.done .customer-timeline-dot) { color: var(--bg); }
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.security-list-icon,.trap-kind-icon .icon) { color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .trap-kind-option:has(input:checked) { border-color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .trap-kind-option input { accent-color: var(--ink); }
+
+/* Switches: off, a light knob on the dark track (the paper-coloured knob was darker than its track); on, a dark knob
+   on the light green, where white on mint could hardly be told apart. */
+:is(html[data-theme='dark'],html[data-theme='black']) input[type=checkbox].switch::after { background: var(--muted); box-shadow: none; }
+:is(html[data-theme='dark'],html[data-theme='black']) input[type=checkbox].switch:checked::after { background: var(--bg); }
+
+/* Grey words and edges fixed for white paper. */
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.hero-art,.chart-col small,.chart-legend,.setup-tag,.badge.channel-facebook,.channel-dot.channel-facebook) { color: var(--muted); }
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.hero-strip,.status-menu,.board-empty,.trap-kind-option,.security-alert) { border-color: var(--line); }
+:is(html[data-theme='dark'],html[data-theme='black']) .hero-art .icon { background: var(--paper); border-color: var(--line); }
+:is(html[data-theme='dark'],html[data-theme='black']) .day-check input:checked+span { color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .work-status-pill.status-busy { background: var(--amber-soft); }
+/* A row's buttons fade in from the row's own colour (refresh.css hard-codes the light hover grey); where they have no
+   fade at all (the overview's quick menu, a touch screen), still none. */
+:is(html[data-theme='dark'],html[data-theme='black']) .row-actions { background: linear-gradient(90deg,transparent,var(--paper) 24px); }
+:is(html[data-theme='dark'],html[data-theme='black']) tbody tr:hover .row-actions { background: linear-gradient(90deg,transparent,var(--soft) 24px); }
+:is(html[data-theme='dark'],html[data-theme='black']) .dashboard-quick-menu .row-actions { background: none; }
+@media (hover:none) { :is(html[data-theme='dark'],html[data-theme='black']) .row-actions { background: none; } }
+
+/* The overview and the escalation log (ระบบอัตโนมัติ → เคสที่ถูกยกระดับล่าสุด share the SLA list's look). */
+:is(html[data-theme='dark'],html[data-theme='black']) .sla-item a { color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .sla-item .time { color: var(--red); }
+:is(html[data-theme='dark'],html[data-theme='black']) .escalation-row.warn .time { color: var(--amber); }
+:is(html[data-theme='dark'],html[data-theme='black']) .case-chart .mini-chart {
+  background: linear-gradient(var(--line),var(--line)) 0 0/100% 1px no-repeat,linear-gradient(var(--line),var(--line)) 0 55px/100% 1px no-repeat,linear-gradient(var(--control-line),var(--control-line)) 0 109px/100% 1px no-repeat;
+}
+:is(html[data-theme='dark'],html[data-theme='black']) .case-chart .chart-col:is(:hover,:focus-visible) progress::-webkit-progress-value { background: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .case-chart .chart-col:is(:hover,:focus-visible) progress::-moz-progress-bar { background: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .my-todo-list input { accent-color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .setup-item.is-done .icon { color: var(--green); }
+:is(html[data-theme='dark'],html[data-theme='black']) .me-item.warn .me-icon .icon { color: var(--amber); }
+/* The report's blue on dark paper: the busier hour is the lighter square, and the bars are a lighter blue. */
+:is(html[data-theme='dark'],html[data-theme='black']) {
+  --chart-bar: #6fb0d4;
+  --chart-bar-hover: #a9d6ec;
+  --heat-1: #1e3645;
+  --heat-2: #2d5a75;
+  --heat-3: #4a8db3;
+  --heat-4: #93c8e4;
+}
+
+/* Warnings and alerts: their pastel edges glowed on dark; the edge takes the cue's own colour, faintly. */
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.auto-stat.warn,.customer-survey,.security-alert.severity-warning) { border-color: color-mix(in srgb,var(--amber) 45%,transparent); }
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.lock-notice,.security-alert.severity-critical) { border-color: color-mix(in srgb,var(--red) 45%,transparent); }
+:is(html[data-theme='dark'],html[data-theme='black']) .star-btn { color: var(--control-line); }
+/* The formatting buttons over a text box were dark grey on the dark paper; the date boxes' calendar stayed black. */
+:is(html[data-theme='dark'],html[data-theme='black']) .tool { color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .tool-divider { background: var(--control-line); }
+:is(html[data-theme='dark'],html[data-theme='black']) .editor-toolbar,
+:is(html[data-theme='dark'],html[data-theme='black']) .editor-input { border-color: var(--control-line); }
+:is(html[data-theme='dark'],html[data-theme='black']) tbody tr:is(:hover,:has(:focus-visible)) .contact-actions .btn { border-color: var(--control-line); color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) input:is([type=date],[type=time],[type=datetime-local],[type=month]) { color-scheme: dark; }
+
+/* The bell's tabs: the ones not chosen were dark grey words on the dark track, and their counts light grey chips. */
+:is(html[data-theme='dark'],html[data-theme='black']) .note-tab { color: var(--muted); }
+:is(html[data-theme='dark'],html[data-theme='black']) .note-tab:hover { color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .note-tab:not([aria-pressed="true"]) .note-tab-count { background: var(--line); color: var(--ink); }
+:is(html[data-theme='dark'],html[data-theme='black']) .note-tab:focus-visible { outline-color: var(--focus); }
+
+/* A channel's setup steps: a done step's tick is dark on the light green (white on it hardly showed). */
+:is(html[data-theme='dark'],html[data-theme='black']) .setup-steps li.done .setup-step-mark { color: var(--bg); }
+
+/* The page to start a chat without signing in (/support/<org>/tickets/new): light edges and a near-white box. */
+:is(html[data-theme='dark'],html[data-theme='black']) :is(.guest-start input:disabled,.guest-follow-option,.guest-follow-name,.guest-follow-foot) { border-color: var(--line); }
+:is(html[data-theme='dark'],html[data-theme='black']) .guest-entry { background: var(--soft); }
+:is(html[data-theme='dark'],html[data-theme='black']) .guest-origin-chip button:hover { background: var(--surface-hover); }
+/* The page you are on (แชท / คำถามที่พบบ่อย) was filled with the near-black accent: no fill to see on a dark head.
+   Inside a website's frame the organization's own colour stays. */
+:is(html[data-theme='dark'],html[data-theme='black']) :not(.guest-embed) .guest-nav .btn.active { background: var(--invert); border-color: var(--invert); }
+
 /* The four swatches in the Aa panel: the letter T on that theme's own paper, as an e-reader shows them. */
 .theme-choices {
   display: flex;

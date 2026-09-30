@@ -170,6 +170,35 @@ function load(key: string): Turn[] {
   }
 }
 
+/** Copies an answer; the icon turns into a green tick for a moment so the member sees it worked. */
+function CopyAnswer({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      /* no clipboard (an insecure page or a denied permission): the tick simply does not show */
+    }
+  };
+  return (
+    <button
+      type="button"
+      className={`assistant-rate-btn copy${copied ? ' done' : ''}`}
+      aria-label={copied ? 'คัดลอกแล้ว' : 'คัดลอกคำตอบ'}
+      title={copied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+      onClick={() => void copy()}
+    >
+      <Icon name={copied ? 'check' : 'copy'} />
+    </button>
+  );
+}
+
 export function AiAssistant() {
   const work = useWork();
   const userName = useBoot().data?.user?.name ?? '';
@@ -517,15 +546,7 @@ export function AiAssistant() {
                       </div>
                       {t.role === 'assistant' && !t.failed && !t.local && !t.fresh && (
                         <div className="assistant-tools">
-                          <button
-                            type="button"
-                            className="link-btn"
-                            onClick={() => {
-                              void navigator.clipboard?.writeText(t.text).catch(() => undefined);
-                            }}
-                          >
-                            คัดลอก
-                          </button>
+                          <CopyAnswer text={t.text} />
                           {t.job && <AnswerRating jobId={t.job} value={t.feedback} onChange={(feedback) => markRated(i, feedback)} />}
                           <AiCitations citations={t.citations} />
                           {t.trace && (

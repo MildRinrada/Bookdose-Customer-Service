@@ -127,13 +127,21 @@ def of_ticket(db, ticket_id):
 
 def request(db, conv, author, body):
     """POST …/no-rush {on: true} while the customer waits for the team, {on: false} to take it back."""
-    from backend.modules.conversations import queue
-    from backend.modules.tickets import repository as tickets
-    from backend.realtime import events as realtime
     body = body if isinstance(body,dict) else {}
     on = body.get('on')
     require(isinstance(on,bool),'ข้อมูลไม่ถูกต้อง')
     D.begin(db)
+    set_state(db,conv,author,on)
+    db.commit()
+    return {'no_rush':state(db,conv['id'])}
+
+
+def set_state(db, conv, author, on):
+    """ไม่รีบ on or off, inside the caller's transaction (the chat page, or the button under a LINE / Messenger
+    receipt: channels/receipt.py). Refused (409) when turning it on while the customer is not waiting."""
+    from backend.modules.conversations import queue
+    from backend.modules.tickets import repository as tickets
+    from backend.realtime import events as realtime
     current = _active(db,conv['id'])
     ticket = tickets.for_conversation(db,conv['id'])
     subject = ticket['id'] if ticket else conv['id']
@@ -152,5 +160,3 @@ def request(db, conv, author, body):
     realtime.conversation(db,conv['id'])
     if ticket:
         realtime.ticket(db,ticket['id'])
-    db.commit()
-    return {'no_rush':state(db,conv['id'])}

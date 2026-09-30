@@ -12,8 +12,9 @@ import { useWork } from '@/lib/session';
 import { AI_SETTINGS_PATH, saveAiSettings, testAiConnection, waitForAiJob } from '../api';
 import type { AiSettings } from '../types';
 
-/* The organization's AI settings (settings page, AI tab; admins only): the API key (OpenAI or Gemini), the model, the two modes,
-   the limits, a connection test and today's usage. Markup: modules/ai/ai-settings. */
+/* The organization's AI settings (settings page, AI tab; admins only), one form over three cards like the other tabs:
+   the connection (an OpenAI or Gemini key and the model, or a workflow in n8n, with a connection test), what the AI
+   may do, and the limits with today's usage. Markup: pages/settings.css (.ai-*). */
 
 export function AiSettingsPanel() {
   const settings = useApi<AiSettings>(AI_SETTINGS_PATH);
@@ -68,24 +69,11 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
   };
 
   return (
-    <section className="card mt" id="ai-settings">
-      <div className="card-header">
-        <div>
-          <h2>
-            <Icon name="sparkle" /> AI Assistant &amp; Chatbot
-          </h2>
-          <p>ตั้งค่าแยกสำหรับ {work.tenant.name}</p>
-        </div>
-        <span className={`badge ${a.key_configured ? 'resolved' : ''}`}>
-          {n8n ? 'ใช้ n8n Webhook' : a.key_configured ? `ใช้ ${service}` : 'ยังไม่ได้เชื่อม AI'}
-        </span>
-      </div>
-      <Form
-        // A save shows the saved values again (and empty key and secret boxes), like reopening the page did.
-        key={`${a.version}:${a.key_configured}:${a.provider}`}
-        className="card-body"
-        data-form="ai-settings"
-        onSubmit={async (values, form) => {
+    <Form
+      // A save shows the saved values again (and empty key and secret boxes), like reopening the page did.
+      key={`${a.version}:${a.key_configured}:${a.provider}`}
+      data-form="ai-settings"
+      onSubmit={async (values, form) => {
           const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
           const body: Record<string, unknown> = { ...values };
           for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'triage_enabled', 'remove_key']) body[key] = checked(key);
@@ -98,164 +86,189 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           await refresh(AI_SETTINGS_PATH, '/api/workspace');
           document.getElementById('ai-settings')?.scrollIntoView({ block: 'start' });
         }}
-      >
-        <div className="notice mb">
-          เมื่อเปิดใช้ ระบบจะส่งข้อความและบทความที่เกี่ยวข้องไปยัง {n8n ? `workflow n8n ของคุณ (${a.webhook_host})` : a.key_configured ? service : 'OpenAI หรือ Gemini ตามคีย์ที่ใส่'} เพื่อสร้างคำตอบ
-          {n8n ? ' แล้ว workflow ส่งต่อให้โมเดลที่คุณเลือกใน n8n' : ' มีค่าใช้บริการตามบัญชี API ของคุณ'} Chatbot
-          อ่านเฉพาะบทความที่เผยแพร่ให้ลูกค้า ส่วนร่างสำหรับเจ้าหน้าที่อาจใช้บทความและบันทึกภายใน
+    >
+      {/* 1. How the organization reaches an AI: its own key, or a workflow in n8n. */}
+      <section className="card" id="ai-settings">
+        <div className="card-header">
+          <div>
+            <h2>การเชื่อมต่อ AI</h2>
+            <p>
+              {n8n
+                ? `งาน AI ทั้งหมดของ ${work.tenant.name} ส่งไปที่ workflow ใน n8n (${a.webhook_host}) ซึ่งเลือกโมเดลเอง`
+                : `ข้อความและบทความที่เกี่ยวข้องส่งไปที่ ${a.key_configured ? service : 'OpenAI หรือ Gemini'} เพื่อสร้างคำตอบ ค่าใช้บริการคิดตามบัญชี API ของคุณ`}
+            </p>
+          </div>
+          <span className={`badge ${a.key_configured ? 'resolved' : ''}`}>
+            {n8n ? 'ใช้ n8n Webhook' : a.key_configured ? `ใช้ ${service}` : 'ยังไม่ได้เชื่อม AI'}
+          </span>
         </div>
-        <h3 className="ai-settings-heading">n8n Webhook {n8n && <span className="badge resolved">เชื่อมแล้ว</span>}</h3>
-        <p className="tiny muted">
-          เชื่อม workflow ใน n8n แล้วระบบจะส่งงาน AI ทั้งหมดของ {work.tenant.name} ไปที่ workflow นั้นแทน API Key (ช่วยร่างคำตอบ, Chatbot,
-          ผู้ช่วย AI, คำแนะนำในหน้าภาพรวม) และเลือกโมเดลใน AI Agent ของ n8n
-        </p>
-        <div className="form-grid">
-          <TextField
-            id="ai-webhook-url"
-            label="Webhook URL (Production URL ของ n8n)"
-            name="webhook_url"
-            type="url"
-            required={false}
-            max={500}
-            defaultValue={a.webhook_url}
-            placeholder="https://xxx.app.n8n.cloud/webhook/bookdose-ai"
-            hint={
-              testUrl ? (
-                <span className="ai-webhook-warn">
-                  นี่คือ Test URL ใช้ได้เฉพาะตอนกด Listen ใน n8n ให้เปลี่ยน /webhook-test/ เป็น /webhook/ แล้วกด Publish ใน n8n
-                </span>
-              ) : (
-                'ใช้ Production URL ของโหนด Webhook (…/webhook/bookdose-ai) ไม่ใช่ Test URL'
-              )
-            }
-          />
-          <div className="ai-secret">
+        <div className="card-body">
+          <div className="form-grid">
             <TextField
-              id="ai-webhook-secret"
-              label="รหัสลับ (X-Bookdose-Secret)"
-              name="webhook_secret"
+              id="ai-key"
+              label="API Key (OpenAI หรือ Gemini)"
+              name="api_key"
               type="password"
               required={false}
-              max={200}
-              placeholder={n8n ? `บันทึกแล้ว ลงท้ายด้วย …${a.webhook_secret_end} · เว้นว่างเพื่อใช้รหัสเดิม` : 'อย่างน้อย 16 ตัว'}
-              hint={
-                n8n
-                  ? `รหัสที่บันทึกไว้ลงท้ายด้วย ${a.webhook_secret_end} · ต้องตรงกับ Value ใน Header Auth ของ n8n (Name: X-Bookdose-Secret)`
-                  : 'ใส่ค่าเดียวกันใน Header Auth ของโหนด Webhook ใน n8n (Name: X-Bookdose-Secret)'
-              }
+              max={503}
+              minLength={undefined}
+              autoComplete="new-password"
+              placeholder={a.openai_key ? `บันทึกคีย์ ${service} แล้ว เว้นว่างเพื่อใช้คีย์เดิม` : 'sk-… หรือ AQ.…'}
+              hint={n8n ? 'ไม่ใช้ระหว่างที่เชื่อม n8n Webhook อยู่' : 'ระบบรู้เองว่าเป็นของเจ้าไหนจากคีย์ เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิม'}
             />
-            <button className="btn subtle small" type="button" onClick={makeSecret}>
-              <Icon name="lock" />
-              สร้างรหัสลับ
-            </button>
+            <TextField
+              id="ai-model"
+              label="โมเดล"
+              name="model"
+              defaultValue={a.model}
+              max={100}
+              hint={n8n ? 'เมื่อใช้ n8n ให้เลือกโมเดลใน workflow' : 'ต้องเป็นโมเดลที่บัญชีคุณใช้ได้และรองรับ Structured Outputs'}
+            />
           </div>
-          {n8n && (
+          <div className="flex wrap mt">
+            <button className="btn" type="button" disabled={!a.key_configured || testing} onClick={() => void test()}>
+              <Icon name="checkCircle" />
+              ทดสอบการเชื่อมต่อ
+            </button>
+            <span id="ai-test-result" role="status" className="tiny muted">
+              {testResult || 'การทดสอบใช้ข้อความตัวอย่าง ไม่มีข้อมูลลูกค้า'}
+            </span>
+          </div>
+          <div className="ai-n8n">
+            <h3 className="ai-settings-heading">
+              ใช้ n8n แทน API Key {n8n && <span className="badge resolved">เชื่อมแล้ว</span>}
+            </h3>
+            <p className="tiny muted">ใส่ Production URL ของโหนด Webhook และรหัสลับที่ตั้งไว้ใน Header Auth (Name: X-Bookdose-Secret) แล้วบันทึก</p>
+            <div className="form-grid">
+              <TextField
+                id="ai-webhook-url"
+                label="Webhook URL"
+                name="webhook_url"
+                type="url"
+                required={false}
+                max={500}
+                defaultValue={a.webhook_url}
+                placeholder="https://xxx.app.n8n.cloud/webhook/bookdose-ai"
+                hint={
+                  testUrl ? (
+                    <span className="ai-webhook-warn">นี่คือ Test URL ใช้ได้เฉพาะตอนกด Listen ใน n8n ให้เปลี่ยน /webhook-test/ เป็น /webhook/ แล้วกด Publish</span>
+                  ) : (
+                    'ใช้ …/webhook/… ไม่ใช่ …/webhook-test/…'
+                  )
+                }
+              />
+              <div className="ai-secret">
+                <TextField
+                  id="ai-webhook-secret"
+                  label="รหัสลับ"
+                  name="webhook_secret"
+                  type="password"
+                  required={false}
+                  max={200}
+                  placeholder={n8n ? `บันทึกแล้ว ลงท้ายด้วย …${a.webhook_secret_end} เว้นว่างเพื่อใช้รหัสเดิม` : 'อย่างน้อย 16 ตัว'}
+                  hint={n8n ? `รหัสที่บันทึกไว้ลงท้ายด้วย ${a.webhook_secret_end}` : 'ต้องตรงกับ Value ใน Header Auth ของ n8n'}
+                />
+                <button className="btn subtle small" type="button" onClick={makeSecret}>
+                  <Icon name="lock" />
+                  สร้างรหัสลับ
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="ai-remove">
+            {n8n && (
+              <label className="check">
+                <input name="remove_webhook" type="checkbox" />
+                เลิกใช้ n8n Webhook แล้วกลับไปใช้ API Key
+              </label>
+            )}
             <label className="check">
-              <input name="remove_webhook" type="checkbox" />
-              เลิกใช้ n8n Webhook (กลับไปใช้ API Key)
+              <input name="remove_key" type="checkbox" />
+              ลบ API Key ออกจากระบบ (ปิดสวิตช์ทุกอย่างด้านล่างก่อนบันทึก)
             </label>
-          )}
+          </div>
         </div>
-        <h3 className="ai-settings-heading">API Key และการใช้งาน</h3>
-        <div className="form-grid">
-          <TextField
-            id="ai-key"
-            label="API Key (OpenAI หรือ Gemini)"
-            name="api_key"
-            type="password"
-            required={false}
-            max={503}
-            minLength={undefined}
-            autoComplete="new-password"
-            placeholder={a.openai_key ? `บันทึกคีย์ ${service} แล้ว · เว้นว่างเพื่อใช้คีย์เดิม` : 'sk-… หรือ AQ.…'}
-            hint={
-              n8n
-                ? 'ไม่ใช้ระหว่างที่เชื่อม n8n Webhook อยู่'
-                : 'OpenAI (platform.openai.com) ขึ้นต้นด้วย sk- · Gemini (aistudio.google.com) ขึ้นต้นด้วย AQ. หรือ AIza · ระบบรู้เองจากคีย์ เก็บเฉพาะฝั่งเซิร์ฟเวอร์ ไม่แสดงคีย์เดิม'
-            }
-          />
-          <TextField
-            id="ai-model"
-            label="โมเดล"
-            name="model"
-            defaultValue={a.model}
-            max={100}
-            hint={
-              n8n
-                ? 'เมื่อใช้ n8n ให้เลือกโมเดลใน workflow'
-                : 'ต้องเป็นโมเดลที่บัญชีคุณมีสิทธิ์และรองรับ Structured Outputs · เปลี่ยนคีย์ไปอีกเจ้า ระบบเปลี่ยนเป็นโมเดลเริ่มต้นของเจ้านั้นให้'
-            }
-          />
+      </section>
+
+      {/* 2. What the AI is allowed to do. */}
+      <section className="card">
+        <div className="card-header">
+          <div>
+            <h2>ให้ AI ทำอะไรบ้าง</h2>
+            <p>Chatbot อ่านเฉพาะบทความที่เผยแพร่ให้ลูกค้า ส่วนร่างสำหรับเจ้าหน้าที่ใช้บทความและบันทึกภายในได้</p>
+          </div>
+        </div>
+        <div className="card-body hours-switches">
           <label className="check">
             <input type="checkbox" className="switch" name="drafts_enabled" defaultChecked={a.drafts_enabled} />
-            เปิด AI ช่วยเจ้าหน้าที่ (ร่างคำตอบ เกลาข้อความ และผู้ช่วย AI มุมขวาล่าง)
+            <span>
+              ช่วยเจ้าหน้าที่
+              <small className="tiny muted">ร่างคำตอบ เกลาข้อความ และผู้ช่วย AI มุมขวาล่าง</small>
+            </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />
-            เปิด Chatbot ตอบลูกค้าในแชทบนเว็บ
+            <span>
+              Chatbot ตอบลูกค้าในแชทบนเว็บ
+              <small className="tiny muted">เริ่มกับบทสนทนาใหม่ บทสนทนาเดิมให้เจ้าหน้าที่เลือกเปิดเป็นรายเรื่อง</small>
+            </span>
           </label>
-          <label className="check ai-mood-switch">
+          <label className="check">
             <input type="checkbox" className="switch" name="mood_enabled" defaultChecked={a.mood_enabled} />
             <span>
-              อ่านอารมณ์ลูกค้าด้วย AI
-              <small className="tiny muted">
-                ส่งข้อความล่าสุดของลูกค้าให้ AI อ่านว่าไม่พอใจหรือเร่งด่วนไหม เพื่อดันเคสขึ้นก่อน (นับโควตาแยกจากงานอื่น) ปิดแล้วยังอ่านจากคำในข้อความเหมือนเดิม
-              </small>
+              อ่านอารมณ์ลูกค้า
+              <small className="tiny muted">AI อ่านข้อความล่าสุดว่าไม่พอใจหรือเร่งด่วนไหม เพื่อดันเคสขึ้นก่อน ปิดแล้วยังอ่านจากคำในข้อความเหมือนเดิม</small>
             </span>
           </label>
-          <label className="check ai-mood-switch">
+          <label className="check">
             <input type="checkbox" className="switch" name="translate_enabled" defaultChecked={a.translate_enabled} />
             <span>
-              แปลภาษาอัตโนมัติสองทาง
-              <small className="tiny muted">
-                ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยแปลเป็นภาษาของลูกค้าก่อนส่ง ส่งไปแค่ตัวข้อความ ไม่มีชื่อหรือข้อมูลติดต่อ (นับโควตาแยกจากงานอื่น)
-              </small>
+              แปลภาษาสองทาง
+              <small className="tiny muted">ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยแปลเป็นภาษาของลูกค้าก่อนส่ง</small>
             </span>
           </label>
-          <label className="check ai-mood-switch">
+          <label className="check">
             <input type="checkbox" className="switch" name="triage_enabled" defaultChecked={a.triage_enabled} />
             <span>
-              เสนอป้าย ความเร่งด่วน และทีม เมื่อมีเคสใหม่
-              <small className="tiny muted">
-                AI อ่านข้อความแรกของลูกค้าแล้วเสนอบนหน้าเคส ทีมงานกดใช้หรือไม่ใช้เอง ระบบไม่เปลี่ยนให้เอง ส่งไปแค่หัวเรื่องและข้อความของลูกค้า ไม่มีชื่อหรือข้อมูลติดต่อ
-              </small>
+              เสนอป้าย ความเร่งด่วน และทีมให้เคสใหม่
+              <small className="tiny muted">AI อ่านข้อความแรกแล้วเสนอบนหน้าเคส ทีมงานเลือกใช้เอง ระบบไม่เปลี่ยนให้</small>
             </span>
           </label>
-          <NumberField id="ai-daily" label="เพดานคำขอ AI ต่อวัน / องค์กร (UTC)" name="daily_limit" min={1} max={10000} defaultValue={a.daily_limit} />
-          <NumberField id="ai-conversation" label="เพดานคำตอบ Chatbot ต่อบทสนทนา" name="conversation_limit" min={1} max={100} defaultValue={a.conversation_limit} />
-          <NumberField id="ai-output" label="จำนวน output tokens สูงสุดต่อคำขอ" name="max_output_tokens" min={200} max={2000} defaultValue={a.max_output_tokens} />
-          <label className="check">
-            <input name="remove_key" type="checkbox" />
-            ลบ API Key (ปิดทั้งสองโหมดก่อนบันทึก)
-          </label>
+          <p className="tiny muted">AI ได้รับแค่ตัวข้อความและหัวเรื่อง ไม่มีชื่อหรือข้อมูลติดต่อของลูกค้า การอ่านอารมณ์และการแปลนับโควตาแยกจากงานอื่น</p>
         </div>
-        <div className="flex wrap mt">
-          <button className="btn primary" type="submit">
-            บันทึกการตั้งค่า AI
-          </button>
-          <button className="btn" type="button" disabled={!a.key_configured || testing} onClick={() => void test()}>
-            <Icon name="checkCircle" />
-            ทดสอบการเชื่อมต่อ
-          </button>
-          <span className="tiny muted">การทดสอบใช้ข้อความตัวอย่าง ไม่มีข้อมูลลูกค้า</span>
+      </section>
+
+      {/* 3. How much, and how much of it was used today. */}
+      <section className="card">
+        <div className="card-header">
+          <div>
+            <h2>เพดานการใช้งาน</h2>
+            <p>นับงานที่รับเข้าคิว รวมงานทดสอบและงานที่ไม่สำเร็จ ไม่ใช่วงเงินเป็นบาท</p>
+          </div>
         </div>
-        <div id="ai-test-result" role="status" className="mt">
-          {testResult}
+        <div className="card-body">
+          <div className="form-grid">
+            <NumberField id="ai-daily" label="คำขอ AI ต่อวันของทั้งองค์กร (UTC)" name="daily_limit" min={1} max={10000} defaultValue={a.daily_limit} />
+            <NumberField id="ai-conversation" label="คำตอบ Chatbot ต่อบทสนทนา" name="conversation_limit" min={1} max={100} defaultValue={a.conversation_limit} />
+            <NumberField id="ai-output" label="Output tokens สูงสุดต่อคำขอ" name="max_output_tokens" min={200} max={2000} defaultValue={a.max_output_tokens} />
+          </div>
+          <div className="flex wrap mt">
+            <span className="badge">
+              วันนี้ {a.usage.requests} / {a.daily_limit} คำขอ
+            </span>
+            <span className="badge">Input {a.usage.input_tokens.toLocaleString()} tokens</span>
+            <span className="badge">Output {a.usage.output_tokens.toLocaleString()} tokens</span>
+          </div>
         </div>
-      </Form>
-      <div className="card-body">
-        <div className="flex wrap">
-          <span className="badge">
-            วันนี้ {a.usage.requests} / {a.daily_limit} คำขอ
-          </span>
-          <span className="badge">Input {a.usage.input_tokens.toLocaleString()} tokens</span>
-          <span className="badge">Output {a.usage.output_tokens.toLocaleString()} tokens</span>
-        </div>
-        <p className="tiny muted mt">
-          เพดานนับงานที่รับเข้าคิว รวมงานทดสอบและงานไม่สำเร็จ ไม่ใช่วงเงินเป็นบาท เปิด Chatbot แล้วจะเริ่มกับบทสนทนาใหม่
-          บทสนทนาเดิมให้เจ้าหน้าที่เลือกเปิดเป็นรายเรื่อง
-        </p>
+      </section>
+
+      <div className="settings-save">
+        <span className="muted">การแก้ไขจะมีผลทันทีหลังบันทึก</span>
+        <button className="btn primary" type="submit">
+          <Icon name="check" />
+          บันทึกการตั้งค่า AI
+        </button>
       </div>
-    </section>
+    </Form>
   );
 }

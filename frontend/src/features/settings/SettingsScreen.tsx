@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { IssuesPanel } from '@/features/incidents/IssuesPanel';
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef } from 'react';
 import { Icon } from '@/components/Icon';
+import { usePinnedMenu } from '@/components/ui/usePinnedMenu';
 import { AiSettingsPanel } from '@/features/ai';
 import { ChannelSettingsPanel, CHANNELS_PATH, FACEBOOK_PATH, FacebookSettingsPanel, type ChannelSetting, type FacebookSetting } from '@/features/channels';
 import { roleLabels } from '@/lib/labels';
@@ -38,26 +39,6 @@ function useChannelStatuses(): Partial<Record<SettingsPart, Status>> {
   };
 }
 
-/** The menu ends at the bottom of the screen, so its lower sections are reached by scrolling the menu, not the page
-    (wide screens; CSSOM, not a style attribute, which the Content-Security-Policy refuses). */
-function useFitToScreen(ref: RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const wide = window.matchMedia('(min-width: 1101px)');
-    // Measured from where the menu starts on the page (its frame, which never sticks), so the height stays the same
-    // while the page scrolls: a height that followed the scroll made the page longer as it moved, and slow to scroll.
-    const fit = () => {
-      const el = ref.current;
-      const frame = el?.parentElement;
-      if (!el || !frame) return;
-      if (!wide.matches) return el.style.removeProperty('max-height');
-      const top = frame.getBoundingClientRect().top + window.scrollY;
-      el.style.setProperty('max-height', `${Math.max(200, Math.round(window.innerHeight - top - 12))}px`);
-    };
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, [ref]);
-}
 
 function StatusChip({ status }: { status: Status | undefined }) {
   if (!status) return null;
@@ -75,7 +56,7 @@ export function SettingsScreen({ tab }: { tab?: string }) {
     document.title = `${place.part ? settingsParts[place.part].label : settingsTabs[current].label} · ตั้งค่าองค์กร`;
   }, [current, place.part, setRemembered]);
   const nav = useRef<HTMLElement>(null);
-  useFitToScreen(nav);
+  usePinnedMenu(nav);
 
   return (
     <>

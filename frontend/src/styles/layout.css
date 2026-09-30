@@ -169,7 +169,9 @@ html.platform-mode .workspace-select,
 html.platform-mode .global-search,
 html.platform-mode .online,
 html.platform-mode .bell-menu:not(.platform-bell),
-html.sidebar-collapsed .platform-scope>.grow {
+/* Collapsed, the note is a globe in a dashed box that says nothing and looks like a button: the menu below it (the
+   console's own) already says which mode this is. */
+html.sidebar-collapsed .platform-scope {
   display: none;
 }
 /* Cases and conversations belong to one organization; the tag says so where they are read. */

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading, StatCard } from '@/components/ui/display';
@@ -66,6 +67,10 @@ export function SecurityScreen({ tab }: { tab?: string }) {
   };
   return (
     <div className="security-page">
+      <Link href="/platform/settings" className="back-link">
+        <Icon name="back" />
+        ตั้งค่าระบบ
+      </Link>
       <div className="page-heading">
         <div>
           <h1>ความปลอดภัย</h1>

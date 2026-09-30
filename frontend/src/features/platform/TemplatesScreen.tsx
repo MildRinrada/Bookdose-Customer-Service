@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -31,6 +32,10 @@ export function TemplatesScreen() {
 
   return (
     <>
+      <Link href="/platform/faq" className="back-link">
+        <Icon name="back" />
+        FAQ กลาง
+      </Link>
       <div className="page-heading">
         <div>
           <h1>คลังบทความแม่แบบ</h1>

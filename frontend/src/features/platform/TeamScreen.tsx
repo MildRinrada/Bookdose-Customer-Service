@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Avatar, ErrorState, PageLoading } from '@/components/ui/display';
@@ -36,6 +37,10 @@ function TeamView({ data }: { data: PlatformTeam }) {
   const refresh = useInvalidate();
   return (
     <>
+      <Link href="/platform/settings" className="back-link">
+        <Icon name="back" />
+        ตั้งค่าระบบ
+      </Link>
       <div className="page-heading">
         <div>
           <h1>ทีมผู้ดูแลระบบ</h1>

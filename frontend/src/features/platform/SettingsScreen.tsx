@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
+import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { RegistrationSettingsPanel } from '@/features/auth/components/RegistrationSettingsPanel';
 import type { RegistrationConfig } from '@/features/auth/types';
@@ -47,6 +49,16 @@ export function SettingsScreen() {
         <div>
           <h1>ตั้งค่าระบบ</h1>
           <p>อีเมล SMS และการตรวจบอทที่ระบบใช้ · มีผลกับทุกองค์กรบนระบบนี้</p>
+        </div>
+        <div className="flex">
+          <Link className="btn" href="/platform/team">
+            <Icon name="shield" />
+            ทีมผู้ดูแลระบบ
+          </Link>
+          <Link className="btn" href="/platform/security">
+            <Icon name="lock" />
+            ความปลอดภัย
+          </Link>
         </div>
       </div>
       <section id="email" className="platform-settings-section" aria-label="อีเมล (SMTP)">

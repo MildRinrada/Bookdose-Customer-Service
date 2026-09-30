@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
@@ -42,6 +43,12 @@ export function AccountsScreen() {
         <div>
           <h1>บัญชีผู้ใช้</h1>
           <p>ค้นบัญชีทีมงานหรือลูกค้าด้วยอีเมล ดูว่าอยู่องค์กรไหนบ้าง แล้วระงับทั้งระบบ หรือบังคับตั้งรหัสผ่านใหม่</p>
+        </div>
+        <div className="flex">
+          <Link className="btn" href="/platform/pdpa">
+            <Icon name="users" />
+            เครื่องมือ PDPA
+          </Link>
         </div>
       </div>
       <section className="card">

@@ -11,6 +11,8 @@ export type StaffPage = {
   icon: string;
   /** Who sees it in the menu and may open it; empty means every member. */
   roles?: Role[];
+  /** The menu item that opens it and stays lit while it is open, for a screen with no item of its own. */
+  parent?: string;
 };
 
 /** The organization's screens, in menu order. */
@@ -28,12 +30,11 @@ export const managePages: StaffPage[] = [
   { key: 'settings', href: '/settings', label: 'ตั้งค่าองค์กร', icon: 'settings', roles: ['admin'] },
 ];
 
-/** Screens opened from ตั้งค่าองค์กร (its menu lists them under its own sections), which stays lit in the side menu
-    while one of them is open. */
+/** Screens opened from ตั้งค่าองค์กร (its menu lists them under its own sections). */
 export const settingsPages: StaffPage[] = [
-  { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin'] },
-  { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin'] },
-  { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin'] },
+  { key: 'automation', href: '/automation', label: 'ระบบอัตโนมัติ', icon: 'macro', roles: ['admin'], parent: 'settings' },
+  { key: 'audit', href: '/audit', label: 'ประวัติการทำงาน', icon: 'shield', roles: ['admin'], parent: 'settings' },
+  { key: 'trash', href: '/trash', label: 'ถังขยะ', icon: 'trash', roles: ['admin'], parent: 'settings' },
 ];
 
 /** Screens outside the menu. The guides open from the ? in the top bar (features/help/HelpMenu). */
@@ -54,16 +55,20 @@ export const platformPages: StaffPage[] = [
   { key: 'platform-org-health', href: '/platform/org-health', label: 'สุขภาพองค์กร', icon: 'thumbUp' },
   { key: 'platform-accounts', href: '/platform/accounts', label: 'บัญชีผู้ใช้', icon: 'users' },
   { key: 'global-faq', href: '/platform/faq', label: 'FAQ กลาง', icon: 'book' },
-  { key: 'platform-templates', href: '/platform/templates', label: 'คลังบทความแม่แบบ', icon: 'copy' },
   { key: 'platform-announcements', href: '/platform/announcements', label: 'ประกาศ', icon: 'bolt' },
   { key: 'platform-reports', href: '/platform/reports', label: 'รายงานปัญหา', icon: 'help' },
-  { key: 'platform-pdpa', href: '/platform/pdpa', label: 'เครื่องมือ PDPA', icon: 'users' },
-  { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield' },
-  { key: 'platform-security', href: '/platform/security', label: 'ความปลอดภัย', icon: 'lock' },
   { key: 'platform-settings', href: '/platform/settings', label: 'ตั้งค่าระบบ', icon: 'settings' },
 ];
 
-const staffPages = [...workspacePages, ...managePages, ...otherStaffPages, ...platformPages];
+/** Console screens opened from another one (a button in its heading), which stays lit in the menu. */
+export const platformSubPages: StaffPage[] = [
+  { key: 'platform-templates', href: '/platform/templates', label: 'คลังบทความแม่แบบ', icon: 'copy', parent: 'global-faq' },
+  { key: 'platform-pdpa', href: '/platform/pdpa', label: 'เครื่องมือ PDPA', icon: 'users', parent: 'platform-accounts' },
+  { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield', parent: 'platform-settings' },
+  { key: 'platform-security', href: '/platform/security', label: 'ความปลอดภัย', icon: 'lock', parent: 'platform-settings' },
+];
+
+const staffPages = [...workspacePages, ...managePages, ...otherStaffPages, ...platformPages, ...platformSubPages];
 
 /** The staff screen an address belongs to (for the menu highlight and the breadcrumb). */
 export function staffPageOf(pathname: string): StaffPage | undefined {

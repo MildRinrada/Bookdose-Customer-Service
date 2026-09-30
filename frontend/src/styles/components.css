@@ -501,6 +501,8 @@ input[type=checkbox].switch:focus-visible {
   border-radius: 9px;
   font-size: 1rem;
   line-height: 1.8;
+  /* No single word alone on the last line. */
+  text-wrap: pretty;
 }
 .notice.warning {
   background: var(--amber-soft);

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
@@ -62,6 +63,10 @@ export function PdpaScreen() {
 
   return (
     <>
+      <Link href="/platform/accounts" className="back-link">
+        <Icon name="back" />
+        บัญชีผู้ใช้
+      </Link>
       <div className="page-heading">
         <div>
           <h1>เครื่องมือ PDPA</h1>

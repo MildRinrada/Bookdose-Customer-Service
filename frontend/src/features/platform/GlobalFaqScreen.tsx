@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -73,6 +74,10 @@ function GlobalFaqView({ articles }: { articles: GlobalArticle[] }) {
           </p>
         </div>
         <div className="flex">
+          <Link className="btn" href="/platform/templates">
+            <Icon name="copy" />
+            คลังบทความแม่แบบ
+          </Link>
           <button type="button" className="btn primary" onClick={() => openForm()}>
             <Icon name="plus" />
             เขียนบทความ

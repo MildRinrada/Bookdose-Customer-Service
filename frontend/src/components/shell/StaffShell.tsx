@@ -20,7 +20,7 @@ import { useWorkAlerts } from '@/features/staff-account/useWorkAlerts';
 import { isDone } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
-import { isAccountPath, isPlatformPath, managePages, platformPages, settingsPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
+import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
 import { AccountSwitcher } from '@/features/staff-account/AccountSwitcher';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
@@ -154,8 +154,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
     );
 
   const openCases = (tickets.data?.tickets ?? []).filter((t) => !isDone(t)).length;
-  // The screens opened from ตั้งค่าองค์กร have no item of their own: that one stays lit for them.
-  const lit = page && settingsPages.includes(page) ? 'settings' : page?.key;
+  // A screen opened from another one has no item of its own: the one it is opened from stays lit.
+  const lit = page?.parent ?? page?.key;
   const nav = (p: StaffPage) => (
     <NavItem key={p.key} href={p.href} label={p.label} icon={p.icon} active={lit === p.key} count={p.key === 'tickets' ? openCases : 0} />
   );

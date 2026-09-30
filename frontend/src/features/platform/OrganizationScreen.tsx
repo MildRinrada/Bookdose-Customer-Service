@@ -1,20 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useCopyText } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Badge, ErrorState, PageLoading } from '@/components/ui/display';
 import { OrgLogo } from '@/components/ui/OrgLogo';
 import { useToast } from '@/components/ui/Toast';
+import { download } from '@/lib/api/client';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { bytesText } from './labels';
-import { HEALTH_PATH, PLATFORM_PREFIX, setTenantStatus, TENANTS_PATH, withdrawSupportAccess } from './api';
+import { closeTenant, HEALTH_PATH, PLATFORM_PREFIX, setTenantStatus, tenantExportPath, TENANTS_PATH, withdrawSupportAccess } from './api';
 import { QuotaForm } from './components/HealthCards';
-import { SupportAccessForm, SuspendTenantForm, TenantAdminForm } from './components/TenantForms';
+import { StaffSecurityList, SupportAccessForm, SuspendTenantForm, TenantAdminForm } from './components/TenantForms';
 import { FeatureForm, SlugForm, tenantAccess } from './OrganizationsScreen';
 import type { OrgUsage, SupportSummary, Tenant, TenantsPage } from './types';
 
@@ -68,13 +71,17 @@ function OrganizationView({
   const boot = useBoot().data!;
   const { data: work } = useWorkspace();
   const copyText = useCopyText();
-  const { openModal, confirm } = useDialogs();
+  const { openModal, confirm, confirmDelete } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();
+  const router = useRouter();
   const switchTenant = useSwitchTenant();
   const url = customerHomeUrl(t.slug, boot.home?.slug);
   const access = tenantAccess(t, boot, Boolean(work), support);
   const isHome = t.slug === boot.home?.slug;
+  // Closing for good needs an export from the last 30 days (backend platform/closing.py EXPORT_DAYS).
+  const [openedAt] = useState(() => Date.now());
+  const exportedRecently = Boolean(t.exported_at) && openedAt - Date.parse(t.exported_at ?? '') <= 30 * 86_400_000;
 
   return (
     <>
@@ -176,6 +183,15 @@ function OrganizationView({
         </section>
 
         <section className="card info-block">
+          <h2>การยืนยันสองขั้นตอนของทีมงาน</h2>
+          <p className="tiny muted">รีเซ็ตให้ทีมงานที่ทำโทรศัพท์และรหัสสำรองหาย โดยไม่ต้องเข้าเซิร์ฟเวอร์</p>
+          <button type="button" className="btn sm" onClick={() => openModal(`การยืนยันสองขั้นตอนของทีมงาน ${t.name}`, <StaffSecurityList id={t.id} />)}>
+            <Icon name="shield" />
+            ดูและรีเซ็ต
+          </button>
+        </section>
+
+        <section className="card info-block">
           <h2>สิทธิ์เข้าช่วยเหลือ</h2>
           <p className="tiny muted">เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติ และดูได้อย่างเดียว</p>
           {'current' in access && (
@@ -260,9 +276,74 @@ function OrganizationView({
             </>
           )}
         </section>
+
+        {!isHome && (
+          <section className="card info-block">
+            <h2>ปิดองค์กรถาวร</h2>
+            <p className="tiny muted">สำหรับองค์กรที่เลิกใช้แล้ว ลบข้อมูลทั้งหมดจริงตาม PDPA และคืนพื้นที่ดิสก์ ย้อนกลับไม่ได้</p>
+            {t.status !== 'suspended' ? (
+              <p className="org-access muted">
+                <Icon name="lock" />
+                ระงับองค์กรก่อน จึงส่งออกข้อมูลและปิดถาวรได้
+              </p>
+            ) : (
+              <>
+                <p className="tiny">
+                  {t.exported_at ? `ส่งออกข้อมูลล่าสุด ${date(t.exported_at, true)}` : 'ขั้นแรก ส่งออกข้อมูลทั้งองค์กรเป็นไฟล์เดียว แล้วส่งให้เจ้าขององค์กรเก็บไว้'}
+                </p>
+                <div className="flex">
+                  <button type="button" className="btn sm" onClick={() => void exportAll()}>
+                    <Icon name="download" />
+                    {t.exported_at ? 'ส่งออกอีกครั้ง' : 'ส่งออกข้อมูลทั้งองค์กร'}
+                  </button>
+                  {exportedRecently ? (
+                    <button type="button" className="btn sm danger" onClick={closeForGood}>
+                      <Icon name="close" />
+                      ปิดถาวร
+                    </button>
+                  ) : (
+                    t.exported_at && <span className="tiny muted">ไฟล์ส่งออกเก่ากว่า 30 วัน ส่งออกใหม่ก่อนปิดถาวร</span>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        )}
       </div>
     </>
   );
+
+  async function exportAll() {
+    try {
+      await download(tenantExportPath(t.id), `${t.slug}.zip`);
+      toast('ส่งออกแล้ว · ส่งไฟล์นี้ให้เจ้าขององค์กรก่อนปิดถาวร');
+      await refresh(PLATFORM_PREFIX);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : String(error), true);
+    }
+  }
+
+  function closeForGood() {
+    confirmDelete({
+      title: `ปิด ${t.name} ถาวร`,
+      warning: 'ข้อมูลทั้งหมดขององค์กรนี้จะถูกลบจริงและกู้คืนจากหน้านี้ไม่ได้ ตรวจว่าเจ้าขององค์กรได้รับไฟล์ที่ส่งออกแล้ว',
+      effects: [
+        'เคส บทสนทนา ลูกค้า คลังความรู้ ไฟล์แนบ และการตั้งค่าทั้งหมดขององค์กร',
+        'Token ของ LINE อีเมล Facebook และคีย์ AI ขององค์กร',
+        'บัญชีทีมงานที่ไม่ได้อยู่องค์กรอื่น ส่วนบัญชีลูกค้ายังอยู่ เพราะเป็นของลูกค้าเอง',
+        `รหัส ${t.slug} ยังถูกจองไว้ ลิงก์เดิมของลูกค้าจะไม่พาไปองค์กรอื่น`,
+        'ไฟล์สำรองทั้งแพลตฟอร์มที่ทำไว้ก่อนหน้ายังมีข้อมูลนี้ จนกว่าจะถูกลบตามรอบ',
+      ],
+      word: t.slug,
+      confirmLabel: 'ปิดถาวร',
+      run: async () => {
+        await closeTenant(t.id, t.slug);
+        toast(`ปิด ${t.name} ถาวรแล้ว`);
+        router.push('/platform/organizations');
+        await refresh(PLATFORM_PREFIX, '/api/bootstrap');
+      },
+    });
+  }
 
   function withdraw(summary: SupportSummary, leaving: boolean) {
     confirm({

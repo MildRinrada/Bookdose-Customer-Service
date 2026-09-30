@@ -28,6 +28,14 @@ export const createTenant = (body: NewTenantBody) => api<{ id: string }>(TENANTS
 /** Suspend (with the typed confirmation: CONFIRM or the organization's name) or reopen an organization. */
 export const setTenantStatus = (tenantId: string, status: 'active' | 'suspended', confirmation = '') =>
   api<{ ok: true }>(`${TENANTS_PATH}/${tenantId}`, status === 'suspended' ? { status, confirmation } : { status }, 'PATCH');
+/** An organization's staff and their two-step sign-in; resetting it for one who lost their phone (asks the password). */
+export const tenantMembersPath = (tenantId: string) => `${TENANTS_PATH}/${tenantId}/members`;
+export const resetStaffSecurity = (userId: string, reason: string) =>
+  api<{ emailed: boolean }>(`/api/platform/users/${userId}/reset-security`, { reason });
+/** ปิดองค์กรถาวร (backend platform/closing.py): the whole organization's archive, then deleting it for good. */
+export const tenantExportPath = (tenantId: string) => `${TENANTS_PATH}/${tenantId}/export`;
+export const closeTenant = (tenantId: string, confirmation: string) =>
+  api<{ ok: true; staff_removed: number }>(`${TENANTS_PATH}/${tenantId}`, { confirmation }, 'DELETE');
 
 /** Ask an organization to let this admin in for support; its admins approve (or not). */
 export const requestSupportAccess = (tenantId: string, reason: string, hours: number) =>

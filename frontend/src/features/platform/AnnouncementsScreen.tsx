@@ -29,8 +29,11 @@ const STATES: [string, string, string][] = [
   ['watching', 'กำลังตรวจสอบ', 'รู้แล้วว่ามีบางอย่างผิดปกติ กำลังหาสาเหตุ'],
   ['partial', 'ใช้งานได้บางส่วน', 'บางส่วนใช้ไม่ได้ แต่ระบบยังเปิดอยู่'],
   ['down', 'ขัดข้อง', 'ใช้งานไม่ได้เป็นวงกว้าง'],
-  ['maintenance', 'ปิดปรับปรุงตามแผน', 'นัดไว้ล่วงหน้า ไม่ใช่เหตุขัดข้อง'],
+  ['maintenance', 'ปิดปรับปรุงตามแผน', 'ทุกคนดูข้อมูลได้ แต่บันทึกหรือส่งข้อมูลไม่ได้'],
 ];
+// ปิดปรับปรุง closes changes for every organization until the notice is taken down (backend platform/maintenance.py).
+const MAINTENANCE_NOTE =
+  'ระหว่างนี้เจ้าหน้าที่ ลูกค้า และผู้เยี่ยมชมดูข้อมูลได้ แต่บันทึกหรือส่งข้อมูลไม่ได้ ข้อความที่ลูกค้าส่งทาง LINE และ Facebook ยังเข้ามาตามปกติ คอนโซลนี้ยังใช้งานได้ทุกอย่าง';
 
 export function AnnouncementsScreen() {
   const toast = useToast();
@@ -69,6 +72,7 @@ export function AnnouncementsScreen() {
             <div className="grow">
               <strong>ประกาศอยู่ตอนนี้ · {STATES.find(([key]) => key === current.state)?.[1] ?? current.state}</strong>
               <p>{current.text}</p>
+              {current.state === 'maintenance' && <p className="tiny">{MAINTENANCE_NOTE} กด “เอาประกาศออก” เมื่อปรับปรุงเสร็จ</p>}
               <span className="tiny muted">
                 โดย {current.updated_by} เมื่อ {date(current.updated_at, true)}
               </span>
@@ -113,7 +117,11 @@ export function AnnouncementsScreen() {
             data-form="status-notice"
             onSubmit={async (values) => {
               await saveStatusNotice(values.state ?? 'watching', values.text ?? '');
-              toast('ประกาศแล้ว · ขึ้นบนหน้าสถานะระบบภายในไม่กี่วินาที');
+              toast(
+                values.state === 'maintenance'
+                  ? 'ปิดปรับปรุงแล้ว · ทุกองค์กรบันทึกข้อมูลไม่ได้จนกว่าจะเอาประกาศออก'
+                  : 'ประกาศแล้ว · ขึ้นบนหน้าสถานะระบบภายในไม่กี่วินาที',
+              );
               await read();
             }}
           >

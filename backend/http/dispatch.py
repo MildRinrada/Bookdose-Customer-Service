@@ -54,7 +54,7 @@ from backend.modules.knowledge import routes as knowledge_routes
 from backend.modules.kudos import routes as kudos_routes
 from backend.modules.org_links import routes as org_link_routes
 from backend.modules.organization import routes as organization_routes, team_security
-from backend.modules.platform import routes as platform_routes
+from backend.modules.platform import maintenance, routes as platform_routes
 from backend.modules.portal import routes as portal_routes, service as portal_service
 from backend.modules.reports import routes as report_routes
 from backend.modules.search import routes as search_routes
@@ -204,6 +204,8 @@ def route_request(req, path):
     # The web app's report of a trap page visit; from anyone else this path is just another unknown path.
     if path==TRAP_PATH and traps.trusted_report(req):
         return traps.handle_report(req)
+    # ปิดปรับปรุง: changes wait until the platform team takes the note down (webhooks above still come in).
+    maintenance.refuse(req,path)
     if path.startswith('/api/public/'):
         return route_portal(req,path)
     if path.startswith('/api/customer/'):

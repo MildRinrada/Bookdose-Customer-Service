@@ -1,14 +1,86 @@
 'use client';
 
+import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
+import { ErrorState } from '@/components/ui/display';
 import { FormActions, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { useInvalidate } from '@/lib/query';
-import { addTenantAdmin, createTenant, PLATFORM_PREFIX, requestSupportAccess, setTenantStatus } from '../api';
+import { useApi, useInvalidate } from '@/lib/query';
+import { addTenantAdmin, createTenant, PLATFORM_PREFIX, requestSupportAccess, resetStaffSecurity, setTenantStatus, tenantMembersPath } from '../api';
+import type { TenantMember } from '../types';
 
 /* The organizations page's dialogs: a new organization (pages/platform/new-tenant.html), a platform admin's request
-   to enter one for support (pages/platform/support-access.html), and suspending one. */
+   to enter one for support (pages/platform/support-access.html), suspending one, and resetting a staff member's
+   two-step sign-in. */
+
+/** An organization's staff and their two-step sign-in, for the one who lost their phone and their recovery codes: the
+    reset asks the password again (the server's), is written in both histories and emails the account's owner.
+    Markup: pages/platform.css (staff-security). */
+export function StaffSecurityList({ id }: { id: string }) {
+  const members = useApi<{ members: TenantMember[] }>(tenantMembersPath(id));
+  const { confirm } = useDialogs();
+  const toast = useToast();
+  if (members.error) return <ErrorState error={members.error} onRetry={() => void members.refetch()} />;
+  if (!members.data) return <p className="tiny muted">กำลังโหลดรายชื่อทีมงาน…</p>;
+  const list = members.data.members;
+  return (
+    <>
+      <p className="notice">
+        ใช้เมื่อทีมงานทำโทรศัพท์และรหัสสำรองหายทั้งคู่ ยืนยันตัวตนของเจ้าของบัญชีด้วยช่องทางอื่นก่อน เช่น โทรกลับเบอร์ที่องค์กรให้ไว้ หลังรีเซ็ตเขาเข้าสู่ระบบได้ด้วยรหัสผ่านเดิม
+        และได้รับอีเมลแจ้ง
+      </p>
+      {list.length ? (
+        <ul className="staff-security">
+          {list.map((m) => {
+            const methods = [m.two_factor ? 'แอปยืนยันตัวตน' : '', m.passkeys ? `Passkey ${m.passkeys} อัน` : ''].filter(Boolean);
+            return (
+              <li key={m.id}>
+                <span className="staff-security-who">
+                  <strong>{m.name}</strong>
+                  <span className="tiny muted">
+                    {m.email}
+                    {!m.active && ' · ปิดการใช้งานอยู่'}
+                  </span>
+                </span>
+                {methods.length ? (
+                  <>
+                    <span className="staff-security-on">
+                      <Icon name="shield" />
+                      {methods.join(' และ ')}
+                    </span>
+                    <button type="button" className="btn sm" onClick={() => reset(m)}>
+                      <Icon name="restore" />
+                      รีเซ็ต
+                    </button>
+                  </>
+                ) : (
+                  <span className="tiny muted staff-security-off">ยังไม่ได้เปิดการยืนยันสองขั้นตอน ไม่ต้องรีเซ็ต</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="tiny muted">องค์กรนี้ยังไม่มีทีมงาน</p>
+      )}
+    </>
+  );
+
+  function reset(m: TenantMember) {
+    confirm({
+      title: `รีเซ็ตการยืนยันสองขั้นตอนของ ${m.name}`,
+      message: `ลบแอปยืนยันตัวตน รหัสสำรอง และ Passkey ทั้งหมดของ ${m.email} และออกจากระบบทุกอุปกรณ์ บันทึกในประวัติแพลตฟอร์มและประวัติของบัญชีนั้น`,
+      confirmLabel: 'รีเซ็ต',
+      tone: 'danger',
+      run: async () => {
+        const answer = await resetStaffSecurity(m.id, '');
+        toast(answer.emailed ? `รีเซ็ตแล้ว ส่งอีเมลแจ้ง ${m.email} แล้ว` : 'รีเซ็ตแล้ว แต่ส่งอีเมลแจ้งไม่ได้ ตรวจการตั้งค่าอีเมลของระบบ แล้วแจ้งเจ้าของบัญชีเอง', !answer.emailed);
+        await members.refetch();
+      },
+    });
+  }
+}
 
 export function TenantForm() {
   const { closeModal } = useDialogs();

@@ -62,6 +62,35 @@ def set_tenant_status(req, tenant_id):
     return req.send(200,{'ok':True})
 
 
+def tenant_members(req, tenant_id):
+    return req.send(200,{'members':service.tenant_members_security(req.cd,tenant_id)})
+
+
+@confirm_first
+def reset_security(req, user_id):
+    """POST /api/platform/users/<id>/reset-security {reason?}: a staff member who lost their phone and their recovery
+    codes gets back in with their password; they are emailed about it."""
+    from backend.middleware.rate_limit import limited
+    from backend.modules.staff_security import service as staff_security
+    limited(('platform-security-reset',req.session['user_id']),10,3600)
+    return req.send(200,staff_security.reset_from_console(req.cd,req.session,user_id,req.body,staff_security.client_info(req)))
+
+
+@confirm_first
+def export_tenant(req, tenant_id):
+    from backend.modules.platform import closing
+    name,content = closing.export(req.cd,req.session,tenant_id)
+    return req.send_download(name,'application/zip',content)
+
+
+@confirm_first
+def close_tenant(req, tenant_id):
+    from backend.middleware.rate_limit import limited
+    from backend.modules.platform import closing
+    limited(('platform-close-tenant',req.session['user_id']),5,3600)
+    return req.send(200,closing.close(req.cd,req.session,tenant_id,req.body))
+
+
 def dormant_tenants(req):
     from backend.modules.platform import dormant
     return req.send(200,dormant.listing(req.cd))

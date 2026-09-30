@@ -1,5 +1,5 @@
 """Emails the platform admins when the server needs someone, so nobody has to keep the console open: a background
-worker stopped, the disk is nearly full, or requests suddenly fail. Checked every minute by the security worker; each
+worker stopped, the disk is nearly full, requests suddenly fail, or the last backup failed. Checked every minute by the security worker; each
 kind is emailed at most once every COOLDOWN_HOURS while it lasts, and again once it comes back after clearing. Only
 when the platform's mailbox is set up."""
 import json
@@ -22,9 +22,15 @@ WORKERS = {'ai':'งาน AI','channels':'ส่งข้อความ LINE /
            'security':'ความปลอดภัยและการสำรองข้อมูล'}
 
 
-def conditions():
+def conditions(cd):
     """{kind: sentence} of what is wrong right now."""
+    from backend.modules.platform import backups
     found = {}
+    # The last backup attempt failed (made by hand, daily, or before a restore); clears once one succeeds.
+    last = backups.last(cd)
+    if last and not last.get('ok'):
+        kind = {'auto':'อัตโนมัติ','before':'ก่อนกู้คืน'}.get(last.get('kind'),'ที่สั่งจากคอนโซล')
+        found['backup'] = f"สำรองข้อมูล{kind}ไม่สำเร็จ ({last.get('error') or 'ไม่ทราบสาเหตุ'}) ตรวจพื้นที่ดิสก์และสิทธิ์เขียนโฟลเดอร์ {backups.folder()}"
     snap = monitor.snapshot()
     stopped = [w['name'] for w in snap['workers'] if not w['running']]
     if stopped:
@@ -42,8 +48,8 @@ def run():
     """One round: email what newly needs someone; returns the kinds emailed."""
     from backend.modules.platform import service as platform
     from backend.modules.security.events import parse
-    found = conditions()
     with D.control() as cd:
+        found = conditions(cd)
         try:
             state = json.loads(repository.setting(cd,STATE) or '{}')
         except ValueError:

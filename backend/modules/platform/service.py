@@ -39,8 +39,10 @@ def create_tenant(cd, name, slug, admin_id, demo=False):
 def list_tenants(cd):
     """The organizations with who runs each (its own admins, never a platform admin) and the admin invitations waiting."""
     from backend.modules.invitations import service as invitations
+    from backend.modules.platform import closing
     found = repository.list_with_member_count(cd)
     chosen = repository.all_tenant_features(cd)
+    exported = closing.exports(cd)
     for org in found:
         org['admins'] = [{'name':a['name'],'email':a['email']} for a in organization.organization_admins(cd,org['id'])]
         org['admin_invites'] = invitations.open_admin_invites(cd,org['id'])
@@ -48,8 +50,21 @@ def list_tenants(cd):
         org['features'] = feature_state(cd,org['id'],chosen.get(org['id'],{}))
         # Codes it used to have; the links customers were given with them still lead here.
         org['former_slugs'] = repository.former_slugs(cd,org['id'])
+        # When its data was last exported for closing it for good (closing.py).
+        org['exported_at'] = (exported.get(org['id']) or {}).get('at')
     return {'tenants':found,'audit':audit.with_names(cd,audit.latest(cd,100)),'can_invite':invitations.ready(cd),
             'feature_catalogue':feature_catalogue()}
+
+
+def tenant_members_security(cd, tenant_id):
+    """The organization's staff (never a platform admin) and which sign-in protection each has: accounts only, nothing
+    of the organization's work."""
+    from backend.modules.staff_security import repository as staff_security
+    require(repository.find_tenant(cd,tenant_id),'ไม่พบองค์กร',404)
+    return [{'id':m['id'],'name':m['name'],'email':m['email'],'role':m['role'],'active':bool(m['active']),
+             'two_factor':bool((staff_security.totp(cd,m['id']) or {}).get('confirmed_at')),
+             'passkeys':len(staff_security.passkeys(cd,m['id']))}
+            for m in organization.tenant_members(cd,tenant_id)]
 
 
 def add_admin(cd, session, tenant_id, body):

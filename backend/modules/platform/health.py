@@ -344,7 +344,12 @@ def announcement(cd):
 
 
 def active_announcement(cd, audience='staff'):
-    """The announcement to show now to `audience` ('staff' or 'customer'), or None."""
+    """The announcement to show now to `audience` ('staff' or 'customer'), or None. While the platform is under
+    maintenance (maintenance.py) that comes first, for everyone: it is why their changes are not saved."""
+    from backend.modules.platform import maintenance, status
+    if maintenance.active(cd):
+        written = status.notice(cd)
+        return {'text':f"{maintenance.BAR} · {written['text']}",'level':'warning','ends_at':None}
     found = announcement(cd)
     if not found:
         return None

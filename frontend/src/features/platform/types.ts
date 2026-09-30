@@ -20,6 +20,19 @@ export type Tenant = {
   features: Record<string, boolean>;
   /** Codes it used to have. Links customers were given with them still lead here. */
   former_slugs: string[];
+  /** When its whole data was last exported for closing it for good (backend platform/closing.py). */
+  exported_at?: string | null;
+};
+
+/** One of an organization's staff, with the sign-in protection they have (GET /api/platform/tenants/<id>/members). */
+export type TenantMember = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  active: boolean;
+  two_factor: boolean;
+  passkeys: number;
 };
 
 /** One switchable feature, as the console lists them (backend platform/model.py FEATURES). */

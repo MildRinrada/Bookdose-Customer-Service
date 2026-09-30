@@ -368,15 +368,67 @@ def activity(cd, session, page):
             'page':page,'has_more':total>start+ACTIVITY_PAGE,'total':total}
 
 
-# The server owner's way back in
+# The way back in for someone who lost their phone and their recovery codes
+def reset_user(cd, user_id, by, detail='', client=None):
+    """Remove every second factor and passkey of a staff account and sign it out everywhere; written in the
+    platform's history and the account's own. The caller commits."""
+    repository.delete_everything(cd,user_id)
+    cd.execute('DELETE FROM sessions WHERE user_id=?',(user_id,))
+    audit.record(cd,by,'account.security_reset',user_id,detail)
+    note(cd,user_id,'security_reset',detail,client)
+
+
 def reset_account(email):
-    """Remove every second factor and passkey of a staff account (someone lost their phone and their recovery codes).
-    Only from the server: python -m backend.modules.staff_security reset <email>."""
+    """The server owner's reset: python -m backend.modules.staff_security reset <email>. The platform console has
+    the same one (reset_from_console)."""
     with D.control() as cd:
         user = D.one(cd,'SELECT id FROM users WHERE email=?',(email,))
         if not user:
             return False
-        repository.delete_everything(cd,user['id'])
-        audit.record(cd,'ระบบ','account.security_reset',user['id'])
-        cd.execute('DELETE FROM sessions WHERE user_id=?',(user['id'],))
+        reset_user(cd,user['id'],'ระบบ','สั่งจากเซิร์ฟเวอร์')
     return True
+
+
+RESET_SUBJECT = 'การยืนยันสองขั้นตอนของบัญชีคุณถูกรีเซ็ต'
+
+
+def reset_from_console(cd, session, user_id, body, client=None):
+    """A platform admin resets a staff member's second factors (the password was just proven, admin_guard). The owner
+    of the account is emailed, so a reset they did not ask for does not go unnoticed. Returns {emailed}."""
+    reason = body.get('reason','')
+    require(isinstance(reason,str) and len(reason.strip())<=300,'เหตุผลยาวได้ไม่เกิน 300 ตัวอักษร')
+    require(user_id!=session['user_id'],'รีเซ็ตบัญชีของตัวเองไม่ได้ ให้ผู้ดูแลแพลตฟอร์มคนอื่นทำ หรือใช้คำสั่งบนเซิร์ฟเวอร์')
+    user = _user(cd,user_id)
+    require(user,'ไม่พบบัญชีนี้',404)
+    require(protected(cd,user_id),'บัญชีนี้ไม่ได้เปิดการยืนยันสองขั้นตอนหรือ Passkey อยู่แล้ว',409)
+    reset_user(cd,user_id,session['name'],reason.strip() or 'รีเซ็ตจากคอนโซลระบบกลาง',client)
+    cd.commit()
+    return {'emailed':_mail_reset(cd,user,session['name'])}
+
+
+def _mail_reset(cd, user, by):
+    import sys
+    from email.message import EmailMessage
+    from email.utils import formatdate, make_msgid
+    from backend.extensions import channel_transport as T
+    from backend.modules.platform import service as platform
+    from backend.utils.dates import now
+    if not platform.registration_ready(cd):
+        return False
+    cfg,secret = platform.registration_config(cd),platform.registration_secret()
+    try:
+        mail = EmailMessage()
+        mail['Subject'] = RESET_SUBJECT
+        mail['From'],mail['To'] = cfg['address'],user['email']
+        mail['Date'],mail['Message-ID'],mail['Auto-Submitted'] = formatdate(localtime=False,usegmt=True),make_msgid(),'auto-generated'
+        mail.set_content(f"เรียน คุณ{user['name']}\n\n"
+                         f"ผู้ดูแลระบบ ({by}) ได้รีเซ็ตการยืนยันสองขั้นตอนและ Passkey ของบัญชี {user['email']} แล้ว "
+                         "และได้ออกจากระบบให้ในทุกอุปกรณ์\n\n"
+                         "ท่านเข้าสู่ระบบได้ด้วยรหัสผ่านเดิม และโปรดตั้งการยืนยันสองขั้นตอนใหม่ที่ ตั้งค่าบัญชี → ความปลอดภัย\n"
+                         f"{cfg.get('public_base_url','').rstrip('/')}/account?tab=security\n\n"
+                         "หากท่านไม่ได้ขอให้รีเซ็ต โปรดเปลี่ยนรหัสผ่านทันทีและแจ้งผู้ดูแลระบบ\n")
+        T.send_email(cfg,secret,user['email'],mail)
+        return True
+    except Exception as error:
+        print(f'[{now()}] Security reset mail: {type(error).__name__}',file=sys.stderr,flush=True)
+        return False

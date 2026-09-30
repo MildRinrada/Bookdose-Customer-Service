@@ -188,6 +188,104 @@ class PlatformHealthTests(unittest.TestCase):
         with patch.object(monitor,'STARTED',monitor.time.time()):
             self.assertTrue(all(w['running'] for w in monitor.snapshot()['workers']))
 
+    def test_a_failed_backup_is_emailed_until_one_succeeds(self):
+        self.enable_registration_mail()
+        quiet = [patch.object(watch.shutil,'disk_usage',return_value=type('Disk',(),{'free':50,'total':100})()),
+                 patch.object(monitor,'_workers',{}),patch.object(monitor,'STARTED',monitor.time.time()),
+                 patch.object(monitor,'server_errors_since',return_value=0)]
+        for part in quiet:
+            part.start()
+            self.addCleanup(part.stop)
+        mails = lambda: [c.args[3] for c in self.mailer.call_args_list if 'ต้องการการดูแล' in str(c.args[3]['Subject'])]
+        with patch('backend.database.backup.make_backup',side_effect=OSError('disk full')):
+            self.assertFalse(backups.run('auto','ระบบ')['ok'])
+        self.assertEqual(watch.run(),['backup'])
+        self.assertIn('สำรองข้อมูลอัตโนมัติไม่สำเร็จ (OSError)',mails()[-1].get_content())
+        self.assertEqual(watch.run(),[])                          # not again while it lasts
+        # A backup that works clears it; the next failure is told again.
+        self.assertTrue(backups.run('manual','ระบบ')['ok'])
+        self.assertEqual(watch.run(),[])
+        with patch('backend.database.backup.make_backup',side_effect=OSError('disk full')):
+            backups.run('manual','ระบบ')
+        self.assertEqual(watch.run(),['backup'])
+
+    def test_a_staff_member_who_lost_their_phone_is_reset_from_the_console(self):
+        from backend.modules.staff_security import repository as staff_security
+        self.enable_registration_mail()
+        with D.control() as cd:
+            user = D.one(cd,"SELECT id FROM users WHERE email='orgadmin@example.com'")['id']
+            staff_security.start_totp(cd,user,'JBSWY3DPEHPK3PXP')
+            staff_security.confirm_totp(cd,user,1)
+        members = {m['email']:m for m in self.ok(self.owner,f'/api/platform/tenants/{self.org}/members')['members']}
+        self.assertTrue(members['orgadmin@example.com']['two_factor'])
+        answer = self.ok(self.owner,f'/api/platform/users/{user}/reset-security',{'reason':'ยืนยันตัวตนทางโทรศัพท์แล้ว'})
+        self.assertTrue(answer['emailed'])
+        mail = [c.args[3] for c in self.mailer.call_args_list if c.args[2]=='orgadmin@example.com'][-1]
+        self.assertIn('รีเซ็ต',str(mail['Subject']))
+        # Gone, signed out everywhere, and written in both histories.
+        self.assertEqual(self.admin.call('/api/bootstrap')[1].get('user'),None)
+        with D.control() as cd:
+            self.assertIsNone(D.one(cd,'SELECT 1 FROM staff_totp WHERE user_id=?',(user,)))
+            self.assertTrue(D.one(cd,"SELECT 1 FROM staff_activity WHERE user_id=? AND action='security_reset'",(user,)))
+            self.assertTrue(D.one(cd,"SELECT 1 FROM audit_logs WHERE action='account.security_reset' AND entity=?",(user,)))
+        # Nothing left to reset; never one's own; only a platform admin.
+        self.assertEqual(self.owner.call(f'/api/platform/users/{user}/reset-security',{})[0],409)
+        me = self.ok(self.owner,'/api/bootstrap')['user']['id']
+        self.assertEqual(self.owner.call(f'/api/platform/users/{me}/reset-security',{})[0],400)
+        self.assertEqual(self.admin.call(f'/api/platform/users/{user}/reset-security',{})[0],401)
+
+    def test_closing_an_organization_for_good_after_exporting_it(self):
+        other = self.ok(self.owner,'/api/platform/tenants',{'name':'Closing Org','slug':'closing','email':'closing@example.com',
+                                                            'admin_name':'ผู้ดูแลที่ปิด','password':'Test-password-123!'})['id']
+        close = lambda typed: self.owner.call(f'/api/platform/tenants/{other}',{'confirmation':typed},'DELETE')
+        # Suspended first, then exported, then the code typed out.
+        self.assertEqual(close('closing')[0],409)
+        self.ok(self.owner,f'/api/platform/tenants/{other}',{'status':'suspended','confirmation':'CONFIRM'},'PATCH')
+        self.assertEqual(close('closing')[0],409)
+        status,raw = self.owner.call(f'/api/platform/tenants/{other}/export')
+        self.assertEqual(status,200)
+        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+            self.assertIn(f'tenants/{other}.sqlite3',archive.namelist())
+        listed = next(t for t in self.ok(self.owner,'/api/platform/tenants')['tenants'] if t['id']==other)
+        self.assertTrue(listed['exported_at'])
+        self.assertEqual(close('Closing Org')[0],400)
+        self.assertEqual(self.ok(self.owner,f'/api/platform/tenants/{other}',{'confirmation':'closing'},'DELETE')['staff_removed'],1)
+        # Its database, its staff account and its rows are gone; its code stays taken; the platform's own cannot go.
+        self.assertFalse(D.tenant_path(other).exists())
+        self.assertNotIn(other,[t['id'] for t in self.ok(self.owner,'/api/platform/tenants')['tenants']])
+        with D.control() as cd:
+            self.assertIsNone(D.one(cd,"SELECT 1 FROM users WHERE email='closing@example.com'"))
+            self.assertIsNone(D.one(cd,'SELECT 1 FROM memberships WHERE tenant_id=?',(other,)))
+        self.assertEqual(self.owner.call('/api/platform/tenants',{'name':'ใหม่','slug':'closing','email':'n@example.com',
+                                                                  'admin_name':'ใหม่','password':'Test-password-123!'})[0],409)
+        self.assertEqual(self.owner.call(f'/api/public/closing')[0],404)
+        with D.control() as cd:
+            from backend.modules.platform import service as platform
+            home = platform.home_tenant_id(cd)
+        self.assertEqual(self.owner.call(f'/api/platform/tenants/{home}/export')[0],409)
+        self.assertEqual(self.admin.call(f'/api/platform/tenants/{self.org}',{'confirmation':'alpha'},'DELETE')[0],403)
+
+    def test_maintenance_closes_changes_until_the_notice_comes_down(self):
+        visitor,conv = self.visitor()
+        self.ok(self.owner,'/api/platform/status',{'state':'maintenance','text':'ย้ายเซิร์ฟเวอร์ 22:00-23:00'})
+        # Staff and customers read as usual, see why, and cannot change anything.
+        self.assertIn('ย้ายเซิร์ฟเวอร์',self.ok(self.admin,'/api/bootstrap')['announcement']['text'])
+        self.assertIn('ย้ายเซิร์ฟเวอร์',self.ok(visitor,'/api/customer/account')['announcement']['text'])
+        status,answer = self.admin.call(f'/api/conversations/{conv}/messages',{'kind':'note','body':'บันทึก'})
+        self.assertEqual(status,503)
+        self.assertIn('ปิดปรับปรุง',answer['error'])
+        self.assertEqual(visitor.call('/api/public/alpha/messages',{'body':'ยังอยู่ไหม'})[0],503)
+        self.assertEqual(self.admin.call(f'/api/conversations/{conv}')[0],200)
+        # The console keeps working, and signing out is never refused.
+        self.ok(self.owner,'/api/platform/announcement',{'text':'ปิดปรับปรุงคืนนี้'})
+        self.assertEqual(visitor.call('/api/customer/logout',{})[0],200)
+        # Other states only speak; taking the note down opens changes again.
+        self.ok(self.owner,'/api/platform/status',{'state':'partial','text':'LINE ล่าช้า'})
+        self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'บันทึก'})
+        self.ok(self.owner,'/api/platform/status',{'state':'maintenance','text':'ย้ายเซิร์ฟเวอร์'})
+        self.ok(self.owner,'/api/platform/status',None,'DELETE')
+        self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'บันทึก'})
+
     def test_the_console_bell_has_the_todo_and_the_answers_to_support_requests(self):
         bell = lambda: {n['key']:n for n in self.ok(self.owner,'/api/platform/notifications')['items']}
         items = bell()

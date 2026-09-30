@@ -42,6 +42,8 @@ ACTIVITY_LABELS = {
     # Platform admins only (security/admin_guard.py, sign_in_alerts.py)
     'reauth':'ยืนยันรหัสผ่านก่อนทำรายการสำคัญ','reauth_failed':'ยืนยันรหัสผ่านไม่ถูกต้อง',
     'reauth_signed_out':'ออกจากระบบเพราะยืนยันรหัสผ่านผิดหลายครั้ง','sign_in_disowned':'แจ้งว่าไม่ใช่ฉัน และยุติการเข้าสู่ระบบครั้งนั้น',
+    # Staff only: a platform admin (or the server owner) removed the second factors (staff_security.reset_user)
+    'security_reset':'ผู้ดูแลระบบรีเซ็ตการยืนยันสองขั้นตอนและ Passkey',
 }
 
 CONTROL_TABLES = '''

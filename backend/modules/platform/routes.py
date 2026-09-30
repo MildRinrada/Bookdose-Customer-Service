@@ -16,6 +16,12 @@ ROUTES = [
     ('PATCH', f'/api/platform/tenants/{ID}/features', controller.set_tenant_feature, 'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/slug', controller.rename_tenant_slug,     'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/admins', controller.add_admin,          'platform'),
+    # Its staff and whether each has two-step sign-in; resetting one who lost their phone (staff_security).
+    ('GET',   f'/api/platform/tenants/{ID}/members', controller.tenant_members,      'platform'),
+    ('POST',  f'/api/platform/users/{ID}/reset-security', controller.reset_security, 'platform'),
+    # ปิดองค์กรถาวร (closing.py): the whole organization exported for its owner, then deleted for good.
+    ('GET',   f'/api/platform/tenants/{ID}/export', controller.export_tenant,        'platform'),
+    ('DELETE',f'/api/platform/tenants/{ID}',  controller.close_tenant,               'platform'),
     # องค์กรที่หลับ (dormant.py): nobody in for 90 days and no new case; emailing their owners.
     ('GET',   '/api/platform/dormant',        controller.dormant_tenants,            'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/contact', controller.contact_tenant,      'platform'),

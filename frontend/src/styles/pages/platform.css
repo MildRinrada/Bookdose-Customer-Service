@@ -422,6 +422,40 @@
   background: #fdecea;
 }
 
+/* การยืนยันสองขั้นตอนของทีมงาน (TenantForms StaffSecurityList): who, what protects the account, and the reset. */
+.staff-security {
+  display: grid;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.staff-security li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.staff-security-who {
+  display: grid;
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.staff-security-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+  font-size: .875rem;
+  font-weight: 600;
+}
+.staff-security-on .icon {
+  width: 16px;
+  height: 16px;
+}
+
 /* Support access on the organizations page: a request waiting for the organization, and an access with an end. */
 .org-support-pending {
   display: inline-flex;

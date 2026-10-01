@@ -510,6 +510,31 @@
   align-items: center;
   gap: 8px 14px;
 }
+/* In the popup (RecapPopup) the name and the title of the month sit side by side, and so do the customer's words and
+   the badges when there are both, so the whole card fits the dialog without a scrollbar; on a phone they stack as on
+   the page. */
+dialog:has(.modal-body .recap) {
+  max-height: calc(100dvh - 32px);
+}
+@media (min-width: 720px) {
+  .modal-body .recap-card {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    align-items: center;
+    gap: 14px 18px;
+    padding: 20px 24px;
+  }
+  .modal-body .recap-card > * {
+    grid-column: 1 / -1;
+  }
+  .modal-body .recap-card > .recap-head,
+  .modal-body .recap-card > .recap-quote:has(+ .recap-badges) {
+    grid-column: 1;
+  }
+  .modal-body .recap-card > .recap-title,
+  .modal-body .recap-quote + .recap-badges {
+    grid-column: 2;
+  }
+}
 .recap-picker {
   flex-wrap: wrap;
   gap: 12px;

@@ -72,18 +72,15 @@ export function RequiredStar() {
   );
 }
 
-/** The eye beside a password box: shows or hides what was typed, with a short blink. */
-function PasswordEye({ inputRef }: { inputRef: React.RefObject<HTMLInputElement | null> }) {
-  const [shown, setShown] = useState(false);
+/** The eye beside a password box: shows or hides what was typed, with a short blink. The box's type comes from
+    `shown` through React - set on the element by hand, React would put type="password" back at the next keystroke. */
+function PasswordEye({ shown, setShown }: { shown: boolean; setShown: (shown: boolean) => void }) {
   const [symbol, setSymbol] = useState<'eye' | 'eyeOff'>('eye');
   const [blink, setBlink] = useState<'' | 'blink-close' | 'blink-open'>('');
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const toggle = () => {
-    const input = inputRef.current;
-    if (!input) return;
     const next = !shown;
-    input.type = next ? 'text' : 'password';
     setShown(next);
     timers.current.forEach(clearTimeout);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -142,8 +139,8 @@ export function TextField({
 }: TextFieldProps) {
   const autoId = useId();
   const inputId = id ?? `f-${name}-${autoId.replace(/:/g, '')}`;
-  const ref = useRef<HTMLInputElement>(null);
   const password = type === 'password';
+  const [shown, setShown] = useState(false);
   const { bind, errorNode } = useFieldValidation((input) => {
     const value = input.value.trim();
     if (personName && value && !PERSON_NAME.test(value)) return 'ใช้ตัวอักษร เว้นวรรค จุด ขีด หรืออัญประกาศสำหรับชื่อ';
@@ -155,10 +152,9 @@ export function TextField({
   });
   const input = (
     <input
-      ref={ref}
       id={inputId}
       name={name}
-      type={type}
+      type={password && shown ? 'text' : type}
       required={required}
       maxLength={max}
       {...(password ? { minLength: 10, autoComplete: 'new-password' } : {})}
@@ -175,7 +171,7 @@ export function TextField({
       {password ? (
         <div className="password-control">
           {input}
-          <PasswordEye inputRef={ref} />
+          <PasswordEye shown={shown} setShown={setShown} />
           {errorNode}
         </div>
       ) : (

@@ -62,6 +62,8 @@ def main():
     parser.add_argument('--restore',metavar='ZIP',help='Restore a full backup to an EMPTY data directory and exit')
     parser.add_argument('--new-key',action='store_true',help='With --restore: the secret key of the backup is lost; '
                         'restore without the LINE / Facebook / email / OpenAI / SMS credentials (enter them again)')
+    parser.add_argument('--demo-users',action='store_true',help='On an EMPTY data directory: create the test accounts '
+                        '(backend/database/demo_users.py) instead of first-run setup, and exit. For test copies only')
     args = parser.parse_args()
     # The address actually served: an n8n webhook on this computer is allowed only while nobody else can reach it.
     settings.HOST = args.host
@@ -82,6 +84,16 @@ def main():
             print(f"{result['secrets']} credential files restored, still sealed with the key {result['key']}.")
         return
     D.init()
+    if args.demo_users:
+        from backend.database.demo_users import create_demo_users
+        try:
+            accounts = create_demo_users()
+        except ValueError as error:
+            raise SystemExit(f'Test accounts not created: {error}')
+        print(f'Test accounts created in {D.DATA}:')
+        for account in accounts:
+            print(f'  {account[1]:<28} {account[2]}')
+        return
     if args.backup:
         target = Path(args.backup).resolve()
         target.parent.mkdir(parents=True,exist_ok=True)

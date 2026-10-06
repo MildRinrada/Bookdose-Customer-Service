@@ -22,7 +22,8 @@ import { CallbackPanel } from '@/features/customer/components/CallbackRequest';
 import { PhoneHandoffPanel } from './components/PhoneHandoff';
 import { chatState, chatView } from '@/features/customer/labels';
 import type { PortalSession } from '@/features/customer/types';
-import { Composer, MessageThread } from '@/features/inbox';
+import { Composer, MessageThread, PinnedButton } from '@/features/inbox';
+import { pinChatMessage } from '@/features/customer/api';
 import { setEmbedded, setGuestCredentials } from '@/lib/api/client';
 import { useCustomerAccount } from '@/lib/customer-session';
 import { relative } from '@/lib/format';
@@ -30,6 +31,7 @@ import { useApi, useInvalidate } from '@/lib/query';
 import { RealtimeProvider } from '@/lib/realtime-provider';
 import { continueGuestOnLine, guestBase, guestPages, guestPath, guestPortalSlug, guestSessionPath, widgetPath } from './api';
 import { FollowCard } from './components/FollowCard';
+import { useOwnMessages } from '@/features/customer/components/useOwnMessages';
 import { GuestNav, SignedInLink } from './components/GuestFrame';
 import { GuestClaimBanners } from './components/GuestClaimBanners';
 import { GuestMenu } from './components/GuestMenu';
@@ -293,12 +295,12 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
     void refresh(guestPath(slug));
   };
 
-  // "ติดตามแชทนี้" lives in the column beside the conversation where there is room for it, open unless the visitor
-  // folded it. Without that column it goes back into the thread, and there it stays folded until asked for: the card
-  // is taller than the thread itself, and a chat whose messages are pushed out of sight by a settings card is worse
-  // than a missed nudge. Its head line says how they can follow this chat either way.
+  // "ติดตามแชทนี้" lives in the column beside the conversation where there is room for it, and goes back into the
+  // thread without that column. Folded either way until it is asked for: the card is taller than what it sits in, and
+  // a chat whose messages - or whose other cards - are pushed out of sight by a settings card is worse than a missed
+  // nudge. Its head line says how they can follow this chat either way.
   const aside = wide && !embed;
-  const followOpen = aside ? fold !== 'closed' : fold === 'open';
+  const followOpen = fold === 'open';
   const setFollowOpen = (open: boolean) => {
     const value = open ? 'open' : 'closed';
     setFold(value);
@@ -403,20 +405,22 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
               เรื่องใหม่
             </button>
           </div>
-          {list.map((c) => (
-            <GuestChatItem
-              key={c.id}
-              chat={c}
-              selected={c.id === current}
-              // The open chat reads its fresher session; the others the case status the list carries (same words).
-              state={c.id === current && session.data ? chatView(session.data) : chatState({ ticket_status: c.ticket_status ?? null, status: c.status })}
-              onOpen={() => {
-                setOpenId(c.id);
-                setComposing(false);
-                setShowList(false);
-              }}
-            />
-          ))}
+          <div className="inbox-items">
+            {list.map((c) => (
+              <GuestChatItem
+                key={c.id}
+                chat={c}
+                selected={c.id === current}
+                // The open chat reads its fresher session; the others the case status the list carries (same words).
+                state={c.id === current && session.data ? chatView(session.data) : chatState({ ticket_status: c.ticket_status ?? null, status: c.status })}
+                onOpen={() => {
+                  setOpenId(c.id);
+                  setComposing(false);
+                  setShowList(false);
+                }}
+              />
+            ))}
+          </div>
         </nav>
       )}
       <div className={`guest-detail${reading ? ' reading' : ''}${drop.over ? ' qa-over' : ''}`} data-thread-scope="" {...drop.handlers}>
@@ -430,9 +434,14 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
             overview={data}
             articles={articles}
             ticket={session.data?.ticket ?? null}
+            messages={session.data?.messages ?? []}
             followOpen={followOpen}
             onRead={read}
             onFollowToggle={setFollowOpen}
+            onUnpin={(m) => {
+              const open = session.data?.conversation.id;
+              if (open) void pinChatMessage(portal, open, m.id, false).then(() => refresh(guestSessionPath(slug)));
+            }}
             onForgotten={forgotten}
           />
         </aside>
@@ -448,18 +457,23 @@ function GuestAside({
   overview,
   articles,
   ticket,
+  messages,
   followOpen,
   onRead,
   onFollowToggle,
+  onUnpin,
   onForgotten,
 }: {
   slug: string;
   overview: GuestOverview;
   articles: PeekArticle[];
   ticket: { id: string; number: number | string } | null;
+  /** The open chat's messages, which the pinned ones are picked out of (PinnedMessages). */
+  messages: PortalSession['messages'];
   followOpen: boolean;
   onRead: (article: PeekArticle) => void;
   onFollowToggle: (open: boolean) => void;
+  onUnpin: (m: { id: string }) => void;
   onForgotten: () => void;
 }) {
   return (
@@ -476,10 +490,13 @@ function GuestAside({
       )}
       <AnswerList articles={articles} hrefOf={(a) => guestPages.article(slug, a.id)} allHref={guestPages.faq(slug)} onRead={onRead} />
       <FollowCard slug={slug} overview={overview} expanded={followOpen} onToggle={onFollowToggle} onForgotten={onForgotten} />
-      {/* The page's foot line, here instead of under the chat: the column has the room. */}
+      {/* ข้อความที่ปักหมุด, after ติดตามแชทนี้: a button that opens them, there whether any are pinned or not. */}
+      <PinnedButton messages={messages} onUnpin={onUnpin} />
+      {/* The page's foot line, here instead of under the chat: the column has the room. Short on purpose - whose
+          chat this is the banner has already said; what is left is the one thing worth warning about. */}
       <div className="guest-aside-foot tiny muted">
         <p>
-          <Icon name="lock" /> ข้อความส่งถึงทีมงานของ {overview.organization.name} โดยตรง อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+          <Icon name="lock" /> อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
         </p>
         <PoweredBy />
       </div>
@@ -593,6 +610,8 @@ function GuestChatView({
         await refresh(guestSessionPath(slug), guestPath(slug));
       },
     });
+  // ยกเลิก/แก้ไขข้อความของตัวเอง and ปักหมุดข้อความ, through the ⋯ on a message (customer/components/useOwnMessages).
+  const manage = useOwnMessages({ slug: portal, conversationId: id, refresh: () => refresh(guestSessionPath(slug), guestPath(slug)) });
   const [soundOn, setSound] = useGuestSound();
   const canMove = Boolean(data.line && !data.line.moved);
   return (
@@ -628,7 +647,7 @@ function GuestChatView({
         <GuestMenu
           items={[
             { key: 'follow', label: 'ติดตามแชทนี้', icon: 'bell', onSelect: onShowFollow },
-            ...(canClose ? [{ key: 'close', label: 'ปิดเคส (ปัญหาแก้ไขแล้ว)', icon: 'check', onSelect: askClose }] : []),
+            ...(canClose ? [{ key: 'close', label: 'ปิดเคส (ปัญหาแก้ไขแล้ว)', icon: 'check', done: true, onSelect: askClose }] : []),
             ...(!data.line?.moved ? [{ key: 'phone', label: 'คุยต่อบนมือถือ (สแกน QR)', icon: 'camera', onSelect: () => setPhoneOpen(true) }] : []),
             ...(data.callback && !data.line?.moved
               ? [
@@ -687,6 +706,7 @@ function GuestChatView({
         publicView
         publicSlug={portal}
         readAt={data.staff_read_at}
+        manage={manage}
         onReact={(m, reaction) => reactToMessage(portal, id, m.id, reaction).then(() => refresh(guestSessionPath(slug)))}
         afterKey={`${JSON.stringify(data.survey)}|${followOpen}|${aside}|${JSON.stringify(guest)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={

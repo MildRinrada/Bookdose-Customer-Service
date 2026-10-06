@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { ApiError } from '@/lib/api/client';
 import { channelIcons, channelNames, priorityLabels, statusLabels, tenantStatusLabels } from '@/lib/labels';
 
 /* Small pieces every screen shows the same way. Class names are the stylesheet's (src/styles). */
@@ -171,21 +172,58 @@ export function PageLoading() {
   );
 }
 
-/** A screen that could not open: the server's reason and a way to try again. */
+/* What a screen that could not open says. The page that is actually in front of somebody is the one that has to
+   explain itself: "เกิดข้อผิดพลาด" beside a padlock tells a visitor they are shut out, when the truth may be that the
+   program behind the page is not answering. Each kind of failure gets its own words and its own picture, and the
+   server's own sentence is kept underneath whenever it said one. */
+const FAILURES: Record<string, { title: string; hint: string; icon: string }> = {
+  offline: { title: 'ติดต่อเซิร์ฟเวอร์ไม่ได้', hint: 'ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต แล้วกดลองใหม่', icon: 'cloud' },
+  denied: { title: 'เข้าหน้านี้ไม่ได้', hint: 'บัญชีของคุณไม่มีสิทธิ์ดูหน้านี้ หรือเซสชันหมดอายุแล้ว', icon: 'lock' },
+  missing: { title: 'ไม่พบหน้านี้', hint: 'ลิงก์อาจหมดอายุ หรือรายการถูกย้าย/ลบไปแล้ว', icon: 'search' },
+  busy: { title: 'ขอบ่อยเกินไป', hint: 'รอสักครู่แล้วกดลองใหม่', icon: 'clock' },
+  server: { title: 'ระบบขัดข้องชั่วคราว', hint: 'ไม่ใช่ความผิดของคุณ · กดลองใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้งทีมงาน', icon: 'storm' },
+  unknown: { title: 'เปิดหน้านี้ไม่สำเร็จ', hint: 'กดลองใหม่อีกครั้ง', icon: 'help' },
+};
+
+function failureOf(error: unknown) {
+  const status = error instanceof ApiError ? error.status : null;
+  if (status === null) return FAILURES.unknown;
+  if (status === 0) return FAILURES.offline;
+  if (status === 401 || status === 403) return FAILURES.denied;
+  if (status === 404) return FAILURES.missing;
+  if (status === 429) return FAILURES.busy;
+  if (status >= 500) return FAILURES.server;
+  return FAILURES.unknown;
+}
+
+/** A screen that could not open: what went wrong, the server's own reason under it, and a way to try again. */
 export function ErrorState({
-  title = 'เปิดหน้านี้ไม่สำเร็จ',
+  title,
   error,
   onRetry,
   children,
 }: {
+  /** Said instead of the words chosen for this kind of failure. */
   title?: string;
   error: unknown;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
+  const failure = failureOf(error);
   const message = error instanceof Error ? error.message : String(error ?? '');
+  // The server's sentence is worth reading when it said something of its own; its fallback only repeats the heading.
+  const said = message && message !== 'เกิดข้อผิดพลาด กรุณาลองใหม่' ? message : '';
   return (
-    <EmptyState title={title} description={message} icon="lock">
+    <EmptyState
+      title={title ?? failure.title}
+      icon={failure.icon}
+      description={
+        <>
+          {failure.hint}
+          {said && <span className="error-said">{said}</span>}
+        </>
+      }
+    >
       {onRetry && (
         <button type="button" className="btn primary" onClick={onRetry}>
           ลองใหม่

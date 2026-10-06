@@ -7,6 +7,44 @@
 .qa-none {
   margin: 0;
 }
+/* A card of the column beside a conversation that arrives folded, so the column is a few short lines to glance at
+   instead of a page with a scrollbar down its whole side. The look follows the case screen's fold cards
+   (pages/tickets .fold-card), which .fold-hint is shared with. */
+.aside-fold {
+  display: block;
+  padding: 0;
+}
+.aside-fold>summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.aside-fold>summary::-webkit-details-marker {
+  display: none;
+}
+.aside-fold>summary h3 {
+  flex-shrink: 0;
+  margin: 0;
+}
+.aside-fold>summary>.icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  transition: transform .15s ease-out;
+}
+.aside-fold[open]>summary>.icon {
+  transform: rotate(180deg);
+}
+.aside-fold>.fold-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
 /* The search box sits between the heading and the answers, its own width, never wider than the column. */
 .guest-aside-faq .search-input {
   width: 100%;

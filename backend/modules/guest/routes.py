@@ -22,6 +22,10 @@ ROUTES = [
     # คุยต่อบนมือถือ: a QR that opens this chat on the guest's phone (handoff.py).
     ('POST',   GUEST+'/handoff-qr',           controller.handoff_qr,          'guest'),
     ('POST',   GUEST+'/csat',                 controller.rate,                'guest'),
+    # The visitor's own words, and the chat's pins (portal/service.py).
+    ('PATCH',  GUEST+f'/messages/{ID}',       controller.edit_message,        'guest'),
+    ('DELETE', GUEST+f'/messages/{ID}',       controller.take_back_message,   'guest'),
+    ('POST',   GUEST+f'/messages/{ID}/pin',   controller.pin_message,         'guest'),
     ('POST',   GUEST+'/resolve',              controller.resolve_chat,        'guest'),
     ('GET',    GUEST+f'/attachments/{ID}',    controller.download_attachment, 'guest'),
     ('GET',    GUEST+f'/thanks/{ID}/photo',   controller.thanks_photo,        'guest'),

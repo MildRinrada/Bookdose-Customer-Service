@@ -68,6 +68,8 @@ export type Message = {
   survey: boolean;
   /** The customer's emoji on a team reply of a web chat (conversations/reactions.py): it reopens nothing. */
   reaction?: Reaction | null;
+  /** ปักหมุดข้อความ (conversations/pins.py): kept to hand in the column beside the chat, for both sides. */
+  pinned?: boolean;
   /** When the writer last corrected it; the thread says "แก้ไขแล้ว" from then on. */
   edited_at?: string | null;
   /** Set when the message was taken back: the words are gone, the marker stays for the team (never sent to a customer). */

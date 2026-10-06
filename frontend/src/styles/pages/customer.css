@@ -159,6 +159,17 @@
   border-right: 0;
   border-radius: 0;
 }
+/* The row runs the width of the conversation, so the pointer anywhere beside a message - not only on its words -
+   brings up its bar of buttons (pages/reactions.css .message-tools). The message itself keeps its own width: .grow
+   is no longer asked to fill the row, and is capped where .message used to cap it. */
+#customer-thread .message {
+  width: 100%;
+  max-width: none;
+}
+#customer-thread .message>.grow {
+  flex: 0 1 auto;
+  max-width: min(640px, 82%);
+}
 /* The customer's own words on the right, the team's on the left, the way every chat reads. */
 #customer-thread .message.customer {
   flex-direction: row-reverse;

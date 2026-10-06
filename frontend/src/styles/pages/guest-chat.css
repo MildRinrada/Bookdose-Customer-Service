@@ -208,12 +208,14 @@
   margin: 0;
   max-width: none;
 }
+/* Two rows: the head, then the chats (.inbox-items, inbox.css), which are the only part that scrolls - the bar
+   stands beside the chats, not against the head. */
 .guest-list {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
-  /* Down the list only: a row never pushes the column sideways, it shortens its own chip instead. */
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   border-right: 1px solid var(--line);
 }
 .guest-list-head {

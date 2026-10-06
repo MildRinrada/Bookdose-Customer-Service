@@ -63,6 +63,13 @@ def download_attachment(req, file_id):
     return req.send_download(*service.staff_attachment(req.db,req.ctx,file_id))
 
 
+def pin_message(req, conversation_id, message_id):
+    """ปักหมุดข้อความ of a conversation the member may see (conversations/pins.py)."""
+    from backend.modules.conversations import pins
+    conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    return req.send(200,pins.pin(req.db,conv,message_id,req.ctx['name'],req.body))
+
+
 def edit_message(req, conversation_id, message_id):
     """Correct a message already in the thread (its writer only)."""
     conv = service.visible_conversation(req.db,req.ctx,conversation_id)

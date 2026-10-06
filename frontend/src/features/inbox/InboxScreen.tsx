@@ -74,7 +74,8 @@ export function InboxScreen({ id }: { id?: string }) {
 
   // Opening another conversation is a change of address, so the list is built again and starts at the top. Putting it
   // back where it was keeps the row that was just clicked under the pointer; without this, the "scroll the least"
-  // below would drag it down to the bottom edge of the box every single time.
+  // below would drag it down to the bottom edge of the box every single time. The box is the rows alone - the search
+  // and the filters are above it and do not scroll.
   const listBox = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = listBox.current;
@@ -168,7 +169,7 @@ export function InboxScreen({ id }: { id?: string }) {
       </div>
       <StaffIssuesBanner />
       <section className={`card inbox-layout staff-chats${selectedId ? ' show-detail' : ''}${detail.data ? ' has-aside' : ''}`}>
-        <div className="inbox-list" ref={listBox}>
+        <div className="inbox-list">
           {/* The customer's list has a search box and one choice under it; the team's has two choices side by side. */}
           <div className="inbox-tools customer-chat-tools staff-chat-tools">
             <SearchInput id="inbox-search" label="ค้นหาบทสนทนา" placeholder="ค้นหาชื่อ เรื่อง หรือเลขเคส" value={query} onChange={setQuery} />
@@ -194,7 +195,9 @@ export function InboxScreen({ id }: { id?: string }) {
               />
             </div>
           </div>
-          <div id="inbox-items">{items}</div>
+          <div className="inbox-items" id="inbox-items" ref={listBox}>
+            {items}
+          </div>
         </div>
         <div className="inbox-detail" data-thread-scope="">
           {pane}

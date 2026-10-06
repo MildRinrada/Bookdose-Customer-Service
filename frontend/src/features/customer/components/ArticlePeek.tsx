@@ -7,6 +7,7 @@ import { SearchInput } from '@/components/ui/filters';
 import { Highlighted, searchArticles } from '@/features/knowledge';
 import { Markdown } from '@/features/rich/Markdown';
 import { date, plainText } from '@/lib/format';
+import { useUiState } from '@/lib/ui-state';
 import { ArticleFeedback } from './ArticleFeedback';
 
 /* Published answers beside a chat, readable without leaving it (the visitor's chat and the signed-in customer's).
@@ -55,7 +56,11 @@ function usePeek() {
 const SHOWN = 6;
 
 /** The answers the organization has published: searched here, a link each, draggable onto the conversation, read on
-    resting. Searching the whole set here is the point - the full FAQ page is for when somebody wants to browse. */
+    resting. Searching the whole set here is the point - the full FAQ page is for when somebody wants to browse.
+
+    Folded when the page opens, and open from then on if it is opened by hand (lib/ui-state: a reload folds it again).
+    The column beside a conversation is for glancing at, so it arrives as a few short cards rather than a page with a
+    scrollbar down its whole side. */
 export function AnswerList({
   articles,
   hrefOf,
@@ -72,6 +77,7 @@ export function AnswerList({
   onRead: (article: PeekArticle) => void;
 }) {
   const { peek, show, hide, keep } = usePeek();
+  const [open, setOpen] = useUiState('aside-fold:answers', false);
   const [search, setSearch] = useState('');
   const term = search.trim().toLowerCase();
   // The words of the answer count as well as its title: people search with what they want to know, not its heading.
@@ -80,55 +86,67 @@ export function AnswerList({
     : articles.slice(0, SHOWN);
   if (!articles.length) return null;
   return (
-    <section className="guest-aside-card guest-aside-faq">
-      <h3>{heading}</h3>
-      <SearchInput
-        id="qa-search"
-        label="ค้นหาคำตอบ"
-        placeholder="ค้นหาคำตอบ เช่น ลืมรหัสผ่าน"
-        value={search}
-        onChange={(value) => {
-          hide();
-          setSearch(value);
-        }}
-      />
-      <p className="tiny muted qa-hint">
-        {term ? `พบ ${found.length} บทความ · ` : ''}ชี้เมาส์เพื่ออ่านย่อ หรือลากมาวางในบทสนทนาเพื่ออ่านที่นี่
-      </p>
-      {term && !found.length && <p className="tiny muted qa-none">ไม่พบคำตอบที่ตรงกับที่ค้นหา ลองคำอื่น หรือถามทีมงานในแชทได้เลย</p>}
-      <ul className="qa-list">
-        {found.map((article) => (
-          <li key={article.id}>
-            <Link
-              className="qa-item"
-              href={hrefOf(article)}
-              draggable
-              title={`${article.title} · ลากมาวางในบทสนทนาเพื่ออ่านที่นี่`}
-              onDragStart={(event) => {
-                event.dataTransfer.setData(ARTICLE_TYPE, article.id);
-                event.dataTransfer.setData('text/plain', article.title);
-                event.dataTransfer.effectAllowed = 'copy';
-                hide();
-              }}
-              onMouseEnter={(event) => show(article, event.currentTarget)}
-              onMouseLeave={hide}
-              onFocus={(event) => show(article, event.currentTarget, true)}
-              onBlur={hide}
-            >
-              <Icon name="book" />
-              <span>{article.title}</span>
-              <Icon name="grip" className="qa-grip" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {allHref && (
-        <Link className="guest-aside-all" href={allHref}>
-          ดูคำถามที่พบบ่อยทั้งหมด <Icon name="arrow" />
-        </Link>
-      )}
-      <ArticlePeekCard peek={peek} href={peek ? hrefOf(peek.article) : ''} onKeep={keep} onHide={hide} onRead={onRead} />
-    </section>
+    <details
+      className="guest-aside-card guest-aside-faq aside-fold"
+      open={open}
+      onToggle={(event) => {
+        if (event.currentTarget.open !== open) setOpen(event.currentTarget.open);
+      }}
+    >
+      <summary>
+        <h3>{heading}</h3>
+        <span className="fold-hint">{articles.length} คำตอบ</span>
+        <Icon name="down" />
+      </summary>
+      <div className="fold-body">
+        <SearchInput
+          id="qa-search"
+          label="ค้นหาคำตอบ"
+          placeholder="ค้นหาคำตอบ เช่น ลืมรหัสผ่าน"
+          value={search}
+          onChange={(value) => {
+            hide();
+            setSearch(value);
+          }}
+        />
+        <p className="tiny muted qa-hint">
+          {term ? `พบ ${found.length} บทความ · ` : ''}ชี้เมาส์เพื่ออ่านย่อ หรือลากมาวางในบทสนทนาเพื่ออ่านที่นี่
+        </p>
+        {term && !found.length && <p className="tiny muted qa-none">ไม่พบคำตอบที่ตรงกับที่ค้นหา ลองคำอื่น หรือถามทีมงานในแชทได้เลย</p>}
+        <ul className="qa-list">
+          {found.map((article) => (
+            <li key={article.id}>
+              <Link
+                className="qa-item"
+                href={hrefOf(article)}
+                draggable
+                title={`${article.title} · ลากมาวางในบทสนทนาเพื่ออ่านที่นี่`}
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(ARTICLE_TYPE, article.id);
+                  event.dataTransfer.setData('text/plain', article.title);
+                  event.dataTransfer.effectAllowed = 'copy';
+                  hide();
+                }}
+                onMouseEnter={(event) => show(article, event.currentTarget)}
+                onMouseLeave={hide}
+                onFocus={(event) => show(article, event.currentTarget, true)}
+                onBlur={hide}
+              >
+                <Icon name="book" />
+                <span>{article.title}</span>
+                <Icon name="grip" className="qa-grip" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {allHref && (
+          <Link className="guest-aside-all" href={allHref}>
+            ดูคำถามที่พบบ่อยทั้งหมด <Icon name="arrow" />
+          </Link>
+        )}
+        <ArticlePeekCard peek={peek} href={peek ? hrefOf(peek.article) : ''} onKeep={keep} onHide={hide} onRead={onRead} />
+      </div>
+    </details>
   );
 }
 

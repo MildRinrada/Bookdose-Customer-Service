@@ -69,6 +69,21 @@ export const resolveChatCase = (slug: string, conversationId: string) =>
 export const reactToMessage = (slug: string, conversationId: string, messageId: string, reaction: Reaction | null) =>
   api<{ reaction: Reaction | null }>(`/api/public/${slug}/messages/${messageId}/reaction`, { reaction }, 'POST', { conversation: conversationId });
 
+/* The customer's own words in a chat of theirs (X-Conversation-ID), and the chat's pins. `slug` is the publicSlug:
+   "<org>/guest" for a visitor. The server gives them OWN_MINUTES after sending (conversations/service.py). */
+
+/** แก้ไขข้อความ: the words of their own message, corrected. It is marked แก้ไขแล้ว for both sides from then on. */
+export const editOwnMessage = (slug: string, conversationId: string, messageId: string, body: string) =>
+  api<{ id: string }>(`/api/public/${slug}/messages/${messageId}`, { body }, 'PATCH', { conversation: conversationId });
+
+/** ยกเลิกข้อความ: their own message leaves the chat; the team keeps a marker that one was taken back. */
+export const takeBackOwnMessage = (slug: string, conversationId: string, messageId: string) =>
+  api<{ id: string }>(`/api/public/${slug}/messages/${messageId}`, undefined, 'DELETE', { conversation: conversationId });
+
+/** ปักหมุดข้อความ of this chat (conversations/pins.py), or take the pin back. */
+export const pinChatMessage = (slug: string, conversationId: string, messageId: string, pinned: boolean) =>
+  api<{ pinned: boolean }>(`/api/public/${slug}/messages/${messageId}/pin`, { pinned }, 'POST', { conversation: conversationId });
+
 /** A heart back to the team member on the thank-you card: it goes up on the team's กำแพงคำชม. */
 export const sendThanksHeart = (slug: string, conversationId: string, cardId: string) =>
   api<{ hearted: true }>(`/api/public/${slug}/thanks/${cardId}/heart`, {}, 'POST', { conversation: conversationId });

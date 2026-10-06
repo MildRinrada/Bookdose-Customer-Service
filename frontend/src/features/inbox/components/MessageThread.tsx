@@ -25,13 +25,18 @@ import { useReadAt, useRealtime, useTyping } from '@/lib/realtime-provider';
 import type { Message, Reaction } from '../types';
 import { MessageTranslation, thaiSide } from './MessageTranslation';
 
-/** What the thread may do with a message of this conversation; absent on the customer's view and wherever the
-    conversation cannot be corrected (only a web chat can: a reply a provider delivered is already read). */
+/** What the reader may do with a message of this conversation, through the ⋯ beside it: absent wherever the
+    conversation cannot be touched at all (only a web chat can: a reply a provider delivered is already read). The
+    team corrects and deletes its own; the customer corrects and takes back their own; either may pin. */
 export type ManageMessage = {
   canEdit: (m: ThreadMessage) => boolean;
   canDelete: (m: ThreadMessage) => boolean;
+  canPin?: (m: ThreadMessage) => boolean;
   onEdit: (m: ThreadMessage) => void;
   onDelete: (m: ThreadMessage) => void;
+  onPin?: (m: ThreadMessage, pinned: boolean) => void;
+  /** What taking a message back is called here: the team ลบข้อความ, the customer ยกเลิกข้อความ. */
+  removeLabel?: string;
 };
 
 /* A conversation's messages (the old messagesHTML): only the time on each message and a divider at each new day,
@@ -43,7 +48,12 @@ export type ManageMessage = {
    reply for both sides, an answer that is not a message and so reopens nothing (conversations/reactions.py). */
 
 type ThreadMessage = Pick<Message, 'id' | 'author_name' | 'author_id' | 'kind' | 'body' | 'created_at' | 'attachments'> &
-  Partial<Pick<Message, 'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation' | 'reaction' | 'photo'>>;
+  Partial<
+    Pick<
+      Message,
+      'delivery' | 'channel_delivery' | 'source' | 'citations' | 'survey' | 'edited_at' | 'deleted_at' | 'deleted_by' | 'translation' | 'reaction' | 'photo' | 'pinned'
+    >
+  >;
 
 /** The customer reacts to a team reply (null takes it back); given on the customer's web chat only. */
 export type ReactToMessage = (m: ThreadMessage, reaction: Reaction | null) => Promise<unknown>;
@@ -165,11 +175,17 @@ function MessageItem({
               {clockTime(m.created_at)}
             </time>
           </div>
-          {/* The words are gone and the customer no longer sees this at all; the team keeps the marker, because a
-              thread that quietly loses a message is worse than one that says it lost it. */}
+          {/* The words are gone, the mark stays: a thread that quietly loses a message is worse than one that says
+              it lost it. A reply the team took back is not in the customer's copy at all (conversations/repository
+              list_messages), so only the team reads that one; a message the customer took back is marked on both
+              sides, in the words of whoever is reading. */}
           <p className="message-removed">
             <Icon name="trash" />
-            ข้อความนี้ถูกลบแล้ว{m.deleted_by ? ` โดย ${m.deleted_by}` : ''} · ลูกค้าไม่เห็นข้อความนี้แล้ว
+            {m.kind === 'customer'
+              ? publicView
+                ? 'คุณยกเลิกข้อความนี้แล้ว'
+                : 'ลูกค้ายกเลิกข้อความนี้แล้ว'
+              : `ข้อความนี้ถูกลบแล้ว${m.deleted_by ? ` โดย ${m.deleted_by}` : ''} · ลูกค้าไม่เห็นข้อความนี้แล้ว`}
           </p>
         </div>
       </article>
@@ -206,10 +222,18 @@ function MessageItem({
               แก้ไขแล้ว
             </span>
           )}
-          {manage && <MessageMenu m={m} manage={manage} />}
+          {m.pinned && (
+            <span className="message-tag pin-tag" title="ข้อความนี้ถูกปักหมุดไว้ · ดูได้ในคอลัมน์ข้าง ๆ">
+              <Icon name="pin" />
+              ปักหมุด
+            </span>
+          )}
+          {/* On the team's screens the ⋮ sits in the message's own line; on the customer's it comes up beside the
+              message with the emoji, the way a chat app puts its actions there (Reactable). */}
+          {manage && !publicView && <MessageMenu m={m} manage={manage} />}
         </div>
-        {publicView && onReact ? (
-          <Reactable m={m} onReact={onReact}>
+        {publicView && (onReact || manage) ? (
+          <Reactable m={m} onReact={onReact} manage={manage}>
             {bubble}
           </Reactable>
         ) : (
@@ -277,7 +301,9 @@ export function MessageThread({
   const typing = useTyping(threadId, other);
   const liveReadAt = useReadAt(threadId, other);
   // A reply held while it is translated has not reached the customer: no read mark on it.
-  const lastPublic = [...messages].reverse().find((m) => m.kind !== 'note' && !(m.translation?.direction === 'out' && m.translation.status === 'pending'));
+  const lastPublic = [...messages]
+    .reverse()
+    .find((m) => m.kind !== 'note' && !m.deleted_at && !(m.translation?.direction === 'out' && m.translation.status === 'pending'));
   const readTimes = [liveReadAt, knownReadAt].filter((at): at is string => Boolean(at)).map((at) => Date.parse(at));
   const read = Boolean(lastPublic && readTimes.some((at) => at >= Date.parse(lastPublic.created_at)));
   const receipt: Receipt | null = lastPublic?.kind === own && (connected || read) ? { id: lastPublic.id, read } : null;
@@ -304,10 +330,13 @@ const LINGER_MS = 700;
 // The row still lingering on another reply, put away at once when the mouse rests on this one.
 let lingering: (() => void) | null = null;
 
-/** A team reply the customer may react to: resting the pointer on it for a moment (a tap on a phone, Tab from the
-    keyboard) shows the row of emoji above it; the one chosen sits under the reply and takes itself back when pressed.
-    Shown at once, put back if the server refuses. Markup: pages/reactions.css. */
-function Reactable({ m, onReact, children }: { m: ThreadMessage; onReact: ReactToMessage; children: ReactNode }) {
+/** What comes up beside a message on the customer's chat when the pointer rests on it for a moment (a tap on a
+    phone, Tab from the keyboard): a small bar of buttons at its edge, as a chat app puts them there - the face, which
+    opens the row of emoji for a team reply, and the ⋮ of what may be done with the message itself (แก้ไขข้อความ,
+    ยกเลิกข้อความ, ปักหมุดข้อความ). Either may be absent: their own message has no emoji to give, and a chat nothing can
+    be done to has no ⋮. The emoji chosen sits under the message and takes itself back when pressed; it is shown at
+    once and put back if the server refuses. Markup: pages/reactions.css. */
+function Reactable({ m, onReact, manage, children }: { m: ThreadMessage; onReact?: ReactToMessage; manage?: ManageMessage; children: ReactNode }) {
   const toast = useToast();
   const root = useRef<HTMLDivElement>(null);
   const saved = m.reaction ?? null;
@@ -354,6 +383,7 @@ function Reactable({ m, onReact, children }: { m: ThreadMessage; onReact: ReactT
     return () => document.removeEventListener('pointerdown', away);
   }, [open]);
   const choose = async (reaction: Reaction) => {
+    if (!onReact) return;
     const before = shown;
     const next = shown === reaction ? null : reaction;
     setShown(next);
@@ -383,39 +413,58 @@ function Reactable({ m, onReact, children }: { m: ThreadMessage; onReact: ReactT
         onPointerEnter={enter}
         onPointerLeave={leave}
         onClick={(event) => {
-          if (window.matchMedia('(hover: none)').matches && !(event.target as HTMLElement).closest('a, button')) setOpen((o) => !o);
+          // No pointer to rest on a phone: a tap on the message brings its bar up (the face on it opens the emoji).
+          if (window.matchMedia('(hover: none)').matches && !(event.target as HTMLElement).closest('a, button')) setResting((was) => !was);
         }}
       >
         {children}
-        <div className="reaction-picker" role="toolbar" aria-label={`รีแอคข้อความของ ${m.author_name}`} onKeyDown={onKey}>
-          {REACTION_KEYS.map((reaction, i) => (
+        <div className="message-tools">
+          {onReact && (
             <button
-              key={reaction}
               type="button"
-              className={shown === reaction ? 'on' : undefined}
-              tabIndex={i === 0 ? 0 : -1}
-              aria-pressed={shown === reaction}
-              aria-label={REACTIONS[reaction].label}
-              title={REACTIONS[reaction].label}
-              onClick={() => void choose(reaction)}
+              className="icon-btn sm"
+              aria-expanded={open}
+              aria-label={`รีแอคข้อความของ ${m.author_name}`}
+              title="รีแอคด้วยอีโมจิ"
+              onClick={() => setOpen((was) => !was)}
             >
-              <span aria-hidden="true">{REACTIONS[reaction].emoji}</span>
+              <Icon name="smile" />
             </button>
-          ))}
+          )}
+          {manage && <MessageMenu m={m} manage={manage} />}
+          {onReact && (
+            <div className="reaction-picker" role="toolbar" aria-label={`รีแอคข้อความของ ${m.author_name}`} onKeyDown={onKey}>
+              {REACTION_KEYS.map((reaction, i) => (
+                <button
+                  key={reaction}
+                  type="button"
+                  className={shown === reaction ? 'on' : undefined}
+                  tabIndex={i === 0 ? 0 : -1}
+                  aria-pressed={shown === reaction}
+                  aria-label={REACTIONS[reaction].label}
+                  title={REACTIONS[reaction].label}
+                  onClick={() => void choose(reaction)}
+                >
+                  <span aria-hidden="true">{REACTIONS[reaction].emoji}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+        {/* The emoji chosen sits on the message's lower right corner, where a chat app puts it. */}
+        {shown && (
+          <button
+            type="button"
+            className={`reaction-chip${pop ? ' pop' : ''}`}
+            aria-label={`คุณรีแอค ${REACTIONS[shown].label} กดเพื่อยกเลิก`}
+            title="กดเพื่อยกเลิก"
+            onClick={() => void choose(shown)}
+            onAnimationEnd={() => setPop(false)}
+          >
+            <span aria-hidden="true">{REACTIONS[shown].emoji}</span>
+          </button>
+        )}
       </div>
-      {shown && (
-        <button
-          type="button"
-          className={`reaction-chip${pop ? ' pop' : ''}`}
-          aria-label={`คุณรีแอค ${REACTIONS[shown].label} กดเพื่อยกเลิก`}
-          title="กดเพื่อยกเลิก"
-          onClick={() => void choose(shown)}
-          onAnimationEnd={() => setPop(false)}
-        >
-          <span aria-hidden="true">{REACTIONS[shown].emoji}</span>
-        </button>
-      )}
     </>
   );
 }
@@ -458,14 +507,15 @@ export function ThreadFilter({
   );
 }
 
-/* The ⋯ beside a message the team may still correct. A message sent to the wrong chat is the reason this exists, so
-   it is on each message rather than in a screen of its own, and it opens on click, closes on Escape, on a click
-   somewhere else and once something is chosen. */
+/* The ⋯ beside a message, which shows when the pointer rests on it: correcting it, taking it back, and pinning it.
+   A message sent to the wrong chat is the reason this exists, so it is on each message rather than in a screen of
+   its own, and it opens on click, closes on Escape, on a click somewhere else and once something is chosen. */
 function MessageMenu({ m, manage }: { m: ThreadMessage; manage: ManageMessage }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const editable = manage.canEdit(m);
   const removable = manage.canDelete(m);
+  const pinnable = Boolean(manage.canPin?.(m) && manage.onPin);
   useEffect(() => {
     if (!open) return;
     const away = (event: MouseEvent) => {
@@ -479,7 +529,7 @@ function MessageMenu({ m, manage }: { m: ThreadMessage; manage: ManageMessage })
       document.removeEventListener('keydown', key);
     };
   }, [open]);
-  if (!editable && !removable) return null;
+  if (!editable && !removable && !pinnable) return null;
   return (
     <div className="message-menu" ref={root}>
       <button
@@ -506,6 +556,19 @@ function MessageMenu({ m, manage }: { m: ThreadMessage; manage: ManageMessage })
             แก้ไขข้อความ
           </button>
         )}
+        {pinnable && (
+          <button
+            type="button"
+            className="menu-item"
+            onClick={() => {
+              setOpen(false);
+              manage.onPin?.(m, !m.pinned);
+            }}
+          >
+            <Icon name="pin" />
+            {m.pinned ? 'เลิกปักหมุด' : 'ปักหมุดข้อความ'}
+          </button>
+        )}
         {removable && (
           <button
             type="button"
@@ -516,7 +579,7 @@ function MessageMenu({ m, manage }: { m: ThreadMessage; manage: ManageMessage })
             }}
           >
             <Icon name="trash" />
-            ลบข้อความ
+            {manage.removeLabel ?? 'ลบข้อความ'}
           </button>
         )}
       </div>

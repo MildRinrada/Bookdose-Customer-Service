@@ -141,6 +141,22 @@ def post_customer_message(db, tenant_id, conv, viewer, body):
     return mid
 
 
+def edit_own_message(db, tenant_id, conv, viewer, message_id, body):
+    """แก้ไขข้อความ: the customer corrects what they wrote (conversations/service.py has the rules and the clock)."""
+    return conversation_service.customer_edit_message(db,tenant_id,conv,_author(viewer),message_id,body)
+
+
+def take_back_own_message(db, conv, viewer, message_id):
+    """ยกเลิกข้อความ: the customer's own message leaves their chat."""
+    return conversation_service.customer_take_back_message(db,conv,_author(viewer),message_id)
+
+
+def pin_message(db, conv, viewer, message_id, body):
+    """ปักหมุดข้อความ of this chat (conversations/pins.py): the same pins the team sees."""
+    from backend.modules.conversations import pins
+    return pins.pin(db,conv,message_id,_author(viewer),body)
+
+
 def rate_service(db, conv, body):
     """The customer answers the satisfaction survey with the star buttons."""
     automation.rate_from_portal(db,conv,body)

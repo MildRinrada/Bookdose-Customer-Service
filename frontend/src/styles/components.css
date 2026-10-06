@@ -530,6 +530,22 @@ input[type=checkbox].switch:focus-visible {
   max-width: 350px;
   margin: 0 auto 15px;
 }
+/* What the server itself said, under the plain explanation (ui/display ErrorState): quieter, and its own line. */
+.error-said {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .9rem;
+  line-height: 1.6;
+}
+/* What the server itself said, under the plain explanation (ui/display ErrorState): quieter, and its own line. */
+.error-said {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .9rem;
+  line-height: 1.6;
+}
 dialog {
   max-height: 90vh;
   border: 1px solid var(--line);

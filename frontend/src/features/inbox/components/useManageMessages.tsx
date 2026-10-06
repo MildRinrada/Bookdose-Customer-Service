@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { useStaffUser } from '@/lib/session';
 import type { Workspace } from '@/lib/types';
-import { CONVERSATION_PREFIXES, deleteMessage, editMessage } from '../api';
+import { CONVERSATION_PREFIXES, deleteMessage, editMessage, pinMessage } from '../api';
 import type { Conversation } from '../types';
 import type { ManageMessage } from './MessageThread';
 import { thaiSide } from './MessageTranslation';
@@ -23,7 +23,10 @@ type Item = Parameters<ManageMessage['canEdit']>[0];
    no menu.
 
    Who: the writer corrects their own words; the writer or the organization's owner takes a message back, which is
-   what an owner is for when something went to the wrong place and the writer has gone home. */
+   what an owner is for when something went to the wrong place and the writer has gone home.
+
+   ปักหมุดข้อความ (conversations/pins.py) is not a correction and belongs to nobody in particular: anyone on the team
+   may pin any message of a web chat, including an internal note, and the pins show in the column beside the chat. */
 
 const RECALLABLE = new Set(['web']);
 
@@ -45,6 +48,17 @@ export function useManageMessages(conversation: Conversation, work: Workspace): 
     // A reply held while it is translated (ai/translate.py) is corrected once it has gone.
     canEdit: (m) => ok(m) && mine(m) && !(m.translation?.direction === 'out' && m.translation.status === 'pending'),
     canDelete: (m) => ok(m) && (mine(m) || work.role === 'admin'),
+    canPin: (m) => !m.deleted_at && (m.kind === 'note' || RECALLABLE.has(conversation.channel)),
+    // The allowance (conversations/pins.py MOST) is the server's to keep: when it is used up it says so, and so do we.
+    onPin: async (m, pinned) => {
+      try {
+        await pinMessage(conversation.id, m.id, pinned);
+        toast(pinned ? 'ปักหมุดข้อความแล้ว · ดูได้ในคอลัมน์ขวา' : 'เอาหมุดออกแล้ว');
+        await refresh(...CONVERSATION_PREFIXES);
+      } catch (problem) {
+        toast((problem as Error).message, true);
+      }
+    },
     onEdit: (m) =>
       openModal(
         'แก้ไขข้อความ',

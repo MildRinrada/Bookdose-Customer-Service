@@ -9,12 +9,16 @@ import { ContactHistory } from '@/features/contacts';
 import { reachText } from '@/features/guest/labels';
 import { date, relative } from '@/lib/format';
 import { channelIcons, channelNames } from '@/lib/labels';
+import { useInvalidate } from '@/lib/query';
+import { CONVERSATION_PREFIXES, pinMessage } from '../api';
 import type { ConversationDetail, ConversationSummary } from '../types';
 import { CustomerAvatar, inboxState } from './InboxItem';
+import { PinnedButton } from './PinnedMessages';
 
 /* Beside the open conversation on wide screens: who the customer is and how to reach them, what this chat is about
-   (channel, category, the reference they gave, its case) and their other chats, so the team does not have to leave
-   the inbox to know who they are talking to. Markup: pages/inbox-fresh.css (inbox-aside). */
+   (channel, category, the reference they gave, its case), what either side pinned in it and their other chats, so
+   the team does not have to leave the inbox to know who they are talking to. The customer sees the same pins in the
+   column beside their own chat. Markup: pages/inbox-fresh.css (inbox-aside). */
 
 function Row({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
   return (
@@ -29,6 +33,7 @@ function Row({ icon, label, children }: { icon: string; label: string; children:
 export function ConversationAside({ data, others }: { data: ConversationDetail; others: ConversationSummary[] }) {
   const { conversation: c, contact, ticket: t } = data;
   const { openModal } = useDialogs();
+  const refresh = useInvalidate();
   const guest = c.guest ?? contact.guest;
   return (
     <aside className="inbox-aside" aria-label="ข้อมูลลูกค้าและบทสนทนานี้">
@@ -95,6 +100,9 @@ export function ConversationAside({ data, others }: { data: ConversationDetail; 
           <p className="aside-empty">ยังไม่ได้เปิดเคสจากบทสนทนานี้</p>
         )}
       </section>
+
+      {/* ข้อความที่ปักหมุด (conversations/pins.py): a button that opens them, there whether any are pinned or not. */}
+      <PinnedButton messages={data.messages} onUnpin={(m) => void pinMessage(c.id, m.id, false).then(() => refresh(...CONVERSATION_PREFIXES))} />
 
       {others.length > 0 && (
         <section className="aside-card">

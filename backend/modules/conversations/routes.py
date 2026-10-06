@@ -10,6 +10,8 @@ ROUTES = [
     ('POST',  CONVERSATION+'/messages',    controller.post_message,        'workspace'),
     # Correcting or taking back a message sent to the wrong place.
     ('PATCH', CONVERSATION+f'/messages/{ID}', controller.edit_message,    'workspace'),
+    # ปักหมุดข้อความในแชท (conversations/pins.py): the strip above the messages, shared with the customer.
+    ('POST', CONVERSATION+f'/messages/{ID}/pin', controller.pin_message,   'workspace'),
     ('DELETE',CONVERSATION+f'/messages/{ID}', controller.delete_message,  'workspace'),
     ('POST',  CONVERSATION+'/ticket',      controller.link_ticket,         'workspace'),
     ('POST',  CONVERSATION+'/ai-draft',    controller.request_ai_draft,    'workspace'),

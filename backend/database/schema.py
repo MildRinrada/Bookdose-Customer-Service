@@ -144,6 +144,9 @@ def upgrade_tenant(db):
     db.executescript(organization.TEAM_SNIPPETS_TABLE)
     from backend.modules.organization import hours
     db.executescript(hours.TABLE)
+    from backend.modules.conversations import pins
+    # ปักหมุดข้อความในแชท: what either side keeps to hand above the messages (conversations/pins.py).
+    db.executescript(pins.TABLE)
     from backend.modules.automation import closing, quiet
     db.executescript(quiet.TABLE)
     # ลูกค้าปิดเคสเอง: the question "ปิดเคสใช่ไหม" waiting for its answer (automation/closing.py).

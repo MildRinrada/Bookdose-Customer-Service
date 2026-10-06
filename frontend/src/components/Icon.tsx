@@ -70,6 +70,7 @@ const paths = {
   history: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2',
   // A customer who is not happy (the mood tag on cases and conversations)
   frown: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M8 16.5s1.5-2 4-2 4 2 4 2 M9 9.5h.01 M15 9.5h.01',
+  smile: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M8 14s1.5 2 4 2 4-2 4-2 M9 9.5h.01 M15 9.5h.01',
   expand: 'M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7',
   shrink: 'M4 14h6v6 M20 10h-6V4 M14 10l7-7 M3 21l7-7',
   translate: 'M5 8l6 6 M4 14l6-6 2-3 M2 5h12 M7 2h1 M22 22l-5-10-5 10 M14 18h6',

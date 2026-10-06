@@ -130,6 +130,21 @@ def rate(req):
     return req.send(200,{'ok':True})
 
 
+def edit_message(req, message_id):
+    """แก้ไขข้อความ of the visitor's own."""
+    return req.send(200,portal.edit_own_message(req.db,req.org['id'],_current(req),req.guest,message_id,req.body))
+
+
+def take_back_message(req, message_id):
+    """ยกเลิกข้อความ: the visitor's own message leaves the chat."""
+    return req.send(200,portal.take_back_own_message(req.db,_current(req),req.guest,message_id))
+
+
+def pin_message(req, message_id):
+    """ปักหมุดข้อความ in the visitor's chat (conversations/pins.py)."""
+    return req.send(200,portal.pin_message(req.db,_current(req),req.guest,message_id,req.body))
+
+
 def resolve_chat(req):
     """ปิดเคส pressed on the guest's chat (automation/closing.py)."""
     return req.send(200,portal.resolve_case(req.db,req.org['id'],_current(req),req.guest))

@@ -99,6 +99,21 @@ def rate(req):
     return req.send(200,{'ok':True})
 
 
+def edit_message(req, message_id):
+    """แก้ไขข้อความ of the customer's own, in the chat named by X-Conversation-ID."""
+    return req.send(200,service.edit_own_message(req.db,req.org['id'],_current(req),req.customer,message_id,req.body))
+
+
+def take_back_message(req, message_id):
+    """ยกเลิกข้อความ: the customer's own message leaves the chat."""
+    return req.send(200,service.take_back_own_message(req.db,_current(req),req.customer,message_id))
+
+
+def pin_message(req, message_id):
+    """ปักหมุดข้อความ in the customer's chat (conversations/pins.py)."""
+    return req.send(200,service.pin_message(req.db,_current(req),req.customer,message_id,req.body))
+
+
 def react(req, message_id):
     """An emoji on a team reply of the customer's chat (conversations/reactions.py)."""
     from backend.modules.conversations import reactions

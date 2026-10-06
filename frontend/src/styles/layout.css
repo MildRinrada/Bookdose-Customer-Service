@@ -890,6 +890,15 @@ html.sidebar-collapsed .platform-scope {
 .menu-item.danger {
   color: var(--red);
 }
+/* What finishes the case: it changes where the case stands, so it does not read as one more setting in the list. */
+.menu-item.done {
+  color: var(--green);
+  font-weight: 600;
+}
+.menu-item.done:hover,.menu-item.done:focus-visible {
+  background: var(--green-soft);
+  color: var(--green);
+}
 .menu-item.danger:hover,.menu-item.danger:focus-visible {
   background: var(--red-soft);
   color: var(--red);

@@ -6,7 +6,8 @@ import { Icon } from '@/components/Icon';
 /* The chat header's menu (the profile menu's markup): follow this chat, start another, forget this browser.
    Closes on a click outside, on Escape (focus back on the button) and after choosing. */
 
-export type GuestMenuItem = { key: string; label: string; icon: string; danger?: boolean; onSelect: () => void };
+/** `danger` for what cannot be undone, `done` for what finishes the case: neither reads as one more setting. */
+export type GuestMenuItem = { key: string; label: string; icon: string; danger?: boolean; done?: boolean; onSelect: () => void };
 
 export function GuestMenu({ items }: { items: GuestMenuItem[] }) {
   const [open, setOpen] = useState(false);
@@ -64,7 +65,7 @@ export function GuestMenu({ items }: { items: GuestMenuItem[] }) {
             key={item.key}
             type="button"
             role="menuitem"
-            className={`menu-item${item.danger ? ' danger' : ''}`}
+            className={`menu-item${item.danger ? ' danger' : ''}${item.done ? ' done' : ''}`}
             onClick={() => {
               setOpen(false);
               item.onSelect();

@@ -64,12 +64,15 @@ def set_team_for_ticket(db, ticket_id, team_id):
 
 # Messages
 def list_messages(db, conversation_id, public=False):
-    # A deleted message leaves the customer's copy entirely - taking one back is the point of deleting it - while the
-    # team still sees that something was there and who took it back.
+    # A reply the team took back leaves the customer's copy entirely - taking one back is the point of deleting it -
+    # while the team still sees that something was there and who took it back. A message the customer took back
+    # themselves (ยกเลิกข้อความ) keeps its mark on both sides: they know what they did, and a chat where their own
+    # words vanish without a trace is one they cannot follow.
     # A reply held while it is translated (ai/translate.py) reaches the customer once it is.
-    extra = " AND kind!='note' AND deleted_at IS NULL AND delivery!='translating'" if public else ''
+    extra = (" AND kind!='note' AND delivery!='translating'"
+             " AND (deleted_at IS NULL OR kind='customer')") if public else ''
     # The writer's id is what the team's screens show their photo by; a customer's copy never carries it.
-    who = '' if public else ',author_id,deleted_at,deleted_by'
+    who = ',deleted_at' if public else ',author_id,deleted_at,deleted_by'
     return rows(db,f'SELECT id,author_name{who},kind,body,delivery,created_at,edited_at FROM messages WHERE conversation_id=?'
                 +extra+' ORDER BY created_at,rowid',(conversation_id,))
 
@@ -79,8 +82,11 @@ def edit_message(db, message_id, body):
 
 
 def mark_message_deleted(db, message_id, who):
-    """The words go, the marker stays: the thread must not silently lose a message the team remembers seeing."""
+    """The words go, the marker stays: the thread must not silently lose a message the team remembers seeing. Its
+    pin goes with it (conversations/pins.py): a strip may not point at words that are no longer there."""
+    from backend.modules.conversations import pins
     db.execute("UPDATE messages SET body='',deleted_at=?,deleted_by=? WHERE id=?",(now(),who,message_id))
+    pins.forget(db,message_id)
 
 
 def find_message(db, message_id):

@@ -43,6 +43,11 @@ ROUTES = [
     ('POST', PORTAL+'/messages',            controller.post_message,        'customer'),
     # An emoji on a team reply: tells the team without a message, so a finished case stays finished.
     ('POST', PORTAL+f'/messages/{ID}/reaction', controller.react,           'customer'),
+    # The customer's own words: corrected, or taken back (conversations/service.py OWN_MINUTES).
+    ('PATCH', PORTAL+f'/messages/{ID}',      controller.edit_message,       'customer'),
+    ('DELETE', PORTAL+f'/messages/{ID}',     controller.take_back_message,  'customer'),
+    # ปักหมุดข้อความในแชท (conversations/pins.py): the same strip the team sees.
+    ('POST', PORTAL+f'/messages/{ID}/pin',   controller.pin_message,        'customer'),
     ('POST', PORTAL+'/csat',                controller.rate,                'customer'),
     # ปิดเคส from the chat (automation/closing.py): the chat named by X-Conversation-ID.
     ('POST', PORTAL+'/resolve',             controller.resolve_chat,        'customer'),

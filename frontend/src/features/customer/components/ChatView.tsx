@@ -20,6 +20,7 @@ import { WaitQueue } from './WaitQueue';
 import { ContinueOnLineButton, ContinueOnLinePanel, MovedToLine } from './ContinueOnLine';
 import { CallbackButton, CallbackPanel } from './CallbackRequest';
 import { ArticleReadPanel, TypingAnswers, type PeekArticle } from './ArticlePeek';
+import { useOwnMessages } from './useOwnMessages';
 
 /* One open chat beside the list (pages/customer/customer-chat.html): who it is with, where it stands, the AI or
    person serving it, the messages (an emoji on the team's replies), the thank-you card and the satisfaction
@@ -115,6 +116,8 @@ export function ChatView({
   const refresh = useInvalidate();
   const toast = useToast();
   const me = useCustomer();
+  // ยกเลิก/แก้ไขข้อความของตัวเอง and ปักหมุดข้อความ, through the ⋯ on a message (useOwnMessages).
+  const manage = useOwnMessages({ slug, conversationId: id, refresh: () => refresh(sessionPath(slug), OVERVIEW_PATH) });
   // ปิดเคส: the customer finishes the chat's case themselves (backend automation/closing.py), asked once first.
   const canClose = Boolean(data.ticket && !['resolved', 'closed'].includes(data.ticket.status));
   const askClose = () =>
@@ -210,6 +213,7 @@ export function ChatView({
         publicSlug={slug}
         ownPhoto={me.avatar}
         readAt={data.staff_read_at}
+        manage={manage}
         onReact={(m, reaction) => reactToMessage(slug, id, m.id, reaction).then(() => refresh(sessionPath(slug)))}
         afterKey={`${JSON.stringify(data.survey)}|${JSON.stringify(data.queue)}|${JSON.stringify(data.thanks)}`}
         after={

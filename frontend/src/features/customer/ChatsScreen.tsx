@@ -7,11 +7,11 @@ import { Icon } from '@/components/Icon';
 import { customerUnread } from '@/lib/customer-session';
 import { CustomerNone, EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { SearchInput } from '@/components/ui/filters';
-import { useSinglePane } from '@/features/inbox';
+import { PinnedButton, useSinglePane } from '@/features/inbox';
 import { plainText, relative } from '@/lib/format';
-import { useApi } from '@/lib/query';
+import { useApi, useInvalidate } from '@/lib/query';
 import { useUiState } from '@/lib/ui-state';
-import { FAQ_PATH } from './api';
+import { FAQ_PATH, pinChatMessage, sessionPath } from './api';
 import { AnswerList, DropHint, askLine, useArticleDrop, type PeekArticle } from './components/ArticlePeek';
 import { ChatView } from './components/ChatView';
 import { OrgFilter } from './components/common';
@@ -62,6 +62,7 @@ export function ChatsScreen({
   );
 
   const fallback = !newChat && !slug && !singlePane ? found[0] : undefined;
+  const refresh = useInvalidate();
   const openSlug = slug ?? fallback?.org_slug;
   const openId = id ?? fallback?.id;
   const session = useChatSession(newChat ? undefined : openSlug, newChat ? undefined : openId);
@@ -71,7 +72,8 @@ export function ChatsScreen({
     if (fallback) router.replace(`/customer/chats/${fallback.org_slug}/${fallback.id}`);
   }, [fallback, router]);
 
-  // Put the list back where it was before the address changed, then (below) reveal the open chat if it is out of view.
+  // Put the rows back where they were before the address changed, then (below) reveal the open chat if it is out of
+  // view. The search and the filters above the rows stay put, so only the rows are scrolled.
   const listRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const list = listRef.current;
@@ -129,6 +131,9 @@ export function ChatsScreen({
   } else detail = <EmptyState title="เลือกแชทจากรายการ" description="หรือเริ่มแชทใหม่เพื่อส่งเรื่องถึงองค์กรที่ต้องการ" icon="chat" />;
 
   const searching = Boolean(query.trim() || orgFilter);
+  // The column beside the chat: the organization's answers, and the messages pinned in the open chat (either may be
+  // empty, and the column is only there when one of them has something).
+  const asideShown = Boolean(session.data) && !newChat;
   return (
     <>
       <div className="page-heading inbox-heading">
@@ -137,8 +142,8 @@ export function ChatsScreen({
           <p>คุยกับทุกองค์กรที่คุณติดต่อ และติดตามทุกเรื่องที่เคยส่งไว้ในที่เดียว</p>
         </div>
       </div>
-      <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}${articles.length ? ' has-aside' : ''}`}>
-        <div className="inbox-list" ref={listRef}>
+      <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}${asideShown ? ' has-aside' : ''}`}>
+        <div className="inbox-list">
           <div className="inbox-tools customer-chat-tools">
             <SearchInput id="customer-chat-search" label="ค้นหาแชท" placeholder="ค้นหาแชทของฉัน" value={query} onChange={setQuery} />
             <OrgFilter id="customer-org-filter" />
@@ -147,7 +152,7 @@ export function ChatsScreen({
               เริ่มแชทใหม่
             </Link>
           </div>
-          <div id="customer-chat-items">
+          <div className="inbox-items" id="customer-chat-items" ref={listRef}>
             {found.length ? (
               found.map((x) => (
                 <ChatItem key={x.id} chat={x} selected={x.id === openId} state={x.id === openId && openState ? openState : chatState(x)} />
@@ -164,9 +169,16 @@ export function ChatsScreen({
           {detail}
           {drop.over && <DropHint />}
         </div>
-        {articles.length > 0 && (
-          <aside className="customer-aside" aria-label="คำตอบที่อาจช่วยได้">
+        {asideShown && (
+          <aside className="customer-aside" aria-label="คำตอบที่อาจช่วยได้ และข้อความที่ปักหมุด">
             <AnswerList articles={articles} hrefOf={articleHref} allHref="/customer/faq" onRead={read} />
+            {/* ข้อความที่ปักหมุด of the open chat: a button that opens them, there whether any are pinned or not. */}
+            <PinnedButton
+              messages={session.data?.messages ?? []}
+              onUnpin={(m) => {
+                if (openSlug && openId) void pinChatMessage(openSlug, openId, m.id, false).then(() => refresh(sessionPath(openSlug)));
+              }}
+            />
           </aside>
         )}
       </section>

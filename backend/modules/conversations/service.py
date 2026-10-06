@@ -219,6 +219,10 @@ def message_list(db, conversation_id, public=False):
     # The customer's emoji on the team's replies (reactions.py): both sides see it on the reply.
     from backend.modules.conversations import reactions
     reacted = reactions.of_conversation(db,conversation_id)
+    # ปักหมุดข้อความ (pins.py): the strip above the thread is these, picked out of the messages each side is given,
+    # so a pinned internal note shows for the team and is simply not in the customer's copy.
+    from backend.modules.conversations import pins
+    pinned = pins.of_conversation(db,conversation_id)
     for message in result:
         message['attachments'] = repository.attachments_of(db,message['id'])
         meta = repository.ai_meta(db,message['id'])
@@ -227,6 +231,7 @@ def message_list(db, conversation_id, public=False):
         message['citations'] = json.loads(meta['citations']) if meta else []
         message['survey'] = message['id'] in surveys
         message['reaction'] = reacted.get(message['id'])
+        message['pinned'] = message['id'] in pinned
         if not public:
             message['translation'] = translations.get(message['id'])
     return result
@@ -282,6 +287,58 @@ def edit_message(db, ctx, conversation_id, message_id, body):
         translate.outgoing(db,ctx['tenant_id'],conversation_id,message_id,text)
     audit.record(db,ctx['name'],'message.edited',message_id,message['body'][:200])
     realtime.conversation(db,conversation_id,public=message['kind']!='note')
+    db.commit()
+    return {'id':message_id}
+
+
+# --- The customer's own words (ยกเลิกข้อความ / แก้ไขข้อความ) ---
+
+# How long the customer has to take back or correct what they wrote: long enough to catch a typo or a screenshot sent
+# to the wrong chat, short enough that the thread the team has been working from does not change under them later.
+OWN_MINUTES = 15
+TOO_LATE = f'ยกเลิกหรือแก้ไขข้อความได้ภายใน {OWN_MINUTES} นาทีหลังส่ง · หลังจากนั้นพิมพ์ข้อความใหม่ชี้แจงได้เลย'
+
+
+def _own_customer_message(db, conv, message_id):
+    """A message of this chat the customer may still take back or correct: their own words, in a web chat, not
+    already taken back, and inside OWN_MINUTES. That the chat is theirs the caller has checked already."""
+    from backend.utils.dates import after
+    require(conv['channel'] not in EXTERNAL,
+            CANNOT_RECALL.format(channel=CHANNEL_NAMES.get(conv['channel'],conv['channel'])),409)
+    message = repository.find_message(db,message_id)
+    require(message and message['conversation_id']==conv['id'] and message['kind']=='customer' and not message['deleted_at'],
+            'ไม่พบข้อความนี้',404)
+    require(message['created_at']>=after(seconds=-OWN_MINUTES*60),TOO_LATE,409)
+    return message
+
+
+def customer_edit_message(db, tenant_id, conv, who, message_id, body):
+    """The customer corrects what they wrote. Marked as edited from then on, the way the team's corrections are:
+    a thread that can change silently is a thread nobody can rely on."""
+    message = _own_customer_message(db,conv,message_id)
+    text = schema.edited_body(body)
+    require(text!=message['body'],'ข้อความยังเหมือนเดิม')
+    D.begin(db)
+    repository.edit_message(db,message_id,text)
+    # The team reads the Thai side of a message in another language (ai/translate.py): the corrected words, now.
+    from backend.modules.ai import translate
+    translate.forget(db,message_id)
+    translate.on_customer_message(db,tenant_id,conv['id'],message_id,text)
+    audit.record(db,who,'message.edited',message_id,message['body'][:200])
+    realtime.conversation(db,conv['id'])
+    db.commit()
+    return {'id':message_id}
+
+
+def customer_take_back_message(db, conv, who, message_id):
+    """ยกเลิกข้อความ: the customer's own message leaves their chat. The team keeps the marker saying a message was
+    taken back and by whom, as it does for their own - a thread that quietly loses a message is worse than one that
+    says it lost it."""
+    message = _own_customer_message(db,conv,message_id)
+    D.begin(db)
+    repository.mark_message_deleted(db,message_id,who)
+    audit.record(db,who,'message.deleted',message_id,message['body'][:200])
+    realtime.conversation(db,conv['id'])
     db.commit()
     return {'id':message_id}
 

@@ -5,10 +5,11 @@
   position: relative;
   max-width: 100%;
 }
+/* It hangs over the face that opens it (it is inside that bar), so the hand has nowhere to travel. */
 .reaction-picker {
   position: absolute;
-  left: 10px;
-  bottom: calc(100% - 10px);
+  right: 0;
+  bottom: calc(100% + 8px);
   z-index: 6;
   display: flex;
   gap: 2px;
@@ -21,24 +22,91 @@
   opacity: 0;
   pointer-events: none;
   transform: translateY(6px) scale(.96);
-  transform-origin: left bottom;
+  transform-origin: right bottom;
   transition: opacity .12s ease, transform .12s ease;
 }
-/* A margin around the row that still counts as on it, so the mouse can wander a little off its edge. */
+/* The customer's own words sit on the right, so their bar - and this row with it - is on the left. */
+#customer-thread .message.customer .reaction-picker {
+  left: 0;
+  right: auto;
+  transform-origin: left bottom;
+}
+/* A margin around the row that still counts as on it, so the mouse can wander a little off its edge, and down to
+   the button it came from. */
 .reaction-picker::before {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: -14px -18px 0;
+  inset: -14px -18px -14px;
 }
-/* Shown once the mouse has rested a moment and kept a moment after it leaves (MessageThread Reactable), at once from
-   the keyboard or a tap. */
-.reactable.resting .reaction-picker,
-.reactable:focus-within .reaction-picker,
+/* The row of emoji opens from the face on the bar beside the message, and closes once one is chosen. */
 .reactable.open .reaction-picker {
   opacity: 1;
   pointer-events: auto;
   transform: none;
+}
+/* The bar itself: a few small buttons at the edge of the message, there once the mouse has rested a moment and kept
+   a moment after it leaves (MessageThread Reactable), at once from the keyboard or a tap. Beside the message, never
+   over it: the words stay readable while the hand travels to it. */
+.message-tools {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+/* The customer's own words sit on the right of their chat (pages/customer.css), so their bar goes on the left. */
+#customer-thread .message.customer .message-tools {
+  left: auto;
+  right: calc(100% + 6px);
+}
+/* Anywhere on the message brings it up, not the one line of words: a bar you have to aim at is a bar nobody finds. */
+.message:hover .message-tools,
+.message:focus-within .message-tools,
+.reactable.resting .message-tools,
+.reactable.open .message-tools {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* A button that reads on any background - the thread is white, a bubble is dark - and dots thick enough to see. */
+.message-tools .icon-btn {
+  width: 30px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 2px 8px #1e293b1f;
+  color: var(--ink);
+}
+.message-tools .icon-btn:hover,.message-tools .icon-btn:focus-visible {
+  background: var(--soft);
+  color: var(--ink);
+}
+.message-tools .icon-btn .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.4;
+}
+/* The ⋮ in the bar is one of its buttons, and its menu hangs under it. */
+.message-tools .message-menu {
+  position: relative;
+  margin: 0;
+}
+.message-tools .message-menu-panel {
+  top: calc(100% + 4px);
+}
+/* While the ⋮'s menu is open its bar stays, so the mouse can travel from one to the other. */
+.reactable:has(.message-menu-panel:not([hidden])) .message-tools {
+  opacity: 1;
+  pointer-events: auto;
 }
 .reaction-picker button {
   display: grid;
@@ -70,15 +138,17 @@
   outline-offset: 1px;
 }
 /* The chosen emoji, on the reply's lower edge. */
+/* On the message's lower right corner, half over its edge, as a chat app shows it. */
 .reaction-chip {
-  position: relative;
+  position: absolute;
+  right: 10px;
+  bottom: -13px;
   z-index: 1;
   display: inline-grid;
   place-items: center;
   min-width: 30px;
   height: 26px;
   min-height: 0;
-  margin: -9px 12px 0;
   padding: 0 6px;
   border: 1px solid var(--line);
   border-radius: 999px;

@@ -39,3 +39,7 @@ export const editMessage = (conversationId: string, messageId: string, body: str
 
 export const deleteMessage = (conversationId: string, messageId: string) =>
   api<{ id: string }>(`/api/conversations/${conversationId}/messages/${messageId}`, undefined, 'DELETE');
+
+/** ปักหมุดข้อความในแชท (backend conversations/pins.py): the same pins the customer sees. */
+export const pinMessage = (conversationId: string, messageId: string, pinned: boolean) =>
+  api<{ pinned: boolean }>(`/api/conversations/${conversationId}/messages/${messageId}/pin`, { pinned }, 'POST');

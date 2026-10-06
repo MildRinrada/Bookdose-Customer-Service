@@ -38,6 +38,7 @@ import '@/styles/pages/known-issues.css';
 import '@/styles/pages/wait-queue.css';
 import '@/styles/pages/continue-line.css';
 import '@/styles/pages/pdpa.css';
+import '@/styles/pages/legal.css';
 import '@/styles/pages/inbox-calm.css';
 import '@/styles/pages/inbox-fresh.css';
 import '@/styles/pages/ai-assistant.css';

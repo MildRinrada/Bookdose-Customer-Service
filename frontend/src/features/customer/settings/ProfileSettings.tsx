@@ -6,7 +6,7 @@ import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { PrivacyNotice } from '@/features/auth/components/PrivacyNotice';
+import { PrivacyNoticeButton } from '@/features/auth/components/PrivacyNotice';
 import type { PublicOrgInfo } from '@/features/auth/types';
 import { useCustomer, useCustomerAccount, useCustomerLogout } from '@/lib/customer-session';
 import { date } from '@/lib/format';
@@ -97,10 +97,7 @@ export function ProfileSettings() {
               ยอมรับประกาศความเป็นส่วนตัว ฉบับ {me.consent_version} เมื่อ {date(me.consent_at, true)}
             </span>
           </p>
-          <details className="customer-privacy">
-            <summary>อ่านประกาศความเป็นส่วนตัว</summary>
-            <PrivacyNotice organization={home?.name || 'องค์กร'} />
-          </details>
+          <PrivacyNoticeButton organization={home?.name || 'องค์กร'} />
         </div>
       </section>
       <section className="card">

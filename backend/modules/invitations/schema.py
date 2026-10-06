@@ -21,7 +21,9 @@ def token(value):
 
 
 def accept_form(body):
-    """(display name, password hash) chosen by someone who has no account yet."""
+    """(display name, password hash) chosen by someone who has no account yet, who has also read the privacy notice
+    for system users (modules/legal) - an account is not made for somebody who was not shown it."""
+    require(body.get('privacy') is True,'กรุณาอ่านและรับทราบประกาศความเป็นส่วนตัวก่อนเข้าร่วม')
     return field(body,'name',100),new_password(body)
 
 

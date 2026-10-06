@@ -15,6 +15,7 @@ from backend.modules.guest import model as guest
 from backend.modules.invitations import model as invitations
 from backend.modules.conversations import model as conversations
 from backend.modules.knowledge import model as knowledge
+from backend.modules.legal import model as legal
 from backend.modules.org_links import model as org_links
 from backend.modules.organization import model as organization
 from backend.modules.pdpa import model as pdpa
@@ -29,7 +30,7 @@ from backend.modules.trash import model as trash
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
                   customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
                   security.CONTROL_TABLES, support_access.CONTROL_TABLES, staff_security.CONTROL_TABLES,
-                  invitations.CONTROL_TABLES, staff_prefs.CONTROL_TABLES, pdpa.CONTROL_TABLES)
+                  invitations.CONTROL_TABLES, staff_prefs.CONTROL_TABLES, pdpa.CONTROL_TABLES, legal.CONTROL_TABLES)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,
                  knowledge.TENANT_TABLES, audit.TABLE)
 
@@ -39,6 +40,9 @@ def create_control_tables(db):
     for script in CONTROL_TABLES:
         db.executescript(script)
     customer_migrate.control_columns(db)
+    # เอกสารกฎหมาย (modules/legal): the first version of each document, from its draft, until the console publishes one.
+    from backend.modules.legal import service as legal_service
+    legal_service.seed(db)
     # Support access with the organization's consent: a membership it makes ends at memberships.expires_at.
     from backend.modules.support_access import repository as support_repository
     support_repository.add_membership_expiry(db)

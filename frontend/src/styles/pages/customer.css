@@ -669,22 +669,6 @@ input[type=file].attach-input:focus-visible+.customer-attach {
   flex-shrink: 0;
   color: var(--green);
 }
-.customer-privacy {
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--soft);
-}
-.customer-privacy summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--muted);
-}
-.customer-privacy p {
-  margin: 8px 0 0;
-  color: var(--muted);
-}
-
 /* One task on its own page, opened from an email: confirm, reset, ask for a reset link. */
 .customer-link-page {
   max-width: 560px;

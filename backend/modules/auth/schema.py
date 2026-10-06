@@ -23,6 +23,9 @@ def registration_form(body):
     organization, slug = field(body,'organization',100),slug_field(body)
     password = new_password(body)
     require(body.get('password_confirm')==body.get('password'),'รหัสผ่านยืนยันไม่ตรงกัน')
+    # ข้อตกลงการใช้บริการ (modules/legal): an organization is not made for somebody who did not agree to them.
+    require(body.get('terms') is True,'กรุณาอ่านและยอมรับข้อตกลงการใช้บริการก่อนสมัคร')
+    require(body.get('privacy') is True,'กรุณาอ่านและรับทราบประกาศความเป็นส่วนตัวก่อนสมัคร')
     return {'name':name,'email':email,'password':password,'organization':organization,'slug':slug}
 
 

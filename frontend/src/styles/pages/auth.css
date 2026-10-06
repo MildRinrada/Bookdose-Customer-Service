@@ -288,20 +288,67 @@
   outline: 3px solid var(--focus);
   outline-offset: -3px;
 }
+/* ประกาศความเป็นส่วนตัว on the sign-up form: the way in to the document, not the document itself. */
 .auth-privacy {
-  margin: 4px 0 4px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 4px 0;
 }
-.auth-privacy summary {
-  cursor: pointer;
+/* A button of its own size beside its words, not the form's full-width kind: it opens a document, it does not send. */
+.auth-form .auth-privacy .privacy-open,
+.privacy-open {
+  flex: none;
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
   font-weight: 600;
 }
-.auth-privacy p {
-  margin: 8px 0 0;
+.auth-privacy > .tiny {
+  flex: 1 1 160px;
+  line-height: 1.5;
+}
+/* The notice itself, in its window: a document to read, so it is set like one - headings that lead, lines that are
+   not too long to follow, and the buttons at the end of the text rather than before it. */
+.privacy-doc {
+  max-width: 62ch;
+  line-height: 1.75;
+}
+.privacy-doc .privacy-lead {
+  margin: 0 0 18px;
+  font-size: 1.02rem;
+  color: var(--ink);
+}
+.privacy-doc h3 {
+  margin: 20px 0 6px;
+  font-size: 1rem;
+  font-weight: 650;
+}
+.privacy-doc p {
+  margin: 0 0 10px;
   color: var(--muted);
+}
+.privacy-doc ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  color: var(--muted);
+}
+.privacy-doc li {
+  margin-bottom: 4px;
+}
+.privacy-doc .privacy-version {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+/* Under the text, and staying in view while it is scrolled: agreeing is the last thing, not the first. */
+.privacy-actions {
+  position: sticky;
+  bottom: 0;
+  margin-top: 4px;
+  padding: 12px 0 2px;
+  background: var(--paper);
 }
 .auth-form .check span {
   line-height: 1.6;

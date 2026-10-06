@@ -22,7 +22,8 @@ import { customerRegister, customerResend, registerOrganization, setUp, signIn, 
 import { AuthStory } from './components/AuthStory';
 import { ForgotPasswordHelp } from './components/ForgotPasswordHelp';
 import { SinglePage } from './components/Frames';
-import { PrivacyNotice } from './components/PrivacyNotice';
+import { LegalButton } from '@/features/legal/LegalDocument';
+import { PrivacyNoticeButton } from './components/PrivacyNotice';
 import { LockNotice, useSignInLock } from './components/SignInLock';
 import { SlugField } from './components/SlugField';
 import { TwoFactorStep } from './components/TwoFactorStep';
@@ -108,17 +109,24 @@ export function AuthScreen({ page, tab = 'login', org = '', next = '', expired =
   );
 }
 
-/** pages/auth/registration-closed.html */
+/** The sign-up page while sign-up is not open: one card that says so, set as the other one-card pages are
+    (.single-page .card), with a picture to make it a state and not a stray heading. */
 function RegistrationClosed({ message, linkLabel }: { message: string; linkLabel: string }) {
   return (
     <SinglePage>
-      <section className="card mt">
+      <section className="card mt single-card">
         <div className="card-body">
+          <span className="single-card-icon" aria-hidden="true">
+            <Icon name="lock" />
+          </span>
           <h1>ยังไม่เปิดรับสมัครองค์กร</h1>
           <p>{message}</p>
-          <Link className="btn" href="/login">
-            {linkLabel}
-          </Link>
+          <div className="single-card-actions">
+            <Link className="btn primary" href="/login">
+              <Icon name="back" />
+              {linkLabel}
+            </Link>
+          </div>
         </div>
       </section>
     </SinglePage>
@@ -157,6 +165,10 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
     setTab(initialTab);
   }
   const [sentTo, setSentTo] = useState('');
+  // ยอมรับประกาศความเป็นส่วนตัว (a customer) / ข้อตกลงการใช้บริการ (an organization): ticked by hand, or by agreeing at
+  // the foot of the document itself.
+  const [consent, setConsent] = useState(false);
+  const [terms, setTerms] = useState(false);
   const [resending, setResending] = useState(false);
   // The password was right and the account asks for a second step (customer_security); the waiting sign-in is a
   // short HttpOnly cookie, so the page only remembers what may finish it.
@@ -228,6 +240,8 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
       if (values.password !== values.password_confirm) throw new Error('รหัสผ่านยืนยันไม่ตรงกัน');
       await registerOrganization({
         name: values.name,
+        terms,
+        privacy: terms,
         email: values.email,
         password: values.password,
         password_confirm: values.password_confirm,
@@ -366,12 +380,13 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   <TextField label="ตั้งรหัสผ่าน (อย่างน้อย 10 ตัวอักษร)" name="password" type="password" max={200} />
                   <TextField label="เบอร์โทรศัพท์ (ไม่บังคับ)" name="phone" type="tel" max={20} required={false} placeholder="เช่น 081-234-5678" />
                   <HoneypotField />
-                  <details className="auth-privacy">
-                    <summary>ประกาศความเป็นส่วนตัว (อ่านก่อนสมัคร)</summary>
-                    <PrivacyNotice organization={supportName} />
-                  </details>
+                  {/* The notice is a document, read in a window of its own; agreeing at the foot of it ticks this box. */}
+                  <div className="auth-privacy">
+                    <PrivacyNoticeButton organization={supportName} onAccept={() => setConsent(true)} />
+                    <span className="tiny muted">อ่านก่อนสมัคร</span>
+                  </div>
                   <label className="check">
-                    <input type="checkbox" name="consent" required />
+                    <input type="checkbox" name="consent" required checked={consent} onChange={(event) => setConsent(event.target.checked)} />
                     <span>ฉันอ่านและยอมรับประกาศความเป็นส่วนตัว และยินยอมให้ {supportName} เก็บและใช้ข้อมูลนี้เพื่อให้บริการ</span>
                   </label>
                   <button className="btn primary" type="submit">
@@ -433,6 +448,20 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                     max={100}
                   />
                   <SlugField defaultValue={setup ? 'bookdose' : ''} />
+                </>
+              )}
+              {register && (
+                <>
+                  {/* ข้อตกลงการใช้บริการ, with the data-processing terms inside it (backend modules/legal): read in its own
+                      window, and agreeing at its foot ticks the box. The server refuses a sign-up without it. */}
+                  <div className="auth-privacy">
+                    <LegalButton doc="terms" label="ข้อตกลงการใช้บริการ" onAccept={() => setTerms(true)} />
+                    <LegalButton doc="platform-privacy" label="ประกาศความเป็นส่วนตัว" onAccept={() => setTerms(true)} />
+                  </div>
+                  <label className="check">
+                    <input type="checkbox" name="terms" required checked={terms} onChange={(event) => setTerms(event.target.checked)} />
+                    <span>ฉันมีอำนาจผูกพันองค์กร ได้อ่านและยอมรับข้อตกลงการใช้บริการในนามองค์กร และรับทราบประกาศความเป็นส่วนตัวแล้ว</span>
+                  </label>
                 </>
               )}
               {/* Sign-in and organization sign-up are open to anyone; the first-time setup is not. */}
@@ -520,6 +549,10 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   {register && <p className="tiny muted">หากเข้าร่วมองค์กรที่มีอยู่แล้ว ให้ติดต่อผู้ดูแลองค์กรเพื่อเพิ่มสมาชิก</p>}
                 </>
               )}
+              <nav className="auth-legal tiny" aria-label="เอกสาร">
+                <Link href="/legal/terms">ข้อตกลงการใช้บริการ</Link>
+                <Link href="/legal/platform-privacy">ความเป็นส่วนตัว</Link>
+              </nav>
             </Form>
           )}
         </div>

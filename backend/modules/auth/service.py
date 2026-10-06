@@ -492,7 +492,12 @@ def request_registration(cookie_header, body, resend, client=None):
         elif resend:
             task = _prepare_verification(db,email=schema.registration_email(body))
         else:
-            task = _prepare_verification(db,applicant=schema.registration_form(body))
+            applicant = schema.registration_form(body)
+            task = _prepare_verification(db,applicant=applicant)
+            # The terms they agreed to, by version (modules/legal); the organization takes it over once it exists.
+            from backend.modules.legal import service as legal
+            legal.accept(db,'terms',applicant['email'],(client or {}).get('ip',''))
+            legal.accept(db,'platform-privacy',applicant['email'],(client or {}).get('ip',''))
         db.commit()
     if trapped:
         # Recorded once the write transaction is over (the event has its own connection).
@@ -591,6 +596,8 @@ def _activate_registration(db, token):
     user_id = uid()
     repository.insert_user(db,user_id,pending['name'],pending['email'],pending['password'])
     tenant_id = platform.create_tenant(db,pending['organization'],pending['slug'],user_id,False)
+    from backend.modules.legal import service as legal
+    legal.attach_to_tenant(db,pending['email'],tenant_id)
     repository.mark_email_verified(db,user_id)
     repository.delete_pending(db,pending['email'])
     audit.record(db,user_id,'tenant.register',tenant_id)

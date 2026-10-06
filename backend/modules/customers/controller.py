@@ -55,6 +55,9 @@ def account(req):
         # The platform's announcement, when it was written for customers too.
         from backend.modules.platform import health
         view['announcement'] = health.active_announcement(req.cd,'customer')
+        # ประกาศความเป็นส่วนตัว in force (modules/legal): unlike consent_version, the page asks to agree again.
+        from backend.modules.legal import service as legal
+        view['privacy_version'] = legal.current_version(req.cd,'customer-privacy')
     return req.send(200,view)
 
 

@@ -8,6 +8,7 @@ export const settingsTabs = {
   issues: { label: 'ประกาศปัญหาถึงลูกค้า', hint: 'แจ้งบนหน้าแชทเมื่อระบบมีปัญหา ลดการถามเรื่องเดิมซ้ำ', icon: 'bell' },
   connections: { label: 'LINE / อีเมล / Facebook / Instagram', hint: 'ช่องทางที่ลูกค้าติดต่อเข้ามา', icon: 'inbox' },
   ai: { label: 'AI Assistant', hint: 'การเชื่อมต่อ สิ่งที่ให้ AI ทำ และเพดานการใช้งาน', icon: 'sparkle' },
+  legal: { label: 'ข้อตกลงและเอกสาร', hint: 'ข้อตกลงที่องค์กรยอมรับ และประกาศความเป็นส่วนตัว', icon: 'file' },
 } as const;
 
 export type SettingsTab = keyof typeof settingsTabs;

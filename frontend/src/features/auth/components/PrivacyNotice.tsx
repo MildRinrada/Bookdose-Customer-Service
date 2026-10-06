@@ -1,14 +1,21 @@
-/* The privacy notice a customer agrees to when signing up (template pages/customer/privacy-notice.html). Also shown
-   on the customer's account page. */
+'use client';
 
-export function PrivacyNotice({ organization }: { organization?: string | null }) {
-  const name = organization || 'องค์กร';
-  return (
-    <>
-      <p>{name} เก็บชื่อ อีเมล และเบอร์โทรศัพท์ (ถ้าให้ไว้) เพื่อยืนยันตัวตน ติดต่อกลับ และแจ้งความคืบหน้าเรื่องที่คุณส่ง</p>
-      <p>
-        ข้อความและไฟล์ที่คุณส่งเก็บในระบบบริการลูกค้าขององค์กร เข้าถึงได้เฉพาะทีมงานที่ดูแลเรื่องของคุณ ขอดู แก้ไข หรือลบข้อมูลได้โดยติดต่อ {name}
-      </p>
-    </>
-  );
+import { LegalButton } from '@/features/legal/LegalDocument';
+
+/* ประกาศความเป็นส่วนตัว for a customer: the document the platform admin publishes (console → เอกสารกฎหมาย,
+   backend modules/legal 'customer-privacy'), opened in a window from the sign-up form and the account page, with the
+   organization's name put in for {{องค์กร}}. On the form, agreeing at the foot of the text is what ticks the box:
+   consent that was never shown is not consent. The version the customer agreed to is written against the account
+   (customer_accounts.consent_version), from the version published at that moment. */
+
+export function PrivacyNoticeButton({
+  organization,
+  label = 'อ่านประกาศความเป็นส่วนตัว',
+  onAccept,
+}: {
+  organization?: string | null;
+  label?: string;
+  onAccept?: () => void;
+}) {
+  return <LegalButton doc="customer-privacy" organization={organization || 'องค์กร'} label={label} onAccept={onAccept} />;
 }

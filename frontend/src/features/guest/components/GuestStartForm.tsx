@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { LegalButton } from '@/features/legal/LegalDocument';
 import { TextField } from '@/components/ui/fields';
 import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
@@ -315,6 +316,9 @@ export function GuestStartForm({
         </button>
         <p className="tiny muted">
           <Icon name="lock" /> {known ? 'แชทนี้จะอยู่ในรายการแชทของคุณในเบราว์เซอร์นี้ · ' : ''}อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+          {/* ประกาศความเป็นส่วนตัว where the details are given (modules/legal): told, not asked - answering a question
+              somebody sent needs no consent, but they are owed the notice when their name and contact are taken. */}
+          {' · '}ข้อมูลที่กรอกใช้ตาม <LegalButton doc="customer-privacy" organization={orgName} label="ประกาศความเป็นส่วนตัว" link />
         </p>
       </div>
     </Form>

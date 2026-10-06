@@ -18,6 +18,7 @@ import { JoinLinksPanel } from './components/JoinLinksPanel';
 import { BackupPanel, CategoriesPanel, ProfilePanel, ServicePanel } from './components/OverviewPanel';
 import { TeamSecurityPanel } from './components/TeamSecurityPanel';
 import { TeamsPanel } from './components/TeamsPanel';
+import { LegalPanel } from '@/features/legal/StaffLegal';
 import { partsOf, settingsPlaceOf, settingsParts, settingsTabs, type SettingsPart, type SettingsTab } from './labels';
 
 /* Organization settings: the sections in the menu on the left (as before), one open on the right. A section with too
@@ -180,6 +181,8 @@ function Section({ tab, part }: { tab: SettingsTab; part: SettingsPart | null })
       return <AiSettingsPanel />;
     case 'issues':
       return <IssuesPanel />;
+    case 'legal':
+      return <LegalPanel />;
     default:
       return null;
   }

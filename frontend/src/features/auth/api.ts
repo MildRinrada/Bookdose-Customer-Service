@@ -35,6 +35,10 @@ export const setUp = (body: {
 
 export const registerOrganization = (body: {
   name: string;
+  /** ข้อตกลงการใช้บริการ agreed to (modules/legal); refused without. */
+  terms: boolean;
+  /** ประกาศความเป็นส่วนตัวสำหรับผู้ใช้งานระบบ acknowledged, beside the terms. */
+  privacy: boolean;
   email: string;
   password: string;
   password_confirm: string;
@@ -84,7 +88,7 @@ export const staffResetPassword = (token: string, password: string) => api<{ ok:
 
 /** The invitation an organization's admin sent by email (backend invitations). */
 export const INVITATION_PATH = (token: string) => `/api/invitation?token=${encodeURIComponent(token)}`;
-export const acceptInvitation = (body: { token: string; name?: string; password?: string }) =>
+export const acceptInvitation = (body: { token: string; name?: string; password?: string; privacy?: boolean }) =>
   api<InvitationAccepted>('/api/invitation/accept', body);
 export type { InvitationView };
 

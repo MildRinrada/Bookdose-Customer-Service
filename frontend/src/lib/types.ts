@@ -202,6 +202,8 @@ export type CustomerAccount =
       notify_email: boolean;
       consent_version: string;
       consent_at: string;
+      /** The customer privacy notice in force (modules/legal); not the one agreed to while they differ. */
+      privacy_version?: string;
       /** The customer's own picture (a PNG data URL), '' for the letters of their name. */
       avatar?: string;
       created_at: string;

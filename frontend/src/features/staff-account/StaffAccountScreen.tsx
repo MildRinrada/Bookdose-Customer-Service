@@ -8,6 +8,7 @@ import { AchievementsSettings } from './AchievementsSettings';
 import { NotificationSettings, PlatformNotificationSettings } from './NotificationSettings';
 import { OrganizationsSettings } from './OrganizationsSettings';
 import { ProfileSettings } from './ProfileSettings';
+import { AccountPrivacyCard } from '@/features/legal/StaffLegal';
 import { RepliesSettings } from './RepliesSettings';
 import { SecuritySettings } from './SecuritySettings';
 import { StatusSettings } from './StatusSettings';
@@ -25,7 +26,12 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
   const tabs = (Object.keys(staffAccountTabs) as StaffAccountTab[]).filter((key) => !platformAdmin || !platformHiddenTabs.includes(key));
   const current: StaffAccountTab = isStaffAccountTab(tab) && tabs.includes(tab) ? tab : 'profile';
   const content = {
-    profile: () => <ProfileSettings />,
+    profile: () => (
+      <>
+        <ProfileSettings />
+        <AccountPrivacyCard />
+      </>
+    ),
     status: () => <StatusSettings />,
     notifications: () => (platformAdmin ? <PlatformNotificationSettings /> : <NotificationSettings />),
     replies: () => <RepliesSettings />,

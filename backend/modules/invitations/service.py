@@ -172,6 +172,8 @@ def accept(cookie_header, body, client=None):
                 user_id = uid()
                 users.insert_user(cd,user_id,name,row['email'],password)
                 users.mark_email_verified(cd,user_id)
+                from backend.modules.legal import service as legal
+                legal.accept(cd,'platform-privacy',row['email'],(client or {}).get('ip',''),row['tenant_id'])
             repository.grant(cd,row['tenant_id'],user_id,row['role'],team_id,memberships.find_membership(cd,row['tenant_id'],user_id))
             audit.record(cd,user_id,'member.joined',row['tenant_id'])
             audit.record(db,name or user['name'],'member.joined',user_id,row['role'])

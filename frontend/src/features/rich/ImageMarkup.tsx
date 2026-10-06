@@ -9,22 +9,26 @@ import { Icon } from '@/components/Icon';
    browser before the message is sent.
 
    ย่อขยาย: small writing on a phone photo cannot be drawn over at the size the whole picture fits, so the picture can be
-   made bigger - the ย่อ-ขยาย slider, as the profile photo cropper has, or Ctrl/⌘ with the wheel - and moved about
-   inside its window: the เลื่อนซ้าย-ขวา slider under it, the mouse wheel held down and dragged (as a design tool does
-   it), the wheel turned, or the window's own bars. Zoom is only how large the picture is shown: the marks are drawn in
-   the picture's own pixels, so what is saved is the same at any size.
+   made bigger and moved about inside its window, the way a picture editor does it:
+     zoom   the ย่อ-ขยาย slider and its − +, Ctrl/⌘ with the wheel, or a double click (in at that spot, out again)
+     move   the เลื่อนภาพ tool, Space held down while dragging, the mouse wheel held down, the wheel turned, or the
+            window's own bars
+   Zoom is only how large the picture is shown: the marks are drawn in the picture's own pixels, so what is saved is
+   the same at any size.
 
    The profile photo cropper (PhotoCropper) works the same way: the picture on a canvas, the pointer mapped onto it.
    Opened from a picture's pill (FilePills). Markup: components (image-markup). */
 
-type Tool = 'blur' | 'circle';
+type Tool = 'blur' | 'circle' | 'pan';
 type Box = { x: number; y: number; w: number; h: number };
 
 /** The longest side kept: a phone photo is bigger than any screen needs, and a smaller file leaves room for others. */
 const LONGEST = 2000;
 const UNDO_KEPT = 12;
-/** ย่อขยาย: 1 is the whole picture in its window, MOST the furthest in the slider goes. */
-const MOST = 8;
+/** ย่อขยาย: 1 is the whole picture in its window, MOST the furthest in. Four times is enough to read the smallest
+    print a phone photo holds; further than that is a blur of pixels and a lot of dragging. */
+const MOST = 4;
+const STEP = 1.5;
 
 function box(a: { x: number; y: number }, b: { x: number; y: number }): Box {
   return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) };
@@ -67,6 +71,12 @@ function outline(ctx: CanvasRenderingContext2D, area: Box) {
   ctx.restore();
 }
 
+const HINTS: Record<Tool, string> = {
+  blur: 'ลากคลุมเบอร์โทร เลขบัญชี หรือข้อมูลที่ไม่อยากให้เห็น ส่วนที่เบลอจะอ่านไม่ได้อีก',
+  circle: 'ลากวงรอบจุดที่มีปัญหา ให้ทีมงานเห็นทันที',
+  pan: 'ลากเพื่อเลื่อนดูส่วนอื่นของภาพ',
+};
+
 export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (file: File) => void; onCancel: () => void }) {
   const shown = useRef<HTMLCanvasElement>(null);
   // The picture with every mark so far (what is saved); the shown canvas is it plus the mark being dragged.
@@ -84,11 +94,18 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
   const [ready, setReady] = useState(false);
   const [fitted, setFitted] = useState(0);
   const hold = useRef<{ fx: number; fy: number; vx: number; vy: number } | null>(null);
-  // เลื่อนซ้าย-ขวา: where the window is scrolled across and how far it can go, which is the slider's place and length.
-  const [across, setAcross] = useState({ at: 0, most: 0 });
-  // กดลูกล้อเมาส์แล้วลาก: the last place the held-down wheel was, and whether it is being dragged (for the cursor).
+  // The ย่อ-ขยาย slider is not a controlled input: Chromium loses its grip on a thumb being dragged when script writes
+  // the value back into it mid-drag (React does, for a controlled one, with float noise on top), and the thumb warps
+  // to the far end on the next move. So the slider keeps its own value while it is held, and is set from here only
+  // when the zoom changed some other way (the − +, the wheel, a double click, พอดีหน้าจอ).
+  const slider = useRef<HTMLInputElement>(null);
+  const sliding = useRef(false);
+  // เลื่อนภาพ: the last place the pointer was while the picture is being dragged about, whether that is the hand tool,
+  // Space held down, or the mouse wheel held down; `spacing` is Space held (the hand for as long as it is).
   const grab = useRef<{ id: number; x: number; y: number } | null>(null);
   const [grabbing, setGrabbing] = useState(false);
+  const [spacing, setSpacing] = useState(false);
+  const moving = tool === 'pan' || spacing;
 
   const paint = () => {
     const canvas = shown.current;
@@ -146,23 +163,12 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
     frame.scrollTop += picture.top + point.fy * picture.height - (seen.top + point.vy);
   }, [zoom]);
 
-  /** Where the เลื่อนซ้าย-ขวา slider stands: wherever the window is scrolled across, however it was moved. */
-  const track = () => {
-    const frame = stage.current;
-    if (!frame) return;
-    const most = Math.max(0, Math.round(frame.scrollWidth - frame.clientWidth));
-    const at = Math.min(most, Math.round(frame.scrollLeft));
-    setAcross((was) => (was.at === at && was.most === most ? was : { at, most }));
-  };
-
   // At zoom 1 the stylesheet decides how large the picture is shown (the whole of it, in its window): that width is
   // read back here, and the zoom is a multiple of it. Measured when the picture arrives, whenever the window is back
-  // at พอดีหน้าจอ, and when the screen changes size; the same width again leaves the component as it is. Runs after the
-  // effect above, so the slider is read once the zoom has finished moving the window.
+  // at พอดีหน้าจอ, and when the screen changes size; the same width again leaves the component as it is.
   const measure = () => {
     const width = shown.current?.clientWidth ?? 0;
     if (zoom === 1 && width) setFitted(width);
-    track();
   };
   useLayoutEffect(() => {
     measure();
@@ -191,6 +197,10 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
     setZoom(level);
   };
 
+  useEffect(() => {
+    if (slider.current && !sliding.current) slider.current.value = String(Math.log(zoom) / Math.log(MOST));
+  }, [zoom]);
+
   // Ctrl/⌘ with the wheel (a trackpad's pinch sends that too) zooms the picture instead of the page. Not onWheel:
   // React listens for the wheel passively, and a passive listener cannot take the browser's own zoom away.
   useEffect(() => {
@@ -204,6 +214,39 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
     frame.addEventListener('wheel', wheel, { passive: false });
     return () => frame.removeEventListener('wheel', wheel);
   });
+
+  // Space held down is the hand for as long as it is held, as in every picture editor. The slider and the dialog's
+  // own buttons keep their Space; a tool button that was just clicked does not need it, and a hand that works only
+  // when nothing is focused is a hand nobody finds (the picture takes the focus when touched, too).
+  useEffect(() => {
+    const own = (event: KeyboardEvent) => {
+      if (event.code !== 'Space') return false;
+      const target = event.target as HTMLElement;
+      if (target.closest('input, select, textarea')) return false;
+      const button = target.closest('button');
+      return !button || Boolean(button.closest('.image-markup-tools'));
+    };
+    const down = (event: KeyboardEvent) => {
+      if (!own(event)) return;
+      event.preventDefault();
+      setSpacing(true);
+    };
+    const up = (event: KeyboardEvent) => {
+      if (event.code === 'Space') setSpacing(false);
+    };
+    document.addEventListener('keydown', down);
+    document.addEventListener('keyup', up);
+    return () => {
+      document.removeEventListener('keydown', down);
+      document.removeEventListener('keyup', up);
+    };
+  }, []);
+
+  const startGrab = (event: PointerEvent<HTMLCanvasElement>) => {
+    grab.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    setGrabbing(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
 
   const finish = () => {
     const d = drag.current;
@@ -245,17 +288,19 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
     );
   };
 
+  const toolButton = (which: Tool, icon: string, label: string, title?: string) => (
+    <button type="button" className={`btn sm${tool === which ? ' active' : ''}`} aria-pressed={tool === which} title={title} onClick={() => setTool(which)}>
+      <Icon name={icon} />
+      {label}
+    </button>
+  );
+
   return (
     <div className="image-markup">
       <div className="image-markup-tools" role="group" aria-label="เครื่องมือ">
-        <button type="button" className={`btn sm${tool === 'blur' ? ' active' : ''}`} aria-pressed={tool === 'blur'} onClick={() => setTool('blur')}>
-          <Icon name="eye" />
-          เบลอ
-        </button>
-        <button type="button" className={`btn sm${tool === 'circle' ? ' active' : ''}`} aria-pressed={tool === 'circle'} onClick={() => setTool('circle')}>
-          <Icon name="edit" />
-          วงกลม
-        </button>
+        {toolButton('blur', 'eye', 'เบลอ')}
+        {toolButton('circle', 'edit', 'วงกลม')}
+        {toolButton('pan', 'hand', 'เลื่อนภาพ', 'ลากเพื่อเลื่อนภาพ (หรือกด Space ค้างไว้แล้วลาก)')}
         {marks > 0 && (
           <button type="button" className="btn sm" onClick={takeBack} title="เอาจุดล่าสุดออก">
             <Icon name="restore" />
@@ -263,42 +308,65 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
           </button>
         )}
         <span className="image-markup-dials">
+          <button type="button" className="btn sm" aria-label="ย่อภาพ" title="ย่อภาพ" disabled={!ready || zoom <= 1} onClick={() => zoomTo(zoom / STEP)}>
+            <Icon name="minus" />
+          </button>
           <label className="image-markup-zoom" title="ลากเพื่อขยาย หรือกด Ctrl ค้างไว้แล้วหมุนลูกล้อเมาส์บนภาพ">
-            <Icon name="search" />
-            ย่อ-ขยาย
-            <input type="range" min={1} max={MOST} step={0.05} value={zoom} disabled={!ready} onChange={(event) => zoomTo(Number(event.target.value))} />
+            <span className="sr-only">ย่อ-ขยาย</span>
+            {/* The slider runs on the logarithm of the zoom: linear in the zoom itself, half its length lies between 250%
+                and 400% and a pixel near the end is a leap, while here every pixel is the same relative step, as the
+                − + are. */}
+            <input
+              ref={slider}
+              type="range"
+              min={0}
+              max={1}
+              step="any"
+              defaultValue={0}
+              disabled={!ready}
+              onPointerDown={() => {
+                sliding.current = true;
+                document.addEventListener('pointerup', () => (sliding.current = false), { once: true });
+              }}
+              onChange={(event) => zoomTo(MOST ** Number(event.target.value))}
+            />
           </label>
+          <button type="button" className="btn sm" aria-label="ขยายภาพ" title="ขยายภาพ" disabled={!ready || zoom >= MOST} onClick={() => zoomTo(zoom * STEP)}>
+            <Icon name="plus" />
+          </button>
           <span className="image-markup-level" aria-live="polite" aria-label={`ขนาดภาพ ${Math.round(zoom * 100)} เปอร์เซ็นต์`}>
             {Math.round(zoom * 100)}%
           </span>
-          {zoom > 1 && (
-            <button type="button" className="btn sm" onClick={() => zoomTo(1)} title="กลับไปเห็นภาพทั้งหมด">
-              <Icon name="shrink" />
-              พอดีหน้าจอ
-            </button>
-          )}
+          {/* Always there, only greyed at 100%: a button that appears as the zoom passes 100% shifts the whole row
+              under the hand that is dragging the slider, and the thumb leaps to the far end. */}
+          <button type="button" className="btn sm" disabled={zoom <= 1} onClick={() => zoomTo(1)} title="กลับไปเห็นภาพทั้งหมด">
+            <Icon name="shrink" />
+            พอดีหน้าจอ
+          </button>
         </span>
       </div>
       <p className="tiny muted image-markup-hint">
-        {tool === 'blur' ? 'ลากคลุมเบอร์โทร เลขบัญชี หรือข้อมูลที่ไม่อยากให้เห็น ส่วนที่เบลอจะอ่านไม่ได้อีก' : 'ลากวงรอบจุดที่มีปัญหา ให้ทีมงานเห็นทันที'}
-        {zoom > 1 && ' · เลื่อนดูส่วนอื่นได้ด้วยการกดลูกล้อเมาส์ค้างแล้วลาก แถบเลื่อนใต้ภาพ หรือหมุนลูกล้อ'}
+        {HINTS[tool]}
+        {zoom > 1 && tool !== 'pan' && ' · เลื่อนภาพ: กด Space ค้างแล้วลาก หรือใช้เครื่องมือ เลื่อนภาพ · ดับเบิลคลิกเพื่อกลับไปพอดีหน้าจอ'}
+        {zoom === 1 && ' · ดับเบิลคลิกตรงที่ต้องการเพื่อซูมเข้า'}
       </p>
       {problem && <p className="error-text">{problem}</p>}
-      <div className={`image-markup-stage${grabbing ? ' grabbing' : ''}`} ref={stage} onScroll={track}>
+      <div className={`image-markup-stage${moving ? ' moving' : ''}${grabbing ? ' grabbing' : ''}`} ref={stage}>
         <canvas
           ref={shown}
           className={`image-markup-canvas tool-${tool}`}
           aria-label="ภาพที่จะแนบ ลากบนภาพเพื่อเบลอหรือวงกลม"
           // Zoomed in, the picture is shown at a width of its own and is larger than its window, which then scrolls.
           style={zoom > 1 && fitted ? { width: Math.round(fitted * zoom), maxWidth: 'none', maxHeight: 'none' } : undefined}
+          tabIndex={-1}
           onPointerDown={(event) => {
-            // The wheel held down moves the picture and draws nothing; its press is taken so Windows does not start
-            // its own scrolling. Only the left button draws - a right click is for the menu.
-            if (event.button === 1) {
+            // The picture holds the keyboard once touched, so Space is the hand from then on.
+            event.currentTarget.focus({ preventScroll: true });
+            // The hand (the tool, Space, or the wheel held down) moves the picture and draws nothing; the wheel's
+            // press is taken so Windows does not start its own scrolling. Only the left button draws.
+            if (event.button === 1 || (event.button === 0 && moving)) {
               event.preventDefault();
-              grab.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
-              setGrabbing(true);
-              event.currentTarget.setPointerCapture(event.pointerId);
+              startGrab(event);
               return;
             }
             if (event.button !== 0) return;
@@ -335,15 +403,11 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
             drag.current = null;
             paint();
           }}
+          // A double click zooms in on that spot, or all the way back out. Two clicks make no mark: a mark needs a drag.
+          onDoubleClick={(event) => zoomTo(zoom > 1 ? 1 : 2.5, event)}
           onAuxClick={(event) => event.preventDefault()}
         />
       </div>
-      {across.most > 0 && (
-        <label className="image-markup-slide">
-          เลื่อนซ้าย-ขวา
-          <input type="range" min={0} max={across.most} step={1} value={across.at} onChange={(event) => stage.current?.scrollTo({ left: Number(event.target.value) })} />
-        </label>
-      )}
       <div className="form-actions">
         <button type="button" className="btn" onClick={onCancel}>
           ไม่แก้

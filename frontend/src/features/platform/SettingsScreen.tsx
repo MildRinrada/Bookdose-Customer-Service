@@ -59,6 +59,10 @@ export function SettingsScreen() {
             <Icon name="lock" />
             ความปลอดภัย
           </Link>
+          <Link className="btn" href="/platform/legal">
+            <Icon name="file" />
+            เอกสารกฎหมาย
+          </Link>
         </div>
       </div>
       <section id="email" className="platform-settings-section" aria-label="อีเมล (SMTP)">

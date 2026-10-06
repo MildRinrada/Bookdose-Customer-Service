@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { LegalButton } from '@/features/legal/LegalDocument';
 import { ErrorState, InitialLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
@@ -67,10 +68,12 @@ export function InvitationScreen({ token = '' }: { token?: string }) {
 /** The address is new here: the colleague sets their own password, so no admin ever knows it. */
 function NewAccountForm({ token, email, organization }: { token: string; email: string; organization: string }) {
   const finish = useFinishStaffSignIn();
+  // ประกาศความเป็นส่วนตัวสำหรับผู้ใช้งานระบบ (modules/legal): ticked by hand, or by agreeing at the foot of the notice.
+  const [privacy, setPrivacy] = useState(false);
   return (
     <Form
       onSubmit={async (values) => {
-        await acceptInvitation({ token, name: values.name ?? '', password: values.password ?? '' });
+        await acceptInvitation({ token, name: values.name ?? '', password: values.password ?? '', privacy });
         finish('/dashboard');
       }}
     >
@@ -80,6 +83,13 @@ function NewAccountForm({ token, email, organization }: { token: string; email: 
         <TextField id="invite-password" label="ตั้งรหัสผ่านของคุณ" name="password" type="password" max={200} />
       </div>
       <p className="tiny muted">อีเมลสำหรับเข้าสู่ระบบคือ {email}</p>
+      <div className="auth-privacy">
+        <LegalButton doc="platform-privacy" label="อ่านประกาศความเป็นส่วนตัว" onAccept={() => setPrivacy(true)} />
+      </div>
+      <label className="check mb">
+        <input type="checkbox" name="privacy" required checked={privacy} onChange={(event) => setPrivacy(event.target.checked)} />
+        <span>ฉันอ่านและรับทราบประกาศความเป็นส่วนตัวสำหรับผู้ใช้งานระบบแล้ว</span>
+      </label>
       <button className="btn primary" type="submit">
         <Icon name="check" />
         เข้าร่วม {organization}

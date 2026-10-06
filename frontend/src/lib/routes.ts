@@ -66,6 +66,7 @@ export const platformSubPages: StaffPage[] = [
   { key: 'platform-pdpa', href: '/platform/pdpa', label: 'เครื่องมือ PDPA', icon: 'users', parent: 'platform-accounts' },
   { key: 'platform-team', href: '/platform/team', label: 'ทีมผู้ดูแลระบบ', icon: 'shield', parent: 'platform-settings' },
   { key: 'platform-security', href: '/platform/security', label: 'ความปลอดภัย', icon: 'lock', parent: 'platform-settings' },
+  { key: 'platform-legal', href: '/platform/legal', label: 'เอกสารกฎหมาย', icon: 'file', parent: 'platform-settings' },
 ];
 
 const staffPages = [...workspacePages, ...managePages, ...otherStaffPages, ...platformPages, ...platformSubPages];
@@ -131,6 +132,7 @@ const legacyStaff: Record<string, string> = {
   'platform-accounts': '/platform/accounts',
   'platform-team': '/platform/team',
   'platform-security': '/platform/security',
+  'platform-legal': '/platform/legal',
   'platform-settings': '/platform/settings',
   'verify-email': '/verify-email',
   'check-email': '/check-email',

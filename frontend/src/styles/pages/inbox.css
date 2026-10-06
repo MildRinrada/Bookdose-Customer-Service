@@ -742,11 +742,11 @@ input[type=file].attach-input {
 }
 
 /* เบลอหรือวงกลมบนภาพ (ImageMarkup): the tools, the picture at the width of the window, then the buttons.
-   --shot: the room the picture has - the dialog (94vh) less its tools, hint, เลื่อนซ้าย-ขวา slider and buttons. */
+   --shot: the room the picture has - the dialog (94vh) less its tools, hint and buttons. */
 .image-markup {
   display: grid;
   gap: 10px;
-  --shot: max(200px, calc(94vh - 380px));
+  --shot: max(200px, calc(94vh - 350px));
 }
 .image-markup-tools {
   display: flex;
@@ -768,6 +768,7 @@ input[type=file].attach-input {
   max-height: var(--shot);
   overflow: auto;
   scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--soft);
@@ -782,33 +783,23 @@ input[type=file].attach-input {
   cursor: crosshair;
   touch-action: none;
 }
-/* ย่อ-ขยาย and เลื่อนซ้าย-ขวา: sliders, as the profile photo cropper (.crop-zoom) has. The one across the picture is
-   only there while the picture is wider than its window. */
+/* ย่อ-ขยาย: − slider + and the level, as the profile photo cropper's slider (.crop-zoom), with steps for a hand that
+   finds a slider too fine. */
 .image-markup-dials {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-left: auto;
 }
-.image-markup-zoom,.image-markup-slide {
+.image-markup-dials .btn {
+  padding-inline: 8px;
+}
+.image-markup-zoom {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: .9rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.image-markup-zoom .icon {
-  width: 16px;
-  height: 16px;
 }
 .image-markup-zoom input {
-  width: 110px;
-}
-.image-markup-slide input {
-  flex: 1;
-  min-width: 0;
+  width: 180px;
 }
 .image-markup-level {
   min-width: 46px;
@@ -817,7 +808,11 @@ input[type=file].attach-input {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-/* กดลูกล้อเมาส์ค้างแล้วลาก: the picture is being moved about, not drawn on. */
+/* เลื่อนภาพ: the hand tool, Space held down, or the mouse wheel held down - the picture is moved about, not drawn on.
+   The hand is shown while it may move, and closes while it is moving. */
+.image-markup-stage.moving .image-markup-canvas {
+  cursor: grab;
+}
 .image-markup-stage.grabbing,.image-markup-stage.grabbing .image-markup-canvas {
   cursor: grabbing;
 }

@@ -16,7 +16,8 @@ from backend.extensions import channel_transport as T
 from backend.modules.contacts import repository as contacts
 from backend.modules.conversations import repository as conversations
 from backend.modules.customers import repository, schema
-from backend.modules.customers.model import CONSENT_VERSION, DEFAULT_CATEGORIES
+from backend.modules.customers.model import DEFAULT_CATEGORIES
+from backend.modules.legal import service as legal
 from backend.modules.knowledge import repository as knowledge
 from backend.modules.organization import hours, repository as organization
 from backend.modules.platform import repository as tenants, service as platform
@@ -198,7 +199,9 @@ def register(cd, body, client=None):
         latest = repository.latest_signup(cd,form['email'])
         require(not latest or latest['created_at']<=after(seconds=-RESEND_SECONDS),'เพิ่งส่งลิงก์ยืนยันไปเมื่อสักครู่ กรุณาตรวจอีเมล หรือรอ 1 นาทีแล้วลองใหม่',429)
         token = secrets.token_urlsafe(32)
-        repository.insert_signup(cd,token_hash(token),form,CONSENT_VERSION,after(hours=VERIFY_HOURS),org['id'] if org else None)
+        # ยอมรับประกาศความเป็นส่วนตัว: the version published now (modules/legal), kept against the account.
+        repository.insert_signup(cd,token_hash(token),form,legal.accept(cd,'customer-privacy',form['email'],(client or {}).get('ip',''),org['id'] if org else None),
+                                 after(hours=VERIFY_HOURS),org['id'] if org else None)
         task = {'kind':'verify','email':form['email'],'name':form['name'],'token':token}
     cd.commit()
     _deliver(cd,org['name'] if org else 'Bookdose',task)
@@ -211,7 +214,8 @@ def _register_unverified(cd, form, org, client=None):
     D.begin(cd)
     require(not repository.find_by_email(cd,form['email']),'อีเมลนี้มีบัญชีแล้ว กรุณาเข้าสู่ระบบ',409)
     account_id = uid()
-    repository.insert_account(cd,account_id,{**form,'consent_version':CONSENT_VERSION,'consent_at':now()},email_verified=False)
+    consent = legal.accept(cd,'customer-privacy',form['email'],(client or {}).get('ip',''),org['id'] if org else None)
+    repository.insert_account(cd,account_id,{**form,'consent_version':consent,'consent_at':now()},email_verified=False)
     session = _new_session(cd,account_id,client)
     cd.commit()
     if org:

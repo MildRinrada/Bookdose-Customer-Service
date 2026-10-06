@@ -1543,6 +1543,40 @@ select:disabled {
   margin: 0 auto;
   padding: 32px 20px 48px;
 }
+/* The one card of such a page (registration closed, an invitation, a verified email): room around its words, a
+   heading that sits in the card rather than on its edge, and the button under the text with air above it. */
+.single-page .card .card-body {
+  padding: 28px 32px 30px;
+}
+.single-page .card h1 {
+  margin: 0 0 10px;
+  font-size: 1.45rem;
+  line-height: 1.35;
+}
+.single-page .card h1 + p {
+  margin-top: 0;
+}
+.single-page .card .card-body > p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.single-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: var(--soft);
+  color: var(--muted);
+}
+.single-card-icon .icon {
+  width: 24px;
+  height: 24px;
+}
+.single-card-actions {
+  margin-top: 20px;
+}
 /* /not-me (features/auth/NotMeScreen): which sign-in the email was about, then the two answers from the left. */
 .not-me-card .card-body {
   padding: 26px 28px 28px;

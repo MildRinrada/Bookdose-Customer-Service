@@ -24,6 +24,7 @@ import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf,
 import { AccountSwitcher } from '@/features/staff-account/AccountSwitcher';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
+import { PrivacyBanner, TermsBanner } from '@/features/legal/StaffLegal';
 import { OrgSwitch } from './OrgSwitch';
 import { SessionGuard } from './SessionGuard';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarTips, SidebarToggle, useSidebar } from './chrome';
@@ -312,6 +313,11 @@ export function StaffShell({ children }: { children: ReactNode }) {
       {work && !readOnly && !platform && <RecapPopup />}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
+        {/* ข้อตกลงการใช้บริการ not agreed to yet (an organization made for it, or a new version): its admin is asked. */}
+        {work?.role === 'admin' && !readOnly && !platform && <TermsBanner />}
+        {/* ประกาศความเป็นส่วนตัวสำหรับผู้ใช้งานระบบ: a member who has not acknowledged the one in force. Not the
+            platform's own admins: the notice is the platform's, telling its users. */}
+        {work && !readOnly && !platform && <PrivacyBanner />}
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (
           <Link className="support-banner" href="/settings?tab=teams" role="status">
             <Icon name="shield" />

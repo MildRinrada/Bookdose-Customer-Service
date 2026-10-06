@@ -165,6 +165,9 @@ html.platform-mode .platform-scope .icon {
   height: 22px;
   flex-shrink: 0;
 }
+/* .org-switch too: the switch's own rule below (.sidebar .workspace-select.org-switch) is three classes, so
+   without it here the console would show an organization switch again. */
+html.platform-mode .sidebar .workspace-select.org-switch,
 html.platform-mode .workspace-select,
 html.platform-mode .global-search,
 html.platform-mode .online,

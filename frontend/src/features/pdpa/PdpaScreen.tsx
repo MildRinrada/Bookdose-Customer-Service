@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
@@ -15,7 +15,8 @@ import { erasePerson, exportPerson, PDPA_PATH, searchPerson, type PdpaChoice, ty
    (email, phone written any way, or name) and every organization answers: the customer account and each record, with
    counts only. Tick what is theirs, say where the request came from, then give them the file (ZIP) or erase it -
    typed confirmation, and each is logged here and in each organization's history. Beside it, the deletion requests
-   organizations have noted on their customers, and the log. Markup: pages/pdpa.css. */
+   organizations have noted on their customers, and the log. Opened from a found account on บัญชีผู้ใช้ (?q=<email>),
+   that email is searched straight away. Markup: pages/pdpa.css. */
 
 const kindWords = { email: 'อีเมล', phone: 'เบอร์โทร', name: 'ชื่อ' };
 
@@ -42,7 +43,7 @@ function save(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function PdpaScreen() {
+export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
   const overview = useApi<PdpaOverview>(PDPA_PATH);
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState('');
@@ -56,6 +57,15 @@ export function PdpaScreen() {
       setSearched(text.trim());
       setFound(result);
     });
+  // Once per address (a development double render runs effects twice).
+  const searchedFirst = useRef('');
+  useEffect(() => {
+    const text = initialQuery?.trim() ?? '';
+    if (text.length < 3 || searchedFirst.current === text) return;
+    searchedFirst.current = text;
+    find(text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
 
   if (overview.error) return <ErrorState error={overview.error} onRetry={() => void overview.refetch()} />;
   if (!overview.data) return <PageLoading />;

@@ -15,7 +15,8 @@ import { forceAccountReset, searchAccounts, suspendAccount, type AccountKind, ty
    Suspending an organization stops everyone in it and signing someone out lasts until their next sign-in; this is
    for the account itself: staff or customer, the organizations it is in, and two acts - suspend (no sign-in at all
    until lifted) or make the password change (the old one stops working and the owner is emailed a link). Both ask
-   the password again and are written in the platform's history and the account's own. Markup: pages/platform.css
+   the password again and are written in the platform's history and the account's own. Each found account also opens
+   เครื่องมือ PDPA with its email already searched, for a request about its data. Markup: pages/platform.css
    (account-*), the search as pages/pdpa.css. */
 
 const roleWords: Record<string, string> = { admin: 'เจ้าขององค์กร', agent: 'เจ้าหน้าที่' };
@@ -128,9 +129,16 @@ function AccountRow({ kind, account: a, onDone }: { kind: AccountKind; account: 
         </span>
       </div>
       {locked ? (
-        <span className="tiny muted">จัดการที่ ทีมผู้ดูแลระบบ</span>
+        <Link className="btn sm" href="/platform/team">
+          <Icon name="shield" />
+          จัดการที่ ทีมผู้ดูแลระบบ
+        </Link>
       ) : (
         <div className="account-actions">
+          <Link className="btn sm" href={`/platform/pdpa?q=${encodeURIComponent(a.email)}`}>
+            <Icon name="users" />
+            เครื่องมือ PDPA
+          </Link>
           {a.suspended_at ? (
             <button
               type="button"

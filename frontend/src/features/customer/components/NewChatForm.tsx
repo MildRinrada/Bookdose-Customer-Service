@@ -114,7 +114,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
           <OrgPicker id="request-org" orgs={orgs} value={slug} onChange={setSlug} />
           <KnownIssuesBar slug={slug} follow />
           <small className="muted">
-            ตัวระบบค้าง หน้าเว็บผิดปกติ หรือพบ Bug ติดต่อผู้ให้บริการระบบได้เสมอ · เรื่องบริการ สินค้า หรือเคสขององค์กรใด ให้เลือกองค์กรนั้น
+            ตัวระบบค้าง หน้าเว็บผิดปกติ หรือพบ Bug ติดต่อผู้ให้บริการระบบได้เสมอ · เรื่องบริการ สินค้า หรือเคสขององค์กรใด ให้เลือกองค์กรนั้น · องค์กรใหม่จะอยู่ในรายการเมื่อเปิดเคสให้คุณ หรือให้ลิงก์เข้าร่วมมา
           </small>
         </div>
         <div id="customer-org-intro" className="customer-org-intro" aria-live="polite">

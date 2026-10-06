@@ -11,7 +11,7 @@ import { Composer, MessageThread } from '@/features/inbox';
 import { useCustomer } from '@/lib/customer-session';
 import { starsText } from '@/lib/format';
 import { useInvalidate } from '@/lib/query';
-import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, reactToMessage, sessionPath } from '../api';
+import { OVERVIEW_PATH, chatExportUrl, continueOnLine, rateService, reactToMessage, resolveChatCase, sessionPath } from '../api';
 import { chatView, ratingLabels } from '../labels';
 import type { PortalSession, PortalSurvey } from '../types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
@@ -111,9 +111,23 @@ export function ChatView({
   const reference = data.ticket ? `BD-${data.ticket.number}` : '';
   const survey = data.survey && (data.survey.pending || data.survey.rating) ? data.survey : null;
   const [lineOpen, setLineOpen] = useState(false);
-  const { openModal, closeModal } = useDialogs();
+  const { openModal, closeModal, confirm } = useDialogs();
   const refresh = useInvalidate();
+  const toast = useToast();
   const me = useCustomer();
+  // ปิดเคส: the customer finishes the chat's case themselves (backend automation/closing.py), asked once first.
+  const canClose = Boolean(data.ticket && !['resolved', 'closed'].includes(data.ticket.status));
+  const askClose = () =>
+    confirm({
+      title: 'ปัญหาแก้ไขแล้ว',
+      message: `เคส ${reference} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง ถ้าปัญหากลับมาอีก พิมพ์บอกในแชทได้เลย`,
+      confirmLabel: 'ยืนยันว่าแก้ไขแล้ว',
+      run: async () => {
+        await resolveChatCase(slug, id);
+        toast('บันทึกว่าแก้ไขแล้ว ขอบคุณที่แจ้งให้ทราบ');
+        await refresh(sessionPath(slug), OVERVIEW_PATH);
+      },
+    });
   // The AI bar stays while the bot answers (it holds คุยกับเจ้าหน้าที่); once a person has the chat that is one chip.
   const bot = data.ai?.mode === 'bot';
   return (
@@ -143,6 +157,12 @@ export function ChatView({
             )}
           </p>
         </div>
+        {canClose && (
+          <button type="button" className="btn sm conv-close-case" onClick={askClose} title="แจ้งว่าปัญหาแก้ไขแล้ว และปิดเคสนี้">
+            <Icon name="check" />
+            ปิดเคส
+          </button>
+        )}
         <a className="icon-btn conv-download" href={chatExportUrl(slug, id)} download title="ดาวน์โหลดประวัติการคุย" aria-label="ดาวน์โหลดประวัติการคุย">
           <Icon name="download" />
         </a>

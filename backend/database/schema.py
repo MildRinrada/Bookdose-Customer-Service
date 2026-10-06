@@ -144,8 +144,10 @@ def upgrade_tenant(db):
     db.executescript(organization.TEAM_SNIPPETS_TABLE)
     from backend.modules.organization import hours
     db.executescript(hours.TABLE)
-    from backend.modules.automation import quiet
+    from backend.modules.automation import closing, quiet
     db.executescript(quiet.TABLE)
+    # ลูกค้าปิดเคสเอง: the question "ปิดเคสใช่ไหม" waiting for its answer (automation/closing.py).
+    db.executescript(closing.TABLE)
     from backend.modules.organization import retention
     db.executescript(retention.TABLE)
     from backend.modules.organization import repository as organization_repository

@@ -111,6 +111,11 @@ def thanks_heart(req, card_id):
     return req.send(200,thanks.heart(req.cd,req.db,req.customer,card_id))
 
 
+def resolve_chat(req):
+    """ปิดเคส pressed on the chat (automation/closing.py)."""
+    return req.send(200,service.resolve_case(req.db,req.org['id'],_current(req),req.customer))
+
+
 def download_attachment(req, file_id):
     return req.send_download(*service.public_attachment(req.db,req.org['id'],req.customer,file_id))
 
@@ -119,6 +124,12 @@ def download_attachment(req, file_id):
 def reopen_case(req, case_id):
     from backend.modules.customers import perks
     return req.send(200,{'conversation_id':perks.reopen_case(req.db,req.org['id'],req.customer,case_id,req.body)})
+
+
+def resolve_case(req, case_id):
+    from backend.modules.customers import perks
+    perks.resolve_case(req.db,req.org['id'],req.customer,case_id)
+    return req.send(200,{'ok':True})
 
 
 def export_conversation(req, conversation_id):

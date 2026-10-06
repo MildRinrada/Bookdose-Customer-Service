@@ -13,7 +13,7 @@ import { AiPortalStatus } from '@/features/ai/components/AiPortalStatus';
 import type { PublicOrgInfo } from '@/features/auth/types';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerList, ArticleReadPanel, DropHint, TypingAnswers, askLine, useArticleDrop, type PeekArticle } from '@/features/customer/components/ArticlePeek';
-import { reactToMessage } from '@/features/customer/api';
+import { reactToMessage, resolveChatCase } from '@/features/customer/api';
 import { CustomerSurvey } from '@/features/customer/components/ChatView';
 import { ThanksCard } from '@/features/customer/components/ThanksCard';
 import { WaitQueue } from '@/features/customer/components/WaitQueue';
@@ -577,9 +577,22 @@ function GuestChatView({
   const guest = overview.guest;
   const [lineOpen, setLineOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
-  const { openModal, closeModal } = useDialogs();
+  const { openModal, closeModal, confirm } = useDialogs();
   const refresh = useInvalidate();
   const toast = useToast();
+  // ปิดเคส: the guest finishes the chat's case themselves (backend automation/closing.py), asked once first.
+  const canClose = Boolean(data.ticket && !['resolved', 'closed'].includes(data.ticket.status) && !data.line?.moved);
+  const askClose = () =>
+    confirm({
+      title: 'ปัญหาแก้ไขแล้ว',
+      message: `เคส BD-${data.ticket?.number} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง ถ้าปัญหากลับมาอีก พิมพ์บอกในแชทได้เลย`,
+      confirmLabel: 'ยืนยันว่าแก้ไขแล้ว',
+      run: async () => {
+        await resolveChatCase(portal, id);
+        toast('บันทึกว่าแก้ไขแล้ว ขอบคุณที่แจ้งให้ทราบ');
+        await refresh(guestSessionPath(slug), guestPath(slug));
+      },
+    });
   const [soundOn, setSound] = useGuestSound();
   const canMove = Boolean(data.line && !data.line.moved);
   return (
@@ -615,6 +628,7 @@ function GuestChatView({
         <GuestMenu
           items={[
             { key: 'follow', label: 'ติดตามแชทนี้', icon: 'bell', onSelect: onShowFollow },
+            ...(canClose ? [{ key: 'close', label: 'ปิดเคส (ปัญหาแก้ไขแล้ว)', icon: 'check', onSelect: askClose }] : []),
             ...(!data.line?.moved ? [{ key: 'phone', label: 'คุยต่อบนมือถือ (สแกน QR)', icon: 'camera', onSelect: () => setPhoneOpen(true) }] : []),
             ...(data.callback && !data.line?.moved
               ? [

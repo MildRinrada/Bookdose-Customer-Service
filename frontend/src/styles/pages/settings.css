@@ -472,6 +472,12 @@ a.settings-nav-item,a.settings-nav-item:hover {
     padding: 31px 0 19px;
     background: var(--bg);
   }
+  /* Under a way back (ระบบอัตโนมัติ → ตั้งค่าองค์กร) there is no top padding to take over: pulled up the full 31px,
+     the title's background would cover the link. It takes over only the link's gap below instead. */
+  .back-link+.page-heading:has(+ .settings-frame) {
+    margin-top: -14px;
+    padding-top: 14px;
+  }
   /* The rest of the old gap stays open, so the cards' top edge and shadow are not under the title's background. */
   .page-heading+.settings-frame {
     padding-top: 8px;

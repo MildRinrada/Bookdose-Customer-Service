@@ -556,6 +556,55 @@ tbody tr:hover .row-actions,tbody tr:has(:focus-visible) .row-actions {
   border-radius: 2px;
   background: var(--invert);
 }
+/* Folded cards (components/FoldCard): one line each - the name, what is in it, a chevron - until opened. The
+   name keeps the square of the other cards' headings; the card's colour (a hand up, a pause) is on the whole card. */
+.detail-sidebar .fold-card {
+  padding: 0;
+}
+.detail-sidebar .fold-card > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.detail-sidebar .fold-card > summary::-webkit-details-marker {
+  display: none;
+}
+.detail-sidebar .fold-card > summary h3 {
+  flex-shrink: 0;
+  margin: 0;
+}
+.fold-hint {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: .85rem;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.detail-sidebar .fold-card > summary > .icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  transition: transform .15s ease-out;
+}
+.detail-sidebar .fold-card[open] > summary > .icon {
+  transform: rotate(180deg);
+}
+.detail-sidebar .fold-card > .fold-body {
+  padding: 0 20px 18px;
+}
+.detail-sidebar .fold-card.highlight {
+  background: var(--amber-soft);
+}
+.fold-body .case-tags-head {
+  justify-content: flex-end;
+}
 .detail-sidebar form.info-block .btn.primary {
   width: 100%;
   justify-content: center;

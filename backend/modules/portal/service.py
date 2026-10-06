@@ -146,6 +146,12 @@ def rate_service(db, conv, body):
     automation.rate_from_portal(db,conv,body)
 
 
+def resolve_case(db, tenant_id, conv, viewer):
+    """ปิดเคส pressed on the chat (the signed-in customer's or the guest's): its case is finished by the customer."""
+    from backend.modules.automation import closing
+    return closing.resolve_from_chat(db,tenant_id,conv,_author(viewer))
+
+
 def public_attachment(db, tenant_id, viewer, file_id):
     """(name, mime, bytes) of a file on a customer-visible message in one of the viewer's own conversations."""
     record = conversations.attachment_with_conversation(db,file_id)

@@ -9,7 +9,7 @@ import { Avatar } from '@/components/ui/display';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { FollowupsPanel, MacroButtons, SurveySummary } from '@/features/automation';
+import { FollowupsPanel, MacroButtons, SurveySummary, useMacros } from '@/features/automation';
 import type { TicketAutomation } from '@/features/automation/types';
 import { AUDIT_PATH } from '@/features/audit/api';
 import { ContactHeadsUp } from '@/features/contacts/components/ContactProfileParts';
@@ -20,6 +20,7 @@ import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
 import { deleteTicket, TICKET_PREFIXES, TICKETS_PATH, updateTicket } from '../api';
 import type { TicketDetail } from '../types';
+import { FoldCard } from './FoldCard';
 import { HandCard } from './HandCard';
 import { SnoozeCard } from './SnoozeCard';
 import { TicketFieldsCard } from './TicketFieldsCard';
@@ -28,8 +29,9 @@ import { TriageCard } from './TriageCard';
 import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers';
 
 /* The case screen's side column (pages/tickets/ticket-detail, aside), one card each: the customer, ยกมือขอช่วย, managing the case,
-   the organization's own fields, tags, follow-up reminders, macros and the CSAT result. The SLA clocks are in the
-   case's head (CaseHero). */
+   the organization's own fields, tags, follow-up reminders, macros and the CSAT result. The customer and managing
+   the case are always open; the parts used now and then are one line each until opened (FoldCard). The SLA clocks
+   are in the case's head (CaseHero). */
 
 const noAutomation: TicketAutomation = { followups: [], escalation: null, survey: null };
 
@@ -38,6 +40,7 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
   const extra = data.automation ?? noAutomation;
   // Saving draws the form again from the saved case (the old screen was drawn again after saving).
   const [formKey, setFormKey] = useState(0);
+  const macros = useMacros();
   return (
     <aside className="detail-sidebar">
       <section className="card info-block case-customer-card">
@@ -77,14 +80,12 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
       <TicketFieldsCard ticket={t} />
       <TicketTagsCard ticket={t} />
       <SnoozeCard ticket={t} />
-      <section className="card info-block">
-        <h3>เตือนติดตามผล</h3>
+      <FoldCard id="followups" title="เตือนติดตามผล" hint={extra.followups.length ? `${extra.followups.length} รายการ` : 'ยังไม่มี'} open={extra.followups.length > 0}>
         <FollowupsPanel ticketId={t.id} followups={extra.followups} />
-      </section>
-      <section className="card info-block">
-        <h3>ปุ่มลัด (Macro)</h3>
+      </FoldCard>
+      <FoldCard id="macros" title="ปุ่มลัด (Macro)" hint={macros.length ? `${macros.length} ปุ่ม` : 'ยังไม่มี'}>
         <MacroButtons kind="ticket" targetId={t.id} />
-      </section>
+      </FoldCard>
       {extra.survey && (
         <section className="card info-block">
           <h3>ความพึงพอใจ (CSAT)</h3>

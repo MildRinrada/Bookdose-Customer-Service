@@ -9,6 +9,7 @@ import { useStaffUser, useWork } from '@/lib/session';
 import type { Hand } from '@/lib/types';
 import { helpHand, lowerHand, raiseHand, TICKET_PREFIXES } from '../api';
 import type { Ticket } from '../types';
+import { FoldCard } from './FoldCard';
 
 /* ยกมือขอช่วย (the case screen's aside, and the chip the case lists show).
 
@@ -58,8 +59,7 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
 
   if (!hand)
     return (
-      <section className="card info-block hand-card">
-        <h3>ติดเคสนี้อยู่ไหม</h3>
+      <FoldCard id="hand" title="ติดเคสนี้อยู่ไหม" className="hand-card">
         <p className="tiny muted">ยกมือแล้ว ทีมของเคสนี้และเจ้าขององค์กรจะเห็นทันที ใครว่างก็เข้ามาช่วยได้</p>
         <label className="sr-only" htmlFor="hand-note">
           ติดเรื่องอะไร
@@ -76,15 +76,14 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
           <Icon name="hand" />
           ยกมือขอช่วย
         </button>
-      </section>
+      </FoldCard>
     );
 
   const mine = hand.raised_by === me;
   const helping = hand.helper_id === me;
   const canLower = mine || helping || ticket.assignee_id === me || work.role === 'admin';
   return (
-    <section className="card info-block hand-card raised">
-      <h3>ขอความช่วยเหลือ</h3>
+    <FoldCard id="hand" title="ขอความช่วยเหลือ" hint={mine ? 'คุณยกมืออยู่' : `${hand.raised_name} ยกมืออยู่`} open highlight className="hand-card raised">
       <p className="hand-who">
         <Icon name="hand" />
         <strong>{mine ? 'คุณยกมือขอช่วยอยู่' : `${hand.raised_name} ยกมือขอช่วย`}</strong>
@@ -108,6 +107,6 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
           </button>
         )}
       </div>
-    </section>
+    </FoldCard>
   );
 }

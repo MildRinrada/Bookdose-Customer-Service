@@ -170,6 +170,8 @@ export type CaseDetail = {
   rating: number | null;
   /** ยังไม่หาย: whether the finished case can be sent back now, and until when (signed-in customers only). */
   reopen?: { allowed: boolean; until: string | null; days: number };
+  /** แก้ไขแล้ว: whether the customer can finish the case now (signed-in customers only). */
+  resolve?: { allowed: boolean };
   /** เส้นทางเคส: each step it reached and when, oldest first (backend tickets/journey.py). */
   journey: CaseJourneyStep[];
 };

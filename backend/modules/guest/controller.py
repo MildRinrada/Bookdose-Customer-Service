@@ -130,6 +130,11 @@ def rate(req):
     return req.send(200,{'ok':True})
 
 
+def resolve_chat(req):
+    """ปิดเคส pressed on the guest's chat (automation/closing.py)."""
+    return req.send(200,portal.resolve_case(req.db,req.org['id'],_current(req),req.guest))
+
+
 def react(req, message_id):
     from backend.modules.conversations import reactions
     return req.send(200,reactions.react(req.db,_current(req),message_id,req.body))

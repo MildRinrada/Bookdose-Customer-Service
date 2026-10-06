@@ -48,6 +48,7 @@ export const openChat = (
    a case as a file (plain links: the browser downloads with the session cookie), hear when a known issue is fixed. */
 export const reopenCase = (slug: string, id: string, message: string) =>
   api<{ conversation_id: string | null }>(`/api/public/${slug}/cases/${id}/reopen`, { message });
+export const resolveCase = (slug: string, id: string) => api<{ ok: true }>(`/api/public/${slug}/cases/${id}/resolve`, {});
 export const chatExportUrl = (slug: string, id: string) => `/api/public/${slug}/conversations/${id}/export`;
 export const caseExportUrl = (slug: string, id: string) => `/api/public/${slug}/cases/${id}/export`;
 export const followingPath = (slug: string) => `/api/public/${slug}/issues/following`;
@@ -57,6 +58,11 @@ export const followIssue = (slug: string, id: string, follow: boolean) =>
 /** Answer the satisfaction survey of a chat (X-Conversation-ID). */
 export const rateService = (slug: string, conversationId: string, body: { rating: number; comment: string }) =>
   api<{ ok: true }>(`/api/public/${slug}/csat`, body, 'POST', { conversation: conversationId });
+
+/** ปิดเคส from the chat (backend automation/closing.py): the chat's case is finished by the customer. `slug` is the
+    publicSlug (for a guest, <org>/guest). */
+export const resolveChatCase = (slug: string, conversationId: string) =>
+  api<{ ticket_id: string }>(`/api/public/${slug}/resolve`, {}, 'POST', { conversation: conversationId });
 
 /** An emoji on a team reply of the chat (null takes it back): tells the team without a message, so a finished case
     stays finished. `slug` is "<org>/guest" for a guest chat. */

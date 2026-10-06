@@ -7,6 +7,7 @@ import { useInvalidate } from '@/lib/query';
 import { snoozeTicket, TICKET_PREFIXES, wakeTicket } from '../api';
 import { isSnoozed, snoozeChoices, snoozeUntilText } from '../labels';
 import type { Ticket } from '../types';
+import { FoldCard } from './FoldCard';
 
 /* พักเคสไว้ก่อน (the case screen's aside, and the wake button the list uses).
 
@@ -79,8 +80,7 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
 
   if (paused)
     return (
-      <section className="card info-block snooze-card paused">
-        <h3>พักไว้อยู่</h3>
+      <FoldCard id="snooze" title="พักไว้อยู่" hint={`กลับมา ${snoozeUntilText(ticket.snoozed_until)}`} open highlight className="snooze-card paused">
         <p className="snooze-until">
           <Icon name="clock" />
           กลับมา {snoozeUntilText(ticket.snoozed_until)}
@@ -99,12 +99,11 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
           <Icon name="restore" />
           เอากลับเข้าคิวเลย
         </button>
-      </section>
+      </FoldCard>
     );
 
   return (
-    <section className="card info-block snooze-card">
-      <h3>พักเคสไว้ก่อน</h3>
+    <FoldCard id="snooze" title="พักเคสไว้ก่อน" className="snooze-card">
       <p className="tiny muted">เคสจะหายจากคิวงาน แล้วเด้งกลับมาเองตามเวลาที่เลือก</p>
       <label className="sr-only" htmlFor="snooze-note">
         รอเรื่องอะไร
@@ -144,6 +143,6 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
         </button>
       </div>
       <p className="tiny muted">SLA ยังเดินอยู่ระหว่างพัก · ลูกค้าตอบเมื่อไร เคสกลับเข้าคิวทันที</p>
-    </section>
+    </FoldCard>
   );
 }

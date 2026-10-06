@@ -10,7 +10,7 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { date, relative, starsText } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
-import { caseExportUrl, casePath, OVERVIEW_PATH, reopenCase } from './api';
+import { caseExportUrl, casePath, OVERVIEW_PATH, reopenCase, resolveCase } from './api';
 import { CaseJourney, journeyEvents } from './components/CaseJourney';
 import { useOrgs, useOverview } from './hooks';
 import { caseState, chatState } from './labels';
@@ -40,13 +40,32 @@ export function CaseScreen({ slug, id }: { slug: string; id: string }) {
   );
 }
 
-/* What the signed-in customer can do with their case (customers/perks.py): send it back when the problem returned
-   within a few days of it being finished, and keep it as a file. */
+/* What the signed-in customer can do with their case (customers/perks.py): finish it themselves when the problem is
+   solved, send it back when the problem returned within a few days of it being finished, and keep it as a file. */
 function CaseActions({ slug, id, data }: { slug: string; id: string; data: CaseDetail }) {
-  const { openModal } = useDialogs();
+  const { openModal, confirm } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
   const reopen = data.reopen;
+  const askResolve = () =>
+    confirm({
+      title: 'ปัญหาแก้ไขแล้ว',
+      message: `เคส BD-${data.case.number} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง ถ้าปัญหากลับมาอีก ส่งเคสกลับได้ภายใน ${reopen?.days ?? 7} วัน`,
+      confirmLabel: 'ยืนยันว่าแก้ไขแล้ว',
+      run: async () => {
+        await resolveCase(slug, id);
+        toast('บันทึกว่าแก้ไขแล้ว ขอบคุณที่แจ้งให้ทราบ');
+        await refresh(casePath(slug, id), OVERVIEW_PATH);
+      },
+    });
   return (
     <>
+      {data.resolve?.allowed && (
+        <button type="button" className="btn primary" onClick={askResolve}>
+          <Icon name="check" />
+          แก้ไขแล้ว
+        </button>
+      )}
       {reopen?.allowed && (
         <button type="button" className="btn primary" onClick={() => openModal('ปัญหายังไม่หาย', <ReopenForm slug={slug} id={id} data={data} />)}>
           <Icon name="restore" />

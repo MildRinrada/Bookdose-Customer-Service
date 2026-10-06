@@ -50,6 +50,67 @@ class MemberPerksTests(unittest.TestCase):
         other,_ = self.visitor(email='other@example.com')
         self.assertEqual(other.call(f'{PUBLIC}/cases/{ticket}/reopen',{})[0],404)
 
+    def test_a_customer_finishes_their_own_case(self):
+        customer,chat = self.visitor()
+        ticket = self.ok(self.admin,f'/api/conversations/{chat}/ticket',{})['id']
+        self.ok(self.admin,'/api/automation/settings',{'escalation_enabled':False,'escalation_minutes':15,'csat_enabled':True,'csat_message':'ให้คะแนนหน่อยครับ'},'PATCH')
+        self.assertTrue(self.ok(customer,f'{PUBLIC}/cases/{ticket}')['resolve']['allowed'])
+        self.ok(customer,f'{PUBLIC}/cases/{ticket}/resolve',{})
+        detail = self.ok(self.admin,f'/api/tickets/{ticket}')
+        self.assertEqual(detail['ticket']['status'],'resolved')
+        self.assertIsNotNone(detail['ticket']['resolved_at'])
+        self.assertIn('ticket.customer_resolved',[e['action'] for e in detail['events']])
+        # The survey follows, as when a member finishes the case.
+        self.assertEqual(self.ok(self.admin,f'/api/conversations/{chat}')['messages'][-1]['body'],'ให้คะแนนหน่อยครับ')
+        # Finished: nothing more to finish, but it can go back.
+        view = self.ok(customer,f'{PUBLIC}/cases/{ticket}')
+        self.assertFalse(view['resolve']['allowed'])
+        self.assertTrue(view['reopen']['allowed'])
+        self.assertEqual(customer.call(f'{PUBLIC}/cases/{ticket}/resolve',{})[0],409)
+        # Not someone else's.
+        other,_ = self.visitor(email='other@example.com')
+        self.assertEqual(other.call(f'{PUBLIC}/cases/{ticket}/resolve',{})[0],404)
+
+    def test_a_customer_closes_from_the_chat_with_the_word_or_the_button(self):
+        customer,chat = self.visitor()
+        ticket = self.ok(self.admin,f'/api/conversations/{chat}/ticket',{})['id']
+        self.ok(self.admin,'/api/automation/settings',{'escalation_enabled':False,'escalation_minutes':15,'csat_enabled':False,'csat_message':'x'},'PATCH')
+        status = lambda: self.ok(self.admin,f'/api/tickets/{ticket}')['ticket']['status']
+        last = lambda: self.ok(customer,f'{PUBLIC}/session')['messages'][-1]
+        # A sentence that has the word in it asks nothing; the word alone (politeness aside) brings the question.
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ถ้าแก้ไม่ได้ก็ปิดเคสไปเถอะ'})
+        self.assertEqual(last()['kind'],'customer')
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ปิดเคสได้เลยค่ะ'})
+        self.assertIn('ต้องการปิดเคส BD-',last()['body'])
+        self.assertEqual(status(),'new')
+        # ไม่ keeps it open; the word again asks again; ใช่ finishes it, and the chat says so.
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ไม่ค่ะ'})
+        self.assertEqual(last()['body'],'รับทราบ เรื่องยังเปิดอยู่ ทีมงานดูแลต่อให้')
+        self.assertEqual(status(),'new')
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ปิดเคส'})
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ใช่ครับ'})
+        self.assertIn('ปิดเคส BD-',last()['body'])
+        self.assertEqual(status(),'resolved')
+        detail = self.ok(self.admin,f'/api/tickets/{ticket}')
+        actions = [e['action'] for e in detail['events']]
+        self.assertIn('ticket.close_asked',actions)
+        self.assertIn('ticket.customer_resolved',actions)
+        # The system's questions are never the team's first reply.
+        self.assertIsNone(detail['ticket']['first_response_at'])
+        # Writing again reopens, as ever; the button on the chat finishes it without the question.
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'เอ๊ะ ยังไม่หาย'})
+        self.assertEqual(status(),'open')
+        self.ok(customer,f'{PUBLIC}/resolve',{})
+        self.assertEqual(status(),'resolved')
+        self.assertEqual(customer.call(f'{PUBLIC}/resolve',{})[0],409)
+        # A question nobody answers lapses: an ordinary message after it goes on as usual.
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ปิดเคส'})
+        self.assertEqual(status(),'open')
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ขอถามเพิ่มอีกเรื่องค่ะ'})
+        self.assertEqual(last()['kind'],'customer')
+        self.ok(customer,f'{PUBLIC}/messages',{'body':'ใช่'})
+        self.assertEqual(status(),'open')
+
     def test_a_chat_and_a_case_download_as_text(self):
         customer,chat = self.visitor(subject='ขอใบเสร็จย้อนหลัง',body='ต้องการของเดือนที่แล้ว')
         self.ok(self.admin,f'/api/conversations/{chat}/messages',{'kind':'note','body':'โน้ตภายในห้ามหลุด'})

@@ -9,6 +9,7 @@ import { useWork } from '@/lib/session';
 import { TICKET_PREFIXES } from '../api';
 import { FIELD_LIMITS, fieldText, fillTicketFields, missingToClose, useCaseFields, type CaseField } from '../fields';
 import type { Ticket } from '../types';
+import { FoldCard } from './FoldCard';
 
 /* ข้อมูลเพิ่มเติม on the case screen: the organization's own fields (fields.ts), filled in by the team and saved with
    one press. A field the case must have before it is closed is marked, and while the case is open the ones still
@@ -77,19 +78,20 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
   const owner = work.role === 'admin' && !work.read_only;
   if (!fields.length)
     return owner ? (
-      <section className="card info-block">
-        <h3>ข้อมูลเพิ่มเติม</h3>
+      <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint="ยังไม่ได้ตั้งช่อง">
         <p className="tiny muted">
           ตั้งช่องที่ทีมต้องกรอกในทุกเคสได้ เช่น เลขคำสั่งซื้อ หรือสาขา <Link href="/settings?tab=fields">ตั้งช่องข้อมูลของเคส</Link>
         </p>
-      </section>
+      </FoldCard>
     ) : null;
 
   const missing = isDone(ticket) ? [] : missingToClose(fields, values);
+  const filled = fields.filter((f) => (values[f.id] ?? '') !== '').length;
+  // The line says what still has to be filled before the case can close, else how much of it is filled.
+  const hint = missing.length ? `ต้องกรอกอีก ${missing.length} ช่องก่อนปิดเคส` : `กรอกแล้ว ${filled}/${fields.length}`;
   if (work.read_only)
     return (
-      <section className="card info-block">
-        <h3>ข้อมูลเพิ่มเติม</h3>
+      <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint={`กรอกแล้ว ${filled}/${fields.length}`}>
         <dl className="case-fields-read">
           {fields.map((f) => (
             <div key={f.id}>
@@ -98,12 +100,13 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
             </div>
           ))}
         </dl>
-      </section>
+      </FoldCard>
     );
   return (
+    <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint={hint} open={missing.length > 0}>
     <Form
       key={JSON.stringify(values)}
-      className="card info-block case-fields-card"
+      className="case-fields-card"
       onSubmit={async (sent, form) => {
         const body = Object.fromEntries(
           fields.map((f) => [f.id, f.kind === 'checkbox' ? (form.elements.namedItem(f.id) as HTMLInputElement).checked : (sent[f.id] ?? '')]),
@@ -113,7 +116,6 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
         await refresh(...TICKET_PREFIXES);
       }}
     >
-      <h3>ข้อมูลเพิ่มเติม</h3>
       {missing.length > 0 && <p className="case-fields-missing">ต้องกรอกก่อนปิดเคส: {missing.join(', ')}</p>}
       {fields.map((f) => (
         <FieldInput key={f.id} field={f} value={values[f.id] ?? ''} />
@@ -123,5 +125,6 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
       </button>
       {fields.some((f) => f.required) && <p className="tiny muted">ช่องที่มี * ต้องกรอกก่อนปิดเคส</p>}
     </Form>
+    </FoldCard>
   );
 }

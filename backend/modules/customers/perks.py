@@ -5,6 +5,8 @@ incidents/follow.py):
                 chat at once instead of asking the customer to tell it all again (conversation_follows).
   reopen_case   ยังไม่หาย: a case finished within REOPEN_DAYS goes back to the team from the case page, with what is
                 still wrong, as a message in the case's chat (so the chat, the case and its owner all hear of it).
+  resolve_case  แก้ไขแล้ว: the customer finishes their own case from its page, as a member would - the survey and the
+                thank-you card follow - and the case's history and its owner say the customer did.
   export_*      ดาวน์โหลดประวัติ: a chat or a case, as a plain text file the customer keeps (only what they can read on
                 the page; never the team's internal notes).
   members_first คิวก่อนสำหรับสมาชิก: the organization may let its signed-in customers go ahead of guests in the queue
@@ -95,6 +97,25 @@ def reopen_case(db, tenant_id, session, case_id, body):
     audit.record(db,session['name'],'ticket.customer_reopened',case['id'],line[:300])
     db.commit()
     return chat['id'] if chat else None
+
+
+# แก้ไขแล้ว
+def can_resolve(case):
+    return case['status'] not in ('resolved','closed')
+
+
+def resolve_case(db, tenant_id, session, case_id):
+    """The customer says their problem is solved: the case is resolved as a member would resolve it (automation/
+    closing.py: the survey, the thank-you card, a raised hand lowered; the history says the customer did it and
+    its owner is told). The organization's required case fields are the team's to fill, so they do not stand in the
+    customer's way."""
+    from backend.modules.automation import closing
+    case = repository.owned_case(db,session['account_id'],schema.case_id(case_id))
+    require(case,'ไม่พบเคสนี้ในบัญชีของคุณ',404)
+    require(can_resolve(case),'เคสนี้จบไปแล้ว',409)
+    D.begin(db)
+    closing.finish(db,tenant_id,one(db,'SELECT * FROM tickets WHERE id=?',(case['id'],)),session['name'])
+    db.commit()
 
 
 # ดาวน์โหลดประวัติ

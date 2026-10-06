@@ -7,7 +7,7 @@ from backend.modules.portal import controller
 from backend.utils.routing import ID
 
 # Every URL here; anything else under /api/public/ is answered "not found".
-PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues|thanks|articles|callback|team|no-rush)(?:/[a-z0-9-]+){0,6})?')
+PORTAL_PATH = re.compile(r'/api/public/([a-z0-9-]+)(?:/(conversations|cases|session|messages|attachments|handoff|csat|line|guest|widget|code|logo|issues|thanks|articles|callback|team|no-rush|resolve)(?:/[a-z0-9-]+){0,6})?')
 PORTAL = '/api/public/[a-z0-9-]+'
 
 ROUTES = [
@@ -26,9 +26,10 @@ ROUTES = [
     ('POST', PORTAL+f'/articles/{ID}/feedback', controller.article_feedback, 'portal'),
     ('POST', PORTAL+'/conversations',       controller.open_conversation,   'customer'),
     ('GET',  PORTAL+f'/cases/{ID}',         controller.case_detail,         'customer'),
-    # What signing in gives (customers/perks.py, incidents/follow.py): send a finished case back, keep a chat or a
-    # case as a file, and hear when a known issue is fixed.
+    # What signing in gives (customers/perks.py, incidents/follow.py): send a finished case back or finish it, keep a
+    # chat or a case as a file, and hear when a known issue is fixed.
     ('POST', PORTAL+f'/cases/{ID}/reopen',  controller.reopen_case,         'customer'),
+    ('POST', PORTAL+f'/cases/{ID}/resolve', controller.resolve_case,        'customer'),
     ('GET',  PORTAL+f'/cases/{ID}/export',  controller.export_case,         'customer'),
     ('GET',  PORTAL+f'/conversations/{ID}/export', controller.export_conversation, 'customer'),
     ('GET',  PORTAL+'/issues/following',    controller.issues_following,    'customer'),
@@ -43,6 +44,8 @@ ROUTES = [
     # An emoji on a team reply: tells the team without a message, so a finished case stays finished.
     ('POST', PORTAL+f'/messages/{ID}/reaction', controller.react,           'customer'),
     ('POST', PORTAL+'/csat',                controller.rate,                'customer'),
+    # ปิดเคส from the chat (automation/closing.py): the chat named by X-Conversation-ID.
+    ('POST', PORTAL+'/resolve',             controller.resolve_chat,        'customer'),
     ('GET',  PORTAL+f'/attachments/{ID}',   controller.download_attachment, 'customer'),
     # The team member's photo on the thank-you card of a finished case, for the customer whose chat it is.
     ('GET',  PORTAL+f'/thanks/{ID}/photo',  controller.thanks_photo,        'customer'),

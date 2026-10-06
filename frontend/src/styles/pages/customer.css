@@ -854,105 +854,217 @@ main .customer-link-head>.text-size-controls {
   flex: 1;
   min-width: 14rem;
 }
-/* Picking who the chat is for, the way an email client picks a recipient: the choice is a chip, and the list below
-   the box searches the organizations the customer can contact (see components/OrgPicker.tsx). */
-.org-picker .combo-control {
-  min-height: 52px;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 7px 10px;
+/* ติดต่อองค์กร (components/OrgPicker.tsx): a dropdown. The button holds the chosen organization; the panel under it a
+   search box (once the list is long) over the list, which scrolls past eight rows or so, so a customer connected with
+   many organizations never gets a page as long as the list. */
+.org-dd {
+  position: relative;
 }
-/* The box always keeps room to type, next to the chip. */
-.org-picker-input {
-  flex: 1;
-  min-width: 11rem;
-}
-.org-chip {
-  display: inline-flex;
+.org-dd-button {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 5px 6px 5px 5px;
-  border: 1px solid #dedede;
-  border-radius: 999px;
-  background: var(--paper);
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 7px 12px;
+  border: 1px solid #959595;
+  border-radius: 8px;
+  background: var(--field);
   color: var(--ink);
+  font: inherit;
   font-weight: 600;
+  text-align: left;
+  cursor: pointer;
 }
-.org-chip .avatar {
+.org-dd-button:hover {
+  border-color: #777777;
+}
+.org-dd-button:focus-visible {
+  border-color: #777777;
+  outline: 3px solid #b4b4b4;
+  outline-offset: 2px;
+}
+.org-dd-button .avatar {
+  flex: none;
   width: 34px;
   height: 34px;
   font-size: 1rem;
 }
-.org-chip-name {
+.org-dd-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.org-chip-tag {
+.org-dd-tag {
+  flex: none;
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--soft);
   color: var(--muted);
   font-size: .8rem;
-  font-weight: 600;
 }
-.org-chip-remove {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
+.org-dd-button>.icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
   color: var(--muted);
+  transition: transform .15s ease-out;
+}
+.org-dd-button[aria-expanded=true]>.icon {
+  transform: rotate(180deg);
+}
+.org-dd-panel {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  padding: 6px;
+  border: 1px solid #d1d1d1;
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 14px 34px #1e293b29;
+}
+.org-dd-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 0 10px;
+  border: 1px solid var(--control-line);
+  border-radius: 8px;
+  background: var(--field);
+}
+.org-dd-search .icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.org-dd-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  background: none;
+  font: inherit;
+}
+.org-dd-search input:focus {
+  outline: none;
+}
+.org-dd-list {
+  max-height: min(340px,50vh);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+.org-dd-list:focus-visible {
+  outline: 3px solid #b4b4b4;
+  outline-offset: 1px;
+  border-radius: 8px;
+}
+.org-dd-list li[role=option] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
   cursor: pointer;
 }
-.org-chip-remove:hover {
+.org-dd-list li.active {
   background: var(--soft);
-  color: var(--ink);
 }
-.org-chip-remove .icon {
-  width: 15px;
-  height: 15px;
-}
-.org-picker-list li[role=option] {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  text-align: left;
-  gap: 10px;
-}
-.org-picker-list .avatar,.org-picker-list .org-add-icon {
+.org-dd-list .avatar {
   flex: none;
 }
-/* The chosen organization is marked by its tick, not by the grey of the row being pointed at: with both painted grey
-   the two rows of a short list looked hovered at once. */
-.org-picker-list li[role=option][aria-selected=true]:not(.active):not(:hover) {
-  background: none;
+.org-dd-list li[role=option]>span {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
-.org-picker-list li[role=option]>.icon {
+.org-dd-list small {
+  color: var(--muted);
+}
+.org-dd-list li[role=option]>.icon {
   flex: none;
   width: 18px;
   height: 18px;
   margin-left: auto;
 }
-.org-picker-list li[role=option] span {
+.org-dd-empty {
+  padding: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+/* The last row: adding an organization by its code, which opens into a small box for it. */
+.org-dd-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.org-dd-add:hover,.org-dd-add:focus-visible {
+  background: var(--soft);
+  outline: none;
+}
+.org-dd-add>span:last-child {
   display: grid;
   min-width: 0;
+  font-weight: 600;
 }
-.org-picker-list small {
+.org-dd-add small {
   color: var(--muted);
+  font-weight: 400;
 }
-.org-add-icon {
+.org-dd-add-icon {
   display: grid;
   place-items: center;
+  flex: none;
   width: 30px;
   height: 30px;
   border-radius: 50%;
   background: var(--soft);
   color: var(--muted);
+}
+.org-dd-add-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+.org-dd-add-form {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+}
+.org-dd-add-form label {
+  font-size: .9rem;
+  font-weight: 600;
+}
+.org-dd-add-row {
+  display: flex;
+  gap: 8px;
+}
+.org-dd-add-row input {
+  flex: 1;
+  min-width: 0;
+}
+.org-dd-add-row .btn {
+  flex: none;
 }
 .customer-org-intro {
   display: grid;

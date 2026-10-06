@@ -694,6 +694,8 @@ def case_detail(db, session, case_id):
                             repository.case_followups(db,ticket['id']),repository.case_rating(db,ticket['id']),journey.of(db,ticket))
     # ยังไม่หาย: a finished case can go back to the team from its page for a few days (perks.reopen_case).
     view['reopen'] = {'allowed':perks.can_reopen(ticket),'until':perks.reopen_until(ticket),'days':perks.REOPEN_DAYS}
+    # แก้ไขแล้ว: a case still being worked on can be finished by its customer (perks.resolve_case).
+    view['resolve'] = {'allowed':perks.can_resolve(ticket)}
     return view
 
 

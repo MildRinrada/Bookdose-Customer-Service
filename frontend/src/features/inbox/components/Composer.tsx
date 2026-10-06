@@ -178,6 +178,7 @@ function Destination({
   channel,
   caseNumber,
   translate,
+  aside,
 }: {
   kind: 'reply' | 'note';
   recipient?: string;
@@ -185,6 +186,8 @@ function Destination({
   caseNumber?: number | null;
   /** The customer's language and whether this reply is translated into it (the member may send it as typed). */
   translate?: { language: string; on: boolean; set: (on: boolean) => void } | null;
+  /** At the strip's right end: who answers the customer (AiControls), so it needs no row of its own. */
+  aside?: ReactNode;
 }) {
   const sep = (
     <span className="composer-to-sep" aria-hidden="true">
@@ -237,6 +240,7 @@ function Destination({
           </label>
         </>
       )}
+      {aside}
     </div>
   );
 }
@@ -449,13 +453,6 @@ function StaffComposer({
         );
       }}
     >
-      {!compact && (
-        <div className="composer-head">
-          <div className="flex wrap" data-ai-controls={id}>
-            <AiControls conversation={conversation} />
-          </div>
-        </div>
-      )}
       <AiDraftPanel
         draft={draft}
         onUse={(answer) => {
@@ -478,6 +475,13 @@ function StaffComposer({
         channel={channel}
         caseNumber={caseNumber}
         translate={translateTo ? { language: translateTo, on: translateOn, set: setTranslateOn } : null}
+        aside={
+          !compact && (
+            <span className="composer-to-ai" data-ai-controls={id}>
+              <AiControls conversation={conversation} />
+            </span>
+          )
+        }
       />
       <label className="sr-only" htmlFor={`compose-${id}`}>
         ข้อความ

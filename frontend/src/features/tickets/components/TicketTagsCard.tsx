@@ -8,6 +8,7 @@ import { useWork } from '@/lib/session';
 import { TICKET_PREFIXES } from '../api';
 import { saveCaseTags, tagsOf, tagTicket, TAGS_PER_CASE, useCaseTags } from '../tags';
 import type { Ticket } from '../types';
+import { FoldCard } from './FoldCard';
 import { TAG_LIST_PREFIXES } from './ManageTags';
 import { TagChips, TagPicker } from './TagPicker';
 
@@ -93,16 +94,17 @@ export function TicketTagsCard({ ticket }: { ticket: Ticket }) {
     </form>
   );
 
+  // The line names the tags on the case, so nobody opens the card just to read them.
+  const names = tagsOf(picked, list).map((t) => t.name);
   return (
-    <section className="card info-block case-tags-card">
-      <div className="case-tags-head">
-        <h3>ป้ายเคส</h3>
-        {canEdit && list.length > 0 && (
+    <FoldCard id="tags" title="ป้ายเคส" hint={names.length ? names.join(' · ') : 'ยังไม่มี'} className="case-tags-card">
+      {canEdit && list.length > 0 && (
+        <div className="case-tags-head">
           <button type="button" className="btn sm" aria-expanded={editing} onClick={() => setEditing(!editing)}>
             {editing ? 'เสร็จแล้ว' : picked.length ? 'แก้ไขป้าย' : 'เลือกป้าย'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {!list.length ? (
         owner ? (
           <>
@@ -123,6 +125,6 @@ export function TicketTagsCard({ ticket }: { ticket: Ticket }) {
       ) : (
         <p className="tiny muted">ยังไม่ได้ติดป้าย ติดป้ายไว้ รายงานจะบอกได้ว่าปัญหาเรื่องไหนมากที่สุด</p>
       )}
-    </section>
+    </FoldCard>
   );
 }

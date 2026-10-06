@@ -477,10 +477,15 @@
   width: 15px;
   height: 15px;
 }
-.account-actions {
+/* The buttons keep to one row beside the account while there is room; on a phone they go under it and wrap.
+   Scoped to the results: the account switcher's menu has its own .account-actions (accounts.css), loaded later. */
+.account-results .account-actions {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: 8px;
+  max-width: 100%;
+  padding: 0;
 }
 .account-more {
   margin: 0;

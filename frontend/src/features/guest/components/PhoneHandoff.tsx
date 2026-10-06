@@ -8,7 +8,7 @@ import { requestHandoffQr } from '../api';
 /* คุยต่อบนมือถือ (backend guest/handoff.py): a QR code of this chat for the guest's phone. Scanned with the phone's
    camera, the same chat opens there without an account, so a photo taken on the phone goes straight into it. The code
    works once and for 10 minutes; asking again replaces it. Shown the moment the panel opens.
-   Markup: the LINE move's panel (pages/continue-line.css) plus phone-handoff-*. */
+   Markup: the LINE move's panel and its anchor (pages/continue-line.css) plus phone-handoff-*. */
 
 type Handoff = { url: string; qr: string; expires_at: string };
 
@@ -36,6 +36,8 @@ export function PhoneHandoffPanel({ slug, conversationId, onClose }: { slug: str
   };
 
   return (
+    // In the LINE panel's anchor, which takes no height: the panel lies over the top of the messages, not the page.
+    <div className="continue-line-anchor">
     <section className="continue-line phone-handoff" aria-label="คุยต่อบนมือถือ">
       <div className="continue-line-head">
         <p>
@@ -74,5 +76,6 @@ export function PhoneHandoffPanel({ slug, conversationId, onClose }: { slug: str
         </button>
       )}
     </section>
+    </div>
   );
 }

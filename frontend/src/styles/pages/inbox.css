@@ -1274,9 +1274,6 @@ input[type=file].attach-input {
 .composer-head {
   justify-content: flex-start;
 }
-.composer-head>[data-ai-controls] {
-  margin-left: auto;
-}
 .composer-mode label {
   position: relative;
 }
@@ -1525,9 +1522,6 @@ input[type=file].attach-input {
     white-space: normal;
   }
 }
-.composer-head:has(>[data-ai-controls]:empty) {
-  display: none;
-}
 .composer-bottom {
   flex-wrap: wrap;
   justify-content: flex-start;
@@ -1764,6 +1758,16 @@ input[type=file].attach-input {
   overflow-wrap: anywhere;
 }
 /* In the bar above the box: the customer's language, and the switch to send a reply as typed. */
+/* Who answers the customer (AiControls), at the strip's right end rather than on a row of its own above it. */
+.composer-to .composer-to-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.composer-to .composer-to-ai:empty {
+  display: none;
+}
 .composer-to .composer-translate {
   display: inline-flex;
   align-items: center;

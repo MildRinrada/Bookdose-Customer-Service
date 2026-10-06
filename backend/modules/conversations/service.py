@@ -333,6 +333,10 @@ def store_message(db, tenant_id, conversation_id, author_id, author_name, kind, 
     if kind=='customer':
         if not uploads and automation.take_rating(db,conversation_id,text):
             return mid
+        # ปิดเคส written by the customer, or the answer to the question it brings (automation/closing.py).
+        from backend.modules.automation import closing
+        if not uploads and closing.take_message(db,tenant_id,conversation_id,text):
+            return mid
         # A customer praising the team goes up on กำแพงคำชม for whoever wrote the reply it answers.
         from backend.modules.kudos import service as kudos
         kudos.on_customer_message(db,conversation_id,mid,text)

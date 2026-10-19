@@ -16,7 +16,6 @@ from backend.modules.invitations import model as invitations
 from backend.modules.conversations import model as conversations
 from backend.modules.knowledge import model as knowledge
 from backend.modules.legal import model as legal
-from backend.modules.org_links import model as org_links
 from backend.modules.organization import model as organization
 from backend.modules.pdpa import model as pdpa
 from backend.modules.platform import model as platform
@@ -28,7 +27,7 @@ from backend.modules.tickets import model as tickets
 from backend.modules.trash import model as trash
 
 CONTROL_TABLES = (auth.CONTROL_TABLES, platform.CONTROL_TABLES, organization.CONTROL_TABLES, channels.CONTROL_TABLES,
-                  customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, org_links.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
+                  customers.CONTROL_TABLES, customer_security.CONTROL_TABLES, guest.CONTROL_TABLES, audit.TABLE,
                   security.CONTROL_TABLES, support_access.CONTROL_TABLES, staff_security.CONTROL_TABLES,
                   invitations.CONTROL_TABLES, staff_prefs.CONTROL_TABLES, pdpa.CONTROL_TABLES, legal.CONTROL_TABLES)
 TENANT_TABLES = (organization.TENANT_TABLES, contacts.TENANT_TABLES, conversations.TENANT_TABLES, tickets.TENANT_TABLES,

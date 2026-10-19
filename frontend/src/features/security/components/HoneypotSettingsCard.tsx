@@ -31,7 +31,6 @@ export function HoneypotSettingsCard() {
       <div className="card-header">
         <div>
           <h2 id="security-honeypot-settings-title">ตั้งค่ากับดัก</h2>
-          <p>เส้นทางล่อ ช่องซ่อนในฟอร์ม และการบล็อก IP อัตโนมัติ · การเปลี่ยนแปลงถูกบันทึกเป็นเหตุการณ์ระดับวิกฤต</p>
         </div>
         <Icon name="settings" />
       </div>
@@ -114,22 +113,17 @@ function HoneypotForm({ value }: { value: HoneypotSettings }) {
           <input type="checkbox" className="switch" name="paths_enabled" defaultChecked={value.paths_enabled} />
           <span>
             <strong>เส้นทางล่อ</strong>
-            <span className="tiny muted">บันทึกเมื่อมีการเปิดเส้นทางที่ผู้ใช้จริงไม่มีวันเปิด เช่น /.env, /wp-admin, /api/admin</span>
           </span>
         </label>
         <label className="check">
           <input type="checkbox" className="switch" name="forms_enabled" defaultChecked={value.forms_enabled} />
           <span>
             <strong>ช่องซ่อนในฟอร์ม</strong>
-            <span className="tiny muted">ช่องที่คนมองไม่เห็นในหน้าเข้าสู่ระบบ สมัครสมาชิก ลืมรหัสผ่าน และเริ่มแชท บอทที่กรอกจะถูกปฏิเสธอย่างเงียบ ๆ</span>
           </span>
         </label>
       </div>
 
       <h3 className="security-subhead">เส้นทาง API ล่อที่กำหนดเอง</h3>
-      <p className="tiny muted">
-        ตอบเหมือนเส้นทางที่ไม่มีอยู่ทุกประการ ใช้ได้เฉพาะเส้นทางใต้ /api/ ที่ไม่ซ้อนกับเส้นทางจริงของระบบ สูงสุด {MAX_CUSTOM_DECOYS} รายการ
-      </p>
       {paths.length > 0 && (
         <ul className="trap-paths">
           {paths.map((row, index) => (
@@ -179,7 +173,6 @@ function HoneypotForm({ value }: { value: HoneypotSettings }) {
       </details>
 
       <h3 className="security-subhead">บล็อก IP อัตโนมัติ</h3>
-      <p className="tiny muted">ไม่บล็อก IP ของเครื่องนี้เอง (localhost) และ IP ของผู้ดูแลแพลตฟอร์มที่เข้าสู่ระบบอยู่</p>
       <div className="security-settings-grid trap-block-grid">
         <fieldset className="security-fieldset">
           <legend>เมื่อเปิดเส้นทางล่อซ้ำ</legend>
@@ -205,7 +198,6 @@ function HoneypotForm({ value }: { value: HoneypotSettings }) {
             บล็อกอัตโนมัติทันที
           </label>
           <DurationSelect name="block_token_duration" label="บล็อกนาน" value={value.block_on_honeytoken.duration} />
-          <p className="tiny muted">การทดสอบกับดักจากรายการไม่บล็อก และไม่ส่งอีเมล</p>
         </fieldset>
       </div>
       <div className="security-form-end">

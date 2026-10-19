@@ -68,7 +68,6 @@ export function CategoriesForm({ saved }: { saved: string }) {
         <div className="card-header">
           <div>
             <h2>หมวดเรื่องที่ลูกค้าเลือก</h2>
-            <p>ลูกค้าเลือกหมวดตอนเริ่มแชท แต่ละหมวดส่งเรื่องเข้าทีมที่กำหนดได้ · ไม่เลือกทีม = ทีมแรกขององค์กร</p>
           </div>
         </div>
         <div className="card-body">

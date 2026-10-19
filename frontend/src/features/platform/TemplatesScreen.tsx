@@ -40,7 +40,7 @@ export function TemplatesScreen() {
         <div>
           <h1>คลังบทความแม่แบบ</h1>
           <p>
-            เขียนคำตอบพื้นฐานไว้ครั้งเดียว องค์กรกดนำไปใช้แล้วแก้เป็นสำนวนของตัวเองได้ · เผยแพร่แล้ว {live} จาก {templates.length} แม่แบบ
+            เผยแพร่แล้ว {live} จาก {templates.length} แม่แบบ
           </p>
         </div>
         <div className="flex">
@@ -50,10 +50,6 @@ export function TemplatesScreen() {
           </button>
         </div>
       </div>
-      <p className="notice">
-        องค์กรเห็นเฉพาะแม่แบบที่เผยแพร่แล้ว · เมื่อองค์กรกดนำไปใช้ บทความจะกลายเป็นของเขาทันที แก้ไขหรือลบเองได้ และ
-        <strong>การแก้หรือลบแม่แบบภายหลังจะไม่ไปแตะบทความที่เขานำไปใช้แล้ว</strong>
-      </p>
       {templates.length ? (
         <div className="template-stack">
           {templates.map((template) => (
@@ -61,11 +57,7 @@ export function TemplatesScreen() {
           ))}
         </div>
       ) : (
-        <EmptyState
-          title="ยังไม่มีแม่แบบ"
-          description="เริ่มจากคำถามที่ทุกองค์กรต้องตอบอยู่แล้ว เช่น เวลาทำการ ช่องทางติดต่อ และระยะเวลาที่ใช้ตอบกลับ"
-          icon="book"
-        />
+        <EmptyState title="ยังไม่มีแม่แบบ" icon="book" />
       )}
     </>
   );
@@ -82,7 +74,7 @@ function TemplateCard({ template }: { template: ArticleTemplate }) {
         <div>
           <h2>{template.title}</h2>
           <p>
-            {template.category} · แก้ไขล่าสุด {date(template.updated_at, true)} โดย {template.author}
+            {template.category} แก้ไขล่าสุด {date(template.updated_at, true)} โดย {template.author}
           </p>
         </div>
         <span className={`badge${published ? '' : ' muted'}`}>{published ? 'เผยแพร่แล้ว' : 'ฉบับร่าง'}</span>
@@ -114,7 +106,7 @@ function TemplateCard({ template }: { template: ArticleTemplate }) {
             onClick={() =>
               confirm({
                 title: 'ลบแม่แบบ',
-                message: 'องค์กรจะไม่เห็นแม่แบบนี้อีก · บทความที่องค์กรนำไปใช้แล้วยังอยู่ครบและไม่ถูกแตะต้อง',
+                message: 'องค์กรจะไม่เห็นแม่แบบนี้อีก',
                 confirmLabel: 'ลบแม่แบบ',
                 tone: 'danger',
                 run: async () => {
@@ -148,12 +140,12 @@ function TemplateForm({ template }: { template?: ArticleTemplate }) {
           body: values.body ?? '',
         });
         closeModal();
-        toast(template ? 'บันทึกแม่แบบแล้ว' : 'เพิ่มแม่แบบแล้ว · กด เผยแพร่ให้องค์กรใช้ เมื่อพร้อม');
+        toast(template ? 'บันทึกแม่แบบแล้ว' : 'เพิ่มแม่แบบแล้ว กด เผยแพร่ให้องค์กรใช้ เมื่อพร้อม');
         await refresh(TEMPLATES_PATH);
       }}
     >
       <TextField label="หัวข้อ" name="title" max={200} defaultValue={template?.title} />
-      <TextField label="หมวด" name="category" max={80} defaultValue={template?.category} hint="เช่น ทั่วไป การใช้งาน การคืนสินค้า" />
+      <TextField label="หมวด" name="category" max={80} defaultValue={template?.category} />
       <div className="field">
         <label htmlFor="template-body">เนื้อหา</label>
         <textarea

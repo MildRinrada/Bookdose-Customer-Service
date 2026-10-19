@@ -24,7 +24,7 @@ import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf,
 import { AccountSwitcher } from '@/features/staff-account/AccountSwitcher';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
-import { PrivacyBanner, TermsBanner } from '@/features/legal/StaffLegal';
+import { StaffLegal } from '@/features/legal/StaffLegal';
 import { OrgSwitch } from './OrgSwitch';
 import { SessionGuard } from './SessionGuard';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarTips, SidebarToggle, useSidebar } from './chrome';
@@ -82,7 +82,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
   }, [platform]);
 
   useEffect(() => {
-    document.title = `${page?.label ?? 'Bookdose'} · Bookdose`;
+    document.title = `${page?.label ?? 'Bookdose'} - Bookdose`;
   }, [page]);
 
   // The pinned top bar's height (--topbar-h), so what sticks below it (the settings menu) starts under it; it grows
@@ -180,7 +180,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
       <>
         <div className="notice warning two-factor-gate-notice">
           <span className="grow">
-            ผู้ดูแลแพลตฟอร์มต้องเปิดการยืนยันตัวตน 2 ขั้น หรือเพิ่ม Passkey ก่อนใช้คอนโซลระบบกลาง เปิดได้ในส่วน &ldquo;ความปลอดภัย&rdquo; ด้านล่าง
+            ผู้ดูแลแพลตฟอร์มต้องเปิดการยืนยันตัวตน 2 ขั้น หรือเพิ่ม Passkey ก่อนใช้คอนโซลระบบกลาง
           </span>
           <button
             type="button"
@@ -201,7 +201,6 @@ export function StaffShell({ children }: { children: ReactNode }) {
     content = (
       <EmptyState
         title="เปิดการยืนยันตัวตน 2 ขั้นก่อนใช้คอนโซลระบบกลาง"
-        description="บัญชีผู้ดูแลแพลตฟอร์มเข้าถึงทุกองค์กรได้ จึงต้องมีรหัสยืนยันจากแอปในโทรศัพท์หรือ Passkey นอกจากรหัสผ่าน ตั้งเสร็จแล้วกลับมาใช้คอนโซลได้ทันที"
         icon="lock"
       >
         <Link className="btn primary" href="/account?tab=security">
@@ -216,7 +215,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
     content = (
       <>
         <div className="notice warning two-factor-gate-notice">
-          <span className="grow">{failed?.message} · เปิดได้ในส่วน &ldquo;ความปลอดภัย&rdquo; ด้านล่าง แล้วกลับไปทำงานต่อได้ทันที</span>
+          <span className="grow">{failed?.message}</span>
           <button type="button" className="btn sm" onClick={retry}>
             ตั้งเสร็จแล้ว กลับไปทำงาน
           </button>
@@ -237,7 +236,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
     );
   else if (!work && !platform && !isAccountPath(pathname))
     content = (
-      <EmptyState title="ไม่มีพื้นที่ทำงานที่ใช้งานอยู่" description="เลือกองค์กรอื่นจากเมนู หรือติดต่อผู้ดูแลองค์กรเพื่อเปิดใช้งานอีกครั้ง" icon="lock">
+      <EmptyState title="ไม่มีพื้นที่ทำงานที่ใช้งานอยู่" icon="lock">
         {user.platform_admin && (
           <Link className="btn primary" href="/platform/system">
             ไปที่คอนโซลระบบกลาง
@@ -313,16 +312,14 @@ export function StaffShell({ children }: { children: ReactNode }) {
       {work && !readOnly && !platform && <RecapPopup />}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
-        {/* ข้อตกลงการใช้บริการ not agreed to yet (an organization made for it, or a new version): its admin is asked. */}
-        {work?.role === 'admin' && !readOnly && !platform && <TermsBanner />}
-        {/* ประกาศความเป็นส่วนตัวสำหรับผู้ใช้งานระบบ: a member who has not acknowledged the one in force. Not the
-            platform's own admins: the notice is the platform's, telling its users. */}
-        {work && !readOnly && !platform && <PrivacyBanner />}
+        {/* ข้อตกลงการใช้บริการ (its admin agrees, the team hears past the grace) and ประกาศความเป็นส่วนตัวสำหรับ
+            ผู้ใช้งานระบบ (every member). Not the platform's own admins: the documents are the platform's, to its users. */}
+        {work && !readOnly && !platform && <StaffLegal admin={work.role === 'admin'} organization={work.tenant.name} />}
         {work?.role === 'admin' && (work.support_pending ?? 0) > 0 && (
           <Link className="support-banner" href="/settings?tab=teams" role="status">
             <Icon name="shield" />
             <span>
-              ทีมผู้ดูแลแพลตฟอร์มขอเข้าช่วยดูแล {work.tenant.name} {work.support_pending} คำขอ · ยังไม่มีใครเข้าได้จนกว่าคุณจะอนุมัติ
+              ทีมผู้ดูแลแพลตฟอร์มขอเข้าช่วยดูแล {work.tenant.name} {work.support_pending} คำขอ
             </span>
             <Icon name="arrow" />
           </Link>
@@ -331,7 +328,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           <div className="support-view-banner" role="status">
             <Icon name="shield" />
             <span>
-              คุณกำลังดู {work?.tenant.name} ด้วยสิทธิ์เข้าช่วยเหลือ แบบอ่านอย่างเดียว · ผู้ดูแลแพลตฟอร์มไม่ตอบลูกค้า ไม่รับเคส และไม่แก้ไขข้อมูลขององค์กร
+              คุณกำลังดู {work?.tenant.name} ด้วยสิทธิ์เข้าช่วยเหลือ แบบอ่านอย่างเดียว
             </span>
             <Link className="btn sm" href="/platform/system">
               กลับคอนโซลระบบกลาง
@@ -406,7 +403,7 @@ function PlatformBanner() {
   return (
     <div className="platform-banner" role="status">
       <Icon name="shield" />
-      <span>โหมดผู้ดูแลแพลตฟอร์ม · การเปลี่ยนแปลงมีผลกับทุกองค์กร</span>
+      <span>โหมดผู้ดูแลแพลตฟอร์ม</span>
       <button type="button" className="platform-banner-close" aria-label="ซ่อนแถบโหมดผู้ดูแลแพลตฟอร์ม" title="ซ่อนจนกว่าจะปิดเบราว์เซอร์" onClick={hideBanner}>
         <Icon name="close" />
       </button>

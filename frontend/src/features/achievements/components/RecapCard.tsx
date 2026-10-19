@@ -23,7 +23,7 @@ export function RecapCard({ recap }: { recap: Recap }) {
       <div className="board-empty recap-empty">
         <Icon name="calendar" />
         <strong>{monthHeading(recap)}</strong>
-        <span>เดือนนี้ยังไม่มีเคสที่ปิดหรือข้อความที่ตอบ เมื่อเริ่มดูแลลูกค้า สรุปจะขึ้นที่นี่</span>
+        <span>เดือนนี้ยังไม่มีเคสที่ปิดหรือข้อความที่ตอบ</span>
       </div>
     );
   const quote = recap.praise.texts[0];
@@ -94,7 +94,6 @@ export function RecapCard({ recap }: { recap: Recap }) {
           <Icon name="download" />
           {saving ? 'กำลังสร้างรูป…' : 'บันทึกเป็นรูปภาพ'}
         </button>
-        <span className="tiny muted">เห็นเฉพาะคุณ ระบบไม่ส่งให้ใคร</span>
       </div>
     </div>
   );

@@ -46,7 +46,6 @@ export function StaffAccountScreen({ tab }: { tab?: string }) {
       <div className="page-heading">
         <div>
           <h1>ตั้งค่าบัญชี</h1>
-          <p>บัญชีเดียวใช้กับทุกองค์กรที่คุณเป็นทีมงาน ข้อมูลที่ทีมเห็น ความปลอดภัยของบัญชี และองค์กรของคุณ</p>
         </div>
       </div>
       <div className="settings-frame account-frame">

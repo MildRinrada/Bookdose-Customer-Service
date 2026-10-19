@@ -191,7 +191,7 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
       <div className="card-header">
         <div>
           <h2>วิเคราะห์แยกตามมุมที่เลือก</h2>
-          <p>เคสที่เปิดในช่วงนี้ {tickets.length} เคส · เลือกว่าจะแยกตามอะไร แล้วกดหัวคอลัมน์เพื่อเรียงลำดับ</p>
+          <p>เคสที่เปิดในช่วงนี้ {tickets.length} เคส</p>
         </div>
         <button type="button" className="btn subtle sm" onClick={download} disabled={!rows.length}>
           <Icon name="download" />
@@ -264,10 +264,6 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
           </tfoot>
         )}
       </table>
-      <p className="card-note tiny muted">
-        ตัวเลขสีจางมาจากเคสน้อยกว่า {FEW} เคส ยังใช้ตัดสินอะไรไม่ได้ · ตอบครั้งแรกและแก้ไขเสร็จเป็นค่ากลาง ไม่ใช่ค่าเฉลี่ย · วันและช่วงเวลานับตามนาฬิกาของเครื่องคุณ
-        {dimension === 'tag' && ' · เคสที่ติดหลายป้ายนับในทุกป้าย สัดส่วนรวมกันจึงเกิน 100% ได้'}
-      </p>
     </section>
   );
 }
@@ -286,7 +282,7 @@ export function SpeedSatisfactionCard({ tickets }: { tickets: TicketRow[] }) {
             <Icon name="star" />
             ความเร็วกับความพอใจ
           </h2>
-          <p>เคสที่เปิดในช่วงนี้และลูกค้าให้คะแนนแล้ว {s.total} เคส · คะแนนเฉลี่ยแยกตามว่าลูกค้ารอนานแค่ไหน</p>
+          <p>เคสที่เปิดในช่วงนี้และลูกค้าให้คะแนนแล้ว {s.total} เคส</p>
         </div>
       </div>
       <div className="card-body">
@@ -303,7 +299,7 @@ export function SpeedSatisfactionCard({ tickets }: { tickets: TicketRow[] }) {
                 <strong>{s.compare.slow.label}</strong> ให้ <strong>{s.compare.slow.average!.toFixed(1)}</strong>
               </p>
             ) : (
-              <p className="speed-finding muted">ยังสรุปไม่ได้ ต้องมีคำตอบอย่างน้อย {FEW} คำตอบในช่วงเวลาอย่างน้อย 2 ช่วง ลองขยายช่วงวันที่</p>
+              <p className="speed-finding muted">ยังสรุปไม่ได้</p>
             )}
             <div className="speed-rows">
               {s.rows.map((r) => (
@@ -318,7 +314,7 @@ export function SpeedSatisfactionCard({ tickets }: { tickets: TicketRow[] }) {
                         <strong>{r.average.toFixed(1)} ★</strong>
                         <small className="muted">
                           {' '}
-                          · พอใจ {r.satisfied!.toFixed(0)}% · {r.count} คำตอบ
+                          พอใจ {r.satisfied!.toFixed(0)}%, {r.count} คำตอบ
                         </small>
                       </>
                     )}
@@ -328,12 +324,8 @@ export function SpeedSatisfactionCard({ tickets }: { tickets: TicketRow[] }) {
             </div>
           </>
         ) : (
-          <p className="empty-mini">ยังไม่มีเคสในช่วงนี้ที่ลูกค้าให้คะแนน · ระบบส่งแบบประเมินเมื่อปิดเคส</p>
+          <p className="empty-mini">ยังไม่มีเคสในช่วงนี้ที่ลูกค้าให้คะแนน</p>
         )}
-        <p className="tiny muted mt">
-          ตัวเลขนี้บอกว่าความเร็วกับคะแนนไปด้วยกันแค่ไหน แต่ไม่ได้พิสูจน์ว่าความเร็วเป็นสาเหตุ เพราะเรื่องยากมักทั้งใช้เวลานานและได้คะแนนต่ำ ·
-          ช่วงที่มีคำตอบน้อยกว่า {FEW} แสดงเป็นสีจาง
-        </p>
       </div>
     </section>
   );

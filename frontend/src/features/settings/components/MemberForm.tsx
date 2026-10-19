@@ -53,22 +53,15 @@ export function MemberForm({ member }: { member?: Member }) {
     >
       {member ? (
         <p>
-          {member.name} · {member.email}
+          {member.name}, {member.email}
         </p>
       ) : inviting ? (
-        <>
-          <div className="notice">
-            ระบบจะส่งลิงก์ไปที่อีเมลนี้ เจ้าตัวเป็นผู้ตั้งชื่อและรหัสผ่านของตัวเอง คุณไม่ต้องรู้รหัสผ่านของใคร · ลิงก์มีอายุ 7 วัน
-          </div>
-          <div className="stack mb">
-            <TextField id="f-email" label="อีเมลของเพื่อนร่วมงาน" name="email" type="email" max={254} autoFocus />
-          </div>
-        </>
+        <div className="stack mb">
+          <TextField id="f-email" label="อีเมลของเพื่อนร่วมงาน" name="email" type="email" max={254} autoFocus />
+        </div>
       ) : (
         <>
-          <div className="notice warning">
-            ยังส่งคำเชิญทางอีเมลไม่ได้ เพราะแพลตฟอร์มยังไม่ได้ตั้งค่าอีเมลของระบบ ระหว่างนี้ให้ตั้งรหัสผ่านเริ่มต้นแล้วแจ้งเจ้าตัวโดยตรง และบอกให้เปลี่ยนรหัสผ่านทันทีที่เข้าใช้งาน
-          </div>
+          <div className="notice warning">ยังส่งคำเชิญทางอีเมลไม่ได้ เพราะแพลตฟอร์มยังไม่ได้ตั้งค่าอีเมลของระบบ</div>
           <div className="stack mb">
             <TextField id="f-name" label="ชื่อสมาชิก" name="name" max={100} />
             <TextField id="f-email" label="อีเมล" name="email" type="email" max={254} />

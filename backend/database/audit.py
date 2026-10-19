@@ -24,12 +24,12 @@ def for_entity(db, entity, limit=40):
 def with_names(control_db, events, tenant_db=None, tenant_id=None):
     """Add readable actor and entity names to audit rows (user, organization, case, contact, article)."""
     user_rows = rows(control_db,'SELECT u.id,u.name,u.email FROM users u JOIN memberships m ON m.user_id=u.id WHERE m.tenant_id=?',(tenant_id,)) if tenant_id else rows(control_db,'SELECT id,name,email FROM users')
-    users = {u['id']:u['name']+' · '+u['email'] for u in user_rows}
+    users = {u['id']:u['name']+' ('+u['email']+')' for u in user_rows}
     org_rows = rows(control_db,'SELECT id,name FROM tenants WHERE id=?',(tenant_id,)) if tenant_id else rows(control_db,'SELECT id,name FROM tenants')
     entities = {t['id']:t['name'] for t in org_rows}
     entities.update(users)
     if tenant_db:
-        entities.update({t['id']:'BD-'+str(t['number'])+' · '+t['subject'] for t in rows(tenant_db,'SELECT id,number,subject FROM tickets')})
+        entities.update({t['id']:'BD-'+str(t['number'])+' '+t['subject'] for t in rows(tenant_db,'SELECT id,number,subject FROM tickets')})
         entities.update({c['id']:c['name'] for c in rows(tenant_db,'SELECT id,name FROM contacts')})
         entities.update({a['id']:a['title'] for a in rows(tenant_db,'SELECT id,title FROM knowledge_articles')})
         entities.update({c['id']:c['subject'] for c in rows(tenant_db,'SELECT id,subject FROM conversations')})

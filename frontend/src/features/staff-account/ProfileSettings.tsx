@@ -29,7 +29,6 @@ export function ProfileSettings() {
         <div className="card-header">
           <div>
             <h2>ข้อมูลส่วนตัว</h2>
-            <p>รูปและชื่อที่ทีมงานและลูกค้าเห็นในทุกองค์กรที่คุณทำงานด้วย</p>
           </div>
         </div>
         <Form
@@ -54,7 +53,6 @@ export function ProfileSettings() {
                 </span>
               )}
             </div>
-            <p className="tiny muted">เปลี่ยนอีเมลไม่ได้ หากต้องใช้อีเมลใหม่ ให้ผู้ดูแลองค์กรเชิญอีเมลนั้นเข้าทีม</p>
           </div>
           <TextField label="ชื่อที่แสดง" name="name" defaultValue={user.name} max={100} personName />
           <button className="btn primary" type="submit">
@@ -69,7 +67,6 @@ export function ProfileSettings() {
         <div className="card-header">
           <div>
             <h2>ออกจากระบบ</h2>
-            <p>ออกจากบัญชีนี้บนอุปกรณ์ที่ใช้อยู่ อุปกรณ์อื่นดูและออกจากระบบได้ที่หมวดความปลอดภัย</p>
           </div>
         </div>
         <div className="card-body">
@@ -102,7 +99,6 @@ function ThanksPrefsCard() {
       <div className="card-header">
         <div>
           <h2>การ์ดขอบคุณหลังปิดเคส</h2>
-          <p>ในองค์กรที่เปิดการ์ดนี้ ลูกค้าที่แชทบนเว็บจะเห็นการ์ดจากคุณเมื่อปิดเคสที่คุณดูแล</p>
         </div>
       </div>
       <Form
@@ -128,9 +124,7 @@ function ThanksPrefsCard() {
             <input type="checkbox" className="switch" name="thanks_photo" defaultChecked={prefs.thanks.photo} />
             <span className="check-text">
               <strong>ให้ลูกค้าเห็นรูปของฉันในการ์ด</strong>
-              <small>
-                {hasPhoto ? 'ถ้าไม่เปิด การ์ดแสดงตัวอักษรแรกของชื่อแทน ปิดเมื่อไรรูปก็หายจากการ์ดที่ส่งไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน การ์ดจึงแสดงตัวอักษรแรกของชื่อ'}
-              </small>
+              {!hasPhoto && <small>ยังไม่ได้ตั้งรูปโปรไฟล์</small>}
             </span>
           </label>
         </div>
@@ -141,7 +135,6 @@ function ThanksPrefsCard() {
           rows={2}
           required={false}
           defaultValue={prefs.thanks.message}
-          hint="เว้นว่างไว้เพื่อใช้ข้อความขององค์กร"
         />
         <div className="reply-preview" aria-live="polite">
           <span className="tiny muted">ตัวอย่างที่ลูกค้าเห็น</span>
@@ -179,7 +172,6 @@ function CustomerFacingCard() {
       <div className="card-header">
         <div>
           <h2>สิ่งที่ลูกค้าเห็นเมื่อคุณตอบ</h2>
-          <p>ชื่อบนข้อความตอบกลับ และลายเซ็นท้ายข้อความ ใช้กับทุกช่องทาง (หน้าเว็บ LINE อีเมล Facebook)</p>
         </div>
       </div>
       <Form
@@ -210,16 +202,13 @@ function CustomerFacingCard() {
           required={false}
           defaultValue={prefs.alias}
           placeholder={user.name}
-          hint="เว้นว่างไว้เพื่อใช้ชื่อจริง ใส่ชื่อเล่นหรือชื่อกลางได้ เช่น “ทีมบริการลูกค้า” เพื่อความเป็นส่วนตัว"
         />
         <div className="switch-group">
           <label className="check">
             <input type="checkbox" className="switch" name="chat_photo" defaultChecked={prefs.chat_photo} />
             <span className="check-text">
               <strong>ให้ลูกค้าเห็นรูปของฉันข้างข้อความตอบกลับในแชทบนเว็บ</strong>
-              <small>
-                {hasPhoto ? 'ถ้าปิด ลูกค้าเห็นตัวอักษรแรกของชื่อแทน และรูปหายจากข้อความที่ตอบไปแล้วด้วย' : 'ยังไม่ได้ตั้งรูปโปรไฟล์ด้านบน ลูกค้าจึงเห็นตัวอักษรแรกของชื่อ'}
-              </small>
+              {!hasPhoto && <small>ยังไม่ได้ตั้งรูปโปรไฟล์</small>}
             </span>
           </label>
           <label className="check">
@@ -236,7 +225,6 @@ function CustomerFacingCard() {
           rows={3}
           required={false}
           defaultValue={prefs.signature.text}
-          hint="เช่น ชื่อ ตำแหน่ง หรือข้อความบริการมาตรฐาน บันทึกภายในไม่มีลายเซ็น"
         />
         <div className="reply-preview" aria-live="polite">
           <span className="tiny muted">ตัวอย่างที่ลูกค้าเห็น</span>

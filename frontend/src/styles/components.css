@@ -1061,6 +1061,21 @@ input[type=file]::file-selector-button {
 .password-control .field-error {
   width: 100%;
 }
+/* How long a new password is so far (ui/fields TextField), green once it is long enough. */
+.password-length {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.password-length.enough {
+  color: var(--green);
+}
+.password-length .icon {
+  width: 14px;
+  height: 14px;
+}
 .modal-header .icon-btn {
   min-width: 44px;
   min-height: 44px;

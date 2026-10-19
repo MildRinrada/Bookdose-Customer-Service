@@ -29,7 +29,6 @@ export function SupportBannerCard() {
       <div className="card-header">
         <div>
           <h2>แบนเนอร์หน้าช่วยเหลือ</h2>
-          <p>ลูกค้าเห็นแบนเนอร์นี้บนสุดของหน้าแชท คำถามที่พบบ่อย และหน้าติดตามเคสขององค์กร จะได้รู้ทันทีว่ากำลังติดต่อใคร</p>
         </div>
       </div>
       <Form
@@ -56,7 +55,7 @@ export function SupportBannerCard() {
             </div>
           </OrgBannerView>
         </div>
-        <p className="tiny muted banner-preview-note">ตัวอย่างที่ลูกค้าจะเห็น · โลโก้และชื่อแก้ได้ที่ &ldquo;แก้ไขชื่อและโลโก้&rdquo; ด้านบน</p>
+        <p className="tiny muted banner-preview-note">ตัวอย่างที่ลูกค้าจะเห็น</p>
 
         <div className="field">
           <label htmlFor="banner-tagline">ข้อความใต้ชื่อ</label>
@@ -70,7 +69,7 @@ export function SupportBannerCard() {
             aria-describedby="banner-tagline-help"
           />
           <p className="tiny muted" id="banner-tagline-help">
-            {tagline.length}/{BANNER_TAGLINE_MAX} ตัวอักษร · เว้นว่างได้ แบนเนอร์จะแสดงเฉพาะโลโก้และชื่อ
+            {tagline.length}/{BANNER_TAGLINE_MAX} ตัวอักษร
           </p>
         </div>
 
@@ -87,7 +86,6 @@ export function SupportBannerCard() {
               </label>
             ))}
           </div>
-          <p className="tiny muted">ทุกสีอ่านตัวหนังสือได้ชัด และเปลี่ยนเป็นโทนเข้มให้เองเมื่อลูกค้าใช้ธีมมืด</p>
         </fieldset>
 
         <div className="flex wrap mt">

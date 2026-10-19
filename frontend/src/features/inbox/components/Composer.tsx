@@ -90,7 +90,7 @@ function TeamComposer(props: ComposerProps) {
     return (
       <p className="notice read-only-composer" role="note">
         <Icon name="lock" />
-        ดูอย่างเดียว · ผู้ดูแลแพลตฟอร์มไม่ตอบลูกค้าและไม่บันทึกในบทสนทนาขององค์กร
+        ดูอย่างเดียว
       </p>
     );
   return <StaffComposer {...props} />;
@@ -140,19 +140,6 @@ function AttachButton({ id, inputRef, onChange }: { id: string; inputRef: RefObj
         <Icon name="paperclip" />
         <span>แนบไฟล์</span>
       </label>
-    </>
-  );
-}
-
-function ComposerTip({ channel, manual }: { channel: string; manual: boolean }) {
-  return (
-    <>
-      <div className="composer-tip">
-        {channel === 'line'
-          ? 'LINE: รูปขนาดเล็กแสดงในแชต ไฟล์อื่นเป็นลิงก์ 7 วัน · ต้องตั้งโดเมน HTTPS'
-          : 'ลากรูป วิดีโอ หรือเอกสารมาวางได้ · สูงสุด 3 ไฟล์ รวม 5 MB'}
-      </div>
-      {manual && <p className="tiny muted mt">เคสนี้บันทึกโดยเจ้าหน้าที่ ลูกค้าไม่เห็นเคสนี้ในแชทบนหน้าลูกค้า</p>}
     </>
   );
 }
@@ -562,7 +549,6 @@ function StaffComposer({
         </div>
         <SendButton manual={manual} />
       </div>
-      <ComposerTip channel={channel} manual={manual} />
     </Form>
   );
 }
@@ -572,7 +558,6 @@ function StaffComposer({
 function QuickReplies({ team, snippets, onPick }: { team: TeamSnippet[]; snippets: Snippet[]; onPick: (text: string) => void }) {
   return (
     <div className="quick-replies">
-      <p className="tiny muted quick-replies-note">ข้อความจะแทรกในช่องร่าง ตรวจแก้ไขได้ก่อนส่ง</p>
       {team.length > 0 && <p className="quick-replies-head">ของทีม</p>}
       {team.map((snippet) => (
         <button key={snippet.id ?? snippet.shortcut} type="button" className="quick-reply" onClick={() => onPick(snippet.text)}>
@@ -594,7 +579,7 @@ function QuickReplies({ team, snippets, onPick }: { team: TeamSnippet[]; snippet
       ))}
       {!snippets.length && (
         <p className="tiny muted">
-          เพิ่มคำตอบด่วนของคุณเองได้ที่ <Link href="/account?tab=replies">ตั้งค่าบัญชี → คำตอบด่วนและคีย์ลัด</Link> แล้วพิมพ์ / ตามด้วยคีย์ลัดในช่องนี้
+          <Link href="/account?tab=replies">ตั้งค่าบัญชี → คำตอบด่วนและคีย์ลัด</Link>
         </p>
       )}
     </div>
@@ -677,7 +662,6 @@ function PortalComposer({ conversationId: id, channel = 'web', publicSlug, onSen
         </div>
         <SendButton manual={false} />
       </div>
-      <ComposerTip channel={channel} manual={false} />
     </Form>
   );
 }

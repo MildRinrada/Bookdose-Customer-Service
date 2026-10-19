@@ -178,7 +178,7 @@ def send_notices(tenant_id):
                 if row['event'] in FORMAL_EVENTS:
                     _mail(cfg,secret,user['email'],row['subject'],_formal_body(user['name'],row['detail'],link))
                 else:
-                    _mail(cfg,secret,user['email'],f"{row['subject']} · {organization}",
+                    _mail(cfg,secret,user['email'],f"{row['subject']} ({organization})",
                           _body(user['name'],organization,row['detail'] or row['subject'],link,row['event']))
             except ChannelError:
                 db.execute('UPDATE staff_notices SET attempts=attempts+1 WHERE id=?',(row['id'],))

@@ -243,7 +243,7 @@ def message_list(db, conversation_id, public=False):
 # would not change theirs, and deleting it would only hide from the team what the customer can still read - the
 # thread would stop matching what happened. So it is refused and says why.
 CANNOT_RECALL = ('ข้อความที่ส่งออกทาง {channel} เรียกคืนไม่ได้ ลูกค้าได้รับฉบับเดิมไปแล้ว '
-                 'แก้ไขหรือลบที่นี่จะทำให้สิ่งที่ทีมเห็นไม่ตรงกับสิ่งที่ลูกค้าเห็น · ส่งข้อความใหม่เพื่อแก้ความเข้าใจแทน')
+                 'แก้ไขหรือลบที่นี่จะทำให้สิ่งที่ทีมเห็นไม่ตรงกับสิ่งที่ลูกค้าเห็น ส่งข้อความใหม่เพื่อแก้ความเข้าใจแทน')
 CHANNEL_NAMES = {'line':'LINE','email':'อีเมล','facebook':'Facebook','instagram':'Instagram'}
 
 
@@ -296,7 +296,7 @@ def edit_message(db, ctx, conversation_id, message_id, body):
 # How long the customer has to take back or correct what they wrote: long enough to catch a typo or a screenshot sent
 # to the wrong chat, short enough that the thread the team has been working from does not change under them later.
 OWN_MINUTES = 15
-TOO_LATE = f'ยกเลิกหรือแก้ไขข้อความได้ภายใน {OWN_MINUTES} นาทีหลังส่ง · หลังจากนั้นพิมพ์ข้อความใหม่ชี้แจงได้เลย'
+TOO_LATE = f'ยกเลิกหรือแก้ไขข้อความได้ภายใน {OWN_MINUTES} นาทีหลังส่ง หลังจากนั้นพิมพ์ข้อความใหม่ชี้แจงได้เลย'
 
 
 def _own_customer_message(db, conv, message_id):

@@ -40,11 +40,11 @@ function ContactForm({ org, mailReady }: { org: Org; mailReady: boolean }) {
   const refresh = useInvalidate();
   const draft = letter(org);
   const emails = org.admins.map((a) => a.email);
-  if (!emails.length) return <p className="notice warning">องค์กรนี้ไม่มีผู้ดูแลที่ติดต่อได้ ระงับได้เลย หรือเพิ่มผู้ดูแลจากรายชื่อองค์กร</p>;
+  if (!emails.length) return <p className="notice warning">องค์กรนี้ไม่มีผู้ดูแลที่ติดต่อได้</p>;
   if (!mailReady)
     return (
       <div className="dormant-contact">
-        <p className="notice warning">ยังไม่ได้ตั้งค่าอีเมลของระบบ จึงส่งจากที่นี่ไม่ได้ เปิดอีเมลของคุณเพื่อส่งเองได้</p>
+        <p className="notice warning">ยังไม่ได้ตั้งค่าอีเมลของระบบ</p>
         <p>
           ผู้ดูแล: <strong>{emails.join(', ')}</strong>
         </p>
@@ -69,7 +69,7 @@ function ContactForm({ org, mailReady }: { org: Org; mailReady: boolean }) {
       }}
     >
       <p>
-        ส่งจากอีเมลของระบบถึงผู้ดูแลองค์กร: <strong>{emails.join(', ')}</strong>
+        ถึง: <strong>{emails.join(', ')}</strong>
       </p>
       <label className="field">
         <span>หัวเรื่อง</span>
@@ -90,11 +90,7 @@ export function DormantList({ page }: { page: DormantPage | undefined }) {
   if (!page.organizations.length)
     return (
       <section className="card">
-        <EmptyState
-          title="ไม่มีองค์กรที่หลับ"
-          description={`ทุกองค์กรที่เปิดใช้มีทีมงานเข้าใช้ หรือมีเคสใหม่ ภายใน ${page.days} วันที่ผ่านมา`}
-          icon="checkCircle"
-        />
+        <EmptyState title="ไม่มีองค์กรที่หลับ" icon="checkCircle" />
       </section>
     );
   return (
@@ -102,9 +98,7 @@ export function DormantList({ page }: { page: DormantPage | undefined }) {
       <div className="card-header">
         <div>
           <h2>องค์กรที่หลับ</h2>
-          <p>
-            ไม่มีทีมงานเข้าใช้และไม่มีเคสใหม่ {page.days} วันขึ้นไป · ยังกินพื้นที่ และบัญชีที่ไม่มีใครดูแลเป็นช่องโหว่ ควรถามเจ้าของก่อน แล้วระงับถ้าไม่ใช้แล้ว
-          </p>
+          <p>ไม่มีทีมงานเข้าใช้และไม่มีเคสใหม่ {page.days} วันขึ้นไป</p>
         </div>
         <Icon name="clock" />
       </div>
@@ -143,7 +137,7 @@ export function DormantList({ page }: { page: DormantPage | undefined }) {
               {customersWriting && (
                 <p className="dormant-warn">
                   <Icon name="chat" />
-                  ลูกค้ายังทักเข้ามา ล่าสุด {relative(org.last_customer_message)} แต่ไม่มีทีมงานเข้ามาดู ควรติดต่อเจ้าของก่อนระงับ
+                  ลูกค้ายังทักเข้ามา ล่าสุด {relative(org.last_customer_message)}
                 </p>
               )}
               <p className="dormant-admins">
@@ -151,7 +145,7 @@ export function DormantList({ page }: { page: DormantPage | undefined }) {
                 {org.contacted && (
                   <span className="dormant-contacted">
                     {' '}
-                    · ติดต่อแล้วเมื่อ {date(org.contacted.at, true)} โดย {org.contacted.by}
+                    ติดต่อแล้วเมื่อ {date(org.contacted.at, true)} โดย {org.contacted.by}
                   </span>
                 )}
               </p>

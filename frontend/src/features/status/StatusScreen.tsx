@@ -88,20 +88,14 @@ export function StatusScreen() {
                   ? 'ระบบทำงานปกติ'
                   : `ระบบ${label(overall)}`}
           </h1>
-          <p>
-            {unreachable
-              ? 'หน้านี้ติดต่อเซิร์ฟเวอร์ไม่ได้ แปลว่าปัญหาอยู่ที่ระบบ ไม่ใช่ที่เครื่องหรือองค์กรของคุณ · ทีมงานเห็นปัญหานี้แล้ว ไม่ต้องแจ้งซ้ำ'
-              : overall === 'ok'
-                ? 'ถ้าองค์กรของคุณใช้งานไม่ได้ทั้งที่หน้านี้ขึ้นว่าปกติ ปัญหามักอยู่ที่การตั้งค่าขององค์กรเองหรือที่อินเทอร์เน็ตของคุณ'
-                : 'ทีมงานเห็นปัญหาแล้ว หน้านี้อัปเดตอัตโนมัติทุก 30 วินาที'}
-          </p>
+          {unreachable ? <p>หน้านี้ติดต่อเซิร์ฟเวอร์ไม่ได้</p> : overall !== 'ok' && <p>ทีมงานเห็นปัญหาแล้ว</p>}
         </div>
       </section>
 
       {status?.notice && (
         <section className={`status-notice state-${status.notice.state}`}>
           <strong>
-            {label(status.notice.state)} · อัปเดตเมื่อ {date(status.notice.updated_at, true)}
+            {label(status.notice.state)} อัปเดตเมื่อ {date(status.notice.updated_at, true)}
           </strong>
           <p>{status.notice.text}</p>
         </section>
@@ -121,15 +115,6 @@ export function StatusScreen() {
           ))}
         </ul>
       )}
-
-      <section className="status-help">
-        <h2>หน้านี้ขึ้นว่าปกติ แต่คุณยังใช้งานไม่ได้</h2>
-        <ol>
-          <li>ลองรีเฟรชหน้าด้วย Ctrl+F5 หนึ่งครั้ง แล้วลองเปิดด้วยเบราว์เซอร์อื่นหรืออินเทอร์เน็ตอื่น</li>
-          <li>ถ้าเป็นเรื่อง LINE, อีเมล, Facebook หรือ Instagram ให้ดูที่ ตั้งค่าองค์กร → LINE / อีเมล / Facebook / Instagram ว่าช่องทางขององค์กรคุณยังเชื่อมอยู่</li>
-          <li>ถ้ายังไม่หาย แจ้งได้จากปุ่ม ? บนแถบบนของระบบ แล้วเลือก รายงานปัญหา เรื่องจะถึงทีมที่ดูแลระบบโดยตรง</li>
-        </ol>
-      </section>
 
       {status && <p className="status-checked muted">ตรวจสอบล่าสุด {date(status.checked_at, true)}</p>}
     </main>

@@ -67,7 +67,6 @@ export function HandoverCard({ interval, readOnly }: { interval: number | false;
       <div className="card-header">
         <div>
           <h2 id="handover-title"><Icon name="users" className="card-title-icon" />ส่งต่อกะ</h2>
-          <p>ทุกคนในองค์กรเห็น · เก็บ {board?.handover_days ?? 3} วัน</p>
         </div>
       </div>
       <div className="card-body">
@@ -116,7 +115,6 @@ export function HandoverCard({ interval, readOnly }: { interval: number | false;
           <div className="board-empty">
             <Icon name="users" />
             <strong>ยังไม่มีเรื่องฝากส่งต่อ</strong>
-            <span>งานที่ค้าง เคสที่ต้องตามต่อ หรือเรื่องที่กะถัดไปควรรู้</span>
           </div>
         )}
       </div>
@@ -159,7 +157,7 @@ export function TodoCard({ interval, now }: { interval: number | false; now: num
       <div className="card-header">
         <div>
           <h2 id="todo-title"><Icon name="checkCircle" className="card-title-icon" />สิ่งที่ต้องทำของฉัน</h2>
-          <p>{open ? `เหลือ ${open} งาน · เห็นเฉพาะคุณ` : 'เห็นเฉพาะคุณ'}</p>
+          {open > 0 && <p>เหลือ {open} งาน</p>}
         </div>
       </div>
       <div className="card-body">
@@ -194,7 +192,6 @@ export function TodoCard({ interval, now }: { interval: number | false; now: num
           <div className="board-empty">
             <Icon name="checkCircle" />
             <strong>ยังไม่มีงานที่จดไว้</strong>
-            <span>ใส่เวลาได้ ระบบจะเตือนด้วยสีเมื่อใกล้ถึงเวลา</span>
           </div>
         )}
       </div>

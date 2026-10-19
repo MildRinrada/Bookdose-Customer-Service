@@ -115,8 +115,8 @@ function TagManager({ data }: { data: CaseTagsOverview }) {
     confirm({
       title: `ลบป้าย “${tag.name}”`,
       message: used
-        ? `ป้ายนี้ติดอยู่ ${used} เคส จะหายจากเคสเหล่านั้นและจากกฎรับเรื่องที่ใช้ป้ายนี้ รายงานจะนับป้ายนี้ไม่ได้อีก ถ้าแค่อยากเปลี่ยนคำ ให้แก้ชื่อแทน`
-        : 'ป้ายนี้ยังไม่ได้ติดเคสใด ลบแล้วทีมจะเลือกป้ายนี้ไม่ได้อีก',
+        ? `ป้ายนี้ติดอยู่ ${used} เคส และจะหายจากเคสเหล่านั้น`
+        : 'ป้ายนี้ยังไม่ได้ติดเคสใด',
       confirmLabel: 'ลบป้าย',
       tone: 'danger',
       run: () => persist(tags.filter((t) => t.id !== tag.id), `ลบป้าย “${tag.name}” แล้ว`),
@@ -149,11 +149,7 @@ function TagManager({ data }: { data: CaseTagsOverview }) {
             เพิ่มป้าย
           </button>
         </div>
-        {tags.length >= view.max ? (
-          <span className="tiny tag-manage-full">ครบ {view.max} ป้ายแล้ว ลบป้ายที่ไม่ได้ใช้ก่อน จึงจะเพิ่มป้ายใหม่ได้</span>
-        ) : (
-          <span className="tiny muted">ทีมเลือกติดป้ายให้เคสจากรายการนี้ รายงานจึงบอกได้ว่าปัญหาเรื่องไหนมากที่สุด · ลูกค้าไม่เห็นป้าย</span>
-        )}
+        {tags.length >= view.max && <span className="tiny tag-manage-full">ครบ {view.max} ป้ายแล้ว</span>}
       </form>
 
       <div className="tag-manage-head">
@@ -169,7 +165,7 @@ function TagManager({ data }: { data: CaseTagsOverview }) {
         </label>
       )}
       {words && !shown.length ? (
-        <p className="empty-mini">ไม่พบป้ายที่ชื่อมีคำว่า “{q.trim()}” สร้างเป็นป้ายใหม่ได้ในช่องด้านบน</p>
+        <p className="empty-mini">ไม่พบป้ายที่ชื่อมีคำว่า “{q.trim()}”</p>
       ) : tags.length ? (
         <ul className="tag-manage-list" ref={list}>
           {shown.map((tag) =>
@@ -229,9 +225,8 @@ function TagManager({ data }: { data: CaseTagsOverview }) {
           )}
         </ul>
       ) : (
-        <p className="empty-mini">ยังไม่มีป้าย พิมพ์ชื่อป้ายแรกในช่องด้านบน</p>
+        <p className="empty-mini">ยังไม่มีป้าย</p>
       )}
-      <p className="tiny muted">แก้ชื่อป้ายแล้ว เคสที่ติดอยู่จะใช้ชื่อใหม่ทันที · ตั้งกฎรับเรื่องให้ติดป้ายเองได้ที่เมนูระบบอัตโนมัติ</p>
       <div className="form-actions">
         <button type="button" className="btn" onClick={() => closeModal()}>
           เสร็จแล้ว

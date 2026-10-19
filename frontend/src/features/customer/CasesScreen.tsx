@@ -35,7 +35,6 @@ export function CasesScreen({ show: requested = '' }: { show?: string }) {
       <div className="page-heading">
         <div>
           <h1>เคสของฉัน</h1>
-          <p>เรื่องที่ทีมงานของแต่ละองค์กรรับเป็นเคสบริการ พร้อมสถานะและกำหนดเวลาที่ทีมรับปากไว้</p>
         </div>
       </div>
       <div className="stats-grid customer-stats">
@@ -55,7 +54,7 @@ export function CasesScreen({ show: requested = '' }: { show?: string }) {
         <div className="card-header">
           <div>
             <h2>รายการเคส</h2>
-            <p>{shown.length} เคส · อัปเดตล่าสุดอยู่บนสุด</p>
+            <p>{shown.length} เคส</p>
           </div>
           <div className="customer-cases-tools">
             <OrgFilter id="customer-case-org" />
@@ -96,7 +95,7 @@ export function CasesScreen({ show: requested = '' }: { show?: string }) {
                           {t.subject}
                         </Link>
                         <span className="customer-case-id">
-                          BD-{t.number} · {t.category}
+                          BD-{t.number} {t.category}
                         </span>
                       </td>
                       <td>
@@ -120,9 +119,6 @@ export function CasesScreen({ show: requested = '' }: { show?: string }) {
         ) : (
           <EmptyState
             title={filtering ? 'ไม่มีเคสในกลุ่มนี้' : 'ยังไม่มีเคส'}
-            description={
-              filtering ? 'ลองดูกลุ่มอื่น หรือเลือก “ทุกองค์กร”' : 'เมื่อทีมงานรับเรื่องจากแชทเป็นเคสบริการ เคสจะแสดงที่นี่พร้อมสถานะและกำหนดเวลา'
-            }
             icon="ticket"
           >
             {!filtering && <NewChatLink />}

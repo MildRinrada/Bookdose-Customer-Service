@@ -26,7 +26,7 @@ export function ChannelDelivery({
   return (
     <div className="message-footer" role="status">
       {deliveryNames[message.delivery] || message.delivery}
-      {message.delivery === 'accepted' && ' · ยังไม่ยืนยันการส่งถึงหรืออ่าน'}
+      {message.delivery === 'accepted' && ' ยังไม่ยืนยันการส่งถึงหรืออ่าน'}
       {delivery.error && <p>{delivery.error}</p>}
       {/* A row of their own: beside the status they landed in the middle of its wrapped text. */}
       {(delivery.has_file_links || delivery.retryable) && (

@@ -45,7 +45,7 @@ def request_access(cd, session, tenant_id, body):
     request_id = uid()
     repository.insert(cd,request_id,tenant_id,user_id,reason,hours)
     audit.record(cd,user_id,'tenant.support_requested',tenant_id,reason)
-    _tenant_audit(tenant_id,session['name'],'tenant.support_requested',user_id,f'{reason} · {hours} ชม.')
+    _tenant_audit(tenant_id,session['name'],'tenant.support_requested',user_id,f'{reason}, {hours} ชม.')
     cd.commit()
     _tell_admins(tenant_id,session['name'],reason,hours)
     return request_id
@@ -98,7 +98,7 @@ def approve(cd, db, ctx, request_id, body):
     expires_at = after(hours=hours)
     require(repository.decide(cd,row['id'],'approved',ctx['id'],schema.note(body),expires_at)==1,GONE,409)
     repository.grant(cd,row['tenant_id'],row['user_id'],memberships.first_team_id(db),expires_at,existing)
-    detail = f"{row['user_name']} · {hours} ชม. · {row['reason']}"
+    detail = f"{row['user_name']}, {hours} ชม., {row['reason']}"
     audit.record(cd,ctx['id'],'tenant.support_access',row['tenant_id'],row['reason'])
     audit.record(db,ctx['name'],'tenant.support_access',row['user_id'],detail)
     cd.commit()

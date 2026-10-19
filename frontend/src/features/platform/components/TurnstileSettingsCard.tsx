@@ -13,8 +13,6 @@ import type { TurnstileSettings } from '../types';
    the widget; the Secret Key is sealed on the server and never shown again, so leaving it empty keeps what was saved.
    While this is off, the support form works exactly as before. */
 
-const HELP = 'https://dash.cloudflare.com/?to=/:account/turnstile';
-
 export function TurnstileSettingsCard() {
   const { data, error } = useApi<TurnstileSettings>(TURNSTILE_PATH);
   return (
@@ -22,7 +20,6 @@ export function TurnstileSettingsCard() {
       <div className="card-header">
         <div>
           <h2>ตรวจบอทหน้าติดต่อ (Cloudflare Turnstile)</h2>
-          <p>ผู้เยี่ยมชมที่เริ่มแชทจากหน้าติดต่อต้องผ่านการตรวจว่าไม่ใช่บอทก่อน ส่วนใหญ่ผ่านเองโดยไม่ต้องกดอะไร</p>
         </div>
       </div>
       <div className="card-body">
@@ -33,14 +30,6 @@ export function TurnstileSettingsCard() {
         ) : (
           <TurnstileForm key={`${data.enabled}:${data.site_key}:${data.configured}`} data={data} />
         )}
-        <p className="tiny muted mt">
-          สร้างวิดเจ็ตได้ที่{' '}
-          <a href={HELP} target="_blank" rel="noopener noreferrer">
-            Cloudflare → Turnstile
-          </a>{' '}
-          (ใช้ฟรี) แล้วใส่โดเมนของระบบนี้ในช่อง Hostnames · Secret Key ถูกเข้ารหัสเก็บบนเซิร์ฟเวอร์ และไม่แสดงซ้ำ · ถ้า Cloudflare ตอบไม่ได้ชั่วคราว ระบบจะปล่อยให้ส่งฟอร์มได้ตามปกติ
-          และบันทึกเหตุการณ์ไว้ในหน้าความปลอดภัย
-        </p>
       </div>
     </section>
   );
@@ -64,7 +53,7 @@ function TurnstileForm({ data }: { data: TurnstileSettings }) {
       <div className="form-grid">
         <label className="check span-2">
           <input type="checkbox" className="switch" name="enabled" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} />
-          เปิดการตรวจบอทบนฟอร์มเริ่มแชท (ต้องใส่ทั้งสองคีย์ก่อน)
+          เปิดการตรวจบอทบนฟอร์มเริ่มแชท
         </label>
         <TextField
           id="turnstile-site-key"
@@ -74,7 +63,6 @@ function TurnstileForm({ data }: { data: TurnstileSettings }) {
           required={enabled}
           defaultValue={data.site_key}
           autoComplete="off"
-          hint="คีย์สาธารณะ แสดงบนหน้าเว็บ เช่น 0x4AAAAAAA…"
         />
         <TextField
           id="turnstile-secret"
@@ -84,7 +72,7 @@ function TurnstileForm({ data }: { data: TurnstileSettings }) {
           max={200}
           required={enabled && !data.configured}
           autoComplete="off"
-          hint={keep ?? 'คีย์ลับ ใช้ตรวจกับ Cloudflare ฝั่งเซิร์ฟเวอร์'}
+          hint={keep}
         />
       </div>
       <div>

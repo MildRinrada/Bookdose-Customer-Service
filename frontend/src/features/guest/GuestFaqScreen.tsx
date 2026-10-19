@@ -54,7 +54,6 @@ function AskTeam({ slug }: { slug: string }) {
         </span>
         <div className="grow">
           <strong>ไม่พบคำตอบที่ต้องการ?</strong>
-          <p className="muted">ส่งคำถามถึงทีมงานได้เลยโดยไม่ต้องสมัครสมาชิก แล้วกลับมาอ่านคำตอบในแชทเดิม</p>
         </div>
         <Link className="btn primary" href={guestPages.chat(slug)}>
           <Icon name="chat" />
@@ -69,7 +68,7 @@ export function GuestFaqScreen({ slug }: { slug: string }) {
   const { page, orgName, articles } = usePublicPage(slug);
   const [search, setSearch] = useState('');
   const [chosenCategory, setCategory] = useState('');
-  useTitle(orgName ? `คำถามที่พบบ่อย · ${orgName}` : '');
+  useTitle(orgName ? `คำถามที่พบบ่อย - ${orgName}` : '');
   if (!page.data)
     return (
       <GuestFrame slug={slug} orgName="" current="faq">
@@ -89,7 +88,6 @@ export function GuestFaqScreen({ slug }: { slug: string }) {
       <div className="page-heading">
         <div>
           <h1>คำถามที่พบบ่อย</h1>
-          <p>คำตอบจาก {orgName} อ่านได้ทันทีโดยไม่ต้องเข้าสู่ระบบ</p>
         </div>
       </div>
       <section className="card customer-answers">
@@ -126,7 +124,7 @@ export function GuestFaqScreen({ slug }: { slug: string }) {
             ) : (
               <CustomerNone
                 title={searching ? 'ไม่พบบทความที่ตรงกับที่ค้นหา' : 'ยังไม่มีบทความ'}
-                hint={searching ? 'ลองใช้คำอื่น หรือถามทีมงานในแชทได้เลย' : 'ถามทีมงานในแชทได้เลย เรายินดีช่วยคุณ'}
+                hint={null}
               />
             )}
           </div>
@@ -140,7 +138,7 @@ export function GuestFaqScreen({ slug }: { slug: string }) {
 export function GuestArticleScreen({ slug, id }: { slug: string; id: string }) {
   const { page, orgName, articles } = usePublicPage(slug);
   const article = articles.find((a) => a.id === id);
-  useTitle(article ? `${article.title} · ${orgName}` : '');
+  useTitle(article ? `${article.title} - ${orgName}` : '');
   if (!page.data)
     return (
       <GuestFrame slug={slug} orgName="" current="faq">
@@ -168,7 +166,7 @@ export function GuestArticleScreen({ slug, id }: { slug: string; id: string }) {
         </article>
       ) : (
         <section className="card">
-          <EmptyState title="ไม่พบบทความนี้" description="บทความอาจถูกย้าย ลบ หรือยกเลิกการเผยแพร่ไปแล้ว" icon="book">
+          <EmptyState title="ไม่พบบทความนี้" icon="book">
             <Link className="btn" href={guestPages.faq(slug)}>
               <Icon name="back" />
               กลับไปคำถามที่พบบ่อย

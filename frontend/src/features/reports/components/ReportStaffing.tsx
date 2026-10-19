@@ -31,7 +31,6 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
           <Icon name="users" />
           คนที่ต้องใช้แต่ละวัน
         </h2>
-        <p>เทียบเคสที่คาดว่าจะเข้ามากับคนที่ทำงานวันนั้น{scope} จากวันลาและเวลาทำงานของแต่ละคน · เห็นเฉพาะเจ้าขององค์กร</p>
       </div>
     </div>
   );
@@ -44,15 +43,13 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
     </section>
   );
 
-  if (!f.ready) return message('ต้องพยากรณ์จำนวนเคสได้ก่อน จึงจะบอกได้ว่าแต่ละวันต้องใช้กี่คน');
+  if (!f.ready) return message('ยังพยากรณ์จำนวนเคสไม่ได้');
   if (plan.error && !plan.data) return message('โหลดวันทำงานของทีมไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง');
   if (!plan.data) return message('กำลังโหลดวันทำงานของทีม…');
 
   const cap = capacity(team ? all.filter((t) => t.crewid === team) : all);
   if (cap.perPerson == null)
-    return message(
-      `ยังมีข้อมูลการปิดเคสไม่พอ ต้องมีวันที่สมาชิกปิดเคสรวมกันอย่างน้อย ${MIN_PERSON_DAYS} วันใน ${CAPACITY_DAYS / 7} สัปดาห์ล่าสุด (ตอนนี้ ${cap.personDays} วัน)`,
-    );
+    return message(`ยังมีข้อมูลการปิดเคสไม่พอ (${cap.personDays} จาก ${MIN_PERSON_DAYS} วัน)`);
 
   const crew = handlers(plan.data, team);
   const days = staffDays(f.ahead, plan.data, crew, cap.perPerson);
@@ -81,7 +78,7 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
           <div className={guessed.length ? 'warn' : ''}>
             <span>ยังไม่ได้ตั้งเวลาทำงาน</span>
             <strong>{guessed.length ? `${guessed.length} คน` : 'ตั้งครบแล้ว'}</strong>
-            <small>{guessed.length ? (plan.data.org_hours ? 'นับว่าทำงานทุกวันที่องค์กรเปิด' : 'นับว่าทำงานทุกวัน') : `ทีมที่นับ ${crew.length} คน`}</small>
+            {!guessed.length && <small>ทีมที่นับ {crew.length} คน</small>}
           </div>
         </div>
 
@@ -90,7 +87,7 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
             {shown.map((d, i) => (
               <li key={d.day.toDateString()} className={d.state}>
                 <span className="staffing-day">
-                  {i === 0 && <span className="muted">พรุ่งนี้ · </span>}
+                  {i === 0 && <span className="muted">พรุ่งนี้ </span>}
                   {dayName.format(d.day)}
                 </span>
                 <span className="staffing-cases">{range(d)} เคส</span>
@@ -108,13 +105,13 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
                 {(d.holiday || d.away.length > 0 || d.state === 'tight') && (
                   <span className="staffing-note">
                     {d.holiday
-                      ? `${d.holiday} · เคสที่เข้ามาจะรอวันทำการถัดไป`
+                      ? d.holiday
                       : [
                           d.state === 'tight' && `ถ้าเคสเข้ามามากตามขอบบน ควรมี ${d.needHigh} คน`,
                           d.away.length > 0 && `ไม่อยู่: ${d.away.map((a) => `${a.name} (${whyWords[a.why] ?? 'ไม่อยู่'})`).join(', ')}`,
                         ]
                           .filter(Boolean)
-                          .join(' · ')}
+                          .join(' ')}
                   </span>
                 )}
               </li>
@@ -130,11 +127,6 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
             {more ? `แสดง ${SHOWN} วัน` : `แสดงถึง ${days.length} วัน`}
           </button>
         )}
-        <p className="tiny muted mt">
-          ต้องใช้กี่คน คิดจากเคสที่คาดว่าจะเข้ามาหารด้วยจำนวนที่คนหนึ่งปิดได้ต่อวัน ตัวเลขแรกคือจำนวนที่น่าจะเป็นที่สุด ตัวเลขหลังคือถ้าเคสเข้ามามากตามขอบบนของช่วง ·
-          นับเจ้าหน้าที่ทุกคน และเจ้าขององค์กรที่ปิดเคสเองใน {CAPACITY_DAYS / 7} สัปดาห์ล่าสุด · ไม่รวมเคสที่ค้างอยู่ตอนนี้ · วันลาและเวลาทำงานตั้งได้ที่
-          ตั้งค่าบัญชี → สถานะการทำงาน ของแต่ละคน
-        </p>
       </div>
     </section>
   );

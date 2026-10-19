@@ -226,7 +226,8 @@ class IntegrationTests(unittest.TestCase):
 
     def registration(self,**overrides):
         return {'name':'ผู้ดูแลองค์กรใหม่','email':'new@example.com','password':'New-password-123!',
-                'password_confirm':'New-password-123!','organization':'องค์กรใหม่','slug':'new-org',**overrides}
+                'password_confirm':'New-password-123!','organization':'องค์กรใหม่','slug':'new-org',
+                'terms':True,'privacy':True,**overrides}
 
     def enable_registration_mail(self):
         cfg={'enabled':True,'signup_enabled':True,'smtp_host':'smtp.example.com','smtp_port':465,'username':'mailer@example.com',

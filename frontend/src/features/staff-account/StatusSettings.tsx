@@ -15,13 +15,6 @@ import { PREFS_PATH, savePreferences, setWorkStatus, usePreferences, type Prefer
    team), and an SLA escalation goes to a lead who is available. Choosing an owner by hand still works. Markup:
    pages/account-settings.css (.work-status). */
 
-const statusHints: Record<WorkStatus, string> = {
-  online: 'รับเคสใหม่จากกฎการกระจายงานและการยกระดับได้',
-  break: 'หยุดรับเคสใหม่ชั่วคราว เคสเดิมยังอยู่กับคุณ',
-  busy: 'หยุดรับเคสใหม่ระหว่างทำงานที่ต้องใช้สมาธิ',
-  offline: 'ไม่รับเคสใหม่จนกว่าจะกลับมาเปลี่ยนสถานะ',
-};
-
 export function StatusSettings() {
   const view = usePreferences();
   if (!view.data) return <PageLoading />;
@@ -53,11 +46,10 @@ function StatusCard({ view }: { view: PreferencesView }) {
       <div className="card-header">
         <div>
           <h2>สถานะตอนนี้</h2>
-          <p>เปลี่ยนได้ทุกเมื่อ หรือเปลี่ยนเร็ว ๆ จากปุ่มสถานะที่แถบด้านบน</p>
         </div>
         <span className={`work-status-pill status-${now.available ? 'online' : now.status}`}>
           <span className="status-dot" aria-hidden="true" />
-          {now.available ? 'พร้อมรับเรื่องใหม่' : `ไม่รับเรื่องใหม่ · ${now.reason}`}
+          {now.available ? 'พร้อมรับเรื่องใหม่' : `ไม่รับเรื่องใหม่ ${now.reason}`}
         </span>
       </div>
       <div className="card-body">
@@ -73,18 +65,9 @@ function StatusCard({ view }: { view: PreferencesView }) {
             >
               <span className="status-dot" aria-hidden="true" />
               <strong>{view.statuses[key]}</strong>
-              <span className="tiny muted">{statusHints[key]}</span>
             </button>
           ))}
         </div>
-        {view.preferences.status === 'online' && !now.available && (
-          <p className="notice" role="status">
-            สถานะเป็นพร้อมรับเรื่อง แต่ตอนนี้{now.reason} ระบบจึงยังไม่ส่งเคสใหม่ให้
-          </p>
-        )}
-        <p className="tiny muted">
-          ทดลองได้: เปลี่ยนเป็น “พักเบรก” แล้วให้ลูกค้าส่งเรื่องที่ตรงกับกฎการกระจายงานของคุณ เคสใหม่จะรอทีมแทนที่จะเข้ามาที่คุณ และในรายชื่อผู้รับผิดชอบจะเห็นว่าคุณไม่พร้อมรับเรื่อง
-        </p>
       </div>
     </section>
   );
@@ -99,7 +82,6 @@ function HoursCard({ view }: { view: PreferencesView }) {
       <div className="card-header">
         <div>
           <h2>เวลาทำงาน</h2>
-          <p>นอกเวลานี้ ระบบจะไม่ส่งเคสใหม่ให้คุณโดยอัตโนมัติ (เวลาประเทศไทย)</p>
         </div>
       </div>
       <Form
@@ -135,11 +117,12 @@ function HoursCard({ view }: { view: PreferencesView }) {
             <input type="time" name="end" defaultValue={hours.end} required />
           </label>
         </div>
-        <p className="tiny muted">กะข้ามคืนได้ เช่น 22:00 ถึง 06:00 นับเป็นวันที่เริ่มกะ</p>
-        <button className="btn primary" type="submit">
-          <Icon name="check" />
-          บันทึกเวลาทำงาน
-        </button>
+        <div className="settings-save">
+          <button className="btn primary" type="submit">
+            <Icon name="check" />
+            บันทึกเวลาทำงาน
+          </button>
+        </div>
       </Form>
     </section>
   );
@@ -163,7 +146,6 @@ function LeaveCard({ view }: { view: PreferencesView }) {
       <div className="card-header">
         <div>
           <h2>วันลา</h2>
-          <p>ในวันที่ลา ระบบจะไม่ส่งเคสใหม่ให้คุณ แม้สถานะเป็นพร้อมรับเรื่อง</p>
         </div>
       </div>
       <div className="card-body">
@@ -176,7 +158,7 @@ function LeaveCard({ view }: { view: PreferencesView }) {
                 </span>
                 <span className="grow">
                   <strong>{item.from === item.to ? item.from : `${item.from} ถึง ${item.to}`}</strong>
-                  <span className="muted">{item.to < today ? 'ผ่านไปแล้ว' : item.from <= today ? 'กำลังลาอยู่' : 'ลาล่วงหน้า'}{item.note ? ` · ${item.note}` : ''}</span>
+                  <span className="muted">{item.to < today ? 'ผ่านไปแล้ว' : item.from <= today ? 'กำลังลาอยู่' : 'ลาล่วงหน้า'}{item.note ? ` ${item.note}` : ''}</span>
                 </span>
                 <button
                   className="btn sm danger"

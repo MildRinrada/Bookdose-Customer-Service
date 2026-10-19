@@ -52,7 +52,6 @@ export function InvitationsPanel({ quiet = false }: { quiet?: boolean } = {}) {
       <div className="card-header">
         <div>
           <h2>คำเชิญเข้าร่วมทีม</h2>
-          <p>เชิญเพื่อนร่วมงานทางอีเมล เจ้าตัวเป็นผู้ตั้งรหัสผ่านเอง ผู้ดูแลไม่ต้องตั้งรหัสผ่านให้ใครอีก</p>
         </div>
         {canInvite && (
           <button type="button" className="btn" onClick={() => openModal('เชิญเพื่อนร่วมงาน', <MemberForm key="invite" />)}>
@@ -67,15 +66,9 @@ export function InvitationsPanel({ quiet = false }: { quiet?: boolean } = {}) {
         ) : !page.data ? (
           <PageLoading />
         ) : !canInvite ? (
-          <p className="notice warning">
-            ยังส่งคำเชิญไม่ได้ เพราะแพลตฟอร์มยังไม่ได้ตั้งค่าอีเมลของระบบ ระหว่างนี้ให้เพิ่มสมาชิกพร้อมรหัสผ่านเริ่มต้นในรายชื่อด้านล่าง แล้วแจ้งให้เจ้าตัวเปลี่ยนรหัสผ่านทันที
-          </p>
+          <p className="notice warning">ยังส่งคำเชิญไม่ได้ เพราะแพลตฟอร์มยังไม่ได้ตั้งค่าอีเมลของระบบ</p>
         ) : open.length === 0 ? (
-          <EmptyState
-            icon="mail"
-            title="ยังไม่มีคำเชิญที่รอตอบรับ"
-            description="กด “เชิญทางอีเมล” แล้วระบบจะส่งลิงก์ให้เพื่อนร่วมงานตั้งรหัสผ่านของตัวเอง"
-          />
+          <EmptyState icon="mail" title="ยังไม่มีคำเชิญที่รอตอบรับ" />
         ) : (
           <ul className="support-list">
             {open.map((r) => (
@@ -113,7 +106,7 @@ function InviteRow({ invitation: r }: { invitation: Invitation }) {
   const cancel = () =>
     confirm({
       title: 'ยกเลิกคำเชิญ',
-      message: `ลิงก์ที่ส่งถึง ${r.email} จะใช้ไม่ได้ทันที หากต้องการเชิญใหม่ ให้ส่งคำเชิญอีกครั้ง`,
+      message: `ลิงก์ที่ส่งถึง ${r.email} จะใช้ไม่ได้ทันที`,
       confirmLabel: 'ยกเลิกคำเชิญ',
       tone: 'danger',
       run: async () => {
@@ -132,12 +125,12 @@ function InviteRow({ invitation: r }: { invitation: Invitation }) {
         <strong>{r.email}</strong>
         <span className="muted">
           {roleLabels[r.role] ?? r.role}
-          {team ? ` · ทีม ${team.name}` : ''}
+          {team ? `, ทีม ${team.name}` : ''}
         </span>
         <span className="tiny muted">
           เชิญเมื่อ {date(r.created_at, true)}
           {r.invited_by ? ` โดย ${r.invited_by}` : ''}
-          {r.state === 'pending' ? ` · ลิงก์หมดอายุ ${date(r.expires_at, true)}` : ''}
+          {r.state === 'pending' ? `, ลิงก์หมดอายุ ${date(r.expires_at, true)}` : ''}
         </span>
       </div>
       <span className={`badge support-status-${r.state === 'accepted' ? 'approved' : r.state}`}>{inviteStateLabels[r.state] ?? r.state}</span>

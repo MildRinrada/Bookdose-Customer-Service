@@ -10,7 +10,6 @@ import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
-import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
 import { ConversationAside } from './components/ConversationAside';
@@ -33,7 +32,6 @@ let listScroll = 0;
 
 export function InboxScreen({ id }: { id?: string }) {
   const router = useRouter();
-  const work = useWork();
   const singlePane = useSinglePane();
   const modalOpen = useModalOpen();
   const interval = useRealtimeInterval(modalOpen ? false : POLL_MS);
@@ -137,24 +135,21 @@ export function InboxScreen({ id }: { id?: string }) {
   const items = shown.length ? (
     shown.map((c) => <InboxItem key={c.id} c={c} selected={c.id === selectedId} />)
   ) : !conversations.length ? (
-    <EmptyState title="ยังไม่มีข้อความ" description="แชร์หน้าลูกค้าเพื่อเริ่มรับเรื่องจากลูกค้า" icon="chat" />
+    <EmptyState title="ยังไม่มีข้อความ" icon="chat" />
   ) : query.trim() ? (
-    <EmptyState title="ไม่พบบทสนทนาที่ค้นหา" description="ลองใช้ชื่อลูกค้า เรื่อง หรือหมายเลขเคส" icon="search" />
+    <EmptyState title="ไม่พบบทสนทนาที่ค้นหา" icon="search" />
   ) : !channel && filter !== 'all' ? (
     // Nobody is waiting (or nothing is open) on any channel: the team has cleared the inbox.
-    <AllClear seed={conversations.length}>
-      <span className="tiny">เลือก “ทั้งหมด” เพื่อดูบทสนทนาที่ปิดแล้ว</span>
-    </AllClear>
+    <AllClear seed={conversations.length} />
   ) : (
     <EmptyState
       title={filter === 'waiting' ? 'ตอบครบทุกบทสนทนาแล้ว' : 'ไม่มีบทสนทนาที่เปิดอยู่'}
-      description="เลือก “ทั้งหมด” เพื่อดูบทสนทนาที่ปิดแล้ว"
       icon="checkCircle"
     />
   );
 
   let pane;
-  if (!selectedId) pane = <EmptyState title="เลือกบทสนทนาเพื่อเริ่มดูแล" description="เมื่อมีลูกค้าส่งเรื่อง ข้อความจะแสดงทางด้านซ้าย" icon="chat" />;
+  if (!selectedId) pane = <EmptyState title="เลือกบทสนทนาเพื่อเริ่มดูแล" icon="chat" />;
   else if (detail.error && !detail.data) pane = <ErrorState error={detail.error} onRetry={() => void detail.refetch()} />;
   else if (!detail.data) pane = <PageLoading />;
   else pane = <ConversationView key={detail.data.conversation.id} data={detail.data} />;
@@ -164,7 +159,6 @@ export function InboxScreen({ id }: { id?: string }) {
       <div className="page-heading inbox-heading">
         <div>
           <h1>กล่องข้อความ</h1>
-          <p>แชทกับลูกค้าจากทุกช่องทางของ {work.tenant.name} ในที่เดียว และติดตามทุกเรื่องที่ลูกค้าส่งมา</p>
         </div>
       </div>
       <StaffIssuesBanner />

@@ -26,9 +26,9 @@ def publish(req, key):
     return req.send(200,service.publish(req.cd,key,req.session['name']))
 
 
-@require_role('admin')
 def organization(req):
-    """ตั้งค่าองค์กร → ข้อตกลงและเอกสาร, and the bar asking the organization's admin to agree to a new version."""
+    """ตั้งค่าองค์กร → ข้อตกลงและเอกสาร, and the bar asking the organization's admin to agree to a new version. Every
+    member reads it: past the grace, the rest of the team is told their admin has not agreed yet. Only an admin agrees."""
     return req.send(200,service.organization_terms(req.cd,req.ctx['tenant_id']))
 
 

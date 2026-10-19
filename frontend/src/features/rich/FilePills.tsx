@@ -99,7 +99,7 @@ export function FilePills({ files, onRemove, onReplace }: { files: File[]; onRem
         <span className="file-pill" key={`${index}:${file.name}:${file.size}`}>
           <Icon name="paperclip" />
           <span className="file-name">
-            {file.name} · {Math.ceil(file.size / 1024)} KB
+            {file.name} {Math.ceil(file.size / 1024)} KB
           </span>
           {onReplace && MARKABLE.includes(file.type) && (
             <button type="button" className="file-pill-mark" onClick={() => mark(index, file)} aria-label={`เบลอหรือวงกลมบนภาพ ${file.name}`} title="เบลอข้อมูลส่วนตัว หรือวงกลมจุดที่มีปัญหา">

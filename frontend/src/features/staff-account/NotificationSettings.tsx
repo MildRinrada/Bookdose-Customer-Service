@@ -20,11 +20,7 @@ import { PREFS_PATH, savePreferences, sendTestEmail, usePreferences, type Notify
 const neverChanges = () => () => {};
 
 const desktopHint = (allowed: string) =>
-  allowed === 'unsupported'
-    ? 'เบราว์เซอร์นี้แจ้งเตือนบนหน้าจอไม่ได้'
-    : allowed === 'denied'
-      ? 'เบราว์เซอร์บล็อกการแจ้งเตือนของเว็บนี้ไว้ เปิดได้ที่ไอคอนแม่กุญแจข้างที่อยู่เว็บ'
-      : 'เด้งขึ้นมุมจอเมื่อคุณอยู่แท็บอื่น ขณะที่ยังเปิดระบบค้างไว้';
+  allowed === 'unsupported' ? 'เบราว์เซอร์นี้แจ้งเตือนบนหน้าจอไม่ได้' : allowed === 'denied' ? 'เบราว์เซอร์บล็อกการแจ้งเตือนของเว็บนี้ไว้' : null;
 
 /** The browser's permission to show notifications, as last known (the server renders the page without it). */
 function useDesktopPermission() {
@@ -45,7 +41,7 @@ async function testDesktop(setPermission: (value: string) => void) {
   if (!shown) throw new Error('เบราว์เซอร์สร้างการแจ้งเตือนไม่สำเร็จ ลองปิดโหมดห้ามรบกวนของเครื่อง แล้วลองใหม่');
 }
 
-const DESKTOP_SENT = 'ส่งการแจ้งเตือนทดสอบแล้ว · ถ้าไม่เห็นที่มุมจอ ให้ดูที่ศูนย์การแจ้งเตือนของเครื่อง และตรวจว่าโหมดห้ามรบกวนปิดอยู่';
+const DESKTOP_SENT = 'ส่งการแจ้งเตือนทดสอบแล้ว ถ้าไม่เห็นที่มุมจอ ให้ดูที่ศูนย์การแจ้งเตือนของเครื่อง และตรวจว่าโหมดห้ามรบกวนปิดอยู่';
 
 export function NotificationSettings() {
   const view = usePreferences();
@@ -69,7 +65,6 @@ function NotifyCard({ view }: { view: PreferencesView }) {
       <div className="card-header">
         <div>
           <h2>การแจ้งเตือนงานของฉัน</h2>
-          <p>เลือกช่องทางและเหตุการณ์ที่ต้องการรู้ทันที กระดิ่งด้านบนยังแสดงทุกเรื่องเสมอ</p>
         </div>
       </div>
       <Form
@@ -101,46 +96,32 @@ function NotifyCard({ view }: { view: PreferencesView }) {
           <legend>ช่องทาง</legend>
           <label className="check">
             <input type="checkbox" className="switch" name="popup" defaultChecked={notify.popup !== false} />
-            <span>
-              ป๊อปอัปมุมขวาล่างในระบบ
-              <span className="tiny muted block">ขณะเปิดหน้าระบบอยู่ บอกข้อความใหม่ของลูกค้าในแชทที่เป็นของคุณหรือยังไม่มีใครดูแล และงานของคุณ กดที่ป๊อปอัปเพื่อเปิด</span>
-            </span>
+            <span>ป๊อปอัปมุมขวาล่างในระบบ</span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="desktop" defaultChecked={notify.desktop} />
             <span>
               แจ้งเตือนบนหน้าจอ (เบราว์เซอร์)
-              <span className="tiny muted block">{desktopHint(allowed)}</span>
+              {desktopHint(allowed) && <span className="tiny muted block">{desktopHint(allowed)}</span>}
             </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="sound" defaultChecked={notify.sound} />
-            <span>
-              เสียงเตือน
-              <span className="tiny muted block">เสียงสั้น ๆ เมื่อมีเรื่องใหม่ เสียงเร่งขึ้นเมื่อเคสด่วน ยกระดับ หรือเกิน SLA และเสียงเมื่อรับเคส ขณะเปิดระบบค้างไว้</span>
-            </span>
+            <span>เสียงเตือน</span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="celebrate" defaultChecked={notify.celebrate} />
-            <span>
-              ฉลองเมื่อปิดเคส ได้ 5 ดาว ได้คำชม หรือได้เหรียญใหม่
-              <span className="tiny muted block">พลุกระดาษและการ์ดแสดงความยินดีสั้น ๆ มีเสียงด้วยเมื่อเปิดเสียงเตือนไว้</span>
-            </span>
+            <span>ฉลองเมื่อปิดเคส ได้ 5 ดาว ได้คำชม หรือได้เหรียญใหม่</span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="recap" defaultChecked={notify.recap} />
-            <span>
-              สรุปผลงานประจำเดือน
-              <span className="tiny muted block">เด้งการ์ดสรุปผลงานของเดือนที่แล้วครั้งเดียว เมื่อเข้าระบบครั้งแรกของเดือน ดูย้อนหลังได้ที่ ผลงานของฉัน</span>
-            </span>
+            <span>สรุปผลงานประจำเดือน</span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="email" defaultChecked={notify.email} />
             <span>
               อีเมล
-              <span className="tiny muted block">
-                {view.mail_ready ? 'ส่งถึงอีเมลที่ใช้เข้าสู่ระบบ แม้ไม่ได้เปิดระบบอยู่' : 'ระบบยังส่งอีเมลไม่ได้ จะเริ่มส่งเมื่อผู้ดูแลแพลตฟอร์มตั้งค่าอีเมลกลาง'}
-              </span>
+              {!view.mail_ready && <span className="tiny muted block">ระบบยังส่งอีเมลไม่ได้</span>}
             </span>
           </label>
         </fieldset>
@@ -279,7 +260,6 @@ function PlatformNotifyCard({ view }: { view: PreferencesView }) {
       <div className="card-header">
         <div>
           <h2>การแจ้งเตือนเรื่องด่วนของระบบ</h2>
-          <p>บอกทันทีเมื่อเซิร์ฟเวอร์หรือความปลอดภัยมีเรื่องที่รอไม่ได้ ขณะเปิดระบบค้างไว้ เรื่องอื่นดูได้ที่กระดิ่งด้านบน</p>
         </div>
       </div>
       <Form
@@ -300,24 +280,18 @@ function PlatformNotifyCard({ view }: { view: PreferencesView }) {
           <legend>ช่องทาง</legend>
           <label className="check">
             <input type="checkbox" className="switch" name="popup" defaultChecked={notify.popup !== false} />
-            <span>
-              ป๊อปอัปมุมขวาล่างในระบบ
-              <span className="tiny muted block">ขณะเปิดหน้าระบบอยู่ กดที่ป๊อปอัปเพื่อไปจัดการ</span>
-            </span>
+            <span>ป๊อปอัปมุมขวาล่างในระบบ</span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="desktop" defaultChecked={notify.desktop} />
             <span>
               แจ้งเตือนบนหน้าจอ (เบราว์เซอร์)
-              <span className="tiny muted block">{desktopHint(allowed)}</span>
+              {desktopHint(allowed) && <span className="tiny muted block">{desktopHint(allowed)}</span>}
             </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="sound" defaultChecked={notify.sound} />
-            <span>
-              เสียงเตือน
-              <span className="tiny muted block">เสียงเร่งเมื่อเป็นเรื่องวิกฤต เสียงสั้นเมื่อเป็นระดับเฝ้าระวัง</span>
-            </span>
+            <span>เสียงเตือน</span>
           </label>
         </fieldset>
         <fieldset className="notify-group">

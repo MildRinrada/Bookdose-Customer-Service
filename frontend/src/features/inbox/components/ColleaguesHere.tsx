@@ -46,7 +46,7 @@ export function ColleaguesHere({ conversationId }: { conversationId: string }) {
       <Icon name={writing.length ? 'edit' : 'eye'} />
       <span className="grow">
         {writing.length ? `${nameList(writing)} กำลังพิมพ์ตอบอยู่` : `${nameList(here)} เปิดแชทนี้อยู่`}
-        {alsoOpen > 0 && ` · อีก ${alsoOpen} คนเปิดอยู่`}
+        {alsoOpen > 0 && ` อีก ${alsoOpen} คนเปิดอยู่`}
       </span>
     </div>
   );

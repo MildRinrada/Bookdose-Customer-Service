@@ -39,7 +39,6 @@ function SnippetForm({ snippet, onSave }: { snippet?: Snippet; onSave: (snippet:
         name="shortcut"
         max={31}
         defaultValue={snippet ? `/${snippet.shortcut}` : '/'}
-        hint="ตัวอักษรไทย อังกฤษ ตัวเลข _ หรือ - ไม่มีช่องว่าง เช่น /ขอบคุณ หรือ /thanks"
       />
       <TextArea label="ข้อความ" name="text" max={2000} rows={5} defaultValue={snippet?.text} />
       <button className="btn primary" type="submit">
@@ -84,7 +83,6 @@ function SnippetsCard({ snippets }: { snippets: Snippet[] }) {
       <div className="card-header">
         <div>
           <h2>คำตอบด่วนของฉัน</h2>
-          <p>ในช่องตอบกลับ พิมพ์ /คีย์ลัด แล้วเว้นวรรค ข้อความจะแทรกให้ทันที 9 รายการแรกใช้ Alt+1 ถึง Alt+9 ได้ด้วย</p>
         </div>
         <button className="btn primary" type="button" onClick={() => edit()}>
           <Icon name="plus" />
@@ -93,7 +91,7 @@ function SnippetsCard({ snippets }: { snippets: Snippet[] }) {
       </div>
       <div className="card-body">
         {snippets.length === 0 ? (
-          <EmptyState icon="bolt" title="ยังไม่มีคำตอบด่วน" description="เพิ่มข้อความที่พิมพ์บ่อย เช่น คำทักทาย คำขอบคุณ หรือขั้นตอนที่อธิบายซ้ำ ๆ" />
+          <EmptyState icon="bolt" title="ยังไม่มีคำตอบด่วน" />
         ) : (
           <ul className="security-list snippet-list">
             {snippets.map((snippet, index) => (
@@ -159,7 +157,6 @@ function ShortcutsCard() {
       <div className="card-header">
         <div>
           <h2>คีย์ลัดของระบบ</h2>
-          <p>ใช้ได้ทุกหน้าในพื้นที่ทำงาน</p>
         </div>
       </div>
       <div className="card-body">

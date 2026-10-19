@@ -79,7 +79,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
       <div className="page-heading">
         <div>
           <h1>ภาพรวมระบบ</h1>
-          <p>สถานะเซิร์ฟเวอร์และการใช้งานของทุกองค์กร · อัปเดตเองทุก 30 วินาที</p>
         </div>
         <div className="flex">
           <button type="button" className="btn subtle" onClick={onRefresh}>
@@ -104,7 +103,7 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           value={number(data.requests)}
           icon="chart"
           color="blue"
-          foot={`ชั่วโมงล่าสุด ${number(data.last_hour)} · เฉลี่ย ${data.average_ms} ms`}
+          foot={`ชั่วโมงล่าสุด ${number(data.last_hour)} เฉลี่ย ${data.average_ms} ms`}
           href="/platform/system"
         />
         <StatCard
@@ -112,7 +111,7 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           value={number(data.server_errors)}
           icon="bolt"
           color={data.server_errors ? 'red' : 'green'}
-          foot={`${errorRate.toFixed(2)}% ของคำขอ · คำขอไม่ถูกต้อง ${number(data.client_errors)}`}
+          foot={`${errorRate.toFixed(2)}% ของคำขอ คำขอไม่ถูกต้อง ${number(data.client_errors)}`}
           href="/platform/system"
           urgent={data.server_errors > 0}
         />
@@ -121,7 +120,7 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           value={number(data.organizations.active)}
           icon="globe"
           color="blue"
-          foot={`ระงับ ${data.organizations.suspended} · สมาชิก ${number(data.organizations.members)} คน`}
+          foot={`ระงับ ${data.organizations.suspended} สมาชิก ${number(data.organizations.members)} คน`}
           href="/platform/organizations"
         />
       </div>
@@ -150,7 +149,7 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
                 </span>
               </div>
               <progress value={used} max={s.disk_total} aria-label={`ใช้พื้นที่ดิสก์แล้ว ${Math.round((used / s.disk_total) * 100)}%`} />
-              {lowDisk && <p className="tiny">พื้นที่เหลือน้อยกว่า 10% ฐานข้อมูลจะเขียนไม่ได้เมื่อดิสก์เต็ม</p>}
+              {lowDisk && <p className="tiny">พื้นที่เหลือน้อยกว่า 10%</p>}
             </div>
           </div>
         </section>
@@ -158,7 +157,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           <div className="card-header">
             <div>
               <h2>งานเบื้องหลัง</h2>
-              <p>งานที่ระบบทำเองตลอดเวลา และคิวที่รออยู่ในทุกองค์กรที่เปิดใช้งาน</p>
             </div>
             <Icon name="bolt" />
           </div>
@@ -193,7 +191,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
           <div className="card-header">
             <div>
               <h2>ข้อผิดพลาดล่าสุด</h2>
-              <p>คำขอที่ล้มเหลว และงานเบื้องหลังที่มีปัญหา</p>
             </div>
             <Icon name="bolt" />
           </div>
@@ -245,7 +242,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
         <div className="card-header">
           <div>
             <h2>การใช้ API</h2>
-            <p>คำขอ API ของทุกองค์กร 24 ชั่วโมงล่าสุด แท่งละหนึ่งชั่วโมง · นับตั้งแต่เปิดโปรแกรม</p>
           </div>
           <Icon name="chart" />
         </div>
@@ -254,12 +250,12 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
             <div className="system-chart" role="group" aria-label="คำขอ API รายชั่วโมง">
               {data.hours.map((h, i) => {
                 const hour = new Date(h.start).getHours();
-                const tip = `${pad(hour)}:00 · ${number(h.requests)} คำขอ${h.errors ? ` · ผิดพลาด ${h.errors}` : ''}`;
+                const tip = `${pad(hour)}:00 ${number(h.requests)} คำขอ${h.errors ? ` ผิดพลาด ${h.errors}` : ''}`;
                 return <ChartColumn key={h.start} tip={tip} count={h.requests} max={max} day={i % 3 === 2 || i === 23 ? pad(hour) : ''} />;
               })}
             </div>
             <p className="tiny muted">
-              ชี้หรือแตะที่แท่งเพื่อดูจำนวน · สูงสุด {number(max === 1 && !data.hours.some((h) => h.requests) ? 0 : max)} คำขอต่อชั่วโมง
+              สูงสุด {number(max === 1 && !data.hours.some((h) => h.requests) ? 0 : max)} คำขอต่อชั่วโมง
             </p>
           </div>
           <div className="system-usage-side">
@@ -289,7 +285,6 @@ function SystemView({ data, health, onRefresh }: { data: SystemOverview; health?
         <div className="card-header">
           <div>
             <h2>กิจกรรมล่าสุด</h2>
-            <p>ใครทำอะไรในคอนโซล</p>
           </div>
           <Link className="btn subtle small" href="/platform/organizations?tab=activity">
             ดูทั้งหมด <Icon name="arrow" />

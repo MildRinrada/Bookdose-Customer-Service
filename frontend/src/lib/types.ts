@@ -41,6 +41,8 @@ export type Member = {
   expires_at?: string | null;
   /** Whether routing may give them a new case now (ตั้งค่าบัญชี → สถานะการทำงาน). */
   availability?: Availability;
+  /** Whether they acknowledged the privacy notice in force (an admin's list only; backend legal acknowledged). */
+  privacy_ok?: boolean;
   /** They chose a photo: GET /api/members/<id>/photo has it (1 from the server, so a number). */
   has_photo?: number | boolean;
 };

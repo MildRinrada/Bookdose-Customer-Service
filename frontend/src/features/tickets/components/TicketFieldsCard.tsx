@@ -80,7 +80,7 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
     return owner ? (
       <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint="ยังไม่ได้ตั้งช่อง">
         <p className="tiny muted">
-          ตั้งช่องที่ทีมต้องกรอกในทุกเคสได้ เช่น เลขคำสั่งซื้อ หรือสาขา <Link href="/settings?tab=fields">ตั้งช่องข้อมูลของเคส</Link>
+          <Link href="/settings?tab=fields">ตั้งช่องข้อมูลของเคส</Link>
         </p>
       </FoldCard>
     ) : null;
@@ -123,7 +123,6 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
       <button className="btn" type="submit">
         บันทึกข้อมูล
       </button>
-      {fields.some((f) => f.required) && <p className="tiny muted">ช่องที่มี * ต้องกรอกก่อนปิดเคส</p>}
     </Form>
     </FoldCard>
   );

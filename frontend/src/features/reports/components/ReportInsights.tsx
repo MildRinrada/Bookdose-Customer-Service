@@ -14,12 +14,12 @@ import type { ReportFilter } from '../types';
 
 function Bar({ label, count, max, tone = '', note }: { label: ReactNode; count: number; max: number; tone?: string; note?: string }) {
   return (
-    <div className={`bar-row${tone ? ` ${tone}` : ''}`} title={`${count}${note ? ` · ${note}` : ''}`}>
+    <div className={`bar-row${tone ? ` ${tone}` : ''}`} title={`${count}${note ? ` (${note})` : ''}`}>
       <span className="bar-label">{label}</span>
       <progress value={count} max={Math.max(1, max)} aria-label={`${typeof label === 'string' ? label : ''} ${count}`} />
       <span className="bar-value">
         {count}
-        {note && <small className="muted"> · {note}</small>}
+        {note && <small className="muted"> ({note})</small>}
       </span>
     </div>
   );
@@ -36,12 +36,12 @@ function TimeFigures({ now, before, done }: { now: Times; before: Times; done: s
       <div>
         <span>ครึ่งหนึ่ง{done}ภายใน</span>
         <strong>{longDuration(now.median)}</strong>
-        <small>ค่ากลาง · {reportTrend(hours(now.median), hours(before.median), 'ชม.')}</small>
+        <small>ค่ากลาง, {reportTrend(hours(now.median), hours(before.median), 'ชม.')}</small>
       </div>
       <div>
         <span>9 ใน 10 เคส{done}ภายใน</span>
         <strong>{longDuration(now.p90)}</strong>
-        <small>P90 · {reportTrend(hours(now.p90), hours(before.p90), 'ชม.')}</small>
+        <small>P90, {reportTrend(hours(now.p90), hours(before.p90), 'ชม.')}</small>
       </div>
       <div>
         <span>เฉลี่ย</span>
@@ -69,7 +69,7 @@ export function FirstResponseCard({ all, f }: { all: TicketRow[]; f: ReportFilte
             เวลาตอบกลับครั้งแรก
           </h2>
           <p>
-            เคสที่เปิดในช่วงนี้และตอบแล้ว {now.count} เคส{now.waiting ? ` · ยังไม่ได้ตอบ ${now.waiting} เคส (ไม่นับ)` : ''} · นับจากเปิดเคสจนทีมตอบครั้งแรก
+            เคสที่เปิดในช่วงนี้และตอบแล้ว {now.count} เคส{now.waiting ? `, ยังไม่ได้ตอบ ${now.waiting} เคส` : ''}
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function ResolutionCard({ all, f }: { all: TicketRow[]; f: ReportFilter }
             <Icon name="checkCircle" />
             เวลาแก้ไขเคสจนเสร็จ
           </h2>
-          <p>เคสที่แก้ไขเสร็จในช่วงนี้ {now.count} เคส · นับจากเปิดเคสจนแก้ไขเสร็จ</p>
+          <p>เคสที่แก้ไขเสร็จในช่วงนี้ {now.count} เคส</p>
         </div>
       </div>
       <div className="card-body">
@@ -160,7 +160,7 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
             {s.weeks.length > 1 && (
               <div className="report-weeks" aria-label="คะแนนเฉลี่ยตามช่วงเวลา">
                 {s.weeks.map((w) => (
-                  <div key={w.start.toISOString()} className="report-week" title={`ช่วงเริ่ม ${date(w.start)} · ${w.count} คำตอบ`}>
+                  <div key={w.start.toISOString()} className="report-week" title={`ช่วงเริ่ม ${date(w.start)}, ${w.count} คำตอบ`}>
                     <span className={`report-week-score${w.average == null ? ' none' : w.average < 3 ? ' low' : ''}`}>
                       {w.average == null ? '–' : w.average.toFixed(1)}
                     </span>
@@ -179,7 +179,7 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
                       <span className="report-comment-body">
                         {c.comment ? `“${c.comment}”` : <span className="muted">ไม่ได้เขียนความเห็น</span>}
                         <Link href={`/tickets/${c.ticket.id}`}>
-                          BD-{c.ticket.number} · {c.ticket.contact_name} · {relative(c.at)}
+                          BD-{c.ticket.number}, {c.ticket.contact_name}, {relative(c.at)}
                         </Link>
                       </span>
                     </li>
@@ -189,7 +189,7 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
             )}
           </>
         ) : (
-          <p className="empty-mini">ยังไม่มีคำตอบแบบประเมินในช่วงนี้ · ระบบส่งให้ลูกค้าเมื่อปิดเคส (ตั้งค่าได้ที่ระบบอัตโนมัติ)</p>
+          <p className="empty-mini">ยังไม่มีคำตอบแบบประเมินในช่วงนี้</p>
         )}
       </div>
     </section>
@@ -206,7 +206,7 @@ export function BacklogCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
             <Icon name="clock" />
             เคสค้างนานแค่ไหน
           </h2>
-          <p>เคสที่ยังไม่เสร็จตอนนี้ {b.total} เคส (ทุกช่วงเวลา) · แยกตามจำนวนวันที่รอ</p>
+          <p>เคสที่ยังไม่เสร็จตอนนี้ {b.total} เคส (ทุกช่วงเวลา)</p>
         </div>
       </div>
       <div className="card-body">

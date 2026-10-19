@@ -180,6 +180,8 @@ def report_problem(req):
     """The customer reports a problem with the website from the ? in their top bar (platform problem reports)."""
     from backend.modules.customers import repository
     from backend.modules.platform import service as platform
+    limited(('customer-problem-report-burst',req.customer['account_id']),1,30)
     limited(('customer-problem-report',req.customer['account_id']),5,600)
+    limited(('problem-report-ip',req.ip),20,3600)
     account = repository.find(req.cd,req.customer['account_id'])
     return req.send(201,{'id':platform.report_problem_as_customer(req.cd,account,req.body,req.headers.get('User-Agent',''))})

@@ -18,16 +18,35 @@
 .legal-head p {
   margin: 0;
 }
+/* Under the card: the way back on one side, the other documents (as links that look like links) on the other. */
+.legal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  margin-top: 18px;
+}
 .legal-others {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
-  margin-top: 18px;
+  align-items: center;
+  gap: 6px 16px;
+}
+.legal-others > span {
+  color: var(--muted);
 }
 .legal-others a {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal-others a .icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* The console: the three documents as a row of tabs, each saying which version is live. */
@@ -311,4 +330,125 @@
   .legal-provider-form {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* The window that has to be answered (features/legal/LegalGate): over the whole page, the page dimmed behind it, no
+   close button. Why it is asked comes first, then the text in its own scrolling box, then what each answer means. */
+.legal-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: #1b1b1b8c;
+  backdrop-filter: blur(4px);
+}
+.legal-gate-card {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(860px, calc(100dvh - 48px));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 24px 60px #0000003d;
+  overflow: hidden;
+}
+.legal-gate-head {
+  display: flex;
+  gap: 16px;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.legal-gate-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+.legal-gate-head p {
+  margin: 0;
+  color: var(--muted);
+}
+.legal-gate-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--info-soft);
+  color: var(--link);
+}
+.legal-gate-icon .icon {
+  width: 22px;
+  height: 22px;
+}
+.legal-gate-text {
+  flex: 1 1 auto;
+  min-height: 160px;
+  overflow: auto;
+  padding: 18px 28px;
+  background: var(--soft);
+}
+.legal-gate-text:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: -2px;
+}
+.legal-gate-terms {
+  margin: 0;
+  padding: 14px 28px;
+  border-top: 1px solid var(--line);
+  font-size: .95rem;
+}
+.legal-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px 20px;
+  border-top: 1px solid var(--line);
+}
+.legal-gate-actions .grow {
+  flex: 1;
+}
+@media (max-width: 600px) {
+  .legal-gate {
+    padding: 0;
+  }
+  .legal-gate-card {
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .legal-gate-head,.legal-gate-text,.legal-gate-terms,.legal-gate-actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .legal-gate-actions .btn {
+    flex: 1 1 auto;
+  }
+  .legal-gate-actions .grow {
+    display: none;
+  }
+}
+
+/* ทีมและสมาชิก: a member who has not acknowledged the notice in force, under their status (features/members). */
+.member-privacy {
+  display: block;
+  margin-top: 4px;
+  color: #8a5a00;
+  white-space: nowrap;
+}
+
+/* องค์กรทั้งหมด: an organization not standing with the terms in force, under its status (features/platform). */
+.org-terms {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .85rem;
+  white-space: nowrap;
+}
+.org-terms.overdue {
+  color: #8a5a00;
+  font-weight: 600;
 }

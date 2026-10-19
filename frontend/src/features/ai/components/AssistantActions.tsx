@@ -234,7 +234,7 @@ export function AssistantActions({
         })}
       </ul>
       {Boolean(result.dropped) && (
-        <p className="assistant-actions-note">ข้าม {result.dropped} รายการที่อ้างถึงเคสหรือคนที่คุณไม่มีสิทธิ์ หรือทำซ้ำกับรายการอื่น</p>
+        <p className="assistant-actions-note">ข้าม {result.dropped} รายการ</p>
       )}
       {!ran && (
         <div className="assistant-actions-foot">

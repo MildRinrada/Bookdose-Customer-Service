@@ -16,7 +16,7 @@ export function ContactHistory({ contactId }: { contactId: string }) {
   const { closeModal } = useDialogs();
   const memberName = useMemberName();
   const tickets = ((useStaffTickets().data?.tickets ?? []) as TicketRow[]).filter((t) => t.contact_id === contactId);
-  if (!tickets.length) return <EmptyState title="ยังไม่มีเคส" description="ลูกค้ารายนี้ยังไม่มีเคสบริการ" icon="ticket" />;
+  if (!tickets.length) return <EmptyState title="ยังไม่มีเคส" icon="ticket" />;
   return (
     <div className="table-scroll">
       <table>

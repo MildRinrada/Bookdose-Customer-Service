@@ -13,7 +13,10 @@ import {
 import { Icon } from '@/components/Icon';
 
 /* Form fields with the app's validation: a red message under the field after leaving it or submitting, in Thai,
-   a star on required labels and an eye on password boxes. Browser validation (required, type, maxLength) does the
+   a star on required labels and an eye on password boxes. What is wrong however the typing ends (a character the
+   pattern does not allow, a name with a symbol, a confirmation that differs) is said while typing; what is only
+   unfinished (an address half typed, a password still short) waits for the field to be left, and a new password
+   counts its length under the box as it is typed. Browser validation (required, type, maxLength) does the
    checking; these components only say it the same way everywhere. */
 
 type Checkable = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -26,6 +29,8 @@ export function fieldMessage(input: Checkable, custom?: (input: Checkable) => st
   if (input.validity.valid) return '';
   if (input.validity.valueMissing) return 'กรุณากรอกข้อมูลช่องนี้';
   if (input.validity.typeMismatch) return 'กรุณาระบุรูปแบบให้ถูกต้อง เช่น name@example.com';
+  if (input.validity.tooShort && 'minLength' in input) return `ต้องมีอย่างน้อย ${input.minLength} ตัวอักษร (ตอนนี้ ${input.value.length})`;
+  if (input.validity.patternMismatch) return input.title || 'รูปแบบไม่ถูกต้อง';
   // The browser's own words for these follow its language, not the app's.
   if (input instanceof HTMLInputElement) {
     if (input.validity.rangeUnderflow) return `กรุณาระบุค่าไม่น้อยกว่า ${input.min}`;
@@ -48,9 +53,12 @@ export function useFieldValidation(custom?: (input: Checkable) => string) {
       onBlur: (e: { currentTarget: Checkable }) => check(e.currentTarget),
       onInvalid: (e: { currentTarget: Checkable }) => check(e.currentTarget),
       onInput: (e: { currentTarget: Checkable }) => {
-        // Keep the custom reason current so submitting sees it; redraw only a message already shown.
-        const message = fieldMessage(e.currentTarget, custom);
-        if (error) setError(message);
+        // Keep the custom reason current so submitting sees it. Shown at once when no more typing can put it right;
+        // otherwise only a message already shown is redrawn.
+        const input = e.currentTarget;
+        const message = fieldMessage(input, custom);
+        const wrong = input.value !== '' && (input.validity.patternMismatch || input.validity.customError);
+        if (error || wrong) setError(message);
       },
       'aria-invalid': error ? true : undefined,
       'aria-describedby': error ? errorId : undefined,
@@ -141,7 +149,11 @@ export function TextField({
   const inputId = id ?? `f-${name}-${autoId.replace(/:/g, '')}`;
   const password = type === 'password';
   const [shown, setShown] = useState(false);
-  const { bind, errorNode } = useFieldValidation((input) => {
+  // A new account password counts its length as it is typed; a sign-in box or a key (minLength={undefined}) and a
+  // confirmation do not.
+  const least = password && name === 'password' && !matches ? ('minLength' in rest ? rest.minLength : 10) : undefined;
+  const [typed, setTyped] = useState(0);
+  const { bind, error, errorNode } = useFieldValidation((input) => {
     const value = input.value.trim();
     if (personName && value && !PERSON_NAME.test(value)) return 'ใช้ตัวอักษร เว้นวรรค จุด ขีด หรืออัญประกาศสำหรับชื่อ';
     if (matches && input.value) {
@@ -160,6 +172,10 @@ export function TextField({
       {...(password ? { minLength: 10, autoComplete: 'new-password' } : {})}
       {...rest}
       {...bind}
+      onInput={(e) => {
+        bind.onInput(e);
+        if (least) setTyped(e.currentTarget.value.length);
+      }}
     />
   );
   return (
@@ -180,6 +196,19 @@ export function TextField({
           {errorNode}
         </>
       )}
+      {least && !error ? (
+        <p className={`tiny password-length${typed >= least ? ' enough' : ''}`} aria-live="polite">
+          {typed >= least ? (
+            <>
+              <Icon name="check" /> ความยาวรหัสผ่านพอแล้ว
+            </>
+          ) : typed ? (
+            `อีก ${least - typed} ตัวอักษร (อย่างน้อย ${least})`
+          ) : (
+            `อย่างน้อย ${least} ตัวอักษร`
+          )}
+        </p>
+      ) : null}
       {hint && <p className="tiny muted">{hint}</p>}
     </div>
   );
@@ -270,11 +299,29 @@ export function NumberField({
 }
 
 /** Buttons at the bottom of a dialog's form: cancel (closes the dialog) and the main action. */
-export function FormActions({ label = 'บันทึก', onCancel, busyLabel }: { label?: ReactNode; onCancel: () => void; busyLabel?: ReactNode }) {
+export function FormActions({
+  label = 'บันทึก',
+  onCancel,
+  busyLabel,
+  back = false,
+}: {
+  label?: ReactNode;
+  onCancel: () => void;
+  busyLabel?: ReactNode;
+  /** The left button goes back to the form this one was opened from, rather than closing. */
+  back?: boolean;
+}) {
   return (
     <div className="form-actions">
       <button type="button" className="btn" onClick={onCancel}>
-        ยกเลิก
+        {back ? (
+          <>
+            <Icon name="back" />
+            ย้อนกลับ
+          </>
+        ) : (
+          'ยกเลิก'
+        )}
       </button>
       <button className="btn primary" type="submit" data-busy-label={typeof busyLabel === 'string' ? busyLabel : undefined}>
         {label}

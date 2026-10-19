@@ -73,7 +73,6 @@ export function AlertsScreen() {
       <div className="page-heading">
         <div>
           <h1>การแจ้งเตือน</h1>
-          <p>สิ่งที่รอคุณ และความคืบหน้าล่าสุดของเรื่องที่ส่งถึงทีมงาน · เลือกช่องทางรับการแจ้งเตือนได้ที่ <Link href="/customer/account">ตั้งค่าบัญชี</Link></p>
         </div>
       </div>
       {alerts.length ? (
@@ -83,7 +82,7 @@ export function AlertsScreen() {
         </div>
       ) : (
         <section className="card">
-          <EmptyState title="ไม่มีการแจ้งเตือน" description="เมื่อทีมงานตอบกลับ ขอข้อมูลเพิ่ม หรือดำเนินการเรื่องของคุณเสร็จ จะแจ้งที่นี่" icon="bell" />
+          <EmptyState title="ไม่มีการแจ้งเตือน" icon="bell" />
         </section>
       )}
     </>

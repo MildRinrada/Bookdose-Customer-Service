@@ -36,7 +36,7 @@ export function SlaWatch({ needed, shown }: { needed: NeededItem[]; shown: numbe
       <div className="card-header">
         <div>
           <h2 id="sla-watch-title">SLA Watch</h2>
-          <p>{needed.length ? `เกินแล้ว ${late} · ใกล้ครบหรือรอคุณ ${needed.length - late}` : 'เคสที่ต้องดำเนินการทันที'}</p>
+          {needed.length > 0 && <p>{`เกินแล้ว ${late}, ใกล้ครบหรือรอคุณ ${needed.length - late}`}</p>}
         </div>
         <span className={`badge${late ? ' suspended' : needed.length ? ' pending_customer' : ''}`}>{needed.length} เคส</span>
       </div>
@@ -63,7 +63,7 @@ export function SlaWatch({ needed, shown }: { needed: NeededItem[]; shown: numbe
                   <Link href={`/tickets/${t.id}`} className="truncate">
                     {t.subject}
                   </Link>
-                  <span className="sla-watch-reason">{reason.split(' · ')[0]}</span>
+                  <span className="sla-watch-reason">{reason}</span>
                 </div>
               </li>
             ))}

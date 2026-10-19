@@ -53,7 +53,7 @@ def save_settings(cd, session, body):
     value = {'enabled':enabled,'hour':hour,'keep':keep}
     repository.save_setting(cd,SETTINGS_KEY,json.dumps(value))
     audit.record(cd,session['user_id'],'platform.backup_settings',
-                 f"{'เปิด' if enabled else 'ปิด'} สำรองอัตโนมัติ · {hour:02d}:00 · เก็บ {keep} ชุด")
+                 f"{'เปิด' if enabled else 'ปิด'} สำรองอัตโนมัติ, {hour:02d}:00, เก็บ {keep} ชุด")
     cd.commit()
     return overview(cd)
 

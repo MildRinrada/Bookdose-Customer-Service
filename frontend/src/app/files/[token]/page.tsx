@@ -5,7 +5,7 @@ import { FileMovedScreen } from '@/features/files/FileMovedScreen';
    reports the visit to the API, which knows whether the token is a honeytoken (docs/security/monitoring-and-traps.md). */
 
 export const metadata: Metadata = {
-  title: 'ไฟล์ไม่พร้อมใช้งาน · Bookdose',
+  title: 'ไฟล์ไม่พร้อมใช้งาน - Bookdose',
   robots: { index: false, follow: false },
 };
 

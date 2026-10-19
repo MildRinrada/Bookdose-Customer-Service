@@ -32,7 +32,7 @@ export function LegalText({ doc, organization }: { doc: LegalDocument; organizat
   return (
     <div className="privacy-doc">
       <p className="tiny muted privacy-version" style={{ marginTop: 0, paddingTop: 0, borderTop: 0 }}>
-        ฉบับ {doc.version} · เผยแพร่ {date(doc.published_at)}
+        ฉบับ {doc.version} เผยแพร่ {date(doc.published_at)}
       </p>
       <Markdown text={named(doc.body, organization)} />
     </div>
@@ -124,7 +124,7 @@ export function LegalPage({ doc }: { doc: LegalKey }) {
             <header className="legal-head">
               <h1>{found.data.title}</h1>
               <p className="tiny muted">
-                ฉบับ {found.data.version} · เผยแพร่ {date(found.data.published_at)}
+                ฉบับ {found.data.version} เผยแพร่ {date(found.data.published_at)}
               </p>
             </header>
             <div className="privacy-doc">
@@ -133,16 +133,21 @@ export function LegalPage({ doc }: { doc: LegalKey }) {
           </>
         )}
       </section>
-      <nav className="legal-others tiny" aria-label="เอกสารอื่น">
-        {others.map((key) => (
-          <Link key={key} href={`/legal/${key}`}>
-            {LEGAL_NAMES[key]}
-          </Link>
-        ))}
-        <Link href="/login">
-          <Icon name="back" /> กลับไปหน้าเข้าสู่ระบบ
+      <footer className="legal-foot">
+        <Link className="btn subtle sm" href="/login">
+          <Icon name="back" />
+          กลับไปหน้าเข้าสู่ระบบ
         </Link>
-      </nav>
+        <nav className="legal-others" aria-label="เอกสารอื่น">
+          <span>เอกสารอื่น</span>
+          {others.map((key) => (
+            <Link key={key} href={`/legal/${key}`}>
+              <Icon name={key === 'terms' ? 'file' : 'shield'} />
+              {LEGAL_NAMES[key]}
+            </Link>
+          ))}
+        </nav>
+      </footer>
     </main>
   );
 }

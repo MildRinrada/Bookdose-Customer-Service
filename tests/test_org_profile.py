@@ -102,7 +102,7 @@ class OrgProfileTests(unittest.TestCase):
         self.assertEqual(self.ok(visitor,'/api/public/alpha')['organization']['banner'],saved)
         self.assertEqual(json.loads(self.ok(self.admin,'/api/workspace')['settings']['support_banner']),saved)
         detail = ' '.join(e['detail'] or '' for e in self.ok(self.admin,'/api/audit')['events'])
-        self.assertIn('แบนเนอร์หน้าช่วยเหลือ (สีเขียวเข้ม · ฝ่ายดูแลสมาชิก ตอบทุกวัน)',detail)
+        self.assertIn('แบนเนอร์หน้าช่วยเหลือ (สีเขียวเข้ม, ฝ่ายดูแลสมาชิก ตอบทุกวัน)',detail)
         # Only the set's colours, a short line, and only the owner.
         for bad in ({'tagline':'','tone':'purple'},{'tagline':'','tone':'#ff00ff'},{'tagline':'ก'*81,'tone':'mint'},{'tagline':5,'tone':'mint'},{'tone':'mint','tagline':None}):
             self.assertEqual(self.admin.call('/api/settings/banner',bad)[0],400,bad)

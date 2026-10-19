@@ -77,7 +77,7 @@ export function MacroButtons({ kind = 'ticket', targetId }: { kind?: MacroTarget
           ยังไม่มี Macro
           {role !== 'agent' && (
             <>
-              {' · '}
+              {' '}
               <Link href="/automation">สร้างที่หน้าระบบอัตโนมัติ</Link>
             </>
           )}
@@ -95,7 +95,6 @@ export function MacroMenu({ target }: { target: MacroTarget }) {
   const [busy, setBusy] = useState<string | null>(null);
   return (
     <>
-      <p className="muted mb">กดครั้งเดียว ระบบทำทุกขั้นตอนของ Macro ให้ทันที</p>
       <div className="macro-list">
         {macros.map((m) => {
           const preview = plainText(m.reply).slice(0, 160);
@@ -129,7 +128,7 @@ export function MacroMenu({ target }: { target: MacroTarget }) {
           ยังไม่มี Macro
           {role !== 'agent' && (
             <>
-              {' · '}
+              {' '}
               <Link href="/automation">สร้างได้ที่หน้าระบบอัตโนมัติ</Link>
             </>
           )}

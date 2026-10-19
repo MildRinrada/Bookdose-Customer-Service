@@ -58,7 +58,7 @@ export function BlockIpDialog({ ip, reason }: { ip: string; reason?: string }) {
         await refresh(SECURITY_PREFIX);
       }}
     >
-      <p className="notice warning">คำขอทั้งหมดจาก IP นี้จะถูกปฏิเสธทันที รวมถึงผู้ใช้ที่ใช้เครือข่ายเดียวกัน</p>
+      <p className="notice warning">คำขอทั้งหมดจาก IP นี้จะถูกปฏิเสธทันที</p>
       <div className="form-grid security-block-grid">
         <BlockFields ip={ip} reason={reason} />
       </div>
@@ -92,7 +92,6 @@ export function IpBlocksCard() {
       <div className="card-header">
         <div>
           <h2 id="security-ip-blocks-title">บล็อก IP</h2>
-          <p>IP ในรายการนี้เข้าใช้งานระบบไม่ได้จนกว่าจะหมดอายุหรือถูกนำออก</p>
         </div>
         <Icon name="shield" />
       </div>

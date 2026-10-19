@@ -193,7 +193,7 @@ def route_request(req, path):
     if run(req,path,'page'):
         return
     # Pages belong to the Next.js app (frontend/).
-    require(path.startswith('/api/'),'ไม่พบหน้านี้ · เปิดหน้าเว็บผ่านแอป Next.js (frontend/)',404)
+    require(path.startswith('/api/'),'ไม่พบหน้านี้ เปิดหน้าเว็บผ่านแอป Next.js (frontend/)',404)
     req.area = 'webhook'
     if run(req,path,'webhook'):
         return

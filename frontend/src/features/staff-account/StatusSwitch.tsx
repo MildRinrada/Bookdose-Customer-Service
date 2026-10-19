@@ -14,13 +14,6 @@ import { useSaveStatus } from './StatusSettings';
    each with its colour and what it means for new cases; when the status is "available" but the hours or leave say
    otherwise, the dot and the menu say so. Markup: pages/account-settings.css (.status-switch, .status-menu). */
 
-const MEANING: Record<WorkStatus, string> = {
-  online: 'ระบบส่งเรื่องใหม่ให้คุณตามปกติ',
-  break: 'หยุดรับเรื่องใหม่ชั่วคราว กลับมากดพร้อมได้ทันที',
-  busy: 'ไม่รับเรื่องใหม่ เคสที่ถืออยู่ยังเป็นของคุณ',
-  offline: 'ไม่รับเรื่องใหม่จนกว่าจะกลับมา',
-};
-
 export function StatusSwitch() {
   const view = usePreferences();
   const run = useRunAction();
@@ -111,7 +104,6 @@ export function StatusSwitch() {
             <span className="status-dot" aria-hidden="true" />
             <span className="status-option-text">
               <strong>{data.statuses[key]}</strong>
-              <small>{MEANING[key]}</small>
             </span>
             {key === status && <Icon name="check" />}
           </button>

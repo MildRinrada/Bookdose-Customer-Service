@@ -18,7 +18,7 @@ export function PhotoPicker({
   value,
   personName,
   title = 'รูปโปรไฟล์',
-  hint = 'คลิกที่รูปเพื่อเลือกภาพใหม่ แล้วเลื่อนและย่อ-ขยายให้พอดีวงกลม · PNG หรือ JPG ไม่เกิน 5 MB',
+  hint = 'PNG หรือ JPG ไม่เกิน 5 MB',
 }: {
   name?: string;
   value: string;
@@ -88,7 +88,7 @@ export function PhotoPicker({
                   onApply={(url) => {
                     setPhoto(url);
                     closeSheet();
-                    toast('ปรับรูปแล้ว · กดบันทึกเพื่อใช้รูปนี้');
+                    toast('ปรับรูปแล้ว กดบันทึกเพื่อใช้รูปนี้');
                   }}
                 />,
               ),

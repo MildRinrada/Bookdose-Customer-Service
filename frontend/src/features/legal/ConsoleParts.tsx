@@ -46,7 +46,6 @@ export function ProviderCard() {
       <div className="card-header">
         <div>
           <h2>ข้อมูลผู้ให้บริการ</h2>
-          <p>ทุกเอกสารดึงข้อมูลนี้ไปแสดงเอง แก้ที่นี่ที่เดียว มีผลกับทุกฉบับรวมฉบับที่เผยแพร่แล้วทันที</p>
         </div>
         {missing > 0 && <span className="legal-missing">ยังไม่ได้กรอก {missing} ช่อง</span>}
       </div>
@@ -56,7 +55,7 @@ export function ProviderCard() {
           data-form="legal-company"
           onSubmit={async (values) => {
             await api(COMPANY_PATH, values);
-            toast('บันทึกข้อมูลผู้ให้บริการแล้ว · ทุกเอกสารแสดงข้อมูลใหม่แล้ว');
+            toast('บันทึกข้อมูลผู้ให้บริการแล้ว ทุกเอกสารแสดงข้อมูลใหม่แล้ว');
             await refresh(COMPANY_PATH);
           }}
         >

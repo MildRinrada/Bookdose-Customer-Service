@@ -105,16 +105,16 @@ export function ContactPeek({ peek, onKeep, onHide }: { peek: Peek | null; onKee
               <Link href={`/tickets/${t.id}`}>
                 <span className="contact-peek-subject">{t.subject}</span>
                 <span className="contact-peek-meta">
-                  BD-{t.number} · <Badge status={t.status} /> · {relative(t.updated_at)}
+                  BD-{t.number} <Badge status={t.status} /> {relative(t.updated_at)}
                 </span>
               </Link>
             </li>
           ))}
         </ol>
       ) : (
-        <p className="muted contact-peek-empty">ยังไม่มีเคส · เพิ่มเข้าระบบ {date(c.created_at)}</p>
+        <p className="muted contact-peek-empty">ยังไม่มีเคส เพิ่มเข้าระบบ {date(c.created_at)}</p>
       )}
-      {s.cases.length > SHOWN && <span className="small muted">และอีก {s.cases.length - SHOWN} เคส · กดจำนวนเคสเพื่อดูทั้งหมด</span>}
+      {s.cases.length > SHOWN && <span className="small muted">และอีก {s.cases.length - SHOWN} เคส</span>}
     </div>
   );
 }

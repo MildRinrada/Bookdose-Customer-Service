@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { Icon } from '@/components/Icon';
 import { CustomerArticleRow, CustomerNone, ErrorState, PageLoading } from '@/components/ui/display';
 import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { plainText } from '@/lib/format';
@@ -36,7 +34,6 @@ function GuidesView({ articles }: { articles: Guide[] }) {
       <div className="page-heading">
         <div>
           <h1>คู่มือจาก Bookdose</h1>
-          <p>คำแนะนำการใช้งานระบบสำหรับแอดมินและทีมงานองค์กร จากทีม Bookdose</p>
         </div>
       </div>
       <section className="card customer-answers">
@@ -67,19 +64,12 @@ function GuidesView({ articles }: { articles: Guide[] }) {
             ) : (
               <CustomerNone
                 title={articles.length ? 'ไม่พบคู่มือที่ตรงกับที่ค้นหา' : 'ยังไม่มีคู่มือ'}
-                hint={articles.length ? 'ลองใช้คำอื่น หรือเลือกหมวด “ทั้งหมด”' : 'ทีม Bookdose ยังไม่ได้เผยแพร่คู่มือสำหรับองค์กร'}
+                hint={null}
               />
             )}
           </div>
         </div>
       </section>
-      <p className="muted guides-note">
-        <Icon name="book" />
-        <span>
-          คู่มือของทีมคุณเองอยู่ที่เมนู <Link href="/knowledge">คลังความรู้</Link> ถ้าต้องการความช่วยเหลือเพิ่ม ติดต่อทีม Bookdose
-          ผ่านช่องทางที่ได้รับตอนเปิดใช้ระบบ
-        </span>
-      </p>
     </>
   );
 }

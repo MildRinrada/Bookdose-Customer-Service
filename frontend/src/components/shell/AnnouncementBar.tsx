@@ -14,7 +14,7 @@ export function AnnouncementBar({ announcement }: { announcement?: ActiveAnnounc
       <Icon name={announcement.level === 'warning' ? 'bolt' : 'bell'} />
       <span>
         {announcement.text}
-        {announcement.ends_at && <span className="tiny"> · ถึง {date(announcement.ends_at, true)}</span>}
+        {announcement.ends_at && <span className="tiny"> ถึง {date(announcement.ends_at, true)}</span>}
       </span>
     </div>
   );

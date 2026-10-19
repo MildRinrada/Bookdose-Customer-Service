@@ -14,7 +14,8 @@
   transform: none;
   filter: none;
 }
-/* A card still waiting to the right must never widen the page (no sideways scrollbar): its section clips it. */
+/* A card still waiting to the right must never widen the page (no sideways scrollbar): its section clips it. The
+   cards in these sections draw their edge as a real border for that reason (dashboard-widgets.css). */
 .manager-view,.insights-section {
   overflow-x: clip;
 }

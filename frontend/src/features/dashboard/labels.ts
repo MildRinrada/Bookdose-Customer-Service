@@ -27,7 +27,7 @@ export function actionNeeded(tickets: TicketRow[]): NeededItem[] {
           rank: 1,
           tone: 'warn',
           symbol: 'clock',
-          reason: `ใกล้ครบ SLA ${responseDue === due ? 'ตอบกลับ' : 'แก้ไข'} · เหลือ ${formatDuration((due - now) / 60000)}`,
+          reason: `ใกล้ครบ SLA ${responseDue === due ? 'ตอบกลับ' : 'แก้ไข'}`,
         };
       if (t.last_public_kind === 'customer' && t.first_response_at)
         return { t, due, rank: 2, tone: 'info', symbol: 'chat', reason: `ลูกค้าตอบกลับล่าสุด ${relative(t.last_public_at)}` };
@@ -53,7 +53,7 @@ export function meItems(alerts: StaffAlerts | null | undefined): MeItem[] {
       tone: 'danger',
       icon: 'bolt',
       title: `BD-${e.number} ยกระดับมาหาคุณ`,
-      detail: `${escalationReasons[e.reason ?? ''] || ''} · ${e.subject}`,
+      detail: [escalationReasons[e.reason ?? ''], e.subject].filter(Boolean).join(', '),
       href: `/tickets/${e.ticket_id}`,
       when: shortAgo(e.escalated_at),
     });
@@ -64,7 +64,7 @@ export function meItems(alerts: StaffAlerts | null | undefined): MeItem[] {
       tone: 'warn',
       icon: 'clock',
       title: `BD-${f.number} น่าจะเกิน SLA`,
-      detail: `คาดว่า${f.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้าราว ${formatDuration(f.late_minutes)} · ${f.subject}`,
+      detail: `คาดว่า${f.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้าราว ${formatDuration(f.late_minutes)}, ${f.subject}`,
       href: `/tickets/${f.ticket_id}`,
       when: `กำหนด ${date(f.due_at, true)}`,
     });
@@ -77,7 +77,7 @@ export function meItems(alerts: StaffAlerts | null | undefined): MeItem[] {
       tone: late ? 'warn' : 'info',
       icon: 'clock',
       title: `${late ? 'ถึงเวลาติดตาม' : 'ติดตามผล'} BD-${f.number}`,
-      detail: `${f.note} · ${f.subject ?? ''}`,
+      detail: [f.note, f.subject].filter(Boolean).join(', '),
       href: `/tickets/${f.ticket_id}`,
       when: late ? 'ถึงกำหนด' : `อีก ${formatDuration((due - now) / 60000)}`,
     });
@@ -89,7 +89,7 @@ export function meItems(alerts: StaffAlerts | null | undefined): MeItem[] {
       tone: 'info',
       icon: 'at',
       title: `${m.author_name} กล่าวถึงคุณ`,
-      detail: `${m.ticket_number ? `BD-${m.ticket_number} · ` : ''}${plainText(m.body).slice(0, 90)}`,
+      detail: `${m.ticket_number ? `BD-${m.ticket_number} ` : ''}${plainText(m.body).slice(0, 90)}`,
       href: m.ticket_id ? `/tickets/${m.ticket_id}` : `/inbox/${m.conversation_id}`,
       when: shortAgo(m.created_at),
     });
@@ -160,7 +160,7 @@ export function heatmapParts({ weeks, counts }: Heatmap, totals = false) {
   const amount = (n: number) => (totals ? `${n} เรื่อง` : `เฉลี่ย ${avg(n)} ${per}`);
   const rows = heatDays.map((d) => ({
     day: weekdayShort[d],
-    cells: counts[d].map((n, h): HeatCell => ({ level: level(n), tip: `${weekdayShort[d]} ${hourText(h)}–${hourText(h + 1)} · ${amount(n)}` })),
+    cells: counts[d].map((n, h): HeatCell => ({ level: level(n), tip: `${weekdayShort[d]} ${hourText(h)}–${hourText(h + 1)}, ${amount(n)}` })),
   }));
   const windows: Array<{ d: number; s: number; n: number }> = [];
   for (const d of heatDays) for (let s = 0; s <= 21; s++) windows.push({ d, s, n: counts[d][s] + counts[d][s + 1] + counts[d][s + 2] });
@@ -173,7 +173,7 @@ export function heatmapParts({ weeks, counts }: Heatmap, totals = false) {
   const dayTotals = heatDays.map((d) => ({ d, n: counts[d].reduce((sum, x) => sum + x, 0) })).sort((x, y) => y.n - x.n);
   const quiet = windows.filter((w) => w.d >= 1 && w.d <= 5 && w.s >= 8 && w.s <= 17).sort((x, y) => x.n - y.n)[0];
   const advice: PeakLine[] = [];
-  if (total < 20) advice.push({ label: 'ข้อมูลยังน้อย', detail: `มี ${total} เรื่อง${totals ? 'ในช่วงนี้' : `ใน ${weeks} สัปดาห์`} ผลวิเคราะห์จะแม่นขึ้นเมื่อมีเรื่องมากขึ้น` });
+  if (total < 20) advice.push({ label: 'ข้อมูลยังน้อย', detail: `มี ${total} เรื่อง${totals ? 'ในช่วงนี้' : `ใน ${weeks} สัปดาห์`} ` });
   if (peaks.length)
     advice.push({
       label: `เพิ่มคนพร้อมตอบช่วง ${weekdayShort[peaks[0].d]} ${hourText(peaks[0].s)}–${hourText(peaks[0].s + 3)}`,
@@ -183,7 +183,7 @@ export function heatmapParts({ weeks, counts }: Heatmap, totals = false) {
   if (dayTotals[0].n)
     advice.push({
       label: `${weekdayFull[dayTotals[0].d]} งานเข้ามากที่สุด`,
-      detail: `${share(dayTotals[0].n)}% ของเรื่อง${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'} · ${weekdayFull[last.d]} น้อยที่สุด (${share(last.n)}%)`,
+      detail: `${share(dayTotals[0].n)}% ของเรื่อง${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'}, ${weekdayFull[last.d]} น้อยที่สุด (${share(last.n)}%)`,
     });
   if (quiet && total)
     advice.push({ label: `ช่วงเงียบ: ${weekdayShort[quiet.d]} ${hourText(quiet.s)}–${hourText(quiet.s + 3)}`, detail: 'เหมาะกับพักกะ ประชุมทีม หรือเคลียร์งานหลังบ้าน' });
@@ -195,7 +195,7 @@ export function heatmapParts({ weeks, counts }: Heatmap, totals = false) {
     total,
     summary,
     rows,
-    peaks: peaks.map((p): PeakLine => ({ label: `${weekdayFull[p.d]} ${hourText(p.s)}–${hourText(p.s + 3)}`, detail: `${amount(p.n)} · ${share(p.n)}% ของ${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'}` })),
+    peaks: peaks.map((p): PeakLine => ({ label: `${weekdayFull[p.d]} ${hourText(p.s)}–${hourText(p.s + 3)}`, detail: `${amount(p.n)}, ${share(p.n)}% ของ${totals ? 'ทั้งช่วง' : 'ทั้งสัปดาห์'}` })),
     advice,
   };
 }

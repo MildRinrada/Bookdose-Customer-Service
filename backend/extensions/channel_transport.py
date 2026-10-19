@@ -335,7 +335,7 @@ def reply_html(text,brand='',base='',author='',slug='',signature=''):
     home = f'{base.rstrip(chr(47))}/support/{slug}' if base and slug else ''
     return mail_style.frame(
         body,brand=brand,title=REPLY_TITLE if brand else '',line=REPLY_KICKER if brand else '',
-        author=author,role=f'{REPLY_ROLE} · {brand}' if brand else REPLY_ROLE,
+        author=author,role=f'{REPLY_ROLE} {brand}' if brand else REPLY_ROLE,
         button=('ดูเรื่องของคุณ',f'{home}/tickets') if home else None,
         links=[('คำถามที่พบบ่อย',f'{home}/faq'),('เริ่มเรื่องใหม่',f'{home}/tickets/new')] if home else [],
         note=REPLY_NOTE,sign=REPLY_SIGN,preview=' '.join(str(text or '').split())[:120])

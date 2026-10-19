@@ -169,7 +169,7 @@ def apply_rules(db, ticket_id):
                 # the team (and the SLA escalation) instead.
                 state = staff_prefs.availability(staff_prefs.prefs_of(cd,assignee))
                 if not state['available']:
-                    away = f" · ไม่มอบหมายให้ผู้รับผิดชอบตามกฎ เพราะ{state['reason']}"
+                    away = f" ไม่มอบหมายให้ผู้รับผิดชอบตามกฎ เพราะ{state['reason']}"
                     assignee = ticket['assignee_id']
     tickets.update(db,ticket_id,ticket['status'],priority,team,assignee,ticket['resolved_at'])
     if priority!=ticket['priority']:
@@ -242,7 +242,7 @@ def escalate_due(cd, db, tenant_id):
         repository.insert_escalation(db,t['id'],'unclaimed',None,lead['id'] if lead else None)
         realtime.ticket(db,t['id'])
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
-                     f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที · {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
+                     f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
     for t in at_risk:
         lead = team_lead(members,load,t['team_id'],available)
         repository.insert_escalation(db,t['id'],'sla_risk',t['assignee_id'],lead['id'] if lead else None)
@@ -250,7 +250,7 @@ def escalate_due(cd, db, tenant_id):
         staff_prefs.queue(db,t['assignee_id'],'sla',f"เคส BD-{t['number']} ใกล้ครบกำหนด SLA",
                           f"{t['subject']}\nยังไม่ได้ตอบกลับลูกค้าครั้งแรก",f"/tickets/{t['id']}")
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
-                     f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA · {'แจ้ง '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
+                     f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA {'แจ้ง '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
     db.commit()
     return len(unclaimed)+len(at_risk)
 
@@ -591,6 +591,7 @@ class Worker:
     def __init__(self):
         self.stop = threading.Event()
         self.thread = threading.Thread(target=self.run,name='bookdose-automation',daemon=True)
+        self.terms_at = 0.0
 
     def start(self):
         self.thread.start()
@@ -608,6 +609,16 @@ class Worker:
                 except Exception as error:
                     print(f'Support access: {type(error).__name__}; retrying next round',flush=True)
                     monitor.error('automation','support: '+type(error).__name__)
+                try:
+                    # ข้อตกลงการใช้บริการฉบับใหม่: its admins are emailed, then reminded (legal/service.py). Every ten minutes.
+                    if time.monotonic()>=self.terms_at:
+                        self.terms_at = time.monotonic()+600
+                        from backend.modules.legal import service as legal
+                        with D.control() as cd:
+                            legal.remind_terms(cd)
+                except Exception as error:
+                    print(f'Terms mail: {type(error).__name__}; retrying next round',flush=True)
+                    monitor.error('automation','terms mail: '+type(error).__name__)
                 for tenant_id in ids:
                     if self.stop.is_set():
                         return

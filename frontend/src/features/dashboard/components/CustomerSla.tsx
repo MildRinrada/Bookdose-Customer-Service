@@ -34,7 +34,7 @@ export function SlaCards({ orgs }: { orgs: OrgServiceLevel[] }) {
             <div>
               <h3>{o.org_name}</h3>
               <p>
-                {o.cases} เคส · เปิดอยู่ {o.open}
+                {o.cases} เคส เปิดอยู่ {o.open}
               </p>
             </div>
             {o.csat_avg != null && (

@@ -101,7 +101,7 @@ function OrganizationsView({ data, tab, admin }: { data: TenantsPage; tab?: stri
         <div>
           <h1>จัดการองค์กร</h1>
           <p>
-            {data.tenants.length} องค์กรบนระบบนี้ · สมาชิกที่ใช้งานรวม {data.tenants.reduce((total, t) => total + t.member_count, 0)} คน
+            {data.tenants.length} องค์กรบนระบบนี้ สมาชิกที่ใช้งานรวม {data.tenants.reduce((total, t) => total + t.member_count, 0)} คน
           </p>
         </div>
         <div className="flex">
@@ -149,7 +149,7 @@ function PlatformActivity({ events }: { events: TenantsPage['audit'] }) {
       <div className="card-header">
         <div>
           <h2>ประวัติแพลตฟอร์ม</h2>
-          <p>การสร้างองค์กร Support Access ทีมผู้ดูแล และ FAQ กลาง · {events.length} รายการล่าสุด</p>
+          <p>{events.length} รายการล่าสุด</p>
         </div>
         <Icon name="shield" />
       </div>
@@ -181,7 +181,7 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
     <>
       {withoutAdmin.length > 0 && (
         <p className="notice warning" role="status">
-          {withoutAdmin.map((t) => t.name).join(', ')} ยังไม่มีผู้ดูแลองค์กร เรื่องจากลูกค้าจะรอโดยไม่มีใครรับ กด “เชิญผู้ดูแล” ในแถวขององค์กรนั้น
+          {withoutAdmin.map((t) => t.name).join(', ')} ยังไม่มีผู้ดูแลองค์กร
         </p>
       )}
       <section className="card">
@@ -243,19 +243,11 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
             </>
           ) : (
             <div className="card-body">
-              <EmptyState title="ไม่พบองค์กรตามตัวกรอง" description="ลองเปลี่ยนคำค้น หรือเลือกสถานะ “ทั้งหมด”" icon="globe" />
+              <EmptyState title="ไม่พบองค์กรตามตัวกรอง" icon="globe" />
             </div>
           )}
         </div>
       </section>
-      {/* The rule behind the "ขอเข้าช่วยเหลือ" column, under the list so the list comes first. */}
-      <p className="muted platform-note">
-        <Icon name="lock" />
-        <span>
-          ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น ไม่รับเคสและไม่ตอบลูกค้า แต่ละองค์กรมีผู้ดูแลองค์กรของตัวเอง (เชิญได้จากหน้าขององค์กรนั้น)
-          เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว
-        </span>
-      </p>
     </>
   );
 }
@@ -328,6 +320,20 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
       <td className="org-members">{t.member_count}</td>
       <td>
         <Badge status={t.status} />
+        {t.terms?.pending && (
+          <span
+            className={`org-terms${t.terms.overdue ? ' overdue' : ''}`}
+            title={
+              t.terms.accepted
+                ? t.terms.overdue
+                  ? 'เลยกำหนดยอมรับข้อตกลงฉบับใหม่แล้ว ผู้ดูแลองค์กรต้องยอมรับก่อนใช้งานต่อ ทีมงานและลูกค้ายังใช้งานได้'
+                  : `ยังไม่ได้ยอมรับข้อตกลงฉบับใหม่ ครบกำหนด ${date(t.terms.due ?? '')}`
+                : 'ผู้ดูแลองค์กรยังไม่เคยยอมรับข้อตกลง ระบบจะขอให้ยอมรับเมื่อเข้าใช้งาน'
+            }
+          >
+            {t.terms.accepted ? (t.terms.overdue ? 'ข้อตกลงเลยกำหนด' : 'รอยอมรับข้อตกลงใหม่') : 'ยังไม่ยอมรับข้อตกลง'}
+          </span>
+        )}
       </td>
       <td>
         {'current' in access && (
@@ -339,7 +345,7 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
         {'pending' in access && (
           <span className="org-access org-support-pending">
             <Icon name="clock" />
-            <span>รอผู้ดูแลองค์กรอนุมัติ · ขอ {access.pending.hours} ชม.</span>
+            <span>รอผู้ดูแลองค์กรอนุมัติ ขอ {access.pending.hours} ชม.</span>
             <button type="button" className="btn sm subtle" onClick={() => withdraw(access.pending, false)}>
               ยกเลิกคำขอ
             </button>
@@ -347,7 +353,7 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
         )}
         {inForce && 'canOpen' in access && (
           <span className="tiny muted org-support-until">
-            Support ถึง {date(inForce.expires_at, true)} ·{' '}
+            Support ถึง {date(inForce.expires_at, true)}{' '}
             <button type="button" className="link-btn" onClick={() => withdraw(inForce, true)}>
               ออกก่อนเวลา
             </button>
@@ -369,7 +375,7 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
             <button
               type="button"
               className="btn sm"
-              title="ส่งคำขอให้ผู้ดูแลองค์กรอนุมัติ พร้อมเหตุผลและระยะเวลา · เมื่ออนุมัติจะดูข้อมูลได้อย่างเดียว"
+              title="ส่งคำขอให้ผู้ดูแลองค์กรอนุมัติ พร้อมเหตุผลและระยะเวลา เมื่ออนุมัติจะดูข้อมูลได้อย่างเดียว"
               onClick={() => openModal('ขอสิทธิ์ Support Access', <SupportAccessForm id={t.id} name={t.name} />)}
             >
               <Icon name="shield" />
@@ -414,27 +420,20 @@ export function FeatureForm({ tenant: t, catalogue }: { tenant: Tenant; catalogu
     }
   };
   return (
-    <>
-      <p className="notice">
-        เปิดหรือปิดได้ทีละองค์กร ใช้ลองฟีเจอร์ใหม่กับบางองค์กรก่อนแล้วค่อยเปิดให้ทุกที่ · มีผลกับหน้าจอของทีมงานองค์กรนี้ตั้งแต่โหลดหน้าถัดไป
-        องค์กรอื่นไม่เปลี่ยน
-      </p>
-      <div className="feature-list">
-        {catalogue.map((f) => {
-          const on = state[f.key];
-          return (
-            <label className="check feature-row" key={f.key}>
-              <input type="checkbox" className="switch" checked={on} disabled={busy === f.key} onChange={(e) => void flip(f, e.target.checked)} />
-              <span>
-                {f.label}
-                <span className="tiny muted block">{f.detail}</span>
-                {on !== f.default && <span className="tiny muted block">ต่างจากค่าเริ่มต้น (ปกติ{f.default ? 'เปิด' : 'ปิด'})</span>}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    </>
+    <div className="feature-list">
+      {catalogue.map((f) => {
+        const on = state[f.key];
+        return (
+          <label className="check feature-row" key={f.key}>
+            <input type="checkbox" className="switch" checked={on} disabled={busy === f.key} onChange={(e) => void flip(f, e.target.checked)} />
+            <span>
+              {f.label}
+              {on !== f.default && <span className="tiny muted block">ต่างจากค่าเริ่มต้น (ปกติ{f.default ? 'เปิด' : 'ปิด'})</span>}
+            </span>
+          </label>
+        );
+      })}
+    </div>
   );
 }
 
@@ -455,11 +454,7 @@ export function SlugForm({ tenant: t }: { tenant: Tenant }) {
         await refresh(PLATFORM_PREFIX, '/api/bootstrap');
       }}
     >
-      <p className="notice">
-        รหัสเดิม <strong>{t.slug}</strong> จะยังเปิดหน้าลูกค้าขององค์กรนี้ได้ตลอดไป ลิงก์ที่ส่งไปแล้วทางอีเมลหรือ SMS และวิดเจ็ตที่ฝังบนเว็บไซต์ขององค์กร
-        จึงไม่พัง · รหัสที่เคยใช้จะไม่ถูกยกให้องค์กรอื่นเด็ดขาด
-      </p>
-      <TextField label="รหัสองค์กรใหม่" name="slug" defaultValue={t.slug} max={60} hint="a-z, 0-9 และขีดกลาง เช่น bookdose-support" />
+      <TextField label="รหัสองค์กรใหม่" name="slug" defaultValue={t.slug} max={60} />
       {t.former_slugs?.length > 0 && <p className="tiny muted">รหัสเดิมที่ยังใช้ได้อยู่: {t.former_slugs.join(', ')}</p>}
       <FormActions label="เปลี่ยนรหัสองค์กร" onCancel={() => closeModal()} />
     </Form>

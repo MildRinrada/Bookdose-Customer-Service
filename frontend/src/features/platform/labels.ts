@@ -45,12 +45,6 @@ export const articleStateLabels: Record<GlobalArticleState, string> = {
   changed: 'มีแก้ไขรอเผยแพร่',
 };
 
-export const articleStateHints: Record<GlobalArticleState, string> = {
-  draft: 'ยังไม่มีใครเห็นบทความนี้ ตรวจให้เรียบร้อยแล้วกด “เผยแพร่”',
-  published: 'ผู้อ่านเห็นบทความนี้อยู่ การแก้ไขครั้งต่อไปจะเก็บเป็นร่างจนกว่าจะเผยแพร่',
-  changed: 'ผู้อ่านยังเห็นฉบับเดิม การแก้ไขจะขึ้นให้ทุกองค์กรเห็นเมื่อกด “เผยแพร่การแก้ไข”',
-};
-
 export const articleStates = Object.keys(articleStateLabels) as GlobalArticleState[];
 
 /** "1.5 GB" */
@@ -76,5 +70,5 @@ export function durationText(seconds: number): string {
 export function workerStatus(w: SystemWorker): string {
   if (w.starting) return 'กำลังเริ่มทำงานหลังเปิดโปรแกรม';
   if (w.seconds_ago === null) return 'ยังไม่เริ่มทำงาน';
-  return w.running ? `ทำงานอยู่ · เริ่มรอบล่าสุด ${durationText(w.seconds_ago)}ที่แล้ว` : `ไม่ตอบสนองมา ${durationText(w.seconds_ago)}`;
+  return w.running ? `ทำงานอยู่ เริ่มรอบล่าสุด ${durationText(w.seconds_ago)}ที่แล้ว` : `ไม่ตอบสนองมา ${durationText(w.seconds_ago)}`;
 }

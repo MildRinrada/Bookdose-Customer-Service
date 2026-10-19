@@ -39,7 +39,7 @@ export function WaitingChats({ now }: { now: number }) {
       <div className="card-header">
         <div>
           <h2 id="waiting-title">แชทรอตอบ</h2>
-          <p>{longest ? `รอนานสุด ${waitText(now - longest.since)}${noCase ? ` · ${noCase} แชทยังไม่เปิดเคส` : ''}` : 'ลูกค้าที่ยังไม่มีใครตอบ'}</p>
+          {longest && <p>{`รอนานสุด ${waitText(now - longest.since)}${noCase ? `, ${noCase} แชทยังไม่เปิดเคส` : ''}`}</p>}
         </div>
         <span className={`badge${waiting.length ? ' pending_customer' : ''}`}>{waiting.length} แชท</span>
       </div>

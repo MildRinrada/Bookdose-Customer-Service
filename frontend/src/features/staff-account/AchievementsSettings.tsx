@@ -6,14 +6,12 @@ import { ACHIEVEMENTS_PATH, type Achievements } from '@/features/achievements/ap
 import { BadgeGrid } from '@/features/achievements/components/BadgeGrid';
 import { RecapMonth } from '@/features/achievements/components/RecapCard';
 import { useApi } from '@/lib/query';
-import { useWork } from '@/lib/session';
 
 /* ตั้งค่าบัญชี → ผลงานของฉัน: the member's monthly summary (any of the last twelve months, or this one so far) and their
    badges, in the organization selected - the one section of the account that belongs to an organization, because the
    work does. Only ever the member's own. */
 
 export function AchievementsSettings() {
-  const work = useWork();
   const data = useApi<Achievements>(ACHIEVEMENTS_PATH).data;
   const [month, setMonth] = useState<string | null>(null);
   if (!data) return <PageLoading />;
@@ -25,7 +23,6 @@ export function AchievementsSettings() {
         <div className="card-header recap-picker">
           <div>
             <h2>สรุปผลงานประจำเดือน</h2>
-            <p>งานของคุณใน {work.tenant.name} เห็นเฉพาะคุณ</p>
           </div>
           <label className="sr-only" htmlFor="recap-month">
             เดือนที่ต้องการดู
@@ -47,7 +44,7 @@ export function AchievementsSettings() {
           <div>
             <h2>เหรียญความสำเร็จ</h2>
             <p>
-              ได้แล้ว {earned} จาก {data.badges.length} เหรียญ ไม่มีการจัดอันดับ แข่งกับตัวเองเท่านั้น
+              ได้แล้ว {earned} จาก {data.badges.length} เหรียญ
             </p>
           </div>
         </div>

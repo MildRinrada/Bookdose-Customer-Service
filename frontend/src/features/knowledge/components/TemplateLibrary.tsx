@@ -24,16 +24,11 @@ export function TemplateLibrary() {
     return (
       <EmptyState
         title="ยังไม่มีแม่แบบให้ใช้"
-        description="ทีม Bookdose ยังไม่ได้เผยแพร่บทความแม่แบบ ระหว่างนี้เขียนบทความเองได้จากปุ่ม เขียนบทความใหม่"
         icon="book"
       />
     );
   return (
     <>
-      <p className="notice">
-        กดนำไปใช้แล้วบทความจะถูกคัดลอกมาเป็นของคุณทันที <strong>แก้ไขเป็นสำนวนของคุณเองได้เลย</strong> · ถ้าทีม Bookdose แก้แม่แบบภายหลัง
-        บทความที่คุณนำไปใช้แล้วจะไม่เปลี่ยนตาม
-      </p>
       <div className="template-list">
         {templates.map((template) => (
           <TemplateRow key={template.id} template={template} />
@@ -56,8 +51,8 @@ function TemplateRow({ template }: { template: ArticleTemplate }) {
       setTaken(true);
       toast(
         visibility === 'public'
-          ? `นำ “${template.title}” มาใช้แล้ว · เผยแพร่ให้ลูกค้าเห็นแล้ว แก้ไขต่อได้ที่คลังความรู้`
-          : `นำ “${template.title}” มาใช้แล้ว · เก็บเป็นบทความภายใน ยังไม่เผยแพร่`,
+          ? `นำ “${template.title}” มาใช้แล้ว เผยแพร่ให้ลูกค้าเห็นแล้ว แก้ไขต่อได้ที่คลังความรู้`
+          : `นำ “${template.title}” มาใช้แล้ว เก็บเป็นบทความภายใน ยังไม่เผยแพร่`,
       );
       await refresh(...ARTICLE_PREFIXES);
     } catch (error) {
@@ -73,7 +68,7 @@ function TemplateRow({ template }: { template: ArticleTemplate }) {
           <strong>{template.title}</strong>
           <span className="tiny muted">
             {template.category}
-            {taken ? ' · นำไปใช้แล้ว' : ''}
+            {taken ? ' นำไปใช้แล้ว' : ''}
           </span>
         </div>
         <button type="button" className="btn sm subtle" aria-expanded={open} onClick={() => setOpen(!open)}>

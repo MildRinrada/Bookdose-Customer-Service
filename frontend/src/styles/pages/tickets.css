@@ -1112,3 +1112,9 @@ button.tag-chip.toggle:focus-visible {
   color: var(--amber);
   font-weight: 600;
 }
+
+/* เปิดเคสใหม่: adding a customer who is not in the list yet, a small button under the box, at its start. */
+.btn.new-contact {
+  align-self: flex-start;
+  margin-top: 2px;
+}

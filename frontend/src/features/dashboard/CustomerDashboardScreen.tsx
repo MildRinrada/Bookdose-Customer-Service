@@ -22,7 +22,6 @@ export function CustomerDashboardScreen() {
       <div className="page-heading">
         <div>
           <h1>ภาพรวม</h1>
-          <p>ระดับการให้บริการของทุกองค์กรที่คุณติดต่อ จากเคสของคุณ</p>
         </div>
         <div className="customer-cases-tools">
           <OrgFilter id="customer-dashboard-org" />
@@ -53,7 +52,7 @@ export function CustomerDashboardScreen() {
       <>
         {heading}
         <section className="card">
-          <EmptyState title="ยังไม่มีข้อมูลภาพรวม" description="เมื่อคุณเปิดเคสกับองค์กรใด เวลาตอบกลับ เวลาแก้ไข และคะแนนความพึงพอใจจะแสดงที่นี่" icon="chart">
+          <EmptyState title="ยังไม่มีข้อมูลภาพรวม" icon="chart">
             <div className="cdash-empty-links">
               <Link className="btn primary" href="/customer/chats/new">
                 เริ่มแชทกับทีมงาน
@@ -71,13 +70,12 @@ export function CustomerDashboardScreen() {
       <section className="cdash-section">
         <div className="cdash-section-head">
           <h2>ระดับการให้บริการ</h2>
-          <p className="muted">จากเคสของคุณ เทียบกับเวลาที่แต่ละองค์กรรับปากไว้</p>
         </div>
         {orgs.length ? (
           <SlaCards orgs={orgs} />
         ) : (
           <section className="card">
-            <EmptyState title="ยังไม่มีเคสกับองค์กรนี้" description="เลือก “ทุกองค์กร” เพื่อดูทั้งหมด" icon="ticket" />
+            <EmptyState title="ยังไม่มีเคสกับองค์กรนี้" icon="ticket" />
           </section>
         )}
       </section>

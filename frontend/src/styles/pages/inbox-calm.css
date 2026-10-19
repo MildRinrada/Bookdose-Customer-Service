@@ -132,9 +132,8 @@
   gap: 2px 0;
 }
 .inbox-facts>span+span::before {
-  content: '·';
-  margin: 0 8px;
-  color: var(--control-line);
+  content: '';
+  margin: 0 6px;
 }
 .inbox-waiting {
   display: inline-flex;
@@ -165,9 +164,8 @@
   font-size: .9375rem;
 }
 .staff-chats .conv-facts>*+*::before {
-  content: '·';
-  margin: 0 8px;
-  color: #b3b9b2;
+  content: '';
+  margin: 0 6px;
 }
 .staff-chats .conv-facts strong {
   color: var(--ink);

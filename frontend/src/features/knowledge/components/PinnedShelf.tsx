@@ -54,7 +54,6 @@ export function PinnedShelf({
           <Icon name="pin" />
           ปักหมุดของฉัน
         </h2>
-        <span className="muted small">{pins.length > 1 ? 'ลากเพื่อจัดลำดับ · เห็นเฉพาะคุณ' : 'เห็นเฉพาะคุณ'}</span>
       </div>
       <ol className="pin-list">
         {pins.map((a, index) => (
@@ -84,14 +83,14 @@ export function PinnedShelf({
             <button
               type="button"
               className="pin-open"
-              aria-label={`อ่าน ${a.title} (ลำดับ ${index + 1} จาก ${pins.length} · Alt + ลูกศรซ้ายขวาเพื่อย้าย)`}
+              aria-label={`อ่าน ${a.title} (ลำดับ ${index + 1} จาก ${pins.length}, Alt + ลูกศรซ้ายขวาเพื่อย้าย)`}
               onClick={() => onOpen(a)}
               onKeyDown={(event) => keys(event, a.id)}
             >
               <span className="pin-title">{a.title}</span>
               <span className="pin-meta">
                 {a.category}
-                {a.uses ? ` · ใช้ ${a.uses} ครั้ง` : ''}
+                {a.uses ? ` ใช้ ${a.uses} ครั้ง` : ''}
               </span>
             </button>
             <button type="button" className="icon-btn pin-remove" aria-label={`เลิกปักหมุด ${a.title}`} title="เลิกปักหมุด" onClick={() => onUnpin(a)}>

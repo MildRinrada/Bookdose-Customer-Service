@@ -35,7 +35,6 @@ export function NotificationsScreen() {
       <div className="page-heading">
         <div>
           <h1>การแจ้งเตือน</h1>
-          <p>เรื่องที่รอคุณดูแล รวมจากเคสบริการและกล่องข้อความ</p>
         </div>
         <div className="flex">
           <button type="button" className="btn subtle" onClick={refresh}>
@@ -64,7 +63,7 @@ export function NotificationsScreen() {
           {shown.length ? (
             <NotificationGroups items={shown} />
           ) : (
-            <EmptyState title="ยังไม่มีเรื่องรอดูแล" description="เมื่อมีเคสเกิน SLA หรือบทสนทนารอตอบ จะแสดงที่นี่" icon="checkCircle" />
+            <EmptyState title="ยังไม่มีเรื่องรอดูแล" icon="checkCircle" />
           )}
         </div>
       </div>

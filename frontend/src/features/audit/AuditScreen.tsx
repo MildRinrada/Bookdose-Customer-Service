@@ -84,13 +84,12 @@ function AuditView({ events }: { events: AuditEvent[] }) {
       <div className="page-heading">
         <div>
           <h1>ประวัติการทำงาน</h1>
-          <p>ใครทำอะไรกับข้อมูลในองค์กรนี้ · เก็บกิจกรรมล่าสุดสูงสุด 300 รายการ</p>
         </div>
       </div>
 
       <div className="audit-summary">
         <div className="audit-stat">
-          <span>กิจกรรม{f.range ? ` · ${auditRanges[f.range] ?? ''}` : 'ทั้งหมด'}</span>
+          <span>กิจกรรม{f.range ? ` ${auditRanges[f.range] ?? ''}` : 'ทั้งหมด'}</span>
           <strong>{pool.length}</strong>
           <small>{f.automated ? 'รวมงานอัตโนมัติของระบบและ AI' : `ไม่รวมงานอัตโนมัติ ${hidden} รายการ`}</small>
         </div>
@@ -107,7 +106,6 @@ function AuditView({ events }: { events: AuditEvent[] }) {
         >
           <span>เรื่องสำคัญ</span>
           <strong>{important}</strong>
-          <small>ลบ กู้คืน export สิทธิ์ และการตั้งค่า · กดเพื่อดู</small>
         </button>
       </div>
 

@@ -141,7 +141,7 @@ function KnowledgeList({ openId }: { openId?: string }) {
   const actions = useRef<{ read: (a: Article) => void; edit: (a?: Article) => void; remove: (a: Article) => void }>(null!);
   const history = useCallback(
     (article: Article) =>
-      openModal(`ประวัติการแก้ไข · ${article.title}`, <ArticleHistory article={article} />, { wide: true }),
+      openModal(`ประวัติการแก้ไข ${article.title}`, <ArticleHistory article={article} />, { wide: true }),
     [openModal],
   );
   const read = useCallback(
@@ -206,7 +206,6 @@ function KnowledgeList({ openId }: { openId?: string }) {
           <div className="kb-hero-head">
             <div>
               <h1 id="kb-title">คลังความรู้</h1>
-              <p>คู่มือที่ทีมใช้ตอบคำถามและช่วยเหลือลูกค้า</p>
             </div>
             {canWrite && (
               <div className="kb-hero-actions">
@@ -231,10 +230,6 @@ function KnowledgeList({ openId }: { openId?: string }) {
                 slice.setPage(1);
               }}
             />
-            <span className="kb-search-hint">
-              <Icon name="sparkle" />
-              ค้นหาอัจฉริยะ: เข้าใจคำพูดทั่วไปและคำพ้อง แล้วไฮไลต์ส่วนที่ตอบได้
-            </span>
           </div>
         </div>
         <dl className="kb-hero-stats">
@@ -331,7 +326,6 @@ function KnowledgeList({ openId }: { openId?: string }) {
         ) : (
           <EmptyState
             title="ไม่พบบทความ"
-            description={query.trim() ? `ยังไม่มีบทความที่ตอบ “${query.trim()}” ลองใช้คำอื่น หรือเขียนบทความใหม่เรื่องนี้` : 'ลองเปลี่ยนคำค้นหรือเลือกหมวด “ทั้งหมด”'}
             icon="book"
           />
         )}

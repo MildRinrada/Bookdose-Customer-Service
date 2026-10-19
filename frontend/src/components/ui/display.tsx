@@ -142,7 +142,7 @@ export function PrivacyTag({ org }: { org: string | null | undefined }) {
   return (
     <span
       className="privacy-tag"
-      title={`เคสและบทสนทนานี้เปิดได้เฉพาะสมาชิกขององค์กร ${name} · สิทธิ์ผู้ดูแลแพลตฟอร์มอย่างเดียวอ่านไม่ได้`}
+      title={`เคสและบทสนทนานี้เปิดได้เฉพาะสมาชิกขององค์กร ${name} สิทธิ์ผู้ดูแลแพลตฟอร์มอย่างเดียวอ่านไม่ได้`}
     >
       <Icon name="lock" />
       เฉพาะสมาชิก {name}
@@ -181,7 +181,7 @@ const FAILURES: Record<string, { title: string; hint: string; icon: string }> = 
   denied: { title: 'เข้าหน้านี้ไม่ได้', hint: 'บัญชีของคุณไม่มีสิทธิ์ดูหน้านี้ หรือเซสชันหมดอายุแล้ว', icon: 'lock' },
   missing: { title: 'ไม่พบหน้านี้', hint: 'ลิงก์อาจหมดอายุ หรือรายการถูกย้าย/ลบไปแล้ว', icon: 'search' },
   busy: { title: 'ขอบ่อยเกินไป', hint: 'รอสักครู่แล้วกดลองใหม่', icon: 'clock' },
-  server: { title: 'ระบบขัดข้องชั่วคราว', hint: 'ไม่ใช่ความผิดของคุณ · กดลองใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้งทีมงาน', icon: 'storm' },
+  server: { title: 'ระบบขัดข้องชั่วคราว', hint: 'ไม่ใช่ความผิดของคุณ กดลองใหม่อีกครั้ง ถ้ายังไม่ได้ให้แจ้งทีมงาน', icon: 'storm' },
   unknown: { title: 'เปิดหน้านี้ไม่สำเร็จ', hint: 'กดลองใหม่อีกครั้ง', icon: 'help' },
 };
 

@@ -46,7 +46,6 @@ export function GuestCaseScreen({ slug, id }: { slug: string; id: string }) {
         <EmptyState
           icon="lock"
           title="เปิดเคสนี้ในเบราว์เซอร์นี้ไม่ได้"
-          description="เคสจะเปิดได้ในเบราว์เซอร์ที่ใช้แชทเรื่องนี้เท่านั้น ถ้าเปลี่ยนเครื่อง ให้เปิดลิงก์ติดตามแชทที่ส่งไปทางอีเมลก่อน หรือเข้าสู่ระบบด้วยอีเมลที่ยืนยันไว้"
         >
           <Link className="btn primary" href={guestPages.chat(slug)}>
             <Icon name="chat" />

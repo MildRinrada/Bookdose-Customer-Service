@@ -50,7 +50,7 @@ function CaseActions({ slug, id, data }: { slug: string; id: string; data: CaseD
   const askResolve = () =>
     confirm({
       title: 'ปัญหาแก้ไขแล้ว',
-      message: `เคส BD-${data.case.number} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง ถ้าปัญหากลับมาอีก ส่งเคสกลับได้ภายใน ${reopen?.days ?? 7} วัน`,
+      message: `เคส BD-${data.case.number} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง`,
       confirmLabel: 'ยืนยันว่าแก้ไขแล้ว',
       run: async () => {
         await resolveCase(slug, id);
@@ -67,7 +67,7 @@ function CaseActions({ slug, id, data }: { slug: string; id: string; data: CaseD
         </button>
       )}
       {reopen?.allowed && (
-        <button type="button" className="btn primary" onClick={() => openModal('ปัญหายังไม่หาย', <ReopenForm slug={slug} id={id} data={data} />)}>
+        <button type="button" className="btn primary" onClick={() => openModal('ปัญหายังไม่หาย', <ReopenForm slug={slug} id={id} />)}>
           <Icon name="restore" />
           ยังไม่หาย
         </button>
@@ -80,7 +80,7 @@ function CaseActions({ slug, id, data }: { slug: string; id: string; data: CaseD
   );
 }
 
-function ReopenForm({ slug, id, data }: { slug: string; id: string; data: CaseDetail }) {
+function ReopenForm({ slug, id }: { slug: string; id: string }) {
   const { closeModal } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();
@@ -96,9 +96,6 @@ function ReopenForm({ slug, id, data }: { slug: string; id: string; data: CaseDe
         if (result.conversation_id) router.push(`/customer/chats/${slug}/${result.conversation_id}`);
       }}
     >
-      <p className="notice">
-        เคส BD-{data.case.number} จะกลับไปให้ทีมงานดูแลต่อ พร้อมข้อความของคุณในแชทเดิม ไม่ต้องเริ่มเล่าใหม่ ส่งกลับได้ภายใน {data.reopen?.days ?? 7} วันหลังปิดเคส
-      </p>
       <div className="field">
         <label htmlFor="reopen-message">ตอนนี้เป็นอย่างไร (ไม่บังคับ)</label>
         <textarea id="reopen-message" name="message" rows={4} maxLength={1000} autoFocus placeholder="เช่น ใช้ได้วันเดียวแล้วกลับมาเป็นเหมือนเดิม" />
@@ -160,11 +157,11 @@ export function CaseView({ data, orgName, back, chatHref, newChatHref, actions }
       <section className={`customer-banner tone-${view.tone}`}>
         <div className="customer-banner-main">
           <span className="customer-banner-ref">
-            เคส {reference} · {orgName}
+            เคส {reference} {orgName}
           </span>
           <h1>{t.subject}</h1>
           <p>
-            <strong>{view.label}</strong> · {view.hint}
+            <strong>{view.label}</strong> {view.hint}
           </p>
           {(replyChat || actions) && (
             <div className="customer-banner-actions">
@@ -185,10 +182,7 @@ export function CaseView({ data, orgName, back, chatHref, newChatHref, actions }
       <div className="customer-case-grid">
         <section className="card">
           <div className="card-header">
-            <div>
-              <h2>ความคืบหน้าและกำหนดเวลา</h2>
-              <p>สิ่งที่ทีมงานทำแล้ว และสิ่งที่ทีมรับปากไว้</p>
-            </div>
+            <h2>ความคืบหน้าและกำหนดเวลา</h2>
           </div>
           <div className="card-body">
             <ol className="customer-timeline">
@@ -236,7 +230,7 @@ export function CaseView({ data, orgName, back, chatHref, newChatHref, actions }
                     <span className="customer-link-text">
                       <strong className="truncate">{x.subject}</strong>
                       <span className="muted">
-                        {chatState({ status: x.status, ticket_status: t.status }).label} · {relative(x.updated_at)}
+                        {chatState({ status: x.status, ticket_status: t.status }).label} {relative(x.updated_at)}
                       </span>
                     </span>
                     <Icon name="arrow" />

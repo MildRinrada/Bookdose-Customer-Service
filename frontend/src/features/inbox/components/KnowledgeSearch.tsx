@@ -8,7 +8,6 @@ import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { SearchInput } from '@/components/ui/filters';
 import { ARTICLES_PATH, Highlighted, helpfulRate, recordUse, searchArticles, type Article, type ArticlesPage } from '@/features/knowledge';
 import { plainText } from '@/lib/format';
-import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 
 /* Knowledge search from the composer: find an article and send its public link in one click, or put its text in
@@ -53,14 +52,10 @@ export function KnowledgeSearch({
         )
         .slice(0, 30)
         .map((article) => ({ article, words: [] as string[], passage: '' }));
-  const via = channelNames[channel] || '';
 
   return (
     <div className="kb-search">
       <SearchInput id="kb-search" label="ค้นหาบทความ" placeholder="พิมพ์แบบที่ลูกค้าถาม เช่น “ลืมรหัสทำยังไง”" value={query} onChange={setQuery} />
-      <p className="tiny muted">
-        “ส่งลิงก์ให้ลูกค้า” ส่งทันทีในบทสนทนานี้{via && `ผ่าน ${via}`} ใช้ได้กับบทความที่เผยแพร่ให้ลูกค้า ลูกค้าเปิดอ่านได้ในหน้าลูกค้าโดยไม่ต้องเข้าสู่ระบบ
-      </p>
       <div id="kb-results" className="kb-list">
         {articles.error ? (
           <ErrorState error={articles.error} onRetry={() => void articles.refetch()} />
@@ -87,7 +82,7 @@ export function KnowledgeSearch({
                   {a.uses || rate !== null ? (
                     <span className="kb-stats">
                       {a.uses ? `ใช้ตอบ ${a.uses} ครั้ง` : ''}
-                      {a.uses && rate !== null ? ' · ' : ''}
+                      {a.uses && rate !== null ? ' ' : ''}
                       {rate !== null ? `ช่วยได้ ${rate}%` : ''}
                     </span>
                   ) : null}
@@ -135,7 +130,7 @@ export function KnowledgeSearch({
             );
           })
         ) : (
-          <EmptyState title="ไม่พบบทความ" description="ลองคำค้นอื่น หรือเพิ่มบทความในคลังความรู้" icon="book" />
+          <EmptyState title="ไม่พบบทความ" icon="book" />
         )}
       </div>
     </div>

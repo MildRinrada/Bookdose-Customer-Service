@@ -47,14 +47,13 @@ export function CustomerSurvey({ survey, slug, conversationId, org }: { survey: 
           }}
         >
           <strong id="customer-survey-title">ทีมงาน{org ? ` ${org}` : ''} ดูแลเรื่องนี้เป็นอย่างไรบ้าง?</strong>
-          <p className="small muted">เลือกดาว 1-5 แล้วเขียนความคิดเห็นเพิ่มได้ถ้าต้องการ</p>
           <div className="star-row" role="radiogroup" aria-label="คะแนนความพึงพอใจ">
             {[1, 2, 3, 4, 5].map((value) => (
               <label key={value} className={`star-btn${value <= rating ? ' on' : ''}`} data-value={value} title={ratingLabels[value]}>
                 <input className="sr-only" type="radio" name="rating" value={value} required onChange={() => setRating(value)} />
                 <span aria-hidden="true">★</span>
                 <span className="sr-only">
-                  {value} ดาว · {ratingLabels[value]}
+                  {value} ดาว {ratingLabels[value]}
                 </span>
               </label>
             ))}
@@ -123,7 +122,7 @@ export function ChatView({
   const askClose = () =>
     confirm({
       title: 'ปัญหาแก้ไขแล้ว',
-      message: `เคส ${reference} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง ถ้าปัญหากลับมาอีก พิมพ์บอกในแชทได้เลย`,
+      message: `เคส ${reference} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง`,
       confirmLabel: 'ยืนยันว่าแก้ไขแล้ว',
       run: async () => {
         await resolveChatCase(slug, id);

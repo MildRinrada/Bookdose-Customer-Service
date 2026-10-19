@@ -78,7 +78,6 @@ export function ContinueOnLinePanel({
       <div className="continue-line-head">
         <p>
           <strong>ย้ายแชทนี้ไปคุยต่อใน LINE กับ {name}</strong>
-          ข้อความเดิมย้ายไปด้วยทั้งหมด ไม่ต้องเล่าใหม่ ทีมงานจะตอบใน LINE แทน
         </p>
         <button type="button" className="icon-btn" aria-label="ปิด" onClick={onClose}>
           <Icon name="close" />
@@ -139,7 +138,6 @@ export function MovedToLine({ line }: { line: PortalLine }) {
       <Icon name="chat" />
       <p>
         <strong>แชทนี้ย้ายไปคุยต่อใน LINE กับ {line.oa_name} แล้ว</strong>
-        ข้อความทั้งหมดยังอยู่ที่นี่ ทีมงานตอบใน LINE พิมพ์ต่อที่นั่นได้เลย
       </p>
       {line.open_url && (
         <a className="btn primary" href={line.open_url} target="_blank" rel="noopener noreferrer">

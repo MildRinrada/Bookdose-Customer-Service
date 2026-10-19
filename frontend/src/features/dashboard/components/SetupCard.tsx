@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
@@ -36,7 +36,7 @@ function StepRow({ step }: { step: SetupStep }) {
         {step.done ? (
           typeof step.count === 'number' ? <span className="tiny muted">มีแล้ว {step.count} บทความ</span> : null
         ) : (
-          <span className="tiny muted">{partial ? `ทำแล้ว ${step.count} จาก ${step.target} · ${step.detail}` : step.detail}</span>
+          partial && <span className="tiny muted">ทำแล้ว {step.count} จาก {step.target}</span>
         )}
       </span>
       {step.done ? (
@@ -86,12 +86,38 @@ function useCelebrateFinished(setup: SetupChecklist) {
   }, [key, fingerprint]);
 }
 
+/** The problems this browser closed the card on, per organization: closed, the card stays away until the problems
+    are different ones (a new one appears, or one is fixed and another breaks). Browser storage can be refused; then
+    closing lasts until the page is opened again. */
+function useClosedProblems(setup: SetupChecklist) {
+  const work = useWork();
+  const key = `bookdose.setup-problems-closed:${work.tenant.id}`;
+  const fingerprint = setup.problems.map((p) => p.key).sort().join(',');
+  const [closed, setClosed] = useState<string | null>(() => {
+    try {
+      return typeof window === 'undefined' ? null : localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  });
+  const close = () => {
+    setClosed(fingerprint);
+    try {
+      localStorage.setItem(key, fingerprint);
+    } catch {
+      /* Only for this visit, then. */
+    }
+  };
+  return { hidden: Boolean(fingerprint) && closed === fingerprint, close };
+}
+
 /** Is there anything for the card to show? When not, the page leaves it off and the cards under it move up. */
 export const setupShown = (setup: SetupChecklist) =>
   setup.problems.length > 0 || (!setup.hidden && setup.steps.some((s) => !s.done));
 
 export function SetupCard({ setup }: { setup: SetupChecklist }) {
   useCelebrateFinished(setup);
+  const problems = useClosedProblems(setup);
   const { confirm } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();
@@ -99,10 +125,11 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
   const later = setup.later ?? [];
   if (!setupShown(setup)) return null;
   const steps = !setup.hidden;
+  if (!steps && problems.hidden) return null;
   const close = () =>
     confirm({
       title: 'ปิดเริ่มต้นใช้งานถาวร',
-      message: 'รายการขั้นตอนนี้จะไม่แสดงบนหน้าภาพรวมของคุณในองค์กรนี้อีก การ์ดข้างล่างจะเลื่อนขึ้นมาแทน ถ้าช่องทางใดมีปัญหา ระบบยังเตือนตรงนี้เหมือนเดิม',
+      message: 'รายการขั้นตอนนี้จะไม่แสดงบนหน้าภาพรวมของคุณในองค์กรนี้อีก',
       confirmLabel: 'ปิดถาวร',
       run: async () => {
         await hideSetup(true);
@@ -117,8 +144,8 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
           <h2 id="setup-title">{setup.problems.length ? 'ต้องแก้ไขตอนนี้' : 'เริ่มต้นใช้งาน'}</h2>
           <p>
             {steps
-              ? `ทำแล้ว ${done} จาก ${setup.steps.length} ขั้น · ทำครบแล้วองค์กรของคุณพร้อมรับลูกค้าจริง · เห็นเฉพาะเจ้าขององค์กร`
-              : 'ช่องทางที่ส่งข้อความไม่ออก · เห็นเฉพาะเจ้าขององค์กร'}
+              ? `ทำแล้ว ${done} จาก ${setup.steps.length} ขั้น`
+              : 'ช่องทางที่ส่งข้อความไม่ออก'}
           </p>
         </div>
         {steps && (
@@ -129,6 +156,11 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
               ปิดถาวร
             </button>
           </div>
+        )}
+        {!steps && (
+          <button type="button" className="icon-btn" aria-label="ปิด" title="ปิด จะแสดงอีกเมื่อมีปัญหาใหม่" onClick={problems.close}>
+            <Icon name="close" />
+          </button>
         )}
       </div>
       <ul className="setup-list">
@@ -148,7 +180,7 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
       </ul>
       {steps && later.length > 0 && done === setup.steps.length && (
         <>
-          <p className="setup-later-head tiny muted">ทำเพิ่มได้ภายหลัง · ไม่จำเป็นต่อการเริ่มใช้งาน</p>
+          <p className="setup-later-head tiny muted">ทำเพิ่มได้ภายหลัง</p>
           <ul className="setup-list setup-later">
             {later.map((step) => (
               <StepRow key={step.key} step={step} />

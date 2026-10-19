@@ -53,7 +53,7 @@ export function useManageMessages(conversation: Conversation, work: Workspace): 
     onPin: async (m, pinned) => {
       try {
         await pinMessage(conversation.id, m.id, pinned);
-        toast(pinned ? 'ปักหมุดข้อความแล้ว · ดูได้ในคอลัมน์ขวา' : 'เอาหมุดออกแล้ว');
+        toast(pinned ? 'ปักหมุดข้อความแล้ว' : 'เอาหมุดออกแล้ว');
         await refresh(...CONVERSATION_PREFIXES);
       } catch (problem) {
         toast((problem as Error).message, true);
@@ -67,14 +67,10 @@ export function useManageMessages(conversation: Conversation, work: Workspace): 
           onSubmit={async (values) => {
             await editMessage(conversation.id, m.id, values.body ?? '');
             closeModal(true);
-            toast('แก้ไขข้อความแล้ว · ข้อความจะขึ้นว่า แก้ไขแล้ว ให้ทั้งทีมและลูกค้าเห็น');
+            toast('แก้ไขข้อความแล้ว');
             await refresh(...CONVERSATION_PREFIXES);
           }}
         >
-          <p className="notice">
-            ลูกค้าเห็นข้อความที่แก้แล้วทันที และจะมีคำว่า <strong>แก้ไขแล้ว</strong> กำกับไว้ · ถ้าลูกค้าอ่านฉบับเดิมไปแล้ว การแก้ไขไม่ได้ลบสิ่งที่เขาอ่านไปจากความทรงจำ
-            เรื่องใหญ่ควรพิมพ์ข้อความใหม่ชี้แจงด้วย
-          </p>
           <div className="field">
             <label htmlFor="edit-body">ข้อความ</label>
             <textarea id="edit-body" name="body" rows={6} maxLength={20000} required autoFocus defaultValue={thaiSide(m.translation) ?? m.body} />
@@ -87,8 +83,8 @@ export function useManageMessages(conversation: Conversation, work: Workspace): 
         title: 'ลบข้อความ',
         message:
           m.kind === 'note'
-            ? 'บันทึกภายในนี้จะหายจากบทสนทนา · ทีมจะเห็นว่ามีข้อความถูกลบและใครเป็นคนลบ'
-            : 'ลูกค้าจะไม่เห็นข้อความนี้อีก · ทีมจะเห็นว่ามีข้อความถูกลบและใครเป็นคนลบ ถ้าลูกค้าอ่านไปแล้วควรพิมพ์ชี้แจงเพิ่ม',
+            ? 'บันทึกภายในนี้จะหายจากบทสนทนา'
+            : 'ลูกค้าจะไม่เห็นข้อความนี้อีก',
         confirmLabel: 'ลบข้อความ',
         tone: 'danger',
         run: async () => {

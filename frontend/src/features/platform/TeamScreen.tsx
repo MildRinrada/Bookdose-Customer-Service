@@ -44,10 +44,7 @@ function TeamView({ data }: { data: PlatformTeam }) {
       <div className="page-heading">
         <div>
           <h1>ทีมผู้ดูแลระบบ</h1>
-          <p>
-            {data.admins.length} บัญชีที่เข้าคอนโซลระบบกลางได้ ·{' '}
-            {owner ? 'คุณเป็นเจ้าของแพลตฟอร์ม เพิ่มหรือถอดผู้ดูแลได้' : 'เฉพาะเจ้าของแพลตฟอร์มเพิ่มหรือถอดผู้ดูแลได้'}
-          </p>
+          <p>{data.admins.length} บัญชี</p>
         </div>
         {owner && (
           <div className="flex">
@@ -138,35 +135,6 @@ function TeamView({ data }: { data: PlatformTeam }) {
           </table>
         </div>
       </section>
-
-      {/* The distinction that used to open the page, as lines that can be scanned instead of read. */}
-      <section className="role-note">
-        <h2>ทีมนี้ต่างจากทีมที่ตอบลูกค้าของ Bookdose อย่างไร</h2>
-        <div className="role-note-split">
-          <div>
-            <h3>
-              <Icon name="shield" />
-              ผู้ดูแลระบบกลาง (หน้านี้)
-            </h3>
-            <ul>
-              <li>ดูแลเซิร์ฟเวอร์ องค์กรลูกค้า และ FAQ กลาง</li>
-              <li>ไม่รับเคสและไม่ตอบลูกค้า</li>
-              <li>เห็นข้อมูลขององค์กรได้เฉพาะเมื่อองค์กรอนุมัติสิทธิ์เข้าช่วยเหลือ และดูได้อย่างเดียว</li>
-            </ul>
-          </div>
-          <div>
-            <h3>
-              <Icon name="chat" />
-              ทีมติดต่อลูกค้า Bookdose
-            </h3>
-            <ul>
-              <li>เป็นทีมงานขององค์กร Bookdose เหมือนองค์กรอื่น</li>
-              <li>เชิญเจ้าขององค์กรได้ที่ จัดการองค์กร</li>
-              <li>เจ้าขององค์กรเพิ่มเจ้าหน้าที่เองที่ ทีมและสมาชิก</li>
-            </ul>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
@@ -188,9 +156,6 @@ function PlatformAdminForm() {
         await refresh(PLATFORM_PREFIX);
       }}
     >
-      <div className="notice">
-        ใช้อีเมลใหม่พร้อมชื่อและรหัสผ่านเริ่มต้น · อีเมลที่เป็นทีมงานขององค์กรใช้ไม่ได้ เพราะผู้ดูแลแพลตฟอร์มไม่รับเคส
-      </div>
       <TextField label="อีเมล" name="email" type="email" max={254} />
       <div className="form-grid">
         <TextField label="ชื่อ (กรอกเมื่อยังไม่มีบัญชี)" name="admin_name" required={false} max={100} />

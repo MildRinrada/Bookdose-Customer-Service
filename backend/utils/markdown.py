@@ -153,3 +153,41 @@ def to_html(text, base=DEFAULT_BASE):
         else:
             out.append(f'<{kind}>{inline_html(value)}</{kind}>')
     return ''.join(out)
+
+
+def inline_plain(nodes):
+    """One line's marks dropped: the words stay, a link keeps its address beside its words."""
+    out = []
+    for kind,value in nodes:
+        if kind in ('strong','em','u','strongEm'):
+            out.append(inline_plain(value))
+        elif kind=='link':
+            url,label = value
+            out.append(url if not label or label==url else f'{label} ({url})')
+        elif kind=='image':
+            out.append(value[0])
+        else:
+            out.append(value)
+    return ''.join(out)
+
+
+def to_plain(text):
+    """Markdown as the text a chat app shows (LINE, Messenger), which draws no formatting: the stars and underscores
+    go, a heading is its words, a bullet is "•", a numbered item keeps its number, and the lines and blank lines the
+    writer left stay where they were."""
+    out,code,number = [],False,0
+    for line in str(text if text is not None else '').split('\n'):
+        if line.startswith('```'):
+            code = not code
+            continue
+        if code:
+            out.append(line)
+            continue
+        item,head = ITEM.match(line),HEAD.match(line)
+        if item:
+            number = 0 if item.group(1) else number+1
+            out.append(('• ' if item.group(1) else f'{number}. ')+inline_plain(parse_inline(item.group(2))))
+            continue
+        number = 0
+        out.append(inline_plain(parse_inline(head.group(2) if head else line)))
+    return '\n'.join(out)

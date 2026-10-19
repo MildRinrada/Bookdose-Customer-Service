@@ -40,7 +40,6 @@ export function HoneytokensCard() {
       <div className="card-header">
         <div>
           <h2 id="security-honeytokens-title">กับดัก Honeytoken</h2>
-          <p>สิ่งที่ผู้ใช้จริงไม่มีวันใช้ เมื่อมีคนใช้ ระบบบันทึกเหตุการณ์วิกฤต แจ้งเตือนผู้ดูแลทันที และบล็อก IP ตามการตั้งค่า</p>
         </div>
         <button type="button" className="btn primary" onClick={() => openModal('สร้างกับดัก', <CreateHoneytokenDialog />)}>
           <Icon name="plus" />
@@ -76,7 +75,7 @@ export function HoneytokensCard() {
         </div>
       ) : (
         <div className="card-body trap-empty">
-          <p className="muted">ยังไม่มีกับดัก สร้างบัญชีล่อ คีย์ API รหัสผ่าน หรือลิงก์ไฟล์ แล้ววางไว้ในที่ที่ผู้ไม่หวังดีน่าจะพบ</p>
+          <p className="muted">ยังไม่มีกับดัก</p>
         </div>
       )}
     </section>
@@ -124,10 +123,6 @@ function HoneytokenRow({ token }: { token: Honeytoken }) {
     confirmDelete({
       title: 'ลบกับดัก',
       warning: `กับดัก “${token.label}” จะหยุดทำงานทันทีและลบออกถาวร`,
-      effects: [
-        'ถ้ายังมีสำเนาวางอยู่ที่ใด การใช้สิ่งนั้นจะไม่ถูกตรวจจับอีก',
-        'เหตุการณ์ที่บันทึกไว้แล้วยังอยู่ในบันทึกเหตุการณ์',
-      ],
       confirmLabel: 'ลบกับดัก',
       run: async () => {
         await deleteHoneytoken(token.id);
@@ -209,7 +204,7 @@ function EditHoneytokenDialog({ token }: { token: Honeytoken }) {
       }}
     >
       <p className="small muted">
-        <KindName kind={token.kind} /> · ค่าลับของกับดักเปลี่ยนไม่ได้ ถ้าต้องการค่าใหม่ให้สร้างกับดักใหม่แล้วลบอันเดิม
+        <KindName kind={token.kind} />
       </p>
       <TextField label="ชื่อกับดัก" name="label" max={100} defaultValue={token.label} autoComplete="off" />
       <TextArea label="วางไว้ที่ (ไม่บังคับ)" name="placed_at_note" max={300} rows={2} required={false} defaultValue={token.placed_at_note ?? ''} />
@@ -249,19 +244,12 @@ function CreateHoneytokenDialog() {
               </span>
               <span className="trap-kind-text">
                 <strong>{item.label}</strong>
-                <span className="small muted">{item.explain}</span>
               </span>
             </label>
           );
         })}
       </fieldset>
-      <p className="notice trap-plant">
-        <Icon name="sparkle" />
-        <span>
-          <strong>วางไว้ที่ไหนดี:</strong> {meta.plant}
-        </span>
-      </p>
-      <TextField label="ชื่อกับดัก" name="label" max={100} placeholder={meta.example} autoComplete="off" hint="ผู้ดูแลเห็นชื่อนี้ในการแจ้งเตือน" />
+      <TextField label="ชื่อกับดัก" name="label" max={100} placeholder={meta.example} autoComplete="off" />
       <TextArea
         label="วางไว้ที่ (ไม่บังคับ)"
         name="placed_at_note"
@@ -316,11 +304,11 @@ function HoneytokenSecret({ created, onDone }: { created: HoneytokenCreated; onD
       <p className="notice warning trap-once" role="alert">
         <Icon name="lock" />
         <span>
-          <strong>จะแสดงครั้งเดียว</strong> คัดลอก{what}นี้ไปวางในที่ที่ตั้งใจไว้ตอนนี้ ระบบเก็บไว้เพียงค่าแฮช ปิดหน้าต่างนี้แล้วจะดูอีกไม่ได้
+          <strong>จะแสดงครั้งเดียว</strong> ปิดหน้าต่างนี้แล้วจะดูอีกไม่ได้
         </span>
       </p>
       <p className="small">
-        <KindName kind={token.kind} /> · {token.label}
+        <KindName kind={token.kind} /> {token.label}
       </p>
       <div className="field">
         <label htmlFor="honeytoken-secret">{what}</label>
@@ -342,7 +330,6 @@ function HoneytokenSecret({ created, onDone }: { created: HoneytokenCreated; onD
         </div>
       </div>
       {token.placed_at_note && <p className="small muted">วางไว้ที่: {token.placed_at_note}</p>}
-      <p className="tiny muted">กับดักนี้เปิดใช้งานแล้ว ใช้ปุ่ม “ทดสอบ” ในรายการเพื่อตรวจว่าเหตุการณ์และการแจ้งเตือนแสดงตามที่คาด</p>
       <div className="form-actions">
         <button type="button" className="btn primary" onClick={onDone}>
           <Icon name="check" />

@@ -21,7 +21,7 @@ export function profileFacts(p: ContactProfile) {
     facts.push({
       key: 'reach',
       icon: 'phone',
-      text: [p.preferred_channel && `สะดวกทาง ${preferredChannelLabels[p.preferred_channel]}`, p.contact_hours].filter(Boolean).join(' · '),
+      text: [p.preferred_channel && `สะดวกทาง ${preferredChannelLabels[p.preferred_channel]}`, p.contact_hours].filter(Boolean).join(', '),
     });
   if (p.language) facts.push({ key: 'lang', icon: 'globe', text: p.language === 'en' ? 'ตอบเป็นภาษาอังกฤษ' : 'ตอบเป็นภาษาไทย' });
   if (p.consent === 'no') facts.push({ key: 'consent', icon: 'lock', text: 'ไม่ยินยอมให้ติดต่อกลับ', tone: 'bad' });
@@ -81,8 +81,8 @@ export function ContactChannels({ view }: { view: ContactProfileView | undefined
           <span className="contact-channel-body">
             <strong>{channelNames[c.channel] ?? c.channel}</strong>
             <span className="muted">
-              {c.conversations} บทสนทนา · ล่าสุด {relative(c.last_at)}
-              {c.addresses.length > 0 && ` · ${c.addresses.join(', ')}`}
+              {c.conversations} บทสนทนา ล่าสุด {relative(c.last_at)}
+              {c.addresses.length > 0 && ` ${c.addresses.join(', ')}`}
             </span>
           </span>
         </li>

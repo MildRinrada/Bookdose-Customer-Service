@@ -42,6 +42,6 @@ def save(db, ctx, body):
     value = form(body)
     db.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(KEY,json.dumps(value,ensure_ascii=False)))
     audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],
-                 f"แบนเนอร์หน้าช่วยเหลือ (สี{TONE_NAMES[value['tone']]}{' · ' + value['tagline'] if value['tagline'] else ''})")
+                 f"แบนเนอร์หน้าช่วยเหลือ (สี{TONE_NAMES[value['tone']]}{', ' + value['tagline'] if value['tagline'] else ''})")
     db.commit()
     return value

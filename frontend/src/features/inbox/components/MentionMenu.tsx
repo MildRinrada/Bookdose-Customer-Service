@@ -14,13 +14,11 @@ export function MentionMenu({ onPick }: { onPick: (name: string) => void }) {
   const people = work.members.filter((m) => m.active && m.id !== user.id);
   return (
     <>
-      <p className="muted mb">ข้อความจะเป็นบันทึกภายใน ลูกค้าไม่เห็น ผู้ถูกแท็กที่มีสิทธิ์เห็นบทสนทนานี้จะได้รับแจ้งเตือน</p>
       <div className="mention-list">
         <button type="button" className="mention-item" data-name="ทีม" onClick={() => onPick('ทีม')}>
           <Icon name="users" />
           <span>
             <strong>@ทีม</strong>
-            <span className="tiny muted">ทุกคนในทีมของบทสนทนานี้</span>
           </span>
         </button>
         {people.map((m, i) => (
@@ -29,7 +27,7 @@ export function MentionMenu({ onPick }: { onPick: (name: string) => void }) {
             <span>
               <strong>{m.name}</strong>
               <span className="tiny muted">
-                {roleLabels[m.role]} · {teamName(m.team_id)}
+                {roleLabels[m.role]} {teamName(m.team_id)}
               </span>
             </span>
           </button>

@@ -143,13 +143,13 @@ def build(cd, db, ctx, query):
         last = dt.date.fromisoformat(_arg(query,'to'))
         archive.writestr('README.txt',README.format(org=ctx.get('tenant_name',''),first=first.isoformat(),last=last.isoformat(),at=moment,
                                                     counts='\n'.join(f'  {name:<20}{len(records):>8} แถว' for name,records in tables.items())))
-    audit.record(db,ctx['name'],'reports.dataset_exported',ctx['tenant_id'],f'{first.isoformat()} ถึง {_arg(query,"to")} · เคส {len(tickets)} รายการ')
+    audit.record(db,ctx['name'],'reports.dataset_exported',ctx['tenant_id'],f'{first.isoformat()} ถึง {_arg(query,"to")}, เคส {len(tickets)} รายการ')
     db.commit()
     return buffer.getvalue(),f'bookdose-dataset-{first.isoformat()}-{_arg(query,"to")}.zip'
 
 
-README = """ชุดข้อมูลสำหรับวิเคราะห์ · {org}
-ช่วงวันที่ {first} ถึง {last} (ตามเวลาของผู้ส่งออก) · ส่งออกเมื่อ {at} (UTC)
+README = """ชุดข้อมูลสำหรับวิเคราะห์ {org}
+ช่วงวันที่ {first} ถึง {last} (ตามเวลาของผู้ส่งออก) ส่งออกเมื่อ {at} (UTC)
 
 {counts}
 

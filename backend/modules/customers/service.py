@@ -669,6 +669,10 @@ def open_conversation(cd, db, org, session, body):
     from backend.modules.portal import same_member
     subject,category = request_form(db,body)
     account = repository.find(cd,session['account_id'])
+    # A customer who has not agreed to the privacy notice in force reads and answers what they already have, but a new
+    # chat is new use of their data under the new notice (the page asks them; legal/service.py).
+    require(account['consent_version']==legal.current_version(cd,'customer-privacy'),
+            'กรุณาอ่านและยอมรับประกาศความเป็นส่วนตัวฉบับใหม่ก่อนเริ่มแชทใหม่',403)
     follows = perks.follows_form(db,account['id'],body)
     D.begin(db)
     contact_id = _ensure_member(db,account)

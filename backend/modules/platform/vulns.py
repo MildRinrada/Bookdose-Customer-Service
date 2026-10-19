@@ -284,7 +284,7 @@ LEVEL_WORDS = {'critical':'วิกฤต','high':'สูง','medium':'กล�
 def _send(recipients, cfg, secret, fresh):
     from backend.extensions import channel_transport as T
     lines = '\n'.join(f"- {f['name']} {f['version']} ({f['ecosystem']}): {', '.join(f['cves']) or f['id']} ระดับ{LEVEL_WORDS[f['level']]}"
-                      +(f" · แก้แล้วในเวอร์ชัน {', '.join(f['fixed'])}" if f['fixed'] else ' · ยังไม่มีเวอร์ชันที่แก้')
+                      +(f" แก้แล้วในเวอร์ชัน {', '.join(f['fixed'])}" if f['fixed'] else ' ยังไม่มีเวอร์ชันที่แก้')
                       +(f"\n  {f['summary']}" if f['summary'] else '')+f"\n  {f['url']}" for f in fresh)
     for recipient in recipients:
         try:

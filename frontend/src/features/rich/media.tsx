@@ -55,7 +55,7 @@ function FileChip({ file, publicSlug }: { file: MessageFile; publicSlug?: string
   return (
     <button type="button" className="file-chip" onClick={save}>
       <Icon name="paperclip" />
-      {file.name} · {Math.ceil(file.size / 1024)} KB
+      {file.name} {Math.ceil(file.size / 1024)} KB
     </button>
   );
 }
@@ -189,7 +189,7 @@ function MessageMedia({ file, publicSlug }: { file: MessageFile; publicSlug?: st
         <span className="media-filename" title={file.name}>
           {file.name}
         </span>
-        <button type="button" className="icon-btn" aria-label={`ดาวน์โหลด ${file.name}`} title={`ดาวน์โหลด · ${size} KB`} onClick={save}>
+        <button type="button" className="icon-btn" aria-label={`ดาวน์โหลด ${file.name}`} title={`ดาวน์โหลด ${size} KB`} onClick={save}>
           <Icon name="download" />
         </button>
       </figcaption>

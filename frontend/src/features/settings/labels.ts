@@ -3,7 +3,6 @@
 export const settingsTabs = {
   overview: { label: 'ภาพรวมและบริการ', hint: 'ข้อมูลองค์กร มาตรฐาน SLA และข้อความอัตโนมัติ', icon: 'settings' },
   teams: { label: 'ทีมและสมาชิก', hint: 'ย้ายไปเป็นหน้าของตัวเองแล้ว', icon: 'users' },
-  invites: { label: 'ลิงก์และ QR สำหรับลูกค้า', hint: 'ให้ลูกค้าสแกนเพื่อเพิ่มองค์กรนี้', icon: 'link' },
   webchat: { label: 'แชทบนเว็บไซต์', hint: 'แชทโดยไม่ต้องเข้าสู่ระบบ และปุ่มแชทบนเว็บองค์กร', icon: 'chat' },
   issues: { label: 'ประกาศปัญหาถึงลูกค้า', hint: 'แจ้งบนหน้าแชทเมื่อระบบมีปัญหา ลดการถามเรื่องเดิมซ้ำ', icon: 'bell' },
   connections: { label: 'LINE / อีเมล / Facebook / Instagram', hint: 'ช่องทางที่ลูกค้าติดต่อเข้ามา', icon: 'inbox' },

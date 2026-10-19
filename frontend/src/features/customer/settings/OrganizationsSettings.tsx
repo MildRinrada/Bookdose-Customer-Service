@@ -7,7 +7,6 @@ import { OrgLogo } from '@/components/ui/OrgLogo';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { joinByLink } from '@/features/org-links/api';
 import { canScanQr, QrScan, readJoinCode, type JoinCode } from '@/features/org-links/components/QrScan';
 import { useInvalidate } from '@/lib/query';
 import { joinOrganization, ORGS_PATH, OVERVIEW_PATH } from '../api';
@@ -27,7 +26,7 @@ export function OrganizationsSettings() {
   /** Add an organization from what the customer typed, pasted or scanned. */
   const add = useCallback(
     async (found: JoinCode) => {
-      const { organization } = 'token' in found ? await joinByLink(found.token) : await joinOrganization(found.slug);
+      const { organization } = await joinOrganization(found.slug);
       await refresh(ORGS_PATH, OVERVIEW_PATH);
       toast(`เพิ่ม ${organization.name} ในองค์กรที่ติดต่อได้แล้ว`);
     },
@@ -38,10 +37,7 @@ export function OrganizationsSettings() {
     <div className="account-section">
       <section className="card">
         <div className="card-header">
-          <div>
-            <h2>องค์กรที่ติดต่อได้</h2>
-            <p>บัญชีเดียวใช้ได้ทุกองค์กร แชท เปิดเคส และอ่านคำถามที่พบบ่อยขององค์กรเหล่านี้ได้</p>
-          </div>
+          <h2>องค์กรที่ติดต่อได้</h2>
         </div>
         <div className="card-body">
           <ul className="org-role-list">
@@ -52,7 +48,7 @@ export function OrganizationsSettings() {
                   <span className="grow">
                     <strong>{org.name}</strong>
                     <span className="muted">
-                      {org.home ? 'ผู้ให้บริการระบบ · ติดต่อเรื่องปัญหาระบบได้เสมอ' : 'องค์กรที่คุณติดต่อ'} · รหัส {org.slug}
+                      {org.home ? 'ผู้ให้บริการระบบ' : 'องค์กรที่คุณติดต่อ'} รหัส {org.slug}
                     </span>
                   </span>
                   {org.home && <span className="badge resolved">ผู้ให้บริการระบบ</span>}
@@ -86,10 +82,7 @@ function AddOrgCard({ onAdd }: { onAdd: (found: JoinCode) => Promise<void> }) {
   return (
     <section className="card">
       <div className="card-header">
-        <div>
-          <h2>เพิ่มองค์กรที่ติดต่อได้</h2>
-          <p>ใช้รหัสองค์กร ลิงก์ที่องค์กรส่งมา หรือสแกน QR ขององค์กร</p>
-        </div>
+        <h2>เพิ่มองค์กรที่ติดต่อได้</h2>
       </div>
       <Form
         className="card-body org-join-form"
@@ -104,8 +97,7 @@ function AddOrgCard({ onAdd }: { onAdd: (found: JoinCode) => Promise<void> }) {
           label="รหัสองค์กร หรือวางลิงก์ที่ได้รับ"
           name="code"
           max={200}
-          placeholder="เช่น my-company หรือ https://…/join/…"
-          hint="ลิงก์ขององค์กรมีรหัสอยู่ท้าย เช่น …/support/my-company/… · ลิงก์เชิญเป็น …/join/…"
+          placeholder="เช่น my-company"
         />
         <div className="org-join-actions">
           <button className="btn primary" type="submit">

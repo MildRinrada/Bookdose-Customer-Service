@@ -64,6 +64,7 @@ ROUTES = [
     ('DELETE',f'/api/platform/faq/{ID}/changes',   controller.discard_global_changes,   'platform'),
     ('GET',   '/api/platform/reports',        controller.problem_reports,            'platform'),
     ('PATCH', f'/api/platform/reports/{ID}',  controller.set_report_status,          'platform'),
+    ('GET',   f'/api/platform/reports/{ID}/images/{ID}', controller.report_image,      'platform'),
     ('GET',   '/api/platform/templates',      controller.article_templates,          'platform'),
     ('POST',  '/api/platform/templates',      controller.create_article_template,    'platform'),
     ('PATCH', f'/api/platform/templates/{ID}', controller.update_article_template,   'platform'),

@@ -120,7 +120,7 @@ def set_suspended(cd, session, kind, account_id, body, client=None):
         require(row['suspended_at'],'บัญชีนี้ไม่ได้ถูกระงับ',409)
         cd.execute(f"UPDATE {table} SET suspended_at=NULL,suspended_reason='' WHERE id=?",(account_id,))
     action = 'suspended' if suspended else 'unsuspended'
-    audit.record(cd,session['name'],f'account.{action}',account_id,f"{row['email']}{' · '+reason if reason else ''}")
+    audit.record(cd,session['name'],f'account.{action}',account_id,f"{row['email']}{', '+reason if reason else ''}")
     _note(cd,kind,account_id,action,reason,client)
     cd.commit()
     return {'ok':True}
@@ -144,7 +144,7 @@ def force_reset(cd, session, kind, account_id, body, client=None):
         from backend.modules.customer_security import service as customer_security
         cd.execute('DELETE FROM customer_resets WHERE account_id=?',(account_id,))
         customer_security.forget_passkeys(cd,account_id,client)
-    audit.record(cd,session['name'],'account.password_forced',account_id,f"{row['email']}{' · '+reason if reason else ''}")
+    audit.record(cd,session['name'],'account.password_forced',account_id,f"{row['email']}{', '+reason if reason else ''}")
     _note(cd,kind,account_id,'password_forced',reason,client)
     cd.commit()
     return {'emailed':_send_link(cd,kind,row['email'])}

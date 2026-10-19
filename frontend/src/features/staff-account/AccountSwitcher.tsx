@@ -174,13 +174,8 @@ export function AddAccountForm() {
         reloadAsAccount();
       }}
     >
-      <p className="muted">เข้าสู่ระบบอีกบัญชีในเบราว์เซอร์นี้ แล้วสลับไปมาได้จากเมนูรูปโปรไฟล์ โดยบัญชีที่ใช้อยู่ยังเข้าสู่ระบบค้างไว้</p>
       <TextField label="อีเมล" name="email" type="email" placeholder="you@bookdose.com" max={254} autoFocus />
       <TextField label="รหัสผ่าน" name="password" type="password" max={200} minLength={undefined} autoComplete="current-password" />
-      <p className="notice add-account-note">
-        <Icon name="shield" />
-        <span>ทั้งสองบัญชีจะเห็นในประวัติความปลอดภัยว่าใช้เบราว์เซอร์นี้ร่วมกัน · บัญชีที่เปิดการยืนยันสองขั้นตอนจะถามรหัส 6 หลักต่อ</span>
-      </p>
       <button className="btn primary" type="submit">
         เพิ่มบัญชี <Icon name="arrow" />
       </button>

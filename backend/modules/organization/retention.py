@@ -126,7 +126,7 @@ def run(db, tenant_id, moment=None):
     for conv in ids:
         files += _clear(db,conv,moment)
     if ids:
-        audit.record(db,ACTOR,'retention.cleared',tenant_id,f"{len(ids)} บทสนทนา · ไฟล์แนบ {len(files)} ไฟล์ · เงียบเกิน {cfg['months']} เดือน")
+        audit.record(db,ACTOR,'retention.cleared',tenant_id,f"{len(ids)} บทสนทนา, ไฟล์แนบ {len(files)} ไฟล์, เงียบเกิน {cfg['months']} เดือน")
     db.commit()
     # The files go once nothing points at them any more.
     for key in files:

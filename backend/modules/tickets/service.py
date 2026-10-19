@@ -282,11 +282,11 @@ def delete_ticket(db, ctx, ticket_id):
     so nothing about the work is lost by one wrong click."""
     ticket = get_scoped(db,'tickets',ticket_id,ctx)
     customer = contacts.find(db,ticket['contact_id']) or {}
-    trash.capture(db,ctx,'ticket',ticket['id'],f"BD-{ticket['number']} · {ticket['subject']}",
+    trash.capture(db,ctx,'ticket',ticket['id'],f"BD-{ticket['number']} {ticket['subject']}",
                   {'tickets':[ticket],'ticket_conversations':repository.conversation_links(db,ticket['id']),
                    'ticket_tags':repository.tag_rows(db,ticket['id']),'ticket_field_values':repository.field_rows(db,ticket['id'])},
                   detail=customer.get('name',''))
     realtime.ticket(db,ticket['id'],public=True,conversations_listed=True)
     repository.delete(db,ticket['id'])
-    audit.record(db,ctx['name'],'ticket.deleted',ticket['id'],f"BD-{ticket['number']} · {ticket['subject']}")
+    audit.record(db,ctx['name'],'ticket.deleted',ticket['id'],f"BD-{ticket['number']} {ticket['subject']}")
     db.commit()

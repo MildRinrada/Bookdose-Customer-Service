@@ -113,7 +113,6 @@ export function AnswerRating({ jobId, value, onChange }: { jobId: string; value?
             placeholder="ควรตอบอย่างไร (ไม่ใส่ก็ได้)"
             onChange={(e) => setComment(e.target.value)}
           />
-          <p className="assistant-rate-note">เจ้าขององค์กรเห็นเหตุผลและความเห็นนี้ในหน้ารายงาน โดยไม่แสดงชื่อคุณและคำถาม</p>
           <div className="assistant-rate-actions">
             <button type="button" className="btn sm" onClick={() => setOpen(false)}>
               ข้าม

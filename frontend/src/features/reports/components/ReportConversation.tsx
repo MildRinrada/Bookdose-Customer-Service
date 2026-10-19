@@ -32,7 +32,6 @@ export function ConversationCard({ all, f, loading }: { all: TicketRow[]; f: Rep
             <Icon name="chat" />
             ระหว่างการคุย
           </h2>
-          <p>หลังตอบครั้งแรกแล้ว ลูกค้ายังรอนานแค่ไหน และทีมตอบจบในครั้งเดียวได้แค่ไหน</p>
         </div>
       </div>
       <div className="card-body">
@@ -53,14 +52,11 @@ export function ConversationCard({ all, f, loading }: { all: TicketRow[]; f: Rep
             <div>
               <span>แก้จบในครั้งเดียว</span>
               <strong>{pct(once.rate)}</strong>
-              <small>{once.finished ? `${once.once} จาก ${once.finished} เคสที่แก้ไขเสร็จ ตอบครั้งเดียวและไม่เปิดซ้ำ` : 'ยังไม่มีเคสที่แก้ไขเสร็จในช่วงนี้'}</small>
+              <small>{once.finished ? `${once.once} จาก ${once.finished} เคสที่แก้ไขเสร็จ` : 'ยังไม่มีเคสที่แก้ไขเสร็จในช่วงนี้'}</small>
               <small>{reportTrend(once.rate, onceBefore.rate, '%')}</small>
             </div>
           </div>
         )}
-        <p className="tiny muted report-conversation-note">
-          รอคำตอบถัดไปนับจากข้อความแรกที่ลูกค้าเขียนมาหลังทีมตอบแล้ว จนถึงคำตอบถัดไปของทีม คำตอบของบอตไม่นับ ครั้งที่ยังรออยู่ยังไม่นับ
-        </p>
       </div>
     </section>
   );
@@ -89,7 +85,6 @@ export function MoodCard({ all, f, tickets, loading }: { all: TicketRow[]; f: Re
             <Icon name="frown" />
             อารมณ์ลูกค้า
           </h2>
-          <p>เคสที่ลูกค้าไม่พอใจหรือโกรธอย่างน้อยหนึ่งข้อความ รู้ได้ก่อนคะแนนความพึงพอใจ ซึ่งลูกค้าส่วนใหญ่ไม่ได้ตอบ</p>
         </div>
       </div>
       <div className="card-body">
@@ -111,7 +106,6 @@ export function MoodCard({ all, f, tickets, loading }: { all: TicketRow[]; f: Re
               <div>
                 <span>โกรธมาก</span>
                 <strong>{mood.angry}</strong>
-                <small>เคสที่ลูกค้าโกรธมาก เช่น ขู่ร้องเรียนหรือใช้คำรุนแรง</small>
               </div>
             </div>
             {tiles.length > 1 && (
@@ -148,7 +142,6 @@ export function MoodCard({ all, f, tickets, loading }: { all: TicketRow[]; f: Re
             )}
           </>
         )}
-        <p className="tiny muted report-conversation-note">อ่านจากคำในข้อความของลูกค้า และจาก AI เมื่อเปิดอ่านอารมณ์ลูกค้าด้วย AI ข้อความที่ใจเย็นลงทีหลังไม่ลบว่าเคยไม่พอใจ</p>
       </div>
     </section>
   );

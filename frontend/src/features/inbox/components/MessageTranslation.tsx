@@ -43,7 +43,7 @@ export function MessageTranslation({ translation: t, body }: { translation: Tran
       text = `แปลจาก${language}ด้วย AI`;
       other = { label: 'ต้นฉบับ', text: body };
     }
-  } else if (t.status === 'pending') text = `กำลังแปลเป็น${language}ก่อนส่ง · ลูกค้ายังไม่เห็นข้อความนี้`;
+  } else if (t.status === 'pending') text = `กำลังแปลเป็น${language}ก่อนส่ง ลูกค้ายังไม่เห็นข้อความนี้`;
   else if (t.status === 'failed') text = `แปลไม่สำเร็จ${why} ส่งเป็นภาษาไทยตามที่พิมพ์`;
   else {
     text = `ลูกค้าได้รับเป็น${language}`;

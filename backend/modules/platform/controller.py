@@ -388,12 +388,21 @@ def set_tenant_feature(req, tenant_id):
 def report_problem(req):
     """A member reports a problem from the ? in the top bar (any signed-in staff account)."""
     from backend.middleware.rate_limit import limited
+    limited(('problem-report-burst',req.session['user_id']),1,30)
     limited(('problem-report',req.session['user_id']),5,600)
+    limited(('problem-report-ip',req.ip),20,3600)
     return req.send(201,{'id':service.report_problem(req.cd,req.session,req.body,req.headers.get('User-Agent',''))})
 
 
 def problem_reports(req):
     return req.send(200,service.problem_reports(req.cd))
+
+
+def report_image(req, report_id, image_id):
+    """A picture sent with a report, for the console. Only image types were ever accepted, and the browser is told
+    not to guess another."""
+    found = service.report_image(req.cd,report_id,image_id)
+    return req.send(200,found['content'],found['mime'],{'Cache-Control':'private, max-age=3600','X-Content-Type-Options':'nosniff'})
 
 
 def set_report_status(req, report_id):

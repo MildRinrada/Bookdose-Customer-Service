@@ -61,7 +61,6 @@ function TrashView({ data, onRefresh }: { data: TrashPage; onRefresh: () => void
     confirmDelete({
       title: `ลบ${kind.label}ถาวร`,
       warning: `“${item.title}” จะถูกลบออกจากระบบอย่างถาวร และกู้คืนไม่ได้อีก`,
-      effects: [`${kind.label}นี้จะหายไปจากถังขยะทันที`, 'ไม่มีสำเนาอื่นในระบบให้กู้คืน', 'การลบถาวรจะถูกบันทึกในประวัติการทำงาน'],
       word: 'ลบถาวร',
       confirmLabel: 'ลบถาวรทันที',
       run: async () => {
@@ -81,7 +80,6 @@ function TrashView({ data, onRefresh }: { data: TrashPage; onRefresh: () => void
       <div className="page-heading">
         <div>
           <h1>ถังขยะ</h1>
-          <p>รายการที่ถูกลบจะเก็บไว้ที่นี่ {data.keep_days || 30} วัน กู้คืนได้ก่อนครบกำหนด หลังจากนั้นระบบจะลบถาวรให้เอง</p>
         </div>
         <div className="flex">
           <button type="button" className="btn subtle" onClick={onRefresh}>
@@ -124,9 +122,9 @@ function TrashView({ data, onRefresh }: { data: TrashPage; onRefresh: () => void
           <Pager slice={slice} unit="รายการ" sizes={[25, 50, 100]} />
         </>
       ) : all.length ? (
-        <EmptyState title="ไม่พบรายการที่ค้นหา" description="ลองเปลี่ยนคำค้น หรือเลือกประเภทอื่น" icon="search" />
+        <EmptyState title="ไม่พบรายการที่ค้นหา" icon="search" />
       ) : (
-        <EmptyState title="ถังขยะว่าง" description="เมื่อมีการลบเคส ข้อมูลลูกค้า หรือบทความ รายการจะมารออยู่ที่นี่ก่อน" icon="trash" />
+        <EmptyState title="ถังขยะว่าง" icon="trash" />
       )}
     </>
   );

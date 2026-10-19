@@ -36,7 +36,7 @@ function Finding({ f }: { f: VulnFinding }) {
         <a href={f.url} target="_blank" rel="noopener noreferrer">
           {f.cves.length ? f.cves.join(', ') : f.id}
         </a>
-        {' · '}
+        {' '}
         {f.fixed.length ? (
           <>
             อัปเดตเป็น <strong>{f.fixed.join(' หรือ ')}</strong> ขึ้นไป
@@ -72,7 +72,6 @@ function VulnsBody({ view }: { view: VulnsView }) {
       <div className="card-header">
         <div>
           <h2>ช่องโหว่ในไลบรารี</h2>
-          <p>ตรวจไลบรารีที่ระบบใช้เทียบฐานข้อมูลช่องโหว่ CVE ทุกวัน เจอระดับสูงส่งอีเมลถึงผู้ดูแลแพลตฟอร์มทันที</p>
         </div>
         <button
           type="button"
@@ -93,22 +92,21 @@ function VulnsBody({ view }: { view: VulnsView }) {
       </div>
       <div className="card-body">
         {!last ? (
-          <p className="muted">ยังไม่เคยตรวจ ระบบจะตรวจเองภายในไม่กี่นาที หรือกดตรวจตอนนี้</p>
+          <p className="muted">ยังไม่เคยตรวจ</p>
         ) : (
           <>
             <p className={!last.ok ? 'notice warning' : urgent ? 'notice danger-notice' : 'vuln-summary'}>
               {!last.ok
-                ? `ตรวจครั้งล่าสุดไม่สำเร็จเมื่อ ${date(last.at, true)}: ติดต่อ api.osv.dev ไม่ได้ จะลองใหม่ภายใน 1 ชั่วโมง${findings.length ? ' · รายการด้านล่างมาจากการตรวจครั้งก่อน' : ''}`
+                ? `ตรวจครั้งล่าสุดไม่สำเร็จเมื่อ ${date(last.at, true)}: ติดต่อ api.osv.dev ไม่ได้ จะลองใหม่ภายใน 1 ชั่วโมง${findings.length ? ' รายการด้านล่างมาจากการตรวจครั้งก่อน' : ''}`
                 : urgent
-                  ? `พบช่องโหว่ระดับสูงในไลบรารีที่ระบบใช้ ${urgent} รายการ ควรอัปเดตโดยเร็ว`
+                  ? `พบช่องโหว่ระดับสูงในไลบรารีที่ระบบใช้ ${urgent} รายการ`
                   : running.length
-                    ? `ไม่มีช่องโหว่ระดับสูง · พบระดับกลางหรือต่ำ ${running.length} รายการ`
+                    ? `ไม่มีช่องโหว่ระดับสูง พบระดับกลางหรือต่ำ ${running.length} รายการ`
                     : 'ไม่พบช่องโหว่ที่ประกาศแล้วในไลบรารีที่ระบบใช้'}
             </p>
             <p className="tiny muted">
-              ตรวจล่าสุด {relative(last.at)} ({date(last.at, true)}) · Python {number(last.python)} ไลบรารี
-              {last.npm == null ? ' · ไม่พบไฟล์ package-lock.json ของเว็บ' : ` · เว็บ (npm) ${number(last.npm)} ไลบรารี`} · ตรวจซ้ำทุก {view.every_hours} ชั่วโมง ·
-              ส่งออกไปแค่ชื่อและเวอร์ชันของไลบรารี
+              ตรวจล่าสุด {relative(last.at)} ({date(last.at, true)}), Python {number(last.python)} ไลบรารี
+              {last.npm == null ? ', ไม่พบไฟล์ package-lock.json ของเว็บ' : `, เว็บ (npm) ${number(last.npm)} ไลบรารี`}, ตรวจซ้ำทุก {view.every_hours} ชั่วโมง
             </p>
             {running.length > 0 && (
               <ul className="vuln-list">
@@ -120,7 +118,7 @@ function VulnsBody({ view }: { view: VulnsView }) {
             {dev.length > 0 && (
               <>
                 <button type="button" className="btn sm subtle vuln-dev-toggle" aria-expanded={showDev} onClick={() => setShowDev(!showDev)}>
-                  {showDev ? 'ซ่อน' : 'ดู'}ไลบรารีที่ใช้ตอนพัฒนาเท่านั้น ({dev.length} รายการ ไม่ได้ทำงานบนเซิร์ฟเวอร์)
+                  {showDev ? 'ซ่อน' : 'ดู'}ไลบรารีที่ใช้ตอนพัฒนาเท่านั้น ({dev.length} รายการ)
                 </button>
                 {showDev && (
                   <ul className="vuln-list">

@@ -67,7 +67,7 @@ function KudosItem({ k, readOnly }: { k: Kudos; readOnly: boolean }) {
         <span className="kudos-who">
           <strong>{k.mine ? 'ชมคุณ' : `ชม ${name}`}</strong>
           <time dateTime={k.created_at} title={clockTime(k.created_at)}>
-            {k.source === 'csat' ? 'ให้ 5 ดาว' : k.source === 'thanks' ? 'การ์ดขอบคุณ' : 'ในแชท'} · {shortAgo(k.created_at)}
+            {k.source === 'csat' ? 'ให้ 5 ดาว' : k.source === 'thanks' ? 'การ์ดขอบคุณ' : 'ในแชท'} {shortAgo(k.created_at)}
           </time>
         </span>
         <span className="kudos-actions">
@@ -140,7 +140,6 @@ function KudosEmpty() {
     <div className="board-empty kudos-empty">
       <Icon name="heart" />
       <strong>ยังไม่มีคำชม</strong>
-      <span>เมื่อลูกค้าชมในแชท ให้ 5 ดาวพร้อมความเห็น หรือส่งหัวใจจากการ์ดขอบคุณ คำชมจะขึ้นที่นี่ให้ทั้งทีมเห็น</span>
     </div>
   );
 }
@@ -157,7 +156,7 @@ export function KudosCard({ wall, readOnly }: { wall: KudosWall | undefined; rea
             <Icon name="heart" className="card-title-icon" />
             กำแพงคำชม
           </h2>
-          <p>คำชมจากลูกค้า {wall?.days ?? 90} วันล่าสุด · ทุกคนในองค์กรเห็น</p>
+          <p>คำชมจากลูกค้า {wall?.days ?? 90} วันล่าสุด</p>
         </div>
         {more && (
           <button type="button" className="btn subtle small" onClick={() => openModal(`กำแพงคำชม (${wall?.total} คำชม)`, <WholeWall readOnly={readOnly} />)}>

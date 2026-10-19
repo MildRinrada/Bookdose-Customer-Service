@@ -8,7 +8,7 @@ export const articleSorts: Record<ArticleSort, string> = { updated: 'อัป�
 export function wordCountText(value: string): string {
   const text = value.trim();
   const words = text ? text.split(/\s+/).length : 0;
-  return `${words} คำ · ${value.length.toLocaleString('th-TH')}/50,000 ตัวอักษร`;
+  return `${words} คำ ${value.length.toLocaleString('th-TH')}/50,000 ตัวอักษร`;
 }
 
 /** An article nobody has touched for this long may no longer match how things work. */

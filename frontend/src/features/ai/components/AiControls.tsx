@@ -58,7 +58,7 @@ export function AiControls({ conversation }: { conversation: AiConversation | nu
           type="button"
           className="btn sm ai-handoff"
           aria-label="ให้ AI ดูแลข้อความถัดไป"
-          title="ตอนนี้เจ้าหน้าที่ดูแลอยู่ · ให้ AI ตอบข้อความถัดไปของลูกค้า"
+          title="ตอนนี้เจ้าหน้าที่ดูแลอยู่ ให้ AI ตอบข้อความถัดไปของลูกค้า"
           onClick={() => change('bot')}
         >
           <Icon name="sparkle" />

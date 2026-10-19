@@ -77,7 +77,7 @@ def actions(button, links):
              f'<td align="center" style="background:{BAND};border-radius:10px">'
              f'<a href="{href}" style="display:inline-block;padding:12px 24px;font-family:{FONT};font-size:15px;'
              f'font-weight:650;color:{PAPER};text-decoration:none">{label}</a></td></tr></table>') if button else ''
-    beside = ' &nbsp;·&nbsp; '.join(f'<a href="{url}" style="color:{SOFT_INK};text-decoration:underline">{text}</a>'
+    beside = ' &nbsp;&nbsp;&nbsp; '.join(f'<a href="{url}" style="color:{SOFT_INK};text-decoration:underline">{text}</a>'
                                     for text,url in links)
     row = (f'<div style="font-family:{FONT};font-size:13px;line-height:2;color:{MUTED};padding-top:{14 if button else 0}px">'
            f'{beside}</div>') if links else ''
@@ -133,7 +133,7 @@ def initial(text):
     for character in (text or '').strip():
         if character.isalnum():
             return character.upper()
-    return '·'
+    return ''
 
 
 def frame(body, brand='', title='', line='', author='', role='', author_lines=(), button=None, links=(),

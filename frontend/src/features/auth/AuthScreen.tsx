@@ -332,11 +332,6 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
           )}
           {login && !secondStep && (guestSlug ? guestChat.data?.guest_chat : !setup) && (
             <p className="guest-entry">
-              <span>
-                {guestSlug
-                  ? `ไม่อยากสมัครสมาชิก? คุยกับทีมงาน ${linked?.name ?? ''} ได้เลย`
-                  : 'ไม่อยากสมัครสมาชิก? ติดต่อทีมงานขององค์กรได้โดยไม่ต้องเข้าสู่ระบบ'}
-              </span>
               <Link className="btn" href={guestSlug ? `/support/${guestSlug}/tickets/new` : '/support/tickets/new'}>
                 <Icon name="chat" />
                 แชทโดยไม่ต้องเข้าสู่ระบบ
@@ -363,9 +358,8 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                 <>
                   <h2>ตรวจอีเมลของคุณ</h2>
                   <p>
-                    เราส่งลิงก์ยืนยันไปที่ <strong>{sentTo}</strong> เปิดลิงก์ แล้วกรอกรหัสผ่านที่เพิ่งตั้ง เพื่อเริ่มส่งเรื่องถึงทีมงาน
+                    เราส่งลิงก์ยืนยันไปที่ <strong>{sentTo}</strong> ลิงก์มีอายุ 24 ชั่วโมง
                   </p>
-                  <p className="small muted">ไม่พบอีเมล? ตรวจโฟลเดอร์สแปม · ลิงก์มีอายุ 24 ชั่วโมง</p>
                   <button className="btn" type="button" disabled={resending} onClick={() => void resend()}>
                     <Icon name="send" />
                     ส่งลิงก์อีกครั้ง
@@ -374,16 +368,15 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
               ) : signupOrganization ? (
                 <Form onSubmit={submitSignup}>
                   <h2>สมัครสมาชิก</h2>
-                  <p>สร้างบัญชีลูกค้า {supportName} เพื่อแชทกับทีมงาน ติดตามเคส และอ่านคำถามที่พบบ่อยได้ในที่เดียว</p>
+                  <p>สร้างบัญชีลูกค้า {supportName}</p>
                   <TextField label="ชื่อ-นามสกุล หรือชื่อที่ต้องการให้เรียก" name="name" max={100} placeholder="เช่น สมชาย ใจดี" personName />
                   <TextField label="อีเมล" name="email" type="email" placeholder="name@example.com" max={254} />
-                  <TextField label="ตั้งรหัสผ่าน (อย่างน้อย 10 ตัวอักษร)" name="password" type="password" max={200} />
+                  <TextField label="ตั้งรหัสผ่าน" name="password" type="password" max={200} />
                   <TextField label="เบอร์โทรศัพท์ (ไม่บังคับ)" name="phone" type="tel" max={20} required={false} placeholder="เช่น 081-234-5678" />
                   <HoneypotField />
                   {/* The notice is a document, read in a window of its own; agreeing at the foot of it ticks this box. */}
                   <div className="auth-privacy">
                     <PrivacyNoticeButton organization={supportName} onAccept={() => setConsent(true)} />
-                    <span className="tiny muted">อ่านก่อนสมัคร</span>
                   </div>
                   <label className="check">
                     <input type="checkbox" name="consent" required checked={consent} onChange={(event) => setConsent(event.target.checked)} />
@@ -392,9 +385,6 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                   <button className="btn primary" type="submit">
                     {verifyEmail ? 'สมัครและส่งอีเมลยืนยัน' : 'สมัครสมาชิก'} <Icon name="arrow" />
                   </button>
-                  <div className="auth-foot">
-                    <Icon name="lock" /> {verifyEmail ? 'ต้องยืนยันอีเมลก่อนเริ่มใช้งาน' : 'สมัครแล้วเริ่มแชทกับทีมงานได้ทันที'}
-                  </div>
                 </Form>
               ) : (
                 <>
@@ -418,7 +408,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
               <TextField label="อีเมล" name="email" type="email" placeholder="you@bookdose.com" max={254} />
               {creating ? (
                 <TextField
-                  label="รหัสผ่าน (อย่างน้อย 10 ตัวอักษร)"
+                  label="รหัสผ่าน"
                   name="password"
                   id="auth-password"
                   type="password"
@@ -483,11 +473,11 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                     // Setting a new password from the email lifts the lock at once, for either kind of account.
                     verifyEmail ? (
                       <>
-                        ตั้งรหัสผ่านใหม่เพื่อปลดล็อกทันที · ลูกค้า:{' '}
+                        ตั้งรหัสผ่านใหม่เพื่อปลดล็อกทันที ลูกค้า:{' '}
                         <Link className="btn subtle" href={withOrg('/customer/forgot', org)}>
                           ลืมรหัสผ่าน
                         </Link>
-                        <span aria-hidden="true">·</span> ทีมงาน:{' '}
+                        {' '}ทีมงาน:{' '}
                         <Link className="btn subtle" href="/forgot-password">
                           ลืมรหัสผ่าน
                         </Link>
@@ -503,14 +493,6 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
               <button key={lock.locked ? 'locked' : 'open'} className="btn primary" type="submit" disabled={login && lock.locked}>
                 {register ? 'สมัครและส่งอีเมลยืนยัน' : setup ? 'สร้างพื้นที่ทำงาน' : 'เข้าสู่ระบบ'} <Icon name="arrow" />
               </button>
-              <div className="auth-foot">
-                <Icon name="lock" />{' '}
-                {register
-                  ? 'ยืนยันอีเมลก่อนเข้าใช้งาน คุณจะเป็นผู้ดูแลเฉพาะองค์กรที่สร้าง'
-                  : setup
-                    ? 'คุณจะเป็นผู้ดูแลแพลตฟอร์มและผู้ดูแลองค์กรแรก'
-                    : 'ข้อมูลแต่ละองค์กรแยกพื้นที่จัดเก็บอย่างอิสระ'}
-              </div>
               {login && passkeys && (
                 <>
                   <div className="auth-or">หรือ</div>
@@ -546,7 +528,6 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                       </>
                     )}
                   </p>
-                  {register && <p className="tiny muted">หากเข้าร่วมองค์กรที่มีอยู่แล้ว ให้ติดต่อผู้ดูแลองค์กรเพื่อเพิ่มสมาชิก</p>}
                 </>
               )}
               <nav className="auth-legal tiny" aria-label="เอกสาร">

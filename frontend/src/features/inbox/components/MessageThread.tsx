@@ -94,7 +94,7 @@ export function Messages({
   onReact,
   ownPhoto,
 }: MessagesProps & { receipt?: Receipt | null; manage?: ManageMessage }) {
-  if (!messages.length) return <EmptyState title="ยังไม่มีข้อความ" description="เริ่มบันทึกรายละเอียดการดูแลในเคสนี้" icon="chat" />;
+  if (!messages.length) return <EmptyState title="ยังไม่มีข้อความ" icon="chat" />;
   return (
     <>
       {messages.map((m, i) => {
@@ -185,7 +185,7 @@ function MessageItem({
               ? publicView
                 ? 'คุณยกเลิกข้อความนี้แล้ว'
                 : 'ลูกค้ายกเลิกข้อความนี้แล้ว'
-              : `ข้อความนี้ถูกลบแล้ว${m.deleted_by ? ` โดย ${m.deleted_by}` : ''} · ลูกค้าไม่เห็นข้อความนี้แล้ว`}
+              : `ข้อความนี้ถูกลบแล้ว${m.deleted_by ? ` โดย ${m.deleted_by}` : ''} ลูกค้าไม่เห็นข้อความนี้แล้ว`}
           </p>
         </div>
       </article>
@@ -223,7 +223,7 @@ function MessageItem({
             </span>
           )}
           {m.pinned && (
-            <span className="message-tag pin-tag" title="ข้อความนี้ถูกปักหมุดไว้ · ดูได้ในคอลัมน์ข้าง ๆ">
+            <span className="message-tag pin-tag" title="ข้อความนี้ถูกปักหมุดไว้ ดูได้ในคอลัมน์ข้าง ๆ">
               <Icon name="pin" />
               ปักหมุด
             </span>

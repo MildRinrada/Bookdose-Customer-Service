@@ -18,7 +18,7 @@ export function GuideScreen({ id }: { id: string }) {
   const a = page.data.articles.find((x) => x.id === id);
   if (!a)
     return (
-      <EmptyState title="ไม่พบคู่มือนี้" description="คู่มืออาจถูกย้ายหรือลบไปแล้ว" icon="file">
+      <EmptyState title="ไม่พบคู่มือนี้" icon="file">
         <Link className="btn" href="/guides">
           <Icon name="back" />
           กลับไปคู่มือจาก Bookdose

@@ -84,7 +84,7 @@ export function CheckupPanel() {
         <div>
           <h2>{needs ? `ต้องดูแล ${needs} เรื่อง` : 'ตั้งค่าความปลอดภัยครบแล้ว'}</h2>
           <p className="muted">
-            {site ? `ตรวจจาก ${site}` : 'ยังไม่ได้ตั้งโดเมนเว็บไซต์'} · ตรวจเมื่อ <time dateTime={checked_at} title={date(checked_at, true)}>{relative(checked_at)}</time>
+            {site ? `ตรวจจาก ${site}` : 'ยังไม่ได้ตั้งโดเมนเว็บไซต์'} ตรวจเมื่อ <time dateTime={checked_at} title={date(checked_at, true)}>{relative(checked_at)}</time>
           </p>
           <ul className="checkup-counts">
             {(['critical', 'warning', 'ok'] as const).map((level) =>

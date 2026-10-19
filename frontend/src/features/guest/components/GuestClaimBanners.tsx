@@ -34,7 +34,7 @@ export function GuestClaimBanners({ org }: { org?: string }) {
             onClick={() =>
               confirm({
                 title: 'ย้ายแชทเข้าบัญชีนี้',
-                message: `ย้ายแชท ${claim.conversations} เรื่องกับ ${claim.org_name} ที่คุยไว้ในเบราว์เซอร์นี้เข้าบัญชีที่เข้าสู่ระบบอยู่? ถ้าไม่ใช่แชทของคุณ (เช่น เครื่องที่ใช้ร่วมกัน) ให้กด “ไม่ย้าย”`,
+                message: `ย้ายแชท ${claim.conversations} เรื่องกับ ${claim.org_name} ที่คุยไว้ในเบราว์เซอร์นี้เข้าบัญชีที่เข้าสู่ระบบอยู่?`,
                 confirmLabel: 'ย้ายเข้าบัญชีนี้',
                 cancelLabel: 'ไม่ย้าย',
                 run: async () => {

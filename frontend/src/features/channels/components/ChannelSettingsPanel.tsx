@@ -54,11 +54,6 @@ function ChannelWordsCard({ c }: { c: ChannelSetting }) {
       <div className="card-header">
         <div>
           <h2>{email ? 'ชื่อผู้ส่งและลายเซ็น' : 'ข้อความต้อนรับเพื่อนใหม่'}</h2>
-          <p>
-            {email
-              ? 'ลูกค้าเห็นในทุกอีเมลที่ทีมตอบกลับ · บันทึกแยกจากการเชื่อมต่อด้านบน ข้อความที่รอส่งจะไม่ถูกยกเลิก'
-              : 'ส่งทันทีเมื่อลูกค้าเพิ่มบัญชี LINE นี้เป็นเพื่อน เป็นการตอบกลับของ LINE จึงไม่นับโควตาข้อความของบัญชี'}
-          </p>
         </div>
       </div>
       <Form
@@ -97,7 +92,6 @@ function ChannelWordsCard({ c }: { c: ChannelSetting }) {
             <div className="field">
               <label htmlFor="email-signature">ลายเซ็นท้ายอีเมล</label>
               <textarea id="email-signature" name="signature" rows={4} maxLength={600} defaultValue={v.signature || ''} />
-              <p className="tiny muted">ต่อท้ายทุกอีเมลที่ตอบลูกค้า เช่น ชื่อทีม เบอร์โทร และเวลาทำการ ขึ้นบรรทัดใหม่ได้ · ไม่ใส่ก็ได้</p>
             </div>
           </>
         ) : (
@@ -109,9 +103,6 @@ function ChannelWordsCard({ c }: { c: ChannelSetting }) {
             <div className="field mt">
               <label htmlFor="line-welcome_message">ข้อความต้อนรับ</label>
               <textarea id="line-welcome_message" name="welcome_message" rows={4} maxLength={1000} defaultValue={v.welcome_message || ''} />
-              <p className="tiny muted">
-                ถ้าตั้งข้อความทักทายไว้ใน LINE Official Account Manager ด้วย ลูกค้าจะได้ 2 ข้อความ ให้ปิดฝั่งนั้น หรือเลือกใช้ที่นี่ที่เดียว
-              </p>
             </div>
           </>
         )}
@@ -156,7 +147,7 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
   return (
     <section className="card mt" id={`channel-${k}`}>
       <div className="card-header">
-        <h2>{name} · เชื่อมบัญชีจริง</h2>
+        <h2>{name} เชื่อมบัญชีจริง</h2>
         {/* Saved is good news: green with a tick, not a grey that reads like "nothing here". */}
         <span className={`badge${c.credentials_configured ? ' resolved' : ''}`}>
           <Icon name={c.credentials_configured ? 'checkCircle' : 'clock'} />
@@ -188,12 +179,6 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
         }}
       >
         <SetupSteps steps={k === 'line' ? lineSteps(c) : emailSteps(c)} />
-        <div className="notice mb">
-          {k === 'line' &&
-            'รับข้อความส่วนตัวและกลุ่มจาก LINE OA ตอบข้อความ รูป และลิงก์เอกสารผ่านบัญชีเดิม ต้องเปิดโปรแกรมไว้และใช้ Webhook URL แบบ HTTPS ที่ LINE เข้าถึงได้'}
-          {k === 'email' &&
-            'รับอีเมลผ่าน IMAP (TLS 993) และส่งผ่าน SMTP ใช้รหัสผ่านหรือ App Password เดียวกันทั้งสองบริการ เริ่มรับเฉพาะอีเมลใหม่หลังเปิดครั้งแรก เลือกใช้รหัสผ่าน หรือ OAuth ของ Google / Microsoft ได้'}
-        </div>
         <div className="form-grid">
           {k === 'line' && (
             <>
@@ -245,9 +230,6 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
             ลบข้อมูลเชื่อมต่อ (ปิดช่องทางก่อนบันทึก)
           </label>
         </div>
-        <p className="tiny muted mt">
-          ข้อมูลลับเก็บฝั่งเซิร์ฟเวอร์ ไม่แสดงกลับและไม่รวมในไฟล์สำรอง การแก้ตั้งค่าจะยกเลิกข้อความที่ยังรอส่ง ให้เจ้าหน้าที่ตรวจแล้วส่งใหม่
-        </p>
         <div className="flex wrap mt">
           <button className="btn primary" type="submit">
             บันทึก {name}
@@ -261,7 +243,6 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
             </button>
           )}
         </div>
-        <p className="tiny muted mt">ทดสอบการเข้าสู่ระบบเท่านั้น ไม่ส่งข้อความทดสอบ</p>
         {webhookURL && (
           <div className="notice mt">
             <strong>Webhook URL</strong>
@@ -278,20 +259,15 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
             >
               คัดลอก Webhook URL
             </button>
-            <p>ถ้าเปิดผ่าน localhost ให้เปลี่ยนเป็นโดเมน HTTPS สาธารณะที่ชี้มายังเซิร์ฟเวอร์นี้ แล้วใส่ URL ใน LINE Developers พร้อมเปิด Use webhook</p>
           </div>
         )}
         <div className="mt" role="status">
           {c.last_error && <p className="notice">{c.last_error}</p>}
           <p className="small muted">
-            ตรวจล่าสุด: {c.last_checked ? date(c.last_checked, true) : '-'} · รับข้อความล่าสุด: {c.last_received ? date(c.last_received, true) : '-'}
+            ตรวจล่าสุด: {c.last_checked ? date(c.last_checked, true) : '-'} รับข้อความล่าสุด: {c.last_received ? date(c.last_received, true) : '-'}
           </p>
           <OutboxBadges outbox={c.outbox} />
         </div>
-        <p className="tiny muted mt">
-          เมื่อเปิด Chatbot ระบบจะส่งข้อความและความรู้สาธารณะที่เกี่ยวข้องให้บริการ AI ที่องค์กรเชื่อมไว้ (OpenAI Gemini หรือ n8n) เพื่อสร้างคำตอบ มีค่าใช้บริการตามบัญชี AI และช่องทาง
-          ต้องตั้ง API Key ในส่วน AI ก่อน เปิดใช้กับเรื่องใหม่ ส่วนเรื่องเดิมให้กดเปิด AI เป็นรายบทสนทนา
-        </p>
       </Form>
     </section>
   );
@@ -324,10 +300,6 @@ function EmailOAuthFields({ c }: { c: ChannelSetting }) {
           </option>
         ))}
       </SelectField>
-      <div className="notice span-2">
-        OAuth: ลงทะเบียน Web application ขององค์กรกับ Google Cloud หรือ Microsoft Entra แล้วกรอก Client ID/Secret และ Redirect URI
-        บันทึกโดยยังไม่เปิดช่องทาง จากนั้นกดเชื่อมบัญชี เมื่ออนุญาตสำเร็จจึงเปิดรับและส่งอีเมล
-      </div>
       <ChannelField kind="email" name="oauth_client_id" label="OAuth Client ID" value={v.oauth_client_id || ''} />
       <ChannelField kind="email" name="oauth_client_secret" label="OAuth Client Secret" type="password" />
       <ChannelField
@@ -354,7 +326,7 @@ function EmailOAuthFields({ c }: { c: ChannelSetting }) {
         >
           เข้าสู่ Google / Microsoft
         </button>
-        <span className="tiny muted">{c.credentials_configured ? 'มีข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่ได้เชื่อมบัญชี'} · token เก็บฝั่งเซิร์ฟเวอร์</span>
+        <span className="tiny muted">{c.credentials_configured ? 'มีข้อมูลเชื่อมต่อแล้ว' : 'ยังไม่ได้เชื่อมบัญชี'}</span>
       </div>
     </>
   );

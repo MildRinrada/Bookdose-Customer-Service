@@ -29,7 +29,7 @@ export function TicketPreview({ data }: { data: TicketDetail }) {
     <div className="ticket-preview">
       <h3>{t.subject}</h3>
       <p className="muted">
-        {t.category} · เปิดเมื่อ {date(t.created_at, true)}
+        {t.category} เปิดเมื่อ {date(t.created_at, true)}
       </p>
       <dl className="preview-meta">
         <div>
@@ -72,7 +72,7 @@ export function TicketPreview({ data }: { data: TicketDetail }) {
           <dd>
             {c.name}
             <span className="muted preview-contact">
-              {c.email || '-'} · {c.phone || '-'}
+              {c.email || '-'} {c.phone || '-'}
             </span>
           </dd>
         </div>

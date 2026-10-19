@@ -419,13 +419,10 @@ export function DashboardBoard({ content }: { content: Record<string, ReactNode>
       {editing && (
         <div className="arrange-bar">
           <span className="grow">
-            <strong>กำลังจัดหน้า</strong>{' '}
-            <span className="tiny muted">
-              จับแถบหัวการ์ดเพื่อย้าย · จับขอบหรือมุมเพื่อย่อ-ขยาย · <b>Shift+คลิก</b>หรือ<b>ลากกรอบ</b>เพื่อเลือกหลายการ์ด แล้วจับตรงไหนของการ์ดที่เลือกก็ย้ายได้ทั้งชุด ·{' '}
-              <b>คลิกขวา</b>เพื่อเพิ่มการ์ด ซ่อน หรือคืนค่า{selected.length > 1 ? ` · เลือกอยู่ ${selected.length} การ์ด` : ''}
-            </span>
+            <strong>กำลังจัดหน้า</strong>
+            {selected.length > 1 && <span className="tiny muted"> เลือกอยู่ {selected.length} การ์ด</span>}
             <br />
-            <span className="tiny arrange-layer">ตอนนี้แสดง: {layer} · ยังไม่บันทึกจนกว่าจะกด บันทึก</span>
+            <span className="tiny arrange-layer">ตอนนี้แสดง: {layer}</span>
           </span>
           <button type="button" className="btn sm" onClick={discard}>
             <Icon name="close" />
@@ -580,7 +577,7 @@ export function DashboardBoard({ content }: { content: Record<string, ReactNode>
                   {
                     label: 'ตั้งหน้านี้เป็นค่าเริ่มต้นขององค์กร',
                     icon: 'users',
-                    run: () => void publish(materialise(current, cards), 'ตั้งเป็นค่าเริ่มต้นขององค์กรแล้ว · คนที่จัดหน้าเองไว้แล้วจะไม่ถูกเปลี่ยน'),
+                    run: () => void publish(materialise(current, cards), 'ตั้งเป็นค่าเริ่มต้นขององค์กรแล้ว คนที่จัดหน้าเองไว้แล้วจะไม่ถูกเปลี่ยน'),
                   },
                   ...(!isEmptyLayout(organization)
                     ? [{ label: 'ล้างค่าเริ่มต้นขององค์กร', icon: 'restore', run: () => void publish(EMPTY_LAYOUT, 'ล้างค่าเริ่มต้นขององค์กรแล้ว') }]
@@ -734,8 +731,8 @@ function Widget({ card, controls: c }: { card: PlacedCard; controls: Controls })
             type="button"
             className="widget-grip"
             data-handle=""
-            aria-label={`ย้าย ${card.title} · ใช้ปุ่มลูกศรเลื่อนทีละช่อง`}
-            title="ลากเพื่อย้าย · ปุ่มลูกศรเลื่อนทีละช่อง"
+            aria-label={`ย้าย ${card.title}, ใช้ปุ่มลูกศรเลื่อนทีละช่อง`}
+            title="ลากเพื่อย้าย ปุ่มลูกศรเลื่อนทีละช่อง"
             onKeyDown={(e) => {
               const step = arrow(e.key);
               if (!step) return;
@@ -763,8 +760,8 @@ function Widget({ card, controls: c }: { card: PlacedCard; controls: Controls })
             type="button"
             className={`widget-edge at-${edge}`}
             data-handle=""
-            aria-label={`${edgeNames[edge]}ของ ${card.title} · ตอนนี้ ${card.box.w} คูณ ${card.box.h} ช่อง · ใช้ปุ่มลูกศรปรับทีละช่อง`}
-            title={`ลาก${edgeNames[edge]}เพื่อย่อ-ขยาย · ปุ่มลูกศรปรับทีละช่อง`}
+            aria-label={`${edgeNames[edge]}ของ ${card.title}, ตอนนี้ ${card.box.w} คูณ ${card.box.h} ช่อง, ใช้ปุ่มลูกศรปรับทีละช่อง`}
+            title={`ลาก${edgeNames[edge]}เพื่อย่อ-ขยาย ปุ่มลูกศรปรับทีละช่อง`}
             {...hold(edge)}
             onKeyDown={(e) => {
               const step = arrow(e.key);

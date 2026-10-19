@@ -91,20 +91,20 @@ def _headers(headers, secure):
     hint = ('ตั้งที่ reverse proxy หน้าเว็บ (เช่น Nginx หรือ Cloudflare)' if 'Strict-Transport-Security' in missing and len(missing)==1
             else 'ตรวจว่า reverse proxy หน้าเว็บไม่ได้ลบ header ที่เว็บส่งมา')
     return _check('headers','warning',f'Security header ขาดหรือไม่ถูกต้อง {len(missing)} ตัว',
-                  f"{', '.join(missing)} · {hint}",items=items)
+                  f"{', '.join(missing)} {hint}",items=items)
 
 
 def _certificate(cert):
     left = int((ssl.cert_time_to_seconds(cert['notAfter'])-time.time())//86400)
     issuer = dict(x[0] for x in cert.get('issuer',()) if x).get('organizationName','')
     until = cert['notAfter']
-    by = f' · ออกโดย {issuer}' if issuer else ''
+    by = f' ออกโดย {issuer}' if issuer else ''
     if left<0:
-        return _check('https','critical','ใบรับรอง HTTPS หมดอายุแล้ว',f'หมดเมื่อ {until}{by} · ผู้ใช้จะเข้าเว็บไม่ได้ ต่ออายุทันที')
+        return _check('https','critical','ใบรับรอง HTTPS หมดอายุแล้ว',f'หมดเมื่อ {until}{by} ผู้ใช้จะเข้าเว็บไม่ได้ ต่ออายุทันที')
     if left<CERT_URGENT_DAYS:
-        return _check('https','critical',f'ใบรับรอง HTTPS เหลือ {left} วัน',f'หมดอายุ {until}{by} · ต่ออายุก่อนหมด ถ้าต่ออัตโนมัติอยู่ ตรวจว่ายังทำงาน')
+        return _check('https','critical',f'ใบรับรอง HTTPS เหลือ {left} วัน',f'หมดอายุ {until}{by} ต่ออายุก่อนหมด ถ้าต่ออัตโนมัติอยู่ ตรวจว่ายังทำงาน')
     if left<CERT_WARN_DAYS:
-        return _check('https','warning',f'ใบรับรอง HTTPS เหลือ {left} วัน',f'หมดอายุ {until}{by} · ใกล้หมดแล้ว ตรวจว่าการต่ออายุอัตโนมัติทำงาน')
+        return _check('https','warning',f'ใบรับรอง HTTPS เหลือ {left} วัน',f'หมดอายุ {until}{by} ใกล้หมดแล้ว ตรวจว่าการต่ออายุอัตโนมัติทำงาน')
     return _check('https','ok',f'ใบรับรอง HTTPS เหลือ {left} วัน',f'หมดอายุ {until}{by}')
 
 
@@ -122,13 +122,13 @@ def _website(base):
     except ssl.SSLCertVerificationError as error:
         reason = error.verify_message or 'ใบรับรองไม่ถูกต้อง'
         return [_check('headers','warning','ตรวจ security header ไม่ได้','เปิดหน้าเว็บผ่าน HTTPS ไม่ได้เพราะใบรับรองไม่ผ่าน'),
-                _check('https','critical','ใบรับรอง HTTPS ไม่ผ่านการตรวจ',f'{base}: {reason} · เบราว์เซอร์จะเตือนผู้ใช้ว่าเว็บไม่ปลอดภัย')]
+                _check('https','critical','ใบรับรอง HTTPS ไม่ผ่านการตรวจ',f'{base}: {reason} เบราว์เซอร์จะเตือนผู้ใช้ว่าเว็บไม่ปลอดภัย')]
     except (OSError,http.client.HTTPException,socket.timeout) as error:
-        why = f'เปิด {base}{PAGE} ไม่ได้ ({type(error).__name__}) · ตรวจว่าโดเมนชี้มาที่เซิร์ฟเวอร์นี้ และเซิร์ฟเวอร์ออกอินเทอร์เน็ตได้'
+        why = f'เปิด {base}{PAGE} ไม่ได้ ({type(error).__name__}) ตรวจว่าโดเมนชี้มาที่เซิร์ฟเวอร์นี้ และเซิร์ฟเวอร์ออกอินเทอร์เน็ตได้'
         return [_check('headers','warning','ตรวจ security header ไม่ได้',why),_check('https','warning','ตรวจใบรับรอง HTTPS ไม่ได้',why)]
     found = [_headers(headers,secure)]
     if status>=400:
-        found[0]['detail'] += f' · หน้าเว็บตอบ {status}'
+        found[0]['detail'] += f' หน้าเว็บตอบ {status}'
     if secure and cert:
         found.append(_certificate(cert))
     elif local:
@@ -147,8 +147,8 @@ def _key(cd):
                       f'ใช้ BOOKDOSE_SECRET_KEY (รหัส {secret_box.current_key_id()}) ใครได้โฟลเดอร์ข้อมูลหรือไฟล์สำรองไปก็เปิด token ไม่ได้')
     saved = repository.setting(cd,health.KEY_SAVED)==secret_box.current_key_id()
     return _check('key','warning','กุญแจเข้ารหัสอยู่ในโฟลเดอร์ข้อมูล',
-                  f'ไฟล์ data/keys/secret.key (รหัส {secret_box.current_key_id()}) อยู่ที่เดียวกับข้อมูลที่มันเข้ารหัส ใครได้โฟลเดอร์นี้ไปก็เปิด token ได้ · '
-                  'ตั้ง BOOKDOSE_SECRET_KEY ในสภาพแวดล้อมของเซิร์ฟเวอร์แทน'+(' · คุณยืนยันแล้วว่าเก็บสำเนากุญแจไว้นอกเครื่อง' if saved else ''))
+                  f'ไฟล์ data/keys/secret.key (รหัส {secret_box.current_key_id()}) อยู่ที่เดียวกับข้อมูลที่มันเข้ารหัส ใครได้โฟลเดอร์นี้ไปก็เปิด token ได้ '
+                  'ตั้ง BOOKDOSE_SECRET_KEY ในสภาพแวดล้อมของเซิร์ฟเวอร์แทน'+(' คุณยืนยันแล้วว่าเก็บสำเนากุญแจไว้นอกเครื่อง' if saved else ''))
 
 
 def _turnstile(cd):

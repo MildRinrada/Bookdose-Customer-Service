@@ -10,11 +10,30 @@ import pathlib
 from backend.database import audit, db as D
 from backend.database.db import one, rows
 from backend.modules.legal.model import BODY_MAX, DOCUMENTS, FIRST_VERSION, KEYS
-from backend.utils.dates import now
+from backend.utils.dates import iso, now
 from backend.utils.security import uid
 from backend.utils.validation import field, require
 
 DRAFTS = pathlib.Path(__file__).parent/'drafts'
+
+# A new version is asked for with a bar for this many days; after that the page asks before anything else (the terms
+# of the organization's admin, the notice of a staff member). Agreed or not, nothing is deleted and nobody is cut off
+# in the middle of their work: the page asks when it is next opened.
+GRACE_DAYS = 14
+
+
+def _due(published_at):
+    """When the grace for a version published at `published_at` runs out."""
+    return iso(dt.datetime.fromisoformat(published_at)+dt.timedelta(days=GRACE_DAYS))
+
+
+def _standing(live, accepted):
+    """{pending, due, overdue} for somebody whose last agreement is `accepted` while `live` is in force. Never having
+    agreed has no grace: the first time is asked at once (an organization the platform made, an account older than
+    the notice); a new version after an agreement is asked with GRACE_DAYS of grace."""
+    pending = bool(live) and (not accepted or accepted['version']!=live['version'])
+    due = _due(live['published_at']) if pending and accepted else None
+    return {'pending':pending,'due':due,'overdue':pending and (not accepted or due<=now())}
 
 
 def seed(db):
@@ -131,8 +150,7 @@ def organization_terms(db, tenant_id):
     accepted = one(db,'''SELECT version,email,accepted_at FROM legal_acceptances WHERE document='terms' AND tenant_id=?
                          ORDER BY accepted_at DESC LIMIT 1''',(tenant_id,))
     return {'current':{'version':live['version'],'title':live['title'],'published_at':live['published_at']} if live else None,
-            'accepted':accepted,
-            'pending':bool(live) and (not accepted or accepted['version']!=live['version'])}
+            'accepted':accepted,**_standing(live,accepted)}
 
 
 def accept_for_organization(db, tenant_id, session, ip=''):
@@ -150,7 +168,19 @@ def member_privacy(db, email):
     live = current(db,'platform-privacy')
     accepted = one(db,'''SELECT version,accepted_at FROM legal_acceptances WHERE document='platform-privacy' AND email=?
                          ORDER BY accepted_at DESC LIMIT 1''',(email,))
-    return {'current':{'version':live['version'],'published_at':live['published_at']} if live else None,'accepted':accepted}
+    return {'current':{'version':live['version'],'published_at':live['published_at']} if live else None,'accepted':accepted,
+            **_standing(live,accepted)}
+
+
+def acknowledged(db, emails):
+    """Which of these staff accounts acknowledged the privacy notice in force (an organization's admin sees who has
+    not, on the team list)."""
+    live = current(db,'platform-privacy')
+    if not live or not emails:
+        return set(emails) if not live else set()
+    marks = ','.join('?'*len(emails))
+    return {r['email'] for r in rows(db,f'''SELECT DISTINCT email FROM legal_acceptances WHERE document='platform-privacy'
+                                           AND version=? AND email IN ({marks})''',(live['version'],*emails))}
 
 
 # --- ผู้ให้บริการ: who Bookdose is, put into every document -----------------------------------------------------
@@ -223,3 +253,52 @@ def acknowledge_customer(db, account_id, email, ip=''):
     db.execute('UPDATE customer_accounts SET consent_version=?,consent_at=? WHERE id=?',(version,now(),account_id))
     db.commit()
     return {'consent_version':version}
+
+
+# --- Telling the organizations about new terms ----------------------------------------------------------------
+
+TERMS_MAILED_KEY = 'legal_terms_mailed'   # platform setting: {tenant id: {version, notice, reminder}}
+
+
+def remind_terms(cd):
+    """The automation worker's round: the admins of an organization that agreed to an older version of the terms are
+    emailed once when a new one is published, and once more halfway through the grace. Nothing is sent while the
+    platform's mailbox is not set up, and an organization that never agreed (made from the platform's screens) is
+    asked on the page instead, the first time its admin signs in."""
+    import json
+    from backend.modules.organization import repository as organization
+    from backend.modules.platform import dormant, repository as tenants, service as platform
+    live = current(cd,'terms')
+    if not live or not platform.registration_ready(cd):
+        return []
+    try:
+        mailed = json.loads(tenants.setting(cd,TERMS_MAILED_KEY) or '{}')
+    except ValueError:
+        mailed = {}
+    halfway = iso(dt.datetime.fromisoformat(live['published_at'])+dt.timedelta(days=GRACE_DAYS//2))
+    cfg,secret,sent = platform.registration_config(cd),platform.registration_secret(),[]
+    base = (cfg.get('public_base_url') or '').rstrip('/')
+    for tenant_id in tenants.active_tenant_ids(cd):
+        standing = organization_terms(cd,tenant_id)
+        if not standing['pending'] or not standing['accepted']:
+            continue
+        record = mailed.get(tenant_id) or {}
+        if record.get('version')!=live['version']:
+            record = {'version':live['version']}
+        kind = 'notice' if not record.get('notice') else 'reminder' if not record.get('reminder') and now()>=halfway else None
+        if not kind:
+            continue
+        admins = [m['email'] for m in organization.tenant_members(cd,tenant_id) if m['role']=='admin' and m['active'] and not m['expires_at']]
+        due = standing['due'][:10]
+        subject = ('ข้อตกลงการใช้บริการ Bookdose มีฉบับใหม่' if kind=='notice' else 'เตือน: กรุณายอมรับข้อตกลงการใช้บริการฉบับใหม่')
+        message = (f"ข้อตกลงการใช้บริการมีฉบับใหม่ (ฉบับ {live['version']}) กรุณาเข้าสู่ระบบแล้วอ่านและยอมรับในนามองค์กรภายในวันที่ {due}\n\n"
+                   f"หลังวันที่ {due} ผู้ดูแลองค์กรจะต้องยอมรับก่อนจึงจะใช้งานต่อได้ ส่วนทีมงานคนอื่นและลูกค้าของคุณใช้งานได้ตามปกติ\n\n"
+                   f"อ่านข้อตกลง: {base}/legal/terms\n")
+        if admins and dormant._send(admins,cfg,secret,subject,message):
+            record[kind] = now()
+            mailed[tenant_id] = record
+            sent.append(tenant_id)
+    if sent:
+        tenants.save_setting(cd,TERMS_MAILED_KEY,json.dumps(mailed,ensure_ascii=False))
+        cd.commit()
+    return sent

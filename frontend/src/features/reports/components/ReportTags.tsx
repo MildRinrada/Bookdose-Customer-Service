@@ -23,7 +23,7 @@ export function TagBarsCard({ tickets, before }: { tickets: TicketRow[]; before:
         </div>
         <div className="card-body">
           <p className="empty-mini">
-            ตั้งป้ายเคสไว้ แล้วให้ทีมติดป้าย รายงานจะบอกได้ว่าปัญหาเรื่องไหนมากที่สุด{' '}
+            ยังไม่ได้ตั้งป้ายเคส{' '}
             <Link href="/tickets">ตั้งป้ายที่หน้าเคสบริการ</Link>
           </p>
         </div>
@@ -57,14 +57,14 @@ export function TagBarsCard({ tickets, before }: { tickets: TicketRow[]; before:
           shown.map((r) => {
             const change = r.before ? Math.round((100 * (r.count - r.before)) / r.before) : null;
             return (
-              <div key={r.id} className="bar-row" title={`${r.count} เคส · ช่วงก่อนหน้า ${r.before} เคส`}>
+              <div key={r.id} className="bar-row" title={`${r.count} เคส, ช่วงก่อนหน้า ${r.before} เคส`}>
                 <span className="bar-label">{r.name}</span>
                 <progress value={r.count} max={top} aria-label={`${r.name}: ${r.count} เคส`} />
                 <span className="bar-value">
                   {r.count}
                   <small className="muted">
                     {' '}
-                    · {change == null ? 'ใหม่ในช่วงนี้' : change === 0 ? 'เท่าเดิม' : `${change > 0 ? 'เพิ่ม' : 'ลด'} ${Math.abs(change)}%`}
+                    {change == null ? 'ใหม่ในช่วงนี้' : change === 0 ? 'เท่าเดิม' : `${change > 0 ? 'เพิ่ม' : 'ลด'} ${Math.abs(change)}%`}
                   </small>
                 </span>
               </div>
@@ -73,8 +73,7 @@ export function TagBarsCard({ tickets, before }: { tickets: TicketRow[]; before:
         ) : (
           <p className="empty-mini">ยังไม่มีเคสในช่วงนี้ที่ติดป้าย</p>
         )}
-        {rows.length > SHOWN && <p className="tiny muted mt">อีก {rows.length - SHOWN} ป้าย ดูครบในตารางวิเคราะห์ด้านบน แยกตามป้ายเคส</p>}
-        <p className="tiny muted mt">เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน · เคสที่ติดหลายป้ายนับในทุกป้าย</p>
+        {rows.length > SHOWN && <p className="tiny muted mt">อีก {rows.length - SHOWN} ป้าย</p>}
       </div>
     </section>
   );

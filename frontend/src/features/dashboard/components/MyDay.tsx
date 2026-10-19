@@ -16,7 +16,6 @@ export function MyDay({ day }: { day: MyDayData }) {
     <section className="card myday-card" aria-labelledby="myday-title">
       <div className="myday-head">
         <h2 id="myday-title">วันนี้ของฉัน</h2>
-        <p className="tiny muted">เวลาตอบและ CSAT นับจากเคสที่คุณรับผิดชอบ</p>
       </div>
       <dl className="myday-grid">
         {cells.map(([label, value, foot]) => (

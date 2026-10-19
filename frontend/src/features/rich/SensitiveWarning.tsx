@@ -15,8 +15,8 @@ export function SensitiveWarning({ text, onMask }: { text: string; onMask: () =>
       <Icon name="lock" />
       <span className="grow">
         {kinds.length === 1 && kinds[0] === 'number'
-          ? 'ข้อความนี้มีตัวเลขยาวที่อาจเป็นเลขบัตรหรือเลขบัญชี ไม่ควรส่งในแชท ถ้าเป็นเลขคำสั่งซื้อหรือเลขพัสดุ ส่งได้ตามปกติ'
-          : `ข้อความนี้ดูเหมือนมี${kinds.map((k) => SENSITIVE_LABELS[k]).join(' และ')} ทีมงานไม่จำเป็นต้องรู้ข้อมูลนี้ และไม่ควรส่งในแชท`}
+          ? 'ข้อความนี้มีตัวเลขยาวที่อาจเป็นเลขบัตรหรือเลขบัญชี ไม่ควรส่งในแชท'
+          : `ข้อความนี้ดูเหมือนมี${kinds.map((k) => SENSITIVE_LABELS[k]).join(' และ')} ไม่ควรส่งในแชท`}
       </span>
       <button type="button" className="btn sm" onClick={onMask}>
         ปิดเลขให้

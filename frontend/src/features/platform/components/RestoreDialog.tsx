@@ -46,11 +46,11 @@ export function RestoreDialog({ name, onClose }: { name: string; onClose: () => 
           กู้คืนเสร็จแล้ว
         </p>
         <p>
-          ทุกคนถูกออกจากระบบ รวมถึงคุณ เข้าสู่ระบบใหม่ด้วยบัญชีที่อยู่ในไฟล์สำรอง
-          {done.secrets_skipped && ' · ยังไม่มี Token ของช่องทาง ต้องใส่ LINE อีเมล Facebook คีย์ AI และ SMS ใหม่'}
+          ทุกคนถูกออกจากระบบ รวมถึงคุณ
+          {done.secrets_skipped && ' ยังไม่มี Token ของช่องทาง'}
         </p>
         <p className="tiny muted">
-          ข้อมูลก่อนกู้เก็บไว้ที่ <code>{done.safety_backup}</code> ถ้ากู้ผิดไฟล์ กู้คืนจากไฟล์นี้เพื่อกลับไปเหมือนเดิม
+          ข้อมูลก่อนกู้เก็บไว้ที่ <code>{done.safety_backup}</code>
         </p>
         <button type="button" className="btn primary" onClick={() => window.location.assign('/login')}>
           ไปหน้าเข้าสู่ระบบ
@@ -71,7 +71,7 @@ export function RestoreDialog({ name, onClose }: { name: string; onClose: () => 
         <Icon name="file" />
         <span>
           <strong>{preview.name}</strong>
-          สำรองเมื่อ {preview.created_at ? date(preview.created_at, true) : 'ไม่ทราบ'} · {bytesText(preview.size)}
+          สำรองเมื่อ {preview.created_at ? date(preview.created_at, true) : 'ไม่ทราบ'} {bytesText(preview.size)}
         </span>
       </p>
 
@@ -84,7 +84,7 @@ export function RestoreDialog({ name, onClose }: { name: string; onClose: () => 
           <strong>{number(t.replace + t.add)}</strong>
           <span>องค์กรหลังกู้</span>
           <small>
-            แทนที่ {t.replace} · เพิ่ม {t.add} · หายไป {t.remove}
+            แทนที่ {t.replace}, เพิ่ม {t.add}, หายไป {t.remove}
           </small>
         </div>
         <div>
@@ -110,20 +110,19 @@ export function RestoreDialog({ name, onClose }: { name: string; onClose: () => 
       </ul>
 
       <ul className="restore-notes">
-        <li>ก่อนกู้ ระบบจะสำรองข้อมูลตอนนี้เก็บไว้ให้อัตโนมัติ ถ้ากู้ผิดไฟล์ กู้กลับจากไฟล์นั้นได้</li>
         <li>
-          ทุกคนถูกออกจากระบบ รวมถึงคุณ ผู้ดูแลแพลตฟอร์มที่เข้าได้หลังกู้:{' '}
+          ผู้ดูแลแพลตฟอร์มที่เข้าได้หลังกู้:{' '}
           <strong>{preview.platform_admins.join(', ') || 'ไม่มี'}</strong>
         </li>
         <li>ไฟล์แนบ {number(preview.attachments)} ไฟล์</li>
         {preview.secrets.available ? (
-          <li>Token ของช่องทาง (LINE อีเมล Facebook คีย์ AI SMS) กู้คืนได้ เพราะเซิร์ฟเวอร์นี้มีกุญแจ {preview.secrets.key_id}</li>
+          <li>Token ของช่องทางกู้คืนได้ (กุญแจ {preview.secrets.key_id})</li>
         ) : (
           <li className="restore-warn">
-            เซิร์ฟเวอร์นี้ไม่มีกุญแจ <code>{preview.secrets.key_id}</code> ที่เข้ารหัส Token ในไฟล์นี้ ตั้ง BOOKDOSE_SECRET_KEY เดิมก่อนถ้ายังมีอยู่
+            เซิร์ฟเวอร์นี้ไม่มีกุญแจ <code>{preview.secrets.key_id}</code> ที่เข้ารหัส Token ในไฟล์นี้
             <label className="check">
               <input type="checkbox" checked={withoutSecrets} onChange={(e) => setWithoutSecrets(e.target.checked)} />
-              กู้คืนโดยไม่มี Token (ต้องใส่ LINE อีเมล Facebook คีย์ AI และ SMS ใหม่)
+              กู้คืนโดยไม่มี Token
             </label>
           </li>
         )}

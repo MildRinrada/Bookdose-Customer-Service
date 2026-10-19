@@ -23,16 +23,11 @@ export function OrganizationsSettings() {
         <div className="card-header">
           <div>
             <h2>องค์กรของฉัน</h2>
-            <p>บัญชีเดียวทำงานได้ทุกองค์กรที่ได้รับเชิญ สลับองค์กรได้จากที่นี่หรือจากเมนูด้านซ้าย</p>
           </div>
         </div>
         <div className="card-body">
           {boot.memberships.length === 0 ? (
-            <p className="muted">
-              {boot.user?.platform_admin
-                ? 'บัญชีนี้ยังไม่ได้เป็นทีมงานขององค์กรใด ดูแลทุกองค์กรได้จากคอนโซลระบบกลาง'
-                : 'บัญชีนี้ยังไม่ได้เป็นทีมงานขององค์กรใด ติดต่อผู้ดูแลองค์กรเพื่อขอคำเชิญ'}
-            </p>
+            <p className="muted">บัญชีนี้ยังไม่ได้เป็นทีมงานขององค์กรใด</p>
           ) : (
             <ul className="org-role-list">
               {boot.memberships.map((m, index) => {
@@ -45,8 +40,8 @@ export function OrganizationsSettings() {
                       <span className="grow">
                         <strong>{m.name}</strong>
                         <span className="muted">
-                          {roleLabels[m.role] ?? m.role} · รหัส {m.slug}
-                          {m.expires_at ? ` · สิทธิ์ช่วยดูแลถึง ${date(m.expires_at, true)}` : ''}
+                          {roleLabels[m.role] ?? m.role} รหัส {m.slug}
+                          {m.expires_at ? ` สิทธิ์ช่วยดูแลถึง ${date(m.expires_at, true)}` : ''}
                         </span>
                       </span>
                       {current && usable ? (
@@ -72,9 +67,6 @@ export function OrganizationsSettings() {
               })}
             </ul>
           )}
-          <p className="small muted">
-            เข้าร่วมองค์กรอื่น: ให้ผู้ดูแลขององค์กรนั้นเชิญอีเมล {boot.user?.email} ที่ ตั้งค่าองค์กร → ทีมและสมาชิก แล้วเปิดลิงก์ในอีเมลเชิญ
-          </p>
         </div>
       </section>
     </div>

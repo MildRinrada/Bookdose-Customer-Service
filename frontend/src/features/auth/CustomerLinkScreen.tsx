@@ -42,7 +42,7 @@ export function CustomerLinkScreen({ kind, token = '', org = '' }: { kind: Custo
   useEffect(() => {
     if (!name) return;
     const before = document.title;
-    document.title = `${name} · Bookdose`;
+    document.title = `${name} - Bookdose`;
     return () => {
       document.title = before;
     };
@@ -90,8 +90,7 @@ function VerifyForm({ token, org, signupOrg }: { token: string; org: string; sig
         <Icon name="checkCircle" />
       </span>
       <h1>ยืนยันอีเมล</h1>
-      <p>กรอกรหัสผ่านที่ตั้งไว้ตอนสมัคร เพื่อยืนยันว่าเป็นคุณ แล้วเริ่มใช้งานได้ทันที</p>
-      <TextField label="รหัสผ่านที่ตั้งไว้ตอนสมัคร" name="password" type="password" max={200} autoFocus />
+      <TextField label="รหัสผ่านที่ตั้งไว้ตอนสมัคร" name="password" type="password" max={200} minLength={undefined} autoComplete="current-password" autoFocus />
       <button className="btn primary customer-submit" type="submit">
         <Icon name="check" />
         ยืนยันและเข้าสู่ระบบ
@@ -131,8 +130,7 @@ function ResetForm({ token, signupOrg }: { token: string; signupOrg: string }) {
         <Icon name="lock" />
       </span>
       <h1>ตั้งรหัสผ่านใหม่</h1>
-      <p>รหัสผ่านใหม่ต้องมีอย่างน้อย 10 ตัวอักษร เมื่อบันทึกแล้วอุปกรณ์อื่นที่เข้าสู่ระบบไว้จะออกจากระบบ</p>
-      <TextField label="รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)" name="password" type="password" max={200} autoFocus />
+      <TextField label="รหัสผ่านใหม่" name="password" type="password" max={200} autoFocus />
       <TextField label="พิมพ์รหัสผ่านใหม่อีกครั้ง" name="password_confirm" type="password" max={200} matches="password" />
       <button className="btn primary customer-submit" type="submit">
         <Icon name="check" />
@@ -153,7 +151,7 @@ function ForgotForm({ mailReady }: { mailReady: boolean }) {
         </span>
         <h1>ตรวจอีเมลของคุณ</h1>
         <p>
-          ถ้า <strong>{sent}</strong> มีบัญชีอยู่ เราส่งลิงก์ตั้งรหัสผ่านใหม่ให้แล้ว ลิงก์มีอายุ 1 ชั่วโมงและใช้ได้ครั้งเดียว
+          ถ้า <strong>{sent}</strong> มีบัญชีอยู่ เราส่งลิงก์ตั้งรหัสผ่านใหม่ให้แล้ว ลิงก์มีอายุ 1 ชั่วโมง
         </p>
       </div>
     );

@@ -54,7 +54,7 @@ export function ConversationAside({ data, others }: { data: ConversationDetail; 
           )}
           {guest && (
             <Row icon="globe" label="ผู้เยี่ยมชม">
-              ผู้เยี่ยมชม · {reachText(guest.follow)}
+              ผู้เยี่ยมชม {reachText(guest.follow)}
             </Row>
           )}
           {!contact.email && !contact.phone && !guest && <p className="aside-empty">ยังไม่มีอีเมลหรือเบอร์โทร</p>}
@@ -115,7 +115,7 @@ export function ConversationAside({ data, others }: { data: ConversationDetail; 
                   <Link href={`/inbox/${o.id}`}>
                     <span className="aside-other-subject">{o.subject}</span>
                     <small>
-                      <span className={`aside-state tone-${state.tone}`}>{state.label}</span> · {relative(o.updated_at)}
+                      <span className={`aside-state tone-${state.tone}`}>{state.label}</span> {relative(o.updated_at)}
                     </small>
                   </Link>
                 </li>

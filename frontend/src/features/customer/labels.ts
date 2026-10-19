@@ -60,7 +60,7 @@ const caseHref = (a: CustomerAlert) => `/customer/cases/${a.org_slug}/${a.case_i
 export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
   reply: { icon: 'chat', tone: 'new', title: (a) => `${a.org_name} ตอบกลับแล้ว`, detail: (a) => a.subject, href: chatHref },
   survey: { icon: 'star', tone: 'new', title: (a) => `ช่วยให้คะแนนการบริการของ ${a.org_name}`, detail: (a) => a.subject, href: chatHref },
-  waiting: { icon: 'clock', tone: 'waiting', title: (a) => `${a.org_name} รอข้อมูลจากคุณ · BD-${a.number}`, detail: (a) => a.subject, href: caseHref },
+  waiting: { icon: 'clock', tone: 'waiting', title: (a) => `${a.org_name} รอข้อมูลจากคุณ BD-${a.number}`, detail: (a) => a.subject, href: caseHref },
   done: {
     icon: 'checkCircle',
     tone: 'done',
@@ -72,14 +72,14 @@ export const alertKinds: Record<CustomerAlert['kind'], AlertKindView> = {
     icon: 'checkCircle',
     tone: 'done',
     title: (a) => `${a.org_name} แก้ปัญหาที่คุณติดตามไว้แล้ว`,
-    detail: (a) => `${a.subject} · ถ้ายังใช้งานไม่ได้ เริ่มแชทกับทีมงานได้เลย`,
+    detail: (a) => a.subject,
     href: (a) => `/customer/chats/new?org=${a.org_slug}`,
   },
   followup: {
     icon: 'calendar',
     tone: 'plan',
     title: (a) => `${a.org_name} นัดติดตามเคส BD-${a.number}`,
-    detail: (a) => `${date(a.at, true)} · ${a.subject}`,
+    detail: (a) => `${date(a.at, true)} ${a.subject}`,
     href: caseHref,
   },
 };

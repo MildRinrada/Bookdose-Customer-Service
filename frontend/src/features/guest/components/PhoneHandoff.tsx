@@ -42,7 +42,6 @@ export function PhoneHandoffPanel({ slug, conversationId, onClose }: { slug: str
       <div className="continue-line-head">
         <p>
           <strong>คุยต่อบนมือถือ</strong>
-          สแกน QR ด้วยกล้องมือถือ แชทนี้จะเปิดบนมือถือทันทีโดยไม่ต้องเข้าสู่ระบบ ถ่ายรูปแล้วส่งเข้าแชทนี้ได้เลย
         </p>
         <button type="button" className="icon-btn" aria-label="ปิด" onClick={onClose}>
           <Icon name="close" />
@@ -66,7 +65,7 @@ export function PhoneHandoffPanel({ slug, conversationId, onClose }: { slug: str
               <Icon name="clock" />
               ใช้ได้ครั้งเดียว อีก {clock(left)} นาที
             </span>
-            <p className="tiny muted">อย่าให้คนอื่นสแกน เพราะผู้ที่สแกนจะอ่านและตอบแชทนี้ได้ แชทยังเปิดอยู่บนเครื่องนี้เหมือนเดิม</p>
+            <p className="tiny muted">อย่าให้คนอื่นสแกน เพราะผู้ที่สแกนจะอ่านและตอบแชทนี้ได้</p>
           </div>
         </div>
       ) : (

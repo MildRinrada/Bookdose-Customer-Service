@@ -109,10 +109,8 @@ export function AnswerList({
             setSearch(value);
           }}
         />
-        <p className="tiny muted qa-hint">
-          {term ? `พบ ${found.length} บทความ · ` : ''}ชี้เมาส์เพื่ออ่านย่อ หรือลากมาวางในบทสนทนาเพื่ออ่านที่นี่
-        </p>
-        {term && !found.length && <p className="tiny muted qa-none">ไม่พบคำตอบที่ตรงกับที่ค้นหา ลองคำอื่น หรือถามทีมงานในแชทได้เลย</p>}
+        {term && <p className="tiny muted qa-hint">พบ {found.length} บทความ</p>}
+        {term && !found.length && <p className="tiny muted qa-none">ไม่พบคำตอบที่ตรงกับที่ค้นหา</p>}
         <ul className="qa-list">
           {found.map((article) => (
             <li key={article.id}>
@@ -120,7 +118,7 @@ export function AnswerList({
                 className="qa-item"
                 href={hrefOf(article)}
                 draggable
-                title={`${article.title} · ลากมาวางในบทสนทนาเพื่ออ่านที่นี่`}
+                title={`${article.title} ลากมาวางในบทสนทนาเพื่ออ่านที่นี่`}
                 onDragStart={(event) => {
                   event.dataTransfer.setData(ARTICLE_TYPE, article.id);
                   event.dataTransfer.setData('text/plain', article.title);
@@ -195,7 +193,7 @@ function ArticlePeekCard({
         <strong>{article.title}</strong>
         <span className="tiny muted">
           {article.category}
-          {article.updated_at ? `${article.category ? ' · ' : ''}อัปเดต ${date(article.updated_at)}` : ''}
+          {article.updated_at ? `${article.category ? ' ' : ''}อัปเดต ${date(article.updated_at)}` : ''}
         </span>
       </div>
       <Markdown className="qa-peek-body article-content" text={article.body} />
@@ -256,7 +254,7 @@ export function AnswerSuggestions({
       <p className="qa-suggest-head">
         <Icon name="sparkle" />
         <span>
-          <strong>อาจมีคำตอบอยู่แล้ว</strong> · กดอ่านได้เลยโดยไม่ต้องรอทีมงาน
+          <strong>อาจมีคำตอบอยู่แล้ว</strong>
         </span>
       </p>
       <ul>
@@ -295,7 +293,6 @@ export function AnswerSuggestions({
           );
         })}
       </ul>
-      <p className="tiny muted qa-suggest-else">ถ้ายังไม่ตรงกับเรื่องของคุณ ส่งถึงทีมงานได้เลย</p>
     </div>
   );
 }
@@ -325,7 +322,7 @@ export function TypingAnswers({ articles, text, onRead }: { articles: PeekArticl
       <p className="qa-typing-head">
         <Icon name="sparkle" />
         <span>
-          <strong>อาจมีคำตอบอยู่แล้ว</strong> · กดอ่านก่อนส่งได้ ข้อความที่พิมพ์ยังอยู่
+          <strong>อาจมีคำตอบอยู่แล้ว</strong>
         </span>
         <button type="button" className="icon-btn qa-typing-close" aria-label="ซ่อนคำแนะนำนี้" title="ซ่อนคำแนะนำนี้" onClick={() => setClosed(key)}>
           <Icon name="close" />
@@ -376,7 +373,7 @@ export function ArticleReadPanel({
           <strong>{article.title}</strong>
           <span className="tiny muted">
             {article.category}
-            {article.updated_at ? `${article.category ? ' · ' : ''}อัปเดต ${date(article.updated_at)}` : ''}
+            {article.updated_at ? `${article.category ? ' ' : ''}อัปเดต ${date(article.updated_at)}` : ''}
           </span>
         </div>
         <button type="button" className="icon-btn" aria-label="ปิดบทความ กลับไปที่ข้อความ" title="กลับไปที่ข้อความ" onClick={onClose}>

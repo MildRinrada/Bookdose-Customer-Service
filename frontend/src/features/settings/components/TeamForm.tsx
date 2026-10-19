@@ -27,7 +27,6 @@ export function TeamForm({ team }: { team?: Team }) {
         await refresh(WORKSPACE_PATH);
       }}
     >
-      {team && <p className="notice">เคส สมาชิก และหมวดเรื่องที่ลูกค้าเลือก ยังอยู่กับทีมนี้เหมือนเดิม</p>}
       <TextField id="f-name" label="ชื่อทีม" name="name" max={100} defaultValue={team?.name} />
       <div className="field">
         <label htmlFor="f-team-description">ทีมนี้ดูแลอะไร</label>
@@ -39,7 +38,6 @@ export function TeamForm({ team }: { team?: Team }) {
           defaultValue={typeof team?.description === 'string' ? team.description : ''}
           placeholder="เช่น ดูแลลูกค้าองค์กรและเรื่องที่ต้องคุยกับฝ่ายเทคนิค"
         />
-        <span className="tiny muted">ไม่ใส่ก็ได้ · เห็นเฉพาะทีมงาน ลูกค้าไม่เห็น</span>
       </div>
       <FormActions label={team ? 'บันทึก' : 'เพิ่มทีม'} onCancel={() => closeModal()} />
     </Form>

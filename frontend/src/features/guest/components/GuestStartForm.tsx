@@ -68,7 +68,7 @@ function Intro({ info, orgName }: { info: PublicOrgInfo | undefined; orgName: st
   );
 }
 
-function Step({ n, title, hint, children }: { n: number; title: string; hint?: string; children: ReactNode }) {
+function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
   return (
     <section className="start-step" aria-labelledby={`start-step-${n}`}>
       <div className="start-step-head">
@@ -77,7 +77,6 @@ function Step({ n, title, hint, children }: { n: number; title: string; hint?: s
         </span>
         <div>
           <h3 id={`start-step-${n}`}>{title}</h3>
-          {hint && <p>{hint}</p>}
         </div>
       </div>
       <div className="start-step-body">{children}</div>
@@ -93,7 +92,7 @@ export function linksMessage(orgName: string, links: GuestStartLink[] | undefine
   const parts = [asked ? askedMemberText(asked) : `ส่งข้อความถึงทีมงาน ${orgName} แล้ว`];
   if (sent.length) parts.push(`ส่งลิงก์ติดตามแชทไปที่ ${sent.join(' และ ')} แล้ว`);
   if (failed.length) parts.push(`ส่งลิงก์ไปที่ ${failed.join(' และ ')} ไม่สำเร็จ ขอใหม่ได้ที่ “ติดตามแชทนี้”`);
-  return parts.join(' · ');
+  return parts.join(' ');
 }
 
 export function GuestStartForm({
@@ -172,7 +171,7 @@ export function GuestStartForm({
       <KnownIssuesBar slug={slug} />
       {intro && <Intro info={info} orgName={orgName} />}
       {topics.length > 0 && (
-        <Step n={++n} title="เรื่องที่ต้องการติดต่อ" hint="เลือกเรื่องที่ใกล้ที่สุด ทีมที่ดูแลเรื่องนั้นจะได้รับทันที (ไม่บังคับ)">
+        <Step n={++n} title="เรื่องที่ต้องการติดต่อ">
           <div className="start-topics" role="group" aria-label="เรื่องที่ต้องการติดต่อ">
             {topics.map((name) => (
               <button
@@ -189,7 +188,7 @@ export function GuestStartForm({
           </div>
         </Step>
       )}
-      <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง" hint="ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด แนบภาพหน้าจอได้">
+      <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง">
         {/* ขอคนเดิม: the member of this browser's last case, when there was one in the last 30 days. */}
         <SameMemberChoice member={overview.last_member} id="guest-same-member" />
         <StartFields fields={overview.form_fields} category={category} idPrefix="guest-field" />
@@ -221,7 +220,6 @@ export function GuestStartForm({
             multiple
             accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt"
             aria-label="แนบไฟล์"
-            aria-describedby="guest-files-help"
             data-file-ready="1"
             onChange={onChange}
           />
@@ -230,24 +228,16 @@ export function GuestStartForm({
             แนบไฟล์
           </label>
           <ScreenRecorder look="button" used={used} onFile={(file) => add([file])} onProblem={report} />
-          <span className="tiny muted" id="guest-files-help">
-            สูงสุด 3 ไฟล์ รวม 5 MB · รูป วิดีโอ PDF หรือ TXT
-          </span>
           <FilePills files={files} onRemove={remove} onReplace={replace} />
           <FileProblem problem={problem} />
         </div>
       </Step>
-      <Step n={++n} title="ติดตามคำตอบ" hint={reach ? 'ไม่ต้องสมัครสมาชิก เลือกทางที่สะดวก' : 'ไม่ต้องสมัครสมาชิก กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้'}>
+      <Step n={++n} title="ติดตามคำตอบ">
         {!known && (
           <label className="start-remember">
             <input type="checkbox" name="remember" defaultChecked />
             <span>
               <strong>จำแชทไว้ในเครื่องนี้</strong>
-              <small>
-                {reach
-                  ? 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้โดยไม่ต้องกรอกอีเมล · เอาเครื่องหมายออกถ้าเป็นเครื่องสาธารณะ'
-                  : 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้ · ตอนนี้ยังไม่มีช่องทางอื่น ถ้าเอาเครื่องหมายออกจะกลับมาอ่านไม่ได้'}
-              </small>
             </span>
           </label>
         )}
@@ -255,7 +245,7 @@ export function GuestStartForm({
           <>
             <p className="start-reach-title">
               รับลิงก์ติดตามแชททาง
-              {emailReady && smsReady ? 'อีเมลหรือ SMS (กรอกทั้งสองช่อง ระบบส่งไปทั้งสองทาง)' : emailReady ? 'อีเมล' : 'SMS'}
+              {emailReady && smsReady ? 'อีเมลหรือ SMS' : emailReady ? 'อีเมล' : 'SMS'}
             </p>
             <div className="guest-start-row">
               {emailReady && (
@@ -315,10 +305,10 @@ export function GuestStartForm({
           ส่งถึงทีมงาน {orgName}
         </button>
         <p className="tiny muted">
-          <Icon name="lock" /> {known ? 'แชทนี้จะอยู่ในรายการแชทของคุณในเบราว์เซอร์นี้ · ' : ''}อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+          <Icon name="lock" /> อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
           {/* ประกาศความเป็นส่วนตัว where the details are given (modules/legal): told, not asked - answering a question
               somebody sent needs no consent, but they are owed the notice when their name and contact are taken. */}
-          {' · '}ข้อมูลที่กรอกใช้ตาม <LegalButton doc="customer-privacy" organization={orgName} label="ประกาศความเป็นส่วนตัว" link />
+          {' '}ข้อมูลที่กรอกใช้ตาม <LegalButton doc="customer-privacy" organization={orgName} label="ประกาศความเป็นส่วนตัว" link />
         </p>
       </div>
     </Form>

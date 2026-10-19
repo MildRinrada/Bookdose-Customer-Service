@@ -18,7 +18,7 @@ import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { ArticlesCard, AssistantReportCard, BotReportCard } from './components/ReportAi';
-import { HISTORY_NEEDED, HISTORY_WEEKS, unusualDays, type DayFlag } from './analysis';
+import { unusualDays, type DayFlag } from './analysis';
 import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
 import { ConversationCard, MoodCard } from './components/ReportConversation';
 import { ReportDocument } from './components/ReportDocument';
@@ -100,7 +100,7 @@ export function ReportsScreen() {
           <progress value={count} max={tickets.length || 1} aria-label={`${label}: ${count} เคส (${pct}%)`} />
           <span className="bar-value">
             {count}
-            <small className="muted"> · {pct}%</small>
+            <small className="muted"> ({pct}%)</small>
           </span>
         </div>
       );
@@ -122,18 +122,12 @@ export function ReportsScreen() {
         <div>
           <h1>รายงานการบริการ</h1>
           <p>
-            {date(f.from)} - {date(f.to)} · เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน
+            {date(f.from)} - {date(f.to)}
           </p>
-          {owner && prefs && (
+          {owner && weeklyOn && (
             <p className="report-weekly-note">
               <Icon name="mail" />
-              {weeklyOn ? (
-                <span>ส่งสรุปรายสัปดาห์ทางอีเมลให้คุณทุกวันจันทร์ 8 โมง</span>
-              ) : (
-                <span>
-                  รับสรุปรายสัปดาห์ทางอีเมลทุกวันจันทร์ได้ เปิดที่ <Link href="/account?tab=notifications">ตั้งค่าบัญชี → การแจ้งเตือน</Link>
-                </span>
-              )}
+              <span>ส่งสรุปรายสัปดาห์ทางอีเมลให้คุณทุกวันจันทร์ 8 โมง</span>
             </p>
           )}
         </div>
@@ -212,7 +206,7 @@ export function ReportsScreen() {
       {m.late > 0 && (
         <Link className="notice warning report-alert" href="/tickets?filter=overdue">
           <Icon name="clock" />
-          ช่วงนี้มี {m.late} เคสเกิน SLA · เปิดรายการเคสเกิน SLA ทั้งหมด <Icon name="arrow" />
+          ช่วงนี้มี {m.late} เคสเกิน SLA เปิดรายการเคสเกิน SLA ทั้งหมด <Icon name="arrow" />
         </Link>
       )}
       {m.total ? (
@@ -241,7 +235,7 @@ export function ReportsScreen() {
           <section className="card report-card report-chart">
             <div className="card-header">
               <h2>ปริมาณเคสต่อวัน</h2>
-              <span className="muted">{busiest && busiest.count ? `วันที่มากที่สุด ${date(busiest.day)} · ${busiest.count} เคส` : ''}</span>
+              <span className="muted">{busiest && busiest.count ? `วันที่มากที่สุด ${date(busiest.day)}, ${busiest.count} เคส` : ''}</span>
             </div>
             <div className="card-body">
               <div className="chart">
@@ -250,7 +244,7 @@ export function ReportsScreen() {
                   return (
                     <ChartColumn
                       key={c.day.toDateString()}
-                      tip={`${date(c.day)} · ${c.count} เคส${flag ? ` · ${flag.kind === 'high' ? 'มากกว่า' : 'น้อยกว่า'}ปกติ (ปกติราว ${Math.round(flag.typical)})` : ''}`}
+                      tip={`${date(c.day)}, ${c.count} เคส${flag ? `, ${flag.kind === 'high' ? 'มากกว่า' : 'น้อยกว่า'}ปกติ (ปกติราว ${Math.round(flag.typical)})` : ''}`}
                       count={c.count}
                       max={max}
                       day={days <= 31 ? c.day.getDate() : ''}
@@ -304,7 +298,7 @@ export function ReportsScreen() {
             <>
               <div className="report-section-head">
                 <h2>AI และคลังความรู้</h2>
-                <p>เห็นเฉพาะผู้ดูแลองค์กร · ทั้งองค์กร ไม่แยกทีม</p>
+                <p>ทั้งองค์กร ไม่แยกทีม</p>
               </div>
               <div className="report-grid">
                 <BotReportCard extras={extras} from={f.from} to={f.to} />
@@ -316,7 +310,6 @@ export function ReportsScreen() {
           <section className="card">
             <div className="card-header">
               <h2>ผลงานตามผู้รับผิดชอบ</h2>
-              <span className="muted">เรียงตามจำนวนเคสมากที่สุด</span>
             </div>
             <div className="table-scroll">
               <table>
@@ -338,13 +331,8 @@ export function ReportsScreen() {
           </section>
         </>
       ) : (
-        <EmptyState title="ไม่มีเคสในช่วงที่เลือก" description="ลองขยายช่วงวันที่ หรือเลือกทีมอื่น" icon="chart" />
+        <EmptyState title="ไม่มีเคสในช่วงที่เลือก" icon="chart" />
       )}
-      <p className="muted">
-        SLA และเวลาเฉลี่ยคำนวณจากเคสที่ตอบกลับครั้งแรกแล้ว · เวลาแก้ไขนับเคสที่แก้ไขเสร็จในช่วงนี้ · CSAT นับคำตอบที่ได้รับในช่วงนี้ · เคสค้างและภาระงานนับเคสที่ยังไม่เสร็จตอนนี้
-        · การเปิดซ้ำโดยลูกค้านับตั้งแต่วันที่ 19 ก.ย. 2569 (ก่อนหน้านั้นนับเฉพาะที่ทีมเปิดเอง)
-        ส่วนช่วงก่อนหน้ามีจำนวนวันเท่ากับช่วงที่เลือก ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
-      </p>
       {/* What prints: a formal document of the same figures, not this page. */}
       <ReportDocument all={all} f={f} tickets={tickets} earlier={earlier} />
     </>
@@ -356,14 +344,8 @@ const WEEKDAY_NAMES = ['อาทิตย์', 'จันทร์', 'อัง
 /* The days under the chart that stood out against the same weekday before (analysis.unusualDays), with the usual
    count beside them; or why none are named. */
 function UnusualDays({ flagged, compared }: { flagged: DayFlag[]; compared: number }) {
-  if (!compared)
-    return (
-      <p className="unusual-note tiny muted">
-        ต้องมีข้อมูลย้อนหลังอย่างน้อย {HISTORY_NEEDED} สัปดาห์ ระบบจึงจะบอกได้ว่าวันไหนมีเคสมากหรือน้อยผิดปกติ
-      </p>
-    );
-  if (!flagged.length)
-    return <p className="unusual-note tiny muted">ไม่มีวันที่เคสมากหรือน้อยผิดปกติ เมื่อเทียบกับวันเดียวกันใน {HISTORY_WEEKS} สัปดาห์ก่อนหน้า</p>;
+  if (!compared) return null;
+  if (!flagged.length) return <p className="unusual-note tiny muted">ไม่มีวันที่เคสมากหรือน้อยผิดปกติ</p>;
   return (
     <div className="unusual-days">
       <h3 className="report-subhead">วันที่ผิดปกติ</h3>
@@ -375,15 +357,13 @@ function UnusualDays({ flagged, compared }: { flagged: DayFlag[]; compared: numb
             </span>
             <span>
               <strong>
-                วัน{WEEKDAY_NAMES[d.day.getDay()]} {date(d.day)} · {d.count} เคส
+                วัน{WEEKDAY_NAMES[d.day.getDay()]} {date(d.day)}, {d.count} เคส
               </strong>{' '}
               {d.kind === 'high' ? 'มากกว่าปกติ' : 'น้อยกว่าปกติ'} วัน{WEEKDAY_NAMES[d.day.getDay()]}ปกติราว {Math.round(d.typical)} เคส
-              {d.kind === 'low' && <span className="muted"> · อาจเป็นวันหยุด หรือช่องทางติดต่อมีปัญหา</span>}
             </span>
           </li>
         ))}
       </ul>
-      <p className="tiny muted">เทียบกับค่ากลางของวันเดียวกันใน {HISTORY_WEEKS} สัปดาห์ก่อนหน้า · มากกว่าปกติคือตั้งแต่ 2 เท่าและเกินอย่างน้อย 3 เคส</p>
     </div>
   );
 }

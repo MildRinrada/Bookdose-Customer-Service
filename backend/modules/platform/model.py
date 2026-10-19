@@ -41,7 +41,7 @@ QUOTA_BOUNDS = (100, 1024*1024)          # 100 MB … 1 TB
 QUOTA_WARN = 0.8                          # the organization is told from here
 QUOTA_FULL = 1.0
 QUOTA_MESSAGE = ('พื้นที่จัดเก็บขององค์กรเต็ม (ใช้ไป {used} จาก {quota}) ลบไฟล์แนบเก่าที่ไม่ใช้แล้ว '
-                 'หรือติดต่อผู้ดูแลระบบเพื่อขอเพิ่มพื้นที่ · ข้อความที่ไม่มีไฟล์แนบยังส่งได้ตามปกติ')
+                 'หรือติดต่อผู้ดูแลระบบเพื่อขอเพิ่มพื้นที่ ข้อความที่ไม่มีไฟล์แนบยังส่งได้ตามปกติ')
 
 # Features that can be switched on for one organization at a time (tenant_features). Something new is added here
 # with default False and tried with one organization before it reaches the rest; something already everywhere is
@@ -52,7 +52,7 @@ FEATURES = {
     'snippet_menu': ('เมนูคำตอบสำเร็จรูปขณะพิมพ์','พิมพ์ / ในช่องตอบแล้วขึ้นรายการให้เลือก ค้นหาต่อได้ทันที',True),
     # Switched off, the overview goes back to the arrangement it ships with for everybody in that organization. What
     # each member had arranged is kept, not thrown away, and comes back the moment it is switched on again.
-    'dashboard_layout': ('จัดหน้าภาพรวมเองได้','ย้าย ย่อ-ขยาย และซ่อนการ์ดบนหน้าภาพรวม แยกของใครของมัน · ปิดแล้วทุกคนกลับไปใช้หน้าตามค่าเริ่มต้น',True),
+    'dashboard_layout': ('จัดหน้าภาพรวมเองได้','ย้าย ย่อ-ขยาย และซ่อนการ์ดบนหน้าภาพรวม แยกของใครของมัน ปิดแล้วทุกคนกลับไปใช้หน้าตามค่าเริ่มต้น',True),
 }
 
 CONTROL_TABLES = '''
@@ -94,4 +94,9 @@ CREATE TABLE IF NOT EXISTS problem_reports (
     created_at TEXT NOT NULL, handled_at TEXT, handled_by TEXT
 );
 CREATE INDEX IF NOT EXISTS problem_reports_open ON problem_reports(status,created_at);
+CREATE TABLE IF NOT EXISTS problem_report_files (
+    id TEXT PRIMARY KEY, report_id TEXT NOT NULL, name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL,
+    content BLOB NOT NULL, created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS problem_report_files_report ON problem_report_files(report_id);
 '''

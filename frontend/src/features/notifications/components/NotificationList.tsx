@@ -43,7 +43,7 @@ export function NotificationSummary({ items, title, note, className = '' }: { it
   const summary = toneCounts(items)
     .filter((t) => t.count)
     .map((t) => `${t.label} ${t.count}`)
-    .join(' · ');
+    .join(', ');
   return (
     <div className={`note-menu-head ${className}`}>
       <div className="note-menu-title">
@@ -113,7 +113,6 @@ export function NotificationsClear({ all }: { all: boolean }) {
         <Icon name="checkCircle" />
       </span>
       <strong>{all ? 'ไม่มีเรื่องรอดูแล' : 'หมวดนี้ไม่มีเรื่องรอดูแล'}</strong>
-      <span className="muted">เคสเกิน SLA เคสที่ยังไม่มอบหมาย และบทสนทนาที่รอตอบ จะขึ้นที่นี่</span>
     </div>
   );
 }

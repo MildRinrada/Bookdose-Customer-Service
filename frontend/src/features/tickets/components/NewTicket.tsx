@@ -23,13 +23,22 @@ import { initialTeam, MemberPicker, TeamOptions } from '@/components/ui/pickers'
    internal note. With no customers yet, the customer form comes first and opens this one after saving.
    Markup: pages/tickets/new-ticket, new-ticket-button. */
 
-export function NewTicketForm({ contacts, contactId = '' }: { contacts: Contact[]; contactId?: string }) {
+export function NewTicketForm({
+  contacts,
+  contactId = '',
+  draft = {},
+}: {
+  contacts: Contact[];
+  contactId?: string;
+  /** What was typed before going to add a customer (ContactForm draft). */
+  draft?: Record<string, string>;
+}) {
   const work = useWork();
   const router = useRouter();
   const toast = useToast();
   const refresh = useInvalidate();
   const { closeModal, openModal } = useDialogs();
-  const [team, setTeam] = useState(() => initialTeam(work, work.team_id));
+  const [team, setTeam] = useState(() => draft.team_id || initialTeam(work, work.team_id));
   const subject = useFieldValidation();
   const body = useFieldValidation();
   return (
@@ -49,7 +58,7 @@ export function NewTicketForm({ contacts, contactId = '' }: { contacts: Contact[
             เรื่องที่ต้องการให้ช่วยเหลือ
             <RequiredStar />
           </label>
-          <input id="new-subject" name="subject" required maxLength={300} placeholder="สรุปเรื่องให้ทีมเข้าใจได้ง่าย" {...subject.bind} />
+          <input id="new-subject" name="subject" required maxLength={300} placeholder="สรุปเรื่องให้ทีมเข้าใจได้ง่าย" defaultValue={draft.subject} {...subject.bind} />
           {subject.errorNode}
         </div>
         <div className="field span-2">
@@ -62,15 +71,25 @@ export function NewTicketForm({ contacts, contactId = '' }: { contacts: Contact[
             name="contact_id"
             value={contactId}
             placeholder="พิมพ์ชื่อ อีเมล หรือองค์กรเพื่อค้นหา"
-            items={contacts.map((c) => ({ value: c.id, label: c.name, detail: [c.company, c.email].filter(Boolean).join(' · ') }))}
+            items={contacts.map((c) => ({ value: c.id, label: c.name, detail: [c.company, c.email].filter(Boolean).join(', ') }))}
           />
-          <button type="button" className="btn subtle" onClick={() => openModal('เพิ่มลูกค้าใหม่', <ContactForm thenTicket />)}>
-            + เพิ่มลูกค้าใหม่
+          <button
+            type="button"
+            className="btn sm new-contact"
+            onClick={(e) => {
+              const typed = Object.fromEntries(
+                [...new FormData(e.currentTarget.form ?? undefined).entries()].map(([k, v]) => [k, String(v)]),
+              );
+              openModal('เพิ่มลูกค้าใหม่', <ContactForm thenTicket draft={typed} />, { wide: true });
+            }}
+          >
+            <Icon name="plus" />
+            เพิ่มลูกค้าใหม่
           </button>
         </div>
         <div className="field">
           <label htmlFor="new-priority">ความเร่งด่วน</label>
-          <select id="new-priority" name="priority" defaultValue="normal">
+          <select id="new-priority" name="priority" defaultValue={draft.priority || 'normal'}>
             {Object.entries(priorityLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -78,7 +97,7 @@ export function NewTicketForm({ contacts, contactId = '' }: { contacts: Contact[
             ))}
           </select>
         </div>
-        <TextField label="หมวดหมู่" name="category" defaultValue="ทั่วไป" max={80} />
+        <TextField label="หมวดหมู่" name="category" defaultValue={draft.category || 'ทั่วไป'} max={80} />
         <div className="field">
           <label htmlFor="new-team">ทีมรับผิดชอบ</label>
           <select id="new-team" name="team_id" value={team} onChange={(e) => setTeam(e.target.value)}>
@@ -87,11 +106,11 @@ export function NewTicketForm({ contacts, contactId = '' }: { contacts: Contact[
         </div>
         <div className="field">
           <label htmlFor="new-assignee">ผู้รับผิดชอบ</label>
-          <MemberPicker id="new-assignee" teamId={team} />
+          <MemberPicker id="new-assignee" teamId={team} value={draft.team_id === team ? draft.assignee_id : undefined} />
         </div>
         <div className="field span-2">
           <label htmlFor="new-body">รายละเอียด / บันทึกภายใน</label>
-          <textarea id="new-body" name="body" maxLength={20000} placeholder="รายละเอียดปัญหาและข้อมูลที่ทีมควรทราบ" {...body.bind} />
+          <textarea id="new-body" name="body" maxLength={20000} placeholder="รายละเอียดปัญหาและข้อมูลที่ทีมควรทราบ" defaultValue={draft.body} {...body.bind} />
           {body.errorNode}
         </div>
       </div>
@@ -107,12 +126,12 @@ export function useOpenNewTicket() {
   const toast = useToast();
   const { openModal } = useDialogs();
   return useCallback(
-    async (contactId = '') => {
+    async (contactId = '', draft?: Record<string, string>) => {
       try {
         const data = await fetchContacts();
         client.setQueryData([CONTACTS_PATH], data);
         if (!data.contacts.length) openModal('เพิ่มลูกค้าใหม่', <ContactForm thenTicket />);
-        else openModal('เปิดเคสบริการใหม่', <NewTicketForm contacts={data.contacts} contactId={contactId} />);
+        else openModal('เปิดเคสบริการใหม่', <NewTicketForm contacts={data.contacts} contactId={contactId} draft={draft} />);
       } catch (error) {
         toast(error instanceof Error ? error.message : String(error), true);
       }

@@ -32,7 +32,7 @@ export function ReauthPrompt() {
               }}
             >
               <p className="sheet-message">
-                รายการนี้มีผลกับทั้งแพลตฟอร์ม กรุณาใส่รหัสผ่านของบัญชีคุณอีกครั้งเพื่อยืนยันว่าเป็นคุณ ยืนยันแล้วทำรายการสำคัญต่อได้อีก 5 นาทีโดยไม่ต้องถามซ้ำ
+                กรุณาใส่รหัสผ่านของบัญชีคุณอีกครั้งเพื่อยืนยันว่าเป็นคุณ
               </p>
               <TextField label="รหัสผ่านของบัญชี" name="password" type="password" max={200} minLength={undefined} autoComplete="current-password" autoFocus />
               <div className="form-actions">

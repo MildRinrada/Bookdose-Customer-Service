@@ -53,9 +53,6 @@ export function useOwnMessages({
             await refresh();
           }}
         >
-          <p className="notice">
-            ข้อความจะขึ้นว่า <strong>แก้ไขแล้ว</strong> ให้ทีมงานเห็นด้วย · ถ้าทีมงานอ่านฉบับเดิมไปแล้ว พิมพ์บอกเพิ่มอีกข้อความจะชัดกว่า
-          </p>
           <div className="field">
             <label htmlFor="own-edit-body">ข้อความ</label>
             <textarea id="own-edit-body" name="body" rows={6} maxLength={20000} required autoFocus defaultValue={m.body} />
@@ -66,7 +63,7 @@ export function useOwnMessages({
     onDelete: (m) =>
       confirm({
         title: 'ยกเลิกข้อความ',
-        message: 'ข้อความนี้จะหายจากแชทของคุณ · ทีมงานจะเห็นว่ามีข้อความถูกยกเลิก ถ้าอ่านไปแล้วควรพิมพ์บอกเพิ่ม',
+        message: 'ข้อความนี้จะหายจากแชทของคุณ',
         confirmLabel: 'ยกเลิกข้อความ',
         tone: 'danger',
         run: async () => {
@@ -79,7 +76,7 @@ export function useOwnMessages({
     onPin: async (m, pinned) => {
       try {
         await pinChatMessage(slug, conversationId, m.id, pinned);
-        toast(pinned ? 'ปักหมุดข้อความแล้ว · ดูได้ที่คอลัมน์ขวา' : 'เอาหมุดออกแล้ว');
+        toast(pinned ? 'ปักหมุดข้อความแล้ว ดูได้ที่คอลัมน์ขวา' : 'เอาหมุดออกแล้ว');
         await refresh();
       } catch (problem) {
         toast((problem as Error).message, true);

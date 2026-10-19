@@ -19,12 +19,12 @@ export function MoodTag({ mood, className }: { mood: Mood; className?: string })
   const level = mood.mood_level ?? 0;
   const urgent = Boolean(mood.mood_urgent);
   if (!level && !urgent) return null;
-  const label = [level === 2 ? 'โกรธมาก' : level === 1 ? 'ไม่พอใจ' : '', urgent ? 'ด่วน' : ''].filter(Boolean).join(' · ');
+  const label = [level === 2 ? 'โกรธมาก' : level === 1 ? 'ไม่พอใจ' : '', urgent ? 'ด่วน' : ''].filter(Boolean).join(', ');
   const by = mood.mood_source === 'ai' ? 'AI อ่านจากข้อความล่าสุด' : 'จากคำในข้อความล่าสุด';
   return (
     <span
       className={`mood-tag ${level === 2 ? 'angry' : level === 1 ? 'upset' : 'urgent'}${className ? ` ${className}` : ''}`}
-      title={`ลูกค้า${label}${mood.mood_reason ? ` · ${mood.mood_reason}` : ''} (${by})`}
+      title={`ลูกค้า${label}${mood.mood_reason ? ` ${mood.mood_reason}` : ''} (${by})`}
     >
       <Icon name={level ? 'frown' : 'bolt'} />
       {label}

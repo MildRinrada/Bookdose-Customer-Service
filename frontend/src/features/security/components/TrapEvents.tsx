@@ -42,11 +42,11 @@ export function trapSummary(e: SecurityEvent): string {
         where ? `พบที่ ${honeytokenWhereLabels[where] ?? where}` : '',
       ]
         .filter(Boolean)
-        .join(' · ');
+        .join(' ');
     }
     default: {
       const duration = text(d.duration);
-      return [text(d.reason), duration ? `บล็อก ${durationLabels[duration as keyof typeof durationLabels] ?? duration}` : ''].filter(Boolean).join(' · ');
+      return [text(d.reason), duration ? `บล็อก ${durationLabels[duration as keyof typeof durationLabels] ?? duration}` : ''].filter(Boolean).join(' ');
     }
   }
 }
@@ -96,7 +96,6 @@ export function TrapEventsCard() {
       <div className="card-header">
         <div>
           <h2 id="security-trap-events-title">เหตุการณ์กับดักล่าสุด</h2>
-          <p>ผู้ใช้จริงไม่ควรทำให้เกิดเหตุการณ์เหล่านี้ ถ้ามี ให้ตรวจสอบ IP และบัญชีที่เกี่ยวข้อง</p>
         </div>
         <Icon name="bell" />
       </div>

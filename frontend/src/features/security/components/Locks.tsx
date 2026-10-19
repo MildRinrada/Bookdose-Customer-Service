@@ -37,7 +37,6 @@ export function LocksCard() {
       <div className="card-header">
         <div>
           <h2 id="security-locks-title">บัญชีที่ถูกล็อกอยู่</h2>
-          <p>ล็อกอัตโนมัติเมื่อกรอกรหัสผิด 5 ครั้งใน 15 นาที ยิ่งถูกล็อกบ่อย ระยะเวลาล็อกยิ่งนานขึ้น</p>
         </div>
         <Icon name="lock" />
       </div>

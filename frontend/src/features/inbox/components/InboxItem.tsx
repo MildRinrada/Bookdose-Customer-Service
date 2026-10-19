@@ -35,7 +35,7 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
   // How the customer feels only matters while the conversation is open.
   const upset = c.status !== 'closed' && Boolean(c.mood_level || c.mood_urgent);
   const channelName = channelNames[c.channel] || c.channel;
-  const guest = c.guest ? ' · ผู้เยี่ยมชม (ไม่ได้เข้าสู่ระบบ)' : '';
+  const guest = c.guest ? ' ผู้เยี่ยมชม (ไม่ได้เข้าสู่ระบบ)' : '';
   // ไม่รีบ: the customer said a reply tomorrow is fine (portal/no_rush.py).
   const foot = [
     channelName,

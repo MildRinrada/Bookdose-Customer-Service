@@ -62,7 +62,7 @@ def export(cd, session, tenant_id):
     found = exports(cd)
     found[tenant_id] = {'at':now(),'by':session['name'],'size':len(content)}
     repository.save_setting(cd,EXPORTS_KEY,json.dumps(found,ensure_ascii=False))
-    audit.record(cd,session['name'],'tenant.exported',tenant_id,f"{org['name']} · {len(content)} ไบต์")
+    audit.record(cd,session['name'],'tenant.exported',tenant_id,f"{org['name']}, {len(content)} ไบต์")
     cd.commit()
     stamp = utc_now().astimezone(backups.THAI).strftime('%Y%m%d')
     return f"{org['slug']}-{stamp}.zip",content
@@ -117,7 +117,7 @@ def close(cd, session, tenant_id, body):
             found.pop(tenant_id,None)
             repository.save_setting(cd,EXPORTS_KEY,json.dumps(found,ensure_ascii=False))
             audit.record(cd,session['name'],'tenant.closed',tenant_id,
-                         f"{org['name']} ({org['slug']}) · ลบบัญชีทีมงานที่ไม่มีองค์กรอื่น {removed} บัญชี")
+                         f"{org['name']} ({org['slug']}), ลบบัญชีทีมงานที่ไม่มีองค์กรอื่น {removed} บัญชี")
             cd.commit()
             restore._remove_tenant(tenant_id)
     finally:

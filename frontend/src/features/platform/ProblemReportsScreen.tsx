@@ -28,7 +28,7 @@ function ReportsView({ data }: { data: ProblemReportsPage }) {
       <div className="page-heading">
         <div>
           <h1>รายงานปัญหา</h1>
-          <p>เรื่องที่ทีมงานขององค์กรส่งมาจากปุ่ม ? บนแถบบน · รอดู {data.open} เรื่อง จากทั้งหมด {data.reports.length} เรื่อง</p>
+          <p>รอดู {data.open} เรื่อง จากทั้งหมด {data.reports.length} เรื่อง</p>
         </div>
       </div>
       {data.reports.length ? (
@@ -38,11 +38,7 @@ function ReportsView({ data }: { data: ProblemReportsPage }) {
           ))}
         </div>
       ) : (
-        <EmptyState
-          title="ยังไม่มีรายงานปัญหา"
-          description="เมื่อทีมงานขององค์กรกดปุ่ม ? บนแถบบนแล้วเลือก รายงานปัญหา เรื่องจะมาอยู่ที่นี่"
-          icon="checkCircle"
-        />
+        <EmptyState title="ยังไม่มีรายงานปัญหา" icon="checkCircle" />
       )}
     </>
   );
@@ -65,7 +61,7 @@ function ReportCard({ report, index }: { report: ProblemReport; index: number })
           <div className="org-text">
             <strong className="truncate">{report.user_name || 'ไม่ทราบชื่อ'}</strong>
             <span className="muted truncate">
-              {report.reporter === 'customer' ? 'บัญชีลูกค้า' : report.tenant_name || 'ไม่ทราบองค์กร'} · {report.user_email || 'ไม่มีอีเมล'}
+              {report.reporter === 'customer' ? 'บัญชีลูกค้า' : report.tenant_name || 'ไม่ทราบองค์กร'} {report.user_email || 'ไม่มีอีเมล'}
             </span>
           </div>
         </div>
@@ -76,6 +72,20 @@ function ReportCard({ report, index }: { report: ProblemReport; index: number })
       </div>
       <div className="card-body">
         <p className="report-message">{report.message}</p>
+        {report.images?.length ? (
+          <div className="report-images">
+            {report.images.map((image) => {
+              const url = `${REPORTS_PATH}/${report.id}/images/${image.id}`;
+              return (
+                <a key={image.id} className="report-image" href={url} target="_blank" rel="noopener" title={image.name}>
+                  {/* Served by the API with its own type; next/image would only add a proxy in front of it. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={image.name} loading="lazy" />
+                </a>
+              );
+            })}
+          </div>
+        ) : null}
         <dl className="report-facts">
           <div>
             <dt>ส่งเมื่อ</dt>
@@ -96,7 +106,7 @@ function ReportCard({ report, index }: { report: ProblemReport; index: number })
               <dt>ดูแล้วโดย</dt>
               <dd>
                 {report.handled_by || '-'}
-                {report.handled_at ? ` · ${date(report.handled_at, true)}` : ''}
+                {report.handled_at ? ` ${date(report.handled_at, true)}` : ''}
               </dd>
             </div>
           )}

@@ -190,7 +190,7 @@ export function OrgPicker({
                 <OrgLogo slug={o.slug} name={o.name} index={o.home ? 1 : 3} hasLogo={o.has_logo} />
                 <span>
                   {o.name}
-                  <small>{o.home ? 'ผู้ให้บริการระบบ · ปัญหาระบบ แจ้ง Bug' : `องค์กรคู่ค้า · ${o.slug}`}</small>
+                  <small>{o.home ? 'ผู้ให้บริการระบบ' : `องค์กรคู่ค้า ${o.slug}`}</small>
                 </span>
                 {o.slug === value && <Icon name="check" />}
               </li>
@@ -212,7 +212,7 @@ export function OrgPicker({
                   value={code}
                   disabled={busy}
                   autoComplete="off"
-                  placeholder="รหัสในลิงก์ที่องค์กรให้ไว้ เช่น …/support/my-shop/…"
+                  placeholder="รหัสในลิงก์ที่องค์กรให้ไว้ เช่น …/support/my-shop"
                   aria-invalid={error ? true : undefined}
                   onChange={(e) => {
                     setCode(e.target.value);
@@ -240,10 +240,7 @@ export function OrgPicker({
               <span className="org-dd-add-icon">
                 <Icon name="plus" />
               </span>
-              <span>
-                {typedCode ? `เพิ่มองค์กรด้วยรหัส “${typedCode}”` : 'เพิ่มองค์กรด้วยรหัส'}
-                <small>รหัสอยู่ในลิงก์ที่องค์กรให้ไว้ เช่น …/support/รหัส/…</small>
-              </span>
+              <span>{typedCode ? `เพิ่มองค์กรด้วยรหัส “${typedCode}”` : 'เพิ่มองค์กรด้วยรหัส'}</span>
             </button>
           )}
         </div>

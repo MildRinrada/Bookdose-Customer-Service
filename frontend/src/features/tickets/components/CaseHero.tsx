@@ -30,9 +30,9 @@ function clock(start: string, due: string | null | undefined, doneAt: string | n
   const until = new Date(due).getTime();
   const at = doneAt ? new Date(doneAt).getTime() : Date.now();
   const used = Math.min(1, Math.max(0, (at - from) / Math.max(1, until - from)));
-  if (doneAt) return { state: at > until ? 'late' : 'done', used, text: `${doneLabel} ${date(doneAt, true)}${at > until ? ` · ช้าไป ${span(at - until)}` : ''}` };
+  if (doneAt) return { state: at > until ? 'late' : 'done', used, text: `${doneLabel} ${date(doneAt, true)}${at > until ? ` ช้าไป ${span(at - until)}` : ''}` };
   if (at > until) return { state: 'late', used: 1, text: `เกินกำหนดมา ${span(at - until)}` };
-  return { state: used > 0.75 ? 'warn' : 'ok', used, text: `เหลือ ${span(until - at)} · ภายใน ${date(due, true)}` };
+  return { state: used > 0.75 ? 'warn' : 'ok', used, text: `เหลือ ${span(until - at)} ภายใน ${date(due, true)}` };
 }
 
 function SlaClock({ label, value }: { label: string; value: Clock }) {
@@ -97,7 +97,7 @@ export function CaseHero({
           {t.hand && !isDone(t) && (
             <span className="case-hero-flag hand" title={t.hand.note || undefined}>
               <Icon name="hand" />
-              {t.hand.raised_name} ยกมือขอช่วย{t.hand.helper_id ? ` · ${t.hand.helper_name} กำลังช่วย` : ''}
+              {t.hand.raised_name} ยกมือขอช่วย{t.hand.helper_id ? ` ${t.hand.helper_name} กำลังช่วย` : ''}
             </span>
           )}
           {escalation && (

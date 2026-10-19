@@ -40,10 +40,6 @@ export function IssuesPanel() {
 
   return (
     <div className="card-body issues-panel">
-      <p className="muted">
-        เมื่อระบบหรือบริการขององค์กรมีปัญหา ประกาศไว้ที่นี่ ลูกค้าจะเห็นแถบแจ้งบนหน้าแชททุกหน้าก่อนพิมพ์ถาม ช่วยลดข้อความถามเรื่องเดียวกัน
-        พอแก้เสร็จกด แก้ไขแล้ว แถบจะเปลี่ยนเป็นแจ้งว่ากลับมาใช้ได้ {view.data?.shown_minutes ?? 60} นาทีแล้วหายไป
-      </p>
       <form
         className="issues-form"
         onSubmit={(event) => {
@@ -91,7 +87,7 @@ export function IssuesPanel() {
                 <strong>{issue.title}</strong>
                 {issue.detail && <span className="muted">{issue.detail}</span>}
                 <span className="tiny muted">
-                  ประกาศโดย {issue.author_name} · {relative(issue.created_at)}
+                  ประกาศโดย {issue.author_name} {relative(issue.created_at)}
                 </span>
                 {/* ฉันก็เจอ: how many customers said they hit it (incidents/service.py). */}
                 <span className="tiny">{issue.affected ? `ลูกค้าแจ้งว่าเจอปัญหานี้ ${issue.affected.toLocaleString('th-TH')} คน` : 'ยังไม่มีลูกค้ากดว่าเจอปัญหานี้'}</span>
@@ -104,7 +100,7 @@ export function IssuesPanel() {
           ))}
         </ul>
       ) : (
-        <p className="tiny muted">ไม่มีประกาศ ลูกค้าไม่เห็นแถบแจ้งปัญหา</p>
+        <p className="tiny muted">ไม่มีประกาศ</p>
       )}
 
       {past.length > 0 && (

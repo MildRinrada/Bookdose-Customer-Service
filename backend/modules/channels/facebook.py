@@ -22,7 +22,7 @@ from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets
 from backend.realtime import events as realtime
 from backend.utils.dates import after, now
-from backend.utils import secret_box
+from backend.utils import markdown, secret_box
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -340,7 +340,7 @@ def process_outbox(tenant_id):
         extra = json.loads(repository.outbox_payload(db,job['id']) or '{}')
     error = provider_id = None
     try:
-        provider_id = T.send_facebook(secret['page_access_token'],link['recipient'],message['body'],extra.get('quick_replies'))
+        provider_id = T.send_facebook(secret['page_access_token'],link['recipient'],markdown.to_plain(message['body']),extra.get('quick_replies'))
     except ChannelError as failure:
         error = failure
     except Exception:

@@ -28,7 +28,6 @@ export function SmsSettingsCard() {
       <div className="card-header">
         <div>
           <h2>SMS สำหรับลิงก์ติดตามแชท</h2>
-          <p>ผู้เยี่ยมชมที่ไม่มีอีเมลขอลิงก์กลับมาที่แชททาง SMS ได้ และได้รับ SMS แจ้งเมื่อมีคำตอบใหม่</p>
         </div>
       </div>
       <div className="card-body">
@@ -39,9 +38,6 @@ export function SmsSettingsCard() {
         ) : (
           <SmsForm key={`${data.provider}:${data.sender}:${data.account}`} data={data} />
         )}
-        <p className="tiny muted mt">
-          ข้อความ SMS มีเฉพาะชื่อองค์กรและลิงก์ ไม่มีเนื้อหาแชท · API Key, Secret และ Auth Token ถูกเข้ารหัสเก็บบนเซิร์ฟเวอร์ และไม่แสดงซ้ำ
-        </p>
       </div>
     </section>
   );
@@ -92,7 +88,6 @@ function SmsForm({ data }: { data: SmsSettings }) {
               name="sender"
               max={11}
               defaultValue={data.provider === 'thaibulksms' ? data.sender : ''}
-              hint="ชื่อที่ลงทะเบียนและได้รับอนุมัติใน ThaiBulkSMS แล้ว ภาษาอังกฤษไม่เกิน 11 ตัว"
             />
             <span />
             <TextField id="sms-key" label="API Key" name="key" type="password" max={200} required={!saved} hint={keep} autoComplete="off" />
@@ -107,7 +102,6 @@ function SmsForm({ data }: { data: SmsSettings }) {
               name="account"
               max={34}
               defaultValue={data.account}
-              hint="ขึ้นต้นด้วย AC จากหน้า Console ของ Twilio"
             />
             <TextField
               id="sms-sender"
@@ -115,12 +109,10 @@ function SmsForm({ data }: { data: SmsSettings }) {
               name="sender"
               max={40}
               defaultValue={data.provider === 'twilio' ? data.sender : ''}
-              hint="เบอร์ Twilio แบบสากล เช่น +15551234567 หรือ Messaging Service SID (MG…)"
             />
             <TextField id="sms-secret" label="Auth Token" name="secret" type="password" max={64} required={!saved} hint={keep} autoComplete="off" />
           </div>
         )}
-        {provider === 'log' && <p className="notice warning">โหมดทดสอบไม่ได้ส่งถึงโทรศัพท์จริง ข้อความจะอยู่ใน log ของเซิร์ฟเวอร์เท่านั้น</p>}
         <div>
           <button className="btn primary" type="submit">
             บันทึก

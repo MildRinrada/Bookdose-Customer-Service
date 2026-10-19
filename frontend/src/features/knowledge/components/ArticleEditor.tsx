@@ -43,7 +43,6 @@ export function ArticleCategoryField({ defaultValue = 'ทั่วไป', cate
           <option key={value} value={value} />
         ))}
       </datalist>
-      <small className="muted">พิมพ์เพื่อสร้างหมวดใหม่ หรือกดเลือกจากหมวดที่มีอยู่</small>
     </div>
   );
 }
@@ -80,7 +79,6 @@ export function ArticleBodyField({
         }}
       />
       <div className="editor-foot">
-        <small className="muted">เลือกข้อความแล้วกดปุ่มจัดรูปแบบ · ข้อความที่เห็นคือหน้าตาที่บันทึก</small>
         <small className="muted" data-word-count="">
           {wordCountText(value)}
         </small>
@@ -222,7 +220,6 @@ export function ArticleForm({
               <option value="internal">{visibilityLabels.internal}</option>
               <option value="public">{visibilityLabels.public}</option>
             </select>
-            <small className="muted">“เผยแพร่ให้ลูกค้า” จะแสดงในหน้าลูกค้าด้วย</small>
           </div>
         }
       />

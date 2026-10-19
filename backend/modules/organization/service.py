@@ -26,6 +26,11 @@ def workspace_overview(cd, db, ctx):
     # Whether each member takes new cases now (ตั้งค่าบัญชี → สถานะการทำงาน), for the owner picker and the team list.
     states = staff_prefs.availability_of(cd,[m['id'] for m in team_members])
     team_members = [{**m,'availability':states[m['id']]} for m in team_members]
+    if ctx['role']=='admin':
+        # Who has not acknowledged the privacy notice in force yet, for the admin to follow up (legal/service.py).
+        from backend.modules.legal import service as legal
+        told = legal.acknowledged(cd,[m['email'] for m in team_members])
+        team_members = [{**m,'privacy_ok':m['email'] in told} for m in team_members]
     from backend.modules.platform import repository as tenants
     return {'tenant':{'id':ctx['tenant_id'],'name':ctx['tenant_name'],'slug':ctx['slug'],
                       'logo':tenants.tenant_logo(cd,ctx['tenant_id']),
@@ -97,7 +102,7 @@ def save_profile(cd, db, ctx, body):
     elif logo and logo!=had:
         changes.append('เปลี่ยนโลโก้')
     if changes:
-        audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],' · '.join(changes))
+        audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],', '.join(changes))
         db.commit()
     return {'name':name,'logo':logo}
 

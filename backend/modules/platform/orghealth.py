@@ -19,7 +19,7 @@ Two rules keep the score honest:
     yet is 'new', not 'in trouble'; nothing makes a platform admin trust a number less than a healthy organization
     being marked as failing because it is quiet.
   - What the score is made of travels with it. A number on its own is something to argue with; the same number with
-    "ตอบในเวลา 62% · เกินกำหนด 9 เคส" beside it is something to act on.
+    "ตอบในเวลา 62% เกินกำหนด 9 เคส" beside it is something to act on.
 """
 from backend.database import db as D
 from backend.utils.dates import after

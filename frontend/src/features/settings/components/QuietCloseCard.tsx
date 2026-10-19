@@ -39,7 +39,6 @@ export function QuietCloseCard() {
       <div className="card-header">
         <div>
           <h2>ปิดเคสเมื่อลูกค้าเงียบ</h2>
-          <p>เคสที่อยู่ในสถานะ &ldquo;รอลูกค้า&rdquo; แล้วลูกค้าไม่ตอบกลับ ระบบจะถามลูกค้าอีกครั้งก่อน ถ้ายังเงียบจึงปิดเคส ลูกค้าตอบกลับเมื่อไรเคสจะเปิดขึ้นอีกครั้ง</p>
         </div>
       </div>
       <Form
@@ -59,10 +58,7 @@ export function QuietCloseCard() {
         <div className="hours-switches">
           <label className="check">
             <input type="checkbox" className="switch" name="enabled" defaultChecked={initial.enabled} />
-            <span>
-              ถามลูกค้าที่เงียบไป แล้วปิดเคสเมื่อยังไม่ตอบ
-              <small className="tiny muted">ส่งทางช่องทางเดิมของเคส (แชทบนเว็บ LINE อีเมล Facebook) · เคสที่พักไว้จะเริ่มนับเมื่อครบเวลาพัก</small>
-            </span>
+            <span>ถามลูกค้าที่เงียบไป แล้วปิดเคสเมื่อยังไม่ตอบ</span>
           </label>
         </div>
         <div className="quiet-days">
@@ -80,7 +76,7 @@ export function QuietCloseCard() {
         <div className="field">
           <label htmlFor="quiet-remind">ข้อความถามลูกค้า</label>
           <textarea id="quiet-remind" name="remind_message" rows={3} maxLength={500} required defaultValue={initial.remind_message} />
-          <p className="tiny muted">ใส่ {TOKEN} ตรงที่ต้องการให้ระบบเติมจำนวนวันก่อนปิดเคส</p>
+          <p className="tiny muted">{TOKEN} = จำนวนวันก่อนปิดเคส</p>
         </div>
         <div className="field">
           <label htmlFor="quiet-close-message">ข้อความตอนปิดเคส</label>

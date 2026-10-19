@@ -45,17 +45,17 @@ export function useAuditChanges() {
         // ช่องข้อมูลเพิ่มเติม by name, with the values in words as they were at the time ("-" for none).
         return (changes as Array<{ field?: string; before?: string; after?: string }>)
           .map((c) => `${c.field ?? ''}: ${c.before ?? '-'} → ${c.after ?? '-'}`)
-          .join(' · ');
+          .join(', ');
       }
       if (event.action === 'ticket.tagged') {
         // ป้ายเคส by name, as they were called at the time.
         const { added = [], removed = [] } = changes as { added?: string[]; removed?: string[] };
-        return [added.length && `เพิ่ม ${added.join(', ')}`, removed.length && `เอาออก ${removed.join(', ')}`].filter(Boolean).join(' · ');
+        return [added.length && `เพิ่ม ${added.join(', ')}`, removed.length && `เอาออก ${removed.join(', ')}`].filter(Boolean).join(', ');
       }
       if (event.action === 'ticket.auto_assigned') {
         const { assignee_id: to, held } = changes as { assignee_id?: Change; held?: number };
         const who = work?.members.find((m) => m.id === to?.after)?.name || 'สมาชิก';
-        return `ให้ ${who}${typeof held === 'number' ? ` · ตอนนั้นถืออยู่ ${held} เคส` : ''}`;
+        return `ให้ ${who}${typeof held === 'number' ? ` ตอนนั้นถืออยู่ ${held} เคส` : ''}`;
       }
       const name = (field: string, value: unknown): string => {
         const text = value == null ? '' : String(value);
@@ -66,7 +66,7 @@ export function useAuditChanges() {
       };
       return Object.entries(changes as Record<string, Change>)
         .map(([field, change]) => `${auditFieldLabels[field] || field}: ${name(field, change?.before)} → ${name(field, change?.after)}`)
-        .join(' · ');
+        .join(', ');
     },
     [work],
   );
@@ -87,7 +87,7 @@ function runs(list: AuditEvent[]): Run[] {
 
 export function AuditList({ events }: { events: AuditEvent[] }) {
   const changesOf = useAuditChanges();
-  if (!events.length) return <p className="empty-mini">ไม่พบกิจกรรมตามตัวกรอง ลองล้างตัวกรองหรือขยายช่วงวันที่</p>;
+  if (!events.length) return <p className="empty-mini">ไม่พบกิจกรรมตามตัวกรอง</p>;
   const days = new Map<string, { when: Date; list: AuditEvent[] }>();
   for (const e of events) {
     const when = new Date(e.created_at);

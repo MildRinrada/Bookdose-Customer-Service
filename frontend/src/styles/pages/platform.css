@@ -944,3 +944,188 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* สร้างองค์กรใหม่ (features/platform/components/TenantForms TenantForm): two numbered steps, the organization and who
+   runs it, each a block of its own; the link the code makes, shown as it is typed; what comes after, at the foot. */
+.new-tenant {
+  display: grid;
+  gap: 18px;
+}
+.new-tenant-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--muted);
+}
+.new-tenant-lead .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--green);
+}
+.new-tenant-step {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.new-tenant-step h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.05rem;
+}
+.new-tenant-number {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--invert);
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 700;
+}
+.new-tenant-step .field {
+  margin: 0;
+}
+.new-tenant-note {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: .95rem;
+}
+.new-tenant-link,.new-tenant-made {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--soft);
+}
+.new-tenant-link > .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--link);
+}
+.new-tenant-link > span,.new-tenant-made > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.new-tenant-link small,.new-tenant-made small {
+  color: var(--muted);
+}
+.new-tenant-link code,.new-tenant-made code {
+  overflow-wrap: anywhere;
+  font-size: .95rem;
+  color: var(--ink);
+}
+/* Where the code will go, before it is typed. */
+.new-tenant-gap {
+  padding: 0 4px;
+  border-bottom: 1px dashed var(--muted);
+  color: var(--muted);
+  font-family: inherit;
+}
+.new-tenant-password {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+/* The button sits level with the box, under the label. */
+.new-tenant-password > .btn {
+  margin-top: 29px;
+  min-height: 46px;
+}
+.new-tenant-made {
+  background: var(--green-soft);
+}
+.new-tenant-next {
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--info-soft);
+}
+.new-tenant-next ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+.new-tenant-next li + li {
+  margin-top: 2px;
+}
+.new-tenant .form-actions {
+  margin-top: 0;
+}
+@media (max-width: 600px) {
+  .new-tenant-step {
+    padding: 14px;
+  }
+  .new-tenant .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .new-tenant-password {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .new-tenant-password > .btn {
+    margin-top: 0;
+  }
+}
+
+/* Pictures with a problem report: the form's previews with a remove button and the tile that adds one
+   (features/help/HelpMenu), and the same thumbnails in the console, each opening the picture full size. */
+.report-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 14px;
+}
+.report-image {
+  position: relative;
+  display: block;
+  width: 96px;
+  height: 72px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--soft);
+}
+.report-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+a.report-image:hover {
+  border-color: var(--ink);
+}
+.report-image-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #000000b3;
+  color: #fff;
+  cursor: pointer;
+}
+.report-image-remove .icon {
+  width: 14px;
+  height: 14px;
+}
+/* The paper clip sits at the start of the form's buttons, apart from cancel and send. */
+.form-actions .report-attach {
+  margin-right: auto;
+}

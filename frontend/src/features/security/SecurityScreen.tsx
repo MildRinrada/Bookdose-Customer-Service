@@ -74,7 +74,6 @@ export function SecurityScreen({ tab }: { tab?: string }) {
       <div className="page-heading">
         <div>
           <h1>ความปลอดภัย</h1>
-          <p>การเข้าสู่ระบบที่ผิดปกติ คำขอที่ถูกปฏิเสธ กับดัก และการตั้งค่าเซสชันของทุกองค์กร</p>
         </div>
         <div className="flex security-heading-actions">
           {current === 'overview' && (
@@ -236,7 +235,6 @@ function Traps() {
     <section className="security-section security-traps" id="security-traps" aria-labelledby="security-traps-title">
       <div className="security-part-head">
         <h2 id="security-traps-title">กับดัก</h2>
-        <p>จับผู้บุกรุก สแกนเนอร์ บอท และคนในที่แอบดูข้อมูล ตั้งแต่ครั้งแรกที่แตะสิ่งที่ผู้ใช้จริงไม่มีวันแตะ ผู้ใช้จริงมองไม่เห็นและไม่ได้รับผลกระทบ</p>
       </div>
       <HoneytokensCard />
       <div className="security-section">

@@ -128,7 +128,7 @@ export function ChatsScreen({
       );
     else if (session.error) detail = session.error.status === 404 ? <PageLoading /> : <ErrorState error={session.error} onRetry={() => void session.refetch()} />;
     else detail = <PageLoading />;
-  } else detail = <EmptyState title="เลือกแชทจากรายการ" description="หรือเริ่มแชทใหม่เพื่อส่งเรื่องถึงองค์กรที่ต้องการ" icon="chat" />;
+  } else detail = <EmptyState title="เลือกแชทจากรายการ" icon="chat" />;
 
   const searching = Boolean(query.trim() || orgFilter);
   // The column beside the chat: the organization's answers, and the messages pinned in the open chat (either may be
@@ -139,7 +139,6 @@ export function ChatsScreen({
       <div className="page-heading inbox-heading">
         <div>
           <h1>แชทของฉัน</h1>
-          <p>คุยกับทุกองค์กรที่คุณติดต่อ และติดตามทุกเรื่องที่เคยส่งไว้ในที่เดียว</p>
         </div>
       </div>
       <section className={`card inbox-layout customer-chats${hasDetail ? ' show-detail' : ''}${asideShown ? ' has-aside' : ''}`}>
@@ -160,7 +159,7 @@ export function ChatsScreen({
             ) : (
               <CustomerNone
                 title={searching ? 'ไม่พบแชทที่ตรงกับที่เลือก' : 'ยังไม่มีแชท'}
-                hint={searching ? 'ลองคำอื่น หรือเลือก “ทุกองค์กร”' : 'กด “เริ่มแชทใหม่” เพื่อส่งเรื่องถึงองค์กรที่ต้องการ'}
+                hint={null}
               />
             )}
           </div>

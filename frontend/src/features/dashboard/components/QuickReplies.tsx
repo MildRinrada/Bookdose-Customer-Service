@@ -33,7 +33,6 @@ export function QuickReplies() {
       <div className="card-header">
         <div>
           <h2 id="quick-replies-title">คำตอบด่วน</h2>
-          <p>กดเพื่อคัดลอก · ในช่องตอบพิมพ์ / ตามด้วยคีย์ลัด</p>
         </div>
         <Link className="icon-btn" href={staffAccountTabPath('replies')} aria-label="จัดการคำตอบด่วน" title="จัดการคำตอบด่วน">
           <Icon name="edit" />
@@ -56,7 +55,7 @@ export function QuickReplies() {
           </ul>
         ) : (
           <div className="empty-mini">
-            ยังไม่มีคำตอบด่วน · <Link href={staffAccountTabPath('replies')}>สร้างข้อความที่ใช้บ่อย</Link>
+            ยังไม่มีคำตอบด่วน <Link href={staffAccountTabPath('replies')}>สร้างข้อความที่ใช้บ่อย</Link>
           </div>
         )}
         {snippets.length > SHOWN && (

@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useOpenOnThisPage } from '@/components/shell/chrome';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
+import { readFile } from '@/lib/files';
 import { reportProblem, reportProblemAsCustomer } from './api';
 
 /* The ? in the top bar: the three things a member reaches for when the screen does not do what they expected -
@@ -111,7 +112,6 @@ export function HelpMenu({ audience = 'staff' }: { audience?: Audience }) {
 function ShortcutList() {
   return (
     <>
-      <p className="notice">ใช้ได้ทันทีโดยไม่ต้องเปิดอะไรก่อน คีย์ลัดของช่องพิมพ์ตอบใช้ได้ในกล่องข้อความและในเคส</p>
       <dl className="shortcut-list">
         {SHORTCUTS.map((s) => (
           <div className="shortcut-row" key={s.keys}>
@@ -125,33 +125,56 @@ function ShortcutList() {
           </div>
         ))}
       </dl>
-      <p className="tiny muted">คำตอบด่วนของฉันและคีย์ลัดของแต่ละอันตั้งได้ที่ ตั้งค่าบัญชี → คำตอบด่วนและคีย์ลัด</p>
     </>
   );
 }
+
+/* Pictures of the problem: chosen, dropped from the clipboard (a screenshot pasted into the text), up to IMAGES and
+   IMAGE_BYTES together, the same limits the server holds (backend platform/schema.py report_images). */
+const IMAGES = 5;
+const IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+type Picked = { file: File; url: string };
 
 function ReportForm({ page, audience }: { page: string; audience: Audience }) {
   const customer = audience === 'customer';
   const { closeModal } = useDialogs();
   const toast = useToast();
+  const [images, setImages] = useState<Picked[]>([]);
+  const picker = useRef<HTMLInputElement>(null);
+  useEffect(() => () => images.forEach((image) => URL.revokeObjectURL(image.url)), [images]);
+  const add = (files: File[]) => {
+    const pictures = files.filter((file) => IMAGE_TYPES.includes(file.type));
+    if (pictures.length < files.length) toast('แนบได้เฉพาะรูป PNG, JPG, GIF หรือ WebP', true);
+    const next = [...images, ...pictures.map((file) => ({ file, url: URL.createObjectURL(file) }))];
+    if (next.length > IMAGES) toast(`แนบรูปได้สูงสุด ${IMAGES} รูป`, true);
+    const kept = next.slice(0, IMAGES);
+    if (kept.reduce((total, image) => total + image.file.size, 0) > IMAGE_BYTES) {
+      toast('รูปทั้งหมดรวมกันต้องไม่เกิน 5 MB', true);
+      return;
+    }
+    setImages(kept);
+  };
   return (
     <Form
       data-form="problem-report"
       onSubmit={async (values) => {
-        await (customer ? reportProblemAsCustomer : reportProblem)(String(values.message ?? ''), page);
+        const uploads = await Promise.all(
+          images.map(async ({ file }, i) => {
+            const read = await readFile(file);
+            // A pasted screenshot is named image.png every time; numbered, they stay apart in the console.
+            return {
+              ...read,
+              name: file.name === 'image.png' ? `screenshot-${i + 1}.png` : file.name,
+            };
+          }),
+        );
+        await (customer ? reportProblemAsCustomer : reportProblem)(String(values.message ?? ''), page, uploads);
         closeModal(true);
         toast('ส่งรายงานให้ผู้ดูแลแพลตฟอร์มแล้ว ขอบคุณครับ');
       }}
     >
-      {customer ? (
-        <p className="notice">
-          สำหรับปัญหาของ<strong>เว็บไซต์</strong> เช่น กดแล้วไม่ทำงาน หน้าไม่ขึ้น เรื่องนี้ส่งถึงทีมที่ทำระบบ ถ้าเป็นเรื่องบริการขององค์กร แชทกับองค์กรนั้นได้เลย
-        </p>
-      ) : (
-        <p className="notice">
-          เรื่องนี้ส่งตรงถึง<strong>ทีมที่ทำระบบ</strong> ไม่ผ่านผู้ดูแลองค์กรของคุณ เจออะไรก็บอกได้เลย
-        </p>
-      )}
       <div className="field">
         <label htmlFor="report-message">เกิดอะไรขึ้น</label>
         <textarea
@@ -161,15 +184,52 @@ function ReportForm({ page, audience }: { page: string; audience: Audience }) {
           maxLength={MAX}
           required
           autoFocus
-          placeholder={customer ? 'เช่น กดส่งข้อความแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง' : 'เช่น กดปุ่มมอบหมายในหน้าเคสแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง'}
+          placeholder={
+            customer ? 'เช่น กดส่งข้อความแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง' : 'เช่น กดปุ่มมอบหมายในหน้าเคสแล้วไม่มีอะไรเกิดขึ้น ทำซ้ำได้ทุกครั้ง'
+          }
+          onPaste={(event) => {
+            const pasted = [...event.clipboardData.files];
+            if (!pasted.length) return;
+            event.preventDefault();
+            add(pasted);
+          }}
         />
-        <span className="tiny muted">
-          {customer
-            ? 'แนบชื่อ อีเมล และหน้าที่คุณเปิดอยู่ไปด้วย จะได้ติดต่อกลับถูกคน ข้อความในแชทของคุณไม่ถูกส่งไป'
-            : 'แนบชื่อ อีเมล และหน้าที่คุณเปิดอยู่ไปด้วย จะได้ติดต่อกลับถูกคน ข้อความที่คุยกับลูกค้าไม่ถูกส่งไป'}
-        </span>
       </div>
+      <input
+        ref={picker}
+        type="file"
+        accept={IMAGE_TYPES.join(',')}
+        multiple
+        hidden
+        onChange={(event) => {
+          add([...(event.target.files ?? [])]);
+          event.target.value = '';
+        }}
+      />
+      {images.length > 0 && (
+        <div className="report-images">
+          {images.map((image, i) => (
+            <figure key={image.url} className="report-image">
+              {/* A local preview (blob: URL) of a file not sent yet. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={image.url} alt={image.file.name} />
+              <button
+                type="button"
+                className="report-image-remove"
+                aria-label={`เอา ${image.file.name} ออก`}
+                onClick={() => setImages(images.filter((_, j) => j !== i))}
+              >
+                <Icon name="close" />
+              </button>
+            </figure>
+          ))}
+        </div>
+      )}
       <div className="form-actions">
+        <button type="button" className="btn subtle report-attach" disabled={images.length >= IMAGES} onClick={() => picker.current?.click()}>
+          <Icon name="paperclip" />
+          {images.length ? `แนบรูป ${images.length}/${IMAGES}` : 'แนบรูป'}
+        </button>
         <button type="button" className="btn" onClick={() => closeModal()}>
           ยกเลิก
         </button>

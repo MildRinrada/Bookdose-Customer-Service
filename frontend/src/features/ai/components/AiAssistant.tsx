@@ -512,7 +512,7 @@ export function AiAssistant() {
                 ))}
               </div>
               <p className="assistant-welcome-note">
-                AI อาจตอบผิด ตรวจก่อนส่งให้ลูกค้า ·{' '}
+                AI อาจตอบผิด{' '}
                 <button type="button" className="assistant-tips-link" onClick={showTips}>
                   เคล็ดลับการถาม
                 </button>
@@ -524,12 +524,10 @@ export function AiAssistant() {
                 {!ready ? (
                   <div className="assistant-empty">
                     <p>ผู้ช่วย AI ยังไม่เปิดใช้ในองค์กรนี้</p>
-                    {work.role === 'admin' ? (
+                    {work.role === 'admin' && (
                       <Link className="btn subtle small" href="/settings?tab=ai" onClick={() => setOpen(false)}>
                         ไปที่ตั้งค่า AI
                       </Link>
-                    ) : (
-                      <p className="muted">ให้เจ้าขององค์กรเปิด “AI ช่วยเจ้าหน้าที่” ในหน้าตั้งค่าองค์กร</p>
                     )}
                   </div>
                 ) : (

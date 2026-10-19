@@ -69,7 +69,6 @@ export function BusinessHoursCard() {
       <div className="card-header">
         <div>
           <h2>เวลาทำการ</h2>
-          <p>ใช้ตอบลูกค้าที่ทักมาตอนปิด และใช้นับเวลา SLA ถ้าเลือกไว้ · เวลาประเทศไทย</p>
         </div>
       </div>
       <Form
@@ -91,17 +90,11 @@ export function BusinessHoursCard() {
         <div className="hours-switches">
           <label className="check">
             <input type="checkbox" className="switch" name="enabled" defaultChecked={initial.enabled} />
-            <span>
-              ตอบลูกค้าอัตโนมัติเมื่ออยู่นอกเวลาทำการ
-              <small className="tiny muted">ทางแชทบนเว็บ LINE อีเมล และ Facebook ส่งครั้งเดียวต่อช่วงที่ปิด ไม่ส่งซ้ำทุกข้อความ</small>
-            </span>
+            <span>ตอบลูกค้าอัตโนมัติเมื่ออยู่นอกเวลาทำการ</span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="sla" defaultChecked={initial.sla} />
-            <span>
-              นับเวลา SLA เฉพาะในเวลาทำการ
-              <small className="tiny muted">กลางคืน วันที่ปิด และวันหยุดพิเศษไม่นับ ลูกค้าทักคืนวันศุกร์ เคสจะไม่เลยกำหนดตั้งแต่เช้าวันจันทร์ · ใช้กับเคสที่เปิดใหม่</small>
-            </span>
+            <span>นับเวลา SLA เฉพาะในเวลาทำการ</span>
           </label>
         </div>
         <div className="hours-days" role="group" aria-label="เวลาทำการแต่ละวัน">
@@ -132,7 +125,6 @@ export function BusinessHoursCard() {
         </div>
         <div className="hours-holidays">
           <h3>วันหยุดพิเศษ</h3>
-          <p className="tiny muted">ปิดทั้งวัน ลูกค้าที่ทักมาจะได้ข้อความนอกเวลา และไม่นับเวลา SLA · วันที่ผ่านไปแล้วระบบลบออกให้เอง</p>
           {holidays.length > 0 && (
             <ul className="hours-holiday-list">
               {holidays.map((h) => (
@@ -185,9 +177,7 @@ export function BusinessHoursCard() {
         <div className="field">
           <label htmlFor="hours-message">ข้อความที่ลูกค้าได้รับนอกเวลาทำการ</label>
           <textarea id="hours-message" name="message" maxLength={500} required defaultValue={initial.message} />
-          <p className="tiny muted">
-            ใส่ {TOKEN} ตรงที่ต้องการให้ระบบเติมเวลาเปิดครั้งถัดไป เช่น &ldquo;พรุ่งนี้ 09:00&rdquo; หรือ &ldquo;วันจันทร์ 09:00&rdquo;
-          </p>
+          <p className="tiny muted">{TOKEN} = เวลาเปิดครั้งถัดไป</p>
         </div>
         <button className="btn primary" type="submit">
           <Icon name="check" />

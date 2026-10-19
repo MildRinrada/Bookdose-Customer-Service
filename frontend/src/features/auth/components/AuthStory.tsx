@@ -34,7 +34,7 @@ export function AuthStory() {
           ))}
         </div>
       </div>
-      <div className="story-footer">Bookdose Customer Service · Made for meaningful support.</div>
+      <div className="story-footer">Bookdose Customer Service. Made for meaningful support.</div>
     </section>
   );
 }

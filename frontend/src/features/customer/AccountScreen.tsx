@@ -28,7 +28,6 @@ export function AccountScreen({ tab }: { tab?: string }) {
       <div className="page-heading">
         <div>
           <h1>ตั้งค่าบัญชี</h1>
-          <p>บัญชีเดียวใช้กับทุกองค์กร ข้อมูลที่ทีมงานใช้ติดต่อคุณ องค์กรที่ติดต่อได้ และความปลอดภัยของบัญชี</p>
         </div>
       </div>
       <div className="settings-frame account-frame">

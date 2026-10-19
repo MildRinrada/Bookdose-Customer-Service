@@ -34,7 +34,6 @@ export function ReceiptCard() {
       <div className="card-header">
         <div>
           <h2>ข้อความรับเรื่องทาง LINE และ Facebook</h2>
-          <p>ลูกค้าที่เริ่มเรื่องใหม่ได้รู้ทันทีว่าข้อความถึงแล้ว และทีมงานจะตอบในราวเมื่อไร แทนการ์ดลำดับคิวที่ลูกค้าบนหน้าเว็บเห็น</p>
         </div>
       </div>
       <Form
@@ -48,23 +47,14 @@ export function ReceiptCard() {
         <div className="hours-switches">
           <label className="check">
             <input type="checkbox" className="switch" name="enabled" defaultChecked={initial.enabled} />
-            <span>
-              ส่งข้อความรับเรื่องเมื่อลูกค้าเริ่มเรื่องใหม่
-              <small className="tiny muted">
-                ทาง LINE (แชทส่วนตัว) Facebook และ Instagram ส่งครั้งเดียวต่อเรื่อง ใต้ข้อความมีปุ่ม &ldquo;ดูลำดับคิวตอนนี้&rdquo; และ &ldquo;ไม่รีบ&rdquo;
-                นอกเวลาทำการส่งข้อความนอกเวลาแทน และไม่ส่งในแชทที่ Chatbot ตอบอยู่
-              </small>
-            </span>
+            <span>ส่งข้อความรับเรื่องเมื่อลูกค้าเริ่มเรื่องใหม่</span>
           </label>
         </div>
         <div className="field">
           <label htmlFor="receipt-message">ข้อความรับเรื่อง</label>
           <textarea id="receipt-message" name="message" rows={3} maxLength={500} required defaultValue={initial.message} />
-          <p className="tiny muted">
-            ใส่ {TOKEN} ตรงที่ต้องการให้ระบบเติมเวลารอ เช่น &ldquo;ภายในประมาณ 10 นาที&rdquo; หรือ &ldquo;โดยเร็วที่สุด&rdquo; เมื่อยังไม่มีทีมงานที่พร้อมตอบ
-          </p>
+          <p className="tiny muted">{TOKEN} = เวลารอโดยประมาณ</p>
         </div>
-        <p className="tiny muted">ข้อความทาง LINE นับรวมในโควตาข้อความรายเดือนของบัญชี LINE ขององค์กร เหมือนข้อความที่ทีมงานตอบ</p>
         <button className="btn primary mt" type="submit">
           <Icon name="check" />
           บันทึกข้อความรับเรื่อง

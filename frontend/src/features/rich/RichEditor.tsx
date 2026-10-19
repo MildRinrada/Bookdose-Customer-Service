@@ -172,7 +172,6 @@ function LinkForm({
       ) : (
         <TextField label="ข้อความที่แสดง" name="text" id="f-text" required={false} defaultValue={text} max={200} placeholder="เว้นว่างเพื่อใช้ที่อยู่ลิงก์" />
       )}
-      <p className="tiny muted">{image ? 'รองรับเฉพาะรูปที่เผยแพร่แบบ https:// เพื่อไม่ให้รูปหายเมื่อผู้อ่านเปิดบทความ' : 'ลิงก์จะเปิดในแท็บใหม่เสมอ'}</p>
       <div className="form-actions">
         <button type="button" className="btn" onClick={onCancel}>
           ยกเลิก

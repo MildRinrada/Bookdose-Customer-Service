@@ -25,7 +25,7 @@ import type { LegalDocument, LegalEntry, LegalKey, LegalOverview } from './types
 const LEGAL_TOOLS: Array<RichFormat | '|'> = ['bold', 'italic', 'underline', '|', 'h1', 'h2', 'normal', '|', 'bullet', 'number', '|', 'link'];
 
 const HINTS: Partial<Record<LegalKey, string>> = {
-  'customer-privacy': 'เขียน {{องค์กร}} ตรงที่ต้องการชื่อองค์กร ระบบจะใส่ชื่อองค์กรของลูกค้าให้เมื่อแสดง',
+  'customer-privacy': '{{องค์กร}} = ชื่อองค์กร',
 };
 
 export function LegalScreen() {
@@ -43,7 +43,6 @@ export function LegalScreen() {
       <div className="page-heading">
         <div>
           <h1>เอกสารกฎหมาย</h1>
-          <p>ข้อตกลงการใช้บริการและประกาศความเป็นส่วนตัว แก้ไขที่นี่แล้วเผยแพร่เป็นฉบับ ฉบับที่มีคนยอมรับไว้แล้วจะไม่ถูกแก้ย้อนหลัง</p>
         </div>
       </div>
       <nav className="legal-tabs" aria-label="เอกสาร">
@@ -52,7 +51,7 @@ export function LegalScreen() {
             <Icon name={d.key === 'terms' ? 'file' : 'shield'} />
             <span>
               {d.name}
-              <small>{d.versions[0] ? `ฉบับ ${d.versions[0].version}` : 'ยังไม่เผยแพร่'}{d.changed ? ' · มีร่างที่ยังไม่เผยแพร่' : ''}</small>
+              <small>{d.versions[0] ? `ฉบับ ${d.versions[0].version}` : 'ยังไม่เผยแพร่'}{d.changed ? ', มีร่างที่ยังไม่เผยแพร่' : ''}</small>
             </span>
           </button>
         ))}
@@ -75,13 +74,13 @@ function Editor({ entry }: { entry: LegalEntry }) {
 
   const save = async () => {
     await saveLegalDraft(entry.key, { title, body });
-    toast('บันทึกฉบับร่างแล้ว · ยังไม่มีผลจนกว่าจะเผยแพร่');
+    toast('บันทึกฉบับร่างแล้ว ยังไม่มีผลจนกว่าจะเผยแพร่');
     await refresh(LEGAL_PATH);
   };
   const publish = () =>
     confirm({
       title: `เผยแพร่ ${entry.name}`,
-      message: 'ฉบับร่างจะกลายเป็นฉบับที่ทุกหน้าแสดง และผู้ที่สมัครหลังจากนี้จะยอมรับฉบับนี้ ฉบับเดิมยังเก็บไว้ให้ดูย้อนหลัง',
+      message: 'ฉบับร่างจะกลายเป็นฉบับที่ทุกหน้าแสดง',
       confirmLabel: 'เผยแพร่',
       run: async () => {
         if (dirty) await saveLegalDraft(entry.key, { title, body });
@@ -98,7 +97,7 @@ function Editor({ entry }: { entry: LegalEntry }) {
         <div>
           <h2>{entry.name}</h2>
           <p>
-            {live ? `ฉบับที่ใช้อยู่ ${live.version} · เผยแพร่ ${date(live.published_at)} โดย ${live.published_by}` : 'ยังไม่เคยเผยแพร่'} ·{' '}
+            {live ? `ฉบับที่ใช้อยู่ ${live.version} เผยแพร่ ${date(live.published_at)} โดย ${live.published_by}` : 'ยังไม่เคยเผยแพร่'}{' '}
             <button type="button" className="legal-link-button" onClick={() => openModal(`ผู้ยอมรับ${entry.name}`, <AcceptanceList doc={entry.key} />, { wide: true })}>
               มีผู้ยอมรับแล้ว {entry.accepted} ครั้ง
             </button>
@@ -132,10 +131,11 @@ function Editor({ entry }: { entry: LegalEntry }) {
               className="article-content editor-input legal-input"
               onChange={setBody}
             />
-            <div className="editor-foot">
-              <small className="muted">ข้อความที่เห็นคือหน้าตาที่ผู้อ่านจะเห็น</small>
-              {HINTS[entry.key] && <small className="muted">{HINTS[entry.key]}</small>}
-            </div>
+            {HINTS[entry.key] && (
+              <div className="editor-foot">
+                <small className="muted">{HINTS[entry.key]}</small>
+              </div>
+            )}
           </div>
           <div className="form-actions legal-actions">
             <span className="tiny muted legal-saved">
@@ -159,7 +159,7 @@ function Editor({ entry }: { entry: LegalEntry }) {
                   <button type="button" className="legal-version" onClick={() => show(v.version)}>
                     <strong>ฉบับ {v.version}</strong>
                     <span>
-                      {date(v.published_at)} · {v.published_by}
+                      {date(v.published_at)} โดย {v.published_by}
                     </span>
                   </button>
                   {i === 0 && <span className="legal-live-tag">ใช้อยู่</span>}
@@ -169,7 +169,6 @@ function Editor({ entry }: { entry: LegalEntry }) {
           ) : (
             <p className="tiny muted">ยังไม่มี</p>
           )}
-          <p className="tiny muted">ฉบับที่เผยแพร่แล้วแก้ไม่ได้ เพราะมีผู้ยอมรับฉบับนั้นไว้ การแก้ไขทุกครั้งคือฉบับใหม่</p>
         </aside>
       </div>
     </section>

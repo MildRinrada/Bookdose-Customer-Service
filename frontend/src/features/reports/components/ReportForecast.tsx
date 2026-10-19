@@ -4,9 +4,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import {
   AHEAD_DAYS,
-  LEARN_WEEKS,
   NEEDED_DAYS,
-  RANGE_SHARE,
   TEST_DAYS,
   type Forecast,
   type ForecastDay,
@@ -37,13 +35,11 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
               <Icon name="chart" />
               พยากรณ์จำนวนเคส
             </h2>
-            <p>คาดการณ์เคสใหม่ {AHEAD_DAYS} วันข้างหน้า จากเคสที่ผ่านมา{scope}</p>
           </div>
         </div>
         <div className="card-body">
           <p className="empty-mini">
-            ต้องมีเคสย้อนหลังอย่างน้อย {NEEDED_DAYS / 7} สัปดาห์ จึงจะพยากรณ์และทดสอบความแม่นได้
-            {f.had ? ` · ตอนนี้มี ${f.had} วัน พยากรณ์ได้ในอีก ${NEEDED_DAYS - f.had} วัน` : ' · ยังไม่มีเคส'}
+            {f.had ? `ยังพยากรณ์ไม่ได้ มีเคสย้อนหลัง ${f.had} วัน พยากรณ์ได้ในอีก ${NEEDED_DAYS - f.had} วัน` : 'ยังไม่มีเคส'}
           </p>
         </div>
       </section>
@@ -65,7 +61,7 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
             พยากรณ์จำนวนเคส
           </h2>
           <p>
-            คาดการณ์เคสใหม่ {AHEAD_DAYS} วันข้างหน้า จากเคส {f.weeks} สัปดาห์ล่าสุด{scope} · นับจากวันนี้ ไม่ขึ้นกับช่วงวันที่ด้านบน
+            {AHEAD_DAYS} วันข้างหน้า จากเคส {f.weeks} สัปดาห์ล่าสุด{scope}
           </p>
         </div>
       </div>
@@ -80,7 +76,7 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
             <span>วันที่น่าจะหนักที่สุด</span>
             <strong>{dayName.format(busiest.day)}</strong>
             <small>
-              {cases(busiest)} เคส{busiest.peak ? ` · หนักสุด ${clock(busiest.peak.from)}-${clock(busiest.peak.to)}` : ''}
+              {cases(busiest)} เคส{busiest.peak ? `, หนักสุด ${clock(busiest.peak.from)}-${clock(busiest.peak.to)}` : ''}
             </small>
           </div>
           <div>
@@ -96,7 +92,7 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
           {shown.map((d, i) => (
             <li key={d.day.toDateString()} className={d === busiestShown && d.expected >= 1 ? 'busiest' : ''}>
               <span className="forecast-day">
-                {i === 0 && <span className="muted">พรุ่งนี้ · </span>}
+                {i === 0 && <span className="muted">พรุ่งนี้ </span>}
                 {dayName.format(d.day)}
                 {d === busiestShown && d.expected >= 1 && <span className="badge">วันที่หนักที่สุด</span>}
               </span>
@@ -107,7 +103,7 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
                   : d.peak && (
                       <>
                         หนักสุด {clock(d.peak.from)}-{clock(d.peak.to)}
-                        {d.peak.cases >= 1 && <span className="muted"> · ราว {Math.round(d.peak.cases)} เคส</span>}
+                        {d.peak.cases >= 1 && <span className="muted">, ราว {Math.round(d.peak.cases)} เคส</span>}
                       </>
                     )}
               </span>
@@ -119,9 +115,6 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
         </button>
 
         <h3 className="report-subhead">ทำนายแม่นแค่ไหน</h3>
-        <p className="forecast-test">
-          ระบบลองทำนาย {TEST_DAYS} วันที่ผ่านมา โดยใช้เฉพาะเคสก่อนหน้านั้น แล้วเทียบกับเคสที่เข้ามาจริง (ครึ่งซ้ายของกราฟ)
-        </p>
         <div className="report-figures">
           <div className={t.share != null && t.share > 0.35 ? 'warn' : ''}>
             <span>พลาดเฉลี่ย</span>
@@ -133,7 +126,6 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
             <strong>
               {t.inside} จาก {TEST_DAYS} วัน
             </strong>
-            <small>ถ้าแม่นตามที่ตั้งไว้ ควรได้ราว {Math.round(TEST_DAYS * RANGE_SHARE)} วัน</small>
           </div>
           <div className={t.simpler != null && t.simpler < -0.05 ? 'warn' : ''}>
             <span>เทียบกับเดาว่าเท่าสัปดาห์ก่อน</span>
@@ -146,20 +138,14 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
                     ? `พลาดมากกว่า ${Math.round(-100 * t.simpler)}%`
                     : 'ใกล้เคียงกัน'}
             </strong>
-            <small>วิธีเดาง่าย ๆ ที่ใช้เป็นเกณฑ์</small>
           </div>
         </div>
         {doubtful && (
           <p className="notice warning forecast-doubt">
             <Icon name="clock" />
-            <span>ช่วงนี้จำนวนเคสเปลี่ยนไปจากเดิมมาก หรือมีวันที่ผิดปกติ ใช้ตัวเลขพยากรณ์เป็นแนวทางคร่าว ๆ และดูของจริงประกอบ</span>
+            <span>ช่วงนี้จำนวนเคสเปลี่ยนไปจากเดิมมาก หรือมีวันที่ผิดปกติ</span>
           </p>
         )}
-        <p className="tiny muted mt">
-          คิดจากรูปแบบของแต่ละวันในสัปดาห์ ชั่วโมงที่ลูกค้าติดต่อ และแนวโน้มช่วง {Math.min(f.weeks, LEARN_WEEKS)} สัปดาห์ล่าสุด
-          วันที่เคสสูงหรือต่ำผิดปกติเพียงไม่กี่วันจะไม่ดึงผลไปมาก · ช่วงที่ทำนายตั้งให้เคสจริงตกอยู่ในช่วงราว {Math.round(10 * RANGE_SHARE)} ใน 10 วัน ·
-          ระบบไม่รู้ล่วงหน้าเรื่องวันหยุด แคมเปญ หรือระบบล่ม · นับวันและชั่วโมงตามเวลาเครื่องของคุณ
-        </p>
       </div>
     </section>
   );
@@ -170,14 +156,13 @@ function Trend({ trend, weeks }: { trend: number | null; weeks: number }) {
     return (
       <>
         <strong>ยังบอกไม่ได้</strong>
-        <small>เคสยังไม่ถึงวันละ 1 เคส</small>
       </>
     );
   const steady = Math.abs(trend) < 5;
   return (
     <>
       <strong>{steady ? 'ทรงตัว' : `${trend > 0 ? 'เพิ่มขึ้น' : 'ลดลง'} ${Math.round(Math.abs(trend))}%`}</strong>
-      <small>{steady ? `เปลี่ยนไม่ถึง 5% ต่อสัปดาห์ ช่วง ${weeks} สัปดาห์ล่าสุด` : `ต่อสัปดาห์ ช่วง ${weeks} สัปดาห์ล่าสุด`}</small>
+      <small>{steady ? `ช่วง ${weeks} สัปดาห์ล่าสุด` : `ต่อสัปดาห์ ช่วง ${weeks} สัปดาห์ล่าสุด`}</small>
     </>
   );
 }
@@ -207,7 +192,7 @@ function ForecastChart({ tested, ahead }: { tested: TestedDay[]; ahead: Forecast
           const miss = d.actual < d.low || d.actual > d.high;
           return (
             <g key={d.day.toDateString()}>
-              <title>{`${dayName.format(d.day)} · เข้ามาจริง ${d.actual} เคส · ทำนายไว้ ${cases(d)} เคส`}</title>
+              <title>{`${dayName.format(d.day)}, เข้ามาจริง ${d.actual} เคส, ทำนายไว้ ${cases(d)} เคส`}</title>
               <rect className="forecast-hit" x={x} width={W} y={0} height={H} />
               {band(d, x)}
               {d.actual > 0 && <rect className={`forecast-actual${miss ? ' miss' : ''}`} x={x + 3} width={W - 6} y={y(d.actual)} height={H - y(d.actual)} />}
@@ -219,7 +204,7 @@ function ForecastChart({ tested, ahead }: { tested: TestedDay[]; ahead: Forecast
           const x = (today + 1 + i) * W;
           return (
             <g key={d.day.toDateString()}>
-              <title>{`${dayName.format(d.day)} · คาดว่า ${cases(d)} เคส`}</title>
+              <title>{`${dayName.format(d.day)}, คาดว่า ${cases(d)} เคส`}</title>
               <rect className="forecast-hit" x={x} width={W} y={0} height={H} />
               {band(d, x)}
               <rect className="forecast-mark" x={x + 1.5} width={W - 3} y={y(d.expected) - 0.8} height={1.6} />

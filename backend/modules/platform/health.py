@@ -104,7 +104,7 @@ def retry_failed(cd, session, tenant_id):
                 continue
             db.commit()
             sent += 1
-    audit.record(cd,session['user_id'],'platform.channel_retry',tenant_id,f'ส่งซ้ำ {sent} รายการ · ส่งซ้ำไม่ได้ {len(reasons)}')
+    audit.record(cd,session['user_id'],'platform.channel_retry',tenant_id,f'ส่งซ้ำ {sent} รายการ, ส่งซ้ำไม่ได้ {len(reasons)}')
     cd.commit()
     return {'retried':sent,'skipped':len(reasons),'reasons':sorted(set(reasons))[:5]}
 
@@ -236,14 +236,14 @@ def checklist(cd, session, snapshot):
     if unprotected:
         mine = any(a['id']==session['user_id'] for a in unprotected)
         items.append(_item('two-factor','warning',f'ผู้ดูแลแพลตฟอร์ม {len(unprotected)} คนยังไม่เปิดการยืนยันสองขั้นตอน',
-                           ', '.join(a['name'] for a in unprotected)+' · บัญชีเหล่านี้เข้าถึงทุกองค์กรได้',
+                           ', '.join(a['name'] for a in unprotected)+' บัญชีเหล่านี้เข้าถึงทุกองค์กรได้',
                            'เปิดของฉัน' if mine else 'ดูทีมผู้ดูแล','/account?tab=security' if mine else '/platform/team'))
     from backend.modules.platform import dormant
     asleep = dormant.listing(cd)['organizations']
     if asleep:
         items.append(_item('dormant','info',f'องค์กรที่ไม่มีการใช้งาน {dormant.DAYS} วัน {len(asleep)} แห่ง',
                            ', '.join(o['name'] for o in asleep[:5])+(' และอื่นๆ' if len(asleep)>5 else '')+
-                           ' · ไม่มีทีมงานเข้าใช้และไม่มีเคสใหม่ ติดต่อเจ้าของหรือระงับเพื่อปิดช่องโหว่',
+                           ' ไม่มีทีมงานเข้าใช้และไม่มีเคสใหม่ ติดต่อเจ้าของหรือระงับเพื่อปิดช่องโหว่',
                            'ดูองค์กรที่หลับ','/platform/organizations?tab=dormant'))
     from backend.modules.platform import vulns
     scan = vulns.last(cd)
@@ -290,7 +290,7 @@ def notifications(cd, session, snapshot):
     cd.commit()
     for row in support.recent_of_user(cd,session['user_id'],after(hours=-SUPPORT_NEWS_HOURS)):
         level,icon,title,detail = SUPPORT_TEXT[row['status']]
-        note = f" · {row['decided_by_name']}: {row['note']}" if row['status']=='denied' and row['note'] else ''
+        note = f" {row['decided_by_name']}: {row['note']}" if row['status']=='denied' and row['note'] else ''
         found.append({'key':f"support-{row['id']}",'kind':'support','level':level,'icon':icon,
                       'title':title.format(org=row['tenant_name']),'detail':detail+note,
                       'href':'/platform/organizations',
@@ -359,7 +359,7 @@ def active_announcement(cd, audience='staff'):
     from backend.modules.platform import maintenance, status
     if maintenance.active(cd):
         written = status.notice(cd)
-        return {'text':f"{maintenance.BAR} · {written['text']}",'level':'warning','ends_at':None}
+        return {'text':f"{maintenance.BAR} {written['text']}",'level':'warning','ends_at':None}
     found = announcement(cd)
     if not found:
         return None

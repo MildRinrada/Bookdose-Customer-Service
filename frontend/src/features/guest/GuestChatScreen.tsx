@@ -336,7 +336,6 @@ function GuestChat({ slug, data, info, initialId, embed, widget }: ChatProps) {
           )}
           <div className="conv-title">
             <h2>{list.length ? 'เริ่มแชทเรื่องใหม่' : `แชทกับ ${data.organization.name}`}</h2>
-            <p className="conv-meta">ส่งข้อความถึงทีมงานได้เลยโดยไม่ต้องสมัครสมาชิก</p>
           </div>
         </div>
         <GuestStartForm
@@ -481,7 +480,6 @@ function GuestAside({
       {ticket && (
         <section className="guest-aside-card">
           <h3>เคส BD-{ticket.number}</h3>
-          <p className="tiny muted">ทีมงานเปิดเคสให้เรื่องนี้แล้ว ดูขั้นตอนที่ทำไปแล้วและกำหนดเวลาได้</p>
           <Link className="btn sm" href={guestPages.case(slug, ticket.id)}>
             <Icon name="ticket" />
             ดูความคืบหน้า
@@ -602,7 +600,7 @@ function GuestChatView({
   const askClose = () =>
     confirm({
       title: 'ปัญหาแก้ไขแล้ว',
-      message: `เคส BD-${data.ticket?.number} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง ถ้าปัญหากลับมาอีก พิมพ์บอกในแชทได้เลย`,
+      message: `เคส BD-${data.ticket?.number} จะเปลี่ยนเป็นแก้ไขแล้ว และทีมงานจะได้รับแจ้ง`,
       confirmLabel: 'ยืนยันว่าแก้ไขแล้ว',
       run: async () => {
         await resolveChatCase(portal, id);
@@ -638,7 +636,7 @@ function GuestChatView({
                 rel={embed ? 'noopener' : undefined}
                 title={`ดูสถานะและความคืบหน้าของเคส BD-${data.ticket.number}`}
               >
-                เคส BD-{data.ticket.number} · ดูความคืบหน้า
+                เคส BD-{data.ticket.number} ดูความคืบหน้า
               </Link>
             )}
             <span className="customer-state-hint guest-state-hint">{view.hint}</span>

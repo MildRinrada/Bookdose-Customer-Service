@@ -35,7 +35,6 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
         <h2>อีเมลยืนยันการสมัครองค์กร</h2>
       </div>
       <div className="card-body">
-        <p className="small muted">กล่องจดหมายที่ระบบใช้ส่งออกทั้งหมด และโดเมนที่ใช้สร้างลิงก์ในอีเมล · สองสวิตช์ด้านล่างแยกกัน</p>
         <Form
           key={saved?.version ?? 0}
           onSubmit={async (values, form) => {
@@ -59,14 +58,12 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
               <input type="checkbox" className="switch" name="enabled" defaultChecked={cfg.enabled} />
               <span className="check-text">
                 <strong>เปิดใช้อีเมลของระบบ</strong>
-                <small>ส่งลิงก์ติดตามแชทให้ลูกค้า ยืนยันอีเมล ลืมรหัสผ่าน คำเชิญสมาชิก และแจ้งเตือนถึงเจ้าหน้าที่</small>
               </span>
             </label>
             <label className="check span-2">
               <input type="checkbox" className="switch" name="signup_enabled" defaultChecked={cfg.signup_enabled} />
               <span className="check-text">
                 <strong>เปิดให้สมัครสร้างองค์กรใหม่เองจากหน้าเว็บ</strong>
-                <small>ใครก็ตามที่เข้าถึงหน้าสมัครสร้างองค์กรของตัวเองได้ · ปิดไว้ถ้าต้องการให้ผู้ดูแลแพลตฟอร์มเป็นคนสร้างองค์กรเอง · ต้องเปิดอีเมลของระบบด้วย</small>
               </span>
             </label>
             <TextField
@@ -80,8 +77,8 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
             <TextField label="อีเมลผู้ส่ง" name="address" type="email" defaultValue={cfg.address || ''} max={254} required={false} />
             <TextField label="เซิร์ฟเวอร์ SMTP" name="smtp_host" defaultValue={cfg.smtp_host || ''} placeholder="smtp.example.com" max={253} required={false} />
             <SelectField label="พอร์ต SMTP" name="smtp_port" id="registration-port" defaultValue={cfg.smtp_port === 587 ? '587' : '465'}>
-              <option value="465">465 · TLS</option>
-              <option value="587">587 · STARTTLS</option>
+              <option value="465">465 TLS</option>
+              <option value="587">587 STARTTLS</option>
             </SelectField>
             <TextField label="ชื่อผู้ใช้ SMTP" name="username" defaultValue={cfg.username || ''} max={500} required={false} />
             <TextField
@@ -95,10 +92,6 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
               placeholder={cfg.has_password ? 'บันทึกไว้แล้ว เว้นว่างเพื่อใช้ค่าเดิม' : 'รหัสผ่านสำหรับส่งอีเมล'}
             />
           </div>
-          <p className="tiny muted">
-            หากเปลี่ยนเซิร์ฟเวอร์ พอร์ต หรือชื่อผู้ใช้ ต้องกรอกรหัสผ่านใหม่ ใช้บัญชีที่ผู้ให้บริการอนุญาตให้ส่งผ่าน SMTP ด้วยรหัสผ่าน / App Password
-            การบันทึกยังไม่ได้ทดสอบส่งอีเมล
-          </p>
           <button className="btn primary" type="submit">
             บันทึกอีเมลยืนยัน
           </button>

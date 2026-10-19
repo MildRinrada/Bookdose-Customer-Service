@@ -91,7 +91,7 @@ export function PlatformBell() {
                         <strong>{n.title}</strong>
                         <span className="note-detail">
                           {n.detail}
-                          {n.until && ` · ถึง ${date(n.until, true)}`}
+                          {n.until && ` ถึง ${date(n.until, true)}`}
                         </span>
                       </span>
                       {n.at && (
@@ -112,7 +112,6 @@ export function PlatformBell() {
                     <Icon name="checkCircle" />
                   </span>
                   <strong>ระบบไม่มีเรื่องรอจัดการ</strong>
-                  <span className="muted">งานเบื้องหลังหยุด ดิสก์ใกล้เต็ม การสำรองข้อมูล และคำตอบของคำขอเข้าช่วยเหลือ จะขึ้นที่นี่</span>
                 </div>
               )}
             </div>

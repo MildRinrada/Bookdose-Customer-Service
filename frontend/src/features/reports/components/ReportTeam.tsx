@@ -26,7 +26,6 @@ export function ReopenCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
             <Icon name="restore" />
             เคสที่ถูกเปิดซ้ำ
           </h2>
-          <p>เคสที่แก้ไขเสร็จหรือปิดแล้วแต่กลับมาเปิดอีก เพราะลูกค้าทักกลับหรือทีมเปิดเอง</p>
         </div>
       </div>
       <div className="card-body">
@@ -54,14 +53,13 @@ export function ReopenCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
                         <span className="ticket-id">BD-{t.number}</span>
                         <span className="truncate">
                           {t.subject}
-                          <small className="muted"> · {memberName(t.assignee_id)} · {relative(t.reopened_at)}</small>
+                          <small className="muted"> {memberName(t.assignee_id)}, {relative(t.reopened_at)}</small>
                         </span>
                       </Link>
                       <span className={`report-days${(t.reopens ?? 0) >= 2 ? ' bad' : ''}`}>{t.reopens} ครั้ง</span>
                     </li>
                   ))}
                 </ul>
-                <p className="tiny muted report-note">อัตราสูงมักแปลว่าปิดเคสเร็วไปก่อนลูกค้าหายสงสัย ลองถามลูกค้าก่อนปิดว่าเรียบร้อยแล้วหรือยัง</p>
               </>
             ) : (
               <p className="empty-mini">ไม่มีเคสที่ถูกเปิดซ้ำในช่วงนี้ ✨</p>
@@ -89,14 +87,14 @@ export function WorkloadCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) 
             <Icon name="users" />
             ภาระงานของทีม
           </h2>
-          <p>เคสที่ยังไม่เสร็จตอนนี้ของแต่ละคน · เฉลี่ยคนละ {load.average.toFixed(1)} เคส</p>
+          <p>เคสที่ยังไม่เสร็จตอนนี้ของแต่ละคน เฉลี่ยคนละ {load.average.toFixed(1)} เคส</p>
         </div>
       </div>
       {heavy.length > 0 && (
         <p className="notice warning report-hint">
           <Icon name="bolt" />
           <span>
-            {heavy.map((p) => memberName(p.id)).join(', ')} ถือเคสมากกว่าค่าเฉลี่ยของทีมมาก · ลองกระจายเคสให้คนที่ว่างกว่า
+            {heavy.map((p) => memberName(p.id)).join(', ')} ถือเคสมากกว่าค่าเฉลี่ยของทีมมาก
           </span>
         </p>
       )}
@@ -152,7 +150,7 @@ export function BusyHoursCard({ hours, f }: { hours: ReportExtras['hours'] | und
             ช่วงเวลาที่ลูกค้าติดต่อเข้ามา
           </h2>
           <p>
-            บทสนทนาใหม่ {hours.total} เรื่องในช่วงนี้ (ทุกช่องทาง{f.team ? ' ของทีมที่เลือก' : ''}) · แยกตามวันและชั่วโมงตามเวลาเครื่องของคุณ
+            บทสนทนาใหม่ {hours.total} เรื่องในช่วงนี้ (ทุกช่องทาง{f.team ? ' ของทีมที่เลือก' : ''})
           </p>
         </div>
       </div>

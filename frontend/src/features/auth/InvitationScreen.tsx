@@ -37,7 +37,7 @@ export function InvitationScreen({ token = '' }: { token?: string }) {
         <section className="card mt">
           <div className="card-body">
             <h1>เข้าร่วม {joined} แล้ว</h1>
-            <p>เข้าสู่ระบบด้วยอีเมล {info.email} และรหัสผ่านเดิมของคุณ เพื่อเริ่มทำงานในองค์กรนี้</p>
+            <p>เข้าสู่ระบบด้วยอีเมล {info.email}</p>
             <Link className="btn primary" href="/login">
               ไปหน้าเข้าสู่ระบบ
             </Link>
@@ -77,7 +77,6 @@ function NewAccountForm({ token, email, organization }: { token: string; email: 
         finish('/dashboard');
       }}
     >
-      <p className="notice">รหัสผ่านที่ตั้งที่นี่เป็นของคุณคนเดียว ผู้ดูแลองค์กรไม่เห็นและเปลี่ยนแทนคุณไม่ได้</p>
       <div className="stack mb">
         <TextField id="invite-name" label="ชื่อที่ให้เพื่อนร่วมงานเห็น" name="name" max={100} autoFocus />
         <TextField id="invite-password" label="ตั้งรหัสผ่านของคุณ" name="password" type="password" max={200} />
@@ -107,7 +106,7 @@ function JoinForm({ token, organization, onJoined }: { token: string; organizati
         onJoined(answer.organization || organization);
       }}
     >
-      <p className="notice">อีเมลนี้มีบัญชีอยู่แล้ว การเข้าร่วมจะเพิ่มองค์กรนี้ให้บัญชีเดิม รหัสผ่านและการยืนยันสองขั้นตอนของคุณไม่เปลี่ยน</p>
+      <p className="notice">อีเมลนี้มีบัญชีอยู่แล้ว</p>
       <button className="btn primary" type="submit">
         <Icon name="check" />
         เข้าร่วม {organization}
@@ -123,7 +122,6 @@ function Bad({ message }: { message: string }) {
         <div className="card-body">
           <h1>เปิดคำเชิญไม่ได้</h1>
           <p className="notice warning">{message}</p>
-          <p>กรุณาขอให้ผู้ดูแลองค์กรส่งคำเชิญอีกครั้ง หรือหากคุณเข้าร่วมไปแล้ว ให้เข้าสู่ระบบตามปกติ</p>
           <Link className="btn" href="/login">
             ไปหน้าเข้าสู่ระบบ
           </Link>

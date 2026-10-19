@@ -41,14 +41,13 @@ function PinnedPanel({ pinned, onUnpin, onGo }: { pinned: Pinned[]; onUnpin?: (m
     return (
       <EmptyState
         title="ไม่มีข้อความที่ปักหมุดไว้"
-        description="ข้อความที่ปักหมุดจากแชทนี้จะปรากฏที่นี่ · ชี้เมาส์ที่ข้อความในแชท แล้วกดปุ่มจุดสามจุดแนวตั้ง เลือก “ปักหมุดข้อความ”"
         icon="pin"
       />
     );
   return (
     <div className="pinned-panel">
       <p className="tiny muted pinned-allowance">
-        ปักหมุดได้ครั้งละ {PINS_MOST} ข้อความ · ตอนนี้ {left.length}
+        ปักหมุดได้ครั้งละ {PINS_MOST} ข้อความ ตอนนี้ {left.length}
       </p>
       <ul className="pinned-list">
         {left.map((m) => (

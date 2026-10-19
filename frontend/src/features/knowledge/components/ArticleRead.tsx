@@ -135,7 +135,7 @@ export function ArticleRead({
         <p className="article-review-note">
           <Icon name="clock" />
           <span>
-            <strong>ควรตรวจทาน:</strong> {review} · ตรวจสอบว่าเนื้อหายังตรงกับวิธีทำงานปัจจุบันก่อนส่งให้ลูกค้า
+            <strong>ควรตรวจทาน:</strong> {review}
           </span>
         </p>
       )}
@@ -148,7 +148,7 @@ export function ArticleRead({
             <Icon name="send" />
             {article.uses ? (
               <>
-                ใช้ตอบลูกค้าแล้ว <b>{article.uses}</b> ครั้ง{article.used_at && ` · ล่าสุด ${relative(article.used_at)}`}
+                ใช้ตอบลูกค้าแล้ว <b>{article.uses}</b> ครั้ง{article.used_at && ` ล่าสุด ${relative(article.used_at)}`}
               </>
             ) : (
               'ยังไม่มีใครนำไปใช้ตอบ'

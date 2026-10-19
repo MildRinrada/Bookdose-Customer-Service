@@ -202,8 +202,14 @@
   color: #fff;
   box-shadow: 0 18px 40px -24px #000000a0;
 }
+/* The title and the search together, in the middle of the height the figures beside them give the band: a short
+   heading then leaves no empty dark above it or between the two. */
 .kb-hero-main {
   min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .kb-hero-head {
   display: flex;

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Icon } from '@/components/Icon';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { FilterPill, SearchInput } from '@/components/ui/filters';
 import { Pager, usePager } from '@/components/ui/Pager';
@@ -72,10 +71,6 @@ export function OrgHealthScreen() {
       <div className="page-heading">
         <div>
           <h1>สุขภาพองค์กร</h1>
-          <p>
-            คะแนนจาก 4 อย่างใน 30 วันล่าสุด · เวลาตอบ · ความพึงพอใจ · เคสค้างเกินกำหนด · ช่องทางที่ส่งไม่ผ่าน ·
-            องค์กรที่ต้องดูแลอยู่บนสุดเสมอ
-          </p>
         </div>
       </div>
 
@@ -144,7 +139,7 @@ export function OrgHealthScreen() {
           </>
         ) : (
           <div className="card-body">
-            <EmptyState title="ไม่พบองค์กรตามตัวกรอง" description="ลองเปลี่ยนคำค้น หรือเลือกระดับ “ทั้งหมด”" icon="globe" />
+            <EmptyState title="ไม่พบองค์กรตามตัวกรอง" icon="globe" />
           </div>
         )}
       </section>
@@ -165,7 +160,7 @@ function OrgRow({ org }: { org: OrgUsage }) {
           </Link>
           <span className="tiny muted">
             {org.slug}
-            {org.status !== 'active' && ' · ระงับ'} · {number(org.open_cases)} เคสเปิด
+            {org.status !== 'active' && ' ระงับ'} {number(org.open_cases)} เคสเปิด
           </span>
         </div>
       </td>
@@ -176,7 +171,7 @@ function OrgRow({ org }: { org: OrgUsage }) {
         </span>
       </td>
       <Cell signal={s.response} under={(x) => (x.total ? `${x.in_time}/${x.total} เคส` : 'ยังไม่มีเคส')} />
-      <Cell signal={s.csat} under={(x) => (x.answers ? `${x.average} ดาว · ${x.answers} คำตอบ` : 'ยังไม่มีคำตอบ')} />
+      <Cell signal={s.csat} under={(x) => (x.answers ? `${x.average} ดาว ${x.answers} คำตอบ` : 'ยังไม่มีคำตอบ')} />
       <Cell signal={s.backlog} under={(x) => (x.open_cases ? `เกิน ${x.overdue}/${x.open_cases}` : 'ไม่มีเคสค้าง')} />
       <Cell
         signal={s.channels}

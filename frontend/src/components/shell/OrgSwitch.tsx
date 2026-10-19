@@ -94,7 +94,7 @@ export function OrgSwitch({ memberships, current, onSwitch }: { memberships: Mem
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="org-menu"
-        aria-label={here ? `องค์กร: ${here.name} · เปลี่ยนองค์กร` : 'เลือกองค์กร'}
+        aria-label={here ? `องค์กร: ${here.name} เปลี่ยนองค์กร` : 'เลือกองค์กร'}
         onClick={() => setOpen((o) => !o)}
       >
         <OrgLogo slug={here?.slug} name={here?.name || 'B'} hasLogo={here?.has_logo} />

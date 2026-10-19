@@ -48,7 +48,6 @@ export function SettingsScreen() {
       <div className="page-heading">
         <div>
           <h1>ตั้งค่าระบบ</h1>
-          <p>อีเมล SMS และการตรวจบอทที่ระบบใช้ · มีผลกับทุกองค์กรบนระบบนี้</p>
         </div>
         <div className="flex">
           <Link className="btn" href="/platform/team">

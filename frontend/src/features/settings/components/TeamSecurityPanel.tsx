@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
@@ -34,10 +33,6 @@ export function TeamSecurityPanel() {
         <div className="card-header">
           <div>
             <h2>บังคับเจ้าหน้าที่ยืนยันตัวตน 2 ขั้น</h2>
-            <p>
-              เจ้าหน้าที่ทุกคนต้องเปิดการยืนยันตัวตน 2 ขั้นด้วยแอปยืนยันตัวตน หรือเพิ่ม Passkey ก่อนเข้าใช้งานองค์กรนี้ คนที่ยังไม่ได้ตั้งจะเข้าได้แค่หน้า
-              ตั้งค่าบัญชี เพื่อไปตั้งให้เสร็จก่อน · ช่วยกันไม่ให้คนที่ได้รหัสผ่านไปเข้าดูข้อมูลลูกค้าได้
-            </p>
           </div>
         </div>
         <div className="card-body">
@@ -57,16 +52,13 @@ export function TeamSecurityPanel() {
               {on ? 'เลิกบังคับ' : 'เปิดการบังคับ'}
             </button>
           </div>
-          <p className="tiny muted mt">
-            คุณต้องตั้งให้บัญชีของตัวเองก่อนจึงจะเปิดได้ ที่ <Link href="/account?tab=security">ตั้งค่าบัญชี → ความปลอดภัย</Link>
-          </p>
         </div>
       </section>
       <section className="card">
         <div className="card-header">
           <div>
             <h2>สถานะของเจ้าหน้าที่</h2>
-            <p>ตั้งแล้ว {members.length - missing.length} จาก {members.length} คน · แต่ละคนตั้งเองได้ที่ ตั้งค่าบัญชี → ความปลอดภัย</p>
+            <p>ตั้งแล้ว {members.length - missing.length} จาก {members.length} คน</p>
           </div>
         </div>
         <div className="card-body">
@@ -78,7 +70,7 @@ export function TeamSecurityPanel() {
                 </span>
                 <span className="grow">
                   <strong>
-                    {m.name} <span className="muted">· {roleLabels[m.role] ?? m.role}</span>
+                    {m.name} <span className="muted">{roleLabels[m.role] ?? m.role}</span>
                   </strong>
                   <span className="muted">{m.email}</span>
                   <span className={`settings-status ${m.protected ? 'on' : 'warn'}`}>{m.protected ? 'ตั้งแล้ว' : 'ยังไม่ได้ตั้ง'}</span>

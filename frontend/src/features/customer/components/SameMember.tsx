@@ -16,7 +16,7 @@ export function SameMemberChoice({ member, id }: { member: LastMember | null | u
       <input id={id} type="checkbox" name="same_member" />
       <span>
         <strong>ให้ {member.name} ดูแลต่อ</strong>
-        <small>เคยดูแลเรื่องของคุณ {relative(member.finished_at)} ถ้าตอนนี้ไม่อยู่ ระบบส่งถึงทีมงานตามปกติ</small>
+        <small>เคยดูแลเรื่องของคุณ {relative(member.finished_at)}</small>
       </span>
     </label>
   );

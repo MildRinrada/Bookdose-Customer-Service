@@ -172,34 +172,26 @@ export const alertSettingLabels: Record<keyof SecuritySettings['alerts'], { labe
 /** The event kinds the traps record, in the order the trap events card lists its filters. */
 export const TRAP_EVENT_KINDS = ['honeytoken_triggered', 'honeypot_path', 'honeypot_form', 'trap_ip_block'] as const;
 
-/** Each honeytoken kind: its icon, Thai name, what sets it off, where to plant it and an example name. */
-export const honeytokenKinds: Record<HoneytokenKind, { icon: string; label: string; explain: string; plant: string; example: string }> = {
+/** Each honeytoken kind: its icon, Thai name and an example name. */
+export const honeytokenKinds: Record<HoneytokenKind, { icon: string; label: string; example: string }> = {
   decoy_account: {
     icon: 'users',
     label: 'บัญชีล่อ',
-    explain: 'อีเมลที่ดูเหมือนบัญชีจริงแต่ไม่มีอยู่จริง ทำงานเมื่อมีคนพยายามเข้าสู่ระบบ ขอตั้งรหัสผ่านใหม่ หรือเชิญอีเมลนี้เข้าทีม',
-    plant: 'วางในไฟล์สำรองรายชื่อผู้ใช้ เอกสารส่งมอบระบบ หรือรายการบัญชีผู้ดูแลที่ไม่ควรหลุดออกไป',
     example: 'เช่น บัญชีสำรองฝ่ายไอที',
   },
   api_key: {
     icon: 'code',
     label: 'คีย์ API ล่อ',
-    explain: 'คีย์ที่หน้าตาเหมือนคีย์ใช้งานจริง ทำงานเมื่อมีคำขอใดส่งคีย์นี้มา (header, cookie, query หรือ JSON)',
-    plant: 'วางในไฟล์ .env ตัวอย่าง โค้ดใน repository ส่วนตัว หรือ wiki ของทีมพัฒนา',
     example: 'เช่น คีย์ API ใน .env.backup',
   },
   password: {
     icon: 'lock',
     label: 'รหัสผ่านล่อ',
-    explain: 'รหัสผ่านที่ทำงานเมื่อมีคนใช้เข้าสู่ระบบ ไม่ว่าจะกรอกอีเมลใด',
-    plant: 'วางในโน้ต "รหัสผ่านผู้ดูแลสำรอง" เอกสารภายใน หรือตัวจัดการรหัสผ่านที่ใช้ร่วมกัน',
     example: 'เช่น รหัสผ่านผู้ดูแลสำรองในโน้ตทีม',
   },
   link: {
     icon: 'link',
     label: 'ลิงก์ไฟล์ล่อ',
-    explain: 'ลิงก์ที่ดูเหมือนไฟล์แชร์ ทำงานเมื่อมีคนเปิด (หน้าที่เปิดขึ้นบอกว่าไฟล์ถูกย้ายหรือหมดอายุ)',
-    plant: 'ตั้งชื่อให้น่าสนใจ แล้ววางในอีเมล โฟลเดอร์แชร์ หรือห้องแชทของทีม',
     example: 'เช่น รหัสผ่านระบบสำรอง.pdf',
   },
 };

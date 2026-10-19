@@ -119,12 +119,9 @@ export function PolishPanel({ polish, onUse }: { polish: Polish; onUse: (text: s
         {close}
       </div>
       {!ready ? (
-        <p className="ai-polish-note">ใช้ได้เมื่อเจ้าขององค์กรเชื่อม AI และเปิด “AI ช่วยเจ้าหน้าที่” ในตั้งค่าองค์กร → AI Assistant</p>
+        <p className="ai-polish-note">ยังไม่ได้เปิด AI ช่วยเจ้าหน้าที่</p>
       ) : view.kind === 'choosing' ? (
-        <>
-          <p className="ai-polish-note">AI ปรับเฉพาะข้อความที่คุณพิมพ์ไว้ อีเมลและเบอร์โทรในข้อความไม่ถูกส่งไป</p>
-          {choices()}
-        </>
+        choices()
       ) : view.kind === 'working' ? (
         <p className="ai-polish-note" role="status">
           AI กำลังปรับให้{styleLabel(view.style)}…

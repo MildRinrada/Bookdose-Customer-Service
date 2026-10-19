@@ -11,6 +11,7 @@ from backend.modules.auth import repository as users
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository, schema
 from backend.modules.security import events
+from backend.utils.dates import after
 from backend.utils.security import uid
 from backend.utils.validation import require
 
@@ -52,6 +53,9 @@ def list_tenants(cd):
         org['former_slugs'] = repository.former_slugs(cd,org['id'])
         # When its data was last exported for closing it for good (closing.py).
         org['exported_at'] = (exported.get(org['id']) or {}).get('at')
+        # Where it stands with the terms of service: not agreed, or a new version past its grace (legal/service.py).
+        from backend.modules.legal import service as legal
+        org['terms'] = legal.organization_terms(cd,org['id'])
     return {'tenants':found,'audit':audit.with_names(cd,audit.latest(cd,100)),'can_invite':invitations.ready(cd),
             'feature_catalogue':feature_catalogue()}
 
@@ -424,7 +428,7 @@ def save_sms_settings(cd, session, body):
     public,typed = sms.settings_form(body)
     D.begin(cd)
     sms.save(cd,public,typed)
-    audit.record(cd,session['user_id'],'sms.settings_updated','platform',public['provider']+(' · credentials' if typed else ''))
+    audit.record(cd,session['user_id'],'sms.settings_updated','platform',public['provider']+(', credentials' if typed else ''))
     cd.commit()
     return sms_settings(cd)
 
@@ -442,7 +446,7 @@ def save_turnstile_settings(cd, session, body):
     D.begin(cd)
     turnstile.save(cd,public,secret)
     audit.record(cd,session['user_id'],'turnstile.settings_updated','platform',
-                 ('เปิด' if public['enabled'] else 'ปิด')+(' · secret key' if secret else ''))
+                 ('เปิด' if public['enabled'] else 'ปิด')+(', secret key' if secret else ''))
     cd.commit()
     return turnstile_settings(cd)
 
@@ -508,21 +512,44 @@ def report_problem(cd, session, body, browser=''):
     """A member of any organization tells the platform something is wrong. Nothing here belongs to the organization:
     the report is answered by whoever keeps the product working, so it is kept in the control database and read in
     the platform console. Returns the new report's id."""
-    message,page = schema.problem_report(body)
+    message,page,images = schema.problem_report(body)
     org = repository.find_tenant(cd,session['tenant_id']) if session.get('tenant_id') else None
     report_id = uid()
+    D.begin(cd)
+    _not_again(cd,session['user_id'],message)
     repository.insert_problem_report(cd,report_id,org,session,page,message,(browser or '')[:300])
+    _keep_images(cd,report_id,images)
     cd.commit()
     return report_id
+
+
+def _not_again(cd, user_id, message):
+    """The same report from the same account within ten minutes is the same report: a double click, or sending again
+    because the first seemed slow. It is refused rather than filed twice."""
+    require(not repository.recent_same_report(cd,user_id,message,after(minutes=-10)),'ส่งรายงานนี้ไปแล้ว ผู้ดูแลแพลตฟอร์มได้รับแล้ว',409)
+
+
+def _keep_images(cd, report_id, images):
+    for name,mime,content in images:
+        repository.insert_report_image(cd,uid(),report_id,name,mime,content)
+
+
+def report_image(cd, report_id, image_id):
+    found = repository.report_image(cd,report_id,image_id)
+    require(found,'ไม่พบรูปนี้',404)
+    return found
 
 
 def report_problem_as_customer(cd, account, body, browser=''):
     """A signed-in customer tells the platform the website is not working for them (the ? in their top bar). It
     belongs to no organization: the customer's account is the same for all of them."""
-    message,page = schema.problem_report(body)
+    message,page,images = schema.problem_report(body)
     report_id = uid()
+    D.begin(cd)
+    _not_again(cd,account['id'],message)
     repository.insert_problem_report(cd,report_id,None,{'user_id':account['id'],'name':account['name'],'email':account['email']},
                                      page,message,(browser or '')[:300],'customer')
+    _keep_images(cd,report_id,images)
     cd.commit()
     return report_id
 

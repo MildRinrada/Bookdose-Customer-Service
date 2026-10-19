@@ -21,7 +21,6 @@ export function SettingsCard() {
       <div className="card-header">
         <div>
           <h2 id="security-settings-title">ตั้งค่าความปลอดภัย</h2>
-          <p>ระยะเวลาเซสชันของแต่ละกลุ่มผู้ใช้ และเกณฑ์การแจ้งเตือน · การเปลี่ยนแปลงถูกบันทึกเป็นเหตุการณ์ระดับวิกฤต</p>
         </div>
         <Icon name="settings" />
       </div>
@@ -76,9 +75,6 @@ function SettingsForm({ value }: { value: SecuritySettings }) {
       }}
     >
       <h3 className="security-subhead">ระยะเวลาเซสชัน</h3>
-      <p className="tiny muted">
-        ไม่ใช้งาน: ออกจากระบบเมื่อไม่มีการใช้งานนานเกินกำหนด (5 นาที – 30 วัน) · สูงสุด: ต้องเข้าสู่ระบบใหม่เมื่อครบกำหนดแม้ใช้งานอยู่ (1 ชั่วโมง – 90 วัน)
-      </p>
       <div className="security-settings-grid">
         {(['staff', 'platform'] as const).map((actor) => (
           <fieldset key={actor} className="security-fieldset">
@@ -115,7 +111,6 @@ function SettingsForm({ value }: { value: SecuritySettings }) {
         </fieldset>
       </div>
       <h3 className="security-subhead">เกณฑ์การแจ้งเตือน</h3>
-      <p className="tiny muted">ระบบตรวจทุกนาที เมื่อถึงเกณฑ์จะแสดงแถบแจ้งเตือนด้านบนของหน้านี้ และส่งอีเมลถึงผู้ดูแลแพลตฟอร์มเมื่อเป็นระดับวิกฤต</p>
       <div className="security-alert-grid">
         {(Object.keys(alertSettingLabels) as Array<keyof SecuritySettings['alerts']>).map((key) => (
           <div key={key} className="security-threshold">

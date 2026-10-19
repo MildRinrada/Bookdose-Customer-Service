@@ -51,7 +51,7 @@ export function notificationItems({ alerts, tickets, conversations }: Notificati
       tone: 'waiting',
       icon: 'clock',
       title: `BD-${f.number} น่าจะเกิน SLA`,
-      detail: `คาดว่า${f.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้าราว ${formatDuration(f.late_minutes)} · ${f.subject}`,
+      detail: `คาดว่า${f.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้าราว ${formatDuration(f.late_minutes)} ${f.subject}`,
       at: f.alerted_at,
       href: `/tickets/${f.ticket_id}`,
     });

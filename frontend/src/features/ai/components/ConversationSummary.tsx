@@ -73,7 +73,7 @@ export function ConversationSummary({ conversationId, messageCount }: { conversa
           <strong>สรุปบทสนทนา</strong>
           {s && (
             <span className="tiny muted">
-              จาก {s.covered} ข้อความ · {relative(s.updated_at)}
+              จาก {s.covered} ข้อความ {relative(s.updated_at)}
             </span>
           )}
         </button>
@@ -81,7 +81,7 @@ export function ConversationSummary({ conversationId, messageCount }: { conversa
           {working ? (
             <span className="conv-summary-working" role="status">
               <span className="conv-summary-pulse" aria-hidden="true" />
-              {s ? 'กำลังอัปเดต อ่านสรุปเดิมไปก่อนได้' : 'AI กำลังสรุป…'}
+              {s ? 'กำลังอัปเดต…' : 'AI กำลังสรุป…'}
             </span>
           ) : !s ? (
             <button type="button" className="btn sm" onClick={ask}>
@@ -125,7 +125,7 @@ export function ConversationSummary({ conversationId, messageCount }: { conversa
               )}
             </div>
           ))}
-          {s.skipped > 0 && <p className="tiny muted conv-summary-note">ข้อความเก่า {s.skipped} ข้อความยาวเกินส่งให้ AI ครั้งเดียว สรุปอาจไม่ครอบคลุมช่วงนั้น</p>}
+          {s.skipped > 0 && <p className="tiny muted conv-summary-note">ข้อความเก่า {s.skipped} ข้อความไม่ได้รวมในสรุป</p>}
         </div>
       )}
     </section>

@@ -34,10 +34,7 @@ export function AiPortalStatus({
       <span>
         {bot ? <Icon name="sparkle" /> : <Icon name="users" />}{' '}
         {bot ? (
-          <>
-            {ai?.pending ? 'AI กำลังตรวจข้อมูลและเตรียมคำตอบ…' : 'คุณกำลังรับบริการจาก AI Chatbot'}
-            <span className="tiny muted"> · ตรวจแหล่งอ้างอิงประกอบคำตอบได้</span>
-          </>
+          ai?.pending ? 'AI กำลังตรวจข้อมูลและเตรียมคำตอบ…' : 'คุณกำลังรับบริการจาก AI Chatbot'
         ) : (
           'เจ้าหน้าที่ดูแลเรื่องนี้อยู่'
         )}

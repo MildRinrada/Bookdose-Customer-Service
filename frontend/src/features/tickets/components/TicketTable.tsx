@@ -48,7 +48,7 @@ export function TicketTable({
   selection?: TicketSelection;
 }) {
   const [density] = useUiState(DENSITY_KEY, 'comfortable');
-  if (!tickets.length) return <EmptyState title="ยังไม่มีเคสในรายการนี้" description="ลองล้างตัวกรองหรือเปิดเคสใหม่" icon="ticket" />;
+  if (!tickets.length) return <EmptyState title="ยังไม่มีเคสในรายการนี้" icon="ticket" />;
   if (compact) return <TableView rows={tickets} density={density} compact />;
   return <PagedTable tickets={tickets} density={density} selection={selection} />;
 }
@@ -171,7 +171,7 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
           {t.subject}
         </Link>
         <span className="ticket-id">
-          BD-{t.number} · {t.category}
+          BD-{t.number} {t.category}
         </span>
         {escalated && (
           <span className="badge escalated" title={`ยกระดับอัตโนมัติ: ${escalated}`}>
@@ -182,10 +182,10 @@ function TicketRowView({ t, index, compact, selection }: { t: TicketRow; index: 
         {forecast && (
           <span
             className="badge forecast-tag"
-            title={`คาดว่า${forecast.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้ากว่ากำหนดราว ${formatDuration(forecast.late_minutes)} · คิวก่อนหน้า ${forecast.ahead} เคส · กำหนด ${date(forecast.due, true)}`}
+            title={`คาดว่า${forecast.kind === 'response' ? 'ตอบครั้งแรก' : 'ปิดเคส'}ช้ากว่ากำหนดราว ${formatDuration(forecast.late_minutes)} คิวก่อนหน้า ${forecast.ahead} เคส กำหนด ${date(forecast.due, true)}`}
           >
             <Icon name="clock" />
-            น่าจะเกิน · ช้าราว {formatDuration(forecast.late_minutes)}
+            น่าจะเกิน ช้าราว {formatDuration(forecast.late_minutes)}
           </span>
         )}
         {!isDone(t) && t.hand && <HandChip hand={t.hand} />}
@@ -327,7 +327,7 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
     try {
       await updateTicket(t.id, changes, t);
       if (changes.assignee_id && changes.assignee_id === me) claimSound();
-      toast(`${message} · BD-${t.number}`);
+      toast(`${message} BD-${t.number}`);
     } catch (error) {
       toast(error instanceof Error ? error.message : String(error), true);
     } finally {
@@ -364,7 +364,7 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
           data-id={t.id}
           disabled={busy || waking}
           aria-label={`เอา BD-${t.number} กลับเข้าคิว`}
-          title={`พักถึง ${snoozeUntilText(t.snoozed_until)} · กดเพื่อเอากลับเข้าคิวเลย`}
+          title={`พักถึง ${snoozeUntilText(t.snoozed_until)} กดเพื่อเอากลับเข้าคิวเลย`}
           onClick={async () => {
             setWaking(true);
             if (!(await wake(t.id, t.number))) setWaking(false);
@@ -404,7 +404,7 @@ function QuickActions({ t, menu = false, onPreview, onDone }: { t: TicketRow; me
         aria-label={`มอบหมาย BD-${t.number}`}
         // The box is too narrow for every name, so the name it is showing is also the tooltip - a cut-off name is
         // readable in full without changing anything.
-        title={owner ? `มอบหมาย (Assign) · ตอนนี้: ${memberName(owner)}` : 'มอบหมาย (Assign) · ยังไม่มอบหมาย'}
+        title={owner ? `มอบหมาย (Assign) ตอนนี้: ${memberName(owner)}` : 'มอบหมาย (Assign) ยังไม่มอบหมาย'}
         value={owner}
         onChange={(e) => {
           const value = e.target.value;

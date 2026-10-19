@@ -23,7 +23,7 @@ import {
   saveGlobalArticle,
   unpublishGlobalArticle,
 } from './api';
-import { articleStateHints, articleStateLabels, articleStates, audienceHints, audienceLabels, audiences } from './labels';
+import { articleStateLabels, articleStates, audienceHints, audienceLabels, audiences } from './labels';
 import type { GlobalArticle, GlobalAudience, GlobalFaqFilters, GlobalFaqPage } from './types';
 
 /* Platform console, FAQ กลาง: articles written once and shown to their audience in every organization - the
@@ -69,8 +69,8 @@ function GlobalFaqView({ articles }: { articles: GlobalArticle[] }) {
         <div>
           <h1>FAQ กลาง</h1>
           <p>
-            เขียนครั้งเดียว แสดงให้ผู้อ่านที่เลือกในทุกองค์กรเมื่อเผยแพร่ · {articles.length} บทความ
-            {unpublished ? ` · รอเผยแพร่ ${unpublished}` : ''}
+            {articles.length} บทความ
+            {unpublished ? ` รอเผยแพร่ ${unpublished}` : ''}
           </p>
         </div>
         <div className="flex">
@@ -91,7 +91,6 @@ function GlobalFaqView({ articles }: { articles: GlobalArticle[] }) {
               {audienceLabels[key]}
               <span className="tag-count">{count(key)}</span>
             </strong>
-            <span className="muted">{audienceHints[key]}</span>
           </div>
         ))}
       </div>
@@ -147,14 +146,14 @@ function GlobalFaqView({ articles }: { articles: GlobalArticle[] }) {
               previewLimit={200}
               foot={
                 <>
-                  อัปเดต {relative(a.updated_at)} · {a.author}
+                  อัปเดต {relative(a.updated_at)} {a.author}
                 </>
               }
               onOpen={() => read(a)}
             />
           ))
         ) : (
-          <EmptyState title="ไม่พบบทความ" description="ลองเปลี่ยนคำค้น หรือเลือกผู้อ่านและสถานะ “ทั้งหมด”" icon="book" />
+          <EmptyState title="ไม่พบบทความ" icon="book" />
         )}
       </div>
     </>
@@ -185,9 +184,9 @@ function GlobalArticleRead({ article: a, onEdit }: { article: GlobalArticle; onE
   const publish = () =>
     act({
       title: a.state === 'changed' ? 'เผยแพร่การแก้ไข' : 'เผยแพร่บทความ',
-      message: `“${a.title}” จะ${audienceHints[a.audience]}ทันที ตรวจเนื้อหาและผู้อ่านให้ถูกต้องก่อนเผยแพร่`,
+      message: `“${a.title}” จะ${audienceHints[a.audience]}ทันที`,
       confirmLabel: 'เผยแพร่',
-      done: `เผยแพร่แล้ว · ${audienceHints[a.audience]}`,
+      done: `เผยแพร่แล้ว ${audienceHints[a.audience]}`,
       run: () => publishGlobalArticle(a.id),
     });
   return (
@@ -200,17 +199,15 @@ function GlobalArticleRead({ article: a, onEdit }: { article: GlobalArticle; onE
         <StateBadge article={a} />
         <span className="muted">
           <Icon name="clock" /> อัปเดต {date(a.updated_at, true)}
-          {a.published_at ? ` · เผยแพร่ ${date(a.published_at, true)}` : ''}
+          {a.published_at ? ` เผยแพร่ ${date(a.published_at, true)}` : ''}
         </span>
       </div>
-      <div className={`notice article-state-note${a.state === 'published' ? '' : ' warning'}`}>{articleStateHints[a.state]}</div>
-      <p className="small muted">{audienceHints[a.audience]}</p>
       <Markdown className="article-content" text={a.body} />
       {a.live && (
         <details className="article-live">
           <summary>ฉบับที่ผู้อ่านเห็นอยู่ตอนนี้</summary>
           <p className="small muted">
-            {a.live.title} · {a.live.category} · {audienceLabels[a.live.audience]}
+            {a.live.title}, {a.live.category}, {audienceLabels[a.live.audience]}
           </p>
           <Markdown className="article-content" text={a.live.body} />
         </details>
@@ -309,7 +306,7 @@ function GlobalArticleForm({ article, categories }: { article?: GlobalArticle; c
           audience,
         });
         closeModal(true);
-        toast(published ? 'บันทึกการแก้ไขแล้ว · ผู้อ่านยังเห็นฉบับเดิมจนกว่าจะกดเผยแพร่' : 'บันทึกร่างแล้ว · ยังไม่มีใครเห็นจนกว่าจะกดเผยแพร่');
+        toast(published ? 'บันทึกการแก้ไขแล้ว ผู้อ่านยังเห็นฉบับเดิมจนกว่าจะกดเผยแพร่' : 'บันทึกร่างแล้ว ยังไม่มีใครเห็นจนกว่าจะกดเผยแพร่');
         await refresh(...FAQ_READERS);
       }}
     >
@@ -330,9 +327,6 @@ function GlobalArticleForm({ article, categories }: { article?: GlobalArticle; c
                 </option>
               ))}
             </select>
-            <small className="muted">
-              {published ? 'การแก้ไขเก็บเป็นร่าง ผู้อ่านยังเห็นฉบับเดิมจนกว่าจะกดเผยแพร่การแก้ไข' : 'บันทึกเป็นร่างก่อน ผู้อ่านจะเห็นเมื่อกดเผยแพร่'}
-            </small>
           </div>
         }
       />

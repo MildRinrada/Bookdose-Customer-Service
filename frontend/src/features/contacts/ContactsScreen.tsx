@@ -124,13 +124,11 @@ export function ContactsScreen() {
     confirmDelete({
       title: 'ลบข้อมูลลูกค้า',
       warning: `“${c.name}” จะถูกย้ายไปถังขยะ`,
-      effects: cases
-        ? [`ลูกค้ารายนี้ยังมีเคสบริการ ${cases} รายการ จึงลบไม่ได้`, 'ให้รวมรายชื่อซ้ำ หรือลบเคสของลูกค้ารายนี้ก่อน']
-        : ['ข้อมูลติดต่อและหมายเหตุจะหายไปจากรายชื่อลูกค้า', 'กู้คืนได้จากเมนูถังขยะภายใน 30 วัน หลังจากนั้นระบบจะลบถาวร', 'การลบจะถูกบันทึกในประวัติการทำงาน'],
+      effects: cases ? [`ลูกค้ารายนี้ยังมีเคสบริการ ${cases} รายการ จึงลบไม่ได้`] : [],
       confirmLabel: 'ย้ายไปถังขยะ',
       run: async () => {
         await deleteContact(c.id);
-        toast('ย้ายข้อมูลลูกค้าไปถังขยะแล้ว · กู้คืนได้ที่เมนูถังขยะ');
+        toast('ย้ายข้อมูลลูกค้าไปถังขยะแล้ว กู้คืนได้ที่เมนูถังขยะ');
         await refresh(CONTACTS_PATH, TRASH_PATH, AUDIT_PATH);
       },
     });
@@ -141,7 +139,6 @@ export function ContactsScreen() {
       <div className="page-heading">
         <div>
           <h1>ข้อมูลลูกค้า</h1>
-          <p>รู้จักลูกค้าของคุณ พร้อมประวัติการดูแลในองค์กร</p>
         </div>
         <div className="flex">
           <button type="button" className="btn primary" onClick={() => contactModal()}>
@@ -199,7 +196,6 @@ export function ContactsScreen() {
             </span>
             <span>
               <strong>พบอีเมลซ้ำ {counts.duplicate} รายชื่อ ({duplicates.size} กลุ่ม)</strong>
-              <span className="muted"> · รวมเป็นรายชื่อเดียวเพื่อให้ประวัติเคสอยู่ที่เดียวกัน</span>
             </span>
             <button
               type="button"
@@ -216,9 +212,9 @@ export function ContactsScreen() {
         <div id="contacts-table">
           {!records.length ? (
             contacts.length ? (
-              <EmptyState title="ไม่พบลูกค้าที่ตรงกับตัวกรอง" description="ลองเปลี่ยนคำค้นหา หรือเลือก “ทั้งหมด”" icon="users" />
+              <EmptyState title="ไม่พบลูกค้าที่ตรงกับตัวกรอง" icon="users" />
             ) : (
-              <EmptyState title="ยังไม่มีข้อมูลลูกค้า" description="เพิ่มลูกค้าหรือรับเรื่องผ่านหน้าลูกค้า" icon="users" />
+              <EmptyState title="ยังไม่มีข้อมูลลูกค้า" icon="users" />
             )
           ) : (
             <>
@@ -320,7 +316,7 @@ function ContactRow({
           <span className="contact-avatar">
             <Avatar name={c.name} index={index} />
             {mood && (
-              <span className={`contact-mood ${mood.tone}`} title={`${mood.label} · คะแนนเฉลี่ย ${c.satisfaction!.average}/5 จาก ${c.satisfaction!.count} ครั้ง`}>
+              <span className={`contact-mood ${mood.tone}`} title={`${mood.label} คะแนนเฉลี่ย ${c.satisfaction!.average}/5 จาก ${c.satisfaction!.count} ครั้ง`}>
                 {mood.face}
               </span>
             )}
@@ -337,7 +333,7 @@ function ContactRow({
                     type="button"
                     className="badge pending_customer dup-badge"
                     aria-label={`รวมข้อมูลซ้ำของ ${c.name}`}
-                    title="มีลูกค้ารายอื่นใช้อีเมลเดียวกัน · กดเพื่อรวมเป็นรายชื่อเดียว"
+                    title="มีลูกค้ารายอื่นใช้อีเมลเดียวกัน กดเพื่อรวมเป็นรายชื่อเดียว"
                     onClick={onMerge}
                   >
                     อีเมลซ้ำ

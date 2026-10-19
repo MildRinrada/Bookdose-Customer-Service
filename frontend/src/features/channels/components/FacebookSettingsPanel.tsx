@@ -37,7 +37,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
   return (
     <section className="card mt" id="channel-facebook">
       <div className="card-header">
-        <h2>Facebook และ Instagram · เชื่อมเพจจริง</h2>
+        <h2>Facebook และ Instagram เชื่อมเพจจริง</h2>
         {/* Saved is good news: green with a tick, not a grey that reads like "nothing here". */}
         <span className={`badge${c.credentials_configured ? ' resolved' : ''}`}>
           <Icon name={c.credentials_configured ? 'checkCircle' : 'clock'} />
@@ -61,16 +61,12 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
         }}
       >
         <SetupSteps steps={facebookSteps(c)} />
-        <div className="notice mb">
-          รับข้อความจากเพจ Facebook เข้ากล่องข้อความเดียวกับแชทบนเว็บ LINE และอีเมล แล้วตอบกลับจากที่นี่ ต้องมี Meta App ที่เปิด Messenger และ
-          Page Access Token ที่มีสิทธิ์ pages_messaging และ pages_manage_metadata · ตอบได้ภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้าตามนโยบาย Messenger · ส่งได้เฉพาะข้อความ
-        </div>
         {v.page_name && (
           <p className="small">
             <strong>เพจที่เชื่อม:</strong> {v.page_name} <span className="muted">(Page ID {v.page_id})</span>
             {v.instagram_username && (
               <>
-                {' · '}
+                {' '}
                 <strong>Instagram:</strong> @{v.instagram_username}
                 {!c.instagram.on && <span className="muted"> (ปิดรับ DM อยู่)</span>}
               </>
@@ -96,10 +92,6 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
             ลบข้อมูลเชื่อมต่อ (ปิดช่องทางก่อนบันทึก)
           </label>
         </div>
-        <p className="tiny muted mt">
-          Page Access Token และ App Secret เก็บฝั่งเซิร์ฟเวอร์ ไม่แสดงกลับและไม่รวมในไฟล์สำรอง · บันทึกครั้งแรกโดยยังไม่เปิดใช้ได้ เพื่อรับ Callback URL
-          และ Verify Token · การแก้ตั้งค่าจะยกเลิกข้อความที่ยังรอส่ง
-        </p>
         <div className="flex wrap mt">
           <button className="btn primary" type="submit">
             บันทึก Facebook และ Instagram
@@ -133,17 +125,12 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
                 คัดลอก Verify Token
               </button>
             </div>
-            <p>
-              ใส่ทั้งสองค่าในหน้าการตั้งค่า Messenger API ของแอป ส่วนกำหนดค่า Webhooks เมื่อเปิดใช้ช่องทาง ระบบจะสั่งให้เพจส่งข้อความเข้ามาเอง ถ้ารับ
-              DM Instagram ด้วย ให้ใส่ค่าเดียวกันที่ Webhooks ของ Instagram แล้วติ๊ก messages · ถ้าเปิดผ่าน localhost ให้ใช้โดเมน HTTPS
-              สาธารณะที่ชี้มายังเซิร์ฟเวอร์นี้แทน
-            </p>
           </div>
         )}
         <div className="mt" role="status">
           {c.last_error && <p className="notice">{c.last_error}</p>}
           <p className="small muted">
-            ตรวจล่าสุด: {c.last_checked ? date(c.last_checked, true) : '-'} · รับข้อความล่าสุด: {c.last_received ? date(c.last_received, true) : '-'}
+            ตรวจล่าสุด: {c.last_checked ? date(c.last_checked, true) : '-'} รับข้อความล่าสุด: {c.last_received ? date(c.last_received, true) : '-'}
           </p>
           <OutboxBadges outbox={c.outbox} />
         </div>
@@ -154,7 +141,7 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
             </h3>
             <SetupSteps steps={instagramSteps(c)} />
             <p className="small muted">
-              DM ล่าสุด: {c.instagram.last_received ? date(c.instagram.last_received, true) : '-'} · ตอบได้ไม่เกิน 1,000 ตัวอักษร ภายใน 24 ชั่วโมงหลัง DM ล่าสุดของลูกค้า
+              DM ล่าสุด: {c.instagram.last_received ? date(c.instagram.last_received, true) : '-'}
             </p>
             <OutboxBadges outbox={c.instagram.outbox} />
           </div>

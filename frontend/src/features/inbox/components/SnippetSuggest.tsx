@@ -199,7 +199,6 @@ export function useSnippets(editor: RichEditor, mine: Prepared[], team: Prepared
           <span className="muted snippet-option-text">{snippet.text}</span>
         </button>
       ))}
-      <p className="tiny muted snippet-menu-foot">↑ ↓ เลือก · Enter หรือ Tab แทรก · Esc ปิด</p>
     </div>
   ) : null;
 

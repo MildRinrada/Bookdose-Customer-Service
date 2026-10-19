@@ -66,8 +66,8 @@ def by_words(text):
     found = [*sorted(angry),*sorted(upset-angry),*sorted(urgent)]
     # "ห่วย" inside "ห่วยแตก" is the same word found twice.
     found = [w for w in dict.fromkeys(found) if not any(w!=other and w in other for other in found)][:4]
-    reason = ('เจอคำว่า '+', '.join(f'"{w}"' for w in found) if found else '')+(' · ใช้เครื่องหมายซ้ำ' if shout else '')
-    return level,bool(urgent),reason.strip(' ·')
+    reason = ('เจอคำว่า '+', '.join(f'"{w}"' for w in found) if found else '')+(' ใช้เครื่องหมายซ้ำ' if shout else '')
+    return level,bool(urgent),reason.strip()
 
 
 def save(db, conversation_id, message_id, level, urgent, reason, source):

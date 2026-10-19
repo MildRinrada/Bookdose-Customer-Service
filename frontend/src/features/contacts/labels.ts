@@ -72,7 +72,7 @@ export function contactBadges(c: Contact, s: ContactStats): ContactBadge[] {
       key: 'care',
       label: 'ดูแลใกล้ชิด',
       tone: 'danger',
-      title: [unhappy && `คะแนนความพึงพอใจเฉลี่ย ${c.satisfaction!.average}/5`, s.late >= 2 && `เคสเกิน SLA ${s.late} เรื่อง`].filter(Boolean).join(' · '),
+      title: [unhappy && `คะแนนความพึงพอใจเฉลี่ย ${c.satisfaction!.average}/5`, s.late >= 2 && `เคสเกิน SLA ${s.late} เรื่อง`].filter(Boolean).join(', '),
     });
   if (s.recent >= 3) badges.push({ key: 'frequent', label: 'แจ้งบ่อย', tone: 'warn', title: `เปิดเคส ${s.recent} เรื่องใน 30 วันที่ผ่านมา` });
   if (s.total >= 5 && !unhappy) badges.push({ key: 'loyal', label: 'ลูกค้าประจำ', tone: 'dark', title: `ติดต่อมาแล้ว ${s.total} เคส` });

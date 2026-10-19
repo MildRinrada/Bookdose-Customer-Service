@@ -92,7 +92,6 @@ export function EventsLog() {
       <div className="card-header">
         <div>
           <h2 id="security-events-title">บันทึกเหตุการณ์ความปลอดภัย</h2>
-          <p>เก็บย้อนหลัง 90 วัน · เหตุการณ์ซ้ำภายในนาทีเดียวกันรวมเป็นแถวเดียวพร้อมจำนวนครั้ง</p>
         </div>
         <Icon name="list" />
       </div>

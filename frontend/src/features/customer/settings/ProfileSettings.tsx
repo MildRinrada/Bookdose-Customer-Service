@@ -7,12 +7,11 @@ import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { PrivacyNoticeButton } from '@/features/auth/components/PrivacyNotice';
-import type { PublicOrgInfo } from '@/features/auth/types';
 import { useCustomer, useCustomerAccount, useCustomerLogout } from '@/lib/customer-session';
 import { date } from '@/lib/format';
-import { useApi, useInvalidate } from '@/lib/query';
+import { useInvalidate } from '@/lib/query';
 import { useBoot } from '@/lib/session';
-import { ACCOUNT_PATH, publicInfoPath, saveProfile } from '../api';
+import { ACCOUNT_PATH, saveProfile } from '../api';
 
 /* ตั้งค่าบัญชี → ข้อมูลส่วนตัว: the name and phone teams use to reach the customer, what they agreed to, and
    signing out (pages/customer/customer-account.html). */
@@ -21,9 +20,6 @@ export function ProfileSettings() {
   const me = useCustomer();
   const account = useCustomerAccount();
   const home = useBoot().data?.home;
-  // Whether the platform can send email (for the hint under an unconfirmed address); assume it can until known.
-  const info = useApi<PublicOrgInfo>(home ? publicInfoPath(home.slug) : null);
-  const mailReady = info.data?.email_verification ?? true;
   const refresh = useInvalidate();
   const toast = useToast();
   const logout = useCustomerLogout();
@@ -38,10 +34,7 @@ export function ProfileSettings() {
     <div className="account-section">
       <section className="card">
         <div className="card-header">
-          <div>
-            <h2>ข้อมูลส่วนตัว</h2>
-            <p>รูปและชื่อที่ทีมงานเห็น และเบอร์สำหรับติดต่อกลับ</p>
-          </div>
+          <h2>ข้อมูลส่วนตัว</h2>
         </div>
         <Form
           key={`${me.name}|${me.phone}|${(me.avatar ?? '').length}`}
@@ -67,13 +60,6 @@ export function ProfileSettings() {
                 <span className="badge pending_customer">ยังไม่ยืนยัน</span>
               )}
             </div>
-            {!me.email_verified && (
-              <p className="tiny muted">
-                {mailReady
-                  ? 'ยืนยันอีเมลได้โดยออกจากระบบ กด “ลืมรหัสผ่าน” แล้วตั้งรหัสผ่านใหม่จากลิงก์ในอีเมล'
-                  : 'ระบบยังส่งอีเมลไม่ได้ ใช้งานได้ตามปกติ แต่จะยังไม่ได้รับอีเมลแจ้งเมื่อทีมงานตอบ'}
-              </p>
-            )}
           </div>
           <TextField label="ชื่อ-นามสกุล หรือชื่อที่ต้องการให้เรียก" name="name" defaultValue={me.name} max={100} personName />
           <TextField label="เบอร์โทรศัพท์ (ไม่บังคับ)" name="phone" type="tel" defaultValue={me.phone} max={20} required={false} placeholder="เช่น 081-234-5678" />
@@ -85,10 +71,7 @@ export function ProfileSettings() {
       </section>
       <section className="card">
         <div className="card-header">
-          <div>
-            <h2>ความเป็นส่วนตัว</h2>
-            <p>สิ่งที่คุณยินยอมไว้ตอนสมัครสมาชิก</p>
-          </div>
+          <h2>ความเป็นส่วนตัว</h2>
         </div>
         <div className="card-body">
           <p className="customer-consent">

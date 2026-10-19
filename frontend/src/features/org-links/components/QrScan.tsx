@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ORG_CODE } from '@/lib/routes';
 
-/* Reading an organization's QR with the camera. Only this app's links count: /join/<token>, the organization's
-   page (/support/<code>/…) and a link with ?org=<code>; anything else the camera sees is ignored. The browser's own BarcodeDetector does the reading (no
-   library), so the button is shown only where it exists. */
+/* Reading an organization's QR with the camera. Only this app's links count: the organization's page
+   (/support/<code>/…) and a link with ?org=<code>; anything else the camera sees is ignored. The browser's own
+   BarcodeDetector does the reading (no library), so the button is shown only where it exists. */
 
-export type JoinCode = { token: string } | { slug: string };
+export type JoinCode = { slug: string };
 
 type DetectedBarcode = { rawValue: string };
 type Detector = { detect: (source: CanvasImageSource) => Promise<DetectedBarcode[]> };
@@ -29,8 +29,6 @@ export function readJoinCode(text: string): JoinCode | null {
     // Only a link of this very app counts: a QR poster (or a pasted link) naming another site would otherwise
     // connect the account to whichever organization that site's link names.
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== window.location.origin) return null;
-    const join = /^\/join\/([A-Za-z0-9_-]{16,64})\/?$/.exec(url.pathname);
-    if (join) return { token: join[1] };
     const page = /^\/support\/([^/]+)(\/|$)/.exec(url.pathname);
     if (page && ORG_CODE.test(page[1])) return { slug: page[1] };
     const slug = url.searchParams.get('org') ?? '';
@@ -99,7 +97,6 @@ export function QrScan({ onFound }: { onFound: (found: JoinCode) => void }) {
   return (
     <div className="qr-scan">
       <video ref={videoRef} className="qr-scan-view" muted playsInline />
-      <p className="tiny muted">หันกล้องไปที่ QR ขององค์กร ระบบจะเพิ่มองค์กรให้ทันทีที่อ่านได้</p>
     </div>
   );
 }

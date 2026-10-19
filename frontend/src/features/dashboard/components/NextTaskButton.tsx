@@ -41,7 +41,7 @@ export function NextTaskButton() {
         claimSound();
         await refresh('/api/tickets', '/api/conversations', '/api/automation/overview');
       }
-      toast(`BD-${next.ticket.number} · ${why[next.reason]}`);
+      toast(`BD-${next.ticket.number} ${why[next.reason]}`);
       router.push(`/tickets/${next.ticket.id}`);
     } catch (error) {
       toast((error as Error).message, true);

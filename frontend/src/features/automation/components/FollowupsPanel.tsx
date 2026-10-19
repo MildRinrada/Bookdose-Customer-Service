@@ -43,7 +43,7 @@ export function FollowupItem({ followup: f }: { followup: Followup }) {
       <div className="grow">
         <strong>{f.note}</strong>
         <span className="tiny muted">
-          {when} · ตั้งโดย {f.user_name}
+          {when} ตั้งโดย {f.user_name}
         </span>
       </div>
       {!done && (

@@ -62,7 +62,7 @@ def invite(cd, db, ctx, body):
     # waiting period belongs to the plain "ส่งอีกครั้ง" button, which sends the very same invitation once more.
     open_row = repository.open_for(cd,ctx['tenant_id'],email)
     token = _issue(cd,ctx,open_row,email,role,team_id)
-    audit.record(db,ctx['name'],'member.invited',ctx['tenant_id'],f'{email} · {role}')
+    audit.record(db,ctx['name'],'member.invited',ctx['tenant_id'],f'{email}, {role}')
     cd.commit()
     db.commit()
     return {**invitations_of(cd,ctx),'sent':_deliver(cd,ctx,email,token,bool(user))}
@@ -78,7 +78,7 @@ def resend(cd, db, ctx, invite_id):
     require(row['last_sent_at']<=after(seconds=-RESEND_SECONDS),TOO_SOON,429)
     known = bool(users.find_user_by_email(cd,row['email']))
     token = _issue(cd,ctx,row,row['email'],row['role'],row['team_id'])
-    audit.record(db,ctx['name'],'member.invited',ctx['tenant_id'],f"{row['email']} · ส่งอีกครั้ง")
+    audit.record(db,ctx['name'],'member.invited',ctx['tenant_id'],f"{row['email']}, ส่งอีกครั้ง")
     cd.commit()
     db.commit()
     return {**invitations_of(cd,ctx),'sent':_deliver(cd,ctx,row['email'],token,known)}
@@ -107,7 +107,7 @@ def invite_admin(cd, session, tenant_id, email):
         repository.purge(cd,after(days=-KEEP_DAYS))
         user = users.find_user_by_email(cd,email)
         token = _issue(cd,ctx,repository.open_for(cd,tenant_id,email),email,'admin',memberships.first_team_id(db))
-        audit.record(db,session['name'],'member.invited',tenant_id,f'{email} · admin')
+        audit.record(db,session['name'],'member.invited',tenant_id,f'{email}, admin')
         cd.commit()
         db.commit()
     return _deliver(cd,ctx,email,token,bool(user))

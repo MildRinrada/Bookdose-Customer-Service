@@ -35,7 +35,7 @@ function DistributionForm({ data }: { data: Distribution }) {
     setBusy(true);
     try {
       await saveDistribution(form);
-      toast(form.enabled ? 'เปิดแจกเคสอัตโนมัติแล้ว · เคสที่รออยู่ถูกแจกทันที' : 'ปิดแจกเคสอัตโนมัติแล้ว');
+      toast(form.enabled ? 'เปิดแจกเคสอัตโนมัติแล้ว เคสที่รออยู่ถูกแจกทันที' : 'ปิดแจกเคสอัตโนมัติแล้ว');
       await refresh(AUTOMATION_PATH, '/api/tickets');
     } catch (error) {
       toast(error instanceof Error ? error.message : String(error), true);
@@ -53,7 +53,6 @@ function DistributionForm({ data }: { data: Distribution }) {
       <div className="card-header">
         <div>
           <h2>แจกเคสอัตโนมัติ</h2>
-          <p>เคสใหม่ที่ยังไม่มีผู้รับผิดชอบ ส่งให้คนในทีมที่พร้อมรับเรื่องและถืองานน้อยที่สุดทันที ไม่ต้องรอใครกดรับ</p>
         </div>
       </div>
       <div className="card-body stack">
@@ -73,7 +72,6 @@ function DistributionForm({ data }: { data: Distribution }) {
               disabled={!canEdit}
               onChange={(e) => set({ cap: e.target.valueAsNumber })}
             />
-            <span className="tiny muted">ครบแล้วเคสใหม่จะไปที่คนถัดไป ถ้าทุกคนครบ เคสรอในคิวของทีม</span>
           </div>
           <label className="check distribution-owners">
             <input type="checkbox" checked={form.owners} disabled={!canEdit} onChange={(e) => set({ owners: e.target.checked })} />
@@ -110,7 +108,6 @@ function DistributionForm({ data }: { data: Distribution }) {
         )}
         {canEdit && (
           <div className="settings-save">
-            <span className="muted">เคสที่รออยู่ตอนนี้จะถูกแจกทันทีหลังบันทึก</span>
             <button className="btn primary" type="button" disabled={busy} onClick={() => void save()}>
               <Icon name="check" />
               {busy ? 'กำลังบันทึก…' : 'บันทึกการแจกเคส'}
@@ -123,8 +120,8 @@ function DistributionForm({ data }: { data: Distribution }) {
           <h2>ตอนนี้ใครรับเคสได้บ้าง</h2>
           <p>
             {data.settings.enabled
-              ? `วันนี้แจกไปแล้ว ${data.today} เคส · รอคนรับ ${data.waiting} เคส · พร้อมรับ ${ready} จาก ${people.length} คน`
-              : 'ยังปิดอยู่ รายชื่อนี้บอกว่าถ้าเปิดตอนนี้ ใครจะได้รับเคส'}
+              ? `วันนี้แจกไปแล้ว ${data.today} เคส รอคนรับ ${data.waiting} เคส พร้อมรับ ${ready} จาก ${people.length} คน`
+              : 'ยังปิดอยู่'}
           </p>
         </div>
       </div>
@@ -145,10 +142,6 @@ function DistributionForm({ data }: { data: Distribution }) {
         ) : (
           <p className="empty-mini">ยังไม่มีสมาชิกในทีมที่เลือก</p>
         )}
-        <p className="tiny muted">
-          รับเคสได้เมื่อพร้อมรับเรื่อง อยู่ในเวลาทำงาน ไม่ลา และเปิดโปรแกรมภายใน {data.active_minutes} นาทีที่ผ่านมา นับเฉพาะเคสที่ต้องทำตอนนี้
-          กฎรับเรื่องที่ระบุผู้รับผิดชอบทำก่อนเสมอ เคสที่ยังไม่มีใครรับได้ ระบบลองแจกใหม่ทุก 30 วินาที
-        </p>
       </div>
     </section>
   );

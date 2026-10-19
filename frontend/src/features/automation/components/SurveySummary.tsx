@@ -6,7 +6,7 @@ import type { Survey } from '../types';
 export function SurveySummary({ survey }: { survey: Survey | null | undefined }) {
   if (!survey) return null;
   if (survey.rating == null)
-    return <p className="small muted">ส่งแบบประเมินเมื่อ {date(survey.sent_at, true)} · รอลูกค้าให้คะแนน</p>;
+    return <p className="small muted">ส่งแบบประเมินเมื่อ {date(survey.sent_at, true)} รอลูกค้าให้คะแนน</p>;
   return (
     <>
       <div className="csat-result">

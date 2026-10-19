@@ -22,6 +22,9 @@ export type Tenant = {
   former_slugs: string[];
   /** When its whole data was last exported for closing it for good (backend platform/closing.py). */
   exported_at?: string | null;
+  /** Where it stands with the terms of service (backend legal organization_terms): pending = not agreed to the version
+      in force; overdue = never agreed, or a new version past its grace. Nothing is suspended for it: the console decides. */
+  terms?: { pending: boolean; overdue: boolean; due: string | null; accepted: { version: string } | null };
 };
 
 /** One of an organization's staff, with the sign-in protection they have (GET /api/platform/tenants/<id>/members). */
@@ -333,6 +336,8 @@ export type ProblemReport = {
   handled_by: string | null;
   /** Who sent it: a member of an organization's team, or a signed-in customer (no organization). */
   reporter?: 'staff' | 'customer';
+  /** Pictures sent with it; each is fetched from /api/platform/reports/<id>/images/<image id>. */
+  images?: { id: string; name: string; mime: string; size: number }[];
 };
 
 /** GET /api/platform/reports */

@@ -147,7 +147,7 @@ export function StaffIssuesBanner() {
         <Icon name="bell" />
         <span>
           <strong>ลูกค้าเห็นประกาศอยู่:</strong>{' '}
-          {active.map((i) => `${i.title}มีปัญหา${i.affected ? ` (ลูกค้าแจ้งว่าเจอ ${i.affected.toLocaleString('th-TH')} คน)` : ''}`).join(' · ')}
+          {active.map((i) => `${i.title}มีปัญหา${i.affected ? ` (ลูกค้าแจ้งว่าเจอ ${i.affected.toLocaleString('th-TH')} คน)` : ''}`).join(', ')}
         </span>
         {work.role === 'admin' && !work.read_only && (
           <Link className="known-issue-manage" href="/settings?tab=issues">

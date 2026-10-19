@@ -59,7 +59,6 @@ export function GoalsCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
         <Icon name="checkCircle" />
         <p>
           <strong>ยังไม่ได้ตั้งเป้าหมาย</strong>
-          <span>ตั้งเป้า เช่น ตอบทัน SLA หรือคะแนนความพึงพอใจ แล้วรายงานจะบอกว่าถึงเป้าหรือยัง และหลุดเป้าช่วงไหน</span>
         </p>
         <button type="button" className="btn sm" onClick={edit}>
           ตั้งเป้าหมาย
@@ -127,7 +126,6 @@ export function GoalsCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
             </li>
           ))}
         </ul>
-        {tiles.length > 1 && <p className="tiny muted report-goal-note">ช่องสีแดงคือช่วงที่ไม่ถึงเป้า ช่องสีจางคือช่วงที่ยังไม่มีข้อมูล</p>}
       </div>
     </section>
   );
@@ -171,9 +169,6 @@ function GoalsForm({ goals, start }: { goals: Goals; start: string }) {
             </option>
           ))}
         </select>
-        <p className="tiny muted">
-          {scope ? 'ช่องที่เว้นว่างใช้เป้าของทั้งองค์กร ตั้งเฉพาะข้อที่ทีมนี้ต่างออกไป' : 'ช่องที่เว้นว่างคือไม่ตั้งเป้าข้อนั้น'}
-        </p>
       </div>
       <div className="report-goal-fields">
         {GOAL_ORDER.map((metric) => {

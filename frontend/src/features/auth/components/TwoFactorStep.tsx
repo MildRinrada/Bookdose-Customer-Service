@@ -37,7 +37,7 @@ export function TwoFactorStep({ methods, onDone, kind = 'customer' }: { methods:
       <h2>ยืนยันอีกขั้นตอน</h2>
       {recovery ? (
         <>
-          <p>กรอกรหัสสำรองหนึ่งรหัสที่คุณเก็บไว้ตอนเปิดการยืนยันสองขั้นตอน แต่ละรหัสใช้ได้ครั้งเดียว</p>
+          <p>กรอกรหัสสำรองหนึ่งรหัสที่คุณเก็บไว้ตอนเปิดการยืนยันสองขั้นตอน</p>
           <TextField
             key="recovery"
             label="รหัสสำรอง"
@@ -90,9 +90,6 @@ export function TwoFactorStep({ methods, onDone, kind = 'customer' }: { methods:
           {recovery ? 'กลับไปใช้รหัสจากแอป' : 'ใช้รหัสสำรองแทน'}
         </button>
       )}
-      <div className="auth-foot">
-        <Icon name="shield" /> รหัสนี้ใช้ได้ครั้งเดียวและมีอายุสั้น หากกรอกผิดหลายครั้งให้เข้าสู่ระบบใหม่
-      </div>
     </Form>
   );
 }

@@ -28,7 +28,7 @@ export const followLabels: Record<string, string> = {
 
 export function reachText(follow: string[] | null | undefined): string {
   const names = (follow ?? []).map((key) => followLabels[key] ?? key);
-  return names.length ? `ติดตามแชทได้ทาง ${names.join(' · ')}` : 'ยังไม่มีช่องทางติดตาม ลูกค้าต้องกลับมาที่หน้าแชทเอง';
+  return names.length ? `ติดตามแชทได้ทาง ${names.join(', ')}` : 'ยังไม่มีช่องทางติดตาม';
 }
 
 export const unreadCount = (c: Pick<GuestConversation, 'unread'>) => (typeof c.unread === 'number' ? c.unread : c.unread ? 1 : 0);

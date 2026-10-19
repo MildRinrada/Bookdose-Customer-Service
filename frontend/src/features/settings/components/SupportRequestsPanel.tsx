@@ -47,7 +47,6 @@ export function SupportRequestsPanel({ quiet = false }: { quiet?: boolean } = {}
       <div className="card-header">
         <div>
           <h2>คำขอเข้าช่วยเหลือจากทีมแพลตฟอร์ม</h2>
-          <p>ทีมผู้ดูแลแพลตฟอร์มจะอ่านเคสและบทสนทนาขององค์กรได้เฉพาะเมื่อคุณอนุมัติ และเฉพาะช่วงเวลาที่อนุมัติเท่านั้น</p>
         </div>
       </div>
       <div className="card-body">
@@ -56,7 +55,7 @@ export function SupportRequestsPanel({ quiet = false }: { quiet?: boolean } = {}
         ) : !requests.data ? (
           <PageLoading />
         ) : open.length === 0 ? (
-          <EmptyState icon="shield" title="ไม่มีคำขอที่รอหรือกำลังใช้งาน" description="เมื่อทีมแพลตฟอร์มขอเข้าช่วยเหลือ คำขอจะแสดงที่นี่และส่งอีเมลแจ้งผู้ดูแลองค์กร" />
+          <EmptyState icon="shield" title="ไม่มีคำขอที่รอหรือกำลังใช้งาน" />
         ) : (
           <ul className="support-list">
             {open.map((r) => (
@@ -98,8 +97,7 @@ function SupportRow({ request: r }: { request: SupportRequest }) {
         }}
       >
         <p>
-          <strong>{r.requester.name}</strong> ({r.requester.email}) จะดูข้อมูลขององค์กรได้แบบอ่านอย่างเดียว เพื่อช่วยตรวจสอบปัญหา ตอบลูกค้า รับเคส หรือแก้ไขข้อมูลไม่ได้
-          และสิทธิ์จะหมดเองเมื่อครบเวลา
+          <strong>{r.requester.name}</strong> ({r.requester.email}) จะดูข้อมูลขององค์กรได้แบบอ่านอย่างเดียว
         </p>
         <p className="notice">เหตุผล: {r.reason}</p>
         <div className="field">
@@ -129,7 +127,7 @@ function SupportRow({ request: r }: { request: SupportRequest }) {
   const deny = () =>
     confirm({
       title: 'ปฏิเสธคำขอ',
-      message: `${r.requester.name} จะเข้าองค์กรไม่ได้ ถ้ายังต้องการช่วยเหลือ ต้องส่งคำขอใหม่`,
+      message: `${r.requester.name} จะเข้าองค์กรไม่ได้`,
       confirmLabel: 'ปฏิเสธ',
       tone: 'danger',
       run: async () => {
@@ -141,7 +139,7 @@ function SupportRow({ request: r }: { request: SupportRequest }) {
   const end = () =>
     confirm({
       title: 'หยุดสิทธิ์เข้าช่วยเหลือตอนนี้',
-      message: `${r.requester.name} จะออกจากองค์กรทันที เคสที่มอบหมายให้จะกลับเป็นยังไม่มีผู้รับผิดชอบ`,
+      message: `${r.requester.name} จะออกจากองค์กรทันที`,
       confirmLabel: 'หยุดสิทธิ์',
       tone: 'danger',
       run: async () => {
@@ -157,15 +155,15 @@ function SupportRow({ request: r }: { request: SupportRequest }) {
       </span>
       <div className="grow">
         <strong>
-          {r.requester.name} <span className="muted">· {r.requester.email}</span>
+          {r.requester.name} <span className="muted">{r.requester.email}</span>
         </strong>
         <span>{r.reason}</span>
         <span className="tiny muted">
-          ขอเมื่อ {date(r.created_at, true)} · ขอ {r.hours} ชั่วโมง
-          {active && r.expires_at ? ` · ใช้งานได้ถึง ${date(r.expires_at, true)}` : ''}
-          {r.decided_by ? ` · ตัดสินโดย ${r.decided_by}` : ''}
-          {r.ended_by ? ` · หยุดโดย ${r.ended_by}` : ''}
-          {r.note ? ` · หมายเหตุ: ${r.note}` : ''}
+          ขอเมื่อ {date(r.created_at, true)}, ขอ {r.hours} ชั่วโมง
+          {active && r.expires_at ? `, ใช้งานได้ถึง ${date(r.expires_at, true)}` : ''}
+          {r.decided_by ? `, ตัดสินโดย ${r.decided_by}` : ''}
+          {r.ended_by ? `, หยุดโดย ${r.ended_by}` : ''}
+          {r.note ? `, หมายเหตุ: ${r.note}` : ''}
         </span>
       </div>
       <span className={`badge support-status-${active ? 'active' : r.status}`}>{active ? 'กำลังใช้งาน' : supportStatusLabels[r.status]}</span>

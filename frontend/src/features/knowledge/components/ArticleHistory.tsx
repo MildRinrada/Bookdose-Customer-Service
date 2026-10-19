@@ -80,7 +80,7 @@ export function ArticleHistory({ article, onRestored }: { article: Article; onRe
   const restore = (r: ArticleRevision) =>
     confirm({
       title: 'กู้คืนเวอร์ชันนี้',
-      message: `บทความจะกลับไปเป็นเวอร์ชันของ ${r.author} (${date(r.saved_at, true)}) · เวอร์ชันปัจจุบันจะถูกเก็บไว้ในประวัติ กลับมาได้เสมอ`,
+      message: `บทความจะกลับไปเป็นเวอร์ชันของ ${r.author} (${date(r.saved_at, true)})`,
       confirmLabel: 'กู้คืน',
       run: async () => {
         await saveArticle(article.id, { title: r.title, category: r.category, body: r.body, visibility: r.visibility });
@@ -97,7 +97,7 @@ export function ArticleHistory({ article, onRestored }: { article: Article; onRe
         <div>
           <strong>เวอร์ชันปัจจุบัน</strong>
           <span className="muted">
-            {article.author} · {date(article.updated_at, true)}
+            {article.author} {date(article.updated_at, true)}
           </span>
         </div>
       </div>
@@ -118,7 +118,7 @@ export function ArticleHistory({ article, onRestored }: { article: Article; onRe
                 <div className="history-entry">
                   <button type="button" className="history-head" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.id)}>
                     <span>
-                      <strong>{r.replaced_by}</strong> แก้{changed.length ? changed.join(' · ') : 'บทความ'}
+                      <strong>{r.replaced_by}</strong> แก้{changed.length ? changed.join(', ') : 'บทความ'}
                     </span>
                     <span className="muted" title={date(r.replaced_at, true)}>
                       {relative(r.replaced_at)}
@@ -128,11 +128,11 @@ export function ArticleHistory({ article, onRestored }: { article: Article; onRe
                   {isOpen && (
                     <div className="history-detail">
                       <p className="muted small">
-                        ก่อนแก้: เวอร์ชันของ {r.author} · {date(r.saved_at, true)} · {visibilityLabels[r.visibility] ?? r.visibility}
+                        ก่อนแก้: เวอร์ชันของ {r.author} {date(r.saved_at, true)} {visibilityLabels[r.visibility] ?? r.visibility}
                         {r.title !== newer.title && (
                           <>
                             {' '}
-                            · ชื่อเดิม “{r.title}”
+                            ชื่อเดิม “{r.title}”
                           </>
                         )}
                       </p>
@@ -164,7 +164,7 @@ export function ArticleHistory({ article, onRestored }: { article: Article; onRe
           })}
         </ol>
       ) : (
-        <EmptyState title="ยังไม่มีประวัติการแก้ไข" description="เมื่อมีการแก้ไขบทความ ระบบจะเก็บเวอร์ชันก่อนหน้าไว้ที่นี่ (สูงสุด 50 เวอร์ชัน)" icon="history" />
+        <EmptyState title="ยังไม่มีประวัติการแก้ไข" icon="history" />
       )}
     </div>
   );

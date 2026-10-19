@@ -65,7 +65,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
               {channelNames[c.channel] ?? c.channel}
             </span>
             {guest && (
-              <span className="conv-fact" title={`ลูกค้าแชทโดยไม่ได้เข้าสู่ระบบ · ${reachText(guest.follow)}`}>
+              <span className="conv-fact" title={`ลูกค้าแชทโดยไม่ได้เข้าสู่ระบบ ${reachText(guest.follow)}`}>
                 ผู้เยี่ยมชม
               </span>
             )}
@@ -110,8 +110,8 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
             )}
             {t && (
               <Link className="conv-case-link" href={`/tickets/${t.id}`} title={`เปิดรายละเอียดเคส BD-${t.number}`}>
-                BD-{t.number} · {statusLabels[t.status] ?? t.status}
-                {['high', 'urgent'].includes(t.priority) && <span className="conv-urgent"> · {priorityLabels[t.priority]}</span>}
+                BD-{t.number} {statusLabels[t.status] ?? t.status}
+                {['high', 'urgent'].includes(t.priority) && <span className="conv-urgent"> {priorityLabels[t.priority]}</span>}
               </Link>
             )}
             {open && c.mood && (
@@ -178,13 +178,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
       </div>
       <ContactHeadsUp contactId={contact.id} className="conv-headsup" />
       {c.line && c.line.source_type !== 'user' && (
-        <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม · เรียก AI ด้วย /bookdose หรือเมนชันบอต</div>
-      )}
-      {c.channel === 'facebook' && (
-        <div className="notice">Facebook Messenger: ตอบได้เฉพาะข้อความ ไม่เกิน 2,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
-      )}
-      {c.channel === 'instagram' && (
-        <div className="notice">Instagram: ตอบได้เฉพาะข้อความ ไม่เกิน 1,000 ตัวอักษร และภายใน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า</div>
+        <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม</div>
       )}
       <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
       <ColleaguesHere conversationId={c.id} />
@@ -242,8 +236,7 @@ function GuestBlockButton({ conversationId, blocked }: { conversationId: string;
           title: 'บล็อกผู้เยี่ยมชมคนนี้',
           message: (
             <>
-              แชทที่ยังเปิดอยู่ทั้งหมดของผู้เยี่ยมชมคนนี้จะถูกปิด เบราว์เซอร์ของเขาอ่านแชทเดิมได้ แต่ส่งข้อความหรือเริ่มแชทใหม่ไม่ได้จนกว่าจะปลดบล็อก
-              และเครือข่ายเดียวกันจะเริ่มแชทใหม่ไม่ได้ 7 วัน ลูกค้าที่เข้าสู่ระบบด้วยบัญชีลูกค้าไม่ได้รับผลกระทบ
+              แชทที่ยังเปิดอยู่ของผู้เยี่ยมชมคนนี้จะถูกปิด และเขาจะส่งข้อความหรือเริ่มแชทใหม่ไม่ได้จนกว่าจะปลดบล็อก
             </>
           ),
           confirmLabel: 'บล็อก',

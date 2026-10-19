@@ -9,10 +9,10 @@ export function GuestBadge({ guest, detail = false }: { guest: GuestReach | null
   if (!guest) return null;
   const reach = reachText(guest.follow);
   const badge = (
-    <span className="badge guest-badge" title={`ลูกค้าแชทโดยไม่ได้เข้าสู่ระบบ · ${reach}`}>
+    <span className="badge guest-badge" title={`ลูกค้าแชทโดยไม่ได้เข้าสู่ระบบ ${reach}`}>
       <Icon name="globe" />
       ผู้เยี่ยมชม
-      {!detail && <span className="sr-only"> · {reach}</span>}
+      {!detail && <span className="sr-only"> {reach}</span>}
     </span>
   );
   if (!detail) return badge;

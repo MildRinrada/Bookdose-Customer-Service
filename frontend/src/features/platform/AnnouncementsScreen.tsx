@@ -25,15 +25,13 @@ import type { Announcement } from './types';
 
 type Notice = { state: string; text: string; updated_at: string; updated_by: string } | null;
 
-const STATES: [string, string, string][] = [
-  ['watching', 'กำลังตรวจสอบ', 'รู้แล้วว่ามีบางอย่างผิดปกติ กำลังหาสาเหตุ'],
-  ['partial', 'ใช้งานได้บางส่วน', 'บางส่วนใช้ไม่ได้ แต่ระบบยังเปิดอยู่'],
-  ['down', 'ขัดข้อง', 'ใช้งานไม่ได้เป็นวงกว้าง'],
-  ['maintenance', 'ปิดปรับปรุงตามแผน', 'ทุกคนดูข้อมูลได้ แต่บันทึกหรือส่งข้อมูลไม่ได้'],
+const STATES: [string, string][] = [
+  ['watching', 'กำลังตรวจสอบ'],
+  ['partial', 'ใช้งานได้บางส่วน'],
+  ['down', 'ขัดข้อง'],
+  ['maintenance', 'ปิดปรับปรุงตามแผน'],
 ];
 // ปิดปรับปรุง closes changes for every organization until the notice is taken down (backend platform/maintenance.py).
-const MAINTENANCE_NOTE =
-  'ระหว่างนี้เจ้าหน้าที่ ลูกค้า และผู้เยี่ยมชมดูข้อมูลได้ แต่บันทึกหรือส่งข้อมูลไม่ได้ ข้อความที่ลูกค้าส่งทาง LINE และ Facebook ยังเข้ามาตามปกติ คอนโซลนี้ยังใช้งานได้ทุกอย่าง';
 
 export function AnnouncementsScreen() {
   const toast = useToast();
@@ -59,7 +57,6 @@ export function AnnouncementsScreen() {
       <div className="page-heading">
         <div>
           <h1>ประกาศ</h1>
-          <p>สิ่งที่ระบบประกาศออกไป · ซ้ายคือเหตุที่เกิดอยู่ตอนนี้ ขวาคือเรื่องที่นัดไว้ล่วงหน้า</p>
         </div>
       </div>
 
@@ -70,9 +67,8 @@ export function AnnouncementsScreen() {
           <div className="card-body">
             <Icon name="bolt" />
             <div className="grow">
-              <strong>ประกาศอยู่ตอนนี้ · {STATES.find(([key]) => key === current.state)?.[1] ?? current.state}</strong>
+              <strong>ประกาศอยู่ตอนนี้ {STATES.find(([key]) => key === current.state)?.[1] ?? current.state}</strong>
               <p>{current.text}</p>
-              {current.state === 'maintenance' && <p className="tiny">{MAINTENANCE_NOTE} กด “เอาประกาศออก” เมื่อปรับปรุงเสร็จ</p>}
               <span className="tiny muted">
                 โดย {current.updated_by} เมื่อ {date(current.updated_at, true)}
               </span>
@@ -83,7 +79,7 @@ export function AnnouncementsScreen() {
               onClick={() =>
                 void run(async () => {
                   await clearStatusNotice();
-                  toast('เอาประกาศออกแล้ว · หน้าสถานะระบบกลับไปบอกผลตรวจตามปกติ');
+                  toast('เอาประกาศออกแล้ว หน้าสถานะระบบกลับไปบอกผลตรวจตามปกติ');
                   await read();
                 })
               }
@@ -94,7 +90,7 @@ export function AnnouncementsScreen() {
           </div>
         </section>
       ) : (
-        <p className="tiny muted announce-quiet">ตอนนี้ไม่มีประกาศ หน้าสถานะระบบบอกเฉพาะผลตรวจอัตโนมัติ</p>
+        <p className="tiny muted announce-quiet">ตอนนี้ไม่มีประกาศ</p>
       )}
 
       <section className="card">
@@ -102,11 +98,9 @@ export function AnnouncementsScreen() {
           <div>
             <h2>เหตุขัดข้องตอนนี้</h2>
             <p>
-              ขึ้นบนหน้า{' '}
               <a href="/status" target="_blank" rel="noopener">
-                สถานะระบบ
-              </a>{' '}
-              ที่เปิดดูได้โดยไม่ต้องเข้าสู่ระบบ
+                หน้าสถานะระบบ
+              </a>
             </p>
           </div>
           <Icon name="bolt" />
@@ -119,8 +113,8 @@ export function AnnouncementsScreen() {
               await saveStatusNotice(values.state ?? 'watching', values.text ?? '');
               toast(
                 values.state === 'maintenance'
-                  ? 'ปิดปรับปรุงแล้ว · ทุกองค์กรบันทึกข้อมูลไม่ได้จนกว่าจะเอาประกาศออก'
-                  : 'ประกาศแล้ว · ขึ้นบนหน้าสถานะระบบภายในไม่กี่วินาที',
+                  ? 'ปิดปรับปรุงแล้ว ทุกองค์กรบันทึกข้อมูลไม่ได้จนกว่าจะเอาประกาศออก'
+                  : 'ประกาศแล้ว ขึ้นบนหน้าสถานะระบบภายในไม่กี่วินาที',
               );
               await read();
             }}
@@ -128,9 +122,9 @@ export function AnnouncementsScreen() {
             <div className="field">
               <label htmlFor="status-state">สถานะ</label>
               <select id="status-state" name="state" defaultValue={current?.state ?? 'watching'}>
-                {STATES.map(([value, label, hint]) => (
+                {STATES.map(([value, label]) => (
                   <option key={value} value={value}>
-                    {label} · {hint}
+                    {label}
                   </option>
                 ))}
               </select>
@@ -146,7 +140,6 @@ export function AnnouncementsScreen() {
                 defaultValue={current?.text ?? ''}
                 placeholder="เช่น ข้อความที่ส่งออกทาง LINE ล่าช้าประมาณ 10 นาที ทีมงานกำลังแก้ไข ไม่มีข้อความสูญหาย"
               />
-              <span className="tiny muted">บอกว่ากระทบอะไร และข้อมูลหายหรือไม่ · สูงสุด 500 ตัวอักษร</span>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn primary">

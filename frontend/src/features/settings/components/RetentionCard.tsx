@@ -39,10 +39,7 @@ function RetentionForm({ state }: { state: Retention }) {
       confirmLabel: 'เปิดการลบตามระยะเวลา',
       message: (
         <>
-          <p>
-            ถ้าใช้ค่านี้ตอนนี้ ระบบจะลบเนื้อหา <strong>{whatGoes}</strong> ที่เงียบมาเกิน {LABELS[months]} ลบแล้วกู้คืนไม่ได้
-          </p>
-          <p className="muted">ระบบจะเริ่มลบจริงหลังจากนี้ {state.wait_days} วัน เปลี่ยนใจได้โดยกดปิดก่อนถึงวันนั้น</p>
+          ระบบจะลบเนื้อหา <strong>{whatGoes}</strong> ที่เงียบมาเกิน {LABELS[months]} ลบแล้วกู้คืนไม่ได้
         </>
       ),
       run: save(true, `เปิดแล้ว ระบบจะเริ่มลบหลังจากนี้ ${state.wait_days} วัน`),
@@ -73,10 +70,6 @@ function RetentionForm({ state }: { state: Retention }) {
       </div>
       <p className="retention-what">
         <strong>ถ้าเลือก {LABELS[months]} ตอนนี้จะลบเนื้อหา {whatGoes}</strong>
-        <span className="tiny muted">
-          ลบเฉพาะบทสนทนาที่ไม่มีข้อความใหม่เกิน {LABELS[months]} และไม่มีเคสที่ยังทำอยู่ · ที่ถูกลบ: ข้อความทุกข้อความรวมบันทึกภายใน ไฟล์แนบ
-          สรุปและการอ่านอารมณ์ของ AI หัวข้อ และความเห็นในแบบสอบถาม · ที่เก็บไว้: เลขเคส วันเวลา สถานะ คะแนน และตัวเลขในรายงาน รวมถึงข้อมูลลูกค้า
-        </span>
       </p>
       <div className="settings-row-actions">
         {!state.enabled ? (
@@ -122,7 +115,6 @@ export function RetentionCard() {
       <div className="card-header">
         <div>
           <h2>ระยะเวลาเก็บข้อมูล</h2>
-          <p>ลบเนื้อหาบทสนทนาเก่าอัตโนมัติ ลดข้อมูลส่วนบุคคลที่ไม่จำเป็นตาม PDPA และคืนพื้นที่จัดเก็บ</p>
         </div>
       </div>
       {state.isPending ? (

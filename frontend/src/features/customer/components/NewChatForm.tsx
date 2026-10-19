@@ -82,7 +82,6 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
         )}
         <div className="conv-title">
           <h2>เริ่มแชทใหม่</h2>
-          <p className="conv-meta">เลือกองค์กรที่ต้องการติดต่อ แล้วเล่าเรื่องให้ทีมงานฟัง เรื่องจะถึงทีมขององค์กรนั้นโดยตรง</p>
         </div>
       </div>
       <Form
@@ -113,9 +112,6 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
           </label>
           <OrgPicker id="request-org" orgs={orgs} value={slug} onChange={setSlug} />
           <KnownIssuesBar slug={slug} follow />
-          <small className="muted">
-            ตัวระบบค้าง หน้าเว็บผิดปกติ หรือพบ Bug ติดต่อผู้ให้บริการระบบได้เสมอ · เรื่องบริการ สินค้า หรือเคสขององค์กรใด ให้เลือกองค์กรนั้น · องค์กรใหม่จะอยู่ในรายการเมื่อเปิดเคสให้คุณ หรือให้ลิงก์เข้าร่วมมา
-          </small>
         </div>
         <div id="customer-org-intro" className="customer-org-intro" aria-live="polite">
           <OrgIntro org={org} />
@@ -126,7 +122,7 @@ export function NewChatForm({ preselect = '', follows = '', hasChats }: { presel
             <option value="">เรื่องใหม่ ไม่เกี่ยวกับเรื่องเดิม</option>
             {earlier.slice(0, 30).map((c) => (
               <option key={c.id} value={c.id}>
-                {c.ticket_number ? `BD-${c.ticket_number} · ` : ''}
+                {c.ticket_number ? `BD-${c.ticket_number} ` : ''}
                 {c.subject}
               </option>
             ))}
@@ -190,7 +186,6 @@ function AttachmentsField() {
           multiple
           accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt"
           aria-label="แนบไฟล์"
-          aria-describedby="request-files-help"
           data-file-ready="1"
           onChange={onChange}
         />
@@ -200,9 +195,6 @@ function AttachmentsField() {
         </label>
         <ScreenRecorder look="button" used={used} onFile={(file) => add([file])} onProblem={report} />
       </div>
-      <p className="tiny muted" id="request-files-help">
-        แนบภาพหรือวิดีโออธิบายปัญหาได้ · สูงสุด 3 ไฟล์ รวม 5 MB · PNG, JPG, GIF, WebP, MP4, WebM, PDF และ TXT
-      </p>
       <FilePills files={files} onRemove={remove} onReplace={replace} />
       <FileProblem problem={problem} />
     </div>

@@ -43,10 +43,7 @@ export function SlaForecast({ forecast, shown }: { forecast: Forecast | null | u
       <div className="card-header">
         <div>
           <h2 id="sla-forecast-title">คาดว่าจะเกิน SLA</h2>
-          <p>
-            จากคิวและความเร็วทีมตอนนี้
-            {forecast?.response_per_hour ? ` · ทีมตอบครั้งแรก ${pace(forecast.response_per_hour)}` : ''}
-          </p>
+          {forecast?.response_per_hour ? <p>ทีมตอบครั้งแรก {pace(forecast.response_per_hour)}</p> : null}
         </div>
         <span className={`badge${cases.length ? ' pending_customer' : ''}`}>{cases.length} เคส</span>
       </div>
@@ -68,17 +65,17 @@ export function SlaForecast({ forecast, shown }: { forecast: Forecast | null | u
                     {f.subject}
                   </Link>
                   <span className="sla-watch-reason">
-                    {KIND[f.kind]} · คิวก่อนหน้า {f.ahead} เคส · {pace(f.per_hour)}
+                    {KIND[f.kind]}, คิวก่อนหน้า {f.ahead} เคส, {pace(f.per_hour)}
                   </span>
                   <span className="sla-watch-reason">
-                    คาดว่า {when(f.expected)} · กำหนด {when(f.due)} · {f.assignee_id ? memberName(f.assignee_id) : 'ยังไม่มีผู้รับ'}
+                    คาดว่า {when(f.expected)}, กำหนด {when(f.due)}, {f.assignee_id ? memberName(f.assignee_id) : 'ยังไม่มีผู้รับ'}
                   </span>
                 </div>
               </li>
             ))}
           </ul>
         ) : forecast?.unknown ? (
-          <div className="empty-mini">ยังคำนวณไม่ได้ · ทีมยังไม่มีการตอบหรือปิดเคสใน 7 วันที่ผ่านมา</div>
+          <div className="empty-mini">ยังคำนวณไม่ได้</div>
         ) : (
           <div className="empty-mini forecast-clear">
             <Icon name="checkCircle" />

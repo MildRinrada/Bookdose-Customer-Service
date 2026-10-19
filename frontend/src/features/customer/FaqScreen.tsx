@@ -43,7 +43,6 @@ export function FaqScreen() {
       <div className="page-heading">
         <div>
           <h1>คำถามที่พบบ่อย</h1>
-          <p>คำตอบจากทุกองค์กรที่คุณติดต่อ อ่านได้ทันทีโดยไม่ต้องรอ</p>
         </div>
       </div>
       <section className="card customer-answers">
@@ -83,14 +82,14 @@ export function FaqScreen() {
                   key={`${a.org_slug}:${a.id}`}
                   href={`/customer/faq/${a.id}`}
                   title={a.title}
-                  category={many ? `${a.org_name} · ${a.category}` : a.category}
+                  category={many ? `${a.org_name} ${a.category}` : a.category}
                   excerpt={plainText(a.body).slice(0, 140)}
                 />
               ))
             ) : (
               <CustomerNone
                 title={searching ? 'ไม่พบบทความที่ตรงกับที่ค้นหา' : 'ยังไม่มีบทความ'}
-                hint={searching ? 'ลองใช้คำอื่น หรือถามทีมงานในแชทได้เลย' : 'ถามทีมงานในแชทได้เลย เรายินดีช่วยคุณ'}
+                hint={null}
               />
             )}
           </div>
@@ -108,7 +107,7 @@ export function ArticleScreen({ id }: { id: string }) {
   const a = query.data.articles.find((x) => x.id === id);
   if (!a)
     return (
-      <EmptyState title="ไม่พบบทความนี้" description="บทความอาจถูกย้ายหรือลบไปแล้ว" icon="book">
+      <EmptyState title="ไม่พบบทความนี้" icon="book">
         <Link className="btn" href="/customer/faq">
           <Icon name="back" />
           กลับไปคำถามที่พบบ่อย

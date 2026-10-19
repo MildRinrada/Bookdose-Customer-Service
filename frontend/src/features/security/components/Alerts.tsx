@@ -26,7 +26,7 @@ function detailText(detail: SecurityAlert['detail']): string {
   if (typeof detail === 'string') return detail;
   // The rule's own numbers: {kind, window_minutes, threshold}
   if (typeof detail.threshold === 'number' && typeof detail.window_minutes === 'number') {
-    const kind = typeof detail.kind === 'string' ? `${eventKindLabel(detail.kind)} · ` : '';
+    const kind = typeof detail.kind === 'string' ? `${eventKindLabel(detail.kind)} ` : '';
     return `${kind}เกณฑ์ ${number(detail.threshold)} ครั้งภายใน ${number(detail.window_minutes)} นาที`;
   }
   // A honeytoken: {token_id, kind, label, where}
@@ -38,11 +38,11 @@ function detailText(detail: SecurityAlert['detail']): string {
       where ? `พบที่ ${honeytokenWhereLabels[where] ?? where}` : '',
     ]
       .filter(Boolean)
-      .join(' · ');
+      .join(' ');
   }
   return Object.entries(detail)
     .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`)
-    .join(' · ');
+    .join(', ');
 }
 
 export function AlertsBanner() {
@@ -72,8 +72,8 @@ export function AlertsBanner() {
                 <SeverityBadge severity={alert.severity} /> {alertRuleLabel(alert.rule) === alert.rule && alert.label ? alert.label : alertRuleLabel(alert.rule)}
               </strong>
               <span>
-                {number(alert.count)} ครั้ง{alert.ip ? ` · IP ${alert.ip}` : ''}
-                {alert.ip && <IpInfoText info={alerts.data?.ip_info?.[alert.ip]} />} · เริ่ม {relative(alert.started_at)} · ล่าสุด{' '}
+                {number(alert.count)} ครั้ง{alert.ip ? ` IP ${alert.ip}` : ''}
+                {alert.ip && <IpInfoText info={alerts.data?.ip_info?.[alert.ip]} />} เริ่ม {relative(alert.started_at)} ล่าสุด{' '}
                 <time dateTime={alert.last_seen_at} title={date(alert.last_seen_at, true)}>
                   {relative(alert.last_seen_at)}
                 </time>

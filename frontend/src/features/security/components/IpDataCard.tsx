@@ -47,7 +47,6 @@ export function IpDataCard() {
       <div className="card-header">
         <div>
           <h2 id="security-ip-data-title">ฐานข้อมูล IP</h2>
-          <p>บอกว่า IP มาจากประเทศไหน ผู้ให้บริการเครือข่ายใด และเป็นเครือข่ายคลาวด์หรือ VPN หรือไม่ ค้นในเซิร์ฟเวอร์นี้เอง ไม่ส่ง IP ของผู้ใช้ออกไปที่ใด</p>
         </div>
         <Icon name="globe" />
       </div>
@@ -58,19 +57,14 @@ export function IpDataCard() {
           <PageLoading />
         ) : (
           <>
-            <ul className="ip-data-uses">
-              <li>แสดงประเทศและผู้ให้บริการข้าง IP ในบันทึกเหตุการณ์ การแจ้งเตือน และรายการ IP ที่บล็อก</li>
-              <li>อีเมลแจ้งการเข้าสู่ระบบของผู้ดูแลแพลตฟอร์มบอกประเทศ และเตือนเมื่อเข้าจากต่างประเทศเร็วเกินกว่าจะเดินทางได้จริง</li>
-              <li>แชทผู้เยี่ยมชมจากเครือข่ายคลาวด์หรือ VPN เริ่มแชทใหม่ได้น้อยกว่าคนทั่วไป (5 เรื่องต่อวันต่อ IP) แต่ไม่ถูกบล็อก</li>
-            </ul>
             <p className="ip-data-state" role="status">
               {data.running
                 ? 'กำลังดาวน์โหลดและจัดเตรียมฐานข้อมูล…'
                 : data.month
-                  ? `ใช้ฉบับเดือน ${data.month} อัปเดตเมื่อ ${date(data.updated_at ?? '', true)} ประเทศ ${number(data.countries)} ช่วง ผู้ให้บริการ ${number(data.networks)} ช่วง ระบบอัปเดตเองทุกเดือน`
+                  ? `ใช้ฉบับเดือน ${data.month} อัปเดตเมื่อ ${date(data.updated_at ?? '', true)} ประเทศ ${number(data.countries)} ช่วง ผู้ให้บริการ ${number(data.networks)} ช่วง`
                   : data.enabled
                     ? 'เปิดใช้แล้ว แต่ยังไม่มีฐานข้อมูลในเครื่อง'
-                    : 'ยังไม่ได้ใช้ กดดาวน์โหลดเพื่อเริ่มใช้ ไฟล์ขนาดประมาณ 12 MB ต่อเดือน'}
+                    : 'ยังไม่ได้ใช้'}
             </p>
             {!data.ok && data.error && !data.running && <p className="notice warning">{data.error}</p>}
             <div className="security-form-end">

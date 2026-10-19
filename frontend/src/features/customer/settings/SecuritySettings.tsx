@@ -25,7 +25,7 @@ export function SecuritySettings() {
       <TwoFactorCard state={state.data} api={customerSecurityApi} />
       <PasskeysCard passkeys={state.data?.passkeys ?? []} api={customerSecurityApi} />
       <SessionsCard api={devices} />
-      <ActivityCard api={devices} description="การเข้าสู่ระบบ การเปลี่ยนการตั้งค่าความปลอดภัย และเอกสารที่คุณลงนามหรืออนุมัติ" />
+      <ActivityCard api={devices} />
     </div>
   );
 }

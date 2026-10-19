@@ -44,7 +44,7 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
           enabled,
         });
         closeModal(true);
-        toast('บันทึกกฎแล้ว · มีผลกับเรื่องใหม่ถัดไป');
+        toast('บันทึกกฎแล้ว มีผลกับเรื่องใหม่ถัดไป');
         await refresh(AUTOMATION_PATH);
       }}
     >
@@ -72,7 +72,6 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
               placeholder="เช่น ระบบล่ม, เข้าไม่ได้, error"
               defaultValue={(rule?.keywords || '').split('\n').filter(Boolean).join(', ')}
             />
-            <span className="tiny muted">คั่นด้วยจุลภาค ตรงคำใดคำหนึ่งก็ทำงาน · เว้นว่างเพื่อใช้กับทุกเรื่องจากช่องทางนี้</span>
           </div>
         </div>
       </fieldset>
@@ -114,11 +113,10 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
               <option value="">ไม่มอบหมายเพิ่ม</option>
               {assignees.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {`${m.name} · ${teamName(m.team_id)}`}
+                  {`${m.name} ${teamName(m.team_id)}`}
                 </option>
               ))}
             </select>
-            {!assignee && <span className="tiny muted">ถ้าเปิดแจกเคสอัตโนมัติไว้ ระบบแจกให้คนในทีมที่พร้อมและถืองานน้อยที่สุด</span>}
           </div>
         </div>
         <div className="field rule-tags">
@@ -132,7 +130,7 @@ export function RuleForm({ rule }: { rule?: AutomationRule }) {
               onToggle={(id) => setTags((all) => (all.includes(id) ? all.filter((t) => t !== id) : [...all, id]))}
             />
           ) : (
-            <span className="tiny muted">ยังไม่มีป้ายเคส ตั้งรายการป้ายได้ที่หน้าเคสบริการ ปุ่มจัดการป้าย</span>
+            <span className="tiny muted">ยังไม่มีป้ายเคส</span>
           )}
         </div>
       </fieldset>

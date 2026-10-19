@@ -16,7 +16,7 @@ from backend.utils.validation import require
 
 # As many as a strip above the messages can hold without pushing the conversation off the screen.
 MOST = 3
-FULL = f'ปักหมุดได้ครั้งละ {MOST} ข้อความ · เอาหมุดเดิมออกก่อนแล้วค่อยปักใหม่'
+FULL = f'ปักหมุดได้ครั้งละ {MOST} ข้อความ เอาหมุดเดิมออกก่อนแล้วค่อยปักใหม่'
 
 TABLE = '''
 CREATE TABLE IF NOT EXISTS message_pins (

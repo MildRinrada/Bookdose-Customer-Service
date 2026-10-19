@@ -57,7 +57,6 @@ export function VerificationScreen({ page, token = '' }: { page: VerificationPag
           {verify && (
             <>
               <h1>ยืนยันอีเมลของคุณ</h1>
-              <p>กดปุ่มด้านล่างเพื่อยืนยันอีเมลและสร้างองค์กรที่คุณสมัครไว้</p>
               <Form
                 onSubmit={async (values) => {
                   await verifyRegistration(values.token ?? '');
@@ -79,10 +78,7 @@ export function VerificationScreen({ page, token = '' }: { page: VerificationPag
           {resend && (
             <>
               <h1>{checkEmail ? 'กรุณาตรวจอีเมลของคุณ' : 'ขอลิงก์ยืนยันอีเมลใหม่'}</h1>
-              <p>
-                {checkEmail && 'หากอีเมลนี้มีคำขอสมัครที่รอยืนยัน ระบบจะส่งลิงก์ให้ กรุณาตรวจกล่องจดหมายและสแปม'} ลิงก์มีอายุ 1 ชั่วโมง
-                ให้เปิดลิงก์แล้วกดยืนยันเพื่อเข้าใช้งาน
-              </p>
+              {checkEmail && <p>หากอีเมลนี้มีคำขอสมัครที่รอยืนยัน ระบบจะส่งลิงก์ให้ ลิงก์มีอายุ 1 ชั่วโมง</p>}
               <Form
                 onSubmit={async (values) => {
                   await resendRegistration(values.email);
@@ -91,7 +87,6 @@ export function VerificationScreen({ page, token = '' }: { page: VerificationPag
                 }}
               >
                 <TextField label="อีเมลที่ใช้สมัคร" name="email" type="email" max={254} defaultValue={rememberedRegistrationEmail()} />
-                <p className="tiny muted">ขอลิงก์ใหม่ได้หลังรอ 1 นาที ลิงก์ใหม่จะยกเลิกลิงก์เดิม หากสมัครเกิน 24 ชั่วโมงแล้ว ให้สมัครใหม่</p>
                 <button className="btn primary" type="submit">
                   ส่งลิงก์ยืนยันใหม่
                 </button>
@@ -102,7 +97,7 @@ export function VerificationScreen({ page, token = '' }: { page: VerificationPag
             </>
           )}
           <p className="small mt">
-            <Link href="/login">เข้าสู่ระบบ</Link> · <Link href="/register">สมัครองค์กรใหม่</Link>
+            <Link href="/login">เข้าสู่ระบบ</Link> <Link href="/register">สมัครองค์กรใหม่</Link>
           </p>
         </div>
       </section>

@@ -88,7 +88,6 @@ export function PasswordCard({ change, form }: { change: (currentPassword: strin
       <div className="card-header">
         <div>
           <h2>เปลี่ยนรหัสผ่าน</h2>
-          <p>เมื่อเปลี่ยนแล้ว อุปกรณ์อื่นที่เข้าสู่ระบบไว้จะออกจากระบบ</p>
         </div>
       </div>
       <Form
@@ -102,7 +101,7 @@ export function PasswordCard({ change, form }: { change: (currentPassword: strin
         }}
       >
         <TextField label="รหัสผ่านปัจจุบัน" name="current_password" type="password" max={200} minLength={undefined} autoComplete="current-password" />
-        <TextField label="รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)" name="password" type="password" max={200} />
+        <TextField label="รหัสผ่านใหม่" name="password" type="password" max={200} />
         <TextField label="พิมพ์รหัสผ่านใหม่อีกครั้ง" name="password_confirm" type="password" max={200} matches="password" />
         <button className="btn" type="submit">
           <Icon name="lock" />
@@ -126,8 +125,8 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
     confirm({
       title: keepCurrent ? 'ออกจากระบบอุปกรณ์อื่นทั้งหมด' : 'ออกจากระบบทุกอุปกรณ์',
       message: keepCurrent
-        ? 'อุปกรณ์อื่นทุกเครื่องจะต้องเข้าสู่ระบบใหม่ เครื่องนี้ยังใช้งานต่อได้'
-        : 'ทุกเครื่องรวมถึงเครื่องนี้จะออกจากระบบ และต้องเข้าสู่ระบบใหม่',
+        ? 'อุปกรณ์อื่นทุกเครื่องจะต้องเข้าสู่ระบบใหม่'
+        : 'ทุกเครื่องรวมถึงเครื่องนี้จะออกจากระบบ',
       confirmLabel: 'ออกจากระบบ',
       tone: 'danger',
       run: async () => {
@@ -142,7 +141,6 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
       <div className="card-header">
         <div>
           <h2>อุปกรณ์ที่เข้าสู่ระบบ</h2>
-          <p>ถ้าเห็นอุปกรณ์ที่ไม่ใช่ของคุณ ให้กดออกจากระบบแล้วเปลี่ยนรหัสผ่าน</p>
         </div>
       </div>
       <div className="card-body">
@@ -150,8 +148,7 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
           <p className="notice warning shared-notice" role="status">
             <Icon name="users" />
             <span>
-              บัญชีนี้ใช้เบราว์เซอร์ร่วมกับบัญชีอื่น {sharing.length} บัญชี: <strong>{sharing.join(', ')}</strong> · บัญชีเหล่านั้นสลับมาใช้บัญชีนี้ได้โดยไม่ต้องใส่รหัสผ่าน
-              หากไม่ได้ตั้งใจ ให้กดออกจากระบบอุปกรณ์นั้น
+              บัญชีนี้ใช้เบราว์เซอร์ร่วมกับบัญชีอื่น {sharing.length} บัญชี: <strong>{sharing.join(', ')}</strong>
             </span>
           </p>
         )}
@@ -167,7 +164,7 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
                   {row.current && <span className="badge resolved">เครื่องนี้</span>}
                 </strong>
                 <span className="muted">
-                  {row.ip || 'ไม่ทราบ IP'} · เข้าสู่ระบบ {date(row.created_at, true)} · ใช้งานล่าสุด {date(row.last_seen_at, true)}
+                  {row.ip || 'ไม่ทราบ IP'} เข้าสู่ระบบ {date(row.created_at, true)} ใช้งานล่าสุด {date(row.last_seen_at, true)}
                 </span>
                 {row.shared_with && row.shared_with.length > 0 && (
                   <span className="shared-with">
@@ -209,7 +206,7 @@ export function SessionsCard({ api }: { api: DevicesApi }) {
 }
 
 /* Everything that happened to the account, newest first, a page at a time. */
-export function ActivityCard({ api, description }: { api: DevicesApi; description: string }) {
+export function ActivityCard({ api }: { api: DevicesApi }) {
   const [page, setPage] = useState(0);
   const history = useApi<ActivityPage>(api.activityPath(page), { keepPrevious: true });
   const items = history.data?.items ?? [];
@@ -218,12 +215,11 @@ export function ActivityCard({ api, description }: { api: DevicesApi; descriptio
       <div className="card-header">
         <div>
           <h2>ประวัติการใช้งานบัญชี</h2>
-          <p>{description}</p>
         </div>
       </div>
       <div className="card-body">
         {items.length === 0 ? (
-          <EmptyState icon="clock" title="ยังไม่มีประวัติ" description="เมื่อมีการเข้าสู่ระบบหรือเปลี่ยนการตั้งค่า รายการจะแสดงที่นี่" />
+          <EmptyState icon="clock" title="ยังไม่มีประวัติ" />
         ) : (
           <div className="table-wrap">
             <table className="activity-table">
@@ -241,12 +237,12 @@ export function ActivityCard({ api, description }: { api: DevicesApi; descriptio
                     <td>{date(item.at, true)}</td>
                     <td>
                       <strong>{item.label}</strong>
-                      {item.org_name && <span className="muted"> · {item.org_name}</span>}
+                      {item.org_name && <span className="muted"> {item.org_name}</span>}
                     </td>
                     <td>{item.detail || '—'}</td>
                     <td className="muted">
                       {item.device || '—'}
-                      {item.ip ? ` · ${item.ip}` : ''}
+                      {item.ip ? ` ${item.ip}` : ''}
                     </td>
                   </tr>
                 ))}
@@ -299,7 +295,6 @@ export function TwoFactorCard({ state, api }: { state: SecurityState | undefined
       <div className="card-header">
         <div>
           <h2>การยืนยันสองขั้นตอน</h2>
-          <p>ให้แอปยืนยันตัวตนสร้างรหัส 6 หลักเพิ่มอีกชั้นหนึ่งตอนเข้าสู่ระบบ</p>
         </div>
         <span className={`badge ${on ? 'resolved' : 'muted'}`}>{on ? 'เปิดใช้งาน' : 'ยังไม่เปิด'}</span>
       </div>
@@ -308,7 +303,7 @@ export function TwoFactorCard({ state, api }: { state: SecurityState | undefined
         {on ? (
           <>
             <p className="small muted">
-              เปิดใช้งานเมื่อ {date(state?.two_factor.confirmed_at, true)} · เหลือรหัสสำรอง {state?.recovery.left ?? 0} จาก{' '}
+              เปิดใช้งานเมื่อ {date(state?.two_factor.confirmed_at, true)} เหลือรหัสสำรอง {state?.recovery.left ?? 0} จาก{' '}
               {state?.recovery.total ?? 0} รหัส
             </p>
             <div className="security-actions">
@@ -392,9 +387,9 @@ function TotpSetupSteps({
   return (
     <div className="totp-setup">
       <ol className="totp-steps">
-        <li>เปิดแอปยืนยันตัวตน เช่น Google Authenticator, Microsoft Authenticator หรือ 1Password</li>
-        <li>สแกน QR ด้านล่าง หรือกรอกรหัสลับด้วยตนเอง</li>
-        <li>กรอกตัวเลข 6 หลักที่แอปแสดง เพื่อยืนยันว่าตรงกัน</li>
+        <li>เปิดแอปยืนยันตัวตน</li>
+        <li>สแกน QR หรือกรอกรหัสลับ</li>
+        <li>กรอกรหัส 6 หลักจากแอป</li>
       </ol>
       <div className="totp-pair">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -438,7 +433,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
         <Icon name="lock" />
         เก็บรหัสสำรอง 10 รหัสนี้ไว้
       </h3>
-      <p>ใช้แทนรหัสจากแอปได้เมื่อทำโทรศัพท์หาย รหัสแต่ละรหัสใช้ได้ครั้งเดียว และจะไม่แสดงอีก</p>
+      <p>ใช้ได้รหัสละครั้ง และจะไม่แสดงอีก</p>
       <ul>
         {codes.map((code) => (
           <li key={code}>
@@ -484,8 +479,6 @@ export function PasskeysCard({ passkeys, api }: { passkeys: Passkey[]; api: Secu
           toast('เพิ่ม Passkey แล้ว ครั้งต่อไปเข้าสู่ระบบได้โดยไม่ต้องใช้รหัสผ่าน');
         }}
       >
-        <p>ระบบจะขอให้ปลดล็อกอุปกรณ์นี้ด้วยลายนิ้วมือ ใบหน้า หรือ PIN แล้วเก็บกุญแจไว้ในอุปกรณ์เอง</p>
-        <p className="small muted">Passkey ใช้เข้าสู่ระบบแทนรหัสผ่านและรหัสยืนยันได้ จึงต้องกรอกรหัสผ่านของบัญชีก่อนเพิ่ม</p>
         <TextField label="รหัสผ่านของบัญชี" name="password" type="password" max={200} minLength={undefined} autoComplete="current-password" />
         <TextField label="ชื่อที่จะใช้เรียกอุปกรณ์นี้ (ไม่บังคับ)" name="name" max={60} required={false} placeholder="เช่น โน้ตบุ๊กที่ทำงาน" />
         <button className="btn primary" type="submit">
@@ -525,7 +518,7 @@ export function PasskeysCard({ passkeys, api }: { passkeys: Passkey[]; api: Secu
           toast('ลบ Passkey แล้ว');
         }}
       >
-        <p>อุปกรณ์นี้จะเข้าสู่ระบบด้วย Passkey ไม่ได้อีก กรอกรหัสผ่านของบัญชีเพื่อยืนยันว่าเป็นคุณ</p>
+        <p>อุปกรณ์นี้จะเข้าสู่ระบบด้วย Passkey ไม่ได้อีก</p>
         <TextField label="รหัสผ่านของบัญชี" name="password" type="password" max={200} minLength={undefined} autoComplete="current-password" />
         <button className="btn danger" type="submit">
           ลบ Passkey
@@ -538,7 +531,6 @@ export function PasskeysCard({ passkeys, api }: { passkeys: Passkey[]; api: Secu
       <div className="card-header">
         <div>
           <h2>Passkey</h2>
-          <p>เข้าสู่ระบบด้วยลายนิ้วมือ ใบหน้า หรือ PIN ของอุปกรณ์ แทนรหัสผ่านและรหัสยืนยัน</p>
         </div>
         {available && (
           <button className="btn primary" type="button" onClick={add}>
@@ -548,9 +540,9 @@ export function PasskeysCard({ passkeys, api }: { passkeys: Passkey[]; api: Secu
         )}
       </div>
       <div className="card-body">
-        {!available && <p className="notice">เบราว์เซอร์นี้ยังไม่รองรับ Passkey กรุณาใช้เบราว์เซอร์รุ่นใหม่บนอุปกรณ์ที่ตั้งรหัสปลดล็อกไว้</p>}
+        {!available && <p className="notice">เบราว์เซอร์นี้ยังไม่รองรับ Passkey</p>}
         {passkeys.length === 0 ? (
-          <EmptyState icon="shield" title="ยังไม่มี Passkey" description="เพิ่ม Passkey ไว้ในอุปกรณ์ที่คุณใช้ประจำ แล้วเข้าสู่ระบบได้ในคลิกเดียว" />
+          <EmptyState icon="shield" title="ยังไม่มี Passkey" />
         ) : (
           <ul className="security-list">
             {passkeys.map((passkey) => (
@@ -561,7 +553,7 @@ export function PasskeysCard({ passkeys, api }: { passkeys: Passkey[]; api: Secu
                 <span className="grow">
                   <strong>{passkey.name}</strong>
                   <span className="muted">
-                    เพิ่มเมื่อ {date(passkey.created_at)} ·{' '}
+                    เพิ่มเมื่อ {date(passkey.created_at)}{' '}
                     {passkey.last_used_at ? `ใช้ล่าสุด ${date(passkey.last_used_at, true)}` : 'ยังไม่เคยใช้'}
                   </span>
                 </span>

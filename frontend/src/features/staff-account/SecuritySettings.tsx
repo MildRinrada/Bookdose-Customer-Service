@@ -34,9 +34,7 @@ export function SecuritySettings() {
     <div className="account-section">
       {unprotected && (
         <p className={`notice${platformAdmin ? ' warning' : ''}`} role="status">
-          {platformAdmin
-            ? 'บัญชีผู้ดูแลแพลตฟอร์มเข้าถึงทุกองค์กรได้ ควรเปิดการยืนยันสองขั้นตอนหรือเพิ่ม Passkey อย่างน้อยหนึ่งอย่าง'
-            : 'บัญชีนี้ยังใช้รหัสผ่านอย่างเดียว เปิดการยืนยันสองขั้นตอนหรือเพิ่ม Passkey เพื่อป้องกันบัญชี'}
+          บัญชีนี้ยังใช้รหัสผ่านอย่างเดียว
         </p>
       )}
       <PasswordCard
@@ -50,10 +48,7 @@ export function SecuritySettings() {
       <TwoFactorCard state={state.data} api={staffSecurityApi} />
       <PasskeysCard passkeys={state.data?.passkeys ?? []} api={staffSecurityApi} />
       <SessionsCard api={devices} />
-      <ActivityCard api={devices} description="การเข้าสู่ระบบ การเปลี่ยนรหัสผ่านและข้อมูลส่วนตัว และการเปลี่ยนการตั้งค่าความปลอดภัย" />
-      <p className="small muted">
-        ทำโทรศัพท์และรหัสสำรองหายทั้งคู่: ให้ผู้ดูแลเซิร์ฟเวอร์รีเซ็ตด้วยคำสั่ง <code>python -m backend.modules.staff_security reset &lt;อีเมล&gt;</code>
-      </p>
+      <ActivityCard api={devices} />
     </div>
   );
 }

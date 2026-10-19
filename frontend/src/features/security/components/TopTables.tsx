@@ -18,7 +18,6 @@ export function TopIpsCard({ rows, info = {} }: { rows: SecurityOverview['top_ip
       <div className="card-header">
         <div>
           <h2 id="security-top-ips-title">IP ที่มีเหตุการณ์มากที่สุด</h2>
-          <p>ในช่วงเวลาที่เลือก</p>
         </div>
         <Icon name="globe" />
       </div>
@@ -81,7 +80,6 @@ export function TopSubjectsCard({ rows }: { rows: SecurityOverview['top_subjects
       <div className="card-header">
         <div>
           <h2 id="security-top-subjects-title">บัญชีที่ถูกพยายามเข้าสู่ระบบมากที่สุด</h2>
-          <p>อีเมลที่ถูกกรอกรหัสผิดบ่อยที่สุด (อาจไม่ใช่บัญชีที่มีอยู่จริง)</p>
         </div>
         <Icon name="users" />
       </div>

@@ -54,12 +54,12 @@ export function WaitQueue({
         ? `ทีมน่าจะตอบ${waitText(queue.wait_minutes)}`
         : 'ข้อความของคุณถึงทีมแล้ว';
   const hint = unhurried
-    ? 'คุณบอกว่าไม่รีบ ลูกค้าที่รีบจะได้คำตอบก่อน ไม่ต้องส่งข้อความซ้ำ'
+    ? ''
     : queue.away
-      ? 'ข้อความของคุณอยู่ในคิวแล้ว ทีมจะตอบเมื่อกลับมา ไม่ต้องส่งซ้ำ'
+      ? 'ข้อความของคุณอยู่ในคิวแล้ว'
       : ahead > 0
-        ? `มีลูกค้ารอก่อนคุณ ${ahead} คน · ไม่ต้องส่งข้อความซ้ำ ลำดับของคุณไม่หายไป`
-        : 'คุณเป็นคิวถัดไป · ไม่ต้องส่งข้อความซ้ำ';
+        ? `มีลูกค้ารอก่อนคุณ ${ahead} คน`
+        : 'คุณเป็นคิวถัดไป';
   return (
     <div className={`wait-queue${queue.away && !unhurried ? ' is-away' : ''}${unhurried ? ' is-unhurried' : ''}`} role="status" aria-live="polite">
       <span className="wait-queue-place" aria-label={`ลำดับคิวที่ ${queue.position}`}>
@@ -71,7 +71,7 @@ export function WaitQueue({
           <Icon name="clock" />
           {title}
         </p>
-        <p className="wait-queue-hint">{hint}</p>
+        {hint && <p className="wait-queue-hint">{hint}</p>}
         {unhurried ? (
           <button type="button" className="btn sm wait-queue-rush" onClick={() => void say(false)}>
             ขอให้ตอบตามคิวปกติ

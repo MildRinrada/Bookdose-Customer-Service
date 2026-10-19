@@ -57,11 +57,11 @@ function Frame({ slug, orgName, children }: { slug?: string; orgName?: string; c
       )}
       {children}
       <p className="guest-foot tiny muted">
-        <Icon name="lock" /> ข้อความส่งถึงทีมงาน{orgName ? `ของ ${orgName}` : 'ขององค์กร'}โดยตรง · อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
+        <Icon name="lock" /> ข้อความส่งถึงทีมงาน{orgName ? `ของ ${orgName}` : 'ขององค์กร'}โดยตรง อย่าส่งรหัสผ่านหรือข้อมูลสำคัญในแชท
         {slug && (
           <>
             {' '}
-            · <PoweredBy />
+            <PoweredBy />
           </>
         )}
       </p>
@@ -88,7 +88,7 @@ export function SupportStartScreen({ slug }: { slug: string }) {
         <EmptyState
           icon={closed ? 'lock' : 'globe'}
           title={closed ? 'ต้องเข้าสู่ระบบก่อนเริ่มแชท' : 'ไม่พบองค์กรนี้'}
-          description={closed ? overview.error?.message : 'ตรวจลิงก์หรือรหัสองค์กรอีกครั้ง'}
+          description={closed ? overview.error?.message : undefined}
         >
           {closed ? (
             <Link className="btn primary" href={`/login?org=${encodeURIComponent(slug)}`}>
@@ -154,7 +154,6 @@ export function SupportStartScreen({ slug }: { slug: string }) {
                 <Icon name="chat" />
                 <span>
                   <strong>แชทเดิมของคุณ {chats} เรื่อง</strong>
-                  <small>เปิดอ่านคำตอบหรือคุยต่อ</small>
                 </span>
                 <Icon name="arrow" />
               </Link>
@@ -162,7 +161,6 @@ export function SupportStartScreen({ slug }: { slug: string }) {
             {articles.length > 0 && (
               <section className="card start-faq" aria-labelledby="start-faq-title">
                 <h2 id="start-faq-title">ลองหาคำตอบก่อน</h2>
-                <p className="tiny muted">คำถามที่ลูกค้าของ {name} ถามบ่อย อาจตอบได้เลยโดยไม่ต้องรอ</p>
                 <ul>
                   {articles.map((a) => (
                     <li key={a.id}>
@@ -201,7 +199,6 @@ export function SupportFindScreen() {
         <div className="card-header conv-header new-chat-header">
           <div className="conv-title">
             <h2>ติดต่อทีมงานขององค์กร</h2>
-            <p className="conv-meta">เปิดจากลิงก์ “ติดต่อเรา” หรือแชทบนเว็บไซต์ขององค์กรที่ต้องการติดต่อ จะเข้าหน้าแชทขององค์กรนั้นทันที</p>
           </div>
         </div>
         <form
@@ -233,7 +230,7 @@ export function SupportFindScreen() {
               spellCheck={false}
               maxLength={60}
               placeholder="เช่น bookdose"
-              aria-describedby="support-org-code-help"
+              aria-describedby={problem ? 'support-org-code-help' : undefined}
               aria-invalid={problem ? 'true' : undefined}
               required
             />
@@ -242,9 +239,11 @@ export function SupportFindScreen() {
               <Icon name="arrow" />
             </button>
           </div>
-          <p className="tiny muted" id="support-org-code-help">
-            {problem || 'รหัสองค์กรอยู่ในลิงก์ที่องค์กรให้มา หรือสอบถามจากองค์กรนั้น · สมาชิกที่เข้าสู่ระบบแล้วเริ่มแชทกับทุกองค์กรของตัวเองได้จากหน้า “แชทของฉัน”'}
-          </p>
+          {problem && (
+            <p className="tiny muted" id="support-org-code-help">
+              {problem}
+            </p>
+          )}
         </form>
       </section>
     </Frame>

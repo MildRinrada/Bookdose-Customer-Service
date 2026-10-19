@@ -120,6 +120,6 @@ export function snoozeUntilText(until: string | null | undefined): string {
 /** The escalation line in the case heading: the reason and who was told (or got the case). */
 export function escalationText(e: TicketEscalation | null | undefined, memberName: (id: string | null | undefined) => string): string {
   if (!e) return '';
-  const who = e.to_user_id ? ` · ${e.reason === 'unclaimed' ? 'ย้ายให้' : 'แจ้ง'} ${memberName(e.to_user_id)}` : '';
+  const who = e.to_user_id ? ` ${e.reason === 'unclaimed' ? 'ย้ายให้' : 'แจ้ง'} ${memberName(e.to_user_id)}` : '';
   return `${escalationReasons[e.reason] || 'ยกระดับแล้ว'}${who}`;
 }

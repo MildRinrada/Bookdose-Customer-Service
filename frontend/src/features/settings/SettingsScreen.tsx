@@ -14,7 +14,6 @@ import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { CaseFieldsPanel } from './components/CaseFieldsPanel';
 import { GuestChatPanel } from './components/GuestChatPanel';
-import { JoinLinksPanel } from './components/JoinLinksPanel';
 import { BackupPanel, CategoriesPanel, ProfilePanel, ServicePanel } from './components/OverviewPanel';
 import { TeamSecurityPanel } from './components/TeamSecurityPanel';
 import { TeamsPanel } from './components/TeamsPanel';
@@ -61,7 +60,7 @@ export function SettingsScreen({ tab }: { tab?: string }) {
   const current = place.tab;
   useEffect(() => {
     setRemembered(current);
-    document.title = `${place.part ? settingsParts[place.part].label : settingsTabs[current].label} · ตั้งค่าองค์กร`;
+    document.title = `${place.part ? settingsParts[place.part].label : settingsTabs[current].label} - ตั้งค่าองค์กร`;
   }, [current, place.part, setRemembered]);
   const nav = useRef<HTMLElement>(null);
   usePinnedMenu(nav);
@@ -72,7 +71,7 @@ export function SettingsScreen({ tab }: { tab?: string }) {
         <div>
           <h1>ตั้งค่าองค์กร</h1>
           <p>
-            {work.tenant.name} · คุณเข้าใช้งานในฐานะ{roleLabels[work.role]}
+            {work.tenant.name} คุณเข้าใช้งานในฐานะ{roleLabels[work.role]}
           </p>
         </div>
       </div>
@@ -128,7 +127,6 @@ function Section({ tab, part }: { tab: SettingsTab; part: SettingsPart | null })
     return (
       <section className="settings-part-list" aria-labelledby="settings-part-title">
         <h2 id="settings-part-title">{settingsTabs[tab].label}</h2>
-        <p>เลือกส่วนที่ต้องการตั้งค่า</p>
         <div className="settings-tiles">
           {parts.map((key) => {
             const meta = settingsParts[key];
@@ -162,7 +160,6 @@ function Section({ tab, part }: { tab: SettingsTab; part: SettingsPart | null })
           </span>
           <div>
             <h2>{meta.label}</h2>
-            <p>{meta.hint}</p>
           </div>
           <StatusChip status={statuses[part]} />
         </div>
@@ -173,8 +170,6 @@ function Section({ tab, part }: { tab: SettingsTab; part: SettingsPart | null })
   switch (tab) {
     case 'teams':
       return <TeamsPanel />;
-    case 'invites':
-      return <JoinLinksPanel />;
     case 'webchat':
       return <GuestChatPanel />;
     case 'ai':

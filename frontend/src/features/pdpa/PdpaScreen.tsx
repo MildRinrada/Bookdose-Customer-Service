@@ -80,7 +80,6 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
       <div className="page-heading">
         <div>
           <h1>เครื่องมือ PDPA</h1>
-          <p>ค้นหาคนหนึ่งคนในทุกองค์กร แล้วออกไฟล์ข้อมูลทั้งหมดของเขา หรือลบข้อมูล ทุกครั้งบันทึกว่าใครสั่ง เมื่อไหร่ และเพราะอะไร</p>
         </div>
       </div>
       <div className="pdpa-layout">
@@ -103,38 +102,14 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
                   ค้นหาในทุกองค์กร
                 </button>
               </div>
-              <p className="tiny muted">
-                ผลการค้นหาแสดงเฉพาะจำนวน ไม่แสดงเนื้อหาบทสนทนา เนื้อหาจะออกไปเฉพาะในไฟล์ที่ออกให้เจ้าของข้อมูล และทุกครั้งถูกบันทึกไว้
-              </p>
             </form>
           </section>
-          {found ? (
-            <Results key={searched} found={found} query={searched} confirmWord={confirm_word} onDone={() => find(searched)} />
-          ) : (
-            // Before the first search: the three steps of the tool, so the empty page says what it is for.
-            <ol className="pdpa-steps" aria-label="ขั้นตอนการใช้เครื่องมือ">
-              <li>
-                <strong>ค้นหา</strong>
-                <span>พิมพ์อีเมล เบอร์โทร หรือชื่อ ระบบค้นในทุกองค์กรพร้อมกัน</span>
-              </li>
-              <li>
-                <strong>เลือกรายการ</strong>
-                <span>ติ๊กเฉพาะรายการที่เป็นของเจ้าของข้อมูลจริง</span>
-              </li>
-              <li>
-                <strong>ออกไฟล์หรือลบ</strong>
-                <span>ออกไฟล์ ZIP ให้เจ้าของข้อมูล หรือลบถาวร ทุกครั้งบันทึกในประวัติ</span>
-              </li>
-            </ol>
-          )}
+          {found && <Results key={searched} found={found} query={searched} confirmWord={confirm_word} onDone={() => find(searched)} />}
         </div>
         <div className="stack">
           <section className="card">
             <div className="card-header">
-              <div>
-                <h2>คำขอลบที่องค์กรบันทึกไว้</h2>
-                <p>ลูกค้าที่ทีมขององค์กรกด “ขอให้ลบข้อมูล” ไว้ และยังไม่ได้ลบ</p>
-              </div>
+              <h2>คำขอลบที่องค์กรบันทึกไว้</h2>
             </div>
             <div className="card-body">
               {requested.length ? (
@@ -144,8 +119,8 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
                       <span>
                         <strong>{r.name}</strong>
                         <small>
-                          {r.tenant_name} · ขอเมื่อ {date(r.requested_at)}
-                          {r.requested_by ? ` · บันทึกโดย ${r.requested_by}` : ''}
+                          {r.tenant_name} ขอเมื่อ {date(r.requested_at)}
+                          {r.requested_by ? ` บันทึกโดย ${r.requested_by}` : ''}
                         </small>
                       </span>
                       {(r.email || r.phone || r.name) && (
@@ -163,10 +138,7 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
           </section>
           <section className="card">
             <div className="card-header">
-              <div>
-                <h2>ประวัติการใช้เครื่องมือ</h2>
-                <p>ไม่เก็บอีเมลหรือเบอร์ของเจ้าของข้อมูล เก็บแค่แบบปิดบังบางส่วน</p>
-              </div>
+              <h2>ประวัติการใช้เครื่องมือ</h2>
             </div>
             <div className="card-body">
               {history.length ? (
@@ -177,7 +149,7 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
                       <span>
                         <strong>{h.subject}</strong>
                         <small>
-                          {date(h.created_at, true)} · โดย {h.by_name} · {h.scope.organizations.map((o) => o.organization).join(', ') || 'บัญชีลูกค้าเท่านั้น'}
+                          {date(h.created_at, true)} โดย {h.by_name} {h.scope.organizations.map((o) => o.organization).join(', ') || 'บัญชีลูกค้าเท่านั้น'}
                         </small>
                         <small>ที่มา: {h.reason}</small>
                       </span>
@@ -206,7 +178,7 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
   const [source, setSource] = useState('');
   const [detail, setDetail] = useState('');
   // What the history keeps: the way it came, then the detail typed (the server asks for 5-300 letters).
-  const reason = source === OTHER ? detail.trim() : [source, detail.trim()].filter(Boolean).join(' · ');
+  const reason = source === OTHER ? detail.trim() : [source, detail.trim()].filter(Boolean).join(' ');
   const toggle = <T,>(set: Set<T>, value: T, apply: (next: Set<T>) => void) => {
     const next = new Set(set);
     if (next.has(value)) next.delete(value);
@@ -227,7 +199,7 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
   if (!found.accounts.length && !found.records.length)
     return (
       <section className="card">
-        <EmptyState title="ไม่พบข้อมูลของคนนี้" description={`ค้นด้วย${kindWords[found.kind]} ${found.subject} ในทุกองค์กรแล้ว`} icon="search" />
+        <EmptyState title="ไม่พบข้อมูลของคนนี้" icon="search" />
       </section>
     );
 
@@ -236,12 +208,12 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
       'ลบข้อมูลตามคำขอ PDPA',
       <EraseConfirm
         confirmWord={confirmWord}
-        summary={`บัญชีลูกค้า ${accounts.size} บัญชี · ข้อมูลลูกค้า ${chosen.length} รายการใน ${new Set(chosen.map((r) => r.tenant_id)).size} องค์กร · บทสนทนา ${total('conversations')} · เคส ${total('cases')} · ไฟล์ ${total('files')}`}
+        summary={`บัญชีลูกค้า ${accounts.size} บัญชี, ข้อมูลลูกค้า ${chosen.length} รายการใน ${new Set(chosen.map((r) => r.tenant_id)).size} องค์กร, บทสนทนา ${total('conversations')}, เคส ${total('cases')}, ไฟล์ ${total('files')}`}
         onCancel={() => closeModal()}
         onConfirm={async (typed) => {
           const done = await erasePerson({ ...choice, reason: reason.trim(), confirm: typed });
           closeModal(true);
-          toast(`ลบข้อมูลแล้ว · ${done.organizations.length} องค์กร · ไฟล์ ${done.files} ไฟล์`);
+          toast(`ลบข้อมูลแล้ว ${done.organizations.length} องค์กร ไฟล์ ${done.files} ไฟล์`);
           await refresh(PDPA_PATH);
           onDone();
         }}
@@ -254,8 +226,8 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
         <div>
           <h2>พบข้อมูล</h2>
           <p>
-            ค้นด้วย{kindWords[found.kind]} {found.subject} · เลือกเฉพาะรายการที่เป็นของเจ้าของข้อมูลจริง
-            {found.more && ' · ผลมากเกินไป แสดงบางส่วน ลองค้นด้วยอีเมลหรือเบอร์แทนชื่อ'}
+            ค้นด้วย{kindWords[found.kind]} {found.subject}
+            {found.more && ' ผลมากเกินไป แสดงบางส่วน'}
           </p>
         </div>
       </div>
@@ -272,8 +244,8 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
                       <strong>{a.name}</strong>
                       <small>
                         {a.email}
-                        {a.phone ? ` · ${a.phone}` : ''} · สมัครเมื่อ {date(a.created_at)}
-                        {a.last_login_at ? ` · เข้าล่าสุด ${date(a.last_login_at)}` : ''}
+                        {a.phone ? `, ${a.phone}` : ''}, สมัครเมื่อ {date(a.created_at)}
+                        {a.last_login_at ? `, เข้าล่าสุด ${date(a.last_login_at)}` : ''}
                       </small>
                     </span>
                   </label>
@@ -301,9 +273,9 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
                         <strong>
                           {r.name} <span className="pdpa-org">{r.tenant_name}</span>
                         </strong>
-                        <small>{[r.email, r.phone, r.company].filter(Boolean).join(' · ') || 'ไม่มีอีเมลหรือเบอร์'}</small>
+                        <small>{[r.email, r.phone, r.company].filter(Boolean).join(', ') || 'ไม่มีอีเมลหรือเบอร์'}</small>
                         <small>
-                          บทสนทนา {number(r.conversations)} · เคส {number(r.cases)} · ข้อความจากลูกค้า {number(r.messages)} · ไฟล์ {number(r.files)}
+                          บทสนทนา {number(r.conversations)}, เคส {number(r.cases)}, ข้อความจากลูกค้า {number(r.messages)}, ไฟล์ {number(r.files)}
                         </small>
                         <span className="pdpa-tags">
                           {r.account_id && <span>ลิงก์กับบัญชีลูกค้า{viaAccount ? ' (เลือกไปกับบัญชีแล้ว)' : ''}</span>}
@@ -328,7 +300,7 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
               <>
                 เลือกแล้ว{' '}
                 <span>
-                  บัญชีลูกค้า {accounts.size} · ข้อมูลลูกค้า {chosen.length} รายการ · บทสนทนา {number(total('conversations'))} · เคส {number(total('cases'))} · ไฟล์{' '}
+                  บัญชีลูกค้า {accounts.size}, ข้อมูลลูกค้า {chosen.length} รายการ, บทสนทนา {number(total('conversations'))}, เคส {number(total('cases'))}, ไฟล์{' '}
                   {number(total('files'))}
                 </span>
               </>
@@ -352,7 +324,6 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
               <span>{source === OTHER ? 'ระบุที่มา' : 'รายละเอียดเพิ่มเติม (ไม่ใส่ก็ได้)'}</span>
               <input value={detail} onChange={(e) => setDetail(e.target.value)} maxLength={200} placeholder="วันที่ได้รับ หรือเลขอ้างอิงของเรื่อง" />
             </label>
-            <p className="tiny muted">บันทึกไว้ในประวัติการใช้เครื่องมือ เผื่อต้องตรวจย้อนหลังว่าทำตามคำขอของใคร</p>
           </div>
           <div className="flex wrap pdpa-actions">
             <button
@@ -403,16 +374,10 @@ function EraseConfirm({
   const run = useRunAction();
   return (
     <div className="pdpa-erase">
-      <p className="notice danger-notice">ลบแล้วกู้คืนไม่ได้ ถังขยะขององค์กรก็ไม่มีสำเนาเหลือ</p>
+      <p className="notice danger-notice">ลบแล้วกู้คืนไม่ได้</p>
       <p>
         <strong>{summary}</strong>
       </p>
-      <ul>
-        <li>บัญชีลูกค้าถูกลบ เข้าสู่ระบบไม่ได้อีก</li>
-        <li>ในแต่ละองค์กร ชื่อ อีเมล เบอร์ บริษัท บันทึก ข้อความทุกข้อความ ไฟล์แนบ หัวเรื่อง สรุปจาก AI คำแปล และที่อยู่ LINE/อีเมล ถูกลบ</li>
-        <li>เคสยังเหลือเป็นตัวเลขในรายงาน โดยไม่มีข้อมูลที่ระบุตัวตน</li>
-        <li>ไฟล์สำรองที่ทำไว้ก่อนหน้านี้ยังมีข้อมูลอยู่ จนกว่าไฟล์จะหมดอายุหรือถูกลบ</li>
-      </ul>
       <label className="field">
         <span>
           พิมพ์ <code>{confirmWord}</code> เพื่อยืนยัน

@@ -20,7 +20,6 @@ export function RevokeSessionsCard() {
       <div className="card-header">
         <div>
           <h2 id="security-revoke-title">ยุติเซสชันทั้งหมดของบัญชี</h2>
-          <p>ออกจากระบบทุกอุปกรณ์ของบัญชีเดียว เจ้าของบัญชีต้องเข้าสู่ระบบใหม่</p>
         </div>
         <Icon name="logout" />
       </div>

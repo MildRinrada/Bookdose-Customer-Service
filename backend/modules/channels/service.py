@@ -24,6 +24,7 @@ from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets, service as ticket_service
 from backend.realtime import events as realtime
+from backend.utils import markdown
 from backend.utils.dates import after, now, utc_now
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
@@ -639,7 +640,7 @@ def process_outbox(tenant_id):
     provider_id = None
     try:
         if job['kind']=='line':
-            provider_id = T.send_line(secret,link['recipient'],json.loads(line_payload) if line_payload else message['body'],job['retry_key'])
+            provider_id = T.send_line(secret,link['recipient'],json.loads(line_payload) if line_payload else markdown.to_plain(message['body']),job['retry_key'])
         else:
             secret = O.access_secret(tenant_id,row['config'],secret)
             for file in attachments:

@@ -91,7 +91,7 @@ def save(db, ctx, body):
     db.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(KEY,json.dumps(value,ensure_ascii=False)))
     uses = [word for on,word in ((value['enabled'],'ตอบนอกเวลา'),(value['sla'],'นับ SLA เฉพาะเวลาทำการ')) if on]
     audit.record(db,ctx['name'],'settings.updated',ctx['tenant_id'],
-                 f"เวลาทำการ ({', '.join(uses) or 'ปิด'}) · วันหยุดพิเศษ {len(value['holidays'])} วัน")
+                 f"เวลาทำการ ({', '.join(uses) or 'ปิด'}), วันหยุดพิเศษ {len(value['holidays'])} วัน")
     db.commit()
     return value
 

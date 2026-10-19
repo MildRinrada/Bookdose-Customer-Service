@@ -56,7 +56,7 @@ import '@/styles/themes.css';
 import '@/styles/reveal.css';
 
 export const metadata: Metadata = {
-  title: 'Bookdose · Customer Service',
+  title: 'Bookdose Customer Service',
   description: 'Bookdose Customer Service - พื้นที่ดูแลลูกค้าสำหรับทุกองค์กร',
   icons: { icon: { url: '/favicon.svg', type: 'image/svg+xml' } },
 };

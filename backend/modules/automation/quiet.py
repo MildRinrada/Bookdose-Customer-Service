@@ -98,7 +98,7 @@ def run(db, tenant_id, moment=None):
             if _post(db,tenant_id,case,cfg['remind_message'].replace(TOKEN,str(cfg['close_days']))):
                 db.execute('INSERT INTO quiet_reminders VALUES(?,?) ON CONFLICT(ticket_id) DO UPDATE SET reminded_at=excluded.reminded_at',
                            (case['id'],iso(moment)))
-                audit.record(db,ACTOR,'ticket.quiet_reminded',case['id'],f"ลูกค้าเงียบ {cfg['remind_days']} วัน · ถามว่ายังต้องการความช่วยเหลือไหม")
+                audit.record(db,ACTOR,'ticket.quiet_reminded',case['id'],f"ลูกค้าเงียบ {cfg['remind_days']} วัน, ถามว่ายังต้องการความช่วยเหลือไหม")
                 done.append((case['id'],'reminded'))
     db.commit()
     return done

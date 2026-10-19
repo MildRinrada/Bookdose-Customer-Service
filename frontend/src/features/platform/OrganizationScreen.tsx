@@ -57,7 +57,7 @@ export function OrganizationScreen({ id }: { id: string }) {
   if (!tenant)
     return (
       <ErrorState
-        error={new Error('ไม่พบองค์กรนี้ · อาจถูกลบไปแล้ว หรือลิงก์ไม่ถูกต้อง')}
+        error={new Error('ไม่พบองค์กรนี้ อาจถูกลบไปแล้ว หรือลิงก์ไม่ถูกต้อง')}
         onRetry={() => void tenants.refetch()}
       />
     );
@@ -105,7 +105,7 @@ function OrganizationView({
           <div>
             <h1>{t.name}</h1>
             <p>
-              <Badge status={t.status} /> · สร้างเมื่อ {date(t.created_at)} · {t.member_count} สมาชิก
+              <Badge status={t.status} /> สร้างเมื่อ {date(t.created_at)} {t.member_count} สมาชิก
             </p>
           </div>
         </div>
@@ -124,12 +124,10 @@ function OrganizationView({
             <div className="card-header">
               <div>
                 <h2>ข้อมูลองค์กร</h2>
-                <p>ลิงก์ รหัส พื้นที่ และผู้ดูแลขององค์กรนี้</p>
               </div>
             </div>
             <Row
               label="หน้าลูกค้า"
-              hint="ลิงก์ที่ลูกค้าขององค์กรนี้ใช้เข้าหน้าช่วยเหลือ"
               action={
                 <button type="button" className="btn sm" onClick={() => void copyText(url)}>
                   <Icon name="link" />
@@ -143,11 +141,7 @@ function OrganizationView({
             </Row>
             <Row
               label="รหัสองค์กร"
-              hint={
-                t.former_slugs?.length > 0
-                  ? `รหัสเดิมที่ยังใช้ได้: ${t.former_slugs.join(', ')}`
-                  : 'อยู่ในลิงก์ที่ลูกค้าได้รับไปแล้วทั้งหมด เปลี่ยนได้ ลิงก์เดิมยังพามาที่นี่'
-              }
+              hint={t.former_slugs?.length > 0 ? `รหัสเดิมที่ยังใช้ได้: ${t.former_slugs.join(', ')}` : undefined}
               action={
                 <button type="button" className="btn sm" onClick={() => openModal(`รหัสองค์กรของ ${t.name}`, <SlugForm tenant={t} />)}>
                   <Icon name="edit" />
@@ -159,11 +153,7 @@ function OrganizationView({
             </Row>
             <Row
               label="พื้นที่ดิสก์"
-              hint={
-                usage
-                  ? `ไฟล์แนบ ${bytesText(usage.storage_bytes)} · ฐานข้อมูล ${bytesText(usage.database_bytes)}${usage.quota_mb ? '' : ' · ไม่มีโควตา ใช้ดิสก์ได้ไม่จำกัด และทำให้ทุกองค์กรเขียนข้อมูลไม่ได้เมื่อดิสก์เต็ม'}`
-                  : undefined
-              }
+              hint={usage ? `ไฟล์แนบ ${bytesText(usage.storage_bytes)} ฐานข้อมูล ${bytesText(usage.database_bytes)}` : undefined}
               action={
                 usage && (
                   <button type="button" className="btn sm" onClick={() => openModal(`โควตาพื้นที่ของ ${t.name}`, <QuotaForm org={usage} />)}>
@@ -234,7 +224,6 @@ function OrganizationView({
             </div>
             <Row
               label="สิทธิ์เข้าช่วยเหลือ"
-              hint="เคสและบทสนทนาเป็นข้อมูลขององค์กร ดูได้เฉพาะเมื่อองค์กรอนุมัติ และดูได้อย่างเดียว"
               action={
                 'pending' in access ? (
                   <button type="button" className="btn sm subtle" onClick={() => void withdraw(access.pending, false)}>
@@ -266,7 +255,7 @@ function OrganizationView({
               {'pending' in access && (
                 <span className="org-access org-support-pending">
                   <Icon name="clock" />
-                  รอผู้ดูแลองค์กรอนุมัติ · ขอ {access.pending.hours} ชม.
+                  รอผู้ดูแลองค์กรอนุมัติ ขอ {access.pending.hours} ชม.
                 </span>
               )}
               {'canOpen' in access && <span className="org-access">ได้รับอนุมัติแล้ว</span>}
@@ -279,7 +268,6 @@ function OrganizationView({
             </Row>
             <Row
               label="การยืนยันสองขั้นตอนของทีมงาน"
-              hint="รีเซ็ตให้ทีมงานที่ทำโทรศัพท์และรหัสสำรองหาย โดยไม่ต้องเข้าเซิร์ฟเวอร์"
               action={
                 <button type="button" className="btn sm" onClick={() => openModal(`การยืนยันสองขั้นตอนของทีมงาน ${t.name}`, <StaffSecurityList id={t.id} />)}>
                   <Icon name="shield" />
@@ -297,13 +285,7 @@ function OrganizationView({
             </div>
             <Row
               label="สถานะ"
-              hint={
-                isHome && t.status === 'active'
-                  ? 'องค์กรหลัก ลูกค้าทุกคนสมัครและเข้าสู่ระบบผ่านองค์กรนี้ จึงระงับไม่ได้'
-                  : t.status === 'active'
-                    ? 'ระงับแล้วทีมงานและลูกค้าใช้งานไม่ได้จนกว่าจะเปิดอีกครั้ง'
-                    : 'ทีมงานเข้าพื้นที่ทำงานไม่ได้ และหน้าลูกค้าปิด'
-              }
+              hint={isHome && t.status === 'active' ? 'องค์กรหลัก ระงับไม่ได้' : undefined}
               action={
                 isHome ? null : t.status === 'active' ? (
                   <button type="button" className="btn sm org-suspend" onClick={() => openModal(`ระงับองค์กร ${t.name}`, <SuspendTenantForm id={t.id} name={t.name} />)}>
@@ -344,7 +326,7 @@ function OrganizationView({
                     ? 'ระงับองค์กรก่อน จึงส่งออกข้อมูลและปิดถาวรได้'
                     : t.exported_at && !exportedRecently
                       ? 'ไฟล์ส่งออกเก่ากว่า 30 วัน ส่งออกใหม่ก่อนปิดถาวร'
-                      : 'ลบข้อมูลทั้งหมดจริงตาม PDPA และคืนพื้นที่ดิสก์ ย้อนกลับไม่ได้'
+                      : undefined
                 }
                 action={
                   t.status === 'suspended' && (
@@ -363,11 +345,7 @@ function OrganizationView({
                   )
                 }
               >
-                {t.status === 'suspended' && (
-                  <span className="tiny">
-                    {t.exported_at ? `ส่งออกข้อมูลล่าสุด ${date(t.exported_at, true)}` : 'ขั้นแรก ส่งออกข้อมูลทั้งองค์กรเป็นไฟล์เดียว แล้วส่งให้เจ้าขององค์กรเก็บไว้'}
-                  </span>
-                )}
+                {t.status === 'suspended' && t.exported_at && <span className="tiny">ส่งออกข้อมูลล่าสุด {date(t.exported_at, true)}</span>}
               </Row>
             )}
           </section>
@@ -379,7 +357,7 @@ function OrganizationView({
   async function exportAll() {
     try {
       await download(tenantExportPath(t.id), `${t.slug}.zip`);
-      toast('ส่งออกแล้ว · ส่งไฟล์นี้ให้เจ้าขององค์กรก่อนปิดถาวร');
+      toast('ส่งออกแล้ว ส่งไฟล์นี้ให้เจ้าขององค์กรก่อนปิดถาวร');
       await refresh(PLATFORM_PREFIX);
     } catch (error) {
       toast(error instanceof Error ? error.message : String(error), true);
@@ -389,14 +367,7 @@ function OrganizationView({
   function closeForGood() {
     confirmDelete({
       title: `ปิด ${t.name} ถาวร`,
-      warning: 'ข้อมูลทั้งหมดขององค์กรนี้จะถูกลบจริงและกู้คืนจากหน้านี้ไม่ได้ ตรวจว่าเจ้าขององค์กรได้รับไฟล์ที่ส่งออกแล้ว',
-      effects: [
-        'เคส บทสนทนา ลูกค้า คลังความรู้ ไฟล์แนบ และการตั้งค่าทั้งหมดขององค์กร',
-        'Token ของ LINE อีเมล Facebook และคีย์ AI ขององค์กร',
-        'บัญชีทีมงานที่ไม่ได้อยู่องค์กรอื่น ส่วนบัญชีลูกค้ายังอยู่ เพราะเป็นของลูกค้าเอง',
-        `รหัส ${t.slug} ยังถูกจองไว้ ลิงก์เดิมของลูกค้าจะไม่พาไปองค์กรอื่น`,
-        'ไฟล์สำรองทั้งแพลตฟอร์มที่ทำไว้ก่อนหน้ายังมีข้อมูลนี้ จนกว่าจะถูกลบตามรอบ',
-      ],
+      warning: 'ข้อมูลทั้งหมดขององค์กรนี้จะถูกลบจริงและกู้คืนไม่ได้',
       word: t.slug,
       confirmLabel: 'ปิดถาวร',
       run: async () => {

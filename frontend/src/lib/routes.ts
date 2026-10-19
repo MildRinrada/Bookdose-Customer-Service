@@ -99,10 +99,11 @@ export function customerPageOf(pathname: string): CustomerPage | undefined {
   return [...customerServicePages, ...customerAccountPages].find((page) => pathname === page.href || pathname.startsWith(page.href + '/'));
 }
 
-/** The link an organization hands its customers: its page for starting a chat or a case, which works without an
-    account and offers signing in from there (backend org_links links_view gives the same address). */
+/** The link an organization hands its customers, short enough for a poster: a new customer finds the form to start a
+    chat, one who has talked from this browser before finds their latest chat; no account needed, and signing in is
+    offered there (backend org_links links_view gives the same address). */
 export function customerHomeUrl(slug: string): string {
-  return `${window.location.origin}/support/${encodeURIComponent(slug)}/tickets/new`;
+  return `${window.location.origin}/support/${encodeURIComponent(slug)}`;
 }
 
 export const ORG_CODE = /^[a-z0-9]+(-[a-z0-9]+)*$/;

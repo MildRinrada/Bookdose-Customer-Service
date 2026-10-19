@@ -98,7 +98,7 @@ export function AiDraftPanel({ draft, onUse }: { draft: AiDraft; onUse: (answer:
   const { view } = draft;
   return (
     <div data-ai-panel={draft.conversationId} aria-live="polite">
-      {view.kind === 'drafting' && <div className="notice">AI กำลังอ่านบทสนทนาและค้นความรู้… คุณพิมพ์ข้อความต่อได้</div>}
+      {view.kind === 'drafting' && <div className="notice">AI กำลังอ่านบทสนทนาและค้นความรู้…</div>}
       {view.kind === 'queued' && (
         <div className="notice">
           งานยังอยู่ในคิว{' '}
@@ -143,7 +143,7 @@ function DraftResult({ job, onDismiss, onUse }: { job: AiJob; onDismiss: () => v
         <Icon name="sparkle" />
         <div className="grow">
           <strong>AI ร่างคำตอบเรื่องนี้ไม่ได้</strong>
-          <p>ยังไม่มีบทความในคลังความรู้ที่ตอบเรื่องนี้ เพิ่มบทความแล้ว AI จะร่างเรื่องแบบนี้ได้</p>
+          <p>ยังไม่มีบทความในคลังความรู้ที่ตอบเรื่องนี้</p>
           {/* The server's own "no knowledge" summary says the same; a summary from the AI says what to check. */}
           {r.summary && !r.summary.startsWith('ไม่พบความรู้') && <p>สำหรับเจ้าหน้าที่: {r.summary}</p>}
         </div>
@@ -157,7 +157,7 @@ function DraftResult({ job, onDismiss, onUse }: { job: AiJob; onDismiss: () => v
           <Icon name="sparkle" />
           ร่างจาก AI
         </strong>
-        <span className="muted">ยังไม่ได้ส่ง · ตรวจก่อนใช้</span>
+        <span className="muted">ยังไม่ได้ส่ง ตรวจก่อนใช้</span>
         {close}
       </div>
       {r.needs_human && <p className="ai-result-warn">AI ไม่แน่ใจคำตอบนี้ ตรวจข้อมูลกับเคสจริงก่อนส่ง</p>}

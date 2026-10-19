@@ -28,7 +28,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
       <div className="manager-head" data-reveal="">
         <div>
           <h2 id="manager-title">มุมมองผู้ดูแล</h2>
-          <p>Manager View · อัปเดตอัตโนมัติทุก 30 วินาที · ล่าสุด {clockTime(m.generated_at)}</p>
+          <p>อัปเดตล่าสุด {clockTime(m.generated_at)}</p>
         </div>
         <Link className="btn subtle small" href="/automation">
           <Icon name="macro" />
@@ -41,7 +41,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
             <div>
               <h2><Icon name="users" className="card-title-icon" />สถานะเจ้าหน้าที่ Real-time</h2>
               <p>
-                Live Agent Activity · กำลังใช้งาน {agents.filter((x) => x.presence === 'online').length} จาก {agents.length} คน
+                กำลังใช้งาน {agents.filter((x) => x.presence === 'online').length} จาก {agents.length} คน
               </p>
             </div>
           </div>
@@ -62,7 +62,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
                   <span className="agent-name">
                     <strong className="truncate">{x.name}</strong>
                     <span className="tiny muted truncate">
-                      {roleLabels[x.role]} · {teamName(x.team_id)}
+                      {roleLabels[x.role]}, {teamName(x.team_id)}
                     </span>
                   </span>
                 </span>
@@ -98,17 +98,13 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
               </div>
             ))}
           </div>
-          <p className="card-note tiny muted">
-            “กำลังใช้งาน” คือเปิดโปรแกรมภายใน 5 นาทีล่าสุด · “งานค้าง” คือเคสที่ต้องทำต่อตอนนี้ ไม่นับเคสรอลูกค้าและเคสที่พักไว้ กดตัวเลขเพื่อดูและย้ายเคสให้คนอื่น
-            · ตอบครั้งแรกเฉลี่ยและ CSAT นับ 30 วันล่าสุดจากเคสที่รับผิดชอบ
-          </p>
         </section>
         <section className="card csat-card" data-reveal="">
           <div className="card-header">
             <div>
               <h2><Icon name="star" className="card-title-icon" />ความพึงพอใจลูกค้า</h2>
               <p>
-                CSAT · 30 วันล่าสุด · ตอบ {c.count} จาก {c.sent} แบบประเมิน
+                30 วันล่าสุด ตอบ {c.count} จาก {c.sent} แบบประเมิน
               </p>
             </div>
           </div>
@@ -127,7 +123,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
                 </p>
               </>
             ) : (
-              <div className="empty-mini">ยังไม่มีคำตอบแบบประเมิน · ระบบส่งให้ลูกค้าเมื่อปิดเคส</div>
+              <div className="empty-mini">ยังไม่มีคำตอบแบบประเมิน</div>
             )}
             <Link className="csat-more" href="/reports">
               ดูคะแนนรายสัปดาห์และความเห็นลูกค้าในรายงาน <Icon name="arrow" />

@@ -24,7 +24,7 @@ export function EscalationRow({ escalation: e }: { escalation: Escalation }) {
         {e.subject}
       </Link>
       <div className="time">
-        <Icon name="bolt" /> {escalationReasons[e.reason] || e.reason} · {to}
+        <Icon name="bolt" /> {escalationReasons[e.reason] || e.reason} {to}
       </div>
     </div>
   );

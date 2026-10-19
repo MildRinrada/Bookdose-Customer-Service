@@ -96,8 +96,8 @@ function LineLink({ org }: { org: LineOrg }) {
       {org.linked ? (
         <div className="line-org-body">
           <p className="tiny muted">
-            {org.available ? `การแจ้งเตือนที่เลือกไว้ในช่อง LINE จะส่งถึงแชทกับ ${name}` : `${org.org_name} ปิดการส่งข้อความทาง LINE ชั่วคราว`}
-            {org.linked_at ? ` · เชื่อมเมื่อ ${date(org.linked_at, true)}` : ''}
+            {org.available ? '' : `${org.org_name} ปิดการส่งข้อความทาง LINE ชั่วคราว`}
+            {org.linked_at ? `${org.available ? '' : ' '}เชื่อมเมื่อ ${date(org.linked_at, true)}` : ''}
           </p>
           <button
             className="btn"
@@ -105,7 +105,7 @@ function LineLink({ org }: { org: LineOrg }) {
             onClick={() =>
               confirm({
                 title: 'ยกเลิกการเชื่อม LINE',
-                message: `จะไม่ได้รับการแจ้งเตือนจาก ${org.org_name} ทาง LINE อีก (อีเมลและหน้าเว็บยังแจ้งตามเดิม) เชื่อมใหม่ได้ทุกเมื่อ`,
+                message: `จะไม่ได้รับการแจ้งเตือนจาก ${org.org_name} ทาง LINE อีก`,
                 confirmLabel: 'ยกเลิกการเชื่อม',
                 cancelLabel: 'ไม่ยกเลิก',
                 tone: 'danger',
@@ -166,10 +166,7 @@ function QuietHoursField({ quiet }: { quiet: QuietHours }) {
       <legend>ช่วงเวลาห้ามรบกวน</legend>
       <label className="check">
         <input type="checkbox" className="switch" name="quiet_on" defaultChecked={quiet.enabled} onChange={(e) => setOn(e.target.checked)} />
-        <span>
-          ไม่ส่งอีเมลและ LINE ในช่วงเวลานี้
-          <span className="tiny muted block">เรื่องที่เกิดระหว่างนั้นจะส่งให้เมื่อพ้นช่วง ถ้าเปิดอ่านบนหน้าเว็บไปก่อนแล้ว จะไม่ส่งซ้ำ</span>
-        </span>
+        <span>ไม่ส่งอีเมลและ LINE ในช่วงเวลานี้</span>
       </label>
       <div className="quiet-times" hidden={!on}>
         <label>
@@ -180,7 +177,6 @@ function QuietHoursField({ quiet }: { quiet: QuietHours }) {
           ถึง
           <input type="time" name="quiet_end" defaultValue={quiet.end} step={60} required={on} />
         </label>
-        <span className="tiny muted">เวลาประเทศไทย ข้ามเที่ยงคืนได้ เช่น 21:00 ถึง 08:00</span>
       </div>
     </fieldset>
   );
@@ -196,10 +192,7 @@ function PageAlertsField({ page }: { page: PageAlerts }) {
       <legend>ขณะเปิดหน้าเว็บนี้อยู่</legend>
       <label className="check">
         <input type="checkbox" className="switch" name="page_popup" defaultChecked={page.popup} />
-        <span>
-          ป๊อปอัปมุมขวาล่างเมื่อทีมงานตอบ
-          <span className="tiny muted block">กดที่ป๊อปอัปเพื่อเปิดแชทนั้น ไม่ขึ้นเมื่อเปิดแชทนั้นอยู่แล้ว</span>
-        </span>
+        <span>ป๊อปอัปมุมขวาล่างเมื่อทีมงานตอบ</span>
       </label>
       <label className="check">
         <input type="checkbox" className="switch" name="page_sound" defaultChecked={page.sound} />
@@ -216,14 +209,10 @@ export function NotifySettingsCard() {
   const refresh = useInvalidate();
   const toast = useToast();
   const emailOk = Boolean(data?.email.ready && data.email.verified);
-  const lineOk = Boolean(data?.line.some((l) => l.linked));
   return (
     <section className="card notify-card">
       <div className="card-header">
-        <div>
-          <h2>การแจ้งเตือน</h2>
-          <p>การแจ้งเตือนในหน้าเว็บ (กระดิ่ง) แสดงเสมอ เลือกได้ว่าเรื่องใดจะส่งทางอีเมลหรือ LINE ด้วย</p>
-        </div>
+        <h2>การแจ้งเตือน</h2>
       </div>
       {!data ? (
         <div className="card-body">
@@ -278,8 +267,6 @@ export function NotifySettingsCard() {
                 {data.email.ready ? 'ต้องยืนยันอีเมลก่อนจึงจะได้รับอีเมลแจ้งเตือน' : 'ระบบยังส่งอีเมลไม่ได้ ตัวเลือกอีเมลจะใช้เมื่อพร้อมส่ง'}
               </p>
             )}
-            {!lineOk && <p className="tiny muted">ตัวเลือก LINE ใช้เมื่อเชื่อม LINE ขององค์กรด้านล่างแล้ว</p>}
-            <p className="tiny muted">อีเมลและ LINE มีแค่หัวเรื่องและลิงก์ให้เข้ามาดู ไม่มีเนื้อหาข้อความแชท</p>
             <QuietHoursField quiet={data.quiet ?? QUIET} />
             <PageAlertsField page={data.page ?? PAGE} />
             <button className="btn" type="submit">

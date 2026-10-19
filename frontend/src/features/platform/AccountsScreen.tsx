@@ -43,7 +43,6 @@ export function AccountsScreen() {
       <div className="page-heading">
         <div>
           <h1>บัญชีผู้ใช้</h1>
-          <p>ค้นบัญชีทีมงานหรือลูกค้าด้วยอีเมล ดูว่าอยู่องค์กรไหนบ้าง แล้วระงับทั้งระบบ หรือบังคับตั้งรหัสผ่านใหม่</p>
         </div>
         <div className="flex">
           <Link className="btn" href="/platform/pdpa">
@@ -76,7 +75,6 @@ export function AccountsScreen() {
               ค้นหา
             </button>
           </div>
-          <p className="tiny muted">บัญชีผู้ดูแลแพลตฟอร์มแสดงในผลค้นหา แต่จัดการที่ ทีมผู้ดูแลระบบ</p>
         </form>
       </section>
       {found &&
@@ -88,11 +86,11 @@ export function AccountsScreen() {
               ))}
             </ul>
             {(found.staff.length >= found.limit || found.customers.length >= found.limit) && (
-              <p className="tiny muted account-more">แสดง {found.limit} บัญชีแรกของแต่ละประเภท พิมพ์อีเมลให้ละเอียดขึ้นเพื่อหาบัญชีที่เหลือ</p>
+              <p className="tiny muted account-more">แสดง {found.limit} บัญชีแรกของแต่ละประเภท</p>
             )}
           </section>
         ) : (
-          <EmptyState title="ไม่พบบัญชี" description={`ไม่มีบัญชีทีมงานหรือลูกค้าที่อีเมลมีคำว่า “${searched}”`} icon="search" />
+          <EmptyState title="ไม่พบบัญชี" icon="search" />
         ))}
     </>
   );
@@ -107,13 +105,13 @@ function AccountRow({ kind, account: a, onDone }: { kind: AccountKind; account: 
       <div className="account-who">
         <strong>{a.name}</strong>
         <span className="tiny muted">
-          {a.email} · {kind === 'staff' ? (a.platform_admin ? 'ผู้ดูแลแพลตฟอร์ม' : 'บัญชีทีมงาน') : 'บัญชีลูกค้า'} · สร้างเมื่อ {date(a.created_at)}
+          {a.email} {kind === 'staff' ? (a.platform_admin ? 'ผู้ดูแลแพลตฟอร์ม' : 'บัญชีทีมงาน') : 'บัญชีลูกค้า'} สร้างเมื่อ {date(a.created_at)}
         </span>
         {a.suspended_at && (
           <span className="account-suspended">
             <Icon name="lock" />
             ระงับเมื่อ {date(a.suspended_at, true)}
-            {a.suspended_reason ? ` · ${a.suspended_reason}` : ''}
+            {a.suspended_reason ? ` ${a.suspended_reason}` : ''}
           </span>
         )}
         <span className="account-orgs">
@@ -121,8 +119,8 @@ function AccountRow({ kind, account: a, onDone }: { kind: AccountKind; account: 
             ? a.organizations.map((o) => (
                 <span key={o.id} className="org-admin" title={o.status === 'suspended' ? 'องค์กรนี้ถูกระงับอยู่' : undefined}>
                   {o.name}
-                  {o.role ? ` · ${roleWords[o.role] ?? o.role}` : ''}
-                  {o.status === 'suspended' ? ' · ระงับ' : ''}
+                  {o.role ? ` ${roleWords[o.role] ?? o.role}` : ''}
+                  {o.status === 'suspended' ? ' ระงับ' : ''}
                 </span>
               ))
             : <span className="tiny muted">{kind === 'staff' ? 'ไม่ได้อยู่องค์กรใด' : 'ยังไม่ได้เข้าร่วมองค์กรใด'}</span>}
@@ -194,19 +192,9 @@ function ActionForm({ kind, account: a, act, onDone }: { kind: AccountKind; acco
       }}
     >
       <div className="notice warning">
-        {act === 'suspend' ? (
-          <ul>
-            <li>ออกจากระบบทุกอุปกรณ์ทันที</li>
-            <li>เข้าสู่ระบบไม่ได้ทุกวิธี แม้รู้รหัสผ่าน มี Passkey หรือตั้งรหัสผ่านใหม่จากลิงก์</li>
-            <li>{kind === 'staff' ? `มีผลกับทุกองค์กรที่บัญชีนี้อยู่ (${a.organizations.length} องค์กร)` : 'มีผลกับหน้าลูกค้าของทุกองค์กร'} จนกว่าผู้ดูแลแพลตฟอร์มจะยกเลิก</li>
-          </ul>
-        ) : (
-          <ul>
-            <li>รหัสผ่านเดิมใช้ไม่ได้ทันที และออกจากระบบทุกอุปกรณ์</li>
-            <li>ลบ Passkey ทั้งหมด เผื่อคนอื่นเพิ่มไว้</li>
-            <li>ระบบส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ {a.email} ใช้เมื่อรหัสผ่านรั่วแต่อีเมลยังเป็นของเจ้าของ ถ้าอีเมลก็ถูกยึดไปด้วย ให้ระงับบัญชีแทน</li>
-          </ul>
-        )}
+        {act === 'suspend'
+          ? 'ออกจากระบบทุกอุปกรณ์ทันที และเข้าสู่ระบบไม่ได้จนกว่าจะยกเลิกการระงับ'
+          : `รหัสผ่านเดิมและ Passkey ใช้ไม่ได้ทันที ระบบส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ ${a.email}`}
       </div>
       <div className="field">
         <label htmlFor="account-reason">เหตุผล (บันทึกในประวัติ ไม่ใส่ก็ได้)</label>

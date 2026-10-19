@@ -52,7 +52,6 @@ export function TodoCard({ items }: { items: TodoItem[] }) {
           <Icon name="checkCircle" />
           <span>
             <strong>ไม่มีเรื่องที่ต้องจัดการ</strong>
-            <span className="muted"> · ทุกองค์กรมีผู้ดูแล อีเมลของระบบ สำรองข้อมูล และช่องทางทำงานปกติ</span>
           </span>
         </div>
       </section>
@@ -62,7 +61,6 @@ export function TodoCard({ items }: { items: TodoItem[] }) {
       <div className="card-header">
         <div>
           <h2 id="todo-title">ต้องจัดการ</h2>
-          <p>สิ่งที่ยังขาดหรือมีปัญหา เรียงจากเรื่องด่วนที่สุด กดปุ่มในแต่ละรายการเพื่อไปแก้ได้ทันที</p>
         </div>
         <span className="tag-count">{items.length}</span>
       </div>
@@ -129,7 +127,7 @@ export function BackupsCard({ view }: { view: BackupsView }) {
         <div>
           <h2>สำรองข้อมูล</h2>
           <p>
-            สำรองทุกองค์กรในไฟล์เดียว (Token ถูกเข้ารหัส กุญแจไม่อยู่ในไฟล์) · รหัสกุญแจ <code>{view.key_id}</code>
+            รหัสกุญแจ <code>{view.key_id}</code>
           </p>
         </div>
         <button
@@ -153,7 +151,7 @@ export function BackupsCard({ view }: { view: BackupsView }) {
         <p className={view.last && !view.last.ok ? 'notice warning' : 'backup-last'}>
           {view.last
             ? view.last.ok
-              ? `สำรองล่าสุด ${relative(view.last.at)} (${date(view.last.at, true)}) · ${bytesText(view.last.size ?? 0)} · ${view.last.kind === 'auto' ? 'อัตโนมัติ' : 'สั่งจากคอนโซล'}`
+              ? `สำรองล่าสุด ${relative(view.last.at)} (${date(view.last.at, true)}) ${bytesText(view.last.size ?? 0)} ${view.last.kind === 'auto' ? 'อัตโนมัติ' : 'สั่งจากคอนโซล'}`
               : `สำรองครั้งล่าสุดไม่สำเร็จเมื่อ ${date(view.last.at, true)} (${view.last.error}) ตรวจพื้นที่ดิสก์และสิทธิ์เขียนโฟลเดอร์`
             : newest
               ? `ไฟล์ล่าสุด ${date(newest.created_at, true)}`
@@ -200,9 +198,8 @@ export function BackupsCard({ view }: { view: BackupsView }) {
         </Form>
         <p className="tiny muted">
           เก็บที่ <code>{view.folder}</code>
-          {view.from_environment ? ' (BOOKDOSE_BACKUP_DIR)' : ' · เปลี่ยนได้ด้วย BOOKDOSE_BACKUP_DIR'}
-          {view.same_disk && !view.offsite.settings.kind && ' · อยู่บนดิสก์เดียวกับข้อมูล ถ้าดิสก์เสียจะเสียทั้งคู่'}
-          {' '}ไฟล์ที่สั่งเองไม่ถูกลบอัตโนมัติ
+          {view.from_environment && ' (BOOKDOSE_BACKUP_DIR)'}
+          {view.same_disk && !view.offsite.settings.kind && ' อยู่บนดิสก์เดียวกับข้อมูล'}
         </p>
         <OffsiteBlock view={view.offsite} hasFiles={view.files.length > 0} />
         <div className="restore-upload">
@@ -232,7 +229,6 @@ export function BackupsCard({ view }: { view: BackupsView }) {
             <Icon name="download" />
             {sending !== null ? `กำลังส่งไฟล์ ${Math.round(sending * 100)}%` : 'กู้คืนจากไฟล์ในเครื่อง'}
           </label>
-          <span className="tiny muted">หรือกด กู้คืน ที่ไฟล์ในรายการ · ระบบบอกก่อนว่าจะแทนที่อะไรบ้าง ยังไม่มีอะไรเปลี่ยนจนกว่าจะยืนยัน</span>
         </div>
         {view.files.length > 0 && (
           <div className="table-scroll">
@@ -251,7 +247,7 @@ export function BackupsCard({ view }: { view: BackupsView }) {
                   <tr key={f.name}>
                     <td>
                       <strong>{date(f.created_at, true)}</strong>
-                      <span className="muted"> · {kindWords[f.kind] ?? f.kind}</span>
+                      <span className="muted"> {kindWords[f.kind] ?? f.kind}</span>
                     </td>
                     <td>{bytesText(f.size)}</td>
                     <td className="backup-actions">
@@ -291,7 +287,7 @@ function OffsiteBlock({ view, hasFiles }: { view: OffsiteView; hasFiles: boolean
         <div>
           <strong>สำเนานอกเครื่อง</strong>
           <p className="tiny muted">
-            {s.kind ? `ทุกครั้งที่สำรอง ระบบส่งสำเนาไปที่ ${where} เอง` : 'ยังไม่ได้ตั้ง · ถ้าเครื่องหรือดิสก์เสีย ไฟล์สำรองจะหายไปพร้อมกัน'}
+            {s.kind ? `ส่งสำเนาไปที่ ${where}` : 'ยังไม่ได้ตั้ง'}
           </p>
         </div>
         <button type="button" className="btn sm" onClick={open}>
@@ -304,13 +300,13 @@ function OffsiteBlock({ view, hasFiles }: { view: OffsiteView; hasFiles: boolean
           {view.last ? (
             <p className={view.last.ok ? 'offsite-ok' : 'notice warning'}>
               {view.last.ok
-                ? `ส่งสำเนาล่าสุด ${relative(view.last.at)} · ${view.last.name}`
+                ? `ส่งสำเนาล่าสุด ${relative(view.last.at)} ${view.last.name}`
                 : `ส่งสำเนาไม่สำเร็จเมื่อ ${date(view.last.at, true)} (${view.last.error}) กดทดสอบเพื่อตรวจปลายทาง`}
             </p>
           ) : (
             <p className="tiny muted">ยังไม่ได้ส่งไฟล์ไปปลายทางนี้</p>
           )}
-          {view.same_disk && <p className="tiny muted">โฟลเดอร์นี้อยู่ดิสก์เดียวกับข้อมูล ถ้าดิสก์เสียจะเสียทั้งคู่ ควรใช้ดิสก์อื่นหรือไดรฟ์บนเครือข่าย</p>}
+          {view.same_disk && <p className="tiny muted">โฟลเดอร์นี้อยู่ดิสก์เดียวกับข้อมูล</p>}
           <div className="flex">
             <button
               type="button"
@@ -333,7 +329,7 @@ function OffsiteBlock({ view, hasFiles }: { view: OffsiteView; hasFiles: boolean
                 onClick={() =>
                   void run(async () => {
                     const answer = await sendOffsiteNow();
-                    toast(`กำลังส่ง ${answer.name} · ผลขึ้นที่นี่เมื่อเสร็จ`);
+                    toast(`กำลังส่ง ${answer.name} ผลขึ้นที่นี่เมื่อเสร็จ`);
                     await refresh(HEALTH_PATH);
                   })
                 }
@@ -342,7 +338,7 @@ function OffsiteBlock({ view, hasFiles }: { view: OffsiteView; hasFiles: boolean
                 {view.sending ? 'กำลังส่ง…' : 'ส่งไฟล์ล่าสุดตอนนี้'}
               </button>
             ) : (
-              <span className="tiny muted">ยังไม่มีไฟล์ให้ส่ง กดสำรองตอนนี้ก่อน</span>
+              <span className="tiny muted">ยังไม่มีไฟล์ให้ส่ง</span>
             )}
           </div>
         </>
@@ -372,7 +368,7 @@ function OffsiteForm({ view }: { view: OffsiteView }) {
           secret_key: values.secret_key ?? '',
         });
         closeModal();
-        toast(kind ? 'บันทึกปลายทางแล้ว · กดทดสอบเพื่อตรวจว่าส่งได้' : 'ปิดการส่งไฟล์ออกนอกเครื่องแล้ว');
+        toast(kind ? 'บันทึกปลายทางแล้ว กดทดสอบเพื่อตรวจว่าส่งได้' : 'ปิดการส่งไฟล์ออกนอกเครื่องแล้ว');
         await refresh(HEALTH_PATH);
       }}
     >
@@ -384,15 +380,9 @@ function OffsiteForm({ view }: { view: OffsiteView }) {
           <option value="s3">พื้นที่เก็บไฟล์แบบ S3 (Amazon S3, Cloudflare R2, Backblaze B2, Wasabi)</option>
         </select>
       </div>
-      {kind === 'folder' && (
-        <>
-          <p className="notice">ใช้ดิสก์อีกลูก ไดรฟ์ที่แชร์บนเครือข่าย หรือไดรฟ์คลาวด์ที่เชื่อมไว้กับเครื่องเซิร์ฟเวอร์ โฟลเดอร์ต้องมีอยู่แล้วและระบบเขียนได้</p>
-          <TextField label="ตำแหน่งโฟลเดอร์บนเซิร์ฟเวอร์ (แบบเต็ม)" name="folder" defaultValue={s.folder} max={500} />
-        </>
-      )}
+      {kind === 'folder' && <TextField label="ตำแหน่งโฟลเดอร์บนเซิร์ฟเวอร์ (แบบเต็ม)" name="folder" defaultValue={s.folder} max={500} />}
       {kind === 's3' && (
         <>
-          <p className="notice">สร้าง Bucket และกุญแจที่เขียนและลบไฟล์ใน Bucket นั้นได้เท่านั้น ไฟล์ที่ส่งไปมี Token ที่เข้ารหัสแล้ว แต่ไม่มีกุญแจเปิด</p>
           <TextField label="Endpoint (ขึ้นต้นด้วย https://)" name="endpoint" defaultValue={s.endpoint} max={300} />
           <div className="form-grid">
             <TextField label="Bucket" name="bucket" defaultValue={s.bucket} max={63} />
@@ -429,7 +419,7 @@ export function ChannelsCard({ orgs }: { orgs: OrgChannels[] }) {
       <div className="card-header">
         <div>
           <h2>สถานะช่องทางของทุกองค์กร</h2>
-          <p>{orgs.length ? `LINE อีเมล และ Facebook ที่เปิดใช้ ${orgs.length} องค์กร · มีปัญหา ${failing} องค์กร` : 'ยังไม่มีองค์กรใดเปิดใช้ LINE อีเมล หรือ Facebook'}</p>
+          <p>{orgs.length ? `LINE อีเมล และ Facebook ที่เปิดใช้ ${orgs.length} องค์กร มีปัญหา ${failing} องค์กร` : 'ยังไม่มีองค์กรใดเปิดใช้ LINE อีเมล หรือ Facebook'}</p>
         </div>
         <Icon name="inbox" />
       </div>
@@ -460,12 +450,16 @@ export function ChannelsCard({ orgs }: { orgs: OrgChannels[] }) {
                           <li key={c.kind} className={`health-${c.status}`}>
                             <strong>{c.name}</strong>
                             <span className="muted">
-                              {!c.enabled ? 'ปิดอยู่' : c.error || (c.status === 'ok' ? 'ทำงานปกติ' : '')}
-                              {c.failed ? ` · ส่งไม่สำเร็จ ${number(c.failed)}` : ''}
-                              {c.unknown ? ` · ไม่แน่ใจผล ${number(c.unknown)}` : ''}
-                              {c.waiting ? ` · รอส่ง ${number(c.waiting)}${c.stuck ? ` (ค้างตั้งแต่ ${relative(c.oldest_waiting!)})` : ''}` : ''}
-                              {c.last_failure ? ` · สาเหตุล่าสุด: ${c.last_failure}` : ''}
-                              {c.last_received ? ` · รับล่าสุด ${relative(c.last_received)}` : ''}
+                              {[
+                                !c.enabled ? 'ปิดอยู่' : c.error || (c.status === 'ok' ? 'ทำงานปกติ' : ''),
+                                c.failed ? `ส่งไม่สำเร็จ ${number(c.failed)}` : '',
+                                c.unknown ? `ไม่แน่ใจผล ${number(c.unknown)}` : '',
+                                c.waiting ? `รอส่ง ${number(c.waiting)}${c.stuck ? ` (ค้างตั้งแต่ ${relative(c.oldest_waiting!)})` : ''}` : '',
+                                c.last_failure ? `สาเหตุล่าสุด: ${c.last_failure}` : '',
+                                c.last_received ? `รับล่าสุด ${relative(c.last_received)}` : '',
+                              ]
+                                .filter(Boolean)
+                                .join(', ')}
                             </span>
                           </li>
                         ))}
@@ -479,12 +473,12 @@ export function ChannelsCard({ orgs }: { orgs: OrgChannels[] }) {
                           onClick={() =>
                             confirm({
                               title: `ส่งข้อความของ ${org.name} ซ้ำ`,
-                              message: `ส่งข้อความที่ส่งไม่สำเร็จ ${failed} รายการอีกครั้งในนามผู้เขียนเดิม ข้อความที่ไม่แน่ใจผลจะไม่ถูกส่งซ้ำ เพื่อไม่ให้ลูกค้าได้รับซ้ำ`,
+                              message: `ส่งข้อความที่ส่งไม่สำเร็จ ${failed} รายการอีกครั้ง`,
                               confirmLabel: 'ส่งซ้ำ',
                               run: async () => {
                                 const result = await retryChannels(org.id);
                                 toast(
-                                  `ส่งซ้ำ ${result.retried} รายการ${result.skipped ? ` · ส่งซ้ำไม่ได้ ${result.skipped} (${result.reasons.join(', ')})` : ''}`,
+                                  `ส่งซ้ำ ${result.retried} รายการ${result.skipped ? ` ส่งซ้ำไม่ได้ ${result.skipped} (${result.reasons.join(', ')})` : ''}`,
                                   result.skipped > 0 && !result.retried,
                                 );
                                 await refresh(HEALTH_PATH, PLATFORM_PREFIX);
@@ -523,14 +517,13 @@ export function UsageCard({ orgs }: { orgs: OrgUsage[] }) {
       <div className="card-header">
         <div>
           <h2>การใช้งานของแต่ละองค์กร</h2>
-          <p>เรียงจากองค์กรที่มีข้อความมากที่สุดใน 7 วัน · กดที่พื้นที่เพื่อตั้งหรือเพิ่มโควตาให้องค์กรนั้น</p>
         </div>
         <Icon name="chart" />
       </div>
       {noCeiling > 0 && (
         <div className="card-body">
           <p className="notice warning">
-            ยังไม่ได้กำหนดโควตา {noCeiling} องค์กร · องค์กรที่ไม่มีโควตาใช้ดิสก์ได้ไม่จำกัด และทำให้ทุกองค์กรเขียนข้อมูลไม่ได้เมื่อดิสก์เต็ม
+            ยังไม่ได้กำหนดโควตา {noCeiling} องค์กร
           </p>
         </div>
       )}
@@ -551,7 +544,7 @@ export function UsageCard({ orgs }: { orgs: OrgUsage[] }) {
               <tr key={o.id} className={o.status === 'active' ? '' : 'org-suspended'}>
                 <td>
                   <strong>{o.name}</strong>
-                  {o.status !== 'active' && <span className="muted"> · ระงับ</span>}
+                  {o.status !== 'active' && <span className="muted"> ระงับ</span>}
                 </td>
                 <td>{number(o.open_cases)}</td>
                 <td>{number(o.messages_7d)}</td>
@@ -581,7 +574,7 @@ function QuotaCell({ org }: { org: OrgUsage }) {
     <button
       type="button"
       className={`quota-cell ${tone}`}
-      title={`ไฟล์แนบ ${bytesText(org.storage_bytes)} · ฐานข้อมูล ${bytesText(org.database_bytes)} · กดเพื่อตั้งโควตา`}
+      title={`ไฟล์แนบ ${bytesText(org.storage_bytes)} ฐานข้อมูล ${bytesText(org.database_bytes)}`}
       onClick={() => openModal(`โควตาพื้นที่ของ ${org.name}`, <QuotaForm org={org} />)}
     >
       <span className="quota-figures">
@@ -614,13 +607,11 @@ export function QuotaForm({ org }: { org: OrgUsage }) {
       }}
     >
       <p className="notice">
-        ตอนนี้ใช้ไป <strong>{bytesText(org.used_bytes)}</strong> (ไฟล์แนบ {bytesText(org.storage_bytes)} · ฐานข้อมูล {bytesText(org.database_bytes)}) ·
-        เมื่อเต็ม องค์กรนี้จะอัปโหลดไฟล์ใหม่ไม่ได้ แต่ยังตอบลูกค้าและอ่านของเดิมได้ตามปกติ
+        ตอนนี้ใช้ไป <strong>{bytesText(org.used_bytes)}</strong> (ไฟล์แนบ {bytesText(org.storage_bytes)} ฐานข้อมูล {bytesText(org.database_bytes)})
       </p>
       <div className="field">
         <label htmlFor="quota-mb">โควตา (MB)</label>
         <input id="quota-mb" name="quota_mb" type="number" min={0} max={1048576} step={256} defaultValue={org.quota_mb} required />
-        <span className="tiny muted">ต่ำสุด 100 MB สูงสุด 1 TB · ใส่ 0 เพื่อไม่จำกัด (ไม่แนะนำ เพราะดิสก์เป็นก้อนเดียวกับทุกองค์กร)</span>
       </div>
       <div className="quota-presets">
         {QUOTA_STEPS.map((mb) => (
@@ -664,7 +655,6 @@ export function SecurityCard({ summary }: { summary: SecuritySummary }) {
       <div className="card-header">
         <div>
           <h2>ความปลอดภัยโดยสรุป</h2>
-          <p>ตัวเลขจากบันทึกความปลอดภัยของทั้งแพลตฟอร์ม</p>
         </div>
         <Link className="btn sm" href="/platform/security">
           ดูทั้งหมด
@@ -706,7 +696,6 @@ export function AnnouncementCard({ current }: { current: Announcement | null }) 
       <div className="card-header">
         <div>
           <h2>ประกาศถึงทุกองค์กร</h2>
-          <p>เช่น แจ้งปิดปรับปรุงระบบล่วงหน้า แสดงเป็นแถบด้านบนของทุกหน้าจนถึงเวลาสิ้นสุด</p>
         </div>
         {current && !ended && <span className={`health-pill health-${current.level === 'warning' ? 'warning' : 'ok'}`}>กำลังแสดง</span>}
       </div>
@@ -754,7 +743,7 @@ export function AnnouncementCard({ current }: { current: Announcement | null }) 
             <input type="datetime-local" name="ends_at" defaultValue={toLocal(current?.ends_at)} />
           </label>
         </div>
-        {ended && <p className="tiny muted">ประกาศนี้สิ้นสุดแล้ว ไม่มีใครเห็นอีก</p>}
+        {ended && <p className="tiny muted">ประกาศนี้สิ้นสุดแล้ว</p>}
         <div className="security-actions">
           <button className="btn primary" type="submit">
             <Icon name="send" />

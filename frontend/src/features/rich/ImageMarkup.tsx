@@ -71,11 +71,6 @@ function outline(ctx: CanvasRenderingContext2D, area: Box) {
   ctx.restore();
 }
 
-const HINTS: Record<Tool, string> = {
-  blur: 'ลากคลุมเบอร์โทร เลขบัญชี หรือข้อมูลที่ไม่อยากให้เห็น ส่วนที่เบลอจะอ่านไม่ได้อีก',
-  circle: 'ลากวงรอบจุดที่มีปัญหา ให้ทีมงานเห็นทันที',
-  pan: 'ลากเพื่อเลื่อนดูส่วนอื่นของภาพ',
-};
 
 export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (file: File) => void; onCancel: () => void }) {
   const shown = useRef<HTMLCanvasElement>(null);
@@ -345,11 +340,6 @@ export function ImageMarkup({ file, onSave, onCancel }: { file: File; onSave: (f
           </button>
         </span>
       </div>
-      <p className="tiny muted image-markup-hint">
-        {HINTS[tool]}
-        {zoom > 1 && tool !== 'pan' && ' · เลื่อนภาพ: กด Space ค้างแล้วลาก หรือใช้เครื่องมือ เลื่อนภาพ · ดับเบิลคลิกเพื่อกลับไปพอดีหน้าจอ'}
-        {zoom === 1 && ' · ดับเบิลคลิกตรงที่ต้องการเพื่อซูมเข้า'}
-      </p>
       {problem && <p className="error-text">{problem}</p>}
       <div className={`image-markup-stage${moving ? ' moving' : ''}${grabbing ? ' grabbing' : ''}`} ref={stage}>
         <canvas

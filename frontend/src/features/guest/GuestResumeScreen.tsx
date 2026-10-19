@@ -87,7 +87,6 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
           <>
             <h1>เปิดแชทจากลิงก์นี้ไหม</h1>
             <p>{asking}</p>
-            <p>แชทเดิมของเบราว์เซอร์นี้ยังอยู่ เปิดลิงก์นี้แล้วจะสลับมาดูแชทของลิงก์แทน</p>
             <button type="button" className="btn primary customer-submit" disabled={busy} onClick={() => void openLink.current?.()}>
               <Icon name="chat" />
               เปิดแชทจากลิงก์
@@ -99,7 +98,6 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
         ) : (
           <>
             <h1>กำลังเปิดแชทของคุณ…</h1>
-            <p>รอสักครู่ เบราว์เซอร์นี้จะจำแชทไว้ให้กลับมาอ่านได้</p>
           </>
         )}
       </div>

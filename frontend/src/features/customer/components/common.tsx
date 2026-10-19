@@ -38,7 +38,6 @@ export function CustomerAsk() {
         </span>
         <div className="grow">
           <strong>ไม่พบคำตอบที่ต้องการ?</strong>
-          <p className="muted">ส่งคำถามถึงทีมงาน แล้วติดตามคำตอบได้ในแชทของฉัน</p>
         </div>
         <NewChatLink />
       </div>

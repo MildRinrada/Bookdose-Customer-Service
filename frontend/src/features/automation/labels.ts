@@ -69,7 +69,7 @@ export function ruleActions(
     tags.length > 0 && `ติดป้าย ${tags.slice(0, 3).map((t) => `“${t}”`).join(' ')}${tags.length > 3 ? ` และอีก ${tags.length - 3} ป้าย` : ''}`,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
 }
 
 /** "ส่งข้อความแม่แบบ → เปลี่ยนสถานะเป็น “รอลูกค้า” → เตือนติดตามใน 1 วัน". reply: the template, or whether there is one. */
@@ -85,14 +85,14 @@ export function macroSteps(macro: Pick<Macro, 'set_status' | 'followup_hours'> &
 
 /** The toast after running a macro: what was done, and what did not apply. */
 export function macroResultText(result: MacroRunResult): string {
-  const done = result.done.map((step) => macroResultLabels[step]).join(' · ') || 'ไม่มีขั้นตอนที่ต้องทำ';
+  const done = result.done.map((step) => macroResultLabels[step]).join(', ') || 'ไม่มีขั้นตอนที่ต้องทำ';
   const skipped = [
     result.skipped.includes('reply') && 'ไม่ได้ส่งข้อความ (ไม่มีช่องทางตอบลูกค้า)',
     result.skipped.includes('ticket') && 'ยังไม่มีเคส จึงไม่ได้เปลี่ยนสถานะหรือตั้งเตือน',
   ]
     .filter(Boolean)
-    .join(' · ');
-  return skipped ? `${done} · ${skipped}` : done;
+    .join(', ');
+  return skipped ? `${done} ${skipped}` : done;
 }
 
 /** Whether a reminder is past due, and the line under it ("เสร็จ …", "ถึงเวลาแล้ว · …", "… · อีก 3 ชม. 5 นาที"). */
@@ -102,7 +102,7 @@ export function followupState(followup: Pick<Followup, 'due_at' | 'done_at'>, no
   const when = followup.done_at
     ? `เสร็จ ${date(followup.done_at, true)}`
     : late
-      ? `ถึงเวลาแล้ว · ${date(followup.due_at, true)}`
-      : `${date(followup.due_at, true)} · อีก ${formatDuration((due - now) / 60000)}`;
+      ? `ถึงเวลาแล้ว ${date(followup.due_at, true)}`
+      : `${date(followup.due_at, true)} อีก ${formatDuration((due - now) / 60000)}`;
   return { late, when };
 }

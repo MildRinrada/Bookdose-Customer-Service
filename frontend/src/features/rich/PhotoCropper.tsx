@@ -132,7 +132,6 @@ export function PhotoCropper({ bitmap, onApply, onCancel }: { bitmap: ImageBitma
           if (crop.current) crop.current.drag = null;
         }}
       />
-      <p className="crop-hint muted">ลากรูปเพื่อเลื่อนตำแหน่ง ส่วนที่อยู่ในวงกลมคือรูปที่จะใช้</p>
       <label className="crop-zoom" htmlFor="crop-zoom">
         ย่อ-ขยาย
         <input id="crop-zoom" type="range" min="1" max="3" step="0.01" defaultValue="1" onInput={(event) => zoomTo(Number(event.currentTarget.value))} />

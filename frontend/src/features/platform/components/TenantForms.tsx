@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { useCopyText } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState } from '@/components/ui/display';
 import { FormActions, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useApi, useInvalidate } from '@/lib/query';
+import { customerHomeUrl } from '@/lib/routes';
 import { addTenantAdmin, createTenant, PLATFORM_PREFIX, requestSupportAccess, resetStaffSecurity, setTenantStatus, tenantMembersPath } from '../api';
 import type { TenantMember } from '../types';
 
@@ -26,10 +29,6 @@ export function StaffSecurityList({ id }: { id: string }) {
   const list = members.data.members;
   return (
     <>
-      <p className="notice">
-        ใช้เมื่อทีมงานทำโทรศัพท์และรหัสสำรองหายทั้งคู่ ยืนยันตัวตนของเจ้าของบัญชีด้วยช่องทางอื่นก่อน เช่น โทรกลับเบอร์ที่องค์กรให้ไว้ หลังรีเซ็ตเขาเข้าสู่ระบบได้ด้วยรหัสผ่านเดิม
-        และได้รับอีเมลแจ้ง
-      </p>
       {list.length ? (
         <ul className="staff-security">
           {list.map((m) => {
@@ -40,7 +39,7 @@ export function StaffSecurityList({ id }: { id: string }) {
                   <strong>{m.name}</strong>
                   <span className="tiny muted">
                     {m.email}
-                    {!m.active && ' · ปิดการใช้งานอยู่'}
+                    {!m.active && ' ปิดการใช้งานอยู่'}
                   </span>
                 </span>
                 {methods.length ? (
@@ -55,7 +54,7 @@ export function StaffSecurityList({ id }: { id: string }) {
                     </button>
                   </>
                 ) : (
-                  <span className="tiny muted staff-security-off">ยังไม่ได้เปิดการยืนยันสองขั้นตอน ไม่ต้องรีเซ็ต</span>
+                  <span className="tiny muted staff-security-off">ยังไม่ได้เปิดการยืนยันสองขั้นตอน</span>
                 )}
               </li>
             );
@@ -70,7 +69,7 @@ export function StaffSecurityList({ id }: { id: string }) {
   function reset(m: TenantMember) {
     confirm({
       title: `รีเซ็ตการยืนยันสองขั้นตอนของ ${m.name}`,
-      message: `ลบแอปยืนยันตัวตน รหัสสำรอง และ Passkey ทั้งหมดของ ${m.email} และออกจากระบบทุกอุปกรณ์ บันทึกในประวัติแพลตฟอร์มและประวัติของบัญชีนั้น`,
+      message: `ลบแอปยืนยันตัวตน รหัสสำรอง และ Passkey ทั้งหมดของ ${m.email} และออกจากระบบทุกอุปกรณ์`,
       confirmLabel: 'รีเซ็ต',
       tone: 'danger',
       run: async () => {
@@ -82,13 +81,45 @@ export function StaffSecurityList({ id }: { id: string }) {
   }
 }
 
+/** An organization's code from its name, while the name is in Latin letters: "Acme Shop Co." is acme-shop-co. A Thai
+    name gives nothing, and the code is typed. */
+const codeFrom = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+
+/** A first password nobody has to think up: 16 characters without the ones that read alike (l 1 I O 0). */
+function makePassword() {
+  const letters = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const picks = crypto.getRandomValues(new Uint32Array(16));
+  return Array.from(picks, (n) => letters[n % letters.length]).join('');
+}
+
+/** Put a value into an uncontrolled field the way typing would, so its own checks and counter see it. */
+function typeInto(id: string, value: string) {
+  const input = document.getElementById(id) as HTMLInputElement | null;
+  if (!input) return;
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/** สร้างองค์กรใหม่ (the organizations page): the organization, then who runs it, then what happens next. The code is
+    shown as the link customers will be given, since that is what it is for. Markup: pages/platform.css (new-tenant). */
 export function TenantForm() {
   const { closeModal } = useDialogs();
   const toast = useToast();
   const refresh = useInvalidate();
+  const copyText = useCopyText();
+  const [slug, setSlug] = useState('');
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [made, setMade] = useState('');
+  const valid = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug);
   return (
     <Form
       data-form="tenant"
+      className="new-tenant"
       onSubmit={async (values) => {
         await createTenant({
           name: values.name ?? '',
@@ -102,18 +133,90 @@ export function TenantForm() {
         await refresh(PLATFORM_PREFIX);
       }}
     >
-      <div className="notice">
-        องค์กรใหม่มีพื้นที่ข้อมูลแยกของตัวเอง ระบุผู้ดูแลองค์กรด้านล่าง (ต้องไม่ใช่บัญชีผู้ดูแลแพลตฟอร์ม) หากอีเมลมีบัญชีอยู่แล้ว ระบบจะใช้บัญชีเดิมและไม่เปลี่ยนรหัสผ่าน
-      </div>
-      <div className="form-grid">
-        <TextField label="ชื่อองค์กร" name="name" max={100} />
-        <TextField label="รหัสองค์กร (a-z, 0-9, -)" name="slug" max={60} />
-        <TextField label="ชื่อผู้ดูแลองค์กร" name="admin_name" max={100} />
-        <TextField label="อีเมลผู้ดูแล" name="email" type="email" max={254} />
-        <div className="span-2">
-          <TextField label="รหัสผ่านเริ่มต้น (กรอกสำหรับบัญชีใหม่)" name="password" type="password" required={false} max={200} />
+      <section className="new-tenant-step" aria-labelledby="new-tenant-org">
+        <h3 id="new-tenant-org">
+          <span className="new-tenant-number">1</span>
+          ข้อมูลองค์กร
+        </h3>
+        <TextField
+          label="ชื่อองค์กร"
+          name="name"
+          max={100}
+          placeholder="ชื่อบริษัทหรือหน่วยงาน"
+          onChange={(e) => {
+            if (!slugTouched) setSlug(codeFrom(e.target.value));
+          }}
+        />
+        <TextField
+          label="รหัสองค์กร"
+          name="slug"
+          max={60}
+          pattern="[a-z0-9]+(-[a-z0-9]+)*"
+          title="ใช้ได้แค่ a-z ตัวเล็ก, 0-9 และขีดกลาง"
+          placeholder="เช่น my-company"
+          autoCapitalize="none"
+          spellCheck={false}
+          value={slug}
+          onChange={(e) => {
+            setSlugTouched(true);
+            setSlug(e.target.value);
+          }}
+        />
+        <div className="new-tenant-link" aria-live="polite">
+          <Icon name="link" />
+          <span>
+            <small>ลิงก์ที่ลูกค้าจะได้รับ</small>
+            {/* Until there is a code, the link with a gap where it goes. */}
+            <code>{valid ? customerHomeUrl(slug) : <>{customerHomeUrl('')}<span className="new-tenant-gap">รหัสองค์กร</span></>}</code>
+          </span>
         </div>
-      </div>
+      </section>
+
+      <section className="new-tenant-step" aria-labelledby="new-tenant-admin">
+        <h3 id="new-tenant-admin">
+          <span className="new-tenant-number">2</span>
+          ผู้ดูแลองค์กร
+        </h3>
+        <div className="form-grid">
+          <TextField label="ชื่อผู้ดูแล" name="admin_name" max={100} placeholder="ชื่อ-นามสกุล" personName />
+          <TextField label="อีเมลผู้ดูแล" name="email" type="email" max={254} placeholder="name@company.com" />
+        </div>
+        <div className="new-tenant-password">
+          <TextField
+            id="new-tenant-password"
+            label="รหัสผ่านเริ่มต้น"
+            name="password"
+            type="password"
+            required={false}
+            max={200}
+          />
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              const password = makePassword();
+              typeInto('new-tenant-password', password);
+              setMade(password);
+            }}
+          >
+            <Icon name="sparkle" />
+            สุ่มรหัสผ่าน
+          </button>
+        </div>
+        {made && (
+          <div className="new-tenant-made">
+            <span>
+              <small>รหัสผ่านที่สุ่มได้ ระบบจะไม่แสดงอีก</small>
+              <code>{made}</code>
+            </span>
+            <button type="button" className="btn sm" onClick={() => void copyText(made)}>
+              <Icon name="copy" />
+              คัดลอก
+            </button>
+          </div>
+        )}
+      </section>
+
       <FormActions label="สร้างองค์กร" onCancel={() => closeModal()} />
     </Form>
   );
@@ -147,10 +250,7 @@ export function TenantAdminForm({ id, name, canInvite }: { id: string; name: str
         await refresh(PLATFORM_PREFIX);
       }}
     >
-      <p className="notice">
-        ผู้ดูแลองค์กรรับเรื่องและจัดการทีมของ <strong>{name}</strong> เอง ผู้ดูแลแพลตฟอร์มดูแลระบบเท่านั้น จึงเป็นผู้ดูแลองค์กรไม่ได้
-        {canInvite ? ' ระบบจะส่งลิงก์ให้ผู้ดูแลตั้งรหัสผ่านเอง' : ' ระบบยังส่งอีเมลไม่ได้ กรุณาตั้งรหัสผ่านเริ่มต้นให้ แล้วแจ้งผู้ดูแลเปลี่ยนเองหลังเข้าสู่ระบบ'}
-      </p>
+      {!canInvite && <p className="notice">ระบบยังส่งอีเมลไม่ได้</p>}
       <TextField label="อีเมลผู้ดูแลองค์กร" name="email" type="email" max={254} />
       {canInvite ? (
         <details className="admin-password-option">
@@ -187,17 +287,9 @@ export function SuspendTenantForm({ id, name }: { id: string; name: string }) {
         await refresh(PLATFORM_PREFIX, '/api/bootstrap');
       }}
     >
-      <div className="notice warning">
-        <p>
-          เมื่อระงับ <strong>{name}</strong> จะมีผลทันที:
-        </p>
-        <ul>
-          <li>ทีมงานขององค์กรเข้าพื้นที่ทำงานไม่ได้</li>
-          <li>หน้าลูกค้า แชทผู้เยี่ยมชม และลิงก์เชิญเปิดไม่ได้ ลูกค้าไม่เห็นองค์กรนี้ในรายการ</li>
-          <li>รับข้อความจาก LINE / Facebook ไม่ได้ และหยุดส่งข้อความกับงาน AI ที่ค้างอยู่</li>
-        </ul>
-        <p>ข้อมูลทั้งหมดยังเก็บไว้ครบ กด “เปิดใช้งานอีกครั้ง” ได้ภายหลัง</p>
-      </div>
+      <p className="notice warning">
+        ทีมงานและลูกค้าของ <strong>{name}</strong> ใช้งานไม่ได้ทันที จนกว่าจะเปิดใช้งานอีกครั้ง
+      </p>
       <TextField label={`พิมพ์ชื่อองค์กร “${name}” หรือ CONFIRM เพื่อยืนยัน`} name="confirmation" max={100} autoComplete="off" />
       <div className="form-actions">
         <button type="button" className="btn" onClick={() => closeModal()}>
@@ -222,15 +314,10 @@ export function SupportAccessForm({ id, name }: { id: string; name: string }) {
       onSubmit={async (values) => {
         await requestSupportAccess(id, values.reason ?? '', Number(values.hours));
         closeModal();
-        toast(`ส่งคำขอถึงผู้ดูแล ${name} แล้ว · เข้าได้เมื่อได้รับอนุมัติ`);
+        toast(`ส่งคำขอถึงผู้ดูแล ${name} แล้ว เข้าได้เมื่อได้รับอนุมัติ`);
         await refresh(PLATFORM_PREFIX);
       }}
     >
-      <p className="notice">
-        คำขอจะส่งถึงผู้ดูแลของ <strong>{name}</strong> ทางอีเมลและในหน้าตั้งค่าองค์กร คุณยังเข้าไม่ได้จนกว่าผู้ดูแลองค์กรจะอนุมัติ เมื่ออนุมัติแล้ว
-        คุณจะดูข้อมูลขององค์กรได้แบบอ่านอย่างเดียว เพื่อช่วยตรวจสอบปัญหา แต่ตอบลูกค้า รับเคส หรือแก้ไขข้อมูลไม่ได้ และสิทธิ์จะหมดเองเมื่อครบเวลา ผู้ดูแลองค์กรหยุดสิทธิ์ได้ทุกเมื่อ
-        ทุกขั้นตอนบันทึกทั้งใน “ประวัติแพลตฟอร์ม” และ “ประวัติการทำงาน” ขององค์กร
-      </p>
       <TextField label="เหตุผลที่ต้องเข้าดูข้อมูล (เช่น เลขคำร้อง หรือปัญหาที่ต้องตรวจสอบ)" name="reason" max={300} />
       <div className="field">
         <label htmlFor="support-request-hours">ขอใช้งานเป็นเวลา</label>
@@ -241,7 +328,6 @@ export function SupportAccessForm({ id, name }: { id: string; name: string }) {
             </option>
           ))}
         </select>
-        <small className="muted">ผู้ดูแลองค์กรอนุมัติได้เท่ากับหรือน้อยกว่าที่ขอ คำขอที่ไม่มีใครตัดสินภายใน 24 ชั่วโมงจะหมดอายุเอง</small>
       </div>
       <FormActions label="ส่งคำขอ" onCancel={() => closeModal()} />
     </Form>

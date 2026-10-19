@@ -124,9 +124,9 @@ export function TicketsScreen() {
     }
     if (failed.length) {
       const reason = failed[0].error instanceof Error ? failed[0].error.message : String(failed[0].error);
-      throw new Error(`${message} ${pending.length - failed.length} จาก ${pending.length} เคส · BD-${failed[0].t.number}: ${reason}`);
+      throw new Error(`${message} ${pending.length - failed.length} จาก ${pending.length} เคส BD-${failed[0].t.number}: ${reason}`);
     }
-    toast(`${message} · ${picked.length} เคส`);
+    toast(`${message} ${picked.length} เคส`);
   };
   const bulk = (changes: TicketChanges, message: string) => void bulkUpdate(changes, message).catch((error: Error) => toast(error.message, true));
 
@@ -153,7 +153,6 @@ export function TicketsScreen() {
       <div className="page-heading">
         <div>
           <h1>เคสบริการ</h1>
-          <p>ติดตาม จัดลำดับ และมอบหมายทุกเรื่องให้ทีมของคุณ</p>
         </div>
         <div className="flex">
           <button
@@ -318,9 +317,6 @@ export function TicketsScreen() {
         </div>
         <div id="ticket-table">
           <TicketTable tickets={visible} selection={selection} />
-        </div>
-        <div className="table-footer">
-          <span>ข้อมูลตามองค์กรและทีมที่คุณมีสิทธิ์</span>
         </div>
       </section>
     </>

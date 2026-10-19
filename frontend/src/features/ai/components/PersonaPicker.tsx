@@ -18,10 +18,10 @@ export const personaLabels: Record<AssistantPersona['persona'], string> = {
   custom: 'ตามใจฉัน',
 };
 
-const CHOICES: Array<{ key: 'formal' | 'friendly' | 'custom'; title: string; line: string }> = [
-  { key: 'formal', title: 'ทางการ', line: 'สุภาพ ตรงประเด็น เหมือนเพื่อนร่วมงานมืออาชีพ' },
-  { key: 'friendly', title: 'สายเป็นกันเอง', line: 'สบาย ๆ เหมือนเพื่อนในทีม คุยง่าย มีมุกบ้าง' },
-  { key: 'custom', title: 'ระบุตามใจฉัน', line: 'บอกนิสัยที่อยากให้เป็นด้วยคำของคุณเอง' },
+const CHOICES: Array<{ key: 'formal' | 'friendly' | 'custom'; title: string }> = [
+  { key: 'formal', title: 'ทางการ' },
+  { key: 'friendly', title: 'สายเป็นกันเอง' },
+  { key: 'custom', title: 'ระบุตามใจฉัน' },
 ];
 
 export function PersonaPicker({ current, onDone }: { current: AssistantPersona | null; onDone: () => void }) {
@@ -48,7 +48,6 @@ export function PersonaPicker({ current, onDone }: { current: AssistantPersona |
     <div className="assistant-persona-pick">
       <div className="assistant-hello">
         <h2>อยากให้ผู้ช่วยคุยแบบไหน</h2>
-        <p>มีผลกับน้ำเสียงที่คุยกับคุณเท่านั้น เปลี่ยนได้ทุกเมื่อ</p>
       </div>
       <div className="assistant-persona-choices" role="radiogroup" aria-label="บุคลิกของผู้ช่วย AI">
         {CHOICES.map((c) => (
@@ -56,7 +55,6 @@ export function PersonaPicker({ current, onDone }: { current: AssistantPersona |
             <input type="radio" name="assistant-persona" value={c.key} checked={choice === c.key} onChange={() => setChoice(c.key)} />
             <span>
               <strong>{c.title}</strong>
-              <small>{c.line}</small>
             </span>
             <Icon name="check" />
           </label>

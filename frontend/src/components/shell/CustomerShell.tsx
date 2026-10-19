@@ -15,7 +15,7 @@ import { RealtimeProvider } from '@/lib/realtime-provider';
 import { customerAccountPages, customerPageOf, customerServicePages, type CustomerPage } from '@/lib/routes';
 import { useBoot } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
-import { CustomerPrivacyBanner } from '@/features/legal/StaffLegal';
+import { CustomerPrivacy } from '@/features/legal/StaffLegal';
 import { Brand, MobileToggle, NavItem, ProfileMenu, SidebarTips, SidebarToggle, useSidebar } from './chrome';
 import { SessionGuard } from './SessionGuard';
 import { TextSizeMenu } from './TextSize';
@@ -46,7 +46,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   useReplyPopups();
 
   useEffect(() => {
-    document.title = `${page?.label ?? 'บัญชีลูกค้า'} · ${home?.name ?? 'Bookdose'}`;
+    document.title = `${page?.label ?? 'บัญชีลูกค้า'} - ${home?.name ?? 'Bookdose'}`;
   }, [page, home]);
 
   const nav = (p: CustomerPage) => (
@@ -76,7 +76,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
       <SidebarTips />
       <div className="app-main">
         <AnnouncementBar announcement={me.announcement} />
-        {me.privacy_version && me.consent_version !== me.privacy_version && <CustomerPrivacyBanner version={me.privacy_version} />}
+        {me.privacy_version && me.consent_version !== me.privacy_version && <CustomerPrivacy version={me.privacy_version} />}
         <header className="topbar">
           <div className="breadcrumb">
             <MobileToggle onClick={() => setMobileOpen((o) => !o)} />

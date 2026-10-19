@@ -135,17 +135,13 @@ export function auditEntityName(event: AuditEvent): string {
   return event.entity_display && event.entity_display !== 'รายการที่เกี่ยวข้อง' ? event.entity_display : '';
 }
 
-/* The server names a person "ชื่อ · อีเมล" (audit.with_names). The row shows the name; the email is only a tooltip.
-   A case is named "BD-12 · หัวข้อ", so that is never read as a person. */
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/* The server names a person "ชื่อ (อีเมล)" (audit.with_names). The row shows the name; the email is only a tooltip.
+   Anything else in brackets at the end that is not an email address is part of a name, not a person's. */
+const PERSON = /^(.+?) \(([^\s@()]+@[^\s@()]+\.[^\s@()]+)\)$/;
 
 export function auditPerson(display: string | undefined): { name: string; email: string } | null {
-  if (!display) return null;
-  const at = display.lastIndexOf(' · ');
-  if (at < 1) return null;
-  const name = display.slice(0, at).trim();
-  const email = display.slice(at + 3).trim();
-  return EMAIL.test(email) && !/^BD-\d+$/.test(name) ? { name, email } : null;
+  const found = display ? PERSON.exec(display) : null;
+  return found ? { name: found[1].trim(), email: found[2] } : null;
 }
 
 /** Who did it and what it was done to, each said once: when the event is about the actor themself (signing in,

@@ -136,7 +136,6 @@ export function CustomerBell() {
                     <Icon name="checkCircle" />
                   </span>
                   <strong>ไม่มีการแจ้งเตือน</strong>
-                  <span className="muted">เมื่อทีมงานตอบกลับ ขอข้อมูลเพิ่ม หรือดำเนินการเรื่องของคุณเสร็จ จะแจ้งที่นี่</span>
                 </div>
               )}
             </div>

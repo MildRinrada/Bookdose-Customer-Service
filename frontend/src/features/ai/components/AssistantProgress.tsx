@@ -130,12 +130,6 @@ export function AssistantProgress({ wait, onStop }: { wait: AssistantWait; onSto
   const thinking = wait.thinkingSince ? (now - wait.thinkingSince) / 1000 : 0;
   const order = ['reading', 'queued', 'thinking'];
   const at = (step: string): Step['state'] => (order.indexOf(step) < order.indexOf(phase) ? 'done' : step === phase ? 'active' : 'todo');
-  const hint =
-    wait.provider === 'n8n' && thinking >= 40
-      ? 'n8n ที่ใช้โมเดลบนเครื่องอาจใช้เวลาหลายนาที ยังทำงานอยู่ตามปกติ'
-      : thinking >= 15
-        ? 'คำถามที่ต้องดูหลายเคส หรือเสนอหลายรายการ ใช้เวลานานขึ้น ยังทำงานอยู่ตามปกติ'
-        : '';
   const steps: Step[] = [
     {
       key: 'reading',
@@ -163,8 +157,7 @@ export function AssistantProgress({ wait, onStop }: { wait: AssistantWait; onSto
       detail: (
         <>
           <span>คิดมาแล้ว {duration(thinking)}</span>
-          {hint && <span>{hint}</span>}
-          {wait.limit ? <span>รอได้นานสุด {duration(wait.limit)} ถ้าเกินระบบจะหยุดรอและแจ้งให้ทราบ</span> : null}
+          {wait.limit ? <span>รอได้นานสุด {duration(wait.limit)}</span> : null}
         </>
       ),
     },

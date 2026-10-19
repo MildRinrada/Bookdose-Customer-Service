@@ -19,17 +19,14 @@ export function SlugField({ defaultValue = '' }: { defaultValue?: string }) {
         required
         maxLength={60}
         pattern="[a-z0-9]+(-[a-z0-9]+)*"
+        title="ใช้ได้แค่ a-z ตัวเล็ก, 0-9 และขีดกลาง"
         defaultValue={defaultValue}
         placeholder="เช่น my-company"
         autoCapitalize="none"
         spellCheck={false}
         {...bind}
-        aria-describedby={['slug-help', bind['aria-describedby']].filter(Boolean).join(' ')}
       />
       {errorNode}
-      <small id="slug-help" className="muted">
-        ใช้ a-z, 0-9 และขีดกลาง เช่น my-company
-      </small>
     </div>
   );
 }

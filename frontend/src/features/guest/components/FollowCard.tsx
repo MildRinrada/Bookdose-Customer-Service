@@ -36,7 +36,7 @@ function Option({ icon, title, status, done, children }: { icon: string; title: 
       </span>
       <div className="guest-follow-text">
         <strong>{title}</strong>
-        <span className="guest-follow-status">{status}</span>
+        {status && <span className="guest-follow-status">{status}</span>}
         {children}
       </div>
     </li>
@@ -52,14 +52,12 @@ function LinkOption({ slug, via, verified, masked }: { slug: string; via: 'email
   const email = via === 'email';
   const inputId = `guest-link-${via}`;
   const status = sentTo
-    ? `ส่งแล้วไปที่ ${sentTo} เปิดลิงก์ในข้อความเพื่อยืนยัน`
+    ? `ส่งแล้วไปที่ ${sentTo}`
     : verified
-      ? `ยืนยันแล้ว ${masked} · ได้รับแจ้งเมื่อทีมงานตอบ พร้อมลิงก์กลับมาที่แชท`
+      ? `ยืนยันแล้ว ${masked}`
       : masked
         ? `ส่งลิงก์ไปที่ ${masked} แล้ว ยังไม่ได้เปิดลิงก์`
-        : email
-          ? 'รับลิงก์ไว้เปิดแชทนี้จากเครื่องอื่น และรับแจ้งเมื่อทีมงานตอบ'
-          : 'สำหรับคนที่ไม่มีอีเมล รับลิงก์ทาง SMS ไว้เปิดแชทนี้ภายหลัง';
+        : '';
   return (
     <Option
       icon={email ? 'mail' : 'phone'}
@@ -151,7 +149,7 @@ function LineOption({ slug, overview }: { slug: string; overview: GuestOverview 
       icon="chat"
       title="แจ้งเตือนทาง LINE"
       done={linked}
-      status={linked ? `เชื่อมกับ ${name} แล้ว · ได้รับแจ้งทาง LINE เมื่อทีมงานตอบ` : `รับแจ้งเตือนในแชท LINE กับ ${name}`}
+      status={linked ? `เชื่อมกับ ${name} แล้ว` : ''}
     >
       {linked ? (
         <button
@@ -160,7 +158,7 @@ function LineOption({ slug, overview }: { slug: string; overview: GuestOverview 
           onClick={() =>
             confirm({
               title: 'ยกเลิกการแจ้งเตือนทาง LINE',
-              message: `จะไม่ได้รับแจ้งทาง LINE เมื่อทีมงานตอบแชทนี้อีก เชื่อมใหม่ได้ทุกเมื่อ`,
+              message: 'จะไม่ได้รับแจ้งทาง LINE เมื่อทีมงานตอบแชทนี้อีก',
               confirmLabel: 'ยกเลิกการเชื่อม',
               cancelLabel: 'ไม่ยกเลิก',
               tone: 'danger',
@@ -283,7 +281,7 @@ export function FollowCard({
         </span>
         <span className="guest-follow-head-text">
           <strong id="guest-follow-title">ติดตามแชทนี้</strong>
-          <span className="tiny muted">{proven.length ? `ติดตามได้ทาง ${proven.join(' · ')}` : 'เลือกวิธีกลับมาอ่านคำตอบของทีมงาน'}</span>
+          {proven.length > 0 && <span className="tiny muted">ติดตามได้ทาง {proven.join(', ')}</span>}
         </span>
         <Icon name="down" />
       </button>
@@ -293,11 +291,7 @@ export function FollowCard({
             icon="globe"
             title="จำในเบราว์เซอร์นี้"
             done={guest.remember}
-            status={
-              guest.remember
-                ? 'เปิดหน้านี้ในเบราว์เซอร์นี้เมื่อไรก็เห็นแชทต่อได้ (เฉพาะเครื่องนี้)'
-                : 'ปิดอยู่ เบราว์เซอร์จะลืมแชทเมื่อปิดหน้าต่าง ขอลิงก์ไว้ก่อนถ้าต้องการกลับมาอ่าน'
-            }
+            status={guest.remember ? '' : 'ปิดอยู่ เบราว์เซอร์จะลืมแชทเมื่อปิดหน้าต่าง'}
           >
             <label className="check guest-switch">
               <input
@@ -332,8 +326,7 @@ export function FollowCard({
             onClick={() =>
               confirm({
                 title: 'ลืมแชทในเบราว์เซอร์นี้',
-                message:
-                  'เบราว์เซอร์นี้จะไม่แสดงแชทกับทีมงานอีก ทีมงานยังเห็นข้อความเดิม และคุณยังเปิดแชทได้จากลิงก์ในอีเมล SMS หรือ LINE ที่ยืนยันไว้',
+                message: 'เบราว์เซอร์นี้จะไม่แสดงแชทกับทีมงานอีก',
                 confirmLabel: 'ลืมแชท',
                 cancelLabel: 'ไม่ลืม',
                 tone: 'danger',

@@ -40,7 +40,7 @@ export function MembersScreen() {
         <div>
           <h1>ทีมและสมาชิก</h1>
           <p>
-            {work.members.length} คนในองค์กร · เปิดใช้งาน {active} คน · {work.teams.length} ทีม
+            {work.members.length} คนในองค์กร, เปิดใช้งาน {active} คน, {work.teams.length} ทีม
           </p>
         </div>
         <div className="flex">
@@ -57,7 +57,6 @@ export function MembersScreen() {
         <div className="card-header">
           <div>
             <h2>สมาชิกในองค์กร</h2>
-            <p>เจ้าขององค์กรเห็นงานทุกทีมและจัดการองค์กรได้ (มีได้หลายคน อย่างน้อย 1 คน) เจ้าหน้าที่ตอบลูกค้าและเห็นเฉพาะทีมของตน</p>
           </div>
         </div>
         <div id="members-panel">
@@ -68,7 +67,6 @@ export function MembersScreen() {
         <div className="card-header">
           <div>
             <h2>ทีมในองค์กร</h2>
-            <p>เคสและบทสนทนาถูกมอบหมายตามทีม</p>
           </div>
           <button type="button" className="btn" onClick={() => openModal('เพิ่มทีมใหม่', <TeamForm />)}>
             <Icon name="plus" />
@@ -193,13 +191,19 @@ function MembersList({ onEdit }: { onEdit: (member: Member) => void }) {
                       </td>
                       <td className="member-cell">
                         {roleLabels[m.role]}
-                        {m.expires_at && m.active ? <span className="tiny muted support-member"> · Support ถึง {date(m.expires_at, true)}</span> : null}
+                        {m.expires_at && m.active ? <span className="tiny muted support-member"> Support ถึง {date(m.expires_at, true)}</span> : null}
                       </td>
                       <td className="member-cell" title={work.teams.find((t) => t.id === m.team_id)?.name || ''}>
                         {work.teams.find((t) => t.id === m.team_id)?.name || '-'}
                       </td>
                       <td>
                         <Badge status={status} label={memberStatusLabels[status]} />
+                        {/* Only an admin's list says it (backend organization/service.py): the notice was shown, not answered. */}
+                        {m.privacy_ok === false && m.active ? (
+                          <span className="tiny member-privacy" title="ยังไม่ได้กดรับทราบประกาศความเป็นส่วนตัวฉบับที่ใช้อยู่ ระบบจะถามเขาตอนเข้าใช้งาน">
+                            ยังไม่รับทราบประกาศ
+                          </span>
+                        ) : null}
                       </td>
                       <td className="member-manage">
                         <button type="button" className="btn sm subtle" data-id={m.id} onClick={() => onEdit(m)}>
@@ -219,7 +223,7 @@ function MembersList({ onEdit }: { onEdit: (member: Member) => void }) {
         </>
       ) : (
         <div className="card-body">
-          <EmptyState title="ไม่พบสมาชิกที่ค้นหา" description="ลองเปลี่ยนคำค้น หรือเลือกบทบาท “ทั้งหมด”" icon="users" />
+          <EmptyState title="ไม่พบสมาชิกที่ค้นหา" icon="users" />
         </div>
       )}
     </>

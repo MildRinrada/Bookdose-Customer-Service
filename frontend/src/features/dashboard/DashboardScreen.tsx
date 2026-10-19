@@ -122,15 +122,15 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
   const cards: Record<string, ReactNode> = {
     stats: (
       <div className="stats-grid">
-        <StatCard label="เคสที่กำลังดูแล" value={active.length} icon="ticket" foot="เคสที่ยังไม่แก้ไขหรือปิด" href="/tickets?filter=active" />
-        <StatCard label="เคสที่มอบหมายให้ฉัน" value={mine.length} icon="users" color="amber" foot="งานที่คุณเป็นผู้รับผิดชอบ" href="/tickets?filter=mine" />
-        <StatCard label="แก้ไขสำเร็จวันนี้" value={resolvedToday} icon="checkCircle" color="green" foot="นับจากเวลาแก้ไขเคสสำเร็จ" href="/tickets?filter=resolved_today" />
+        <StatCard label="เคสที่กำลังดูแล" value={active.length} icon="ticket" foot={null} href="/tickets?filter=active" />
+        <StatCard label="เคสที่มอบหมายให้ฉัน" value={mine.length} icon="users" color="amber" foot={null} href="/tickets?filter=mine" />
+        <StatCard label="แก้ไขสำเร็จวันนี้" value={resolvedToday} icon="checkCircle" color="green" foot={null} href="/tickets?filter=resolved_today" />
         <StatCard
           label="เคสที่เกิน SLA"
           value={late.length}
           icon="clock"
           color="red"
-          foot="เวลาตอบกลับหรือเวลาแก้ไข"
+          foot={null}
           href="/tickets?filter=overdue"
           urgent={late.length > 0}
         />
@@ -176,7 +176,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
             </div>
             <div className="mini-chart">
               {dates.map((d, i) => (
-                <ChartColumn key={d.toDateString()} tip={`${date(d)} · ${counts[i]} เคส`} count={counts[i]} max={max} day={dayNames[d.getDay()]} />
+                <ChartColumn key={d.toDateString()} tip={`${date(d)}, ${counts[i]} เคส`} count={counts[i]} max={max} day={dayNames[d.getDay()]} />
               ))}
             </div>
           </div>
@@ -190,7 +190,6 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         <div className="card-header">
           <div>
             <h2>ถึงคุณ</h2>
-            <p>ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ</p>
           </div>
           <span className={`badge${me.length ? ' pending_customer' : ''}`} id="me-count">
             {me.length} รายการ
@@ -218,7 +217,6 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         <div className="manager-head">
           <div>
             <h2 id="insights-title">AI และคลังความรู้</h2>
-            <p>เห็นเฉพาะเจ้าขององค์กร · อัปเดตทุก 2 นาที</p>
           </div>
         </div>
         <div className="insights-grid">
@@ -271,7 +269,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
       </div>
       <DashboardBoard content={cards} />
       <div className="section-bottom">
-        <span>พื้นที่ทำงาน {work.tenant.name} · ข้อมูลตามสิทธิ์ของคุณ</span>
+        <span>พื้นที่ทำงาน {work.tenant.name}</span>
         <span>Made for meaningful support. ♡</span>
       </div>
     </>

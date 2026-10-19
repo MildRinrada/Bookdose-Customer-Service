@@ -135,7 +135,7 @@ export function CallbackPanel({
   if (!state.slots.length)
     return (
       <section className="callback-form" aria-label="ขอให้ติดต่อกลับ">
-        <p className="callback-intro">ตอนนี้ไม่มีช่วงเวลาให้เลือกใน 7 วันข้างหน้า พิมพ์ถึงทีมงานในแชทนี้ได้เลย</p>
+        <p className="callback-intro">ตอนนี้ไม่มีช่วงเวลาให้เลือกใน 7 วันข้างหน้า</p>
       </section>
     );
 

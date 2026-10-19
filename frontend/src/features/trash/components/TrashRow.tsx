@@ -37,10 +37,10 @@ export function TrashRow({
         <strong className="trash-title">{item.title || '(ไม่มีชื่อ)'}</strong>
         <span className="trash-meta">
           {kind.label}
-          {item.detail ? ` · ${item.detail}` : ''}
+          {item.detail ? ` ${item.detail}` : ''}
         </span>
         <span className="trash-meta">
-          ลบโดย {item.actor} ·{' '}
+          ลบโดย {item.actor}{' '}
           <time dateTime={item.deleted_at} title={date(item.deleted_at, true)}>
             {relative(item.deleted_at)}
           </time>

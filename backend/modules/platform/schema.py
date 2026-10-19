@@ -1,10 +1,19 @@
 """Organization and registration-email form validation."""
+import base64
 import re
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from backend.exceptions.errors import APIError
 from backend.modules.platform.model import GLOBAL_AUDIENCES, REPORT_MAX, REPORT_STATUSES, TENANT_STATUSES
+from backend.utils.files import matches_file_type
 from backend.utils.validation import require, field, email_field, slug_field, new_password
+
+# Pictures of what went wrong, sent with a problem report: screenshots, so images only, few and small enough that a
+# report is a report and not a file store (the JSON body itself is capped at 8 MB, base64 adds a third).
+REPORT_IMAGES = 5
+REPORT_IMAGE_BYTES = 5*1024*1024
+REPORT_IMAGE_TYPES = {'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.webp':'image/webp'}
 
 
 def tenant_form(body):
@@ -64,11 +73,32 @@ def tenant_quota(body):
 
 
 def problem_report(body):
-    """(message, page) of a report sent from the ? in the top bar. The page is whatever address the reporter was on,
-    kept short and free of control characters; it is a hint for reproducing, not something to trust."""
+    """(message, page, images) of a report sent from the ? in the top bar. The page is whatever address the reporter
+    was on, kept short and free of control characters; it is a hint for reproducing, not something to trust. images:
+    [(name, mime, bytes)], each one's content checked against its type, not only its name."""
     page = body.get('page','')
     require(isinstance(page,str) and len(page)<=300 and not any(ord(c)<32 for c in page),'หน้าที่แจ้งไม่ถูกต้อง')
-    return field(body,'message',REPORT_MAX),page.strip()
+    return field(body,'message',REPORT_MAX),page.strip(),report_images(body.get('images',[]))
+
+
+def report_images(uploads):
+    require(isinstance(uploads,list) and len(uploads)<=REPORT_IMAGES,f'แนบรูปได้สูงสุด {REPORT_IMAGES} รูป')
+    found,total = [],0
+    for item in uploads:
+        require(isinstance(item,dict) and isinstance(item.get('data'),str),'รูปที่แนบไม่ถูกต้อง')
+        name = field(item,'name',150)
+        require('/' not in name and '\\' not in name and not any(ord(c)<32 for c in name),'ชื่อไฟล์ไม่ถูกต้อง')
+        mime = REPORT_IMAGE_TYPES.get(Path(name).suffix.lower())
+        require(mime,'แนบได้เฉพาะรูป PNG, JPG, GIF หรือ WebP')
+        try:
+            content = base64.b64decode(item['data'],validate=True)
+        except (ValueError,TypeError):
+            raise APIError(400,'รูปที่แนบไม่ถูกต้อง')
+        total += len(content)
+        require(content and total<=REPORT_IMAGE_BYTES,'รูปทั้งหมดรวมกันต้องไม่เกิน 5 MB')
+        require(matches_file_type(Path(name).suffix.lower()[1:],content),f'“{name}” ไม่ใช่ไฟล์รูปจริง')
+        found.append((name,mime,content))
+    return found
 
 
 def report_status(body):

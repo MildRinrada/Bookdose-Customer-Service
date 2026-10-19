@@ -25,7 +25,7 @@ import { FoldCard } from './FoldCard';
 export function HandChip({ hand }: { hand: Hand }) {
   const coming = hand.helper_id ? `${hand.helper_name} กำลังช่วย` : 'ยังไม่มีใครเข้าไปช่วย';
   return (
-    <span className={`hand-chip${hand.helper_id ? ' helped' : ''}`} title={`${hand.raised_name} ยกมือขอช่วย${hand.note ? `: ${hand.note}` : ''} · ${coming}`}>
+    <span className={`hand-chip${hand.helper_id ? ' helped' : ''}`} title={`${hand.raised_name} ยกมือขอช่วย${hand.note ? `: ${hand.note}` : ''} ${coming}`}>
       <Icon name="hand" />
       {hand.helper_id ? 'มีคนช่วยแล้ว' : 'ขอช่วย'}
     </span>
@@ -60,7 +60,6 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
   if (!hand)
     return (
       <FoldCard id="hand" title="ติดเคสนี้อยู่ไหม" className="hand-card">
-        <p className="tiny muted">ยกมือแล้ว ทีมของเคสนี้และเจ้าขององค์กรจะเห็นทันที ใครว่างก็เข้ามาช่วยได้</p>
         <label className="sr-only" htmlFor="hand-note">
           ติดเรื่องอะไร
         </label>
@@ -90,7 +89,7 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
       </p>
       {hand.note && <p className="hand-note">{hand.note}</p>}
       <p className="tiny muted">
-        ยกมือเมื่อ {shortAgo(hand.raised_at)} ·{' '}
+        ยกมือเมื่อ {shortAgo(hand.raised_at)}{' '}
         {hand.helper_id ? (helping ? 'คุณกำลังเข้าไปช่วย' : `${hand.helper_name} กำลังเข้ามาช่วย`) : 'ยังไม่มีใครเข้ามาช่วย'}
       </p>
       <div className="hand-actions">

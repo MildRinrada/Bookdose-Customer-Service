@@ -110,21 +110,14 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
 
   const remove = () => {
     const number = `BD-${t.number}`;
-    const conversations = data.conversations.length;
     confirmDelete({
       title: `ลบเคส ${number}`,
       warning: `${number} “${t.subject}” จะถูกย้ายไปถังขยะ`,
-      effects: [
-        'เคสนี้จะหายไปจากรายการเคส รายงาน และการนับ SLA ทันที',
-        conversations ? `บทสนทนา ${conversations} รายการจะยังอยู่ในกล่องข้อความ แต่จะไม่ผูกกับเคสนี้อีก` : 'เคสนี้ยังไม่มีบทสนทนาที่ผูกอยู่',
-        'กู้คืนได้จากเมนูถังขยะภายใน 30 วัน หลังจากนั้นระบบจะลบถาวร',
-        'การลบจะถูกบันทึกในประวัติการทำงานพร้อมหมายเลขเคส',
-      ],
       word: number,
       confirmLabel: 'ย้ายเคสไปถังขยะ',
       run: async () => {
         await deleteTicket(t.id);
-        toast(`ย้าย ${number} ไปถังขยะแล้ว · กู้คืนได้ที่เมนูถังขยะ`);
+        toast(`ย้าย ${number} ไปถังขยะแล้ว กู้คืนได้ที่เมนูถังขยะ`);
         router.push('/tickets');
         // Not the deleted case itself: asking for it again would only answer "not found" on the way out.
         await Promise.all([

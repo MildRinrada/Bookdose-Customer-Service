@@ -56,6 +56,11 @@
 .widget-body>.card,.widget-body>.board-card {
   border: 1px solid var(--line);
 }
+/* So do the cards inside the two sections that clip their sides (reveal.css): a ring drawn outside a card is cut
+   off there, and the first card lost its left edge, the last its right. */
+.manager-view .card,.insights-section .card {
+  border: 1px solid var(--line);
+}
 /* Where the card being carried or pulled would land; red where something is already there. */
 .board-ghost {
   grid-column: calc(var(--x,0) + 1) / span var(--w,3);

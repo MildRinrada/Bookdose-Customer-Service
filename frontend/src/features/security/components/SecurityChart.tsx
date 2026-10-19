@@ -40,7 +40,7 @@ export function SecurityChart({ series, range }: { series: SecurityOverview['ser
           const at = new Date(b.at);
           const lines = [bucketLabel(at, range), ...SERIES.map((key) => `${seriesLabels[key]} ${number(b[key] || 0)}`)];
           return (
-            <div key={b.at} className="chart-col security-col" tabIndex={0} role="img" aria-label={lines.join(' · ')} data-tip={lines.join('\n')}>
+            <div key={b.at} className="chart-col security-col" tabIndex={0} role="img" aria-label={lines.join(', ')} data-tip={lines.join('\n')}>
               <span className="security-bars" aria-hidden="true">
                 {SERIES.map((key) => (
                   <progress key={key} className={`series-${key}`} value={b[key] || 0} max={max} />
@@ -52,7 +52,7 @@ export function SecurityChart({ series, range }: { series: SecurityOverview['ser
         })}
       </div>
       <p className="tiny muted">
-        {empty ? 'ยังไม่มีเหตุการณ์ในช่วงนี้' : `ชี้หรือแตะที่แท่งเพื่อดูจำนวน · สูงสุด ${number(max)} ครั้งต่อช่วง`}
+        {empty ? 'ยังไม่มีเหตุการณ์ในช่วงนี้' : `สูงสุด ${number(max)} ครั้งต่อช่วง`}
       </p>
       <details className="security-table-view">
         <summary>ดูเป็นตาราง</summary>

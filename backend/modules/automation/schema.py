@@ -75,7 +75,7 @@ def macro_form(body):
     # A macro that only sends a text is a canned reply that skips the read-through: that belongs in
     # คำตอบสำเร็จรูปของทีม (organization/model.py), which writes into the draft instead of sending.
     require(values['set_status'] or hours,
-            'Macro ต้องเปลี่ยนสถานะเคสหรือตั้งเตือนติดตามผลอย่างน้อย 1 อย่าง · ถ้าต้องการแค่ส่งข้อความสำเร็จรูป ให้เพิ่มที่ ตั้งค่าองค์กร → คำตอบสำเร็จรูปของทีม')
+            'Macro ต้องเปลี่ยนสถานะเคสหรือตั้งเตือนติดตามผลอย่างน้อย 1 อย่าง ถ้าต้องการแค่ส่งข้อความสำเร็จรูป ให้เพิ่มที่ ตั้งค่าองค์กร → คำตอบสำเร็จรูปของทีม')
     return values
 
 

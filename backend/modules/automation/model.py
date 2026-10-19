@@ -49,5 +49,5 @@ CREATE INDEX IF NOT EXISTS mentions_user ON mentions(user_id,read_at);
 DEFAULT_SETTINGS = [
     ('escalation_enabled','1'),('escalation_minutes','15'),('csat_enabled','1'),
     ('csat_message','ขอบคุณที่ใช้บริการค่ะ 🙏 ช่วยให้คะแนนความพึงพอใจกับการดูแลครั้งนี้ โดยตอบกลับเป็นตัวเลข 1-5\n'
-                    '5 = พอใจมาก · 4 = พอใจ · 3 = เฉย ๆ · 2 = ไม่ค่อยพอใจ · 1 = ไม่พอใจ'),
+                    '5 = พอใจมาก, 4 = พอใจ, 3 = เฉย ๆ, 2 = ไม่ค่อยพอใจ, 1 = ไม่พอใจ'),
 ]

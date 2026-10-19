@@ -67,7 +67,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
         <div className="card-header">
           <div>
             <h2>แชทโดยไม่ต้องเข้าสู่ระบบ</h2>
-            <p>ลูกค้าเปิดลิงก์แล้วพิมพ์คุยกับทีมได้ทันที ไม่ต้องสมัครสมาชิก ติดตามคำตอบได้ในเบราว์เซอร์เดิม หรือขอลิงก์ทางอีเมล SMS และ LINE</p>
           </div>
         </div>
         <Form
@@ -81,7 +80,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             <input type="checkbox" className="switch" name="guest_enabled" defaultChecked={data.guest_chat.enabled} />
             ให้ลูกค้าเริ่มแชทได้โดยไม่ต้องเข้าสู่ระบบ
           </label>
-          <p className="tiny muted">ปิดแล้ว ลูกค้าต้องเข้าสู่ระบบก่อนจึงจะเริ่มแชทได้ แชทที่เริ่มไว้แล้วยังอยู่ในกล่องข้อความตามเดิม</p>
           <div className="org-link-share mt">
             {data.chat_qr && (
               <figure className="org-qr">
@@ -92,7 +90,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
               </figure>
             )}
             <div className="grow">
-              <span className="muted">ลิงก์แชทขององค์กร · ใส่ในเว็บไซต์ อีเมล เอกสาร หรือพิมพ์ QR ไว้ที่หน้าร้าน</span>
+              <span className="muted">ลิงก์แชทขององค์กร</span>
               <a className="portal-url" href={chatUrl} target="_blank" rel="noopener">
                 {chatUrl}
               </a>
@@ -138,7 +136,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
         <div className="card-header">
           <div>
             <h2>คิวก่อนสำหรับสมาชิก</h2>
-            <p>ลูกค้าที่เข้าสู่ระบบด้วยบัญชีลูกค้าได้ลำดับคิวก่อนลูกค้าที่แชทโดยไม่เข้าสู่ระบบ เป็นสิทธิพิเศษที่ชวนให้ลูกค้าสมัครสมาชิก</p>
           </div>
         </div>
         <Form
@@ -154,9 +151,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             <input type="checkbox" className="switch" name="members_first" defaultChecked={Boolean(data.members_first)} />
             ให้สมาชิกได้คิวก่อน
           </label>
-          <p className="tiny muted">
-            มีผลกับลำดับคิวที่ลูกค้าเห็น ปุ่มรับงานถัดไป และเคสที่รอคนรับ แชทของสมาชิกมีป้าย “สมาชิก” ในกล่องข้อความ ลูกค้าที่ไม่เข้าสู่ระบบยังได้รับบริการตามปกติ แค่รอหลังสมาชิก
-          </p>
           <div className="form-actions">
             <button className="btn primary" type="submit">
               บันทึก
@@ -169,7 +163,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
         <div className="card-header">
           <div>
             <h2>ปุ่มแชทบนเว็บไซต์ขององค์กร</h2>
-            <p>วางโค้ดบรรทัดเดียวในเว็บไซต์ แล้วลูกค้าจะเห็นปุ่มแชทที่มุมจอ เปิดคุยกับทีมได้โดยไม่ต้องออกจากเว็บไซต์</p>
           </div>
         </div>
         <Form
@@ -220,7 +213,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
               required={false}
               defaultValue={w.title}
               placeholder={`แชทกับ ${orgName}`}
-              hint="เว้นว่างเพื่อใช้ชื่อองค์กร"
             />
           </div>
           <div className="guest-snippet mt">
@@ -228,7 +220,6 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             <pre>
               <code>{snippet}</code>
             </pre>
-            <p className="tiny muted">วางไว้ก่อนแท็กปิด &lt;/body&gt; ในทุกหน้าที่ต้องการให้มีปุ่มแชท ปุ่มจะแสดงเมื่อเปิดใช้งานและเว็บไซต์อยู่ในรายการที่อนุญาต</p>
             <div className="guest-settings-actions">
               <button type="button" className="btn subtle" onClick={() => void copyCode()}>
                 <Icon name="code" />
@@ -259,9 +250,6 @@ function GuestBlocksCard() {
       <div className="card-header">
         <div>
           <h2>ผู้เยี่ยมชมที่บล็อกไว้</h2>
-          <p>
-            บล็อกผู้เยี่ยมชมที่ก่อกวนได้จากปุ่ม “บล็อก” ในกล่องข้อความ ผู้ที่ถูกบล็อกอ่านแชทเดิมได้ แต่ส่งข้อความหรือเริ่มแชทใหม่ไม่ได้ และเครือข่ายเดียวกันเริ่มแชทใหม่ไม่ได้ 7 วัน
-          </p>
         </div>
       </div>
       <div className="card-body">
@@ -325,7 +313,7 @@ function OriginsField({ origins, onChange }: { origins: string[]; onChange: (ori
     if (!value) return;
     const found = websiteOrigin(value);
     if (!found) {
-      setProblem('ใส่เป็น https://ชื่อเว็บไซต์ เช่น https://www.example.com (ไม่มีหน้าย่อย) · ทดสอบในเครื่องใช้ http://localhost:พอร์ต ได้');
+      setProblem('ใส่เป็น https://ชื่อเว็บไซต์ เช่น https://www.example.com (ไม่มีหน้าย่อย) ทดสอบในเครื่องใช้ http://localhost:พอร์ต ได้');
       return;
     }
     if (origins.includes(found)) {
@@ -369,7 +357,6 @@ function OriginsField({ origins, onChange }: { origins: string[]; onChange: (ori
           autoComplete="off"
           value={text}
           placeholder={origins.length ? 'เพิ่มเว็บไซต์' : 'https://www.example.com'}
-          aria-describedby="widget-origin-help"
           aria-invalid={problem ? true : undefined}
           onChange={(event) => {
             setText(event.target.value);
@@ -395,9 +382,6 @@ function OriginsField({ origins, onChange }: { origins: string[]; onChange: (ori
           {problem}
         </span>
       )}
-      <p className="tiny muted" id="widget-origin-help">
-        สูงสุด {MAX_ORIGINS} เว็บไซต์ · ต้องขึ้นต้นด้วย https:// · เว็บไซต์อื่นจะเปิดแชทในกรอบของหน้าเว็บไม่ได้
-      </p>
     </div>
   );
 }

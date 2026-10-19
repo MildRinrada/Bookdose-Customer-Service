@@ -86,7 +86,7 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
           กลับมา {snoozeUntilText(ticket.snoozed_until)}
         </p>
         {ticket.snooze_note && <p className="snooze-note">{ticket.snooze_note}</p>}
-        <p className="tiny muted">พักโดย {ticket.snoozed_by || 'ทีมงาน'} · ลูกค้าตอบเมื่อไร กลับเข้าคิวทันที · SLA ยังเดินอยู่</p>
+        <p className="tiny muted">พักโดย {ticket.snoozed_by || 'ทีมงาน'}</p>
         <button
           type="button"
           className="btn"
@@ -104,7 +104,6 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
 
   return (
     <FoldCard id="snooze" title="พักเคสไว้ก่อน" className="snooze-card">
-      <p className="tiny muted">เคสจะหายจากคิวงาน แล้วเด้งกลับมาเองตามเวลาที่เลือก</p>
       <label className="sr-only" htmlFor="snooze-note">
         รอเรื่องอะไร
       </label>
@@ -142,7 +141,6 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
           พักถึงเวลานี้
         </button>
       </div>
-      <p className="tiny muted">SLA ยังเดินอยู่ระหว่างพัก · ลูกค้าตอบเมื่อไร เคสกลับเข้าคิวทันที</p>
     </FoldCard>
   );
 }

@@ -223,8 +223,29 @@ def insert_problem_report(db, report_id, org, user, page, message, browser, repo
 
 
 def problem_reports(db, limit=200):
-    """Newest first, the ones still to look at before the ones already dealt with."""
-    return rows(db,"SELECT * FROM problem_reports ORDER BY status='done',created_at DESC LIMIT ?",(limit,))
+    """Newest first, the ones still to look at before the ones already dealt with, each with its pictures listed
+    (the pictures themselves are fetched one by one)."""
+    found = rows(db,"SELECT * FROM problem_reports ORDER BY status='done',created_at DESC LIMIT ?",(limit,))
+    files = {}
+    for row in rows(db,f'''SELECT id,report_id,name,mime,size FROM problem_report_files
+                          WHERE report_id IN ({','.join('?'*len(found)) or "''"}) ORDER BY created_at,rowid''',
+                    tuple(r['id'] for r in found)):
+        files.setdefault(row['report_id'],[]).append({k:row[k] for k in ('id','name','mime','size')})
+    return [{**r,'images':files.get(r['id'],[])} for r in found]
+
+
+def insert_report_image(db, image_id, report_id, name, mime, content):
+    db.execute('INSERT INTO problem_report_files(id,report_id,name,mime,size,content,created_at) VALUES(?,?,?,?,?,?,?)',
+               (image_id,report_id,name,mime,len(content),content,now()))
+
+
+def report_image(db, report_id, image_id):
+    return one(db,'SELECT name,mime,content FROM problem_report_files WHERE report_id=? AND id=?',(report_id,image_id))
+
+
+def recent_same_report(db, user_id, message, since):
+    """The same words from the same account lately: a second click, or the same report sent again."""
+    return one(db,'SELECT id FROM problem_reports WHERE user_id=? AND message=? AND created_at>=?',(user_id,message,since))
 
 
 def find_problem_report(db, report_id):

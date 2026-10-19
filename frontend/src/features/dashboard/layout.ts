@@ -55,7 +55,7 @@ export type CardDef = { id: string; title: string; note: string; box: Box };
    nobody needs to see to act, come last. Cards that take no rows (nothing to show) drop out and the rest close up. */
 export const CARDS: CardDef[] = [
   { id: 'setup', title: 'เช็กลิสต์เริ่มต้นใช้งาน', note: 'ขั้นตอนตั้งค่าองค์กรที่ยังไม่ครบ', box: { x: 0, y: 0, w: 12, h: 5 } },
-  { id: 'stats', title: 'ตัวเลขสรุป', note: 'เคสที่ดูแล · ของฉัน · ปิดวันนี้ · เกิน SLA', box: { x: 0, y: 5, w: 12, h: 4 } },
+  { id: 'stats', title: 'ตัวเลขสรุป', note: 'เคสที่ดูแล ของฉัน ปิดวันนี้ เกิน SLA', box: { x: 0, y: 5, w: 12, h: 4 } },
   { id: 'today', title: 'วันนี้ของฉัน', note: 'ตอบวันนี้ ปิดวันนี้ เวลาตอบ และ CSAT ของคุณ', box: { x: 0, y: 9, w: 12, h: 3 } },
   { id: 'tickets', title: 'เคสล่าสุด', note: 'ตาราง 6 เคสล่าสุด พร้อมตัวกรองด่วน', box: { x: 0, y: 12, w: 8, h: 15 } },
   { id: 'chart', title: 'เคสเข้าใหม่', note: 'กราฟ 7 วันย้อนหลัง', box: { x: 0, y: 27, w: 8, h: 6 } },
@@ -65,7 +65,7 @@ export const CARDS: CardDef[] = [
   { id: 'sla', title: 'SLA Watch', note: 'เคสที่ต้องดำเนินการทันที พร้อมนาฬิกานับเวลา', box: { x: 8, y: 12, w: 4, h: 9 } },
   { id: 'forecast', title: 'คาดว่าจะเกิน SLA', note: 'เคสที่ยังไม่เกิน แต่ตามคิวและความเร็วทีมตอนนี้จะไม่ทัน', box: { x: 8, y: 21, w: 4, h: 6 } },
   { id: 'waiting', title: 'แชทรอตอบ', note: 'บทสนทนาที่ลูกค้าพิมพ์ล่าสุด เรียงตามเวลาที่รอ', box: { x: 8, y: 27, w: 4, h: 7 } },
-  { id: 'me', title: 'ถึงคุณ', note: 'ถูกกล่าวถึง · เตือนติดตามผล · เคสที่ยกระดับ', box: { x: 8, y: 34, w: 4, h: 7 } },
+  { id: 'me', title: 'ถึงคุณ', note: 'ถูกกล่าวถึง เตือนติดตามผล เคสที่ยกระดับ', box: { x: 8, y: 34, w: 4, h: 7 } },
   { id: 'replies', title: 'คำตอบด่วน', note: 'คำตอบสำเร็จรูปที่ใช้บ่อย', box: { x: 8, y: 41, w: 4, h: 4 } },
   { id: 'insights', title: 'AI และคลังความรู้', note: 'เห็นเฉพาะเจ้าขององค์กร', box: { x: 0, y: 49, w: 12, h: 13 } },
   { id: 'manager', title: 'มุมมองผู้ดูแล', note: 'ภาระงานของทีม ช่องทาง และสถิติรวม', box: { x: 0, y: 62, w: 12, h: 16 } },

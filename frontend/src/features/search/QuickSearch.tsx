@@ -69,7 +69,7 @@ function hitsOf(results: SearchResults | undefined, pages: Page[], query: string
       href: `/tickets/${c.id}`,
       icon: 'ticket',
       title: `BD-${c.number} ${c.subject}`,
-      detail: `${c.contact_name} · ${statusLabels[c.status] ?? c.status}`,
+      detail: `${c.contact_name} ${statusLabels[c.status] ?? c.status}`,
     });
   for (const c of results?.customers ?? [])
     found.push({
@@ -78,7 +78,7 @@ function hitsOf(results: SearchResults | undefined, pages: Page[], query: string
       href: `/contacts?q=${encodeURIComponent(c.email || c.name)}`,
       icon: 'users',
       title: c.name,
-      detail: [c.email, c.phone, c.company].filter(Boolean).join(' · ') || 'ยังไม่มีช่องทางติดต่อ',
+      detail: [c.email, c.phone, c.company].filter(Boolean).join(', ') || 'ยังไม่มีช่องทางติดต่อ',
     });
   for (const a of results?.articles ?? [])
     found.push({
@@ -87,7 +87,7 @@ function hitsOf(results: SearchResults | undefined, pages: Page[], query: string
       href: `/knowledge/${a.id}`,
       icon: 'book',
       title: a.title,
-      detail: `${a.category} · ${a.visibility === 'public' ? 'ลูกค้าอ่านได้' : 'ใช้ภายในทีม'}`,
+      detail: `${a.category} ${a.visibility === 'public' ? 'ลูกค้าอ่านได้' : 'ใช้ภายในทีม'}`,
     });
   for (const p of matchPages(pages, query)) found.push({ key: `page-${p.href}`, group: 'pages', ...p });
   found.push({ key: 'more', group: 'more', href: `/tickets?q=${encodeURIComponent(query)}`, icon: 'search', title: `ค้นหา “${query}” ในรายการเคสทั้งหมด`, detail: '' });

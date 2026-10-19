@@ -22,7 +22,16 @@ import { ContactChannels, TagInput } from './ContactProfileParts';
    contacted back and a data deletion request; and who edited last. `thenTicket` opens the new-case dialog after
    saving. Markup: pages/contacts/contact-form. */
 
-export function ContactForm({ contact = null, thenTicket = false }: { contact?: Contact | null; thenTicket?: boolean }) {
+export function ContactForm({
+  contact = null,
+  thenTicket = false,
+  draft,
+}: {
+  contact?: Contact | null;
+  thenTicket?: boolean;
+  /** What was typed into the case form this was opened from: ย้อนกลับ returns to it, and so does saving. */
+  draft?: Record<string, string>;
+}) {
   const c = contact;
   const toast = useToast();
   const refresh = useInvalidate();
@@ -37,13 +46,13 @@ export function ContactForm({ contact = null, thenTicket = false }: { contact?: 
   // The list row carries the profile; opened from elsewhere, the form waits for it.
   const profile: ContactProfile | null | undefined = c ? (c.profile !== undefined ? c.profile : view?.profile) : null;
   if (c && profile === undefined) return <PageLoading />;
-  return <ContactFormBody c={c} p={profile ?? null} view={view} contacts={contacts} match={match} setEmail={setEmail} notes={notes} onSaved={async () => {
+  return <ContactFormBody c={c} p={profile ?? null} view={view} contacts={contacts} match={match} setEmail={setEmail} notes={notes} onSaved={async (id) => {
     closeModal();
     toast('บันทึกข้อมูลลูกค้าแล้ว');
     // The customer's name shows on the case list and case screens too, the profile on chats and cases.
     await refresh(CONTACTS_PATH, '/api/tickets');
-    if (thenTicket) await openNewTicket();
-  }} onCancel={() => closeModal()} />;
+    if (thenTicket) await openNewTicket(id ?? '', draft);
+  }} back={Boolean(draft)} onCancel={() => (draft ? void openNewTicket(draft.contact_id ?? '', draft) : closeModal())} />;
 }
 
 function ContactFormBody({
@@ -56,6 +65,7 @@ function ContactFormBody({
   notes,
   onSaved,
   onCancel,
+  back = false,
 }: {
   c: Contact | null;
   p: ContactProfile | null;
@@ -64,8 +74,9 @@ function ContactFormBody({
   match: Contact | undefined;
   setEmail: (value: string) => void;
   notes: ReturnType<typeof useFieldValidation>;
-  onSaved: () => Promise<void>;
+  onSaved: (id?: string) => Promise<void>;
   onCancel: () => void;
+  back?: boolean;
 }) {
   const [tags, setTags] = useState<string[]>(p?.tags ?? []);
   const [consent, setConsent] = useState<string>(p?.consent ?? '');
@@ -81,8 +92,8 @@ function ContactFormBody({
       className="contact-form"
       onSubmit={async (values) => {
         const body: ContactValues = { ...(values as unknown as ContactValues), tags, consent, deletion_requested: deletion };
-        await saveContact(c?.id, body);
-        await onSaved();
+        const saved = await saveContact(c?.id, body);
+        await onSaved('id' in saved ? saved.id : c?.id);
       }}
     >
       <section className="contact-form-section">
@@ -105,7 +116,7 @@ function ContactFormBody({
           <TextField label="โทรศัพท์" name="phone" type="tel" defaultValue={c?.phone || ''} placeholder="081-234-5678" required={false} max={40} />
           <TextField label="องค์กร / บริษัท" name="company" defaultValue={c?.company || ''} placeholder="เช่น บริษัท บุ๊คโดส จำกัด" required={false} max={150} />
           <p className="notice warning span-2" data-duplicate-warning="" role="status" hidden={!match}>
-            {match ? `มีลูกค้า “${match.name}” ใช้อีเมลนี้อยู่แล้ว ตรวจสอบก่อนบันทึกเพื่อไม่ให้ข้อมูลซ้ำ` : ''}
+            {match ? `มีลูกค้า “${match.name}” ใช้อีเมลนี้อยู่แล้ว` : ''}
           </p>
         </div>
       </section>
@@ -135,7 +146,6 @@ function ContactFormBody({
                 </option>
               ))}
             </select>
-            <span className="field-hint">AI จะตอบลูกค้ารายนี้เป็นภาษานี้ด้วย</span>
           </div>
           <div className="field">
             <label htmlFor="contact-tags">แท็กของทีม</label>
@@ -191,7 +201,7 @@ function ContactFormBody({
             </select>
             {p?.consent && consent === p.consent && p.consent_at && (
               <span className="field-hint">
-                บันทึกโดย {p.consent_by} · {date(p.consent_at, true)}
+                บันทึกโดย {p.consent_by} {date(p.consent_at, true)}
               </span>
             )}
           </div>
@@ -203,17 +213,12 @@ function ContactFormBody({
                 ลูกค้าขอให้ลบข้อมูลส่วนตัว
                 {deletion && p?.deletion_requested_at && (
                   <small>
-                    แจ้งโดย {p.deletion_requested_by} · {date(p.deletion_requested_at, true)}
+                    แจ้งโดย {p.deletion_requested_by} {date(p.deletion_requested_at, true)}
                   </small>
                 )}
               </span>
             </label>
           </div>
-          {deletion && (
-            <p className="notice warning span-2">
-              ทีมจะเห็นป้าย “ขอให้ลบข้อมูล” ที่ลูกค้ารายนี้ · ลบได้จากปุ่มลบในรายชื่อลูกค้า เมื่อจัดการเคสและบทสนทนาของลูกค้าแล้ว (ระบบไม่ลบประวัติเคสโดยอัตโนมัติ)
-            </p>
-          )}
         </div>
       </section>
 
@@ -221,11 +226,11 @@ function ContactFormBody({
         <p className="small muted contact-last-edit">
           <Icon name="clock" />
           {edited
-            ? `${edited.action === 'contact.created' ? 'เพิ่มโดย' : edited.action === 'contact.merged' ? 'รวมข้อมูลล่าสุดโดย' : 'แก้ไขล่าสุดโดย'} ${edited.actor} · ${date(edited.created_at, true)}`
+            ? `${edited.action === 'contact.created' ? 'เพิ่มโดย' : edited.action === 'contact.merged' ? 'รวมข้อมูลล่าสุดโดย' : 'แก้ไขล่าสุดโดย'} ${edited.actor} ${date(edited.created_at, true)}`
             : `เพิ่มเข้าระบบ ${date(c.created_at, true)}`}
         </p>
       )}
-      <FormActions onCancel={onCancel} />
+      <FormActions onCancel={onCancel} back={back} />
     </Form>
   );
 }

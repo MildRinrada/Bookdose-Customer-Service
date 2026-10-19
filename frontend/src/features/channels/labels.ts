@@ -15,4 +15,4 @@ export const emailAuthModes: Record<string, string> = {
   microsoft: 'Microsoft 365 / Outlook OAuth',
 };
 
-export const smtpPorts: Record<string, string> = { 465: '465 · TLS', 587: '587 · STARTTLS' };
+export const smtpPorts: Record<string, string> = { 465: '465 (TLS)', 587: '587 (STARTTLS)' };

@@ -56,14 +56,14 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
             ผลงานของบอต AI
           </h2>
           <p>
-            {bot.conversations} บทสนทนาที่บอตเริ่มตอบในช่วงนี้ · {bot.answers} คำตอบจากบอต
+            {bot.conversations} บทสนทนาที่บอตเริ่มตอบในช่วงนี้, {bot.answers} คำตอบจากบอต
           </p>
         </div>
       </div>
       <div className="card-body">
         {!bot.conversations ? (
           <p className="empty-mini">
-            {extras.ai?.chatbot_enabled ? 'บอตยังไม่ได้คุยกับลูกค้าในช่วงนี้' : 'ยังไม่ได้เปิดบอต AI ตอบลูกค้า'} · <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
+            {extras.ai?.chatbot_enabled ? 'บอตยังไม่ได้คุยกับลูกค้าในช่วงนี้' : 'ยังไม่ได้เปิดบอต AI ตอบลูกค้า'} <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
           </p>
         ) : (
           <>
@@ -82,7 +82,6 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
                 <div>
                   <span>ยังคุยกับบอตอยู่</span>
                   <strong>{bot.waiting}</strong>
-                  <small>ยังไม่จบหรือบอตยังไม่ได้ตอบ</small>
                 </div>
               )}
             </div>
@@ -95,7 +94,7 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
                     <div
                       key={t.start.toISOString()}
                       className="report-week"
-                      title={`${width > 1 ? 'ช่วงเริ่ม ' : ''}${date(t.start)} · ตอบจบเอง ${t.resolved} · ส่งต่อ ${t.handed_off}`}
+                      title={`${width > 1 ? 'ช่วงเริ่ม ' : ''}${date(t.start)}, ตอบจบเอง ${t.resolved}, ส่งต่อ ${t.handed_off}`}
                     >
                       <span className={`report-week-score${pct == null ? ' none' : pct < 50 ? ' low' : ''}`}>{pct == null ? '–' : `${pct}%`}</span>
                       <span className="report-week-day">{date(t.start)}</span>
@@ -113,7 +112,7 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
                     <progress value={r.count} max={Math.max(1, bot.handed_off)} aria-label={`${botReasonLabels[r.reason] ?? r.reason} ${r.count}`} />
                     <span className="bar-value">
                       {r.count}
-                      <small className="muted"> · {Math.round((100 * r.count) / Math.max(1, bot.handed_off))}%</small>
+                      <small className="muted"> ({Math.round((100 * r.count) / Math.max(1, bot.handed_off))}%)</small>
                     </span>
                   </div>
                 ))}
@@ -144,7 +143,7 @@ export function AssistantReportCard({ extras }: { extras: ReportExtras }) {
             <Icon name="sparkle" />
             ผลงานของผู้ช่วย AI
           </h2>
-          <p>{a.asked ? `${a.asked} คำถามจากทีม ${a.people} คนในช่วงนี้` : 'คำถามที่ทีมถามผู้ช่วย AI มุมขวาล่าง'}</p>
+          {a.asked > 0 && <p>{`${a.asked} คำถามจากทีม ${a.people} คนในช่วงนี้`}</p>}
         </div>
       </div>
       <div className="card-body">
@@ -232,7 +231,7 @@ function UseKinds({ a }: { a: ReportArticles['top'][number] }) {
     a.linked ? `ส่งลิงก์ ${a.linked}` : '',
     `${a.people} คนใช้`,
   ].filter(Boolean);
-  return <small className="muted">{parts.join(' · ')}</small>;
+  return <small className="muted">{parts.join(', ')}</small>;
 }
 
 export function ArticlesCard({ extras }: { extras: ReportExtras }) {
@@ -249,7 +248,7 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
             คลังความรู้ที่ทีมใช้
           </h2>
           <p>
-            ใช้ตอบลูกค้า {a.uses} ครั้งในช่วงนี้ · ถูกใช้ {a.used_articles} จาก {a.articles} บทความ
+            ใช้ตอบลูกค้า {a.uses} ครั้งในช่วงนี้, ถูกใช้ {a.used_articles} จาก {a.articles} บทความ
           </p>
         </div>
       </div>
@@ -279,7 +278,7 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
             </ol>
           </>
         ) : (
-          <p className="empty-mini">ทีมยังไม่ได้ใช้บทความตอบลูกค้าในช่วงนี้ · คัดลอกหรือใส่บทความในคำตอบได้จากกล่องข้อความ</p>
+          <p className="empty-mini">ทีมยังไม่ได้ใช้บทความตอบลูกค้าในช่วงนี้</p>
         )}
         {a.unhelpful.length > 0 && (
           <>
@@ -293,7 +292,7 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
                   <span className="report-comment-body">
                     <ArticleLink title={u.title} />
                     <small className="muted">
-                      {u.category} · ช่วย {u.helpful} · ไม่ช่วย {u.unhelpful} · แก้ไขล่าสุด {relative(u.updated_at)}
+                      {u.category}, ช่วย {u.helpful}, ไม่ช่วย {u.unhelpful}, แก้ไขล่าสุด {relative(u.updated_at)}
                     </small>
                   </span>
                 </li>
@@ -305,7 +304,7 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
           <>
             <h3 className="report-subhead">ลูกค้าบอกว่าบทความช่วยได้ไหม</h3>
             <p className="muted report-customer-votes">
-              ช่วยได้ {a.customers.helpful} ครั้ง ไม่ช่วย {a.customers.unhelpful} ครั้ง จากหน้าคำถามที่พบบ่อยและคำตอบที่แนะนำตอนเริ่มแชท
+              ช่วยได้ {a.customers.helpful} ครั้ง ไม่ช่วย {a.customers.unhelpful} ครั้ง
             </p>
             {a.customers.unhelpful_articles.length > 0 && (
               <ul className="report-comments">
@@ -333,7 +332,7 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
               {gaps.total ? (
                 <>
                   ลูกค้าถาม <strong>{gaps.total} คำถาม</strong> ที่ยังไม่มีบทความตอบ
-                  {gaps.groups[0] && <> เช่น “{gaps.groups[0].label}”</>} · <Link href="/dashboard">เขียนบทความจากหน้าภาพรวม</Link>
+                  {gaps.groups[0] && <> เช่น “{gaps.groups[0].label}”</>} <Link href="/dashboard">เขียนบทความจากหน้าภาพรวม</Link>
                 </>
               ) : (
                 'ทุกคำถามของลูกค้าในช่วงนี้มีบทความตอบแล้ว'

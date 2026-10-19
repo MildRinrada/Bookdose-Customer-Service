@@ -12,7 +12,7 @@ import type { OrgLinksView } from '@/features/org-links/types';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
 
-/* ตั้งค่าองค์กร → ลิงก์และ QR สำหรับลูกค้า: the organization's permanent link (…/?org=<code>) with its QR, and the
+/* ตั้งค่าองค์กร → ลิงก์และ QR สำหรับลูกค้า: the organization's permanent link (…/support/<code>/tickets/new) with its QR, and the
    invite links an admin makes for a fair, an email or a partner — each with its own QR, lifetime and number of
    users, and revocable at any time. Markup: pages/org-links.css. */
 
@@ -60,7 +60,7 @@ export function JoinLinksPanel() {
         <div className="card-header">
           <div>
             <h2>ลิงก์และ QR ขององค์กร</h2>
-            <p>ลิงก์ถาวรของ {data.org_slug} · ลูกค้าที่เปิดลิงก์แล้วเข้าสู่ระบบจะเห็นองค์กรนี้ในรายการที่ติดต่อได้</p>
+            <p>ลิงก์ถาวรของ {data.org_slug} · ลูกค้าที่เปิดลิงก์จะไปหน้าเริ่มแชทและเปิดเคสขององค์กรนี้</p>
           </div>
         </div>
         <div className="card-body org-link-share">
@@ -72,7 +72,7 @@ export function JoinLinksPanel() {
           <div className="grow">
             <p className="muted">
               พิมพ์ QR นี้ไว้ที่หน้าร้าน ใส่ในเอกสารหรือท้ายอีเมล ลิงก์นี้ใช้ได้เสมอและไม่มีวันหมดอายุ
-              ใครที่เปิดจะสมัครสมาชิกหรือเข้าสู่ระบบก่อน แล้วองค์กรนี้จะถูกเพิ่มให้อัตโนมัติ
+              ลูกค้าเริ่มแชทได้ทันทีโดยไม่ต้องสมัครสมาชิก หรือเข้าสู่ระบบจากหน้านั้นเพื่อเพิ่มองค์กรนี้ในบัญชี
             </p>
             <a className="portal-url" href={data.org_url} target="_blank" rel="noopener">
               {data.org_url}

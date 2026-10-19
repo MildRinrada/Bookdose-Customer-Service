@@ -57,7 +57,7 @@ class OrgLinkTests(unittest.TestCase):
         view = self.ok(self.admin,LINKS)
         # No public address set yet: the link is the one this browser used.
         self.assertEqual((view['org_slug'],view['links']),('alpha',[]))
-        self.assertEqual(view['org_url'],f'{self.base}/?org=alpha')
+        self.assertEqual(view['org_url'],f'{self.base}/support/alpha/tickets/new')
         self.assertIn('<svg',self.svg(view['org_qr']))
         # Only the organization's admin sees and makes links.
         agent,_ = self.create_member()
@@ -66,7 +66,7 @@ class OrgLinkTests(unittest.TestCase):
         self.assertIn(Client(self.base).call(LINKS)[0],(401,403))
         # With the platform's public address set, every link uses it (a QR is scanned on another device).
         self.enable_registration_mail()
-        self.assertEqual(self.ok(self.admin,LINKS)['org_url'],'https://bookdose.example.com/?org=alpha')
+        self.assertEqual(self.ok(self.admin,LINKS)['org_url'],'https://bookdose.example.com/support/alpha/tickets/new')
 
     def test_invite_links_are_made_listed_and_revoked(self):
         self.enable_registration_mail()

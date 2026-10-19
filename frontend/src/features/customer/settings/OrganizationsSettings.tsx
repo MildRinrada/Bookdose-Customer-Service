@@ -105,7 +105,7 @@ function AddOrgCard({ onAdd }: { onAdd: (found: JoinCode) => Promise<void> }) {
           name="code"
           max={200}
           placeholder="เช่น my-company หรือ https://…/join/…"
-          hint="ลิงก์ขององค์กรมีรหัสอยู่ท้าย เช่น …/?org=my-company · ลิงก์เชิญเป็น …/join/…"
+          hint="ลิงก์ขององค์กรมีรหัสอยู่ท้าย เช่น …/support/my-company/… · ลิงก์เชิญเป็น …/join/…"
         />
         <div className="org-join-actions">
           <button className="btn primary" type="submit">

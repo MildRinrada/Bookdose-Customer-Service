@@ -90,7 +90,7 @@ function OrganizationView({
   const refresh = useInvalidate();
   const router = useRouter();
   const switchTenant = useSwitchTenant();
-  const url = customerHomeUrl(t.slug, boot.home?.slug);
+  const url = customerHomeUrl(t.slug);
   const access = tenantAccess(t, boot, Boolean(work), support);
   const isHome = t.slug === boot.home?.slug;
   // Closing for good needs an export from the last 30 days (backend platform/closing.py EXPORT_DAYS).

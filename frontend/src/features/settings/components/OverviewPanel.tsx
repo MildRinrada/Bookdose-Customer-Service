@@ -34,7 +34,7 @@ export function ProfilePanel() {
   const copyText = useCopyText();
   const { openModal } = useDialogs();
   // The screen only renders in the browser (the staff layout waits for the workspace), so window is there.
-  const customerUrl = typeof window === 'undefined' ? '' : customerHomeUrl(work.tenant.slug, boot?.home?.slug);
+  const customerUrl = typeof window === 'undefined' ? '' : customerHomeUrl(work.tenant.slug);
   return (
     <>
     <section className="card">
@@ -75,7 +75,7 @@ export function ProfilePanel() {
         <div className="portal-link">
           <div className="grow">
             <span className="muted">
-              หน้าลูกค้า · ลูกค้าสมัครสมาชิกและเข้าสู่ระบบที่หน้าแรกของระบบ แล้วใช้แชท เคส และคำถามที่พบบ่อยจากเมนูด้านข้าง
+              หน้าลูกค้า · ลูกค้าเปิดลิงก์นี้เพื่อเริ่มแชทหรือเปิดเคสได้ทันที หรือเข้าสู่ระบบเพื่อดูแชทและเคสเดิม
             </span>
             <a className="portal-url" href={customerUrl} target="_blank" rel="noopener">
               {customerUrl}

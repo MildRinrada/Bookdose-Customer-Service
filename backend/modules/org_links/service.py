@@ -1,7 +1,7 @@
 """Organization join links and QR codes (see model.py), and what the customer's account page shows about the
 organizations it belongs to.
 
-Staff side: the organization's permanent link `{base}/?org=<code>` with its QR, and invite links `{base}/join/<token>`
+Staff side: the organization's permanent link `{base}/support/<code>/tickets/new` with its QR, and invite links `{base}/join/<token>`
 an admin makes with an optional label, lifetime and number of users. Customer side: a preview of a link before
 signing in, joining by it (one use per account, however often the link is opened), and องค์กรของฉัน — every
 organization the account can contact and whether it has joined it."""
@@ -54,7 +54,7 @@ def link_view(row, base):
 
 def links_view(cd, ctx, base):
     """The organization's permanent link with its QR, and its invite links (newest first)."""
-    url = f"{base}/?org={ctx['slug']}"
+    url = f"{base}/support/{ctx['slug']}/tickets/new"
     return {'org_slug':ctx['slug'],'org_url':url,'org_qr':qrcode.data_url(url,'QR องค์กร'),
             'links':[link_view(row,base) for row in repository.of_tenant(cd,ctx['tenant_id'])]}
 

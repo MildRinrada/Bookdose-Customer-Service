@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { ORG_CODE } from '@/lib/routes';
 
-/* Reading an organization's QR with the camera. Only this app's links count: /join/<token> and a link with
-   ?org=<code>; anything else the camera sees is ignored. The browser's own BarcodeDetector does the reading (no
+/* Reading an organization's QR with the camera. Only this app's links count: /join/<token>, the organization's
+   page (/support/<code>/…) and a link with ?org=<code>; anything else the camera sees is ignored. The browser's own BarcodeDetector does the reading (no
    library), so the button is shown only where it exists. */
 
 export type JoinCode = { token: string } | { slug: string };
@@ -31,6 +31,8 @@ export function readJoinCode(text: string): JoinCode | null {
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== window.location.origin) return null;
     const join = /^\/join\/([A-Za-z0-9_-]{16,64})\/?$/.exec(url.pathname);
     if (join) return { token: join[1] };
+    const page = /^\/support\/([^/]+)(\/|$)/.exec(url.pathname);
+    if (page && ORG_CODE.test(page[1])) return { slug: page[1] };
     const slug = url.searchParams.get('org') ?? '';
     if (ORG_CODE.test(slug)) return { slug };
   } catch {

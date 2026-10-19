@@ -212,7 +212,7 @@ export function OrgPicker({
                   value={code}
                   disabled={busy}
                   autoComplete="off"
-                  placeholder="รหัสในลิงก์ที่องค์กรให้ไว้ เช่น …/?org=my-shop"
+                  placeholder="รหัสในลิงก์ที่องค์กรให้ไว้ เช่น …/support/my-shop/…"
                   aria-invalid={error ? true : undefined}
                   onChange={(e) => {
                     setCode(e.target.value);
@@ -242,7 +242,7 @@ export function OrgPicker({
               </span>
               <span>
                 {typedCode ? `เพิ่มองค์กรด้วยรหัส “${typedCode}”` : 'เพิ่มองค์กรด้วยรหัส'}
-                <small>รหัสอยู่ในลิงก์ที่องค์กรให้ไว้ เช่น …/?org=รหัส</small>
+                <small>รหัสอยู่ในลิงก์ที่องค์กรให้ไว้ เช่น …/support/รหัส/…</small>
               </span>
             </button>
           )}

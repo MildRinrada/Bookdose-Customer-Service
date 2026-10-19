@@ -99,10 +99,10 @@ export function customerPageOf(pathname: string): CustomerPage | undefined {
   return [...customerServicePages, ...customerAccountPages].find((page) => pathname === page.href || pathname.startsWith(page.href + '/'));
 }
 
-/** Links to the customer side for an organization: the main page, naming the organization when it is not the
-    platform's own (?org=<code> connects the organization once the customer signs in). */
-export function customerHomeUrl(slug: string, homeSlug: string | null | undefined): string {
-  return `${window.location.origin}/${homeSlug === slug ? '' : `?org=${encodeURIComponent(slug)}`}`;
+/** The link an organization hands its customers: its page for starting a chat or a case, which works without an
+    account and offers signing in from there (backend org_links links_view gives the same address). */
+export function customerHomeUrl(slug: string): string {
+  return `${window.location.origin}/support/${encodeURIComponent(slug)}/tickets/new`;
 }
 
 export const ORG_CODE = /^[a-z0-9]+(-[a-z0-9]+)*$/;

@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { joinOrganization, ORGS_PATH, OVERVIEW_PATH } from '../api';
 
-/* Adding an organization by its code (the one in its link, …/?org=my-company): from the new-chat form's
+/* Adding an organization by its code (the one in its link, …/support/my-company/…): from the new-chat form's
    "เพิ่มองค์กรด้วยรหัส" and from the account page. */
 
 /** Join by code, then (except on the account page) start a new chat with that organization, the likely next step. */
@@ -39,7 +39,7 @@ export function JoinOrgForm() {
   return (
     <Form onSubmit={(values) => join(values.slug ?? '')}>
       <p>
-        กรอกรหัสองค์กรจากลิงก์ที่องค์กรนั้นให้ไว้ เช่น ลิงก์ <code>…/?org=my-company</code> รหัสคือ <strong>my-company</strong>{' '}
+        กรอกรหัสองค์กรจากลิงก์ที่องค์กรนั้นให้ไว้ เช่น ลิงก์ <code>…/support/my-company/…</code> รหัสคือ <strong>my-company</strong>{' '}
         เพิ่มแล้วเริ่มแชทกับองค์กรนั้นได้ทันที
       </p>
       <TextField label="รหัสองค์กร" name="slug" max={60} placeholder="เช่น my-company" />

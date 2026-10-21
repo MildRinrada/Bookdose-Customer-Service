@@ -193,15 +193,45 @@ def apply_rules(db, ticket_id):
 
 
 def on_new_conversation(db, conversation_id):
-    """The first customer message of a conversation without a case: when a rule matches, the case is opened right
-    away (the rule then sets its priority, team and owner). Returns the new case id or None."""
+    """The first customer message of a conversation without a case opens one, waiting in the case list for a member
+    to press รับเคส (conversations/service.accept); a matching rule then sets its priority, team and owner. Not while
+    the chatbot answers first and no rule matches: handing over to a person opens it then (ai/service.handoff).
+    Returns the new case id or None."""
     if tickets.is_conversation_linked(db,conversation_id):
         return None
     conv = conversations.find(db,conversation_id)
-    if conv['channel']=='manual' or not matching_rules(db,conv['channel'],conv['subject']+'\n'+_customer_text(db,conversation_id)):
+    if conv['channel']=='manual':
         return None
+    from backend.modules.ai import service as ai
+    bot_first = ai.bot_enabled(db,conversation_id) and ai.has_key(D.tenant_id_of(db))
+    if bot_first and not matching_rules(db,conv['channel'],conv['subject']+'\n'+_customer_text(db,conversation_id)):
+        return None
+    return _open_case(db,conv)
+
+
+def _open_case(db, conv):
+    from backend.modules.customers import repository as customer_repository
     from backend.modules.tickets import service as ticket_service
-    return ticket_service.open_ticket(db,conv['contact_id'],conv['team_id'],conv['subject'],'normal',conversation_id=conversation_id)
+    category = customer_repository.category_of(db,conv['id']) or 'ทั่วไป'
+    return ticket_service.open_ticket(db,conv['contact_id'],conv['team_id'],conv['subject'],'normal',category=category,conversation_id=conv['id'])
+
+
+def open_missing_cases(db):
+    """An open chat a customer wrote in that still has no case (it began before a case opened from the first message,
+    or nothing opened one since) gets its case now, as a new chat would: waiting for someone to press รับเคส. Not a
+    chat the chatbot is still answering. A few at a time, each in its own transaction (the worker, every round)."""
+    from backend.database.db import rows
+    from backend.modules.ai import service as ai
+    found = rows(db,'''SELECT c.* FROM conversations c WHERE c.status='open' AND c.channel!='manual'
+                      AND NOT EXISTS (SELECT 1 FROM ticket_conversations tc WHERE tc.conversation_id=c.id)
+                      AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id=c.id AND m.kind='customer')
+                      ORDER BY c.created_at LIMIT 20''')
+    for conv in found:
+        if ai.conversation_state(db,conv['id'])['mode']=='bot':
+            continue
+        D.begin(db)
+        _open_case(db,conv)
+        db.commit()
 
 
 # SLA escalation
@@ -467,13 +497,19 @@ def read_mentions(db, ctx, body):
 
 # What each person should see
 def my_alerts(db, ctx, cd=None):
-    from backend.modules.achievements import badges, recap
+    from backend.modules.achievements import badges, controller as achievements, recap
     from backend.modules.kudos import service as kudos
     from backend.modules.tickets import hands
     team = visible_team(ctx)
+    # ผลงานของฉัน only where the platform gave it to the organization (platform/model.py FEATURES).
+    if cd is None:
+        with D.control() as control:
+            earned = achievements.enabled(control,ctx['tenant_id'])
+    else:
+        earned = achievements.enabled(cd,ctx['tenant_id'])
     # เหรียญความสำเร็จ reached since the last look are given here (at most every few minutes), so they arrive with the
     # alerts on whichever screen the member is on.
-    if not ctx.get('read_only'):
+    if earned and not ctx.get('read_only'):
         badges.check(db,ctx['tenant_id'],ctx['id'])
         db.commit()
     return {'mentions':repository.unread_mentions(db,ctx['id'],team),
@@ -485,9 +521,9 @@ def my_alerts(db, ctx, cd=None):
             'forecasts':repository.forecasts_to(db,ctx['id'],now()),
             # ยกมือขอช่วย: hands raised on the cases this member can see, and who is coming to their own.
             'hands':hands.alerts(db,ctx,team),
-            'badges':[] if ctx.get('read_only') else badges.unseen(db,ctx['id']),
+            'badges':[] if ctx.get('read_only') or not earned else badges.unseen(db,ctx['id']),
             # Last month's summary, the first time the member opens the app in a new month.
-            'recap':recap.pending(cd,db,ctx),
+            'recap':recap.pending(cd,db,ctx) if earned else None,
             # A channel that stopped working (channels/health.py): for the organization's admins, who can fix it.
             'channels':_channel_alerts(db) if ctx.get('role')=='admin' else []}
 
@@ -624,6 +660,8 @@ class Worker:
                         return
                     try:
                         with D.control() as cd, D.tenant(tenant_id) as db:
+                            # A chat without its case gets one first, so the steps below see it.
+                            open_missing_cases(db)
                             # แจกเคสอัตโนมัติ first: a case someone can take now should not be escalated as unclaimed.
                             from backend.modules.automation import distribution
                             distribution.run(cd,db,tenant_id)

@@ -78,7 +78,8 @@ def _buttons(status):
     """The buttons worth showing: none once nobody waits, ไม่รีบ only while it is not already said."""
     if not status:
         return []
-    return [QUEUE]+([] if status.get('no_rush') else [NO_RUSH])
+    from backend.modules.portal import no_rush
+    return [QUEUE]+([] if status.get('no_rush') or not no_rush.enabled() else [NO_RUSH])
 
 
 # Sending
@@ -164,7 +165,7 @@ def on_button(db, tenant_id, conversation_id, action):
     conv = conversations.find(db,conversation_id)
     if not conv or action not in BUTTONS or not _thread_ok(db,conv):
         return None
-    if action==NO_RUSH:
+    if action==NO_RUSH and no_rush.enabled():
         try:
             no_rush.set_state(db,conv,f'ลูกค้าทาง {conv["channel"].upper() if conv["channel"]=="line" else conv["channel"].title()}',True)
         except APIError:

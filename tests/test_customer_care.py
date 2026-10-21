@@ -86,7 +86,7 @@ class CustomerCareTests(guest_tests.GuestChatTests):
         self.ok(agent,'/api/account/status',{'status':'offline'})
         status,data,_ = self.start(visitor,body='อีกเรื่องค่ะ',same_member=True)
         self.assertEqual(data['asked_member'],{'name':'เจ้าหน้าที่ทดสอบ','given':False})
-        self.assertIsNone(self.ticket_of(data['id']))
+        self.assertIsNone(self.ticket_of(data['id'])['assignee_id'])
         header = self.ok(self.admin,f"/api/conversations/{data['id']}")['conversation']['asked_member']
         self.assertEqual((header['given'],header['reason']),(False,'ไม่อยู่'))
 

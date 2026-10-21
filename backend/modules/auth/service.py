@@ -202,6 +202,7 @@ def workspace_context(db, session):
 
 
 def bootstrap_data(db, session, server=None):
+    from backend.modules.platform import switches
     if session:
         # console_locked: a platform admin without a second factor or passkey, on a server that asks for one, reaches
         # only ตั้งค่าบัญชี (admin_guard).
@@ -212,6 +213,8 @@ def bootstrap_data(db, session, server=None):
         setup_required=repository.count_users(db)==0,
         setup_token_required=bool(settings.setup_token()) or settings.on_render(),
         registration_available=platform.signup_open(db),
+        customer_accounts=switches.on('customer_accounts'),
+        work_status=switches.on('work_status'),
         home=tenants.home_organization(db),
         avatar=repository.avatar_of(db,session['user_id']) if session else '',
         memberships=memberships.user_memberships(db,session['user_id']) if session else [])
@@ -335,7 +338,9 @@ def sign_in(cd, cookie_header, body, client=None):
         lockout.refuse_trapped(key,customers.WRONG_LOGIN,password,hashes=2)
     lockout.check(key,client)
     user = repository.find_user_by_email(cd,email)
-    account = accounts.find_by_email(cd,email)
+    # บัญชีลูกค้า switched off for the platform (platform/switches.py): only staff sign in here.
+    from backend.modules.platform import switches
+    account = accounts.find_by_email(cd,email) if switches.on('customer_accounts') else None
     staff_ok = password_ok(password,user['password'] if user else DUMMY_PASSWORD_HASH) and bool(user)
     customer_ok = password_ok(password,account['password'] if account else customers.DUMMY_PASSWORD_HASH) and bool(account)
     staff_actor = 'platform' if user and user['platform_admin'] else 'staff'

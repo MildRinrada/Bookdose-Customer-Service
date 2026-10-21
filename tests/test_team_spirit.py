@@ -15,7 +15,12 @@ def stamp(moment):
 
 
 class TeamSpiritTests(unittest.TestCase):
-    setUp = base.IntegrationTests.setUp
+    def setUp(self):
+        base.IntegrationTests.setUp(self)
+        # ผลงานของฉัน is off until the platform gives it to an organization (platform/model.py FEATURES).
+        self.assertEqual(self.admin.call('/api/achievements')[0],404)
+        self.ok(self.owner,f'/api/platform/tenants/{self.org}/features',{'feature':'achievements','enabled':True},'PATCH')
+
     tearDown = base.IntegrationTests.tearDown
     ok = base.IntegrationTests.ok
     create_member = base.IntegrationTests.create_member

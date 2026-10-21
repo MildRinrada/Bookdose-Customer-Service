@@ -64,7 +64,6 @@ export type ReportArticle = {
 
 export type ReportArticles = {
   top: ReportArticle[];
-  unhelpful: Array<{ id: string; title: string; category: string; updated_at: string; helpful: number; unhelpful: number }>;
   uses: number;
   used_articles: number;
   articles: number;

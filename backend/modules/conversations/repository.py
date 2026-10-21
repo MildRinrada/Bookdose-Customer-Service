@@ -8,7 +8,7 @@ from backend.utils.dates import now
 def list_with_previews(db, team_id=None):
     where,params = ('c.team_id=?',[team_id]) if team_id is not None else ('1=1',[])
     return rows(db,f'''SELECT c.id,c.contact_id,c.subject,c.channel,c.team_id,c.status,c.created_at,c.updated_at,
-        p.name AS contact_name,p.company,tc.ticket_id,t.number AS ticket_number,t.status AS ticket_status,t.priority AS ticket_priority,
+        p.name AS contact_name,p.company,tc.ticket_id,t.number AS ticket_number,t.status AS ticket_status,t.priority AS ticket_priority,t.assignee_id AS ticket_assignee_id,
         (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS preview,
         (SELECT kind FROM messages m WHERE m.conversation_id=c.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS last_kind,
         (SELECT kind FROM messages m WHERE m.conversation_id=c.id AND m.kind!='note' AND NOT EXISTS(SELECT 1 FROM ai_message_meta x

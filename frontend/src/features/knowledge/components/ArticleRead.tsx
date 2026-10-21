@@ -9,7 +9,7 @@ import { Markdown } from '@/features/rich/Markdown';
 import { date, relative } from '@/lib/format';
 import { useApi } from '@/lib/query';
 import { useBoot, useWork } from '@/lib/session';
-import { ARTICLES_PATH, recordUse, voteArticle } from '../api';
+import { ARTICLES_PATH, recordUse } from '../api';
 import { helpfulRate, reviewReason, visibilityLabels } from '../labels';
 import type { Article, ArticlesPage } from '../types';
 
@@ -101,14 +101,6 @@ export function ArticleRead({
     return highlightWords(content.current, words.split('\n'));
   }, [words, article.body]);
 
-  const vote = (value: -1 | 1) =>
-    run(async () => {
-      const next = article.my_vote === value ? 0 : value;
-      await voteArticle(client, article.id, next);
-      if (next === 1) toast('ขอบคุณ! ทีมจะเห็นว่าบทความนี้ช่วยได้');
-      if (next === -1) toast('รับทราบ ผู้ดูแลจะเห็นว่าบทความนี้ควรปรับปรุง');
-    });
-
   return (
     <>
       <div className="article-meta">
@@ -157,23 +149,10 @@ export function ArticleRead({
           {rate !== null && (
             <span>
               <Icon name="thumbUp" />
-              ช่วยได้ <b>{rate}%</b> จาก {(article.helpful ?? 0) + (article.unhelpful ?? 0)} คน
+              ลูกค้าบอกว่าช่วยได้ <b>{rate}%</b> จาก {(article.helpful ?? 0) + (article.unhelpful ?? 0)} คน
             </span>
           )}
         </div>
-        {!readOnly && (
-          <div className="article-vote" role="group" aria-label="บทความนี้ช่วยตอบลูกค้าได้ไหม">
-            <span>ช่วยตอบลูกค้าได้ไหม?</span>
-            <button type="button" className={`vote-btn up${article.my_vote === 1 ? ' on' : ''}`} aria-pressed={article.my_vote === 1} onClick={() => vote(1)}>
-              <Icon name="thumbUp" />
-              ช่วยได้ {article.helpful ? <b>{article.helpful}</b> : null}
-            </button>
-            <button type="button" className={`vote-btn down${article.my_vote === -1 ? ' on' : ''}`} aria-pressed={article.my_vote === -1} onClick={() => vote(-1)}>
-              <Icon name="thumbDown" />
-              ไม่ช่วย {article.unhelpful ? <b>{article.unhelpful}</b> : null}
-            </button>
-          </div>
-        )}
       </div>
       <div className="form-actions wrap">
         <button

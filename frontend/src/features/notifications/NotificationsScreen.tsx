@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { staffAccountTabPath } from '@/features/staff-account/tabs';
-import { useStaffAlerts, useStaffTickets } from '@/lib/session';
+import { useStaffAlerts, useStaffTickets, useStaffUser } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { filterItems, NotificationGroups, NotificationSummary, NotificationTabs, type NotificationFilter } from './components/NotificationList';
 import { notificationItems, useCachedConversations } from './items';
@@ -16,12 +16,13 @@ export function NotificationsScreen() {
   const conversations = useCachedConversations(true);
   const tickets = useStaffTickets();
   const alerts = useStaffAlerts();
+  const user = useStaffUser();
   const [filter, setFilter] = useUiState<NotificationFilter>('notifications:filter', 'all');
 
   if (conversations.isPending) return <PageLoading />;
   if (conversations.error) return <ErrorState error={conversations.error} onRetry={() => void conversations.refetch()} />;
 
-  const items = notificationItems({ alerts: alerts.data, tickets: tickets.data?.tickets, conversations: conversations.data.conversations });
+  const items = notificationItems({ alerts: alerts.data, tickets: tickets.data?.tickets, conversations: conversations.data.conversations, me: user.id });
   const shown = filterItems(items, filter);
   // The old "รีเฟรช" opened the screen again: cases, alerts and conversations are all asked again.
   const refresh = () => {

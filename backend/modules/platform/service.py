@@ -493,6 +493,8 @@ def save_registration_settings(cd, session, body):
     """A changed server or username drops the saved password unless a new one is given."""
     cfg,password = schema.registration_mail(body)
     old = registration_config(cd)
+    if 'signup_enabled' not in body:
+        cfg['signup_enabled'] = bool(old.get('signup_enabled'))
     old_secret = registration_secret()
     if any(old.get(k)!=cfg.get(k) for k in ('smtp_host','smtp_port','username')):
         old_secret = {}

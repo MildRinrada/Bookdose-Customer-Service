@@ -4,6 +4,7 @@ import json
 
 from backend.modules.customers import repository as customer_repository
 from backend.database import audit, db as D
+from backend.exceptions.errors import APIError
 from backend.middleware.access import visible_team, get_scoped
 from backend.modules.ai import service as ai
 from backend.modules.automation import service as automation
@@ -175,7 +176,11 @@ def set_ai_mode(db, ctx, conv, body):
 def link_ticket(db, ctx, conv, body):
     """Attach the conversation to an existing case of the same customer and team, or open a new case for it."""
     D.begin(db)
-    require(not tickets.is_conversation_linked(db,conv['id']),'บทสนทนานี้เชื่อมเคสแล้ว',409)
+    # A new chat has its case from the first message (automation.on_new_conversation): asking for one gives that one.
+    current = tickets.for_conversation(db,conv['id'])
+    if current and not body.get('ticket_id'):
+        return current['id']
+    require(not current,'บทสนทนานี้เชื่อมเคสแล้ว',409)
     if body.get('ticket_id'):
         ticket = get_scoped(db,'tickets',schema.linked_ticket_id(body),ctx)
         require(ticket['contact_id']==conv['contact_id'],'ต้องเป็นข้อมูลลูกค้าคนเดียวกันที่ยืนยันแล้ว')
@@ -189,6 +194,35 @@ def link_ticket(db, ctx, conv, body):
     audit.record(db,ctx['name'],'conversation.linked',tid,conv['id'])
     realtime.conversation(db,conv['id'])
     realtime.ticket(db,tid,public=True)
+    db.commit()
+    return tid
+
+
+def accept(cd, db, ctx, conv):
+    """รับเคส: the member takes the customer's matter before answering it. The chat's case becomes theirs (opened
+    now when it has none); a colleague who took it first wins, and this answers 409 with their name. Returns the
+    case id."""
+    from backend.database.db import one
+    from backend.middleware.access import validate_assignee
+    from backend.modules.organization import repository as organization
+    require(organization.is_active_team_member(cd,ctx['tenant_id'],ctx['id'],conv['team_id']),'รับได้เฉพาะสมาชิกในทีมของแชทนี้',403)
+    D.begin(db)
+    ticket = tickets.for_conversation(db,conv['id'])
+    if ticket and ticket['assignee_id']==ctx['id']:
+        return ticket['id']
+    if ticket:
+        if ticket['assignee_id']:
+            taker = one(cd,'SELECT name FROM users WHERE id=?',(ticket['assignee_id'],))
+            raise APIError(409,f"{taker['name'] if taker else 'เพื่อนร่วมทีม'} รับเรื่องนี้ไปแล้ว")
+        require(tickets.take(db,ticket['id'],ctx['id']),'มีคนรับเรื่องนี้ไปก่อนแล้ว',409)
+        tid = ticket['id']
+    else:
+        validate_assignee(cd,ctx,ctx['id'],conv['team_id'])
+        category = customer_repository.category_of(db,conv['id']) or 'ทั่วไป'
+        tid = ticket_service.open_ticket(db,conv['contact_id'],conv['team_id'],conv['subject'],'normal',ctx['id'],category,conv['id'])
+    audit.record(db,ctx['name'],'ticket.updated',tid,json.dumps({'assignee_id':{'before':None,'after':ctx['id']}},ensure_ascii=False))
+    realtime.ticket(db,tid,public=False,teams=(conv['team_id'],),conversations_listed=True)
+    realtime.conversation(db,conv['id'])
     db.commit()
     return tid
 

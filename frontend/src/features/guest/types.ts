@@ -9,7 +9,7 @@ export type GuestInfo = {
   phone_masked: string;
   phone_verified: boolean;
   line_linked: boolean;
-  /** true: a cookie kept for 400 days; false: forgotten when the browser closes. */
+  /** true: a cookie kept for 30 days from the first chat; false: forgotten when the browser closes. */
   remember: boolean;
   csrf: string;
 };

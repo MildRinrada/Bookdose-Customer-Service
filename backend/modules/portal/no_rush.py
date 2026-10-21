@@ -31,9 +31,18 @@ CREATE TABLE IF NOT EXISTS conversation_no_rush (
 '''
 
 
+def enabled():
+    """The platform admin's switch (platform/switches.py). Off, the button is not offered and no row holds, so a
+    promise already given stops moving the queue and the deadlines."""
+    from backend.modules.platform import switches
+    return switches.on('no_rush')
+
+
 def _active_clause():
     """The row still holds: its deadline ahead, and no member has replied since its wait began."""
     from backend.modules.conversations.queue import HUMAN_REPLY
+    if not enabled():
+        return '(0 AND n.until>?)'
     return f'''n.until>? AND NOT EXISTS (SELECT 1 FROM messages r WHERE r.conversation_id=n.conversation_id
                AND r.rowid>=n.since_rowid AND {HUMAN_REPLY})'''
 
@@ -130,6 +139,7 @@ def request(db, conv, author, body):
     body = body if isinstance(body,dict) else {}
     on = body.get('on')
     require(isinstance(on,bool),'ข้อมูลไม่ถูกต้อง')
+    require(enabled() or not on,'ปิดใช้งานฟีเจอร์นี้อยู่',403)
     D.begin(db)
     set_state(db,conv,author,on)
     db.commit()

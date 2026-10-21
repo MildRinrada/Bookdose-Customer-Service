@@ -8,6 +8,7 @@ import { CustomerLinkPage } from '@/features/auth/components/Frames';
 import { api, ApiError, setGuestCredentials } from '@/lib/api/client';
 import type { PublicOrgInfo } from '@/features/auth/types';
 import { useApi, useInvalidate } from '@/lib/query';
+import { useCustomerAccountsOn } from '@/lib/session';
 import { guestPages, guestPath, resumeGuest } from './api';
 import type { GuestOverview } from './types';
 
@@ -17,6 +18,7 @@ import type { GuestOverview } from './types';
 export function GuestResumeScreen({ slug }: { slug: string }) {
   const router = useRouter();
   const refresh = useInvalidate();
+  const accounts = useCustomerAccountsOn();
   const [problem, setProblem] = useState('');
   // The browser already follows another guest's chats: the link waits until the person says to open it.
   const [asking, setAsking] = useState('');
@@ -69,7 +71,11 @@ export function GuestResumeScreen({ slug }: { slug: string }) {
   }, [slug, router, refresh]);
 
   return (
-    <CustomerLinkPage organization={info.data?.organization.name ?? ''} loginHref={`/login?org=${encodeURIComponent(slug)}`} backLabel="เข้าสู่ระบบด้วยบัญชีสมาชิก">
+    <CustomerLinkPage
+      organization={info.data?.organization.name ?? ''}
+      loginHref={accounts ? `/login?org=${encodeURIComponent(slug)}` : guestPages.chat(slug)}
+      backLabel={accounts ? 'เข้าสู่ระบบด้วยบัญชีสมาชิก' : 'กลับไปหน้าแชท'}
+    >
       <div className="card-body" role="status" aria-live="polite">
         <span className="customer-center-icon">
           <Icon name={problem ? 'clock' : 'chat'} />

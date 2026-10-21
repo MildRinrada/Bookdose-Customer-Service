@@ -6,19 +6,17 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { PrivacyTag } from '@/components/ui/display';
 import { MoodTag } from '@/components/ui/MoodTag';
-import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
 import { AiControls } from '@/features/ai/components/AiControls';
 import { ConversationSummary } from '@/features/ai/components/ConversationSummary';
 import { ContactHeadsUp } from '@/features/contacts/components/ContactProfileParts';
-import { blockGuest, GUEST_BLOCKS_PATH, unblockGuest } from '@/features/guest/api';
 import { reachText } from '@/features/guest/labels';
 import { useRunAction } from '@/components/ui/actions';
 import { date } from '@/lib/format';
 import { channelIcons, channelNames, priorityLabels, statusLabels } from '@/lib/labels';
 import { useInvalidate } from '@/lib/query';
-import { useWork } from '@/lib/session';
-import { CONVERSATION_PREFIXES, openTicketFromConversation, setConversationStatus } from '../api';
+import { useStaffUser, useWork } from '@/lib/session';
+import { acceptConversation, CONVERSATION_PREFIXES, openTicketFromConversation } from '../api';
 import type { ConversationDetail } from '../types';
 import { ColleaguesHere } from './ColleaguesHere';
 import { Composer } from './Composer';
@@ -33,6 +31,7 @@ import { useManageMessages } from './useManageMessages';
 export function ConversationView({ data }: { data: ConversationDetail }) {
   const { conversation: c, ticket: t, contact, messages } = data;
   const work = useWork();
+  const user = useStaffUser();
   // Correcting or taking back a message of this conversation (web chat and internal notes only).
   const manage = useManageMessages(c, work);
   const router = useRouter();
@@ -42,7 +41,10 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
   const [notesOnly, setNotesOnly] = useState(false);
   const open = c.status === 'open';
   const guest = c.guest ?? contact.guest;
-  const nextStatus = open ? 'closed' : 'open';
+  // รับเคส: an open chat nobody has taken is taken before it is answered, by a member of its team (backend
+  // conversations/service.accept). Members of other teams and support access read it as it is.
+  const owner = t?.assignee_id ? work.members.find((m) => m.id === t.assignee_id) : undefined;
+  const mustAccept = open && c.channel !== 'manual' && !work.read_only && work.team_id === c.team_id && !t?.assignee_id;
 
   return (
     <>
@@ -95,7 +97,11 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
             {c.asked_member && (
               <span
                 className="conv-fact"
-                title={c.asked_member.given ? 'ลูกค้าขอให้คนเดิมดูแลต่อ ระบบมอบเคสให้แล้ว' : `ลูกค้าขอให้คนเดิมดูแลต่อ แต่ตอนนั้น${c.asked_member.reason} จึงส่งเข้าทีมตามปกติ`}
+                title={
+                  c.asked_member.given
+                    ? 'ลูกค้าขอให้คนเดิมดูแลต่อ ระบบมอบเคสให้แล้ว'
+                    : `ลูกค้าขอให้คนเดิมดูแลต่อ แต่ตอนนั้น${c.asked_member.reason} จึงส่งเข้าทีมตามปกติ`
+                }
               >
                 <Icon name="users" />
                 ขอ {c.asked_member.name}
@@ -134,7 +140,7 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
           <span className="inbox-ai-status" data-ai-controls={c.id}>
             <AiControls conversation={c} />
           </span>
-          {!t && (
+          {!t && !mustAccept && (
             <button
               type="button"
               className="btn sm"
@@ -152,22 +158,6 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
               <span className="conv-action-label">เปิดเคส</span>
             </button>
           )}
-          <button
-            type="button"
-            className="btn sm"
-            title={open ? 'ปิดบทสนทนา' : 'เปิดบทสนทนาอีกครั้ง'}
-            onClick={() =>
-              run(async () => {
-                await setConversationStatus(c.id, nextStatus);
-                toast(nextStatus === 'closed' ? 'ปิดบทสนทนาแล้ว' : 'เปิดบทสนทนาแล้ว');
-                await refresh(...CONVERSATION_PREFIXES);
-              })
-            }
-          >
-            <Icon name={open ? 'checkCircle' : 'chat'} />
-            <span className="conv-action-label">{open ? 'ปิดบทสนทนา' : 'เปิดบทสนทนาอีกครั้ง'}</span>
-          </button>
-          {work.role === 'admin' && c.guest_block && <GuestBlockButton conversationId={c.id} blocked={Boolean(c.guest_block.block)} />}
         </div>
       </div>
       {/* One row: who may read, the AI summary (a button until there is one, then its own row under), notes only. */}
@@ -177,80 +167,68 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
         <ThreadFilter messages={messages} notesOnly={notesOnly} onChange={setNotesOnly} />
       </div>
       <ContactHeadsUp contactId={contact.id} className="conv-headsup" />
-      {c.line && c.line.source_type !== 'user' && (
-        <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม</div>
-      )}
+      {c.line && c.line.source_type !== 'user' && <div className="notice">บทสนทนากลุ่ม LINE: คำตอบและไฟล์จะส่งให้สมาชิกทุกคนในกลุ่ม</div>}
       <MessageThread messages={messages} threadId={c.id} notesOnly={notesOnly} readAt={data.customer_read_at} manage={manage} />
       <ColleaguesHere conversationId={c.id} />
-      <Composer
-        conversationId={c.id}
-        channel={c.channel}
-        manual={c.channel === 'manual'}
-        compact
-        conversation={c} recipient={contact.name}
-        caseNumber={t?.number}
-        translateTo={translateTo(c.translation)}
-        notesOnly={notesOnly}
-        // A reply sent while the thread shows notes only would be out of sight: show the whole thread again.
-        onSent={(sent) => {
-          if (sent === 'reply') setNotesOnly(false);
-        }}
-      />
+      {mustAccept ? (
+        <AcceptBar conversationId={c.id} />
+      ) : (
+        <>
+          {open && owner && owner.id !== user.id && (
+            <p className="conv-owner">
+              <Icon name="users" />
+              {owner.name} รับเรื่องนี้แล้ว
+            </p>
+          )}
+          <Composer
+            conversationId={c.id}
+            channel={c.channel}
+            manual={c.channel === 'manual'}
+            compact
+            conversation={c}
+            recipient={contact.name}
+            caseNumber={t?.number}
+            translateTo={translateTo(c.translation)}
+            notesOnly={notesOnly}
+            // A reply sent while the thread shows notes only would be out of sight: show the whole thread again.
+            onSent={(sent) => {
+              if (sent === 'reply') setNotesOnly(false);
+            }}
+          />
+        </>
+      )}
     </>
   );
 }
 
-/** บล็อกผู้ก่อกวน (owners): a guest who keeps opening chats to make trouble. Asked first, since it closes their chats
-    and holds their network; lifting it is not asked. Backend: guest/blocks.py. */
-function GuestBlockButton({ conversationId, blocked }: { conversationId: string; blocked: boolean }) {
-  const { confirm } = useDialogs();
+/** Where the composer would be while nobody has taken the chat: one button takes it, then the composer opens. */
+function AcceptBar({ conversationId }: { conversationId: string }) {
   const toast = useToast();
   const refresh = useInvalidate();
   const run = useRunAction();
-  const done = () => refresh(...CONVERSATION_PREFIXES, GUEST_BLOCKS_PATH);
-  if (blocked)
-    return (
+  return (
+    <div className="conv-accept">
+      <p>
+        <strong>ยังไม่มีใครรับเรื่องนี้</strong>
+        <span>กดรับเคสก่อนตอบลูกค้า เพื่อนร่วมทีมจะเห็นว่าคุณดูแลอยู่</span>
+      </p>
       <button
         type="button"
-        className="btn sm conv-unblock"
-        title="ปลดบล็อกผู้เยี่ยมชมคนนี้ ให้ส่งข้อความและเริ่มแชทได้อีกครั้ง"
+        className="btn primary"
         onClick={() =>
           run(async () => {
-            await unblockGuest(conversationId);
-            toast('ปลดบล็อกแล้ว');
-            await done();
+            try {
+              await acceptConversation(conversationId);
+              toast('รับเคสแล้ว');
+            } finally {
+              await refresh(...CONVERSATION_PREFIXES);
+            }
           })
         }
       >
-        <Icon name="ban" />
-        <span className="conv-action-label">ปลดบล็อก</span>
+        <Icon name="checkCircle" />
+        รับเคส
       </button>
-    );
-  return (
-    <button
-      type="button"
-      className="btn sm"
-      title="บล็อกผู้เยี่ยมชมที่ก่อกวน"
-      onClick={() =>
-        confirm({
-          title: 'บล็อกผู้เยี่ยมชมคนนี้',
-          message: (
-            <>
-              แชทที่ยังเปิดอยู่ของผู้เยี่ยมชมคนนี้จะถูกปิด และเขาจะส่งข้อความหรือเริ่มแชทใหม่ไม่ได้จนกว่าจะปลดบล็อก
-            </>
-          ),
-          confirmLabel: 'บล็อก',
-          tone: 'danger',
-          run: async () => {
-            const result = await blockGuest(conversationId);
-            toast(result.closed ? `บล็อกแล้ว ปิดแชท ${result.closed} เรื่อง` : 'บล็อกแล้ว');
-            await done();
-          },
-        })
-      }
-    >
-      <Icon name="ban" />
-      <span className="conv-action-label">บล็อก</span>
-    </button>
+    </div>
   );
 }

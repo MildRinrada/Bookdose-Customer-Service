@@ -278,11 +278,13 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
             อ่านอารมณ์ลูกค้า
             <InfoHint>AI ดูข้อความล่าสุดว่าลูกค้าไม่พอใจหรือเร่งด่วนไหม เพื่อดันเคสขึ้นก่อน ถ้าปิด ระบบยังดูจากคำในข้อความเหมือนเดิม</InfoHint>
           </label>
-          <label className="check">
-            <input type="checkbox" className="switch" name="translate_enabled" defaultChecked={a.translate_enabled} />
-            แปลภาษาสองทาง
-            <InfoHint>ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยจะแปลเป็นภาษาของลูกค้าก่อนส่ง</InfoHint>
-          </label>
+          {a.translate_offered && (
+            <label className="check">
+              <input type="checkbox" className="switch" name="translate_enabled" defaultChecked={a.translate_enabled} />
+              แปลภาษาสองทาง
+              <InfoHint>ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยจะแปลเป็นภาษาของลูกค้าก่อนส่ง</InfoHint>
+            </label>
+          )}
           <label className="check">
             <input type="checkbox" className="switch" name="triage_enabled" defaultChecked={a.triage_enabled} />
             เสนอป้าย ความเร่งด่วน และทีมให้เคสใหม่

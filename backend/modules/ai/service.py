@@ -35,7 +35,15 @@ JOB_TIMEOUT_SECONDS = ai_webhook.TIMEOUT_SECONDS+30
 
 
 def config(db):
+    """The organization's AI settings. แปลภาษาสองทาง also needs the platform's switch (platform/switches.py):
+    translate_chosen is what the owner chose, kept while the platform has it off."""
+    from backend.modules.platform import switches
     values = repository.settings(db)
+    chosen = values.get('ai_translate','0')=='1'
+    return {'translate_chosen':chosen,**_config(values),'translate_enabled':chosen and switches.on('translate')}
+
+
+def _config(values):
     return {'drafts_enabled':values.get('ai_drafts')=='1','chatbot_enabled':values.get('ai_chatbot')=='1',
             'model':values.get('ai_model',DEFAULT_MODEL),'daily_limit':int(values.get('ai_daily_limit',100)),
             'conversation_limit':int(values.get('ai_conversation_limit',20)),
@@ -66,6 +74,8 @@ def model_for(provider, model, changed):
 
 def overview(db, tenant_id):
     cfg = config(db)
+    from backend.modules.platform import switches
+    cfg['translate_offered'] = switches.on('translate')
     webhook = repository.read_webhook(tenant_id)
     key = repository.read_key(tenant_id)
     # The owner sees the saved URL (the secret header is what protects the workflow) and only the last characters of
@@ -509,6 +519,11 @@ def save_settings(db, ctx, body):
     webhook = None if change is False else saved if change is None else \
         {'url':change['url'] or saved['url'],'secret':change['secret'] or (saved or {}).get('secret','')}
     require(not webhook or webhook['secret'],'กรุณาตั้งรหัสลับของ Webhook (ใส่ค่าเดียวกันใน Header Auth ของ n8n)')
+    from backend.modules.platform import switches
+    if not switches.on('translate'):
+        # Not offered now (platform/switches.py): the owner's choice is kept for when the platform turns it on, unless
+        # the AI it would run on goes with this save.
+        cfg['translate_enabled'] = cfg['translate_chosen'] and bool(effective_key or webhook)
     require(effective_key or webhook or not (cfg['drafts_enabled'] or cfg['chatbot_enabled'] or cfg['translate_enabled']),
             'ต้องเชื่อม AI (API Key ของ OpenAI หรือ Gemini หรือ n8n Webhook) ก่อนเปิด AI หรือปิดทั้งสองโหมดก่อนลบการเชื่อมต่อ')
     # With n8n the workflow picks the model; with a key the model has to be one of that key's service.

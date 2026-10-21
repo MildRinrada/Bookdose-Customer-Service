@@ -544,7 +544,8 @@ function StaffComposer({
             <span>แท็กทีม</span>
           </button>
           <AiDraftButton draft={draft} />
-          <PolishButton polish={polish} />
+          {/* เกลาข้อความ: off for the whole platform when the console says so (backend platform/switches.py). */}
+          {work.ai.polish_offered !== false && <PolishButton polish={polish} />}
           <FileProblem problem={pills.problem} />
         </div>
         <SendButton manual={manual} />

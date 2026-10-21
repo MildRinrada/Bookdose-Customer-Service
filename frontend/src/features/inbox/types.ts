@@ -23,6 +23,8 @@ export type ConversationSummary = {
   ticket_number: number | null;
   ticket_status: string | null;
   ticket_priority: string | null;
+  /** Who took the chat's case (รับเคส), or null while nobody has. */
+  ticket_assignee_id?: string | null;
   /** The newest message (notes included). */
   preview: string | null;
   last_kind: MessageKind | null;
@@ -141,6 +143,7 @@ export type ConversationTicket = {
   number: number;
   status: string;
   priority: string;
+  assignee_id: string | null;
 } & Record<string, unknown>;
 
 /** GET /api/conversations/<id> */

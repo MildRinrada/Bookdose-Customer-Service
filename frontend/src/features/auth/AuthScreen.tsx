@@ -92,7 +92,7 @@ export function AuthScreen({ page, tab = 'login', org = '', next = '', expired =
   if (page === 'register' && boot.data.setup_required)
     return <RegistrationClosed message="เจ้าของระบบต้องตั้งค่าครั้งแรกก่อน จึงจะสมัครองค์กรใหม่ได้" linkLabel="กลับหน้าหลัก" />;
   if (page === 'register' && !boot.data.registration_available)
-    return <RegistrationClosed message="กรุณาติดต่อ Bookdose เพื่อเปิดใช้งานอีเมลยืนยันการสมัคร" linkLabel="กลับหน้าเข้าสู่ระบบ" />;
+    return <RegistrationClosed message="ตอนนี้ยังไม่เปิดให้สมัครองค์กรเอง กรุณาติดต่อ Bookdose" linkLabel="กลับหน้าเข้าสู่ระบบ" />;
 
   return (
     <AuthPage
@@ -188,7 +188,9 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
 
   const creating = setup || register;
   const login = !creating;
-  const signUp = login && tab === 'signup';
+  // บัญชีลูกค้า off for the platform (backend platform/switches.py): sign-in is for the team only, no sign-up tab.
+  const accounts = boot.customer_accounts;
+  const signUp = login && tab === 'signup' && accounts;
   const kind = setup ? 'setup' : register ? 'register' : 'login';
   // Customers sign up with the organization of the link the page was opened with, else the platform's own.
   const signupOrganization = info?.organization ?? boot.home;
@@ -312,7 +314,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
   };
 
   const openForgot = () =>
-    openModal('ลืมรหัสผ่าน', <ForgotPasswordHelp customerReset={verifyEmail} forgotHref={withOrg('/customer/forgot', org)} />);
+    openModal('ลืมรหัสผ่าน', <ForgotPasswordHelp customerReset={verifyEmail} customers={accounts} forgotHref={withOrg('/customer/forgot', org)} />);
 
   return (
     <main className="auth-page">
@@ -320,7 +322,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
       <section className="auth-form-wrap">
         <div className="auth-card" ref={card}>
           <TextSizeControls />
-          {login && !secondStep && (
+          {login && !secondStep && accounts && (
             <div className="auth-tabs" role="tablist" aria-label="เข้าสู่ระบบหรือสมัครสมาชิก">
               <button type="button" role="tab" aria-selected={!signUp} onClick={() => switchTab('login')}>
                 เข้าสู่ระบบ
@@ -334,8 +336,8 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
             <p className="guest-entry">
               <span>
                 {guestSlug
-                  ? `ไม่อยากสมัครสมาชิก? คุยกับทีมงาน ${linked?.name ?? ''} ได้เลย`
-                  : 'ไม่อยากสมัครสมาชิก? ติดต่อทีมงานขององค์กรได้โดยไม่ต้องเข้าสู่ระบบ'}
+                  ? `${accounts ? 'ไม่อยากสมัครสมาชิก?' : 'ลูกค้า?'} คุยกับทีมงาน ${linked?.name ?? ''} ได้เลย`
+                  : `${accounts ? 'ไม่อยากสมัครสมาชิก?' : 'ลูกค้า?'} ติดต่อทีมงานขององค์กรได้โดยไม่ต้องเข้าสู่ระบบ`}
               </span>
               <Link className="btn" href={guestSlug ? `/support/${guestSlug}/tickets/new` : '/support/tickets/new'}>
                 <Icon name="chat" />
@@ -478,11 +480,16 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                     // Setting a new password from the email lifts the lock at once, for either kind of account.
                     verifyEmail ? (
                       <>
-                        ตั้งรหัสผ่านใหม่เพื่อปลดล็อกทันที ลูกค้า:{' '}
-                        <Link className="btn subtle" href={withOrg('/customer/forgot', org)}>
-                          ลืมรหัสผ่าน
-                        </Link>
-                        {' '}ทีมงาน:{' '}
+                        ตั้งรหัสผ่านใหม่เพื่อปลดล็อกทันที{' '}
+                        {accounts && (
+                          <>
+                            ลูกค้า:{' '}
+                            <Link className="btn subtle" href={withOrg('/customer/forgot', org)}>
+                              ลืมรหัสผ่าน
+                            </Link>{' '}
+                          </>
+                        )}
+                        ทีมงาน:{' '}
                         <Link className="btn subtle" href="/forgot-password">
                           ลืมรหัสผ่าน
                         </Link>
@@ -528,9 +535,11 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                         มีบัญชีแล้ว? <Link href="/login">เข้าสู่ระบบ</Link>
                       </>
                     ) : (
-                      <>
-                        ต้องการเปิดระบบนี้ให้องค์กรของคุณ? <Link href="/register">สมัครองค์กรใหม่</Link>
-                      </>
+                      boot.registration_available && (
+                        <>
+                          ต้องการเปิดระบบนี้ให้องค์กรของคุณ? <Link href="/register">สมัครองค์กรใหม่</Link>
+                        </>
+                      )
                     )}
                   </p>
                 </>

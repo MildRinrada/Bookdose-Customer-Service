@@ -245,6 +245,38 @@
   font-size: .6rem;
 }
 
+/* รับเคส: in place of the composer while nobody has taken the chat. */
+.conv-accept {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 18px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--info-soft);
+}
+.conv-accept p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.conv-accept span {
+  color: var(--muted);
+  font-size: .92rem;
+}
+/* A colleague took this chat: said once above the composer, which stays open for notes and help. */
+.conv-owner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 22px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .92rem;
+}
 .composer {
   padding: 18px 22px;
   border-top: 1px solid var(--line);
@@ -544,8 +576,8 @@
   border: 1px solid #a6a6a6;
   color: var(--ink);
 }
+/* A note starts at the same edge as the customer's messages; its colour and dashed border tell it apart. */
 .message.note {
-  margin-inline: 4%;
   max-width: 92%;
 }
 .message.note .bubble {

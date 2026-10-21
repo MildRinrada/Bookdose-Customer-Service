@@ -49,7 +49,8 @@ class AutomationTests(unittest.TestCase):
         rule = self.ok(self.admin,'/api/automation/rules',{'name':'ระบบล่มจากเว็บ','channel':'web','keywords':'ระบบล่ม, เข้าไม่ได้',
                                                           'set_priority':'high','set_team_id':accounting})['id']
         _,plain = self.visitor()
-        self.assertIsNone(self.ticket_of(plain))
+        # Every new chat has a case; only the matching one is routed and raised by the rule.
+        self.assertEqual((self.ticket_of(plain)['priority'],self.ticket_of(plain)['team_id']==accounting),('normal',False))
         _,paid = self.visitor(email='down@example.com',subject='สอบถาม',body='ระบบล่มตั้งแต่เช้า ยังใช้งานไม่ได้')
         ticket = self.ticket_of(paid)
         self.assertEqual((ticket['priority'],ticket['team_id']),('high',accounting))
@@ -60,7 +61,7 @@ class AutomationTests(unittest.TestCase):
         self.ok(self.admin,f'/api/automation/rules/{rule}',{'name':'ปิดไว้','enabled':False,'channel':'web','keywords':'ระบบล่ม','set_priority':'high'},'PATCH')
         self.ok(self.admin,'/api/automation/rules',{'name':'LINE เท่านั้น','channel':'line','keywords':'ระบบล่ม','set_priority':'urgent'})
         _,again = self.visitor(email='down@example.com',subject='ระบบล่ม',body='ระบบล่มอีกครั้ง')
-        self.assertIsNone(self.ticket_of(again))
+        self.assertEqual(self.ticket_of(again)['priority'],'normal')
 
     def test_rule_applies_to_cases_staff_open_and_keeps_owner_in_team(self):
         accounting = self.new_team()

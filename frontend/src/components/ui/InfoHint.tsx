@@ -10,7 +10,8 @@ import { Icon } from '@/components/Icon';
    about get lost in them. So the text waits behind the (i): pointing at it shows it, clicking keeps it open (and on a
    phone, where nothing can be pointed at, a tap is the click), and pointing away, clicking elsewhere, Esc or
    scrolling put it away. It is drawn over the page, outside the card, so a card is never taller for having one and
-   a card that clips its edges never cuts it off.
+   a card that clips its edges never cuts it off. Inside an open dialog it is drawn in the dialog instead: a modal
+   dialog sits in the browser's top layer, above anything else on the page however high its z-index.
 
    Inside a link (a stat tile) a second control would be a control inside a control, so there `still` draws the (i)
    without a button: the text shows when the (i) is pointed at, and the link carries it as its description.
@@ -19,7 +20,8 @@ import { Icon } from '@/components/Icon';
 const WIDTH = 300;
 const GAP = 8;
 
-type Place = { x: number; y: number; above: boolean };
+/** host: where the text is drawn, the open dialog around the (i) or else the page. */
+type Place = { x: number; y: number; above: boolean; host: Element };
 
 /** Centred under (or over) the (i), but never so near the window's edge that the widest text would not fit. */
 function placeBeside(anchor: HTMLElement): Place {
@@ -28,7 +30,7 @@ function placeBeside(anchor: HTMLElement): Place {
   const x = Math.min(Math.max(GAP + half, rect.left + rect.width / 2), window.innerWidth - GAP - half);
   // Below the (i), unless the window ends too soon there: then above it.
   const above = rect.bottom + 180 > window.innerHeight && rect.top > 180;
-  return { x, y: above ? window.innerHeight - rect.top + GAP : rect.bottom + GAP, above };
+  return { x, y: above ? window.innerHeight - rect.top + GAP : rect.bottom + GAP, above, host: anchor.closest('dialog') ?? document.body };
 }
 
 export function InfoHint({ children, label = 'คำอธิบาย', still = false }: { children: ReactNode; label?: string; still?: boolean }) {
@@ -79,7 +81,7 @@ export function InfoHint({ children, label = 'คำอธิบาย', still =
       >
         {children}
       </div>,
-      document.body,
+      place.host,
     );
 
   if (still)

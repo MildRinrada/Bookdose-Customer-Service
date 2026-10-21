@@ -5,7 +5,7 @@ import { needsReply } from '@/features/inbox/hooks';
 import { clockTime, dayLabel, formatDuration, overdue, plainText } from '@/lib/format';
 import { channelIcons } from '@/lib/labels';
 import { useApi } from '@/lib/query';
-import { useStaffAlerts, useStaffTickets } from '@/lib/session';
+import { useBoot, useStaffAlerts, useStaffTickets } from '@/lib/session';
 import type { StaffAlerts, TicketSummary } from '@/lib/types';
 import type { NotificationItem, NotificationKind } from './types';
 
@@ -25,12 +25,14 @@ export type NotificationSource = {
   alerts?: StaffAlerts | null;
   tickets?: TicketSummary[] | null;
   conversations?: ConversationSummary[] | null;
+  /** The member looking: a chat a colleague took (รับเคส) is not waiting for them. */
+  me?: string;
 };
 
 /* One list, newest first. A case that is past its SLA or still unassigned needs someone; a conversation whose
    last message came from the customer is waiting for a reply; and what is addressed to you: a case escalated to
    you, a follow-up reminder that is due, a colleague who @mentioned you or raised their hand for help. */
-export function notificationItems({ alerts, tickets, conversations }: NotificationSource): NotificationItem[] {
+export function notificationItems({ alerts, tickets, conversations, me }: NotificationSource): NotificationItem[] {
   const items: NotificationItem[] = [];
   const now = Date.now();
   for (const c of alerts?.channels ?? [])
@@ -81,7 +83,7 @@ export function notificationItems({ alerts, tickets, conversations }: Notificati
       items.push({ kind: 'ticket', tone: 'new', icon: 'ticket', title: `BD-${t.number} ยังไม่มีผู้รับผิดชอบ`, detail: t.subject, at: t.created_at, href: `/tickets/${t.id}` });
   }
   for (const c of conversations ?? [])
-    if (needsReply(c))
+    if (needsReply(c) && (!c.ticket_assignee_id || c.ticket_assignee_id === me))
       items.push({
         kind: 'inbox',
         tone: 'waiting',
@@ -106,7 +108,8 @@ export function useNotificationItems(fetchConversations = false): NotificationIt
   const alerts = useStaffAlerts().data;
   const tickets = useStaffTickets().data?.tickets;
   const conversations = useCachedConversations(fetchConversations).data?.conversations;
-  return notificationItems({ alerts, tickets, conversations });
+  const me = useBoot().data?.user?.id;
+  return notificationItems({ alerts, tickets, conversations, me });
 }
 
 /** The number on the bell. */

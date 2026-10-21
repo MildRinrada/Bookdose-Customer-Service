@@ -133,7 +133,7 @@ export function ArticleCard({
             {article.uses ? `ใช้ตอบ ${article.uses} ครั้ง` : 'ยังไม่ถูกใช้'}
           </span>
           {rate !== null && (
-            <span className={`article-stat rate${rate < 50 ? ' low' : ''}`} title={`ช่วยได้ ${article.helpful} ไม่ช่วย ${article.unhelpful}`}>
+            <span className={`article-stat rate${rate < 50 ? ' low' : ''}`} title={`ลูกค้าบอกว่าช่วยได้ ${article.helpful} ไม่ช่วย ${article.unhelpful}`}>
               <Icon name="thumbUp" />
               ช่วยได้ {rate}%
             </span>

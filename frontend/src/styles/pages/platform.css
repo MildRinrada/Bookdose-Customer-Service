@@ -622,6 +622,21 @@
 .platform-settings-section>.card.mt:first-child {
   margin-top: 0;
 }
+/* ฟีเจอร์ของระบบ: one switch per row, its explanation under its name. */
+.platform-switches {
+  display: grid;
+  gap: 16px;
+}
+.platform-switches .check {
+  align-items: flex-start;
+}
+.platform-switches .switch {
+  margin-top: 2px;
+  flex: none;
+}
+.platform-switch-warn {
+  color: var(--red);
+}
 
 #platform-organizations td {
   overflow-wrap: anywhere;

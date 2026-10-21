@@ -12,6 +12,10 @@ export type Boot = {
   setup_required: boolean;
   setup_token_required: boolean;
   registration_available: boolean;
+  /** บัญชีลูกค้า (backend platform/switches.py): off, the sign-in page is for staff only and customers write in as guests. */
+  customer_accounts: boolean;
+  /** สถานะการทำงาน (backend platform/switches.py): off, nobody sets a status and everyone counts as available. */
+  work_status: boolean;
   /** The platform's own organization, where customers sign up on the main page. */
   home: { slug: string; name: string } | null;
   /** platform_owner: the account made at first-run setup, the one who manages the platform admins. console_locked: a
@@ -69,7 +73,7 @@ export type Workspace = {
   snippets: TeamSnippet[];
   macros: Macro[];
   customer_email: boolean;
-  ai: Record<string, unknown> & { key_configured: boolean };
+  ai: Record<string, unknown> & { key_configured: boolean; polish_offered?: boolean };
   /** Support access requests waiting for this organization's admins (always 0 for other roles). */
   support_pending?: number;
   /** How full this organization's share of the shared disk is. `quota` 0 means the platform gave it no ceiling;

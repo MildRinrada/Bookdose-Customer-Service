@@ -24,12 +24,6 @@ def use_kind(body):
     return value
 
 
-def vote(body):
-    value = body.get('vote')
-    require(type(value) is int and value in (-1,0,1),'คะแนนต้องเป็น 1 (ช่วยได้), -1 (ไม่ช่วย) หรือ 0 (ยกเลิก)')
-    return value
-
-
 def pins(body):
     """The article ids to pin, in order, without repeats."""
     value = body.get('ids')

@@ -14,6 +14,8 @@ ROUTES = [
     ('POST', CONVERSATION+f'/messages/{ID}/pin', controller.pin_message,   'workspace'),
     ('DELETE',CONVERSATION+f'/messages/{ID}', controller.delete_message,  'workspace'),
     ('POST',  CONVERSATION+'/ticket',      controller.link_ticket,         'workspace'),
+    # รับเคส: the member takes the chat's matter before answering it (service.accept).
+    ('POST',  CONVERSATION+'/accept',      controller.accept,              'workspace'),
     ('POST',  CONVERSATION+'/ai-draft',    controller.request_ai_draft,    'workspace'),
     # สรุปบทสนทนา: the kept summary, and asking for it to be brought up to date.
     ('GET',   CONVERSATION+'/summary',     controller.summary,             'workspace'),

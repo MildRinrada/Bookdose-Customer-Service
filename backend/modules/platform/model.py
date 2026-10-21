@@ -53,6 +53,8 @@ FEATURES = {
     # Switched off, the overview goes back to the arrangement it ships with for everybody in that organization. What
     # each member had arranged is kept, not thrown away, and comes back the moment it is switched on again.
     'dashboard_layout': ('จัดหน้าภาพรวมเองได้','ย้าย ย่อ-ขยาย และซ่อนการ์ดบนหน้าภาพรวม แยกของใครของมัน ปิดแล้วทุกคนกลับไปใช้หน้าตามค่าเริ่มต้น',True),
+    # Off, nobody earns a badge or is shown a monthly summary; what was earned is kept for when it is on again.
+    'achievements': ('ผลงานของฉัน','เหรียญความสำเร็จและสรุปผลงานรายเดือนของสมาชิกแต่ละคน',False),
 }
 
 CONTROL_TABLES = '''

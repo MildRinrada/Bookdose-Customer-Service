@@ -28,14 +28,8 @@ class KnowledgeActivityTests(unittest.TestCase):
         self.ok(agent,f'{ARTICLES}/{first}/use',{'kind':'insert'})
         used = self.ok(self.admin,f'{ARTICLES}/{first}/use',{'kind':'link'})
         self.assertEqual(used['uses'],3);self.assertTrue(used['used_at'])
-        # Marks: one per member, changed or taken back; everyone sees the totals, each their own mark.
-        self.ok(agent,f'{ARTICLES}/{first}/vote',{'vote':-1})
-        self.ok(agent,f'{ARTICLES}/{first}/vote',{'vote':1})
-        self.ok(self.admin,f'{ARTICLES}/{first}/vote',{'vote':-1})
-        mine = self.row(agent,first)
-        self.assertEqual((mine['helpful'],mine['unhelpful'],mine['my_vote']),(1,1,1))
-        self.assertEqual(self.row(self.admin,first)['my_vote'],-1)
-        self.assertEqual(self.ok(self.admin,f'{ARTICLES}/{first}/vote',{'vote':0})['unhelpful'],0)
+        # The team does not vote on articles; only customers say whether one helped (knowledge/feedback.py).
+        self.assertEqual(agent.call(f'{ARTICLES}/{first}/vote',{'vote':1})[0],404)
         # Pins are the member's own, in their order.
         self.assertEqual(self.ok(agent,f'{ARTICLES}/pins',{'ids':[second,first]})['pins'],[second,first])
         self.assertEqual((self.row(agent,second)['pin_order'],self.row(agent,first)['pin_order']),(1,2))
@@ -43,8 +37,7 @@ class KnowledgeActivityTests(unittest.TestCase):
         self.ok(agent,f'{ARTICLES}/pins',{'ids':[first]})
         self.assertEqual((self.row(agent,second)['pin_order'],self.row(agent,first)['pin_order']),(0,1))
         # What may be sent.
-        for path,body in ((f'{ARTICLES}/{first}/use',{'kind':'print'}),(f'{ARTICLES}/{first}/vote',{'vote':2}),
-                          (f'{ARTICLES}/{first}/vote',{'vote':True}),(f'{ARTICLES}/pins',{'ids':[first,first]}),
+        for path,body in ((f'{ARTICLES}/{first}/use',{'kind':'print'}),(f'{ARTICLES}/pins',{'ids':[first,first]}),
                           (f'{ARTICLES}/pins',{'ids':'x'}),(f'{ARTICLES}/pins',{'ids':['../x']})):
             self.assertEqual(agent.call(path,body)[0],400,(path,body))
         self.assertEqual(agent.call(f'{ARTICLES}/{"0"*32}/use',{'kind':'copy'})[0],404)

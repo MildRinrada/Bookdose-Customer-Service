@@ -2,13 +2,13 @@
 
 export type ArticleVisibility = 'public' | 'internal';
 
-/** How the team used an article (knowledge_uses, knowledge_marks); my_vote and pin_order are the member's own. */
+/** How the team used an article (knowledge_uses, knowledge_marks; pin_order is the member's own) and what customers
+    said of it (helpful / unhelpful: knowledge/feedback.py). */
 export type ArticleActivity = {
   uses: number;
   used_at: string | null;
   helpful: number;
   unhelpful: number;
-  my_vote: -1 | 0 | 1;
   /** 1 = first of the member's pins; 0 = not pinned. */
   pin_order: number;
 };

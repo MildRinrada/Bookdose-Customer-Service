@@ -4,6 +4,7 @@ contact and whether it has joined it."""
 from backend.middleware import security
 from backend.modules.customers import repository as accounts, service as customers
 from backend.modules.platform import service as platform
+from backend.utils import qrcode
 
 
 def base_url(cd, req):
@@ -14,6 +15,12 @@ def base_url(cd, req):
         return base
     proxied = security.from_web_app(req)
     return ('https://' if req.server.secure_cookies else 'http://')+req.headers.get('X-Forwarded-Host' if proxied else 'Host','')
+
+
+def support_link(cd, ctx, req):
+    """หน้าลูกค้า: the organization's page for customers, with its QR to print or put on a poster."""
+    url = f"{base_url(cd,req)}/support/{ctx['slug']}"
+    return {'url':url,'qr':qrcode.data_url(url,'QR หน้าลูกค้า')}
 
 
 def org_roles(cd, session):

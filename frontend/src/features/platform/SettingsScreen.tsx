@@ -8,6 +8,7 @@ import { RegistrationSettingsPanel } from '@/features/auth/components/Registrati
 import type { RegistrationConfig } from '@/features/auth/types';
 import { useApi } from '@/lib/query';
 import { REGISTRATION_PATH } from './api';
+import { PlatformSwitchesCard } from './components/PlatformSwitchesCard';
 import { SmsSettingsCard } from './components/SmsSettingsCard';
 import { TurnstileSettingsCard } from './components/TurnstileSettingsCard';
 
@@ -64,6 +65,9 @@ export function SettingsScreen() {
           </Link>
         </div>
       </div>
+      <section id="features" className="platform-settings-section" aria-label="ฟีเจอร์ของระบบ">
+        <PlatformSwitchesCard />
+      </section>
       <section id="email" className="platform-settings-section" aria-label="อีเมล (SMTP)">
         <RegistrationSettingsPanel config={registration.data} />
       </section>

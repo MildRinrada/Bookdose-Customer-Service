@@ -10,6 +10,7 @@ import type {
   RestorePreview,
   RestoreResult,
   TurnstileSettings,
+  PlatformSwitches,
   VulnsView,
 } from './types';
 
@@ -28,6 +29,9 @@ export const REGISTRATION_PATH = '/api/platform/registration';
 export const ADMINS_PATH = '/api/platform/admins';
 export const GLOBAL_FAQ_PATH = '/api/platform/faq';
 export const TURNSTILE_PATH = '/api/platform/turnstile';
+/** ฟีเจอร์ของระบบ (backend platform/switches.py): on or off for every organization at once. */
+export const SWITCHES_PATH = '/api/platform/switches';
+export const savePlatformSwitch = (key: string, enabled: boolean) => api<PlatformSwitches>(SWITCHES_PATH, { key, enabled });
 
 /** The bot check on the public support form (Cloudflare Turnstile). `secret`: '' keeps the saved key. */
 export const saveTurnstileSettings = (body: { enabled: boolean; site_key: string; secret: string }) =>

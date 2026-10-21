@@ -15,18 +15,18 @@ export function wordCountText(value: string): string {
 export const STALE_DAYS = 180;
 const DAY = 86_400_000;
 
-/** "ช่วยได้ 90%" once anyone marked it; null before. */
+/** "ช่วยได้ 90%" once a customer marked it; null before. */
 export function helpfulRate(a: Article): number | null {
   const votes = (a.helpful ?? 0) + (a.unhelpful ?? 0);
   return votes ? Math.round(((a.helpful ?? 0) / votes) * 100) : null;
 }
 
-/** Why an article should be looked over, or null: not updated for STALE_DAYS, or marked not helpful more often
-    than helpful (at least twice). */
+/** Why an article should be looked over, or null: not updated for STALE_DAYS, or customers said it did not help more
+    often than it did (at least twice). */
 export function reviewReason(a: Article, now = Date.now()): string | null {
   const days = Math.floor((now - new Date(a.updated_at).getTime()) / DAY);
   const unhelpful = a.unhelpful ?? 0;
-  if (unhelpful >= 2 && unhelpful > (a.helpful ?? 0)) return `ทีมกดว่าไม่ช่วย ${unhelpful} ครั้ง`;
+  if (unhelpful >= 2 && unhelpful > (a.helpful ?? 0)) return `ลูกค้าบอกว่าไม่ช่วย ${unhelpful} ครั้ง`;
   if (days >= STALE_DAYS) return `ไม่ได้อัปเดต ${Math.floor(days / 30)} เดือน`;
   return null;
 }

@@ -8,6 +8,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
+import { useCustomerAccountsOn } from '@/lib/session';
 import { forgetGuest, guestPath, requestGuestLineCode, sendFollowLink, setGuestName, setGuestRemember, unlinkGuestLine } from '../api';
 import type { GuestLineCode, GuestOverview } from '../types';
 
@@ -263,6 +264,7 @@ export function FollowCard({
   const toast = useToast();
   const refresh = useInvalidate();
   const { confirm } = useDialogs();
+  const accounts = useCustomerAccountsOn();
   if (!guest) return null;
 
   const proven = [
@@ -316,10 +318,12 @@ export function FollowCard({
         </ul>
         <NameRow slug={slug} name={guest.name} />
         <div className="guest-follow-foot">
-          <Link className="btn subtle" href={signup} target={newWindow ? '_blank' : undefined} rel={newWindow ? 'noopener' : undefined}>
-            <Icon name="users" />
-            สมัครสมาชิกเพื่อเก็บประวัติถาวร
-          </Link>
+          {accounts && (
+            <Link className="btn subtle" href={signup} target={newWindow ? '_blank' : undefined} rel={newWindow ? 'noopener' : undefined}>
+              <Icon name="users" />
+              สมัครสมาชิกเพื่อเก็บประวัติถาวร
+            </Link>
+          )}
           <button
             type="button"
             className="btn subtle guest-forget"

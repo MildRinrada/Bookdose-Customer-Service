@@ -8,16 +8,19 @@ import { useDialogs } from '@/components/ui/Dialogs';
    and staff alike get a link to choose a new password themselves (which also lifts a lock from wrong passwords);
    without it, the only way back is the person who opened the account. */
 
-export function ForgotPasswordHelp({ customerReset, forgotHref }: { customerReset: boolean; forgotHref: string }) {
+/** customers: บัญชีลูกค้า is on for the platform (backend platform/switches.py); off, only the team's line is shown. */
+export function ForgotPasswordHelp({ customerReset, forgotHref, customers = true }: { customerReset: boolean; forgotHref: string; customers?: boolean }) {
   const { closeModal } = useDialogs();
   return (
     <>
       {customerReset ? (
         <>
-          <p className="notice">
-            <Icon name="mail" />
-            ลูกค้าที่สมัครสมาชิกไว้: <Link href={forgotHref}>รับลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล</Link>
-          </p>
+          {customers && (
+            <p className="notice">
+              <Icon name="mail" />
+              ลูกค้าที่สมัครสมาชิกไว้: <Link href={forgotHref}>รับลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล</Link>
+            </p>
+          )}
           <p className="notice">
             <Icon name="users" />
             ทีมงานขององค์กรและผู้ดูแลแพลตฟอร์ม: <Link href="/forgot-password">รับลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล</Link>

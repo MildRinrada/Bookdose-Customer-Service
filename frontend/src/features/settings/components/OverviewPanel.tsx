@@ -12,7 +12,7 @@ import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { useToast } from '@/components/ui/Toast';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
 import { priorityLabels } from '@/lib/labels';
-import { useInvalidate } from '@/lib/query';
+import { useApi, useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
 import { useWork } from '@/lib/session';
 import type { TeamSnippet } from '@/lib/types';
@@ -35,6 +35,8 @@ export function ProfilePanel() {
   const { openModal } = useDialogs();
   // The screen only renders in the browser (the staff layout waits for the workspace), so window is there.
   const customerUrl = typeof window === 'undefined' ? '' : customerHomeUrl(work.tenant.slug);
+  // The same page as a QR, drawn by the server (backend org_links support_link), to print or put on a poster.
+  const qr = useApi<{ url: string; qr: string }>('/api/organization/support-link').data?.qr;
   return (
     <>
     <section className="card">
@@ -73,16 +75,25 @@ export function ProfilePanel() {
           )}
         </div>
         <div className="portal-link">
+          {qr && <img className="portal-qr" src={qr} alt="QR หน้าลูกค้า" width={96} height={96} />}
           <div className="grow">
             <span className="muted">หน้าลูกค้า</span>
             <a className="portal-url" href={customerUrl} target="_blank" rel="noopener">
               {customerUrl}
             </a>
           </div>
-          <button type="button" className="btn subtle" onClick={() => void copyText(customerUrl)}>
-            <Icon name="link" />
-            คัดลอกลิงก์
-          </button>
+          <div className="portal-link-actions">
+            <button type="button" className="btn subtle" onClick={() => void copyText(customerUrl)}>
+              <Icon name="link" />
+              คัดลอกลิงก์
+            </button>
+            {qr && (
+              <a className="btn subtle" href={qr} download={`qr-${work.tenant.slug}.svg`}>
+                <Icon name="download" />
+                ดาวน์โหลด QR
+              </a>
+            )}
+          </div>
         </div>
         {!work.customer_email && (
           <p className="notice warning mt">ระบบยังส่งอีเมลถึงลูกค้าไม่ได้</p>

@@ -47,7 +47,6 @@ export type RegistrationConfig = {
 /** The body of POST /api/platform/registration. */
 export type RegistrationSettingsInput = {
   enabled: boolean;
-  signup_enabled: boolean;
   public_base_url: string;
   address: string;
   smtp_host: string;

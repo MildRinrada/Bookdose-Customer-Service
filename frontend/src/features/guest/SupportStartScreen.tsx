@@ -48,6 +48,7 @@ function Frame({ slug, orgName, children }: { slug?: string; orgName?: string; c
           <Brand />
           <div className="guest-head-actions">
             {!account.data?.signed_in && (
+              // The team's own sign-in (customers have none while บัญชีลูกค้า is off): kept, it is how staff get in.
               <Link className="btn subtle" href="/login">
                 เข้าสู่ระบบ
               </Link>

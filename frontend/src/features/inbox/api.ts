@@ -22,6 +22,11 @@ export function openTicketFromConversation(conversationId: string) {
   return api<{ id: string }>(`/api/conversations/${conversationId}/ticket`, {});
 }
 
+/** รับเคส: the chat's case becomes the member's (opened now when it has none); 409 names who took it first. */
+export function acceptConversation(conversationId: string) {
+  return api<{ ticket_id: string }>(`/api/conversations/${conversationId}/accept`, {});
+}
+
 /** The customer's message from the organization's portal (customer side). */
 export function postPortalMessage(slug: string, conversationId: string, body: { body: string; attachments?: Upload[] }) {
   return api<{ id: string }>(`/api/public/${slug}/messages`, body, 'POST', { conversation: conversationId });

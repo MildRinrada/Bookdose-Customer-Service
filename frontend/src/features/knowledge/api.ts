@@ -40,11 +40,6 @@ export function recordUse(client: QueryClient, id: string, kind: ArticleUseKind)
   );
 }
 
-/** 1 = helpful, -1 = not helpful, 0 = take the mark back. */
-export async function voteArticle(client: QueryClient, id: string, vote: -1 | 0 | 1) {
-  keepActivity(client, await api<ActivityAnswer>(`${ARTICLES_PATH}/${id}/vote`, { vote }));
-}
-
 /** The member's pinned articles become exactly `ids`, in that order (shown at once, then saved). */
 export async function savePins(client: QueryClient, ids: string[]) {
   const before = client.getQueryData<ArticlesPage>([ARTICLES_PATH]);

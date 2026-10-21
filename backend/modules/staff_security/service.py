@@ -276,6 +276,8 @@ def passkey_sign_in(req):
         # A customer's passkey (or none): the staff copy of the challenge goes, the customer's is used there.
         repository.take_challenge(req.cd,token_hash(value))
         req.cd.commit()
+        from backend.modules.platform import switches
+        require(switches.on('customer_accounts'),webauthn.BAD)
         return 'customer',customer.passkey_login(req)
     from backend.modules.auth import service as auth
     from backend.modules.security import lockout

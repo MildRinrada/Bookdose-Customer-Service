@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { TextSizeMenu } from '@/components/shell/TextSize';
 import { useCustomerAccount } from '@/lib/customer-session';
+import { useCustomerAccountsOn } from '@/lib/session';
 import { guestPages } from '../api';
 import { OrgBanner, PoweredBy } from './OrgBanner';
 
@@ -15,6 +16,8 @@ import { OrgBanner, PoweredBy } from './OrgBanner';
 /** A signed-in customer can go to their own chats instead (the organization joins their list via ?org=). */
 export function SignedInLink({ slug }: { slug: string }) {
   const account = useCustomerAccount();
+  const accounts = useCustomerAccountsOn();
+  if (!accounts) return null;
   if (account.data?.signed_in)
     return (
       <Link className="btn" href={`/customer/chats?org=${encodeURIComponent(slug)}`}>

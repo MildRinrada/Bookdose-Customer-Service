@@ -319,6 +319,9 @@ export type GlobalArticleInput = { title: string; category: string; body: string
     server (it never comes back). */
 export type TurnstileSettings = { enabled: boolean; site_key: string; configured: boolean };
 
+/** GET /api/platform/switches. mail_ready: the system's email works (สมัครสมาชิกองค์กรเอง needs it to finish). */
+export type PlatformSwitches = { items: { key: string; label: string; detail: string; enabled: boolean }[]; mail_ready: boolean };
+
 /** A row of GET /api/platform/reports: what a member of an organization sent from the ? in their top bar. */
 export type ProblemReport = {
   id: string;

@@ -16,7 +16,7 @@ from backend.utils.validation import require
 
 
 def cookie_header(req, slug, token, remember, clear=False):
-    """The guest cookie g_<org>: only for the API, never readable by page scripts. Kept 400 days when remembered,
+    """The guest cookie g_<org>: only for the API, never readable by page scripts. Kept DEVICE_DAYS (30) when remembered,
     else until the browser closes. Inside the widget's frame on another website (X-Embed: 1, behind HTTPS) it must
     be SameSite=None; Secure; Partitioned, or the browser would not keep it."""
     parts = [f'{COOKIE_PREFIX}{slug}={token}','HttpOnly','Path=/api/']

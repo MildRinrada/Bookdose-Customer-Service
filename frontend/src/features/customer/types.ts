@@ -146,7 +146,8 @@ export type ThanksCardData = { id: string; name: string; photo: boolean; message
 /** ไม่รีบ (backend portal/no_rush.py): the reply promised by (UTC ISO) and the same in words ("พรุ่งนี้ 18:00 น."). */
 export type NoRush = { until: string; text: string };
 
-export type PortalQueue = { position: number; wait_minutes: number | null; away: boolean; no_rush?: NoRush | null };
+/** no_rush_offered: the platform has the ไม่รีบ button on (backend platform/switches.py). */
+export type PortalQueue = { position: number; wait_minutes: number | null; away: boolean; no_rush?: NoRush | null; no_rush_offered?: boolean };
 
 /** ขอคนเดิม (backend portal/same_member.py): the member of the customer's last case, as the start form offers them. */
 export type LastMember = { name: string; finished_at: string };

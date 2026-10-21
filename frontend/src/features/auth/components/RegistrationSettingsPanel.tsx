@@ -40,7 +40,6 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
           onSubmit={async (values, form) => {
             const result = await saveRegistrationSettings({
               enabled: (form.elements.namedItem('enabled') as HTMLInputElement).checked,
-              signup_enabled: (form.elements.namedItem('signup_enabled') as HTMLInputElement).checked,
               public_base_url: values.public_base_url ?? '',
               address: values.address ?? '',
               smtp_host: values.smtp_host ?? '',
@@ -58,12 +57,6 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
               <input type="checkbox" className="switch" name="enabled" defaultChecked={cfg.enabled} />
               <span className="check-text">
                 <strong>เปิดใช้อีเมลของระบบ</strong>
-              </span>
-            </label>
-            <label className="check span-2">
-              <input type="checkbox" className="switch" name="signup_enabled" defaultChecked={cfg.signup_enabled} />
-              <span className="check-text">
-                <strong>เปิดให้สมัครสร้างองค์กรใหม่เองจากหน้าเว็บ</strong>
               </span>
             </label>
             <TextField

@@ -25,7 +25,7 @@ from backend.modules.customers import notify, repository as accounts, schema as 
 from backend.modules.customers.line import NOT_AVAILABLE, unused_code
 from backend.modules.guest import repository, schema
 from backend.modules.guest.model import (CONTACT_SOURCE, COOKIE_PREFIX, COOKIE_REFRESH_SECONDS, DEFAULT_GUEST_CHAT, DEFAULT_WIDGET,
-                                         DEVICE_UNUSED_DAYS, GUEST_NAME, LINE_CODE_MINUTES, LINK_DAYS, MAX_NOTICE_ATTEMPTS,
+                                         DEVICE_DAYS, GUEST_NAME, LINE_CODE_MINUTES, LINK_DAYS, MAX_NOTICE_ATTEMPTS,
                                          START_PER_VISITOR_DAY)
 from backend.modules.platform import repository as tenants, service as platform
 from backend.modules.portal import same_member
@@ -51,7 +51,10 @@ def _json_setting(db, key, default):
 
 
 def guest_chat_enabled(db):
-    return _json_setting(db,'guest_chat',DEFAULT_GUEST_CHAT)['enabled'] is True
+    """With บัญชีลูกค้า off for the platform (platform/switches.py) a guest chat is the only way in, so it is open
+    whatever the organization chose."""
+    from backend.modules.platform import switches
+    return _json_setting(db,'guest_chat',DEFAULT_GUEST_CHAT)['enabled'] is True or not switches.on('customer_accounts')
 
 
 def require_enabled(db):
@@ -544,17 +547,21 @@ def send_notices(tenant_id):
 
 
 def cleanup(tenant_id, force=False):
-    """Browsers unused for 400 days, dead links, expired LINE codes, held addresses whose days are over and the
-    addresses of older chats are deleted (at most every 10 minutes)."""
+    """Browsers past their DEVICE_DAYS go every round of the worker (they are refused already; this deletes them).
+    Dead links, expired LINE codes, held addresses whose days are over and the addresses of older chats go at most
+    every 10 minutes."""
     from backend.modules.guest import blocks
     import time
+    with D.tenant(tenant_id) as db:
+        D.begin(db)
+        repository.delete_old_devices(db,after(days=-DEVICE_DAYS))
+        db.commit()
     moment = time.monotonic()
     if not force and moment-_cleaned.get(tenant_id,-CLEANUP_SECONDS)<CLEANUP_SECONDS:
         return
     _cleaned[tenant_id] = moment
     with D.tenant(tenant_id) as db:
         D.begin(db)
-        repository.delete_unused_devices(db,after(days=-DEVICE_UNUSED_DAYS))
         repository.delete_dead_links(db)
         repository.delete_expired_codes(db)
         blocks.cleanup(db)

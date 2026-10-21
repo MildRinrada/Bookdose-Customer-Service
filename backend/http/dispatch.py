@@ -264,9 +264,21 @@ def route_portal(req, path):
                 return
             if match[2]=='guest':
                 return route_guest(req,path)
+            accounts_open(req,path)
             req.customer = auth.customer_session(req)
             if not run(req,path,'customer'):
                 raise APIError(404,'ไม่พบรายการ')
+
+
+def accounts_open(req, path):
+    """บัญชีลูกค้า is a platform switch (platform/switches.py). Off, nobody signs up, signs in or uses a signed-in
+    customer's pages; asking who is signed in answers "nobody" (401), so the pages carry on as for a guest."""
+    from backend.modules.platform import switches
+    if switches.on('customer_accounts'):
+        return
+    if req.command=='GET' and path=='/api/customer/account':
+        raise APIError(401,'ยังไม่ได้เข้าสู่ระบบ')
+    raise APIError(403,'ปิดใช้งานบัญชีลูกค้าอยู่ ติดต่อองค์กรได้โดยไม่ต้องเข้าสู่ระบบ')
 
 
 def route_guest(req, path):
@@ -288,6 +300,7 @@ def route_customer(req, path):
     with D.control() as cd:
         req.cd = cd
         limit_customer_area(req)
+        accounts_open(req,path)
         if run(req,path,'customer-public'):
             return
         req.customer = auth.customer_session(req)

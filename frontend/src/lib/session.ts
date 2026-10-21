@@ -24,6 +24,12 @@ export function useBoot() {
   });
 }
 
+/** บัญชีลูกค้า is on for the platform (backend platform/switches.py). Off, no page offers a customer sign-in or
+    sign-up; customers write in as guests. False until the bootstrap has loaded. */
+export function useCustomerAccountsOn() {
+  return Boolean(useBoot().data?.customer_accounts);
+}
+
 /** The membership of the selected organization, if it is active. */
 export function activeMembership(boot: Boot | undefined): Membership | undefined {
   return boot?.memberships.find((m) => m.id === boot.tenant_id && m.status === 'active');

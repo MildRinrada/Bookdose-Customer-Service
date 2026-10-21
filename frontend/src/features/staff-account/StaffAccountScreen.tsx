@@ -12,7 +12,7 @@ import { AccountPrivacyCard } from '@/features/legal/StaffLegal';
 import { RepliesSettings } from './RepliesSettings';
 import { SecuritySettings } from './SecuritySettings';
 import { StatusSettings } from './StatusSettings';
-import { useBoot } from '@/lib/session';
+import { useBoot, useWorkspace } from '@/lib/session';
 import { isStaffAccountTab, platformHiddenTabs, platformNotifyHint, staffAccountTabPath, staffAccountTabs, type StaffAccountTab } from './tabs';
 
 /* ตั้งค่าบัญชี of a staff account - a member of any role, or a platform admin (/account?tab=): laid out as a
@@ -22,8 +22,14 @@ import { isStaffAccountTab, platformHiddenTabs, platformNotifyHint, staffAccount
    Markup: pages/settings.css (.settings-nav), pages/account-settings.css. */
 
 export function StaffAccountScreen({ tab }: { tab?: string }) {
-  const platformAdmin = Boolean(useBoot().data?.user?.platform_admin);
-  const tabs = (Object.keys(staffAccountTabs) as StaffAccountTab[]).filter((key) => !platformAdmin || !platformHiddenTabs.includes(key));
+  const boot = useBoot().data;
+  const platformAdmin = Boolean(boot?.user?.platform_admin);
+  // ผลงานของฉัน only where the platform gave it to the organization selected (backend platform/model.py FEATURES).
+  const achievements = Boolean(useWorkspace().data?.features?.achievements);
+  const tabs = (Object.keys(staffAccountTabs) as StaffAccountTab[]).filter(
+    (key) =>
+      (!platformAdmin || !platformHiddenTabs.includes(key)) && (key !== 'achievements' || achievements) && (key !== 'status' || Boolean(boot?.work_status)),
+  );
   const current: StaffAccountTab = isStaffAccountTab(tab) && tabs.includes(tab) ? tab : 'profile';
   const content = {
     profile: () => (

@@ -62,6 +62,10 @@ def save(cd, session, body):
 # Available for new cases
 def availability(prefs, moment=None):
     """{'available', 'status', 'label', 'reason'}: whether routing may give this member a new case at `moment`."""
+    from backend.modules.platform import switches
+    if not switches.on('work_status'):
+        # สถานะการทำงาน switched off for the platform (platform/switches.py): everyone is there for new work.
+        return {'status':'online','label':STATUSES['online'],'available':True,'reason':''}
     moment = (moment or utc_now()).astimezone(WORK_TZ)
     status = prefs['status']
     found = {'status':status,'label':STATUSES[status]}

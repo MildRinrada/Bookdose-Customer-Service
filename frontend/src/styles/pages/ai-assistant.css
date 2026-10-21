@@ -31,7 +31,8 @@
   width: 24px;
   height: 24px;
 }
-html:has(.composer) .assistant-fab {
+html:has(.composer) .assistant-fab,
+html:has(.conv-accept) .assistant-fab {
   right: 0;
   bottom: 42vh;
   width: 40px;
@@ -39,14 +40,17 @@ html:has(.composer) .assistant-fab {
   border-radius: 14px 0 0 14px;
   box-shadow: -4px 6px 16px #34343433;
 }
-html:has(.composer) .assistant-fab:hover {
+html:has(.composer) .assistant-fab:hover,
+html:has(.conv-accept) .assistant-fab:hover {
   transform: translateX(-3px);
 }
-html:has(.composer) .assistant-fab .icon {
+html:has(.composer) .assistant-fab .icon,
+html:has(.conv-accept) .assistant-fab .icon {
   width: 20px;
   height: 20px;
 }
-html:has(.composer) .assistant-fab.open {
+html:has(.composer) .assistant-fab.open,
+html:has(.conv-accept) .assistant-fab.open {
   display: none;
 }
 

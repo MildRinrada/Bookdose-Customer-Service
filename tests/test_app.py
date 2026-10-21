@@ -159,6 +159,12 @@ class IntegrationTests(unittest.TestCase):
         D.DATA=Path(self.temporary.name)/'data'
         D.init()
         rate_limit.RATES.clear()
+        # The platform's switches (platform/switches.py) are off on a new install; the tests of what they turn on need
+        # them on, and test_platform_switches.py turns them off again.
+        from backend.modules.platform import repository as platform_repository, switches
+        with D.control() as cd:
+            platform_repository.save_setting(cd,switches.KEY,json.dumps({'customer_accounts':True,'no_rush':True,'translate':True,'work_status':True}))
+        switches._cache['value']=None
         # The console's two-step rule follows this computer's .env otherwise (security/admin_guard.py); the tests of
         # that rule turn it on themselves (test_admin_guard.py).
         environment=patch.dict(os.environ,{'BOOKDOSE_PLATFORM_2FA':'off'})
@@ -478,10 +484,11 @@ class IntegrationTests(unittest.TestCase):
     def test_portal_ticket_reply_note_attachment_and_reopening(self):
         visitor,conversation=self.visitor()
         self.assertNotIn('portal_token',self.ok(self.admin,f'/api/conversations/{conversation}')['conversation'])
+        # The chat has its case from the first message; asking for one gives that one, never a second.
         before=len(self.ok(self.admin,'/api/tickets')['tickets'])
         ticket=self.ok(self.admin,f'/api/conversations/{conversation}/ticket',{})['id']
-        self.assertEqual(len(self.ok(self.admin,'/api/tickets')['tickets']),before+1)
-        self.assertEqual(self.admin.call(f'/api/conversations/{conversation}/ticket',{})[0],409)
+        self.assertEqual(len(self.ok(self.admin,'/api/tickets')['tickets']),before)
+        self.assertEqual(self.ok(self.admin,f'/api/conversations/{conversation}/ticket',{})['id'],ticket)
         file={'name':'บันทึก.txt','data':base64.b64encode('ลับสำหรับทีม'.encode()).decode()}
         self.ok(self.admin,f'/api/conversations/{conversation}/messages',{'kind':'note','body':'PRIVATE INTERNAL NOTE','attachments':[file]})
         note=self.ok(self.admin,f'/api/conversations/{conversation}')['messages'][-1]
@@ -907,7 +914,8 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(cd.execute('SELECT COUNT(*) FROM pending_registrations').fetchone()[0],0)
             self.assertEqual(cd.execute('SELECT COUNT(*) FROM tenants').fetchone()[0],1)
         with closing(sqlite3.connect(restore_dir/'tenants'/f'{self.org}.sqlite3')) as td:
-            self.assertEqual(td.execute('SELECT COUNT(*) FROM tickets').fetchone()[0],5)
+            # The demo cases and the case the visitor's chat opened.
+            self.assertEqual(td.execute('SELECT COUNT(*) FROM tickets').fetchone()[0],6)
             key=td.execute('SELECT storage_key FROM attachments').fetchone()[0]
         self.assertEqual((restore_dir/'files'/self.org/key).read_bytes(),b'round trip')
         again=subprocess.run([sys.executable,app.__file__,'--restore',str(archive)],env=env,capture_output=True)

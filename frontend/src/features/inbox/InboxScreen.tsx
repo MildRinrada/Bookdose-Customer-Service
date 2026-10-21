@@ -11,7 +11,7 @@ import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
-import { useWork } from '@/lib/session';
+import { useStaffUser, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
 import { ConversationAside } from './components/ConversationAside';
@@ -35,6 +35,7 @@ let listScroll = 0;
 export function InboxScreen({ id }: { id?: string }) {
   const router = useRouter();
   const work = useWork();
+  const user = useStaffUser();
   const admin = work.role === 'admin' && !work.read_only;
   const singlePane = useSinglePane();
   const modalOpen = useModalOpen();
@@ -57,11 +58,13 @@ export function InboxScreen({ id }: { id?: string }) {
     );
   };
   // An upset customer waiting for us comes first (ai/mood.py): most upset first, the rest in the order they came.
+  // A chat a colleague took (รับเคส) goes below the rest: it is in hand, and not this member's to answer.
   const heat = (c: ConversationSummary) => (c.status !== 'closed' && needsReply(c) ? moodHeat(c) : 0);
-  const shown = conversations.filter((c) => matches(c)).sort((a, b) => heat(b) - heat(a));
+  const taken = (c: ConversationSummary) => (c.ticket_assignee_id && c.ticket_assignee_id !== user.id ? 1 : 0);
+  const shown = conversations.filter((c) => matches(c)).sort((a, b) => taken(a) - taken(b) || heat(b) - heat(a));
 
   // Wide screens open a conversation from the current tab beside the list.
-  const fallback = !id && !singlePane && list.data ? (conversations.find((c) => matches(c)) ?? conversations[0])?.id : undefined;
+  const fallback = !id && !singlePane && list.data ? (shown[0] ?? conversations[0])?.id : undefined;
   const selectedId = id ?? fallback;
   const detail = useApi<ConversationDetail>(selectedId ? conversationPath(selectedId) : null, { refetchInterval: interval });
 

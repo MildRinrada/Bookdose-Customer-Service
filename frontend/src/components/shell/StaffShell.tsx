@@ -349,7 +349,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
             {work && (
               <>
                 <QuickSearch inputRef={search} role={work.role} platformAdmin={Boolean(user.platform_admin)} shortcut={SEARCH_SHORTCUT} />
-                {!readOnly && <StatusSwitch />}
+                {/* สถานะการทำงาน is a platform switch (backend platform/switches.py). */}
+                {!readOnly && boot.work_status && <StatusSwitch />}
                 <NotificationBell />
               </>
             )}

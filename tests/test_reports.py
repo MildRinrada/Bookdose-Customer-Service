@@ -38,12 +38,10 @@ class ReportTests(unittest.TestCase):
         self.visitor()
         article = self.ok(self.admin,'/api/articles',{'title':'ลืมรหัสผ่าน','category':'บัญชี','body':'กดลืมรหัสผ่าน'})['id']
         self.ok(self.admin,f'/api/articles/{article}/use',{'kind':'copy'})
-        self.ok(self.admin,f'/api/articles/{article}/vote',{'vote':-1})
         owner = self.ok(self.admin,query)
         self.assertEqual(owner['hours']['total'],before+1)
         self.assertEqual(len(owner['hours']['counts']),7);self.assertEqual(len(owner['hours']['counts'][0]),24)
         self.assertEqual((owner['articles']['uses'],owner['articles']['top'][0]['id'],owner['articles']['top'][0]['copied']),(1,article,1))
-        self.assertEqual(owner['articles']['unhelpful'][0]['id'],article)
         self.assertEqual(owner['bot']['conversations'],0);self.assertIn('days',owner['bot'])
         self.assertIn('groups',owner['gaps'])
         # A day before anything happened is empty.

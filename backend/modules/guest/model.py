@@ -26,9 +26,11 @@ import json
 CONTACT_SOURCE = 'guest'
 GUEST_NAME = 'ผู้เยี่ยมชม'
 COOKIE_PREFIX = 'g_'
-COOKIE_MAX_AGE = 400*86400          # the browsers' cap for a cookie's lifetime
+# A browser remembers the guest's chats for DEVICE_DAYS from when it began, used or not: a shared or lost device does
+# not keep showing a private chat. Past that the device is refused at once and deleted within a minute (cleanup).
+DEVICE_DAYS = 30
+COOKIE_MAX_AGE = DEVICE_DAYS*86400
 COOKIE_REFRESH_SECONDS = 86400      # a remembered cookie is sent again when the device was last seen longer ago
-DEVICE_UNUSED_DAYS = 400
 LINK_DAYS = 30
 LINK_USES = 20
 LINE_CODE_MINUTES = 10

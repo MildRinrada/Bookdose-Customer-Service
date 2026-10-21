@@ -4,6 +4,9 @@ from backend.utils.routing import ID
 ROUTES = [
     ('GET',   '/api/platform/registration',   controller.registration_settings,      'platform'),
     ('POST',  '/api/platform/registration',   controller.save_registration_settings, 'platform'),
+    # ฟีเจอร์ของระบบ (switches.py): on or off for every organization at once.
+    ('GET',   '/api/platform/switches',       controller.platform_switches,          'platform'),
+    ('POST',  '/api/platform/switches',       controller.save_platform_switch,       'platform'),
     ('GET',   '/api/platform/sms',            controller.sms_settings,               'platform'),
     ('POST',  '/api/platform/sms',            controller.save_sms_settings,          'platform'),
     ('POST',  '/api/platform/sms/test',       controller.test_sms,                   'platform'),

@@ -53,6 +53,12 @@ def organization_logo(org):
 
 def portal_info(cd, db, org):
     from backend.modules.organization import banner
+    from backend.modules.platform import switches
+    # บัญชีลูกค้า (platform/switches.py): off, the pages offer no sign-in or sign-up.
+    return {**_portal_info(cd,db,org,banner),'customer_accounts':switches.on('customer_accounts')}
+
+
+def _portal_info(cd, db, org, banner):
     return schema.organization_view(org,organization.setting(db,'welcome'),
                                     ai.config(db)['chatbot_enabled'] and ai.has_key(org['id']),
                                     # The organization's own public articles, then the platform's articles for every customer.

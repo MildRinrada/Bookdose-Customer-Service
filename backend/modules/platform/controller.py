@@ -14,6 +14,17 @@ def save_registration_settings(req):
     return req.send(200,service.save_registration_settings(req.cd,req.session,req.body))
 
 
+def platform_switches(req):
+    from backend.modules.platform import switches
+    return req.send(200,switches.view(req.cd))
+
+
+@confirm_first
+def save_platform_switch(req):
+    from backend.modules.platform import switches
+    return req.send(200,switches.save(req.cd,req.session,req.body))
+
+
 def sms_settings(req):
     return req.send(200,service.sms_settings(req.cd))
 

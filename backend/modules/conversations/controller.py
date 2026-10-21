@@ -29,6 +29,11 @@ def link_ticket(req, conversation_id):
     return req.send(201,{'id':service.link_ticket(req.db,req.ctx,conv,req.body)})
 
 
+def accept(req, conversation_id):
+    conv = service.visible_conversation(req.db,req.ctx,conversation_id)
+    return req.send(200,{'ticket_id':service.accept(req.cd,req.db,req.ctx,conv)})
+
+
 def request_ai_draft(req, conversation_id):
     conv = service.visible_conversation(req.db,req.ctx,conversation_id)
     limited(('ai-draft',req.ctx['tenant_id'],req.ctx['id']),10,60)

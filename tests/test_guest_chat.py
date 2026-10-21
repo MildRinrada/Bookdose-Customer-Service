@@ -186,7 +186,7 @@ class GuestChatTests(unittest.TestCase):
         status,data,headers = self.start(page,name='สมศรี',category='สอบถามบริการ')
         self.assertEqual(status,201,data)
         cookie = headers['Set-Cookie']
-        self.assertRegex(cookie,r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=Lax; Max-Age=34560000$')
+        self.assertRegex(cookie,r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=Lax; Max-Age=2592000$')
         conv = data['id']
         me = self.overview(page)
         self.assertEqual((me['guest']['name'],me['guest']['csrf'],me['guest']['remember'],me['guest']['email_masked']),('สมศรี',data['csrf'],True,''))
@@ -236,7 +236,7 @@ class GuestChatTests(unittest.TestCase):
         self.assertFalse(self.overview(page)['guest']['remember'])
         status,answer,headers = page.raw(GUEST+'/remember',{'remember':True})
         self.assertEqual((status,answer),(200,{'ok':True,'remember':True}))
-        self.assertIn('Max-Age=34560000',headers['Set-Cookie'])
+        self.assertIn('Max-Age=2592000',headers['Set-Cookie'])
         self.assertTrue(self.overview(page)['guest']['remember'])
         self.assertEqual(self.status(page,GUEST+'/remember',{'remember':'yes'}),400)
         status,_,headers = page.raw(GUEST+'/remember',{'remember':False})
@@ -248,7 +248,7 @@ class GuestChatTests(unittest.TestCase):
         form = {'body':'จากปุ่มแชทบนเว็บ','website':'','started_ms':int(time.time()*1000)-5000}
         status,_,headers = embed.raw(GUEST+'/conversations',form,headers={'X-Embed':'1'})
         self.assertEqual(status,201)
-        self.assertRegex(headers['Set-Cookie'],r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=None; Secure; Partitioned; Max-Age=34560000$')
+        self.assertRegex(headers['Set-Cookie'],r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=None; Secure; Partitioned; Max-Age=2592000$')
         rate_limit.RATES.clear()
         status,_,headers = self.browser().raw(GUEST+'/conversations',form)
         self.assertIn('SameSite=Lax; Secure;',headers['Set-Cookie'])
@@ -260,7 +260,7 @@ class GuestChatTests(unittest.TestCase):
         with D.tenant(self.org) as db:
             db.execute("UPDATE guest_devices SET last_seen_at='2000-01-01T00:00:00+00:00'")
         _,_,headers = page.raw(GUEST)
-        self.assertIn('Max-Age=34560000',headers['Set-Cookie'])
+        self.assertIn('Max-Age=2592000',headers['Set-Cookie'])
         _,_,headers = page.raw(GUEST)
         self.assertIsNone(headers.get('Set-Cookie'))
         # An unknown or malformed cookie is no guest, and the answer clears it.
@@ -452,7 +452,7 @@ class GuestChatTests(unittest.TestCase):
         self.assertEqual(statuses,[202,202,202,429])
         cleanup = guest.cleanup
         with D.tenant(self.org) as db:
-            db.execute("UPDATE guest_devices SET last_seen_at='2000-01-01T00:00:00+00:00' WHERE rowid=1")
+            db.execute("UPDATE guest_devices SET created_at='2000-01-01T00:00:00+00:00' WHERE rowid=1")
             before = db.execute('SELECT COUNT(*) FROM guest_devices').fetchone()[0]
         cleanup(self.org,force=True)
         with D.tenant(self.org) as db:
@@ -728,13 +728,14 @@ class GuestChatTests(unittest.TestCase):
         conv = self.started(page)
         other = self.started(page,body='อีกเรื่องหนึ่งค่ะ')
         rows = {c['id']:c for c in self.overview(page)['conversations']}
-        self.assertEqual((rows[conv]['ticket_status'],rows[other]['ticket_status']),(None,None))
+        # Each new chat has its case from the first message, waiting for someone to take it (รับเคส).
+        self.assertEqual((rows[conv]['ticket_status'],rows[other]['ticket_status']),('new','new'))
         case = self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})['id']
         self.ok(self.admin,f'/api/tickets/{case}',{'status':'open'},'PATCH')
         rows = {c['id']:c for c in self.overview(page)['conversations']}
         page.conversation = conv
         self.assertEqual(rows[conv]['ticket_status'],self.ok(page,GUEST+'/session')['ticket']['status'])
-        self.assertEqual((rows[conv]['ticket_status'],rows[other]['ticket_status']),('open',None))
+        self.assertEqual((rows[conv]['ticket_status'],rows[other]['ticket_status']),('open','new'))
 
     def test_existing_databases_upgrade_cleanly(self):
         with D.tenant(self.org) as db:
@@ -748,6 +749,92 @@ class GuestChatTests(unittest.TestCase):
         D.init()
         self.assertEqual(self.started(self.browser()) is not None,True)
         self.assertEqual(self.ok(Client(self.base),ORG+'/widget')['guest_chat'],True)
+
+    # รับเคส (conversations/service.accept)
+    def test_a_new_chat_waits_as_a_case_until_one_member_takes_it(self):
+        conv = self.started(self.browser())
+        ticket = self.ok(self.admin,f'/api/conversations/{conv}')['ticket']
+        self.assertEqual((ticket['status'],ticket['assignee_id']),('new',None))
+        colleague,colleague_id = self.create_member()
+        self.assertEqual(self.ok(colleague,f'/api/conversations/{conv}/accept',{})['ticket_id'],ticket['id'])
+        self.assertEqual(self.ok(self.admin,f'/api/conversations/{conv}')['ticket']['assignee_id'],colleague_id)
+        listed = next(c for c in self.ok(self.admin,'/api/conversations')['conversations'] if c['id']==conv)
+        self.assertEqual(listed['ticket_assignee_id'],colleague_id)
+        # Taken already: the second member is told by whom, and the case stays with the first.
+        status,data = self.admin.call(f'/api/conversations/{conv}/accept',{})
+        self.assertEqual((status,data['error']),(409,'เจ้าหน้าที่ทดสอบ รับเรื่องนี้ไปแล้ว'))
+        self.assertEqual(self.ok(colleague,f'/api/conversations/{conv}/accept',{})['ticket_id'],ticket['id'])
+        # Opening a case from the chat gives the one it has.
+        self.assertEqual(self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})['id'],ticket['id'])
+
+    def test_a_browser_remembers_the_chats_for_thirty_days_then_forgets_them(self):
+        from backend.utils.dates import after
+        page = self.browser()
+        self.started(page)
+        self.assertEqual(self.status(page,GUEST+'/session'),200)
+        with D.tenant(self.org) as db:
+            db.execute('UPDATE guest_devices SET created_at=?,last_seen_at=?',(after(days=-31),after(minutes=-1)))
+            db.commit()
+        # Used yesterday or not, the browser is past its days: refused at once, and the worker deletes it.
+        self.assertNotEqual(self.status(page,GUEST+'/session'),200)
+        guest.cleanup(self.org)
+        with D.tenant(self.org) as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM guest_devices').fetchone()[0],0)
+
+    def test_a_chat_left_without_a_case_gets_one_from_the_worker(self):
+        from backend.modules.automation import service as automation
+        conv = self.started(self.browser())
+        with D.tenant(self.org) as db:
+            db.execute('DELETE FROM ticket_conversations WHERE conversation_id=?',(conv,))
+            db.commit()
+        self.assertIsNone(self.ok(self.admin,f'/api/conversations/{conv}')['ticket'])
+        with D.tenant(self.org) as db:
+            automation.open_missing_cases(db)
+            automation.open_missing_cases(db)
+        ticket = self.ok(self.admin,f'/api/conversations/{conv}')['ticket']
+        self.assertEqual((ticket['status'],ticket['assignee_id']),('new',None))
+
+    # ฟีเจอร์ของระบบ (platform/switches.py)
+    def switch(self, **values):
+        from backend.modules.platform import repository as platform_repository, switches
+        with D.control() as cd:
+            platform_repository.save_setting(cd,switches.KEY,json.dumps(values))
+        switches._cache['value'] = None
+
+    def test_with_customer_accounts_off_customers_write_in_as_guests_only(self):
+        self.switch(customer_accounts=False,no_rush=True)
+        visitor = Client(self.base)
+        self.assertFalse(visitor.boot()['customer_accounts'])
+        self.assertEqual(visitor.call('/api/customer/account')[0],401)
+        status,data = visitor.call('/api/customer/register',{'name':'สมศรี','email':'somsri@example.com','password':'Test-password-123!','consent':True})
+        self.assertEqual(status,403,data)
+        self.assertFalse(self.ok(visitor,ORG)['customer_accounts'])
+        # The organization had turned guest chat off: with no accounts, a guest chat is the only way in, so it opens.
+        from backend.modules.guest import repository as guest_repository
+        with D.tenant(self.org) as db:
+            guest_repository.save_setting(db,'guest_chat',json.dumps({'enabled':False}))
+        self.started(self.browser())
+
+    def test_with_work_status_off_everyone_counts_as_available(self):
+        from backend.modules.staff_prefs import service as staff_prefs
+        agent,agent_id = self.create_member()
+        self.ok(agent,'/api/account/status',{'status':'offline'})
+        with D.control() as cd:
+            self.assertFalse(staff_prefs.is_available(cd,agent_id))
+        self.switch(customer_accounts=True,no_rush=True)
+        self.assertFalse(Client(self.base).boot()['work_status'])
+        with D.control() as cd:
+            self.assertTrue(staff_prefs.is_available(cd,agent_id))
+
+    def test_with_no_rush_off_the_button_is_refused_and_old_promises_stop_counting(self):
+        page = self.browser()
+        self.started(page)
+        self.assertTrue(self.ok(page,GUEST+'/session')['queue']['no_rush_offered'])
+        self.assertIsNotNone(self.ok(page,GUEST+'/no-rush',{'on':True})['no_rush'])
+        self.switch(customer_accounts=True,no_rush=False)
+        session = self.ok(page,GUEST+'/session')
+        self.assertEqual((session['queue']['no_rush'],session['queue']['no_rush_offered']),(None,False))
+        self.assertEqual(self.status(page,GUEST+'/no-rush',{'on':True}),403)
 
 
 if __name__=='__main__':

@@ -147,9 +147,12 @@ def of(db, tenant_id, conversation):
     # ไม่รีบ (portal/no_rush.py): the reply promised by then, which is what the page tells them instead of a guess.
     from backend.modules.portal import no_rush
     unhurried = no_rush.state(db,conversation['id']) if mine[0]['no_rush'] else None
+    # The button is offered only while the platform has it on (platform/switches.py).
+    offered = no_rush.enabled()
     teams,owner = value['available']
     if not owner and conversation['team_id'] not in teams:
-        return {'position':ahead+1,'wait_minutes':None,'away':True,'no_rush':unhurried}
+        return {'position':ahead+1,'wait_minutes':None,'away':True,'no_rush':unhurried,'no_rush_offered':offered}
     usual,rate = value['pace'].get(conversation['team_id'],value['overall'])
     waited = max(0,(utc_now()-dt.datetime.fromisoformat(since)).total_seconds())
-    return {'position':ahead+1,'wait_minutes':estimate(ahead+1,waited,usual,rate),'away':False,'no_rush':unhurried}
+    return {'position':ahead+1,'wait_minutes':estimate(ahead+1,waited,usual,rate),'away':False,'no_rush':unhurried,
+            'no_rush_offered':offered}

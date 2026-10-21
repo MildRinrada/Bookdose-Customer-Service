@@ -33,6 +33,8 @@ def mask(text):
 def request(db, ctx, body):
     """The member's "เกลาข้อความ": queue the job and return its id (the page asks /api/ai/jobs/<id> for the answer)."""
     from backend.modules.ai import service as ai
+    from backend.modules.platform import switches
+    require(switches.on('polish'),'ปิดใช้งานเกลาข้อความอยู่',403)
     body = body if isinstance(body,dict) else {}
     style,text = body.get('style'),body.get('text')
     require(style in STYLES,'เลือกว่าจะให้ปรับแบบไหน')

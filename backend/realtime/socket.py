@@ -159,10 +159,12 @@ class CustomerIdentity:
 
     def __init__(self, probe):
         from backend.modules.customers import service as customers
+        from backend.modules.platform import switches
         self.cookie = probe.headers.get('Cookie','')
         with D.control() as cd:
             session = customers.read_session(cd,self.cookie)
-        if not session:
+        # บัญชีลูกค้า off for the platform (platform/switches.py): a session made before is not used.
+        if not session or not switches.on('customer_accounts'):
             raise Refused(CLOSE_UNAUTHORIZED)
         self.token_hash,self.account_id,self.name = session['token_hash'],session['account_id'],session['name']
         self.key = ('customer',self.token_hash)
@@ -173,7 +175,8 @@ class CustomerIdentity:
         # Signed out, device signed out, or past its limits (the check itself is never activity).
         with D.control() as cd:
             session = customers.read_session(cd,self.cookie)
-        if not session or session['token_hash']!=self.token_hash:
+        from backend.modules.platform import switches
+        if not session or session['token_hash']!=self.token_hash or not switches.on('customer_accounts'):
             return CLOSE_UNAUTHORIZED
         self.name = session['name']
         return None

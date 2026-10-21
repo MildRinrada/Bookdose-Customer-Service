@@ -4,7 +4,7 @@ import json
 
 from backend.database.db import one, rows
 from backend.modules.guest.model import LINK_USES
-from backend.utils.dates import now
+from backend.utils.dates import after, now
 
 # A visitor's own conversations: the web conversations it started.
 # A web chat carried to LINE (channels/move.py) stays readable on the web.
@@ -93,9 +93,13 @@ def insert_device(db, token_hash, visitor_id, csrf, remember, user_agent, ip):
 
 
 def device(db, token_hash):
-    """The browser and its visitor (not merged into an account), or None."""
+    """The browser and its visitor (not merged into an account), or None; a browser past model.DEVICE_DAYS counts as
+    none (cleanup deletes it)."""
+    from backend.modules.guest.model import DEVICE_DAYS
+    since = after(days=-DEVICE_DAYS)
     return one(db,'''SELECT d.token_hash,d.visitor_id,d.csrf,d.remember,d.last_seen_at AS device_seen_at FROM guest_devices d
-                     JOIN guest_visitors v ON v.id=d.visitor_id WHERE d.token_hash=? AND v.account_id IS NULL''',(token_hash,))
+                     JOIN guest_visitors v ON v.id=d.visitor_id WHERE d.token_hash=? AND v.account_id IS NULL AND d.created_at>=?''',
+               (token_hash,since))
 
 
 def touch_device(db, token_hash):
@@ -110,8 +114,8 @@ def delete_device(db, token_hash):
     db.execute('DELETE FROM guest_devices WHERE token_hash=?',(token_hash,))
 
 
-def delete_unused_devices(db, before):
-    db.execute('DELETE FROM guest_devices WHERE last_seen_at<?',(before,))
+def delete_old_devices(db, before):
+    return db.execute('DELETE FROM guest_devices WHERE created_at<?',(before,)).rowcount
 
 
 # Conversations

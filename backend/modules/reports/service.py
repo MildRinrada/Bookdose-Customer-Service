@@ -26,7 +26,6 @@ from backend.utils.validation import require
 
 MAX_DAYS = 366
 TOP_ARTICLES = 8
-UNHELPFUL_ARTICLES = 5
 LEADS = ('admin','manager')
 DAY = re.compile(r'\d{4}-\d{2}-\d{2}')
 CACHE_SECONDS = 120          # the questions are the slow part; the page asks again when the filter changes
@@ -86,26 +85,22 @@ def bot(db, since, until, tz, first):
 
 
 def articles(db, since, until):
-    """The articles the team used most in the period (by how), and the ones marked not helpful more than helpful."""
+    """The articles the team used most in the period (by how), each with what customers said of it."""
     used = rows(db,'''SELECT a.id,a.title,a.category,a.visibility,COUNT(*) AS uses,
                       SUM(u.kind='copy') AS copied,SUM(u.kind='insert') AS inserted,SUM(u.kind='link') AS linked,
                       COUNT(DISTINCT u.user_id) AS people
                       FROM knowledge_uses u JOIN knowledge_articles a ON a.id=u.article_id
                       WHERE u.created_at>=? AND u.created_at<? GROUP BY a.id ORDER BY uses DESC,a.title LIMIT ?''',(since,until,TOP_ARTICLES))
-    votes = {r['article_id']:r for r in rows(db,'''SELECT article_id,SUM(vote=1) AS helpful,SUM(vote=-1) AS unhelpful
-                                                   FROM knowledge_marks GROUP BY article_id''')}
+    votes = {r['article_id']:r for r in rows(db,'''SELECT article_id,SUM(helpful=1) AS helpful,SUM(helpful=0) AS unhelpful
+                                                   FROM knowledge_feedback GROUP BY article_id''')}
     for row in used:
         mark = votes.get(row['id'])
         row['helpful'],row['unhelpful'] = (mark['helpful'] or 0,mark['unhelpful'] or 0) if mark else (0,0)
-    unhelpful = rows(db,'''SELECT a.id,a.title,a.category,a.updated_at,SUM(m.vote=1) AS helpful,SUM(m.vote=-1) AS unhelpful
-                           FROM knowledge_marks m JOIN knowledge_articles a ON a.id=m.article_id GROUP BY a.id
-                           HAVING SUM(m.vote=-1)>0 AND SUM(m.vote=-1)>=SUM(m.vote=1)
-                           ORDER BY SUM(m.vote=-1)-SUM(m.vote=1) DESC,SUM(m.vote=-1) DESC LIMIT ?''',(UNHELPFUL_ARTICLES,))
     totals = db.execute('''SELECT COUNT(*),COUNT(DISTINCT article_id) FROM knowledge_uses WHERE created_at>=? AND created_at<?''',
                         (since,until)).fetchone()
     # What customers said of the published ones in the period (knowledge/feedback.py).
     from backend.modules.knowledge import feedback
-    return {'top':used,'unhelpful':unhelpful,'uses':totals[0],'used_articles':totals[1],
+    return {'top':used,'uses':totals[0],'used_articles':totals[1],
             'articles':db.execute('SELECT COUNT(*) FROM knowledge_articles').fetchone()[0],'customers':feedback.report(db,since,until)}
 
 

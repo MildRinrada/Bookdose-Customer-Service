@@ -32,6 +32,7 @@ export const auditEventLabels: Record<string, string> = {
   'auth.email_verified': 'ยืนยันอีเมล',
   'tenant.register': 'สมัครองค์กรใหม่',
   'registration.settings_updated': 'ตั้งค่าอีเมลยืนยัน',
+  'platform.switch': 'เปิดปิดฟีเจอร์ของระบบ',
   'account.profile_updated': 'ปรับรูปโปรไฟล์และชื่อ',
   'retention.cleared': 'ลบเนื้อหาบทสนทนาเก่าตามระยะเวลาเก็บข้อมูล',
   'reports.dataset_exported': 'ส่งออกชุดข้อมูลสำหรับวิเคราะห์',

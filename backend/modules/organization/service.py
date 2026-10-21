@@ -12,6 +12,7 @@ from backend.modules.automation import service as automation
 from backend.modules.customers import service as customers
 from backend.modules.channels import service as channels
 from backend.modules.organization import repository, schema
+from backend.modules.platform import switches
 from backend.modules.tickets import repository as tickets
 from backend.utils.security import uid
 from backend.utils.validation import require
@@ -55,7 +56,8 @@ def workspace_overview(cd, db, ctx):
             # Which features this organization has, so something new can be tried with one organization before it
             # reaches the rest (platform/model.py FEATURES, switched per organization in the console).
             'features':_features(cd,ctx),
-            'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id'])}}
+            # polish_offered: เกลาข้อความ is on for the platform (platform/switches.py).
+            'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id']),'polish_offered':switches.on('polish')}}
 
 
 def _support_pending(cd, ctx):

@@ -37,17 +37,20 @@ def delete(db, article_id):
 # How the team uses the articles (model.py: knowledge_uses, knowledge_marks).
 
 def activity(db, user_id):
-    """{article_id: {uses, used_at, helpful, unhelpful, my_vote, pin_order}} for the articles anyone used or marked."""
+    """{article_id: {uses, used_at, helpful, unhelpful, my_vote, pin_order}} for the articles anyone used, pinned or
+    customers marked. helpful / unhelpful are what customers said (feedback.py); the team does not vote, so my_vote
+    stays 0."""
     found = {}
     def entry(article_id):
         return found.setdefault(article_id,{'uses':0,'used_at':None,'helpful':0,'unhelpful':0,'my_vote':0,'pin_order':0})
     for row in db.execute('SELECT article_id,COUNT(*),MAX(created_at) FROM knowledge_uses GROUP BY article_id'):
         item = entry(row[0])
         item['uses'],item['used_at'] = row[1],row[2]
-    for row in db.execute('''SELECT article_id,SUM(vote=1),SUM(vote=-1),MAX(CASE WHEN user_id=? THEN vote END),
-                             MAX(CASE WHEN user_id=? THEN pin_order END) FROM knowledge_marks GROUP BY article_id''',(user_id,user_id)):
+    for row in db.execute('SELECT article_id,MAX(CASE WHEN user_id=? THEN pin_order END) FROM knowledge_marks GROUP BY article_id',(user_id,)):
+        entry(row[0])['pin_order'] = row[1] or 0
+    for row in db.execute('SELECT article_id,SUM(helpful=1),SUM(helpful=0) FROM knowledge_feedback GROUP BY article_id'):
         item = entry(row[0])
-        item['helpful'],item['unhelpful'],item['my_vote'],item['pin_order'] = row[1] or 0,row[2] or 0,row[3] or 0,row[4] or 0
+        item['helpful'],item['unhelpful'] = row[1] or 0,row[2] or 0
     return found
 
 
@@ -57,11 +60,6 @@ def used_recently(db, article_id, user_id, kind, since):
 
 def add_use(db, article_id, user_id, kind):
     db.execute('INSERT INTO knowledge_uses VALUES(?,?,?,?,?)',(uid(),article_id,user_id,kind,now()))
-
-
-def set_vote(db, article_id, user_id, vote):
-    db.execute('''INSERT INTO knowledge_marks(article_id,user_id,vote,updated_at) VALUES(?,?,?,?)
-                  ON CONFLICT(article_id,user_id) DO UPDATE SET vote=excluded.vote,updated_at=excluded.updated_at''',(article_id,user_id,vote,now()))
 
 
 def set_pins(db, user_id, article_ids):

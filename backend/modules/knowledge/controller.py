@@ -33,11 +33,6 @@ def record_use(req, article_id):
     return req.send(200,service.record_use(req.db,req.ctx,article_id,req.body))
 
 
-def vote(req, article_id):
-    limited(('article-mark',req.ctx['id']),300,3600)
-    return req.send(200,service.vote(req.db,req.ctx,article_id,req.body))
-
-
 def set_pins(req):
     limited(('article-mark',req.ctx['id']),300,3600)
     return req.send(200,service.set_pins(req.db,req.ctx,req.body))

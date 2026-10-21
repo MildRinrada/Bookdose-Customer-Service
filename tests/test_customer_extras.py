@@ -35,6 +35,9 @@ class CustomerExtrasTests(guest_tests.GuestChatTests):
             self.assertEqual(self.status(reader,path,bad),400,bad)
         customers = self.report()['customers']
         self.assertEqual((customers['helpful'],customers['unhelpful']),(1,1))
+        # The team's knowledge page counts what customers said (the team does not vote itself).
+        row = next(a for a in self.ok(self.admin,'/api/articles')['articles'] if a['id']==public)
+        self.assertEqual((row['helpful'],row['unhelpful']),(1,1))
         self.assertEqual([(a['title'],a['helpful'],a['unhelpful']) for a in customers['unhelpful_articles']],[('วิธีรีเซ็ตรหัสผ่าน',1,1)])
         with D.tenant(self.org) as db:
             self.assertFalse(db.execute('SELECT 1 FROM knowledge_feedback WHERE voter=?',(VOTER,)).fetchone())

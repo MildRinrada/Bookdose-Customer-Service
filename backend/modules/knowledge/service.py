@@ -101,14 +101,6 @@ def record_use(db, ctx, article_id, body):
     return _activity(db,ctx,article_id)
 
 
-def vote(db, ctx, article_id, body):
-    value = schema.vote(body)
-    begin(db)
-    _article(db,article_id)
-    repository.set_vote(db,article_id,ctx['id'],value)
-    return _activity(db,ctx,article_id)
-
-
 def set_pins(db, ctx, body):
     """The member's pinned articles, in the order they arranged them."""
     ids = schema.pins(body)

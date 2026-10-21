@@ -15,7 +15,7 @@ import { widgetPositions, widgetThemes, websiteOrigin } from '@/features/guest/l
 import type { GuestBlock, GuestChatSettings, WidgetPosition, WidgetTheme } from '@/features/guest/types';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
-import { useWork } from '@/lib/session';
+import { useCustomerAccountsOn, useWork } from '@/lib/session';
 
 /* ตั้งค่าองค์กร → แชทบนเว็บไซต์ (admin): whether customers may chat without signing in, the public chat link with its QR,
    and the chat button for the organization's own website — on/off, the websites allowed to show it, where it sits,
@@ -30,7 +30,14 @@ export function GuestChatPanel() {
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
   if (!data) return <PageLoading />;
   // A save redraws the forms from what the server kept.
-  return <GuestChatCards key={JSON.stringify([data.guest_chat, data.widget, data.members_first])} data={data} slug={work.tenant.slug} orgName={work.tenant.name} />;
+  return (
+    <GuestChatCards
+      key={JSON.stringify([data.guest_chat, data.widget, data.members_first])}
+      data={data}
+      slug={work.tenant.slug}
+      orgName={work.tenant.name}
+    />
+  );
 }
 
 function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug: string; orgName: string }) {
@@ -38,6 +45,9 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
   const refresh = useInvalidate();
   const copyText = useCopyText();
   const { openModal } = useDialogs();
+  // บัญชีลูกค้า off for the platform (backend platform/switches.py): every customer chats without signing in, so the
+  // switch for it and the members' queue have nothing to choose.
+  const accounts = useCustomerAccountsOn();
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const chatUrl = data.chat_url || `${origin}/support/${slug}/tickets/new`;
   const snippet = `<script src="${origin}/widget.js" data-org="${slug}" async></script>`;
@@ -69,7 +79,9 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
           <div>
             <h2>
               แชทโดยไม่ต้องเข้าสู่ระบบ
-              <InfoHint>ลูกค้าเปิดลิงก์แล้วคุยกับทีมได้ทันทีโดยไม่ต้องสมัครสมาชิก ติดตามคำตอบได้ในเบราว์เซอร์เดิม หรือขอลิงก์ทางอีเมล SMS และ LINE</InfoHint>
+              <InfoHint>
+                ลูกค้าเปิดลิงก์แล้วคุยกับทีมได้ทันทีโดยไม่ต้องสมัครสมาชิก ติดตามคำตอบได้ในเบราว์เซอร์เดิม หรือขอลิงก์ทางอีเมล SMS และ LINE
+              </InfoHint>
             </h2>
           </div>
         </div>
@@ -80,12 +92,14 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             await save({ guest_chat: { enabled } }, enabled ? 'เปิดแชทโดยไม่ต้องเข้าสู่ระบบแล้ว' : 'ปิดแชทโดยไม่ต้องเข้าสู่ระบบแล้ว');
           }}
         >
-          <label className="check">
-            <input type="checkbox" className="switch" name="guest_enabled" defaultChecked={data.guest_chat.enabled} />
-            ให้ลูกค้าเริ่มแชทได้โดยไม่ต้องเข้าสู่ระบบ
-            <InfoHint>ถ้าปิด ลูกค้าต้องเข้าสู่ระบบก่อนจึงจะเริ่มแชทได้ แชทที่เริ่มไว้แล้วยังอยู่ในกล่องข้อความตามเดิม</InfoHint>
-          </label>
-          <div className="org-link-share mt">
+          {accounts && (
+            <label className="check">
+              <input type="checkbox" className="switch" name="guest_enabled" defaultChecked={data.guest_chat.enabled} />
+              ให้ลูกค้าเริ่มแชทได้โดยไม่ต้องเข้าสู่ระบบ
+              <InfoHint>ถ้าปิด ลูกค้าต้องเข้าสู่ระบบก่อนจึงจะเริ่มแชทได้ แชทที่เริ่มไว้แล้วยังอยู่ในกล่องข้อความตามเดิม</InfoHint>
+            </label>
+          )}
+          <div className={`org-link-share${accounts ? ' mt' : ''}`}>
             {data.chat_qr && (
               <figure className="org-qr">
                 {/* A data: URL drawn by the server. */}
@@ -133,43 +147,49 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
               </div>
             </div>
           </div>
-          <div className="form-actions">
-            <button className="btn primary" type="submit">
-              บันทึก
-            </button>
-          </div>
+          {accounts && (
+            <div className="form-actions">
+              <button className="btn primary" type="submit">
+                บันทึก
+              </button>
+            </div>
+          )}
         </Form>
       </section>
-      <section className="card">
-        <div className="card-header">
-          <div>
-            <h2>
-              คิวก่อนสำหรับสมาชิก
-              <InfoHint>ลูกค้าที่เข้าสู่ระบบด้วยบัญชีลูกค้าได้คิวก่อนลูกค้าที่แชทโดยไม่เข้าสู่ระบบ ซึ่งยังได้รับบริการตามปกติ แค่รอหลังสมาชิก</InfoHint>
-            </h2>
+      {accounts && (
+        <section className="card">
+          <div className="card-header">
+            <div>
+              <h2>
+                คิวก่อนสำหรับสมาชิก
+                <InfoHint>
+                  ลูกค้าที่เข้าสู่ระบบด้วยบัญชีลูกค้าได้คิวก่อนลูกค้าที่แชทโดยไม่เข้าสู่ระบบ ซึ่งยังได้รับบริการตามปกติ แค่รอหลังสมาชิก
+                </InfoHint>
+              </h2>
+            </div>
           </div>
-        </div>
-        <Form
-          className="card-body"
-          onSubmit={async (_values, form) => {
-            const on = (form.elements.namedItem('members_first') as HTMLInputElement).checked;
-            await saveGuestSettings({ members_first: on });
-            toast(on ? 'เปิดคิวก่อนสำหรับสมาชิกแล้ว' : 'ปิดคิวก่อนสำหรับสมาชิกแล้ว');
-            await refresh(GUEST_SETTINGS_PATH);
-          }}
-        >
-          <label className="check">
-            <input type="checkbox" className="switch" name="members_first" defaultChecked={Boolean(data.members_first)} />
-            ให้สมาชิกได้คิวก่อน
-            <InfoHint>มีผลกับลำดับคิวที่ลูกค้าเห็น ปุ่มรับงานถัดไป และเคสที่รอคนรับ แชทของสมาชิกมีป้าย “สมาชิก” ในกล่องข้อความ</InfoHint>
-          </label>
-          <div className="form-actions">
-            <button className="btn primary" type="submit">
-              บันทึก
-            </button>
-          </div>
-        </Form>
-      </section>
+          <Form
+            className="card-body"
+            onSubmit={async (_values, form) => {
+              const on = (form.elements.namedItem('members_first') as HTMLInputElement).checked;
+              await saveGuestSettings({ members_first: on });
+              toast(on ? 'เปิดคิวก่อนสำหรับสมาชิกแล้ว' : 'ปิดคิวก่อนสำหรับสมาชิกแล้ว');
+              await refresh(GUEST_SETTINGS_PATH);
+            }}
+          >
+            <label className="check">
+              <input type="checkbox" className="switch" name="members_first" defaultChecked={Boolean(data.members_first)} />
+              ให้สมาชิกได้คิวก่อน
+              <InfoHint>มีผลกับลำดับคิวที่ลูกค้าเห็น ปุ่มรับงานถัดไป และเคสที่รอคนรับ แชทของสมาชิกมีป้าย “สมาชิก” ในกล่องข้อความ</InfoHint>
+            </label>
+            <div className="form-actions">
+              <button className="btn primary" type="submit">
+                บันทึก
+              </button>
+            </div>
+          </Form>
+        </section>
+      )}
 
       <section className="card mt">
         <div className="card-header">
@@ -191,7 +211,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             );
           }}
         >
-          {!data.guest_chat.enabled && (
+          {accounts && !data.guest_chat.enabled && (
             <p className="notice warning">ต้องเปิด “ให้ลูกค้าเริ่มแชทได้โดยไม่ต้องเข้าสู่ระบบ” ด้านบนก่อน ปุ่มแชทจึงจะแสดงบนเว็บไซต์</p>
           )}
           <div className="form-grid">
@@ -238,7 +258,9 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
           <div className="guest-snippet mt">
             <strong>
               โค้ดสำหรับวางในเว็บไซต์
-              <InfoHint>วางไว้ก่อนแท็กปิด &lt;/body&gt; ในทุกหน้าที่ต้องการปุ่มแชท ปุ่มจะแสดงเมื่อเปิดใช้งานและเว็บไซต์อยู่ในรายการที่อนุญาต</InfoHint>
+              <InfoHint>
+                วางไว้ก่อนแท็กปิด &lt;/body&gt; ในทุกหน้าที่ต้องการปุ่มแชท ปุ่มจะแสดงเมื่อเปิดใช้งานและเว็บไซต์อยู่ในรายการที่อนุญาต
+              </InfoHint>
             </strong>
             <pre>
               <code>{snippet}</code>
@@ -274,7 +296,10 @@ function GuestBlocksCard() {
         <div>
           <h2>
             ผู้เยี่ยมชมที่บล็อกไว้
-            <InfoHint>บล็อกได้จากปุ่ม “บล็อก” ในกล่องข้อความ ผู้ถูกบล็อกอ่านแชทเดิมได้แต่ส่งข้อความหรือเริ่มแชทใหม่ไม่ได้ และเครือข่ายเดียวกันเริ่มแชทใหม่ไม่ได้ 7 วัน</InfoHint>
+            <InfoHint>
+              บล็อกได้จากปุ่ม “บล็อก” ในกล่องข้อความ ผู้ถูกบล็อกอ่านแชทเดิมได้แต่ส่งข้อความหรือเริ่มแชทใหม่ไม่ได้
+              และเครือข่ายเดียวกันเริ่มแชทใหม่ไม่ได้ 7 วัน
+            </InfoHint>
           </h2>
         </div>
       </div>
@@ -296,9 +321,7 @@ function GuestBlocksCard() {
                   <strong>{b.name}</strong>
                   <span className="muted">
                     {b.subject && (
-                      <>
-                        จากแชท {b.conversation_id ? <Link href={`/inbox/${b.conversation_id}`}>“{b.subject}”</Link> : `“${b.subject}”`}{' '}
-                      </>
+                      <>จากแชท {b.conversation_id ? <Link href={`/inbox/${b.conversation_id}`}>“{b.subject}”</Link> : `“${b.subject}”`} </>
                     )}
                     บล็อกโดย {b.blocked_by} เมื่อ {date(b.created_at, true)}
                   </span>

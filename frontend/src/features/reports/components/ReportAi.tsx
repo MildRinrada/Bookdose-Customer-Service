@@ -291,26 +291,6 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
         ) : (
           <p className="empty-mini">ทีมยังไม่ได้ใช้บทความตอบลูกค้าในช่วงนี้</p>
         )}
-        {a.unhelpful.length > 0 && (
-          <>
-            <h3 className="report-subhead">ทีมโหวตว่าไม่ช่วย ควรปรับปรุง</h3>
-            <ul className="report-comments">
-              {a.unhelpful.map((u) => (
-                <li key={u.id} className="low">
-                  <span className="report-comment-stars report-votes">
-                    <Icon name="thumbDown" /> {u.unhelpful}
-                  </span>
-                  <span className="report-comment-body">
-                    <ArticleLink title={u.title} />
-                    <small className="muted">
-                      {u.category}, ช่วย {u.helpful}, ไม่ช่วย {u.unhelpful}, แก้ไขล่าสุด {relative(u.updated_at)}
-                    </small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
         {a.customers && a.customers.helpful + a.customers.unhelpful > 0 && (
           <>
             <h3 className="report-subhead">ลูกค้าบอกว่าบทความช่วยได้ไหม</h3>

@@ -8,6 +8,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { GUEST_BLOCKS_PATH, GUEST_SETTINGS_PATH, liftGuestBlock, saveGuestSettings } from '@/features/guest/api';
 import { widgetPositions, widgetThemes, websiteOrigin } from '@/features/guest/labels';
@@ -66,7 +67,10 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>แชทโดยไม่ต้องเข้าสู่ระบบ</h2>
+            <h2>
+              แชทโดยไม่ต้องเข้าสู่ระบบ
+              <InfoHint>ลูกค้าเปิดลิงก์แล้วคุยกับทีมได้ทันทีโดยไม่ต้องสมัครสมาชิก ติดตามคำตอบได้ในเบราว์เซอร์เดิม หรือขอลิงก์ทางอีเมล SMS และ LINE</InfoHint>
+            </h2>
           </div>
         </div>
         <Form
@@ -79,6 +83,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
           <label className="check">
             <input type="checkbox" className="switch" name="guest_enabled" defaultChecked={data.guest_chat.enabled} />
             ให้ลูกค้าเริ่มแชทได้โดยไม่ต้องเข้าสู่ระบบ
+            <InfoHint>ถ้าปิด ลูกค้าต้องเข้าสู่ระบบก่อนจึงจะเริ่มแชทได้ แชทที่เริ่มไว้แล้วยังอยู่ในกล่องข้อความตามเดิม</InfoHint>
           </label>
           <div className="org-link-share mt">
             {data.chat_qr && (
@@ -90,7 +95,10 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
               </figure>
             )}
             <div className="grow">
-              <span className="muted">ลิงก์แชทขององค์กร</span>
+              <span className="muted">
+                ลิงก์แชทขององค์กร
+                <InfoHint>ใส่ลิงก์นี้ในเว็บไซต์ อีเมล หรือเอกสาร หรือพิมพ์ QR ไว้ที่หน้าร้าน</InfoHint>
+              </span>
               <a className="portal-url" href={chatUrl} target="_blank" rel="noopener">
                 {chatUrl}
               </a>
@@ -135,7 +143,10 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>คิวก่อนสำหรับสมาชิก</h2>
+            <h2>
+              คิวก่อนสำหรับสมาชิก
+              <InfoHint>ลูกค้าที่เข้าสู่ระบบด้วยบัญชีลูกค้าได้คิวก่อนลูกค้าที่แชทโดยไม่เข้าสู่ระบบ ซึ่งยังได้รับบริการตามปกติ แค่รอหลังสมาชิก</InfoHint>
+            </h2>
           </div>
         </div>
         <Form
@@ -150,6 +161,7 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
           <label className="check">
             <input type="checkbox" className="switch" name="members_first" defaultChecked={Boolean(data.members_first)} />
             ให้สมาชิกได้คิวก่อน
+            <InfoHint>มีผลกับลำดับคิวที่ลูกค้าเห็น ปุ่มรับงานถัดไป และเคสที่รอคนรับ แชทของสมาชิกมีป้าย “สมาชิก” ในกล่องข้อความ</InfoHint>
           </label>
           <div className="form-actions">
             <button className="btn primary" type="submit">
@@ -162,7 +174,10 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
       <section className="card mt">
         <div className="card-header">
           <div>
-            <h2>ปุ่มแชทบนเว็บไซต์ขององค์กร</h2>
+            <h2>
+              ปุ่มแชทบนเว็บไซต์ขององค์กร
+              <InfoHint>วางโค้ดบรรทัดเดียวในเว็บไซต์ ลูกค้าจะเห็นปุ่มแชทที่มุมจอ และคุยกับทีมได้โดยไม่ต้องออกจากเว็บไซต์</InfoHint>
+            </h2>
           </div>
         </div>
         <Form
@@ -206,7 +221,12 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             </fieldset>
             <TextField
               className="span-2"
-              label="ข้อความบนแถบหัวของแชท (ไม่บังคับ)"
+              label={
+                <>
+                  ข้อความบนแถบหัวของแชท (ไม่บังคับ)
+                  <InfoHint>ถ้าเว้นว่างไว้ จะใช้ชื่อองค์กร</InfoHint>
+                </>
+              }
               name="title"
               id="widget-title"
               max={60}
@@ -216,7 +236,10 @@ function GuestChatCards({ data, slug, orgName }: { data: GuestChatSettings; slug
             />
           </div>
           <div className="guest-snippet mt">
-            <strong>โค้ดสำหรับวางในเว็บไซต์</strong>
+            <strong>
+              โค้ดสำหรับวางในเว็บไซต์
+              <InfoHint>วางไว้ก่อนแท็กปิด &lt;/body&gt; ในทุกหน้าที่ต้องการปุ่มแชท ปุ่มจะแสดงเมื่อเปิดใช้งานและเว็บไซต์อยู่ในรายการที่อนุญาต</InfoHint>
+            </strong>
             <pre>
               <code>{snippet}</code>
             </pre>
@@ -249,7 +272,10 @@ function GuestBlocksCard() {
     <section className="card mt">
       <div className="card-header">
         <div>
-          <h2>ผู้เยี่ยมชมที่บล็อกไว้</h2>
+          <h2>
+            ผู้เยี่ยมชมที่บล็อกไว้
+            <InfoHint>บล็อกได้จากปุ่ม “บล็อก” ในกล่องข้อความ ผู้ถูกบล็อกอ่านแชทเดิมได้แต่ส่งข้อความหรือเริ่มแชทใหม่ไม่ได้ และเครือข่ายเดียวกันเริ่มแชทใหม่ไม่ได้ 7 วัน</InfoHint>
+          </h2>
         </div>
       </div>
       <div className="card-body">
@@ -331,7 +357,10 @@ function OriginsField({ origins, onChange }: { origins: string[]; onChange: (ori
 
   return (
     <div className="field span-2 guest-origins">
-      <label htmlFor="widget-origin-input">เว็บไซต์ที่อนุญาตให้แสดงปุ่มแชท</label>
+      <label htmlFor="widget-origin-input">
+        เว็บไซต์ที่อนุญาตให้แสดงปุ่มแชท
+        <InfoHint>{`เพิ่มได้สูงสุด ${MAX_ORIGINS} เว็บไซต์ ต้องขึ้นต้นด้วย https:// เว็บไซต์ที่ไม่อยู่ในรายการจะแสดงปุ่มแชทไม่ได้`}</InfoHint>
+      </label>
       <div className="guest-origin-box" onClick={() => input.current?.focus()}>
         {origins.map((o) => (
           <span key={o} className="guest-origin-chip">

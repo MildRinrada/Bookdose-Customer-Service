@@ -12,6 +12,7 @@ import { askAssistant, stopAssistant, waitForAiJob } from '../api';
 import type { AiCitation, AssistantFeedback, AssistantResult } from '../types';
 import { AiCitations } from './AiCitations';
 import { useWorkspaceAi } from './AiControls';
+import { AiNotReady } from './AiNotReady';
 import { AnswerRating } from './AnswerRating';
 import { AssistantActions } from './AssistantActions';
 import { afterCheck, AssistantProgress, AssistantTrace, traceOf, type AssistantTraceData, type AssistantWait } from './AssistantProgress';
@@ -523,12 +524,7 @@ export function AiAssistant() {
               <div className="assistant-log" ref={log} aria-live="polite">
                 {!ready ? (
                   <div className="assistant-empty">
-                    <p>ผู้ช่วย AI ยังไม่เปิดใช้ในองค์กรนี้</p>
-                    {work.role === 'admin' && (
-                      <Link className="btn subtle small" href="/settings?tab=ai" onClick={() => setOpen(false)}>
-                        ไปที่ตั้งค่า AI
-                      </Link>
-                    )}
+                    <AiNotReady ai={ai} onGo={() => setOpen(false)} />
                   </div>
                 ) : (
                   turns.map((t, i) => (

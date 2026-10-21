@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
 import { celebrate } from '@/features/staff-account/celebrate';
@@ -24,11 +25,21 @@ import type { SetupChecklist, SetupStep } from '../types';
    the page and the cards under it move up. A broken channel still shows here, alone, because that is not a step.
    Markup: dashboard-extras (setup-card). */
 
-function StepRow({ step }: { step: SetupStep }) {
+/** One step. `number` is its place in the order the steps are meant to be done (none for the ones under
+    ทำเพิ่มได้ภายหลัง); `next` is the first one not done yet, the one to do now, so it is the one that stands out. */
+function StepRow({ step, number, next = false }: { step: SetupStep; number?: number; next?: boolean }) {
   const partial = !step.done && typeof step.count === 'number' && step.count > 0;
   return (
-    <li className={`setup-item${step.done ? ' is-done' : ''}`}>
-      {step.done ? <Icon name="checkCircle" /> : <span className="setup-check" aria-hidden="true" />}
+    <li className={`setup-item${step.done ? ' is-done' : ''}${next ? ' is-next' : ''}`}>
+      {step.done ? (
+        <span className="setup-mark">
+          <Icon name="checkCircle" />
+        </span>
+      ) : (
+        <span className="setup-check" aria-label={number ? `ขั้นที่ ${number}` : undefined}>
+          {number}
+        </span>
+      )}
       <span className="setup-text">
         <strong>{step.title}</strong>
         {/* The detail says why the step is worth doing, so it reads wrong once it is done ("ยังไม่มีเจ้าหน้าที่"
@@ -42,7 +53,7 @@ function StepRow({ step }: { step: SetupStep }) {
       {step.done ? (
         <span className="setup-tag">เสร็จแล้ว</span>
       ) : (
-        <Link className="btn small" href={step.action.href}>
+        <Link className={`btn small${next ? ' primary' : ''}`} href={step.action.href}>
           {step.action.label}
         </Link>
       )}
@@ -141,7 +152,14 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
     <section className="card setup-card" aria-labelledby="setup-title">
       <div className="card-header">
         <div>
-          <h2 id="setup-title">{setup.problems.length ? 'ต้องแก้ไขตอนนี้' : 'เริ่มต้นใช้งาน'}</h2>
+          <h2 id="setup-title">
+            {setup.problems.length ? 'ต้องแก้ไขตอนนี้' : 'เริ่มต้นใช้งาน'}
+            <InfoHint>
+              {setup.problems.length
+                ? 'ช่องทางที่ส่งข้อความถึงลูกค้าไม่ออกหรือล่าช้า แก้แล้วรายการจะหายไปเอง เห็นเฉพาะเจ้าขององค์กร'
+                : 'ขั้นตอนที่ทำให้องค์กรพร้อมรับลูกค้าจริง ทำตามลำดับเลข ขั้นที่ทำแล้วระบบจะติ๊กให้เอง เห็นเฉพาะเจ้าขององค์กร'}
+            </InfoHint>
+          </h2>
           <p>
             {steps
               ? `ทำแล้ว ${done} จาก ${setup.steps.length} ขั้น`
@@ -176,7 +194,10 @@ export function SetupCard({ setup }: { setup: SetupChecklist }) {
             </Link>
           </li>
         ))}
-        {steps && setup.steps.map((step) => <StepRow key={step.key} step={step} />)}
+        {steps &&
+          setup.steps.map((step, i) => (
+            <StepRow key={step.key} step={step} number={i + 1} next={setup.steps.findIndex((s) => !s.done) === i} />
+          ))}
       </ul>
       {steps && later.length > 0 && done === setup.steps.length && (
         <>

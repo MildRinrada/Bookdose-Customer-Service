@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Icon } from '@/components/Icon';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { isDone } from '@/lib/format';
@@ -78,10 +79,14 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
   const owner = work.role === 'admin' && !work.read_only;
   if (!fields.length)
     return owner ? (
-      <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint="ยังไม่ได้ตั้งช่อง">
-        <p className="tiny muted">
-          <Link href="/settings?tab=fields">ตั้งช่องข้อมูลของเคส</Link>
-        </p>
+      <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" info="ช่องข้อมูลที่องค์กรตั้งเอง เช่น เลขคำสั่งซื้อ หรือสาขา ช่องที่มี * ต้องกรอกก่อนปิดเคส ผู้ดูแลตั้งช่องได้ที่ตั้งค่าองค์กร" hint="ยังไม่ได้ตั้งช่อง">
+        <div className="fold-row">
+          <span className="tiny muted">ยังไม่ได้ตั้งช่องข้อมูล</span>
+          <Link className="btn sm" href="/settings?tab=fields">
+            ตั้งช่องข้อมูล
+            <Icon name="arrow" />
+          </Link>
+        </div>
       </FoldCard>
     ) : null;
 
@@ -91,7 +96,7 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
   const hint = missing.length ? `ต้องกรอกอีก ${missing.length} ช่องก่อนปิดเคส` : `กรอกแล้ว ${filled}/${fields.length}`;
   if (work.read_only)
     return (
-      <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint={`กรอกแล้ว ${filled}/${fields.length}`}>
+      <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" info="ช่องข้อมูลที่องค์กรตั้งเอง เช่น เลขคำสั่งซื้อ หรือสาขา ช่องที่มี * ต้องกรอกก่อนปิดเคส ผู้ดูแลตั้งช่องได้ที่ตั้งค่าองค์กร" hint={`กรอกแล้ว ${filled}/${fields.length}`}>
         <dl className="case-fields-read">
           {fields.map((f) => (
             <div key={f.id}>
@@ -103,7 +108,7 @@ export function TicketFieldsCard({ ticket }: { ticket: Ticket }) {
       </FoldCard>
     );
   return (
-    <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" hint={hint} open={missing.length > 0}>
+    <FoldCard id="fields" title="ข้อมูลเพิ่มเติม" info="ช่องข้อมูลที่องค์กรตั้งเอง เช่น เลขคำสั่งซื้อ หรือสาขา ช่องที่มี * ต้องกรอกก่อนปิดเคส ผู้ดูแลตั้งช่องได้ที่ตั้งค่าองค์กร" hint={hint} open={missing.length > 0}>
     <Form
       key={JSON.stringify(values)}
       className="case-fields-card"

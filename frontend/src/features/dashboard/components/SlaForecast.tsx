@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { PriorityTag } from '@/components/ui/display';
 import { clockTime, formatDuration } from '@/lib/format';
 import { useMemberName } from '@/lib/session';
@@ -42,7 +43,10 @@ export function SlaForecast({ forecast, shown }: { forecast: Forecast | null | u
     <section className="card action-needed sla-watch sla-forecast" aria-labelledby="sla-forecast-title">
       <div className="card-header">
         <div>
-          <h2 id="sla-forecast-title">คาดว่าจะเกิน SLA</h2>
+          <h2 id="sla-forecast-title">
+            คาดว่าจะเกิน SLA
+            <InfoHint>เคสที่ยังไม่เกิน แต่ดูจากคิวและความเร็วของทีมตอนนี้แล้วน่าจะทำไม่ทัน คำนวณจากการตอบและปิดเคสใน 7 วันที่ผ่านมา</InfoHint>
+          </h2>
           {forecast?.response_per_hour ? <p>ทีมตอบครั้งแรก {pace(forecast.response_per_hour)}</p> : null}
         </div>
         <span className={`badge${cases.length ? ' pending_customer' : ''}`}>{cases.length} เคส</span>

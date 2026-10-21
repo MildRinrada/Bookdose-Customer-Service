@@ -424,9 +424,15 @@
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+/* Taking a connection away: red buttons of their own, each confirming first (never a box ticked and saved). */
 .ai-remove {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+}
+/* The same on a channel's settings: at the far end of its row of buttons, apart from save and test. */
+.channel-remove {
+  margin-left: auto;
 }
 .ai-settings-heading {
   display: flex;

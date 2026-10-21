@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/ui/display';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { heatmapParts } from '@/features/dashboard';
 import type { TicketRow } from '@/features/tickets/types';
 import { relative } from '@/lib/format';
@@ -25,6 +26,10 @@ export function ReopenCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
           <h2 className="report-title">
             <Icon name="restore" />
             เคสที่ถูกเปิดซ้ำ
+            <InfoHint>
+              เคสที่แก้ไขเสร็จหรือปิดแล้วแต่กลับมาเปิดอีกในช่วงนี้ เพราะลูกค้าทักกลับหรือทีมเปิดเอง การเปิดซ้ำโดยลูกค้านับตั้งแต่ 19 ก.ย. 2569
+              ก่อนหน้านั้นนับเฉพาะที่ทีมเปิดเอง
+            </InfoHint>
           </h2>
         </div>
       </div>
@@ -86,6 +91,10 @@ export function WorkloadCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) 
           <h2 className="report-title">
             <Icon name="users" />
             ภาระงานของทีม
+            <InfoHint>
+              เคสที่ยังไม่เสร็จตอนนี้ของแต่ละคนตามทีมที่เลือก ไม่ขึ้นกับช่วงวันที่และผู้รับผิดชอบที่เลือก ถือเคสมากคือตั้งแต่ 3 เคสและ 1.5 เท่าของค่าเฉลี่ย
+              ป้ายด่วนนับความเร่งด่วนสูงและเร่งด่วน
+            </InfoHint>
           </h2>
           <p>เคสที่ยังไม่เสร็จตอนนี้ของแต่ละคน เฉลี่ยคนละ {load.average.toFixed(1)} เคส</p>
         </div>
@@ -148,6 +157,9 @@ export function BusyHoursCard({ hours, f }: { hours: ReportExtras['hours'] | und
           <h2 className="report-title">
             <Icon name="calendar" />
             ช่วงเวลาที่ลูกค้าติดต่อเข้ามา
+            <InfoHint>
+              นับบทสนทนาใหม่ ไม่ใช่เคส แยกตามวันและชั่วโมงที่เริ่มตามเวลาเครื่องของคุณ ไม่แยกผู้รับผิดชอบ ช่วงพีคคือ 3 ชั่วโมงติดกันที่มีเรื่องเข้ามากที่สุด
+            </InfoHint>
           </h2>
           <p>
             บทสนทนาใหม่ {hours.total} เรื่องในช่วงนี้ (ทุกช่องทาง{f.team ? ' ของทีมที่เลือก' : ''})

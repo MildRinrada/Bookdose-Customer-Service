@@ -1051,3 +1051,23 @@ textarea.assistant-action-text:focus-visible {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* An AI feature not set up yet (features/ai/components/AiNotReady): drawn like the other empty boxes on its card -
+   what is missing, one line on how, and for the organization's admin a plain button to the setting. */
+.ai-not-ready {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  text-align: center;
+  color: var(--muted);
+}
+.ai-not-ready strong {
+  color: var(--ink);
+}
+.ai-not-ready .btn {
+  margin-top: 8px;
+}

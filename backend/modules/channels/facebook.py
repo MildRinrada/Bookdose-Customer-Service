@@ -81,6 +81,21 @@ def overview(db, tenant_id):
             'instagram':{'on':instagram_on(row),'last_received':last_instagram,'outbox':repository.outbox_counts(db,IG_KIND)}}
 
 
+def remove_connection(db, ctx):
+    """ลบการเชื่อมต่อ (its own red button): Facebook and Instagram are turned off and the Page token forgotten in one
+    step. The Page stays named on the channel, so its history stays its own; replies still queued are not sent."""
+    old = repository.find_facebook_setting(db)
+    require(old,'ยังไม่ได้เชื่อมต่อ Facebook',404)
+    D.begin(db)
+    write_secret(ctx['tenant_id'],{})
+    repository.save_facebook_setting(db,old['route_id'],False,json.dumps(old['config'],ensure_ascii=False),uid(),old['last_checked'])
+    for kind in KINDS:
+        repository.fail_queued(db,kind)
+    audit.record(db,ctx['name'],'channel.settings_updated',old['route_id'],f'{KIND}: ลบการเชื่อมต่อ')
+    db.commit()
+    return overview(db,ctx['tenant_id'])
+
+
 def save(cd, db, ctx, body):
     """Check the Page token with Facebook first, then save the settings as a new generation.
     A channel keeps the Page it was first connected to, and one Page belongs to one organization."""

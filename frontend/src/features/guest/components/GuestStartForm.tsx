@@ -7,6 +7,7 @@ import { TextField } from '@/components/ui/fields';
 import { filesOf } from '@/components/ui/FileInput';
 import { Form } from '@/components/ui/Form';
 import { HoneypotField, honeypotValue } from '@/components/ui/HoneypotField';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { CAPTCHA_FIELD, CAPTCHA_WAIT, TurnstileField, type TurnstileHandle } from '@/components/ui/Turnstile';
 import { KnownIssuesBar } from '@/features/incidents/KnownIssues';
 import { AnswerSuggestions, type PeekArticle } from '@/features/customer/components/ArticlePeek';
@@ -68,7 +69,7 @@ function Intro({ info, orgName }: { info: PublicOrgInfo | undefined; orgName: st
   );
 }
 
-function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+function Step({ n, title, hint, children }: { n: number; title: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <section className="start-step" aria-labelledby={`start-step-${n}`}>
       <div className="start-step-head">
@@ -76,7 +77,10 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
           {n}
         </span>
         <div>
-          <h3 id={`start-step-${n}`}>{title}</h3>
+          <h3 id={`start-step-${n}`}>
+            {title}
+            {hint && <InfoHint>{hint}</InfoHint>}
+          </h3>
         </div>
       </div>
       <div className="start-step-body">{children}</div>
@@ -171,7 +175,7 @@ export function GuestStartForm({
       <KnownIssuesBar slug={slug} />
       {intro && <Intro info={info} orgName={orgName} />}
       {topics.length > 0 && (
-        <Step n={++n} title="เรื่องที่ต้องการติดต่อ">
+        <Step n={++n} title="เรื่องที่ต้องการติดต่อ" hint="เลือกเรื่องที่ใกล้ที่สุด ทีมที่ดูแลเรื่องนั้นจะได้รับทันที ไม่เลือกก็ได้">
           <div className="start-topics" role="group" aria-label="เรื่องที่ต้องการติดต่อ">
             {topics.map((name) => (
               <button
@@ -188,7 +192,7 @@ export function GuestStartForm({
           </div>
         </Step>
       )}
-      <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง">
+      <Step n={++n} title="เล่าเรื่องให้ทีมงานฟัง" hint="ยิ่งเล่าละเอียด ทีมงานยิ่งช่วยได้ตรงจุด แนบรูป วิดีโอ PDF หรือ TXT ได้สูงสุด 3 ไฟล์ รวมไม่เกิน 5 MB">
         {/* ขอคนเดิม: the member of this browser's last case, when there was one in the last 30 days. */}
         <SameMemberChoice member={overview.last_member} id="guest-same-member" />
         <StartFields fields={overview.form_fields} category={category} idPrefix="guest-field" />
@@ -237,7 +241,14 @@ export function GuestStartForm({
           <label className="start-remember">
             <input type="checkbox" name="remember" defaultChecked />
             <span>
-              <strong>จำแชทไว้ในเครื่องนี้</strong>
+              <strong>
+                จำแชทไว้ในเครื่องนี้
+                <InfoHint>
+                  {reach
+                    ? 'กลับมาอ่านคำตอบในเบราว์เซอร์นี้ได้เลย ถ้าใช้เครื่องสาธารณะ ให้เอาเครื่องหมายออก'
+                    : 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้เท่านั้น ถ้าเอาเครื่องหมายออก จะกลับมาอ่านคำตอบไม่ได้'}
+                </InfoHint>
+              </strong>
             </span>
           </label>
         )}
@@ -246,6 +257,7 @@ export function GuestStartForm({
             <p className="start-reach-title">
               รับลิงก์ติดตามแชททาง
               {emailReady && smsReady ? 'อีเมลหรือ SMS' : emailReady ? 'อีเมล' : 'SMS'}
+              {emailReady && smsReady && <InfoHint>ถ้ากรอกทั้งสองช่อง ระบบจะส่งลิงก์ไปให้ทั้งสองทาง</InfoHint>}
             </p>
             <div className="guest-start-row">
               {emailReady && (

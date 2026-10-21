@@ -8,6 +8,7 @@ import { Combobox } from '@/components/ui/Combobox';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { FormActions, RequiredStar, TextField, useFieldValidation } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { CONTACTS_PATH, fetchContacts } from '@/features/contacts/api';
 import { ContactForm } from '@/features/contacts/components/ContactForm';
@@ -88,7 +89,10 @@ export function NewTicketForm({
           </button>
         </div>
         <div className="field">
-          <label htmlFor="new-priority">ความเร่งด่วน</label>
+          <label htmlFor="new-priority">
+            ความเร่งด่วน
+            <InfoHint>กำหนดเวลาที่ต้องตอบกลับและแก้ไขเคสนี้ (SLA) ตามที่ตั้งไว้สำหรับแต่ละระดับในตั้งค่าองค์กร</InfoHint>
+          </label>
           <select id="new-priority" name="priority" defaultValue={draft.priority || 'normal'}>
             {Object.entries(priorityLabels).map(([value, label]) => (
               <option key={value} value={value}>
@@ -97,19 +101,38 @@ export function NewTicketForm({
             ))}
           </select>
         </div>
-        <TextField label="หมวดหมู่" name="category" defaultValue={draft.category || 'ทั่วไป'} max={80} />
+        <TextField
+          label={
+            <>
+              หมวดหมู่
+              <InfoHint>หมวดของเรื่องนี้ ใช้จัดกลุ่มเคสในรายงานว่าลูกค้าติดต่อเรื่องอะไรมากที่สุด</InfoHint>
+            </>
+          }
+          name="category"
+          defaultValue={draft.category || 'ทั่วไป'}
+          max={80}
+        />
         <div className="field">
-          <label htmlFor="new-team">ทีมรับผิดชอบ</label>
+          <label htmlFor="new-team">
+            ทีมรับผิดชอบ
+            <InfoHint>ทีมที่ดูแลเคสนี้ เริ่มต้นเป็นทีมของคุณ ผู้ดูแลองค์กรเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
+          </label>
           <select id="new-team" name="team_id" value={team} onChange={(e) => setTeam(e.target.value)}>
             <TeamOptions />
           </select>
         </div>
         <div className="field">
-          <label htmlFor="new-assignee">ผู้รับผิดชอบ</label>
+          <label htmlFor="new-assignee">
+            ผู้รับผิดชอบ
+            <InfoHint>เลือกได้เฉพาะคนในทีมที่เลือกไว้ ถ้าเว้นว่าง เคสจะรอคนรับ หรือระบบแจกให้เองถ้าเปิดแจกเคสอัตโนมัติไว้</InfoHint>
+          </label>
           <MemberPicker id="new-assignee" teamId={team} value={draft.team_id === team ? draft.assignee_id : undefined} />
         </div>
         <div className="field span-2">
-          <label htmlFor="new-body">รายละเอียด / บันทึกภายใน</label>
+          <label htmlFor="new-body">
+            รายละเอียด / บันทึกภายใน
+            <InfoHint>บันทึกเป็นโน้ตภายในของเคส เห็นเฉพาะทีมงาน ลูกค้าไม่เห็น</InfoHint>
+          </label>
           <textarea id="new-body" name="body" maxLength={20000} placeholder="รายละเอียดปัญหาและข้อมูลที่ทีมควรทราบ" defaultValue={draft.body} {...body.bind} />
           {body.errorNode}
         </div>

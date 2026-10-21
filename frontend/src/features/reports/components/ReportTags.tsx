@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { tagsOf, useCaseTags } from '@/features/tickets/tags';
 import type { TicketRow } from '@/features/tickets/types';
 import { useWork } from '@/lib/session';
@@ -19,7 +20,10 @@ export function TagBarsCard({ tickets, before }: { tickets: TicketRow[]; before:
     return (
       <section className="card">
         <div className="card-header">
-          <h2>เคสตามป้าย</h2>
+          <h2>
+            เคสตามป้าย
+            <InfoHint>ตั้งป้ายเคสไว้ แล้วให้ทีมติดป้าย รายงานจะบอกได้ว่าปัญหาเรื่องไหนมากที่สุด</InfoHint>
+          </h2>
         </div>
         <div className="card-body">
           <p className="empty-mini">
@@ -47,7 +51,12 @@ export function TagBarsCard({ tickets, before }: { tickets: TicketRow[]; before:
   return (
     <section className="card tag-bars">
       <div className="card-header">
-        <h2>เคสตามป้าย</h2>
+        <h2>
+          เคสตามป้าย
+          <InfoHint>
+            เคสที่เปิดในช่วงนี้ตามป้ายเคส เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน เคสที่ติดหลายป้ายนับในทุกป้าย ดูครบทุกป้ายได้ในตารางวิเคราะห์ด้านบน แยกตามป้ายเคส
+          </InfoHint>
+        </h2>
         <span className="muted">
           ติดป้ายแล้ว {tagged} จาก {tickets.length} เคส
         </span>

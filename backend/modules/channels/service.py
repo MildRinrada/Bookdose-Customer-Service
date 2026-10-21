@@ -151,6 +151,26 @@ def save_channel(cd, db, ctx, kind, body):
     return overview(db,ctx['tenant_id'])
 
 
+def remove_connection(db, ctx, kind):
+    """ลบการเชื่อมต่อ (its own red button): the channel is turned off and its credentials forgotten in one step, so
+    nobody has to switch it off and save first. Its team and its wording stay for the next connection; replies still
+    queued are not sent, and bot chats on it go back to the team."""
+    require(kind in KINDS,'ช่องทางไม่ถูกต้อง')
+    old = setting(db,kind)
+    require(old,'ยังไม่ได้เชื่อมต่อช่องทางนี้',404)
+    cfg = {**old['config'],'chatbot_enabled':False}
+    D.begin(db)
+    write_secret(ctx['tenant_id'],kind,{})
+    repository.save_setting(db,kind,False,json.dumps(cfg,ensure_ascii=False),uid(),old['last_checked'])
+    repository.fail_queued(db,kind)
+    for conversation in repository.bot_conversations(db,kind):
+        if not bot_enabled(db,conversation):
+            ai.stop_bot(db,conversation['id'],'channel_disabled')
+    audit.record(db,ctx['name'],'channel.settings_updated',old['route_id'],f'{kind}: ลบการเชื่อมต่อ')
+    db.commit()
+    return overview(db,ctx['tenant_id'])
+
+
 def save_presentation(db, ctx, kind, body):
     """Only the words customers read (email: sender name and signature; LINE: the welcome for a new friend). The
     connection is not checked again, and its generation and queued messages stay as they are, so changing a

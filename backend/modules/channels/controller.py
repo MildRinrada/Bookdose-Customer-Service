@@ -67,6 +67,12 @@ def save_facebook(req):
 
 
 @require_role('admin')
+def remove_facebook(req):
+    _limit_settings(req)
+    return req.send(200,facebook.remove_connection(req.db,req.ctx))
+
+
+@require_role('admin')
 def test_facebook(req):
     _limit_settings(req)
     facebook.test(req.db,req.ctx['tenant_id'])
@@ -102,6 +108,12 @@ def overview(req):
 def save_channel(req, kind):
     _limit_settings(req)
     return req.send(200,service.save_channel(req.cd,req.db,req.ctx,kind,req.body))
+
+
+@require_role('admin')
+def remove_channel(req, kind):
+    _limit_settings(req)
+    return req.send(200,service.remove_connection(req.db,req.ctx,kind))
 
 
 @require_role('admin')

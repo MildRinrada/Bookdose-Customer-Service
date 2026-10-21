@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { requestPolish, waitForAiJob, type PolishStyle } from '../api';
 import { useWorkspaceAi } from './AiControls';
+import { AiNotReady } from './AiNotReady';
 
 /* "เกลาข้อความ" in the reply composer (backend ai/polish.py): the member picks how - more polite, shorter or typos
    fixed - and the AI rewrites only what they typed. The result shows above the text box and replaces the text only
@@ -119,7 +120,7 @@ export function PolishPanel({ polish, onUse }: { polish: Polish; onUse: (text: s
         {close}
       </div>
       {!ready ? (
-        <p className="ai-polish-note">ยังไม่ได้เปิด AI ช่วยเจ้าหน้าที่</p>
+        <AiNotReady ai={ai} />
       ) : view.kind === 'choosing' ? (
         choices()
       ) : view.kind === 'working' ? (

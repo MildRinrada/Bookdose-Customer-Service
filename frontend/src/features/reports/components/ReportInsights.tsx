@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import type { TicketRow } from '@/features/tickets/types';
 import { date, relative, starsText } from '@/lib/format';
 import { reportTrend } from '../labels';
@@ -67,6 +68,9 @@ export function FirstResponseCard({ all, f }: { all: TicketRow[]; f: ReportFilte
           <h2 className="report-title">
             <Icon name="clock" />
             เวลาตอบกลับครั้งแรก
+            <InfoHint>
+              นับจากเปิดเคสจนทีมตอบครั้งแรก เฉพาะเคสที่เปิดในช่วงนี้และตอบแล้ว เคสที่ยังไม่ได้ตอบไม่นับ ทันกำหนดคือตอบก่อนครบเวลาตอบกลับตาม SLA
+            </InfoHint>
           </h2>
           <p>
             เคสที่เปิดในช่วงนี้และตอบแล้ว {now.count} เคส{now.waiting ? `, ยังไม่ได้ตอบ ${now.waiting} เคส` : ''}
@@ -99,6 +103,7 @@ export function ResolutionCard({ all, f }: { all: TicketRow[]; f: ReportFilter }
           <h2 className="report-title">
             <Icon name="checkCircle" />
             เวลาแก้ไขเคสจนเสร็จ
+            <InfoHint>นับจากเปิดเคสจนแก้ไขเสร็จ เฉพาะเคสที่แก้ไขเสร็จในช่วงนี้ ไม่ว่าจะเปิดเมื่อไร ทันกำหนดคือเสร็จก่อนครบเวลาแก้ไขตาม SLA</InfoHint>
           </h2>
           <p>เคสที่แก้ไขเสร็จในช่วงนี้ {now.count} เคส</p>
         </div>
@@ -130,6 +135,9 @@ export function SatisfactionCard({ all, f }: { all: TicketRow[]; f: ReportFilter
           <h2 className="report-title">
             <Icon name="star" />
             ความพึงพอใจลูกค้า (CSAT)
+            <InfoHint>
+              คำตอบแบบประเมินที่ลูกค้าส่งในช่วงนี้ ไม่ว่าเคสจะเปิดเมื่อไร พอใจคือให้ 4-5 ดาว ระบบส่งแบบประเมินเมื่อปิดเคส ตั้งค่าได้ที่ระบบอัตโนมัติ
+            </InfoHint>
           </h2>
           <p>คำตอบแบบประเมินที่ได้รับในช่วงนี้ {s.count} คำตอบ</p>
         </div>
@@ -205,6 +213,7 @@ export function BacklogCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
           <h2 className="report-title">
             <Icon name="clock" />
             เคสค้างนานแค่ไหน
+            <InfoHint>เคสที่ยังไม่แก้ไขเสร็จหรือปิดตอนนี้ ไม่ว่าจะเปิดเมื่อไร ตามทีมและผู้รับผิดชอบที่เลือก แยกตามจำนวนวันนับจากเปิดเคส</InfoHint>
           </h2>
           <p>เคสที่ยังไม่เสร็จตอนนี้ {b.total} เคส (ทุกช่วงเวลา)</p>
         </div>

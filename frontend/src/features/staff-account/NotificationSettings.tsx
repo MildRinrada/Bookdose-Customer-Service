@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { PageLoading } from '@/components/ui/display';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { allowDesktop, desktopPermission, playAlertSound, playSound, showDesktop } from './alerts';
@@ -21,6 +22,8 @@ const neverChanges = () => () => {};
 
 const desktopHint = (allowed: string) =>
   allowed === 'unsupported' ? 'เบราว์เซอร์นี้แจ้งเตือนบนหน้าจอไม่ได้' : allowed === 'denied' ? 'เบราว์เซอร์บล็อกการแจ้งเตือนของเว็บนี้ไว้' : null;
+
+const DESKTOP_ABOUT = 'เด้งขึ้นมุมจอเมื่อคุณอยู่แท็บอื่น ขณะที่ยังเปิดระบบไว้ ถ้าเบราว์เซอร์บล็อกไว้ ให้กดอนุญาตที่ไอคอนแม่กุญแจข้างที่อยู่เว็บ';
 
 /** The browser's permission to show notifications, as last known (the server renders the page without it). */
 function useDesktopPermission() {
@@ -64,7 +67,10 @@ function NotifyCard({ view }: { view: PreferencesView }) {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2>การแจ้งเตือนงานของฉัน</h2>
+          <h2>
+            การแจ้งเตือนงานของฉัน
+            <InfoHint>เลือกช่องทางและเรื่องที่อยากรู้ทันที กระดิ่งด้านบนยังแสดงทุกเรื่องเสมอ</InfoHint>
+          </h2>
         </div>
       </div>
       <Form
@@ -96,31 +102,47 @@ function NotifyCard({ view }: { view: PreferencesView }) {
           <legend>ช่องทาง</legend>
           <label className="check">
             <input type="checkbox" className="switch" name="popup" defaultChecked={notify.popup !== false} />
-            <span>ป๊อปอัปมุมขวาล่างในระบบ</span>
+            <span>
+              ป๊อปอัปมุมขวาล่างในระบบ
+              <InfoHint>ขึ้นเมื่อมีข้อความใหม่ในแชทของคุณหรือแชทที่ยังไม่มีคนดูแล และเมื่อมีงานของคุณ ขณะเปิดระบบอยู่ กดที่ป๊อปอัปเพื่อเปิด</InfoHint>
+            </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="desktop" defaultChecked={notify.desktop} />
             <span>
               แจ้งเตือนบนหน้าจอ (เบราว์เซอร์)
+              <InfoHint>{DESKTOP_ABOUT}</InfoHint>
               {desktopHint(allowed) && <span className="tiny muted block">{desktopHint(allowed)}</span>}
             </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="sound" defaultChecked={notify.sound} />
-            <span>เสียงเตือน</span>
+            <span>
+              เสียงเตือน
+              <InfoHint>เสียงสั้น ๆ เมื่อมีเรื่องใหม่หรือรับเคส เสียงเร่งเมื่อเคสด่วน ถูกยกระดับ หรือเกิน SLA ดังเฉพาะตอนเปิดระบบไว้</InfoHint>
+            </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="celebrate" defaultChecked={notify.celebrate} />
-            <span>ฉลองเมื่อปิดเคส ได้ 5 ดาว ได้คำชม หรือได้เหรียญใหม่</span>
+            <span>
+              ฉลองเมื่อปิดเคส ได้ 5 ดาว ได้คำชม หรือได้เหรียญใหม่
+              <InfoHint>พลุกระดาษกับการ์ดแสดงความยินดีสั้น ๆ มีเสียงด้วยถ้าเปิดเสียงเตือนไว้</InfoHint>
+            </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="recap" defaultChecked={notify.recap} />
-            <span>สรุปผลงานประจำเดือน</span>
+            <span>
+              สรุปผลงานประจำเดือน
+              <InfoHint>การ์ดสรุปผลงานเดือนที่แล้ว ขึ้นครั้งเดียวเมื่อเข้าระบบครั้งแรกของเดือน ดูย้อนหลังได้ที่หน้าผลงานของฉัน</InfoHint>
+            </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="email" defaultChecked={notify.email} />
             <span>
               อีเมล
+              <InfoHint>
+                ส่งถึงอีเมลที่ใช้เข้าสู่ระบบ แม้ไม่ได้เปิดระบบอยู่{view.mail_ready ? '' : ' จะเริ่มส่งได้เมื่อผู้ดูแลแพลตฟอร์มตั้งค่าอีเมลกลางแล้ว'}
+              </InfoHint>
               {!view.mail_ready && <span className="tiny muted block">ระบบยังส่งอีเมลไม่ได้</span>}
             </span>
           </label>
@@ -259,7 +281,10 @@ function PlatformNotifyCard({ view }: { view: PreferencesView }) {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2>การแจ้งเตือนเรื่องด่วนของระบบ</h2>
+          <h2>
+            การแจ้งเตือนเรื่องด่วนของระบบ
+            <InfoHint>บอกทันทีเมื่อเซิร์ฟเวอร์หรือความปลอดภัยมีเรื่องที่รอไม่ได้ ขณะเปิดระบบไว้ เรื่องอื่นดูได้ที่กระดิ่งด้านบน</InfoHint>
+          </h2>
         </div>
       </div>
       <Form
@@ -280,18 +305,25 @@ function PlatformNotifyCard({ view }: { view: PreferencesView }) {
           <legend>ช่องทาง</legend>
           <label className="check">
             <input type="checkbox" className="switch" name="popup" defaultChecked={notify.popup !== false} />
-            <span>ป๊อปอัปมุมขวาล่างในระบบ</span>
+            <span>
+              ป๊อปอัปมุมขวาล่างในระบบ
+              <InfoHint>ขึ้นขณะเปิดหน้าระบบอยู่ กดที่ป๊อปอัปเพื่อไปจัดการ</InfoHint>
+            </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="desktop" defaultChecked={notify.desktop} />
             <span>
               แจ้งเตือนบนหน้าจอ (เบราว์เซอร์)
+              <InfoHint>{DESKTOP_ABOUT}</InfoHint>
               {desktopHint(allowed) && <span className="tiny muted block">{desktopHint(allowed)}</span>}
             </span>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="sound" defaultChecked={notify.sound} />
-            <span>เสียงเตือน</span>
+            <span>
+              เสียงเตือน
+              <InfoHint>เสียงเร่งเมื่อเป็นเรื่องวิกฤต เสียงสั้นเมื่อเป็นระดับเฝ้าระวัง</InfoHint>
+            </span>
           </label>
         </fieldset>
         <fieldset className="notify-group">

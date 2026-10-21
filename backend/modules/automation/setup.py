@@ -1,17 +1,21 @@
-"""เริ่มต้นใช้งาน on the owner's overview: the four things a new organization has to do before the system does
+"""เริ่มต้นใช้งาน on the owner's overview: the three things a new organization has to do before the system does
 anything for it, and what is broken now (a channel whose replies do not go out).
 
 A new organization that cannot work out what to set up simply stops using the system, so the order here is the order
 that gets it working, and the last step is the one that proves it:
 
-  1. เชื่อมช่องทาง     a way in besides the web chat
-  2. เพิ่มทีม          somebody other than the owner to answer
-  3. เขียน FAQ 5 บทความ enough for a customer to find an answer alone, and for the bot to have something to answer from
-  4. ทดลองแชท         send one message as a customer and watch it arrive - the proof the whole loop works
+  1. เพิ่มทีม          somebody other than the owner to answer
+  2. เขียน FAQ 5 บทความ enough for a customer to find an answer alone, and for the bot to have something to answer from
+  3. ทดลองแชท         send one message as a customer and watch it arrive - the proof the whole loop works
+
+A way in is not a step: every organization has its web chat link from the moment it signs up, so a step for it was
+ticked before anyone did anything. Connecting LINE, email or Facebook is something to do later, for the organizations
+whose customers are there.
 
 A step can be partly done (the articles), and says so, because "2 จาก 5" is a reason to carry on and "ยังไม่เสร็จ" is
-not. Rules and AI come after: they make a working organization better, they do not make it work, and putting them in
-the same list made the list look longer than the job. The card goes away once the four are done and nothing is broken.
+not. Channels, rules and AI come after: they make a working organization better, they do not make it work, and putting
+them in the same list made the list look longer than the job. The card goes away once the three are done and nothing is
+broken.
 
 An owner who does not want the steps closes them for good (hide): from then on only what is broken is shown to them.
 """
@@ -51,9 +55,6 @@ def checklist(cd, db, ctx):
     # One conversation of any kind is the proof: a message came in, reached the team and can be answered.
     talked = db.execute('SELECT COUNT(*) FROM conversations').fetchone()[0]
     steps = [
-        _step('channels',any(c['enabled'] for c in channels),'เชื่อมช่องทางที่ลูกค้าติดต่อเข้ามา',
-              'ตอนนี้ลูกค้าติดต่อได้ทางแชทบนเว็บเท่านั้น เชื่อม LINE อีเมล หรือ Facebook เพิ่มได้',
-              'เชื่อมช่องทาง','/settings?tab=connections'),
         _step('agents',any(m['role']=='agent' for m in members),'เพิ่มทีมและเจ้าหน้าที่',
               'ยังไม่มีเจ้าหน้าที่ เรื่องจากลูกค้าทั้งหมดจึงรอเจ้าขององค์กรคนเดียว','เพิ่มสมาชิก','/members'),
         _step('articles',public>=ARTICLE_TARGET,f'เขียนคำถามที่พบบ่อย {ARTICLE_TARGET} บทความ',
@@ -65,6 +66,8 @@ def checklist(cd, db, ctx):
     ]
     # Worth doing, but an organization works without them: they are shown apart so the list of four stays a list of four.
     later = [
+        _step('channels',any(c['enabled'] for c in channels),'เชื่อม LINE อีเมล หรือ Facebook',
+              'รับเรื่องจากช่องทางที่ลูกค้าใช้อยู่แล้ว เข้ากล่องข้อความเดียวกับแชทบนเว็บ','เชื่อมช่องทาง','/settings?tab=connections'),
         _step('rules',automation.enabled_rule_count(db),'ตั้งกฎส่งต่อเรื่อง',
               'ส่งเรื่องให้ทีมหรือคนที่ถูกต้องเองตามช่องทางและคำในข้อความ','ตั้งกฎ','/automation'),
         _step('ai',ai.has_key(ctx['tenant_id']),'เปิด AI ช่วยตอบ',

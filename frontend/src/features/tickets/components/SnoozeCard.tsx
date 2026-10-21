@@ -80,7 +80,7 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
 
   if (paused)
     return (
-      <FoldCard id="snooze" title="พักไว้อยู่" hint={`กลับมา ${snoozeUntilText(ticket.snoozed_until)}`} open highlight className="snooze-card paused">
+      <FoldCard id="snooze" title="พักไว้อยู่" info="เคสจะหายจากคิวงานแล้วกลับมาเองตามเวลาที่เลือก ถ้าลูกค้าตอบก่อน เคสกลับเข้าคิวทันที ระหว่างพัก SLA ยังนับต่อ" hint={`กลับมา ${snoozeUntilText(ticket.snoozed_until)}`} open highlight className="snooze-card paused">
         <p className="snooze-until">
           <Icon name="clock" />
           กลับมา {snoozeUntilText(ticket.snoozed_until)}
@@ -103,7 +103,7 @@ export function SnoozeCard({ ticket }: { ticket: Ticket }) {
     );
 
   return (
-    <FoldCard id="snooze" title="พักเคสไว้ก่อน" className="snooze-card">
+    <FoldCard id="snooze" title="พักเคสไว้ก่อน" info="เคสจะหายจากคิวงานแล้วกลับมาเองตามเวลาที่เลือก ถ้าลูกค้าตอบก่อน เคสกลับเข้าคิวทันที ระหว่างพัก SLA ยังนับต่อ" className="snooze-card">
       <label className="sr-only" htmlFor="snooze-note">
         รอเรื่องอะไร
       </label>

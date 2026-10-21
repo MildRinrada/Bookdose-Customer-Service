@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import {
   AHEAD_DAYS,
   NEEDED_DAYS,
+  RANGE_SHARE,
   TEST_DAYS,
   type Forecast,
   type ForecastDay,
@@ -34,6 +36,9 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
             <h2 className="report-title">
               <Icon name="chart" />
               พยากรณ์จำนวนเคส
+              <InfoHint>
+                คาดการณ์เคสใหม่ {AHEAD_DAYS} วันข้างหน้าจากเคสที่ผ่านมา{scope} ต้องมีเคสย้อนหลังอย่างน้อย {NEEDED_DAYS / 7} สัปดาห์ จึงจะพยากรณ์และทดสอบความแม่นได้
+              </InfoHint>
             </h2>
           </div>
         </div>
@@ -59,6 +64,10 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
           <h2 className="report-title">
             <Icon name="chart" />
             พยากรณ์จำนวนเคส
+            <InfoHint>
+              คาดการณ์เคสใหม่นับจากวันนี้ ไม่ขึ้นกับช่วงวันที่ด้านบน คิดจากรูปแบบของแต่ละวันในสัปดาห์ ชั่วโมงที่ลูกค้าติดต่อ และแนวโน้มช่วงสัปดาห์ล่าสุด
+              ระบบไม่รู้ล่วงหน้าเรื่องวันหยุด แคมเปญ หรือระบบล่ม
+            </InfoHint>
           </h2>
           <p>
             {AHEAD_DAYS} วันข้างหน้า จากเคส {f.weeks} สัปดาห์ล่าสุด{scope}
@@ -114,7 +123,13 @@ export function ForecastCard({ forecast: f, team }: { forecast: Forecast; team: 
           {more ? `แสดง ${SHOWN} วัน` : `แสดงถึง ${AHEAD_DAYS} วัน`}
         </button>
 
-        <h3 className="report-subhead">ทำนายแม่นแค่ไหน</h3>
+        <h3 className="report-subhead">
+          ทำนายแม่นแค่ไหน
+          <InfoHint>
+            ระบบลองทำนาย {TEST_DAYS} วันที่ผ่านมาโดยใช้เฉพาะเคสก่อนหน้านั้น แล้วเทียบกับเคสที่เข้ามาจริง (ครึ่งซ้ายของกราฟ) ช่วงที่ทำนายตั้งให้เคสจริงตกอยู่ในช่วงราว{' '}
+            {Math.round(10 * RANGE_SHARE)} ใน 10 วัน
+          </InfoHint>
+        </h3>
         <div className="report-figures">
           <div className={t.share != null && t.share > 0.35 ? 'warn' : ''}>
             <span>พลาดเฉลี่ย</span>

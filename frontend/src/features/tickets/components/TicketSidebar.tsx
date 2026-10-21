@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { Avatar } from '@/components/ui/display';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
@@ -80,15 +81,18 @@ export function TicketSidebar({ data }: { data: TicketDetail }) {
       <TicketFieldsCard ticket={t} />
       <TicketTagsCard ticket={t} />
       <SnoozeCard ticket={t} />
-      <FoldCard id="followups" title="เตือนติดตามผล" hint={extra.followups.length ? `${extra.followups.length} รายการ` : 'ยังไม่มี'} open={extra.followups.length > 0}>
+      <FoldCard id="followups" title="เตือนติดตามผล" info="ตั้งเวลาให้ระบบเตือนให้กลับมาตามเรื่องนี้ ถึงเวลาแล้วจะขึ้นในกระดิ่งและการ์ดถึงคุณบนหน้าภาพรวม" hint={extra.followups.length ? `${extra.followups.length} รายการ` : 'ยังไม่มี'} open={extra.followups.length > 0}>
         <FollowupsPanel ticketId={t.id} followups={extra.followups} />
       </FoldCard>
-      <FoldCard id="macros" title="ปุ่มลัด (Macro)" hint={macros.length ? `${macros.length} ปุ่ม` : 'ยังไม่มี'}>
+      <FoldCard id="macros" title="ปุ่มลัด (Macro)" info="กดปุ่มเดียวเพื่อทำหลายอย่างกับเคสนี้พร้อมกัน เช่น เปลี่ยนสถานะ หรือตั้งเตือนติดตามผล ผู้ดูแลสร้างปุ่มได้ที่หน้าระบบอัตโนมัติ" hint={macros.length ? `${macros.length} ปุ่ม` : 'ยังไม่มี'}>
         <MacroButtons kind="ticket" targetId={t.id} />
       </FoldCard>
       {extra.survey && (
         <section className="card info-block">
-          <h3>ความพึงพอใจ (CSAT)</h3>
+          <h3>
+            ความพึงพอใจ (CSAT)
+            <InfoHint>ระบบส่งแบบประเมินให้ลูกค้าเมื่อปิดเคส ลูกค้าตอบเป็นคะแนน 1 ถึง 5 คะแนนนับรวมในรายงานความพึงพอใจ</InfoHint>
+          </h3>
           <SurveySummary survey={extra.survey} />
         </section>
       )}
@@ -150,7 +154,10 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
         </select>
       </div>
       <div className="field">
-        <label htmlFor="case-priority">ความเร่งด่วน</label>
+        <label htmlFor="case-priority">
+          ความเร่งด่วน
+          <InfoHint>กำหนดเวลาที่ต้องตอบกลับและแก้ไขเคสนี้ (SLA) ตามที่ตั้งไว้สำหรับแต่ละระดับในตั้งค่าองค์กร</InfoHint>
+        </label>
         <select id="case-priority" name="priority" defaultValue={t.priority}>
           {Object.entries(priorityLabels).map(([value, label]) => (
             <option key={value} value={value}>
@@ -160,7 +167,10 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
         </select>
       </div>
       <div className="field">
-        <label htmlFor="case-team">ทีมรับผิดชอบ</label>
+        <label htmlFor="case-team">
+          ทีมรับผิดชอบ
+          <InfoHint>ทีมที่ดูแลเคสนี้ ถ้าย้ายทีม ช่องผู้รับผิดชอบจะว่างจนกว่าจะเลือกคนในทีมใหม่ ผู้ดูแลองค์กรเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
+        </label>
         <select
           id="case-team"
           name="team_id"
@@ -174,7 +184,10 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
         </select>
       </div>
       <div className="field">
-        <label htmlFor="case-assignee">ผู้รับผิดชอบ</label>
+        <label htmlFor="case-assignee">
+          ผู้รับผิดชอบ
+          <InfoHint>เลือกได้เฉพาะคนในทีมที่เลือกไว้ ถ้าเว้นว่าง เคสจะรอคนรับ หรือระบบแจกให้เองถ้าเปิดแจกเคสอัตโนมัติไว้</InfoHint>
+        </label>
         <MemberPicker id="case-assignee" teamId={team} value={teamChanged ? '' : (t.assignee_id ?? '')} />
       </div>
       <button className="btn primary" type="submit">

@@ -35,6 +35,10 @@ export function saveFacebook(body: Record<string, unknown>) {
   return api(FACEBOOK_PATH, body, 'PATCH');
 }
 
+/** ลบการเชื่อมต่อ: the channel off and its credentials forgotten, in one step (backend channels remove_connection). */
+export const removeChannel = (kind: 'line' | 'email') => api(`/api/channels/${kind}/connection`, undefined, 'DELETE');
+export const removeFacebook = () => api(`${FACEBOOK_PATH}/connection`, undefined, 'DELETE');
+
 export function testFacebook() {
   return api('/api/channels/facebook/test', {});
 }

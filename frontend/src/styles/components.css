@@ -514,6 +514,10 @@ input[type=checkbox].switch:focus-visible {
   text-align: center;
   color: #6c6776;
 }
+/* Nothing to list, in a list laid out as a grid of cards: the message takes the whole row, not the first card's place. */
+.empty {
+  grid-column: 1 / -1;
+}
 .empty .icon {
   height: 38px;
   width: 38px;
@@ -1682,4 +1686,79 @@ select:disabled {
 .two-factor-gate-notice .grow {
   flex: 1 1 260px;
   min-width: 0;
+}
+
+/* (i) beside a title, and the explanation it keeps (ui/InfoHint): a quiet mark until pointed at, the text drawn over
+   the page in the dark of a tooltip, centred on the mark and never wider than reads comfortably. */
+.info-hint {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0 0 0 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  line-height: 1;
+  vertical-align: -3px;
+  cursor: help;
+}
+.info-hint .icon {
+  width: 20px;
+  height: 20px;
+}
+/* A page title's letters are larger: the mark rides higher to sit on their middle. */
+h1>.info-hint {
+  vertical-align: 2px;
+}
+.info-hint:hover,.info-hint.pinned,.info-hint:focus-visible {
+  background: var(--soft);
+  color: var(--ink);
+}
+.info-hint-pop {
+  position: fixed;
+  top: var(--y);
+  left: var(--x);
+  z-index: 500;
+  width: max-content;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--invert);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  box-shadow: 0 10px 30px #00000033;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.info-hint-pop.above {
+  top: auto;
+  bottom: var(--y);
+}
+/* A few items explained in one (i): one per line. */
+.info-hint-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0 0 0 16px;
+}
+.info-hint-list strong {
+  font-weight: 700;
+}
+
+/* A button straight under a field or a switch in a card: the line of help that used to sit between them is gone, and
+   without a gap the button looked stuck to the box above it. */
+.card-body>.field+.btn,.card-body>.check+.btn,.card-body>.field+a.btn {
+  margin-top: 14px;
 }

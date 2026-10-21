@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { PageLoading } from '@/components/ui/display';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
@@ -155,6 +156,7 @@ export function KudosCard({ wall, readOnly }: { wall: KudosWall | undefined; rea
           <h2 id="kudos-title">
             <Icon name="heart" className="card-title-icon" />
             กำแพงคำชม
+            <InfoHint>คำชมที่ลูกค้าส่งให้ทีม ทุกคนในองค์กรเห็น</InfoHint>
           </h2>
           <p>คำชมจากลูกค้า {wall?.days ?? 90} วันล่าสุด</p>
         </div>

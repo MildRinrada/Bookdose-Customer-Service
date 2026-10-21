@@ -8,6 +8,7 @@ import { download } from '@/lib/api/client';
 import { Avatar, ChartColumn, EmptyState, StatCard } from '@/components/ui/display';
 import { FilterPill } from '@/components/ui/filters';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { visibleTeams } from '@/components/ui/pickers';
 import { usePreferences } from '@/features/staff-account/prefs';
 import { useDownloadTicketsCSV } from '@/features/tickets/csv';
@@ -18,7 +19,7 @@ import { useApi } from '@/lib/query';
 import { useMemberName, useStaffTickets, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { ArticlesCard, AssistantReportCard, BotReportCard } from './components/ReportAi';
-import { unusualDays, type DayFlag } from './analysis';
+import { HISTORY_NEEDED, HISTORY_WEEKS, unusualDays, type DayFlag } from './analysis';
 import { PivotCard, SpeedSatisfactionCard } from './components/ReportAnalysis';
 import { ConversationCard, MoodCard } from './components/ReportConversation';
 import { ReportDocument } from './components/ReportDocument';
@@ -120,7 +121,13 @@ export function ReportsScreen() {
     <>
       <div className="page-heading report-heading">
         <div>
-          <h1>รายงานการบริการ</h1>
+          <h1>
+            รายงานการบริการ
+            <InfoHint>
+              ตัวเลขเทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน ข้อมูลและ CSV จำกัดตามสิทธิ์องค์กรและทีม
+              {owner && prefs && !weeklyOn && ' รับสรุปรายสัปดาห์ทางอีเมลทุกวันจันทร์ได้ เปิดที่ตั้งค่าบัญชี แท็บการแจ้งเตือน'}
+            </InfoHint>
+          </h1>
           <p>
             {date(f.from)} - {date(f.to)}
           </p>
@@ -212,19 +219,35 @@ export function ReportsScreen() {
       {m.total ? (
         <>
           <div className="stats-grid">
-            <StatCard label="เคสทั้งหมด" value={m.total} icon="ticket" foot={reportTrend(m.total, before.total, 'เคส')} href="/tickets" />
-            <StatCard label="ยังดูแลอยู่" value={m.open} icon="users" foot={reportTrend(m.open, before.open, 'เคส')} href="/tickets?filter=active" />
+            <StatCard
+              label="เคสทั้งหมด"
+              value={m.total}
+              icon="ticket"
+              foot={reportTrend(m.total, before.total, 'เคส')}
+              href="/tickets"
+              hint="เคสที่เปิดในช่วงวันที่ที่เลือก ตามทีมและผู้รับผิดชอบที่เลือก เทียบกับช่วงก่อนหน้าที่ยาวเท่ากัน"
+            />
+            <StatCard
+              label="ยังดูแลอยู่"
+              value={m.open}
+              icon="users"
+              foot={reportTrend(m.open, before.open, 'เคส')}
+              href="/tickets?filter=active"
+              hint="เคสที่เปิดในช่วงนี้ และตอนนี้ยังไม่แก้ไขเสร็จหรือยังไม่ปิด"
+            />
             <StatCard
               label="ตอบกลับครั้งแรก (ค่ากลาง)"
               value={formatDuration(m.median)}
               icon="clock"
               foot={reportTrend(m.median, before.median, 'นาที')}
               href="/tickets"
+              hint="ครึ่งหนึ่งของเคสที่เปิดในช่วงนี้ได้คำตอบแรกภายในเวลานี้ นับจากเปิดเคสจนทีมตอบครั้งแรก เฉพาะเคสที่ตอบแล้ว"
             />
             <StatCard
               label="ตอบทัน SLA"
               value={m.sla == null ? '-' : m.sla.toFixed(1) + '%'}
               icon="checkCircle"
+              hint="สัดส่วนเคสที่เปิดในช่วงนี้และตอบแล้ว ที่ตอบครั้งแรกทันกำหนด SLA เป็นสีเขียวเมื่อถึงเป้าของทีม หรือ 90% ถ้ายังไม่ได้ตั้งเป้า"
               // Against the team's goal when there is one (เป้าหมาย below), else the usual 90%.
               color={m.sla != null && (slaTarget != null ? reaches('response_sla', m.sla, slaTarget) : m.sla >= 90) ? 'green' : 'amber'}
               foot={slaTarget != null ? `${reportTrend(m.sla, before.sla, '%')} เป้า ${slaTarget}%` : reportTrend(m.sla, before.sla, '%')}
@@ -234,7 +257,13 @@ export function ReportsScreen() {
           <GoalsCard all={all} f={f} />
           <section className="card report-card report-chart">
             <div className="card-header">
-              <h2>ปริมาณเคสต่อวัน</h2>
+              <h2>
+                ปริมาณเคสต่อวัน
+                <InfoHint>
+                  จำนวนเคสที่เปิดในแต่ละวันของช่วงนี้ แท่งสีต่างคือวันที่เคสมากหรือน้อยผิดปกติ เทียบกับวันเดียวกันใน {HISTORY_WEEKS} สัปดาห์ก่อนหน้า
+                  ต้องมีข้อมูลย้อนหลังอย่างน้อย {HISTORY_NEEDED} สัปดาห์
+                </InfoHint>
+              </h2>
               <span className="muted">{busiest && busiest.count ? `วันที่มากที่สุด ${date(busiest.day)}, ${busiest.count} เคส` : ''}</span>
             </div>
             <div className="card-body">
@@ -275,20 +304,31 @@ export function ReportsScreen() {
             <BacklogCard all={all} f={f} />
             <WorkloadCard all={all} f={f} />
           </div>
+          {/* Two columns of about the same height: the reopened cases (short when there are few) over the priorities,
+              beside the statuses over the tags. With the three lists stacked on one side, the reopened card was
+              stretched to their height and stood mostly empty. */}
           <div className="report-grid">
-            <ReopenCard all={all} f={f} />
+            <div className="report-stack">
+              <ReopenCard all={all} f={f} />
+              <section className="card">
+                <div className="card-header">
+                  <h2>
+                    เคสตามความเร่งด่วน
+                    <InfoHint>เคสที่เปิดในช่วงนี้ แยกตามความเร่งด่วนของเคสตอนนี้ ตัวเลขในวงเล็บคือสัดส่วนจากเคสทั้งหมดในช่วงนี้</InfoHint>
+                  </h2>
+                </div>
+                <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
+              </section>
+            </div>
             <div className="report-stack">
               <section className="card">
                 <div className="card-header">
-                  <h2>เคสตามสถานะ</h2>
+                  <h2>
+                    เคสตามสถานะ
+                    <InfoHint>เคสที่เปิดในช่วงนี้ แยกตามสถานะตอนนี้ ตัวเลขในวงเล็บคือสัดส่วนจากเคสทั้งหมดในช่วงนี้</InfoHint>
+                  </h2>
                 </div>
                 <div className="card-body">{bars(statusLabels, 'status', 'status')}</div>
-              </section>
-              <section className="card">
-                <div className="card-header">
-                  <h2>เคสตามความเร่งด่วน</h2>
-                </div>
-                <div className="card-body">{bars(priorityLabels, 'priority', 'priority')}</div>
               </section>
               <TagBarsCard tickets={tickets} before={earlier} />
             </div>
@@ -297,7 +337,10 @@ export function ReportsScreen() {
           {extras?.bot && (
             <>
               <div className="report-section-head">
-                <h2>AI และคลังความรู้</h2>
+                <h2>
+                  AI และคลังความรู้
+                  <InfoHint>เห็นเฉพาะผู้ดูแลองค์กร นับทั้งองค์กรในช่วงวันที่ที่เลือก ไม่แยกทีมหรือผู้รับผิดชอบ</InfoHint>
+                </h2>
                 <p>ทั้งองค์กร ไม่แยกทีม</p>
               </div>
               <div className="report-grid">
@@ -309,7 +352,13 @@ export function ReportsScreen() {
           )}
           <section className="card">
             <div className="card-header">
-              <h2>ผลงานตามผู้รับผิดชอบ</h2>
+              <h2>
+                ผลงานตามผู้รับผิดชอบ
+                <InfoHint>
+                  เคสที่เปิดในช่วงนี้ แยกตามผู้รับผิดชอบ เรียงจากเคสมากที่สุด ตอบกลับเฉลี่ยและตอบทัน SLA นับเฉพาะเคสที่ตอบครั้งแรกแล้ว
+                  เกิน SLA คือเคสที่ยังไม่เสร็จและเลยกำหนดแล้ว
+                </InfoHint>
+              </h2>
             </div>
             <div className="table-scroll">
               <table>
@@ -348,7 +397,12 @@ function UnusualDays({ flagged, compared }: { flagged: DayFlag[]; compared: numb
   if (!flagged.length) return <p className="unusual-note tiny muted">ไม่มีวันที่เคสมากหรือน้อยผิดปกติ</p>;
   return (
     <div className="unusual-days">
-      <h3 className="report-subhead">วันที่ผิดปกติ</h3>
+      <h3 className="report-subhead">
+        วันที่ผิดปกติ
+        <InfoHint>
+          มากกว่าปกติคือตั้งแต่ 2 เท่าของค่ากลางและเกินอย่างน้อย 3 เคส น้อยกว่าปกติคือเหลือหนึ่งในสามหรือน้อยกว่า อาจเป็นวันหยุด หรือช่องทางติดต่อมีปัญหา
+        </InfoHint>
+      </h3>
       <ul>
         {flagged.map((d) => (
           <li key={d.day.toDateString()} className={d.kind}>

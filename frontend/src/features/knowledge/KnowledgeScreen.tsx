@@ -291,6 +291,8 @@ function KnowledgeList({ openId }: { openId?: string }) {
           {visible.length} บทความ
         </span>
       </section>
+      {/* Only when there is something to choose between: a lone "ทั้งหมด" over no articles is a button for nothing. */}
+      {(pills.length > 1 || toReview > 0) && (
       <div className="filter-pills knowledge-tags" role="group" aria-label="หมวดหมู่บทความ">
         {pills.map((value) => (
           <FilterPill
@@ -319,6 +321,7 @@ function KnowledgeList({ openId }: { openId?: string }) {
           />
         )}
       </div>
+      )}
       {browsing && pins.length > 0 && !readOnly && <PinnedShelf pins={pins} onOpen={read} onArrange={(ids) => void arrange(ids)} onUnpin={togglePin} />}
       <div className="article-grid" id="articles-grid">
         {slice.shown.length ? (

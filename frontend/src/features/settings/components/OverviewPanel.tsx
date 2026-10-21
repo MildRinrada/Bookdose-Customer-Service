@@ -7,6 +7,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { Avatar, EmptyState, ProfilePhoto } from '@/components/ui/display';
 import { FormActions, RequiredStar, TextArea, TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { PhotoPicker } from '@/components/ui/PhotoPicker';
 import { useToast } from '@/components/ui/Toast';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
@@ -108,6 +109,7 @@ function StorageNotice() {
         <div>
           <strong>
             {storage.full ? 'พื้นที่จัดเก็บเต็มแล้ว' : `ใช้พื้นที่ไปแล้ว ${Math.round(storage.share * 100)}%`} ({mb(storage.used)} จาก {mb(storage.quota)})
+            <InfoHint>เมื่อพื้นที่เต็มจะอัปโหลดไฟล์ใหม่ไม่ได้ แต่ยังตอบลูกค้าและเปิดไฟล์เดิมได้ ลบไฟล์แนบเก่าที่ไม่ใช้ หรือขอเพิ่มพื้นที่จากผู้ดูแลระบบ</InfoHint>
           </strong>
           {storage.full && <p className="muted">อัปโหลดไฟล์ใหม่ไม่ได้จนกว่าจะมีที่ว่าง</p>}
         </div>
@@ -195,7 +197,10 @@ export function ServicePanel() {
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>มาตรฐานการบริการ (SLA)</h2>
+            <h2>
+              มาตรฐานการบริการ (SLA)
+              <InfoHint>ใช้กับเคสที่เปิดใหม่ ช่องที่เว้นว่างใช้เวลาของระดับปกติ เมื่อเปลี่ยนความเร่งด่วนของเคส ระบบนับกำหนดใหม่จากตอนเปิดเคส ตั้งวิธีนับเวลาได้ที่การ์ดเวลาทำการ</InfoHint>
+            </h2>
             <p>{savedHours(work.settings.business_hours).sla ? 'นับเฉพาะในเวลาทำการ' : 'นับต่อเนื่อง 24 ชั่วโมง'}</p>
           </div>
         </div>
@@ -206,7 +211,10 @@ export function ServicePanel() {
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>ข้อความอัตโนมัติ</h2>
+            <h2>
+              ข้อความอัตโนมัติ
+              <InfoHint>ลูกค้าเห็นข้อความต้อนรับนี้เมื่อเริ่มแชทใหม่ในหน้าลูกค้า</InfoHint>
+            </h2>
           </div>
         </div>
         <div className="card-body">
@@ -241,7 +249,12 @@ function SnippetForm({ snippet, onSave }: { snippet?: TeamSnippet; onSave: (snip
   return (
     <Form className="dialog-form" onSubmit={async (values) => onSave({ id: snippet?.id, shortcut: values.shortcut ?? '', text: values.text ?? '' })}>
       <TextField
-        label="คีย์ลัด (พิมพ์ / ตามด้วยคำนี้)"
+        label={
+          <>
+            คีย์ลัด (พิมพ์ / ตามด้วยคำนี้)
+            <InfoHint>ใช้ตัวอักษรไทย อังกฤษ ตัวเลข _ หรือ - ไม่มีช่องว่าง และต้องไม่ซ้ำกับคีย์ลัดอื่น</InfoHint>
+          </>
+        }
         name="shortcut"
         max={31}
         defaultValue={snippet ? `/${snippet.shortcut}` : '/'}      />
@@ -287,7 +300,10 @@ function TeamRepliesCard({ snippets }: { snippets: TeamSnippet[] }) {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2>คำตอบสำเร็จรูปของทีม</h2>
+          <h2>
+            คำตอบสำเร็จรูปของทีม
+            <InfoHint>ทุกคนในองค์กรแทรกลงช่องร่างได้จากปุ่มคำตอบสำเร็จรูป หรือพิมพ์ / ตามด้วยคีย์ลัด แล้วแก้ก่อนส่งได้ ถ้าต้องการให้ส่งและเปลี่ยนสถานะเคสด้วย ใช้ Macro ที่ระบบอัตโนมัติ</InfoHint>
+          </h2>
         </div>
         <button className="btn primary" type="button" onClick={() => edit()}>
           <Icon name="plus" />
@@ -370,7 +386,10 @@ export function BackupPanel() {
     <>
     <section className="card">
       <div className="card-header">
-        <h2>ข้อมูลและการสำรอง</h2>
+        <h2>
+          ข้อมูลและการสำรอง
+          <InfoHint>ไฟล์สำรองเป็น ZIP ที่มีฐานข้อมูลและไฟล์แนบขององค์กร รวมข้อมูลลูกค้าและบันทึกภายใน จึงควรเก็บในที่ปลอดภัย รายการที่ลบอยู่ในถังขยะ 30 วันก่อนถูกลบถาวร</InfoHint>
+        </h2>
         <Icon name="shield" />
       </div>
       <div className="card-body">

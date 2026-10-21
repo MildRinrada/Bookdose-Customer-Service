@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { FilterPill } from '@/components/ui/filters';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { csvText, saveCSVFile } from '@/features/tickets/csv';
 import { useCaseFields } from '@/features/tickets/fields';
 import { useCaseTags } from '@/features/tickets/tags';
@@ -190,7 +191,13 @@ export function PivotCard({ tickets }: { tickets: TicketRow[] }) {
     <section className="card report-card pivot-card">
       <div className="card-header">
         <div>
-          <h2>วิเคราะห์แยกตามมุมที่เลือก</h2>
+          <h2>
+            วิเคราะห์แยกตามมุมที่เลือก
+            <InfoHint>
+              เคสที่เปิดในช่วงนี้ แยกตามมุมที่เลือก เวลาตอบและแก้ไขเป็นค่ากลาง ไม่ใช่ค่าเฉลี่ย ตัวเลขสีจางมาจากเคสน้อยกว่า {FEW} เคส ยังใช้ตัดสินไม่ได้
+              {dimension === 'tag' && ' เคสที่ติดหลายป้ายนับในทุกป้าย สัดส่วนรวมกันจึงเกิน 100% ได้'}
+            </InfoHint>
+          </h2>
           <p>เคสที่เปิดในช่วงนี้ {tickets.length} เคส</p>
         </div>
         <button type="button" className="btn subtle sm" onClick={download} disabled={!rows.length}>
@@ -281,6 +288,10 @@ export function SpeedSatisfactionCard({ tickets }: { tickets: TicketRow[] }) {
           <h2 className="report-title">
             <Icon name="star" />
             ความเร็วกับความพอใจ
+            <InfoHint>
+              คะแนนเฉลี่ยแยกตามว่าลูกค้ารอนานแค่ไหน บอกว่าความเร็วกับคะแนนไปด้วยกันแค่ไหน แต่ไม่ได้พิสูจน์ว่าความเร็วเป็นสาเหตุ
+              ช่วงที่มีคำตอบน้อยกว่า {FEW} แสดงเป็นสีจาง และยังใช้สรุปไม่ได้
+            </InfoHint>
           </h2>
           <p>เคสที่เปิดในช่วงนี้และลูกค้าให้คะแนนแล้ว {s.total} เคส</p>
         </div>

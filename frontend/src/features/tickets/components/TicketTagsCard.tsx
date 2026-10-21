@@ -97,14 +97,9 @@ export function TicketTagsCard({ ticket }: { ticket: Ticket }) {
   // The line names the tags on the case, so nobody opens the card just to read them.
   const names = tagsOf(picked, list).map((t) => t.name);
   return (
-    <FoldCard id="tags" title="ป้ายเคส" hint={names.length ? names.join(', ') : 'ยังไม่มี'} className="case-tags-card">
-      {canEdit && list.length > 0 && (
-        <div className="case-tags-head">
-          <button type="button" className="btn sm" aria-expanded={editing} onClick={() => setEditing(!editing)}>
-            {editing ? 'เสร็จแล้ว' : picked.length ? 'แก้ไขป้าย' : 'เลือกป้าย'}
-          </button>
-        </div>
-      )}
+    <FoldCard id="tags" title="ป้ายเคส" info="ติดป้ายบอกว่าเคสนี้เป็นเรื่องอะไร ใช้กรองในหน้าเคสบริการ และรายงานจะบอกได้ว่าปัญหาเรื่องไหนมากที่สุด" hint={names.length ? names.join(', ') : 'ยังไม่มี'} className="case-tags-card">
+      {/* What the case has on the left, the button that changes it on the right; while choosing, the button that
+          finishes comes after the choices. */}
       {!list.length ? (
         owner ? (
           creator
@@ -115,11 +110,21 @@ export function TicketTagsCard({ ticket }: { ticket: Ticket }) {
         <>
           <TagPicker tags={list} picked={picked} onToggle={(id) => void toggle(id)} max={TAGS_PER_CASE} disabled={busy} label="ป้ายของเคสนี้" />
           {creator}
+          <div className="fold-row end">
+            <button type="button" className="btn sm" aria-expanded onClick={() => setEditing(false)}>
+              เสร็จแล้ว
+            </button>
+          </div>
         </>
-      ) : picked.length ? (
-        <TagChips tags={tagsOf(picked, list)} />
       ) : (
-        <p className="tiny muted">ยังไม่ได้ติดป้าย</p>
+        <div className="fold-row">
+          {picked.length ? <TagChips tags={tagsOf(picked, list)} /> : <span className="tiny muted">ยังไม่ได้ติดป้าย</span>}
+          {canEdit && (
+            <button type="button" className="btn sm" aria-expanded={false} onClick={() => setEditing(true)}>
+              {picked.length ? 'แก้ไขป้าย' : 'เลือกป้าย'}
+            </button>
+          )}
+        </div>
       )}
     </FoldCard>
   );

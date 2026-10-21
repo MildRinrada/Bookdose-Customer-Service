@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { AllClear } from '@/features/inbox/components/AllClear';
 import { needsReply } from '@/features/inbox/hooks';
 import { useCachedConversations } from '@/features/notifications/items';
@@ -38,7 +39,10 @@ export function WaitingChats({ now }: { now: number }) {
     <section className="card waiting-card" aria-labelledby="waiting-title">
       <div className="card-header">
         <div>
-          <h2 id="waiting-title">แชทรอตอบ</h2>
+          <h2 id="waiting-title">
+            แชทรอตอบ
+            <InfoHint>แชทที่ลูกค้าพิมพ์มาล่าสุดและยังไม่มีใครตอบ เรียงจากรอนานที่สุด</InfoHint>
+          </h2>
           {longest && <p>{`รอนานสุด ${waitText(now - longest.since)}${noCase ? `, ${noCase} แชทยังไม่เปิดเคส` : ''}`}</p>}
         </div>
         <span className={`badge${waiting.length ? ' pending_customer' : ''}`}>{waiting.length} แชท</span>

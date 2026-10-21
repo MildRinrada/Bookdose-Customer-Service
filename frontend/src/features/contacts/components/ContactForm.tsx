@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { PageLoading } from '@/components/ui/display';
 import { FormActions, TextField, useFieldValidation } from '@/components/ui/fields';
@@ -114,7 +115,14 @@ function ContactFormBody({
             onChange={(e) => setEmail(e.target.value)}
           />
           <TextField label="โทรศัพท์" name="phone" type="tel" defaultValue={c?.phone || ''} placeholder="081-234-5678" required={false} max={40} />
-          <TextField label="องค์กร / บริษัท" name="company" defaultValue={c?.company || ''} placeholder="เช่น บริษัท บุ๊คโดส จำกัด" required={false} max={150} />
+          <TextField
+            label={
+              <>
+                องค์กร / บริษัท
+                <InfoHint>ค้นหาลูกค้าด้วยชื่อองค์กรได้ ทั้งในรายชื่อลูกค้าและตอนเลือกลูกค้าให้เคส</InfoHint>
+              </>
+            }
+            name="company" defaultValue={c?.company || ''} placeholder="เช่น บริษัท บุ๊คโดส จำกัด" required={false} max={150} />
           <p className="notice warning span-2" data-duplicate-warning="" role="status" hidden={!match}>
             {match ? `มีลูกค้า “${match.name}” ใช้อีเมลนี้อยู่แล้ว` : ''}
           </p>
@@ -125,7 +133,10 @@ function ContactFormBody({
         <h3>การดูแลลูกค้า</h3>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="contact-channel">ช่องทางที่ลูกค้าสะดวก</label>
+            <label htmlFor="contact-channel">
+              ช่องทางที่ลูกค้าสะดวก
+              <InfoHint>บันทึกไว้ให้ทีมเห็นเหนือแชทและในการ์ดลูกค้าของหน้าเคส ว่าลูกค้าอยากให้ติดต่อกลับทางไหน</InfoHint>
+            </label>
             <select id="contact-channel" name="preferred_channel" defaultValue={p?.preferred_channel ?? ''}>
               <option value="">ไม่ระบุ</option>
               {Object.entries(preferredChannelLabels).map(([value, label]) => (
@@ -135,9 +146,19 @@ function ContactFormBody({
               ))}
             </select>
           </div>
-          <TextField label="ช่วงเวลาที่สะดวก" name="contact_hours" defaultValue={p?.contact_hours ?? ''} placeholder="เช่น หลัง 18:00 หรือ จ.-ศ. 9:00-12:00" required={false} max={80} />
+          <TextField
+            label={
+              <>
+                ช่วงเวลาที่สะดวก
+                <InfoHint>บันทึกไว้ให้ทีมเห็นเหนือแชทและในการ์ดลูกค้าของหน้าเคส ว่าควรติดต่อกลับช่วงไหน</InfoHint>
+              </>
+            }
+            name="contact_hours" defaultValue={p?.contact_hours ?? ''} placeholder="เช่น หลัง 18:00 หรือ จ.-ศ. 9:00-12:00" required={false} max={80} />
           <div className="field">
-            <label htmlFor="contact-language">ภาษาที่ใช้ตอบ</label>
+            <label htmlFor="contact-language">
+              ภาษาที่ใช้ตอบ
+              <InfoHint>ถ้าไม่ระบุ จะตอบตามภาษาที่ลูกค้าเขียนมา ถ้าเลือกไว้ AI จะร่างคำตอบให้ลูกค้ารายนี้เป็นภาษานี้</InfoHint>
+            </label>
             <select id="contact-language" name="language" defaultValue={p?.language ?? ''}>
               <option value="">ตามที่ลูกค้าเขียนมา</option>
               {Object.entries(languageLabels).map(([value, label]) => (
@@ -148,13 +169,17 @@ function ContactFormBody({
             </select>
           </div>
           <div className="field">
-            <label htmlFor="contact-tags">แท็กของทีม</label>
+            <label htmlFor="contact-tags">
+              แท็กของทีม
+              <InfoHint>คำสั้น ๆ ที่ทีมใช้จัดกลุ่มลูกค้า เช่น ลูกค้าองค์กร ใช้ค้นหาในหน้าข้อมูลลูกค้าได้ ลูกค้าไม่เห็น</InfoHint>
+            </label>
             <TagInput value={tags} onChange={setTags} suggestions={suggestions} />
           </div>
           <div className="field span-2 warning-field">
             <label htmlFor="contact-warning">
               <Icon name="bell" />
               คำเตือนถึงทีม
+              <InfoHint>แสดงเด่นเหนือแชทและในหน้าเคสของลูกค้ารายนี้ ทุกคนในทีมเห็น ลูกค้าไม่เห็น</InfoHint>
             </label>
             <textarea
               id="contact-warning"
@@ -166,7 +191,10 @@ function ContactFormBody({
             />
           </div>
           <div className="field span-2">
-            <label htmlFor="contact-notes">หมายเหตุ</label>
+            <label htmlFor="contact-notes">
+              หมายเหตุ
+              <InfoHint>เห็นเฉพาะทีมงาน ลูกค้าไม่เห็น</InfoHint>
+            </label>
             <textarea
               id="contact-notes"
               name="notes"
@@ -191,7 +219,10 @@ function ContactFormBody({
         <h3>ความยินยอม (PDPA)</h3>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="contact-consent">การติดต่อกลับ</label>
+            <label htmlFor="contact-consent">
+              การติดต่อกลับ
+              <InfoHint>ลูกค้ายินยอมให้ทีมติดต่อกลับหรือไม่ ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล (PDPA) ระบบบันทึกว่าใครเปลี่ยนและเมื่อไร</InfoHint>
+            </label>
             <select id="contact-consent" value={consent} onChange={(e) => setConsent(e.target.value)}>
               {Object.entries(consentLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -206,7 +237,10 @@ function ContactFormBody({
             )}
           </div>
           <div className="field">
-            <span className="field-label">คำขอลบข้อมูล</span>
+            <span className="field-label">
+              คำขอลบข้อมูล
+              <InfoHint>ติ๊กเมื่อลูกค้าขอให้ลบข้อมูล ทีมจะเห็นป้าย “ขอให้ลบข้อมูล” ที่ลูกค้ารายนี้ แล้วลบได้จากปุ่มลบในรายชื่อลูกค้า</InfoHint>
+            </span>
             <label className={`deletion-check${deletion ? ' on' : ''}`}>
               <input type="checkbox" checked={deletion} onChange={(e) => setDeletion(e.target.checked)} />
               <span>

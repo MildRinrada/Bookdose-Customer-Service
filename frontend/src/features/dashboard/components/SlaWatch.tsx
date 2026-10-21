@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { PriorityTag } from '@/components/ui/display';
 import type { NeededItem } from '../labels';
 
@@ -35,7 +36,10 @@ export function SlaWatch({ needed, shown }: { needed: NeededItem[]; shown: numbe
     <section className="card action-needed sla-watch" aria-labelledby="sla-watch-title">
       <div className="card-header">
         <div>
-          <h2 id="sla-watch-title">SLA Watch</h2>
+          <h2 id="sla-watch-title">
+            SLA Watch
+            <InfoHint>เคสที่เกินหรือใกล้ครบเวลาตอบกลับหรือเวลาแก้ไข และเคสที่รอคุณอยู่ เรียงจากเร่งที่สุด</InfoHint>
+          </h2>
           {needed.length > 0 && <p>{`เกินแล้ว ${late}, ใกล้ครบหรือรอคุณ ${needed.length - late}`}</p>}
         </div>
         <span className={`badge${late ? ' suspended' : needed.length ? ' pending_customer' : ''}`}>{needed.length} เคส</span>

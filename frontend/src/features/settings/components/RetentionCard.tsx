@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { useApi, useInvalidate } from '@/lib/query';
 import { RETENTION_PATH, saveRetention, type Retention } from '../api';
@@ -69,7 +70,10 @@ function RetentionForm({ state }: { state: Retention }) {
         ))}
       </div>
       <p className="retention-what">
-        <strong>ถ้าเลือก {LABELS[months]} ตอนนี้จะลบเนื้อหา {whatGoes}</strong>
+        <strong>
+          ถ้าเลือก {LABELS[months]} ตอนนี้จะลบเนื้อหา {whatGoes}
+          <InfoHint>ลบเฉพาะบทสนทนาที่เงียบเกินกำหนดและไม่มีเคสที่ยังทำอยู่ ลบข้อความ ไฟล์แนบ และผลของ AI แต่เก็บเลขเคส วันเวลา สถานะ คะแนน ตัวเลขในรายงาน และข้อมูลลูกค้าไว้</InfoHint>
+        </strong>
       </p>
       <div className="settings-row-actions">
         {!state.enabled ? (
@@ -114,7 +118,10 @@ export function RetentionCard() {
     <section className="card" id="data-retention">
       <div className="card-header">
         <div>
-          <h2>ระยะเวลาเก็บข้อมูล</h2>
+          <h2>
+            ระยะเวลาเก็บข้อมูล
+            <InfoHint>ลบเนื้อหาบทสนทนาเก่าอัตโนมัติ เพื่อลดข้อมูลส่วนบุคคลที่ไม่จำเป็นตาม PDPA และคืนพื้นที่จัดเก็บ</InfoHint>
+          </h2>
         </div>
       </div>
       {state.isPending ? (

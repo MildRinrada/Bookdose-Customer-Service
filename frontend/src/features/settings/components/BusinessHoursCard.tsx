@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
@@ -68,7 +69,10 @@ export function BusinessHoursCard() {
     <section className="card" id="business-hours">
       <div className="card-header">
         <div>
-          <h2>เวลาทำการ</h2>
+          <h2>
+            เวลาทำการ
+            <InfoHint>ใช้ตอบลูกค้าที่ทักมาตอนปิด และใช้นับเวลา SLA ถ้าเปิดไว้ ทุกเวลาเป็นเวลาประเทศไทย</InfoHint>
+          </h2>
         </div>
       </div>
       <Form
@@ -88,13 +92,16 @@ export function BusinessHoursCard() {
         }}
       >
         <div className="hours-switches">
+          {/* Label text and (i) sit straight in the label: a <span> here is a grid (hours-switches) and would put the (i) on a line of its own. */}
           <label className="check">
             <input type="checkbox" className="switch" name="enabled" defaultChecked={initial.enabled} />
-            <span>ตอบลูกค้าอัตโนมัติเมื่ออยู่นอกเวลาทำการ</span>
+            ตอบลูกค้าอัตโนมัติเมื่ออยู่นอกเวลาทำการ
+            <InfoHint>ส่งทางแชทบนเว็บ LINE อีเมล และ Facebook ครั้งเดียวต่อช่วงที่ปิด ไม่ส่งซ้ำทุกข้อความ</InfoHint>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="sla" defaultChecked={initial.sla} />
-            <span>นับเวลา SLA เฉพาะในเวลาทำการ</span>
+            นับเวลา SLA เฉพาะในเวลาทำการ
+            <InfoHint>ไม่นับกลางคืน วันที่ปิด และวันหยุดพิเศษ ใช้กับเคสที่เปิดใหม่</InfoHint>
           </label>
         </div>
         <div className="hours-days" role="group" aria-label="เวลาทำการแต่ละวัน">
@@ -124,7 +131,10 @@ export function BusinessHoursCard() {
           })}
         </div>
         <div className="hours-holidays">
-          <h3>วันหยุดพิเศษ</h3>
+          <h3>
+            วันหยุดพิเศษ
+            <InfoHint>ปิดทั้งวัน ลูกค้าที่ทักมาจะได้ข้อความนอกเวลา และไม่นับเวลา SLA วันที่ผ่านไปแล้วระบบลบออกให้เอง</InfoHint>
+          </h3>
           {holidays.length > 0 && (
             <ul className="hours-holiday-list">
               {holidays.map((h) => (
@@ -175,7 +185,10 @@ export function BusinessHoursCard() {
           </div>
         </div>
         <div className="field">
-          <label htmlFor="hours-message">ข้อความที่ลูกค้าได้รับนอกเวลาทำการ</label>
+          <label htmlFor="hours-message">
+            ข้อความที่ลูกค้าได้รับนอกเวลาทำการ
+            <InfoHint>ใส่ {TOKEN} ตรงที่ต้องการ ระบบจะเติมเวลาเปิดครั้งถัดไปให้ เช่น “พรุ่งนี้ 09:00”</InfoHint>
+          </label>
           <textarea id="hours-message" name="message" maxLength={500} required defaultValue={initial.message} />
           <p className="tiny muted">{TOKEN} = เวลาเปิดครั้งถัดไป</p>
         </div>

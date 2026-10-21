@@ -1,4 +1,4 @@
-"""เริ่มต้นใช้งาน: the four steps a new organization has to do, how far along it is, and the step that proves the
+"""เริ่มต้นใช้งาน: the three steps a new organization has to do, how far along it is, and the step that proves the
 whole loop works. A new organization that cannot tell what to set up is one that stops using the system."""
 import unittest
 
@@ -12,10 +12,11 @@ class SetupChecklistTests(unittest.TestCase):
     def steps(self, who=None):
         return {s['key']:s for s in self.setup(who)['steps']}
 
-    def test_the_four_steps_are_the_four_asked_for(self):
-        self.assertEqual([s['key'] for s in self.setup()['steps']],['channels','agents','articles','chat'])
-        # Rules and AI are kept, apart: they make a working organization better, not a working one.
-        self.assertEqual([s['key'] for s in self.setup()['later']],['rules','ai'])
+    def test_the_three_steps_are_the_three_asked_for(self):
+        self.assertEqual([s['key'] for s in self.setup()['steps']],['agents','articles','chat'])
+        # Channels, rules and AI are kept, apart: they make a working organization better, not a working one. The web
+        # chat link is every organization's from sign-up, so a way in is never a step to tick.
+        self.assertEqual([s['key'] for s in self.setup()['later']],['channels','rules','ai'])
 
     def test_adding_an_agent_ticks_its_step(self):
         self.assertFalse(self.steps()['agents']['done'])
@@ -60,7 +61,7 @@ class SetupChecklistTests(unittest.TestCase):
         closed = self.setup()
         self.assertTrue(closed['hidden'])
         # The steps are still there to read; what is broken is still sent (the page shows only that).
-        self.assertEqual(len(closed['steps']),4)
+        self.assertEqual(len(closed['steps']),3)
         # Saving other preferences keeps it closed.
         self.ok(self.admin,'/api/account/preferences',{'alias':'แอดมิน'})
         self.assertTrue(self.setup()['hidden'])

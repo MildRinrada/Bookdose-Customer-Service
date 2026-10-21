@@ -1,6 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useCaseTags } from '@/features/tickets/tags';
 import type { TicketRow } from '@/features/tickets/types';
 import { date } from '@/lib/format';
@@ -31,6 +32,9 @@ export function ConversationCard({ all, f, loading }: { all: TicketRow[]; f: Rep
           <h2 className="report-title">
             <Icon name="chat" />
             ระหว่างการคุย
+            <InfoHint>
+              รอคำตอบถัดไป: ในเคสที่เปิดช่วงนี้ จากข้อความลูกค้าหลังทีมตอบแล้วถึงคำตอบถัดไปของทีม ไม่นับบอตและครั้งที่ยังรอ แก้จบในครั้งเดียว: เคสที่แก้ไขเสร็จช่วงนี้ด้วยคำตอบเดียวและไม่เปิดซ้ำ
+            </InfoHint>
           </h2>
         </div>
       </div>
@@ -84,6 +88,9 @@ export function MoodCard({ all, f, tickets, loading }: { all: TicketRow[]; f: Re
           <h2 className="report-title">
             <Icon name="frown" />
             อารมณ์ลูกค้า
+            <InfoHint>
+              เคสที่เปิดในช่วงนี้ที่ลูกค้าไม่พอใจหรือโกรธอย่างน้อยหนึ่งข้อความ อ่านจากคำในข้อความ และจาก AI ถ้าเปิดอ่านอารมณ์ด้วย AI ไว้ ข้อความที่ใจเย็นลงทีหลังไม่ลบว่าเคยไม่พอใจ
+            </InfoHint>
           </h2>
         </div>
       </div>

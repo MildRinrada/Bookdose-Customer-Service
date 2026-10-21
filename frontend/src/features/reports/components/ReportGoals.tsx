@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { FormActions } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { visibleTeams } from '@/components/ui/pickers';
 import type { TicketRow } from '@/features/tickets/types';
@@ -58,7 +59,10 @@ export function GoalsCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
       <section className="card report-goals-empty">
         <Icon name="checkCircle" />
         <p>
-          <strong>ยังไม่ได้ตั้งเป้าหมาย</strong>
+          <strong>
+            ยังไม่ได้ตั้งเป้าหมาย
+            <InfoHint>ตั้งเป้า เช่น ตอบทัน SLA หรือคะแนนความพึงพอใจ แล้วรายงานจะบอกว่าถึงเป้าหรือยัง และหลุดเป้าช่วงไหน</InfoHint>
+          </strong>
         </p>
         <button type="button" className="btn sm" onClick={edit}>
           ตั้งเป้าหมาย
@@ -81,6 +85,9 @@ export function GoalsCard({ all, f }: { all: TicketRow[]; f: ReportFilter }) {
           <h2 className="report-title">
             <Icon name="checkCircle" />
             เป้าหมาย
+            <InfoHint>
+              แต่ละข้อนับแบบเดียวกับการ์ดอื่นในหน้านี้ ข้อที่ทีมไม่ได้ตั้งเองใช้เป้าขององค์กร ช่องสีแดงคือช่วงที่ไม่ถึงเป้า ช่องสีจางคือช่วงที่ยังไม่มีข้อมูล
+            </InfoHint>
           </h2>
           <p>
             ถึงเป้า {reached} จาก {rows.length} ข้อในช่วงนี้ ใช้เป้าของ{own ? `ทีม${teamName(team)}` : 'ทั้งองค์กร'}
@@ -160,7 +167,10 @@ function GoalsForm({ goals, start }: { goals: Goals; start: string }) {
       }}
     >
       <div className="field">
-        <label htmlFor="goal-scope">เป้าหมายของ</label>
+        <label htmlFor="goal-scope">
+          เป้าหมายของ
+          <InfoHint>{scope ? 'ช่องที่เว้นว่างใช้เป้าของทั้งองค์กร ตั้งเฉพาะข้อที่ทีมนี้ต่างออกไป' : 'ช่องที่เว้นว่างคือไม่ตั้งเป้าข้อนั้น'}</InfoHint>
+        </label>
         <select id="goal-scope" value={scope} onChange={(e) => setScope(e.target.value)}>
           <option value="">ทั้งองค์กร</option>
           {visibleTeams(work).map((t) => (

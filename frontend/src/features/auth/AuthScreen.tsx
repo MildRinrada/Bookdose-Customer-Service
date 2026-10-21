@@ -332,6 +332,11 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
           )}
           {login && !secondStep && (guestSlug ? guestChat.data?.guest_chat : !setup) && (
             <p className="guest-entry">
+              <span>
+                {guestSlug
+                  ? `ไม่อยากสมัครสมาชิก? คุยกับทีมงาน ${linked?.name ?? ''} ได้เลย`
+                  : 'ไม่อยากสมัครสมาชิก? ติดต่อทีมงานขององค์กรได้โดยไม่ต้องเข้าสู่ระบบ'}
+              </span>
               <Link className="btn" href={guestSlug ? `/support/${guestSlug}/tickets/new` : '/support/tickets/new'}>
                 <Icon name="chat" />
                 แชทโดยไม่ต้องเข้าสู่ระบบ

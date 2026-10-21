@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
@@ -10,6 +11,7 @@ import { FilterSelect, SearchInput } from '@/components/ui/filters';
 import { channelNames } from '@/lib/labels';
 import { useApi } from '@/lib/query';
 import { useRealtimeInterval } from '@/lib/realtime-provider';
+import { useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { conversationPath } from './api';
 import { ConversationAside } from './components/ConversationAside';
@@ -32,6 +34,8 @@ let listScroll = 0;
 
 export function InboxScreen({ id }: { id?: string }) {
   const router = useRouter();
+  const work = useWork();
+  const admin = work.role === 'admin' && !work.read_only;
   const singlePane = useSinglePane();
   const modalOpen = useModalOpen();
   const interval = useRealtimeInterval(modalOpen ? false : POLL_MS);
@@ -149,7 +153,19 @@ export function InboxScreen({ id }: { id?: string }) {
   );
 
   let pane;
-  if (!selectedId) pane = <EmptyState title="เลือกบทสนทนาเพื่อเริ่มดูแล" icon="chat" />;
+  if (!selectedId)
+    pane = conversations.length ? (
+      <EmptyState title="เลือกบทสนทนาเพื่อเริ่มดูแล" icon="chat" />
+    ) : (
+      /* Nothing has come in yet (a new organization): where customers come from, and for its admin the link to give them. */
+      <EmptyState title="ยังไม่มีลูกค้าทักเข้ามา" description="ส่งลิงก์แชทขององค์กรให้ลูกค้า ข้อความจะขึ้นที่นี่" icon="chat">
+        {admin && (
+          <Link className="btn small" href="/settings?tab=webchat">
+            ดูลิงก์และ QR
+          </Link>
+        )}
+      </EmptyState>
+    );
   else if (detail.error && !detail.data) pane = <ErrorState error={detail.error} onRetry={() => void detail.refetch()} />;
   else if (!detail.data) pane = <PageLoading />;
   else pane = <ConversationView key={detail.data.conversation.id} data={detail.data} />;

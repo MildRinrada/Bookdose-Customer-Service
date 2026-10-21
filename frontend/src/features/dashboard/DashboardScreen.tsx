@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { ChartColumn, PageLoading, StatCard } from '@/components/ui/display';
 import { useModalOpen } from '@/features/inbox/hooks';
 import { NewTicketButton } from '@/features/tickets/components/NewTicket';
@@ -122,17 +123,18 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
   const cards: Record<string, ReactNode> = {
     stats: (
       <div className="stats-grid">
-        <StatCard label="เคสที่กำลังดูแล" value={active.length} icon="ticket" foot={null} href="/tickets?filter=active" />
-        <StatCard label="เคสที่มอบหมายให้ฉัน" value={mine.length} icon="users" color="amber" foot={null} href="/tickets?filter=mine" />
-        <StatCard label="แก้ไขสำเร็จวันนี้" value={resolvedToday} icon="checkCircle" color="green" foot={null} href="/tickets?filter=resolved_today" />
+        <StatCard label="เคสที่กำลังดูแล" value={active.length} icon="ticket" foot="เคสที่ยังไม่แก้ไขหรือปิด" href="/tickets?filter=active" hint="นับทุกเคสที่ยังไม่เสร็จ รวมเคสที่รอลูกค้าและเคสที่พักไว้" />
+        <StatCard label="เคสที่มอบหมายให้ฉัน" value={mine.length} icon="users" color="amber" foot="งานที่คุณเป็นผู้รับผิดชอบ" href="/tickets?filter=mine" hint="นับเฉพาะเคสที่ยังไม่แก้ไขหรือปิด" />
+        <StatCard label="แก้ไขสำเร็จวันนี้" value={resolvedToday} icon="checkCircle" color="green" foot="นับจากเวลาแก้ไขเคสสำเร็จ" href="/tickets?filter=resolved_today" hint="เคสที่เปลี่ยนเป็นแก้ไขแล้วหรือปิดแล้วตั้งแต่เที่ยงคืนวันนี้" />
         <StatCard
           label="เคสที่เกิน SLA"
           value={late.length}
           icon="clock"
           color="red"
-          foot={null}
+          foot="เวลาตอบกลับหรือเวลาแก้ไข"
           href="/tickets?filter=overdue"
           urgent={late.length > 0}
+          hint="เคสที่เลยกำหนดตอบกลับหรือกำหนดแก้ไข ตามมาตรฐานบริการ (SLA) ที่ตั้งไว้ในตั้งค่าองค์กร"
         />
       </div>
     ),
@@ -140,7 +142,10 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>เคสล่าสุด</h2>
+            <h2>
+              เคสล่าสุด
+              <InfoHint>6 เคสที่อัปเดตล่าสุด เลือกแท็บเพื่อดูเฉพาะเคสของคุณหรือเคสใหม่ ดูทั้งหมดได้ที่หน้าเคสบริการ</InfoHint>
+            </h2>
           </div>
           <Link className="btn subtle small" href="/tickets">
             ดูทั้งหมด <Icon name="arrow" />
@@ -162,7 +167,10 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>เคสเข้าใหม่</h2>
+            <h2>
+              เคสเข้าใหม่
+              <InfoHint>จำนวนเคสที่เปิดในแต่ละวัน ชี้ที่แท่งเพื่อดูวันที่และจำนวน</InfoHint>
+            </h2>
             <p>7 วันย้อนหลัง</p>
           </div>
           <Icon name="chart" />
@@ -189,7 +197,10 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
       <section className="card me-card">
         <div className="card-header">
           <div>
-            <h2>ถึงคุณ</h2>
+            <h2>
+              ถึงคุณ
+              <InfoHint>ข้อความที่มีคนกล่าวถึงคุณ เคสที่ถึงเวลาติดตามผล และเคสที่ถูกยกระดับมาถึงคุณ</InfoHint>
+            </h2>
           </div>
           <span className={`badge${me.length ? ' pending_customer' : ''}`} id="me-count">
             {me.length} รายการ
@@ -216,7 +227,10 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
       <section className="insights-section" aria-labelledby="insights-title" ref={insightsRef}>
         <div className="manager-head">
           <div>
-            <h2 id="insights-title">AI และคลังความรู้</h2>
+            <h2 id="insights-title">
+              AI และคลังความรู้
+              <InfoHint>เห็นเฉพาะเจ้าขององค์กร ข้อมูลอัปเดตเองทุก 2 นาที</InfoHint>
+            </h2>
           </div>
         </div>
         <div className="insights-grid">

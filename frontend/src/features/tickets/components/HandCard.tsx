@@ -59,7 +59,7 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
 
   if (!hand)
     return (
-      <FoldCard id="hand" title="ติดเคสนี้อยู่ไหม" className="hand-card">
+      <FoldCard id="hand" title="ติดเคสนี้อยู่ไหม" info="ยกมือเมื่อติดอยู่กับเคสนี้ ทีมของเคสและเจ้าขององค์กรจะเห็นทันที ใครว่างก็เข้ามาช่วยได้" className="hand-card">
         <label className="sr-only" htmlFor="hand-note">
           ติดเรื่องอะไร
         </label>
@@ -82,7 +82,7 @@ export function HandCard({ ticket }: { ticket: Ticket }) {
   const helping = hand.helper_id === me;
   const canLower = mine || helping || ticket.assignee_id === me || work.role === 'admin';
   return (
-    <FoldCard id="hand" title="ขอความช่วยเหลือ" hint={mine ? 'คุณยกมืออยู่' : `${hand.raised_name} ยกมืออยู่`} open highlight className="hand-card raised">
+    <FoldCard id="hand" title="ขอความช่วยเหลือ" info="ยกมือเมื่อติดอยู่กับเคสนี้ ทีมของเคสและเจ้าขององค์กรจะเห็นทันที ใครว่างก็เข้ามาช่วยได้" hint={mine ? 'คุณยกมืออยู่' : `${hand.raised_name} ยกมืออยู่`} open highlight className="hand-card raised">
       <p className="hand-who">
         <Icon name="hand" />
         <strong>{mine ? 'คุณยกมือขอช่วยอยู่' : `${hand.raised_name} ยกมือขอช่วย`}</strong>

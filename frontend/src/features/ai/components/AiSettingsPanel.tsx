@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { TextField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { NumberField } from '@/components/ui/fields';
 import { useApi, useInvalidate } from '@/lib/query';
@@ -25,6 +27,7 @@ export function AiSettingsPanel() {
 function AiSettingsCard({ a }: { a: AiSettings }) {
   const toast = useToast();
   const refresh = useInvalidate();
+  const { confirm } = useDialogs();
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState('');
   const alive = useRef(true);
@@ -66,6 +69,21 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
     }
   };
 
+  const disconnect = (title: string, message: string, body: Record<string, boolean>, last: boolean) =>
+    confirm({
+      title,
+      message,
+      confirmLabel: title,
+      tone: 'danger',
+      run: async () => {
+        // The last connection going: what runs on AI is switched off with it, instead of the admin doing that first.
+        const off = last ? { drafts_enabled: false, chatbot_enabled: false, mood_enabled: false, translate_enabled: false, triage_enabled: false } : {};
+        await saveAiSettings({ ...body, ...off });
+        toast(`${title}แล้ว`);
+        await refresh(AI_SETTINGS_PATH, '/api/workspace');
+      },
+    });
+
   return (
     <Form
       // A save shows the saved values again (and empty key and secret boxes), like reopening the page did.
@@ -74,8 +92,7 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
       onSubmit={async (values, form) => {
           const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
           const body: Record<string, unknown> = { ...values };
-          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'triage_enabled', 'remove_key']) body[key] = checked(key);
-          body.remove_webhook = n8n && checked('remove_webhook');
+          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'triage_enabled']) body[key] = checked(key);
           for (const key of ['daily_limit', 'conversation_limit', 'max_output_tokens']) body[key] = Number(values[key]);
           await saveAiSettings(body);
           // The form opens again with what was saved (the URL, the secret's ending); the key and secret boxes stay empty.
@@ -89,7 +106,14 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
       <section className="card" id="ai-settings">
         <div className="card-header">
           <div>
-            <h2>การเชื่อมต่อ AI</h2>
+            <h2>
+              การเชื่อมต่อ AI
+              <InfoHint>
+                {n8n
+                  ? `งาน AI ทั้งหมดส่งไปที่ workflow ใน n8n (${a.webhook_host}) และเลือกโมเดลใน workflow`
+                  : `ข้อความและบทความที่เกี่ยวข้องส่งไปที่ ${a.key_configured ? service : 'OpenAI หรือ Gemini'} เพื่อสร้างคำตอบ ค่าบริการคิดตามบัญชี API ของคุณ`}
+              </InfoHint>
+            </h2>
           </div>
           <span className={`badge ${a.key_configured ? 'resolved' : ''}`}>
             {n8n ? 'ใช้ n8n Webhook' : a.key_configured ? `ใช้ ${service}` : 'ยังไม่ได้เชื่อม AI'}
@@ -99,7 +123,16 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           <div className="form-grid">
             <TextField
               id="ai-key"
-              label="API Key (OpenAI หรือ Gemini)"
+              label={
+                <>
+                  API Key (OpenAI หรือ Gemini)
+                  <InfoHint>
+                    {n8n
+                      ? 'ไม่ใช้คีย์นี้ระหว่างที่เชื่อม n8n Webhook อยู่'
+                      : 'ระบบรู้เองจากคีย์ว่าเป็น OpenAI หรือ Gemini คีย์เก็บไว้ที่เซิร์ฟเวอร์เท่านั้นและจะไม่แสดงให้เห็นอีก'}
+                  </InfoHint>
+                </>
+              }
               name="api_key"
               type="password"
               required={false}
@@ -110,7 +143,14 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
             />
             <TextField
               id="ai-model"
-              label="โมเดล"
+              label={
+                <>
+                  โมเดล
+                  <InfoHint>
+                    {n8n ? 'เมื่อใช้ n8n ให้เลือกโมเดลใน workflow แทน' : 'ต้องเป็นโมเดลที่บัญชีของคุณใช้ได้และรองรับ Structured Outputs'}
+                  </InfoHint>
+                </>
+              }
               name="model"
               defaultValue={a.model}
               max={100}
@@ -127,12 +167,19 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
           </div>
           <div className="ai-n8n">
             <h3 className="ai-settings-heading">
-              ใช้ n8n แทน API Key {n8n && <span className="badge resolved">เชื่อมแล้ว</span>}
+              ใช้ n8n แทน API Key
+              <InfoHint>ส่งงาน AI ให้ workflow ใน n8n แทนการใช้ API Key ใส่ Production URL ของโหนด Webhook และรหัสลับ แล้วกดบันทึก</InfoHint>
+              {n8n && <span className="badge resolved">เชื่อมแล้ว</span>}
             </h3>
             <div className="form-grid">
               <TextField
                 id="ai-webhook-url"
-                label="Webhook URL"
+                label={
+                  <>
+                    Webhook URL
+                    <InfoHint>ใช้ Production URL ที่มี /webhook/ ไม่ใช่ /webhook-test/ เพราะ Test URL ใช้ได้เฉพาะตอนกด Listen ใน n8n</InfoHint>
+                  </>
+                }
                 name="webhook_url"
                 type="url"
                 required={false}
@@ -144,7 +191,12 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
               <div className="ai-secret">
                 <TextField
                   id="ai-webhook-secret"
-                  label="รหัสลับ"
+                  label={
+                    <>
+                      รหัสลับ
+                      <InfoHint>ต้องตรงกับ Value ใน Header Auth ของ n8n ที่ตั้ง Name เป็น X-Bookdose-Secret</InfoHint>
+                    </>
+                  }
                   name="webhook_secret"
                   type="password"
                   required={false}
@@ -158,18 +210,44 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
               </div>
             </div>
           </div>
-          <div className="ai-remove">
-            {n8n && (
-              <label className="check">
-                <input name="remove_webhook" type="checkbox" />
-                เลิกใช้ n8n Webhook แล้วกลับไปใช้ API Key
-              </label>
-            )}
-            <label className="check">
-              <input name="remove_key" type="checkbox" />
-              ลบ API Key ออกจากระบบ (ปิดสวิตช์ทุกอย่างด้านล่างก่อนบันทึก)
-            </label>
-          </div>
+          {(n8n || a.openai_key) && (
+            <div className="ai-remove">
+              {n8n && (
+                <button
+                  type="button"
+                  className="btn danger"
+                  onClick={() =>
+                    disconnect(
+                      'เลิกใช้ n8n Webhook',
+                      a.openai_key ? `งาน AI จะกลับไปใช้ API Key ของ ${service} ทันที` : 'AI ทุกอย่างในองค์กรจะหยุดทำงานจนกว่าจะเชื่อมใหม่',
+                      { remove_webhook: true },
+                      !a.openai_key,
+                    )
+                  }
+                >
+                  <Icon name="trash" />
+                  เลิกใช้ n8n Webhook
+                </button>
+              )}
+              {a.openai_key && (
+                <button
+                  type="button"
+                  className="btn danger"
+                  onClick={() =>
+                    disconnect(
+                      'ลบ API Key',
+                      n8n ? 'คีย์จะถูกลบออกจากระบบ งาน AI ยังส่งไปที่ n8n ตามเดิม' : 'คีย์จะถูกลบออกจากระบบ และ AI ทุกอย่างในองค์กรจะหยุดทำงานจนกว่าจะเชื่อมใหม่',
+                      { remove_key: true },
+                      !n8n,
+                    )
+                  }
+                >
+                  <Icon name="trash" />
+                  ลบ API Key
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -177,29 +255,38 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>ให้ AI ทำอะไรบ้าง</h2>
+            <h2>
+              ให้ AI ทำอะไรบ้าง
+              <InfoHint>AI ได้รับแค่ตัวข้อความและหัวเรื่อง ไม่ได้รับชื่อหรือข้อมูลติดต่อของลูกค้า การอ่านอารมณ์และการแปลนับโควตาแยกจากงานอื่น</InfoHint>
+            </h2>
           </div>
         </div>
         <div className="card-body hours-switches">
+          {/* Label text and (i) sit straight in the label: a <span> here is a grid (hours-switches) and would put the (i) on a line of its own. */}
           <label className="check">
             <input type="checkbox" className="switch" name="drafts_enabled" defaultChecked={a.drafts_enabled} />
-            <span>ช่วยเจ้าหน้าที่</span>
+            ช่วยเจ้าหน้าที่
+            <InfoHint>ร่างคำตอบ เกลาข้อความ และผู้ช่วย AI มุมขวาล่าง ใช้ได้ทั้งบทความและบันทึกภายใน</InfoHint>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="chatbot_enabled" defaultChecked={a.chatbot_enabled} />
-            <span>Chatbot ตอบลูกค้าในแชทบนเว็บ</span>
+            Chatbot ตอบลูกค้าในแชทบนเว็บ
+            <InfoHint>ตอบจากบทความที่เผยแพร่ให้ลูกค้าเท่านั้น เริ่มกับบทสนทนาใหม่ ส่วนบทสนทนาเดิมเจ้าหน้าที่เลือกเปิดเป็นรายเรื่อง</InfoHint>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="mood_enabled" defaultChecked={a.mood_enabled} />
-            <span>อ่านอารมณ์ลูกค้า</span>
+            อ่านอารมณ์ลูกค้า
+            <InfoHint>AI ดูข้อความล่าสุดว่าลูกค้าไม่พอใจหรือเร่งด่วนไหม เพื่อดันเคสขึ้นก่อน ถ้าปิด ระบบยังดูจากคำในข้อความเหมือนเดิม</InfoHint>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="translate_enabled" defaultChecked={a.translate_enabled} />
-            <span>แปลภาษาสองทาง</span>
+            แปลภาษาสองทาง
+            <InfoHint>ลูกค้าพิมพ์ภาษาอื่น เจ้าหน้าที่เห็นเป็นภาษาไทย และคำตอบภาษาไทยจะแปลเป็นภาษาของลูกค้าก่อนส่ง</InfoHint>
           </label>
           <label className="check">
             <input type="checkbox" className="switch" name="triage_enabled" defaultChecked={a.triage_enabled} />
-            <span>เสนอป้าย ความเร่งด่วน และทีมให้เคสใหม่</span>
+            เสนอป้าย ความเร่งด่วน และทีมให้เคสใหม่
+            <InfoHint>AI อ่านข้อความแรกแล้วแสดงข้อเสนอบนหน้าเคส ทีมงานเลือกใช้เอง ระบบไม่เปลี่ยนให้</InfoHint>
           </label>
         </div>
       </section>
@@ -208,7 +295,10 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>เพดานการใช้งาน</h2>
+            <h2>
+              เพดานการใช้งาน
+              <InfoHint>นับจำนวนงานที่รับเข้าคิว รวมงานทดสอบและงานที่ไม่สำเร็จ ไม่ใช่วงเงินเป็นบาท</InfoHint>
+            </h2>
           </div>
         </div>
         <div className="card-body">

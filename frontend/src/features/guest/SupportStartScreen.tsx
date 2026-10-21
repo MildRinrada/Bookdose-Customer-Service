@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Brand } from '@/components/shell/chrome';
 import { TextSizeMenu } from '@/components/shell/TextSize';
 import { EmptyState, ErrorState, InitialLoading } from '@/components/ui/display';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import type { PublicOrgInfo } from '@/features/auth/types';
 import { useCustomerAccount } from '@/lib/customer-session';
@@ -160,7 +161,10 @@ export function SupportStartScreen({ slug }: { slug: string }) {
             )}
             {articles.length > 0 && (
               <section className="card start-faq" aria-labelledby="start-faq-title">
-                <h2 id="start-faq-title">ลองหาคำตอบก่อน</h2>
+                <h2 id="start-faq-title">
+                  ลองหาคำตอบก่อน
+                  <InfoHint>คำถามที่ลูกค้าถามบ่อย อาจได้คำตอบทันทีโดยไม่ต้องรอทีมงาน</InfoHint>
+                </h2>
                 <ul>
                   {articles.map((a) => (
                     <li key={a.id}>

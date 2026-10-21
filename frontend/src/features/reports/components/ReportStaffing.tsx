@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import type { TicketRow } from '@/features/tickets/types';
 import { useApi } from '@/lib/query';
 import type { Forecast } from '../forecast';
@@ -30,6 +31,10 @@ export function StaffingCard({ forecast: f, all, team }: { forecast: Forecast; a
         <h2 className="report-title">
           <Icon name="users" />
           คนที่ต้องใช้แต่ละวัน
+          <InfoHint>
+            เทียบคนที่ทำงานแต่ละวัน{scope} จากวันลาและเวลาทำงาน กับคนที่ต้องใช้ คือเคสใหม่ที่คาดว่าจะเข้ามาหารด้วยจำนวนที่คนหนึ่งปิดได้ต่อวัน
+            นับเจ้าหน้าที่ และเจ้าขององค์กรที่ปิดเคสเองใน {CAPACITY_DAYS / 7} สัปดาห์ล่าสุด
+          </InfoHint>
         </h2>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { ApiError } from '@/lib/api/client';
 import { channelIcons, channelNames, priorityLabels, statusLabels, tenantStatusLabels } from '@/lib/labels';
 
@@ -53,7 +54,7 @@ export function EmptyState({
     <div className="empty">
       <Icon name={icon} />
       <h3>{title}</h3>
-      <p>{description}</p>
+      {description ? <p>{description}</p> : null}
       {children}
     </div>
   );
@@ -68,6 +69,7 @@ export function StatCard({
   foot,
   href,
   urgent = false,
+  hint,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -76,11 +78,16 @@ export function StatCard({
   foot: ReactNode;
   href: string;
   urgent?: boolean;
+  /** What the number counts, behind an (i) beside the label. */
+  hint?: ReactNode;
 }) {
   return (
     <Link href={href} className={`stat-card${urgent ? ' urgent' : ''}`}>
       <div className="stat-top">
-        {label}
+        <span>
+          {label}
+          {hint && <InfoHint still>{hint}</InfoHint>}
+        </span>
         <span className={`stat-icon ${color}`}>
           <Icon name={icon} />
         </span>

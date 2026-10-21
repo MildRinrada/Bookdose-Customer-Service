@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { date, relative } from '@/lib/format';
 import { useUiState } from '@/lib/ui-state';
 import { feedbackReasonLabels } from '@/features/ai';
@@ -54,6 +55,9 @@ export function BotReportCard({ extras, from, to }: { extras: ReportExtras; from
           <h2 className="report-title">
             <Icon name="sparkle" />
             ผลงานของบอต AI
+            <InfoHint>
+              บทสนทนาที่เริ่มในช่วงนี้และบอตรับไว้ ตอบจบเองคือบอตตอบแล้วไม่มีเจ้าหน้าที่รับต่อ สัดส่วนไม่นับบทสนทนาที่ยังไม่จบหรือบอตยังไม่ได้ตอบ
+            </InfoHint>
           </h2>
           <p>
             {bot.conversations} บทสนทนาที่บอตเริ่มตอบในช่วงนี้, {bot.answers} คำตอบจากบอต
@@ -142,6 +146,9 @@ export function AssistantReportCard({ extras }: { extras: ReportExtras }) {
           <h2 className="report-title">
             <Icon name="sparkle" />
             ผลงานของผู้ช่วย AI
+            <InfoHint>
+              คำถามที่ทีมถามผู้ช่วย AI มุมขวาล่างในช่วงนี้ ถูกใจคิดจากคำตอบที่มีคนกดถูกใจหรือไม่ถูกใจ ความเห็นไม่แสดงชื่อผู้เขียนและคำถาม
+            </InfoHint>
           </h2>
           {a.asked > 0 && <p>{`${a.asked} คำถามจากทีม ${a.people} คนในช่วงนี้`}</p>}
         </div>
@@ -246,6 +253,10 @@ export function ArticlesCard({ extras }: { extras: ReportExtras }) {
           <h2 className="report-title">
             <Icon name="book" />
             คลังความรู้ที่ทีมใช้
+            <InfoHint>
+              ครั้งที่ทีมคัดลอก ใส่ในคำตอบ หรือส่งลิงก์บทความในช่วงนี้ โหวตของทีมนับทุกช่วงเวลา ส่วนโหวตของลูกค้านับในช่วงนี้
+              จากหน้าคำถามที่พบบ่อยและคำตอบที่แนะนำตอนเริ่มแชท
+            </InfoHint>
           </h2>
           <p>
             ใช้ตอบลูกค้า {a.uses} ครั้งในช่วงนี้, ถูกใช้ {a.used_articles} จาก {a.articles} บทความ

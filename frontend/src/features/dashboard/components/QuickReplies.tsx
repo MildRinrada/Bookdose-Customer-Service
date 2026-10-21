@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { usePreferences } from '@/features/staff-account/prefs';
 import { staffAccountTabPath } from '@/features/staff-account/tabs';
@@ -32,7 +33,10 @@ export function QuickReplies() {
     <section className="card dash-replies" aria-labelledby="quick-replies-title">
       <div className="card-header">
         <div>
-          <h2 id="quick-replies-title">คำตอบด่วน</h2>
+          <h2 id="quick-replies-title">
+            คำตอบด่วน
+            <InfoHint>กดเพื่อคัดลอก หรือในช่องตอบพิมพ์ / ตามด้วยคีย์ลัดเพื่อแทรก</InfoHint>
+          </h2>
         </div>
         <Link className="icon-btn" href={staffAccountTabPath('replies')} aria-label="จัดการคำตอบด่วน" title="จัดการคำตอบด่วน">
           <Icon name="edit" />

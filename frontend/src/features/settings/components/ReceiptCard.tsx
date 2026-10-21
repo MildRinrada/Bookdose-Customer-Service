@@ -2,6 +2,7 @@
 
 import { Icon } from '@/components/Icon';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
@@ -33,7 +34,10 @@ export function ReceiptCard() {
     <section className="card" id="receipt">
       <div className="card-header">
         <div>
-          <h2>ข้อความรับเรื่องทาง LINE และ Facebook</h2>
+          <h2>
+            ข้อความรับเรื่องทาง LINE และ Facebook
+            <InfoHint>ลูกค้าที่เริ่มเรื่องใหม่รู้ทันทีว่าข้อความถึงแล้ว และทีมจะตอบราวเมื่อไร ข้อความทาง LINE นับรวมในโควตารายเดือนของบัญชี LINE องค์กร</InfoHint>
+          </h2>
         </div>
       </div>
       <Form
@@ -45,13 +49,18 @@ export function ReceiptCard() {
         }}
       >
         <div className="hours-switches">
+          {/* Label text and (i) sit straight in the label: a <span> here is a grid (hours-switches) and would put the (i) on a line of its own. */}
           <label className="check">
             <input type="checkbox" className="switch" name="enabled" defaultChecked={initial.enabled} />
-            <span>ส่งข้อความรับเรื่องเมื่อลูกค้าเริ่มเรื่องใหม่</span>
+            ส่งข้อความรับเรื่องเมื่อลูกค้าเริ่มเรื่องใหม่
+            <InfoHint>ส่งครั้งเดียวต่อเรื่องทาง LINE (แชทส่วนตัว) Facebook และ Instagram พร้อมปุ่มดูลำดับคิว นอกเวลาทำการส่งข้อความนอกเวลาแทน และไม่ส่งในแชทที่ Chatbot ตอบอยู่</InfoHint>
           </label>
         </div>
         <div className="field">
-          <label htmlFor="receipt-message">ข้อความรับเรื่อง</label>
+          <label htmlFor="receipt-message">
+            ข้อความรับเรื่อง
+            <InfoHint>ใส่ {TOKEN} ตรงที่ต้องการ ระบบจะเติมเวลารอให้ เช่น “ภายในประมาณ 10 นาที” หรือ “โดยเร็วที่สุด” เมื่อยังไม่มีทีมงานที่พร้อมตอบ</InfoHint>
+          </label>
           <textarea id="receipt-message" name="message" rows={3} maxLength={500} required defaultValue={initial.message} />
           <p className="tiny muted">{TOKEN} = เวลารอโดยประมาณ</p>
         </div>

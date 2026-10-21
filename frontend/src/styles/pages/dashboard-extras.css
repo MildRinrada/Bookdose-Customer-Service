@@ -55,12 +55,31 @@
   margin: 0 -22px;
   padding: 12px 22px;
 }
-.setup-check {
-  width: 18px;
-  height: 18px;
+/* A step's place in the order: a number in a ring, filled for the one to do now; a done step's tick sits in the
+   same width so the titles stay in one column. */
+.setup-check,.setup-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
-  border: 2px solid var(--control-line);
+}
+.setup-check {
+  border: 1.5px solid var(--control-line);
   border-radius: 50%;
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.setup-item.is-next .setup-check {
+  border-color: var(--invert);
+  background: var(--invert);
+  color: #fff;
+}
+.setup-mark .icon {
+  width: 22px;
+  height: 22px;
 }
 .setup-text {
   display: flex;

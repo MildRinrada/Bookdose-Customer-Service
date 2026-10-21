@@ -2,6 +2,7 @@
 
 import { Icon } from '@/components/Icon';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { SelectField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
@@ -9,7 +10,7 @@ import { TeamOptions } from '@/components/ui/pickers';
 import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
-import { CHANNEL_SETTINGS_PREFIXES, FACEBOOK_PATH, saveFacebook, testFacebook } from '../api';
+import { CHANNEL_SETTINGS_PREFIXES, FACEBOOK_PATH, removeFacebook, saveFacebook, testFacebook } from '../api';
 import type { FacebookSetting } from '../types';
 import { ChannelField } from '../util';
 import { OutboxBadges } from './ChannelSettingsPanel';
@@ -28,6 +29,7 @@ export function FacebookSettingsPanel() {
 
 function FacebookCard({ c }: { c: FacebookSetting }) {
   const toast = useToast();
+  const { confirm } = useDialogs();
   const refresh = useInvalidate();
   const run = useRunAction();
   const copyText = useCopyText();
@@ -54,7 +56,6 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
             ...values,
             enabled: box('enabled').checked,
             instagram_enabled: box('instagram_enabled').checked,
-            remove_credentials: box('remove_credentials').checked,
           });
           toast('บันทึก Facebook และ Instagram แล้ว');
           await refresh(...CHANNEL_SETTINGS_PREFIXES);
@@ -87,10 +88,6 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
             <input name="instagram_enabled" type="checkbox" className="switch" defaultChecked={v.instagram_enabled} />
             รับและตอบ DM Instagram ของบัญชีที่ผูกกับเพจนี้
           </label>
-          <label className="check">
-            <input name="remove_credentials" type="checkbox" />
-            ลบข้อมูลเชื่อมต่อ (ปิดช่องทางก่อนบันทึก)
-          </label>
         </div>
         <div className="flex wrap mt">
           <button className="btn primary" type="submit">
@@ -110,6 +107,28 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
           >
             ทดสอบบัญชีที่บันทึกไว้
           </button>
+          {c.credentials_configured && (
+            <button
+              className="btn danger channel-remove"
+              type="button"
+              onClick={() =>
+                confirm({
+                  title: 'ลบการเชื่อมต่อ Facebook และ Instagram',
+                  message: 'Facebook และ Instagram จะปิดและหยุดรับส่งข้อความทันที ข้อความที่ยังรอส่งจะไม่ถูกส่ง แชทเดิมยังอยู่ในกล่องข้อความ',
+                  confirmLabel: 'ลบการเชื่อมต่อ',
+                  tone: 'danger',
+                  run: async () => {
+                    await removeFacebook();
+                    toast('ลบการเชื่อมต่อ Facebook และ Instagram แล้ว');
+                    await refresh(...CHANNEL_SETTINGS_PREFIXES);
+                  },
+                })
+              }
+            >
+              <Icon name="trash" />
+              ลบการเชื่อมต่อ
+            </button>
+          )}
         </div>
         {webhookURL && (
           <div className="notice mt">

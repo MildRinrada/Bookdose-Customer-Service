@@ -2,6 +2,7 @@
 
 import { Icon } from '@/components/Icon';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import { useWork } from '@/lib/session';
@@ -38,7 +39,10 @@ export function QuietCloseCard() {
     <section className="card" id="quiet-close">
       <div className="card-header">
         <div>
-          <h2>ปิดเคสเมื่อลูกค้าเงียบ</h2>
+          <h2>
+            ปิดเคสเมื่อลูกค้าเงียบ
+            <InfoHint>เคสในสถานะ “รอลูกค้า” ที่ลูกค้าไม่ตอบ ระบบจะถามอีกครั้งก่อน ถ้ายังเงียบจึงปิดเคส ลูกค้าตอบกลับเมื่อไรเคสจะเปิดขึ้นอีกครั้ง</InfoHint>
+          </h2>
         </div>
       </div>
       <Form
@@ -56,9 +60,11 @@ export function QuietCloseCard() {
         }}
       >
         <div className="hours-switches">
+          {/* Label text and (i) sit straight in the label: a <span> here is a grid (hours-switches) and would put the (i) on a line of its own. */}
           <label className="check">
             <input type="checkbox" className="switch" name="enabled" defaultChecked={initial.enabled} />
-            <span>ถามลูกค้าที่เงียบไป แล้วปิดเคสเมื่อยังไม่ตอบ</span>
+            ถามลูกค้าที่เงียบไป แล้วปิดเคสเมื่อยังไม่ตอบ
+            <InfoHint>ส่งทางช่องทางเดิมของเคส (แชทบนเว็บ LINE อีเมล Facebook) เคสที่พักไว้จะเริ่มนับเมื่อครบเวลาพัก</InfoHint>
           </label>
         </div>
         <div className="quiet-days">
@@ -74,7 +80,10 @@ export function QuietCloseCard() {
           </label>
         </div>
         <div className="field">
-          <label htmlFor="quiet-remind">ข้อความถามลูกค้า</label>
+          <label htmlFor="quiet-remind">
+            ข้อความถามลูกค้า
+            <InfoHint>ใส่ {TOKEN} ตรงที่ต้องการ ระบบจะเติมจำนวนวันที่เหลือก่อนปิดเคสให้</InfoHint>
+          </label>
           <textarea id="quiet-remind" name="remind_message" rows={3} maxLength={500} required defaultValue={initial.remind_message} />
           <p className="tiny muted">{TOKEN} = จำนวนวันก่อนปิดเคส</p>
         </div>

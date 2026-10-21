@@ -198,6 +198,17 @@ class ChannelTests(unittest.TestCase):
         self.assertEqual(client.call('/api/channels')[0],403)
         self.assertEqual(client.call('/api/channels/line',{'enabled':False},'PATCH')[0],403)
 
+    def test_removing_a_connection_is_one_step(self):
+        # The red button: no need to switch the channel off and save first; it goes off and forgets its secret at once.
+        self.assertTrue(self.configure()['enabled'])
+        member=self.create_member(team=self.team,email='not-admin@example.com')
+        client=base.Client(self.base);client.login('not-admin@example.com')
+        self.assertEqual(client.call('/api/channels/line/connection',None,'DELETE')[0],403)
+        line=next(c for c in self.ok(self.admin,'/api/channels/line/connection',None,'DELETE') if c['kind']=='line')
+        self.assertEqual((line['enabled'],line['credentials_configured']),(False,False))
+        self.assertEqual(line['config']['team_id'],self.team)
+        self.assertEqual(self.admin.call('/api/channels/email/connection',None,'DELETE')[0],404)
+
     def test_tenant_routes_account_binding_and_suspend(self):
         conv=self.incoming_line();mid=self.reply(conv)
         original=self.org

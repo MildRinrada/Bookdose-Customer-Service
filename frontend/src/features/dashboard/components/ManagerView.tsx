@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { EscalationRow } from '@/features/automation/components/EscalationRow';
 import { BACKLOG_SCOPE, ticketsHref } from '@/features/tickets/labels';
@@ -27,7 +28,10 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
     <>
       <div className="manager-head" data-reveal="">
         <div>
-          <h2 id="manager-title">มุมมองผู้ดูแล</h2>
+          <h2 id="manager-title">
+            มุมมองผู้ดูแล
+            <InfoHint>ภาพรวมของทีม สำหรับเจ้าขององค์กร อัปเดตเองทุก 30 วินาที</InfoHint>
+          </h2>
           <p>อัปเดตล่าสุด {clockTime(m.generated_at)}</p>
         </div>
         <Link className="btn subtle small" href="/automation">
@@ -39,7 +43,14 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         <section className="card agents-card" data-reveal="">
           <div className="card-header">
             <div>
-              <h2><Icon name="users" className="card-title-icon" />สถานะเจ้าหน้าที่ Real-time</h2>
+              <h2>
+                <Icon name="users" className="card-title-icon" />
+                สถานะเจ้าหน้าที่ Real-time
+                <InfoHint>
+                  “กำลังใช้งาน” คือเปิดโปรแกรมภายใน 5 นาทีล่าสุด “งานค้าง” คือเคสที่ต้องทำต่อตอนนี้ ไม่นับเคสรอลูกค้าและเคสที่พักไว้
+                  กดตัวเลขเพื่อดูและย้ายเคสให้คนอื่น ตอบครั้งแรกเฉลี่ยและ CSAT นับ 30 วันล่าสุดจากเคสที่รับผิดชอบ
+                </InfoHint>
+              </h2>
               <p>
                 กำลังใช้งาน {agents.filter((x) => x.presence === 'online').length} จาก {agents.length} คน
               </p>
@@ -102,7 +113,11 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         <section className="card csat-card" data-reveal="">
           <div className="card-header">
             <div>
-              <h2><Icon name="star" className="card-title-icon" />ความพึงพอใจลูกค้า</h2>
+              <h2>
+                <Icon name="star" className="card-title-icon" />
+                ความพึงพอใจลูกค้า
+                <InfoHint>คะแนนจากแบบประเมินที่ระบบส่งให้ลูกค้าเมื่อปิดเคส นับ 30 วันล่าสุด</InfoHint>
+              </h2>
               <p>
                 30 วันล่าสุด ตอบ {c.count} จาก {c.sent} แบบประเมิน
               </p>
@@ -123,17 +138,25 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
                 </p>
               </>
             ) : (
-              <div className="empty-mini">ยังไม่มีคำตอบแบบประเมิน</div>
+              <div className="manager-empty">
+                <Icon name="star" />
+                <strong>ยังไม่มีคำตอบแบบประเมิน</strong>
+                <span>{a.csat_enabled ? 'ระบบส่งให้ลูกค้าทุกครั้งที่ปิดเคส' : 'ยังปิดการส่งแบบประเมินอยู่'}</span>
+              </div>
             )}
-            <Link className="csat-more" href="/reports">
-              ดูคะแนนรายสัปดาห์และความเห็นลูกค้าในรายงาน <Icon name="arrow" />
+            <Link className="btn subtle small csat-more" href="/reports">
+              ดูในรายงาน <Icon name="arrow" />
             </Link>
           </div>
         </section>
         <section className="card auto-card" data-reveal="">
           <div className="card-header">
             <div>
-              <h2><Icon name="macro" className="card-title-icon" />ระบบอัตโนมัติ</h2>
+              <h2>
+                <Icon name="macro" className="card-title-icon" />
+                ระบบอัตโนมัติ
+                <InfoHint>กฎอัตโนมัติและ Macro ที่เปิดใช้ เคสที่ระบบยกระดับวันนี้ และเคสที่ถึงกำหนดติดตาม</InfoHint>
+              </h2>
               <p>Automation &amp; Workflow</p>
             </div>
           </div>
@@ -160,11 +183,27 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
                 <li className={a.csat_enabled ? 'on' : ''}>{a.csat_enabled ? 'ส่งแบบประเมินความพึงพอใจเมื่อปิดเคส' : 'ปิดการส่งแบบประเมิน'}</li>
               </ul>
             </div>
-            {m.escalations.length > 0 && (
+            {m.escalations.length > 0 ? (
               <div className="auto-escalations">
                 {m.escalations.slice(0, 3).map((e) => (
                   <EscalationRow key={`${e.ticket_id}:${e.escalated_at}`} escalation={e} />
                 ))}
+              </div>
+            ) : a.rules + a.macros === 0 ? (
+              /* A new organization: nothing set up yet, so the room beside the figures says where to start. */
+              <div className="manager-empty">
+                <Icon name="macro" />
+                <strong>ยังไม่ได้ตั้งกฎอัตโนมัติ</strong>
+                <span>ให้ระบบส่งเรื่องถึงทีมที่ถูกต้อง และตอบหรือปิดเคสด้วยปุ่มเดียวด้วย Macro</span>
+                <Link className="btn small" href="/automation">
+                  ตั้งกฎอัตโนมัติ <Icon name="arrow" />
+                </Link>
+              </div>
+            ) : (
+              <div className="manager-empty">
+                <Icon name="checkCircle" />
+                <strong>ยังไม่มีเคสถูกยกระดับ</strong>
+                <span>เคสที่ระบบยกระดับจะแสดงที่นี่</span>
               </div>
             )}
           </div>

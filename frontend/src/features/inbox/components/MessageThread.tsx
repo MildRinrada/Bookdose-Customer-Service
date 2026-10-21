@@ -236,14 +236,18 @@ function MessageItem({
           <Reactable m={m} onReact={onReact} manage={manage}>
             {bubble}
           </Reactable>
+        ) : !publicView && m.reaction ? (
+          /* The customer's reaction sits on the reply's corner, so it is drawn inside the same box as the reply; on
+             its own it was placed against the page and showed up out beside the thread. */
+          <div className="reactable">
+            {bubble}
+            <span className="reaction-chip" title={`ลูกค้ารีแอค ${REACTIONS[m.reaction].emoji} ${REACTIONS[m.reaction].label} แทนการพิมพ์ เคสจึงไม่ถูกเปิดกลับมา`}>
+              <span aria-hidden="true">{REACTIONS[m.reaction].emoji}</span>
+              <span className="sr-only">ลูกค้ารีแอค {REACTIONS[m.reaction].label}</span>
+            </span>
+          </div>
         ) : (
           bubble
-        )}
-        {!publicView && m.reaction && (
-          <span className="reaction-chip" title={`ลูกค้ารีแอค ${REACTIONS[m.reaction].emoji} ${REACTIONS[m.reaction].label} แทนการพิมพ์ เคสจึงไม่ถูกเปิดกลับมา`}>
-            <span aria-hidden="true">{REACTIONS[m.reaction].emoji}</span>
-            <span className="sr-only">ลูกค้ารีแอค {REACTIONS[m.reaction].label}</span>
-          </span>
         )}
         <AiCitations citations={m.citations} />
         {translation && <MessageTranslation translation={translation} body={m.body} />}

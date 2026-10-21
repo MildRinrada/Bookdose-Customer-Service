@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icon';
 import { useRunAction } from '@/components/ui/actions';
 import { PageLoading } from '@/components/ui/display';
 import { Form } from '@/components/ui/Form';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useToast } from '@/components/ui/Toast';
 import { useInvalidate } from '@/lib/query';
 import type { WorkStatus } from '@/lib/types';
@@ -14,6 +15,14 @@ import { PREFS_PATH, savePreferences, setWorkStatus, usePreferences, type Prefer
    routing rule gives no new case to someone on a break, busy, away, off shift or on leave (the case waits for the
    team), and an SLA escalation goes to a lead who is available. Choosing an owner by hand still works. Markup:
    pages/account-settings.css (.work-status). */
+
+/** What each status means, behind the (i) on its option. The option is itself a button, so the (i) is a still one. */
+const statusHints: Record<WorkStatus, string> = {
+  online: 'ระบบส่งเคสใหม่ให้คุณได้ ทั้งจากกฎการกระจายงานและการยกระดับ',
+  break: 'หยุดรับเคสใหม่ชั่วคราว เคสเดิมยังอยู่กับคุณ',
+  busy: 'หยุดรับเคสใหม่ระหว่างทำงานที่ต้องใช้สมาธิ เคสเดิมยังอยู่กับคุณ',
+  offline: 'ไม่รับเคสใหม่จนกว่าคุณจะกลับมาเปลี่ยนสถานะ',
+};
 
 export function StatusSettings() {
   const view = usePreferences();
@@ -45,7 +54,19 @@ function StatusCard({ view }: { view: PreferencesView }) {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2>สถานะตอนนี้</h2>
+          <h2>
+            สถานะตอนนี้
+            <InfoHint>
+              เปลี่ยนได้ทุกเมื่อ หรือเปลี่ยนเร็ว ๆ จากปุ่มสถานะที่แถบด้านบน
+              <ul className="info-hint-list">
+                {(Object.keys(view.statuses) as WorkStatus[]).map((key) => (
+                  <li key={key}>
+                    <strong>{view.statuses[key]}</strong> {statusHints[key]}
+                  </li>
+                ))}
+              </ul>
+            </InfoHint>
+          </h2>
         </div>
         <span className={`work-status-pill status-${now.available ? 'online' : now.status}`}>
           <span className="status-dot" aria-hidden="true" />
@@ -81,7 +102,10 @@ function HoursCard({ view }: { view: PreferencesView }) {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2>เวลาทำงาน</h2>
+          <h2>
+            เวลาทำงาน
+            <InfoHint>นอกเวลานี้ระบบจะไม่ส่งเคสใหม่ให้คุณ (เวลาประเทศไทย) ตั้งกะข้ามคืนได้ เช่น 22:00 ถึง 06:00 นับเป็นวันที่เริ่มกะ</InfoHint>
+          </h2>
         </div>
       </div>
       <Form
@@ -145,7 +169,10 @@ function LeaveCard({ view }: { view: PreferencesView }) {
     <section className="card">
       <div className="card-header">
         <div>
-          <h2>วันลา</h2>
+          <h2>
+            วันลา
+            <InfoHint>ในวันที่ลา ระบบจะไม่ส่งเคสใหม่ให้คุณ แม้สถานะเป็น “พร้อมรับเรื่อง”</InfoHint>
+          </h2>
         </div>
       </div>
       <div className="card-body">

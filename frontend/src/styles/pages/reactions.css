@@ -139,6 +139,11 @@
 }
 /* The chosen emoji, on the reply's lower edge. */
 /* On the message's lower right corner, half over its edge, as a chat app shows it. */
+/* The chip hangs half below the message, so a message that has one keeps that much room under it: the line beneath
+   (read, delivered) would otherwise sit under the chip. */
+.reactable:has(.reaction-chip) {
+  margin-bottom: 14px;
+}
 .reaction-chip {
   position: absolute;
   right: 10px;

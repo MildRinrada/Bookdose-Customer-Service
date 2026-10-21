@@ -4,6 +4,7 @@ import { Fragment, useState, type ChangeEvent } from 'react';
 import { Icon } from '@/components/Icon';
 import { ErrorState, PageLoading } from '@/components/ui/display';
 import { useRunAction } from '@/components/ui/actions';
+import { useDialogs } from '@/components/ui/Dialogs';
 import { NumberField, SelectField } from '@/components/ui/fields';
 import { Form } from '@/components/ui/Form';
 import { TeamOptions } from '@/components/ui/pickers';
@@ -11,7 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { date } from '@/lib/format';
 import { settingsParts } from '@/features/settings/labels';
 import { useApi, useInvalidate } from '@/lib/query';
-import { CHANNEL_SETTINGS_PREFIXES, CHANNELS_PATH, saveChannel, saveChannelPresentation, startEmailOAuth, syncEmail, testChannel } from '../api';
+import { CHANNEL_SETTINGS_PREFIXES, CHANNELS_PATH, removeChannel, saveChannel, saveChannelPresentation, startEmailOAuth, syncEmail, testChannel } from '../api';
 import { deliveryNames, emailAuthModes, smtpPorts } from '../labels';
 import type { ChannelSetting, OutboxCount } from '../types';
 import { ChannelField } from '../util';
@@ -128,6 +129,7 @@ export function OutboxBadges({ outbox }: { outbox: OutboxCount[] }) {
 
 function ChannelCard({ c }: { c: ChannelSetting }) {
   const toast = useToast();
+  const { confirm } = useDialogs();
   const refresh = useInvalidate();
   const run = useRunAction();
   const k = c.kind;
@@ -168,7 +170,6 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
             if (input) data[key] = input.checked;
           }
           data.enabled = box('enabled')?.checked ?? false;
-          data.remove_credentials = box('remove_credentials')?.checked ?? false;
           if (k === 'email') {
             data.smtp_port = Number(data.smtp_port);
             data.poll_seconds = Number(data.poll_seconds);
@@ -225,10 +226,6 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
             <input name="chatbot_enabled" type="checkbox" className="switch" defaultChecked={Boolean(v.chatbot_enabled)} />
             เปิด Chatbot ตอบอัตโนมัติบน {name}
           </label>
-          <label className="check">
-            <input name="remove_credentials" type="checkbox" />
-            ลบข้อมูลเชื่อมต่อ (ปิดช่องทางก่อนบันทึก)
-          </label>
         </div>
         <div className="flex wrap mt">
           <button className="btn primary" type="submit">
@@ -240,6 +237,28 @@ function ChannelCard({ c }: { c: ChannelSetting }) {
           {k === 'email' && (
             <button className="btn" type="button" onClick={() => void action('sync')}>
               ตรวจอีเมลรอบถัดไปทันที
+            </button>
+          )}
+          {c.credentials_configured && (
+            <button
+              className="btn danger channel-remove"
+              type="button"
+              onClick={() =>
+                confirm({
+                  title: `ลบการเชื่อมต่อ ${name}`,
+                  message: `${name} จะปิดและหยุดรับส่งข้อความทันที ข้อความที่ยังรอส่งจะไม่ถูกส่ง แชทเดิมยังอยู่ในกล่องข้อความ`,
+                  confirmLabel: 'ลบการเชื่อมต่อ',
+                  tone: 'danger',
+                  run: async () => {
+                    await removeChannel(k);
+                    toast(`ลบการเชื่อมต่อ ${name} แล้ว`);
+                    await refresh(...CHANNEL_SETTINGS_PREFIXES);
+                  },
+                })
+              }
+            >
+              <Icon name="trash" />
+              ลบการเชื่อมต่อ
             </button>
           )}
         </div>

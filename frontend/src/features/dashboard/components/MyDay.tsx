@@ -1,3 +1,4 @@
+import { InfoHint } from '@/components/ui/InfoHint';
 import { formatDuration } from '@/lib/format';
 import type { MyDay as MyDayData } from '../types';
 
@@ -15,7 +16,10 @@ export function MyDay({ day }: { day: MyDayData }) {
   return (
     <section className="card myday-card" aria-labelledby="myday-title">
       <div className="myday-head">
-        <h2 id="myday-title">วันนี้ของฉัน</h2>
+        <h2 id="myday-title">
+          วันนี้ของฉัน
+          <InfoHint>งานของคุณวันนี้ เวลาตอบและ CSAT นับจากเคสที่คุณรับผิดชอบ</InfoHint>
+        </h2>
       </div>
       <dl className="myday-grid">
         {cells.map(([label, value, foot]) => (

@@ -236,12 +236,7 @@
   color: var(--green);
 }
 .csat-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink);
-  font-weight: 700;
-  text-decoration: none;
+  margin-top: 14px;
 }
 .csat-more .icon {
   width: 15px;
@@ -887,4 +882,34 @@ a.auto-stat:hover {
 }
 .distribution-card {
   container-type: inline-size;
+}
+
+/* มุมมองผู้ดูแล with nothing to show yet (a new organization): what is missing and, where there is one, the way to
+   start, in the quiet box the other empty places on the overview use. */
+.manager-empty {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 150px;
+  padding: 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  text-align: center;
+  color: var(--muted);
+}
+.manager-empty > .icon {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 4px;
+}
+.manager-empty strong {
+  color: var(--ink);
+}
+.manager-empty .btn {
+  margin-top: 8px;
+}
+.auto-body > .manager-empty {
+  height: 100%;
 }

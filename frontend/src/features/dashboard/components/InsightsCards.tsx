@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { AiNotReady } from '@/features/ai/components/AiNotReady';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { useToast } from '@/components/ui/Toast';
 import { waitForAiJob } from '@/features/ai/api';
@@ -28,12 +30,7 @@ function useAlive() {
 }
 
 function AiOff({ ai }: { ai: Insights['ai'] }) {
-  return (
-    <p className="ai-off tiny muted">
-      {ai.key_configured ? 'เปิด “AI ช่วยร่างคำตอบ” ก่อนจึงใช้ได้' : 'เชื่อม AI (OpenAI Gemini หรือ n8n) ก่อนจึงใช้ได้'}{' '}
-      <Link href="/settings?tab=ai">ตั้งค่า AI</Link>
-    </p>
-  );
+  return <AiNotReady ai={ai} />;
 }
 
 const WHEN: Record<BriefAction['when'], string> = { now: 'ทำเลย', today: 'วันนี้', this_week: 'สัปดาห์นี้' };
@@ -116,6 +113,10 @@ export function BriefCard({ brief, ai }: { brief: Brief | null; ai: Insights['ai
         <div>
           <h2 id="brief-title">
             <Icon name="sparkle" /> สรุปสถานการณ์วันนี้
+            <InfoHint>
+              AI อ่านเคสที่ค้าง งานเข้า-ออก 7 วัน คำถามที่ยังไม่มีบทความ และคะแนนความพอใจ แล้วบอกว่าควรทำอะไร สรุปเมื่อกดเท่านั้น
+              (ใช้ AI 1 ครั้ง) ตรวจตัวเลขจริงได้ในหน้ารายงาน
+            </InfoHint>
           </h2>
         </div>
         {usable && (
@@ -209,7 +210,14 @@ export function GapsCard({ insights }: { insights: Insights }) {
     <section className="card gaps-card" aria-labelledby="gaps-title">
       <div className="card-header">
         <div>
-          <h2 id="gaps-title"><Icon name="book" className="card-title-icon" />คำถามที่ยังไม่มีบทความตอบ</h2>
+          <h2 id="gaps-title">
+            <Icon name="book" className="card-title-icon" />
+            คำถามที่ยังไม่มีบทความตอบ
+            <InfoHint>
+              คำถามจากลูกค้าที่บทความสาธารณะยังตอบไม่ได้ เรียงจากที่ถามบ่อยที่สุด เขียนบทความเรื่องเหล่านี้แล้วลูกค้าจะหาคำตอบเองได้
+              และบอตตอบได้ เคสจึงลดลง
+            </InfoHint>
+          </h2>
           <p>
             {gaps.total} คำถามใน {days} วันล่าสุด
           </p>

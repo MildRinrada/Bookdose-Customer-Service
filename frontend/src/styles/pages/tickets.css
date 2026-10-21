@@ -1118,3 +1118,16 @@ button.tag-chip.toggle:focus-visible {
   align-self: flex-start;
   margin-top: 2px;
 }
+
+/* Inside a fold card of the case's side column: what is there now on the left, the button that changes it on the right. */
+.fold-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.fold-row.end {
+  justify-content: flex-end;
+  margin-top: 10px;
+}

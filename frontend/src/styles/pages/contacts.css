@@ -582,21 +582,21 @@ tbody tr:hover .contact-actions .btn,tbody tr:has(:focus-visible) .contact-actio
 }
 .contact-warning-line {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
   max-width: 100%;
   margin-top: 4px;
   color: var(--red);
   font-size: .82rem;
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* A warning is read in full: cut short, its last words were the ones that said what to do. */
+  overflow-wrap: anywhere;
 }
 .contact-warning-line .icon {
   flex-shrink: 0;
   width: 13px;
   height: 13px;
+  margin-top: 3px;
 }
 
 /* On a chat (under its toolbar) and in a case's customer card. */

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { InfoHint } from '@/components/ui/InfoHint';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useToast } from '@/components/ui/Toast';
 import { clockTime, shortAgo } from '@/lib/format';
@@ -66,7 +67,13 @@ export function HandoverCard({ interval, readOnly }: { interval: number | false;
     <section className="card board-card handover-card" aria-labelledby="handover-title">
       <div className="card-header">
         <div>
-          <h2 id="handover-title"><Icon name="users" className="card-title-icon" />ส่งต่อกะ</h2>
+          <h2 id="handover-title">
+            <Icon name="users" className="card-title-icon" />
+            ส่งต่อกะ
+            <InfoHint>
+              จดงานที่ค้าง เคสที่ต้องตามต่อ หรือเรื่องที่กะถัดไปควรรู้ ทุกคนในองค์กรเห็น เก็บไว้ {board?.handover_days ?? 3} วัน
+            </InfoHint>
+          </h2>
         </div>
       </div>
       <div className="card-body">
@@ -156,7 +163,11 @@ export function TodoCard({ interval, now }: { interval: number | false; now: num
     <section className="card board-card my-todo-card" aria-labelledby="todo-title">
       <div className="card-header">
         <div>
-          <h2 id="todo-title"><Icon name="checkCircle" className="card-title-icon" />สิ่งที่ต้องทำของฉัน</h2>
+          <h2 id="todo-title">
+            <Icon name="checkCircle" className="card-title-icon" />
+            สิ่งที่ต้องทำของฉัน
+            <InfoHint>เห็นเฉพาะคุณ ใส่เวลาได้ ระบบจะเตือนด้วยสีเมื่อใกล้ถึงเวลา</InfoHint>
+          </h2>
           {open > 0 && <p>เหลือ {open} งาน</p>}
         </div>
       </div>

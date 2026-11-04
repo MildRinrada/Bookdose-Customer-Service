@@ -923,3 +923,115 @@
   overflow-wrap: anywhere;
   color: var(--muted);
 }
+
+/* นำเข้าบทความ (features/knowledge/ImportScreen, components/ImportArticles). */
+.import-about {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.import-waiting,.import-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.import-waiting .icon {
+  flex-shrink: 0;
+}
+.import-status span {
+  flex: 1;
+  min-width: 220px;
+}
+.import-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 12px;
+}
+.import-toolbar .btn.primary {
+  margin-left: auto;
+}
+.import-drafts {
+  display: grid;
+  gap: 14px;
+}
+.import-draft {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 18px;
+}
+.import-draft.is-done {
+  background: #f6f8f6;
+}
+.import-draft-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.import-draft-head input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+}
+.import-draft-head .grow {
+  min-width: 0;
+}
+.import-draft h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.import-draft-meta,.import-badges,.import-draft-actions,.import-compare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.import-draft-meta {
+  margin-top: 2px;
+  font-size: .94rem;
+}
+.import-badges {
+  gap: 6px;
+  margin-top: 6px;
+}
+.import-badges:empty {
+  display: none;
+}
+.import-draft-actions,.import-compare-actions {
+  gap: 8px;
+}
+.import-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.import-compare > div:not(.import-compare-actions) {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.import-compare h3 {
+  margin: 0 0 8px;
+  font-size: .94rem;
+  color: var(--muted);
+}
+.import-compare-actions {
+  grid-column: 1 / -1;
+}
+@media (max-width:720px) {
+  .import-compare {
+    grid-template-columns: 1fr;
+  }
+  .import-toolbar .btn.primary {
+    width: 100%;
+    margin-left: 0;
+  }
+}

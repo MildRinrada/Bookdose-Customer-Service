@@ -16,7 +16,11 @@ keeps its row (so cases and reports still add up) with nothing left that says wh
 company, notes, profile gone; every message of their conversations emptied and its files deleted; subjects, AI
 summaries, translations, mood readings, channel addresses (LINE / email), guest browsers and links, ratings'
 comments and follow-up notes cleared; the recycle bin's copies thrown away. Backups made before still hold it until
-they age out; the console says so. """
+they age out; the console says so.
+
+The letter (หนังสือแจ้งผล): what the platform tells the person afterwards, made from the log alone - the counts per
+organization taken at the time, the day the request came, the day it was done - and the provider's details the legal
+documents use (legal/service.company). """
 import datetime as dt
 import io
 import json
@@ -26,7 +30,7 @@ import zipfile
 from backend.database import audit, db as D
 from backend.database.db import one, rows
 from backend.modules.pdpa.model import CONFIRM_WORD, ERASED_NAME, ERASED_TEXT
-from backend.utils.dates import now
+from backend.utils.dates import now, today
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
 
@@ -74,6 +78,11 @@ def masked(kind, value):
     return f'{value[:1]}*** (ชื่อ)'
 
 
+def masked_kind(label):
+    """'email', 'phone' or 'name': what a masked label (masked above) was made from."""
+    return 'email' if '@' in label else 'name' if label.endswith('(ชื่อ)') else 'phone'
+
+
 # Finding the person
 def _tenants(cd):
     return [t for t in rows(cd,'SELECT id,name,slug,status FROM tenants ORDER BY name') if D.tenant_path(t['id']).is_file()]
@@ -102,6 +111,12 @@ def _record(db, tenant, contact_id):
             'files':count("SELECT COUNT(*) FROM attachments WHERE message_id IN (SELECT m.id FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.contact_id=? AND m.kind!='note')"),
             'deletion_requested_at':profile['deletion_requested_at'] if profile else None,
             'erased':contact['name']==ERASED_NAME}
+
+
+def _counts(db, tenant, contact_ids):
+    """How much the chosen records of one organization hold, counts only: what the log keeps and the letter states."""
+    found = [r for r in (_record(db,tenant,c) for c in contact_ids) if r]
+    return {k:sum(r[k] for r in found) for k in ('conversations','cases','messages','files')}
 
 
 def search(cd, body):
@@ -159,11 +174,28 @@ def _reason(body):
     return reason.strip()
 
 
-def _log(cd, session, kind, body, scope, reason):
+def _received(body):
+    """The day the request reached the platform (YYYY-MM-DD, not after today), which the letter states; None when
+    not given."""
+    value = body.get('received_on')
+    if value in (None,''):
+        return None
+    try:
+        day = dt.date.fromisoformat(value) if isinstance(value,str) and len(value)==10 else None
+    except ValueError:
+        day = None
+    # Thailand is ahead of UTC: its today may be tomorrow here.
+    require(day and day<=dt.date.fromisoformat(today())+dt.timedelta(days=1),'วันที่ได้รับคำขอไม่ถูกต้อง')
+    return day.isoformat()
+
+
+def _log(cd, session, kind, body, scope, reason, received_on):
     what,value = _query(body)
     actor = session.get('name') or session['user_id']
-    cd.execute('INSERT INTO pdpa_requests VALUES(?,?,?,?,?,?,?,?,?)',
-               (uid(),kind,masked(what,value),token_hash(value),json.dumps(scope,ensure_ascii=False),reason,session['user_id'],actor,now()))
+    cd.execute('''INSERT INTO pdpa_requests(id,kind,subject,subject_hash,scope,reason,by_id,by_name,created_at,received_on)
+                  VALUES(?,?,?,?,?,?,?,?,?,?)''',
+               (uid(),kind,masked(what,value),token_hash(value),json.dumps(scope,ensure_ascii=False),reason,session['user_id'],actor,now(),
+                received_on))
     audit.record(cd,session['user_id'],'pdpa.'+('exported' if kind=='export' else 'erased'),masked(what,value),reason)
 
 
@@ -235,6 +267,7 @@ files/           ไฟล์แนบในบทสนทนา (ชื่อ�
 def export(cd, session, body):
     """(ZIP bytes, file name) of everything the ticked records and accounts hold. Recorded."""
     reason = _reason(body)
+    received_on = _received(body)
     accounts,chosen,tenants = _selection(cd,body)
     buffer = io.BytesIO()
     scope = []
@@ -245,10 +278,10 @@ def export(cd, session, body):
                 for contact_id in contact_ids:
                     data['organizations'].append(_contact_data(db,tenants[tenant_id],contact_id,archive))
                 audit.record(db,f"ผู้ดูแลแพลตฟอร์ม {session.get('name','')}",'pdpa.exported',','.join(contact_ids),reason)
-            scope.append({'organization':tenants[tenant_id]['name'],'records':len(contact_ids)})
+                scope.append({'organization':tenants[tenant_id]['name'],'records':len(contact_ids),**_counts(db,tenants[tenant_id],contact_ids)})
         archive.writestr('data.json',json.dumps(data,ensure_ascii=False,indent=2,default=str))
         archive.writestr('README.txt',README.format(at=now(),by=session.get('name','')))
-    _log(cd,session,'export',body,{'accounts':len(accounts),'organizations':scope},reason)
+    _log(cd,session,'export',body,{'accounts':len(accounts),'organizations':scope},reason,received_on)
     cd.commit()
     stamp = dt.datetime.now(dt.timezone.utc).strftime('%Y%m%d-%H%M%S')
     return buffer.getvalue(),f'pdpa-export-{stamp}.zip'
@@ -315,19 +348,22 @@ def erase(cd, session, body):
     """Erase what was ticked, confirmed with the word typed out and a reason; recorded here and in each organization's
     history. Returns what was erased (counts)."""
     reason = _reason(body)
+    received_on = _received(body)
     require(body.get('confirm')==CONFIRM_WORD,f'พิมพ์ "{CONFIRM_WORD}" เพื่อยืนยัน')
     accounts,chosen,tenants = _selection(cd,body)
     scope,files = [],{}
     for tenant_id,contact_ids in chosen.items():
         with D.tenant(tenant_id) as db:
+            # Counted first, for the log and the letter: afterwards there is nothing left to count by.
+            counts = _counts(db,tenants[tenant_id],contact_ids)
             D.begin(db)
             conversations = sum(_erase_contact(db,contact_id,files.setdefault(tenant_id,[])) for contact_id in contact_ids)
             audit.record(db,f"ผู้ดูแลแพลตฟอร์ม {session.get('name','')}",'pdpa.erased',','.join(contact_ids),reason)
             db.commit()
-        scope.append({'organization':tenants[tenant_id]['name'],'records':len(contact_ids),'conversations':conversations})
+        scope.append({'organization':tenants[tenant_id]['name'],'records':len(contact_ids),**counts,'conversations':conversations})
     for account in accounts:
         _erase_account_everywhere(cd,account,tenants)
-    _log(cd,session,'erase',body,{'accounts':len(accounts),'organizations':scope},reason)
+    _log(cd,session,'erase',body,{'accounts':len(accounts),'organizations':scope},reason,received_on)
     cd.commit()
     for tenant_id,keys in files.items():
         for key in keys:
@@ -355,3 +391,31 @@ def overview(cd):
                                   'requested_by':r['deletion_requested_by']})
     requested.sort(key=lambda r:r['requested_at'])
     return {'history':history,'requested':requested,'confirm_word':CONFIRM_WORD}
+
+
+# The letter to the person
+def _thai_year(at):
+    """The Buddhist Era year of a stored UTC time, in Thailand (UTC+7, no daylight saving)."""
+    return (dt.datetime.fromisoformat(at)+dt.timedelta(hours=7)).year+543
+
+
+def letter(cd, request_id):
+    """What หนังสือแจ้งผล is made of: one request as the log recorded it, its reference number, and the provider.
+    The number (PDPA-2569-0003) is the year it was done and its place among that year's requests, worked out rather
+    than stored: the log is only ever added to, so a letter printed again carries the same number."""
+    request = one(cd,'SELECT rowid AS position,id,kind,subject,scope,reason,received_on,created_at FROM pdpa_requests WHERE id=?',(request_id,))
+    require(request,'ไม่พบรายการนี้',404)
+    year = _thai_year(request['created_at'])
+    # In the order they were written (rowid), not by time: two requests in the same second keep their numbers.
+    place = sum(1 for r in rows(cd,'SELECT created_at FROM pdpa_requests WHERE rowid<=?',(request.pop('position'),))
+                if _thai_year(r['created_at'])==year)
+    from backend.modules.legal import service as legal
+    return {'request':{**request,'scope':json.loads(request['scope']),'subject_kind':masked_kind(request['subject']),
+                       'reference':f'PDPA-{year}-{place:04d}'},
+            'company':legal.company(cd)}
+
+
+def upgrade(cd):
+    """received_on on a log made before the letter existed (safe to repeat); those letters leave the day out."""
+    if 'received_on' not in {row[1] for row in cd.execute('PRAGMA table_info(pdpa_requests)')}:
+        cd.execute('ALTER TABLE pdpa_requests ADD COLUMN received_on TEXT')

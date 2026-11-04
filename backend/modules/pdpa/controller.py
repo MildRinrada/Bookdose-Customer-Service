@@ -25,3 +25,8 @@ def export(req):
 def erase(req):
     limited(('pdpa-erase',req.session['user_id']),20,3600)
     return req.send(200,service.erase(req.cd,req.session,req.body))
+
+
+def letter(req, request_id):
+    """The letter that tells the person the outcome (features/pdpa/PdpaLetter): only what the log recorded."""
+    return req.send(200,service.letter(req.cd,request_id))

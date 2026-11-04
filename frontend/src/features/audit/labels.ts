@@ -76,6 +76,9 @@ const auditIcons: Record<string, string> = {
   'contact.merged': 'users',
   'contact.deleted': 'close',
   'article.saved': 'book',
+  'article.imported': 'book',
+  'article.import_started': 'file',
+  'article.import_discarded': 'close',
   'article.deleted': 'close',
   'ticket.restored': 'restore',
   'contact.restored': 'restore',
@@ -124,7 +127,8 @@ export function auditLabel(action: string): string | undefined {
 /* The audit row points at what it changed, so a question ("who closed this case?") ends on the case itself. */
 export function auditLink(event: AuditEvent): string {
   const [kind] = event.action.split('.');
-  if (/\.(deleted|purged)$/.test(event.action)) return '';
+  // An import is gone once its drafts are saved or after a week (knowledge/importer.py): nothing to open.
+  if (/\.(deleted|purged)$/.test(event.action) || event.action.startsWith('article.import_')) return '';
   if (kind === 'ticket') return `/tickets/${event.entity}`;
   if (kind === 'message' || kind === 'conversation' || kind === 'line') return `/inbox/${event.entity}`;
   if (kind === 'article') return `/knowledge/${event.entity}`;

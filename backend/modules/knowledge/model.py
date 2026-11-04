@@ -5,7 +5,9 @@
                        member, article and kind within USE_REPEAT_MINUTES, so clicking twice counts once.
   knowledge_marks      each member's own mark on an article: helpful (1) or not (-1), and pinned to the top of their
                        list (pin_order, 1 first; 0 = not pinned).
-  knowledge_revisions  the version an article had before each save that changed it (REVISIONS_KEPT per article)."""
+  knowledge_revisions  the version an article had before each save that changed it (REVISIONS_KEPT per article).
+  knowledge_imports    a file being imported (knowledge/importer.py): its sections and the drafts made of them, until
+                       every draft is saved or skipped, or for 7 days. The file itself is not kept."""
 
 VISIBILITIES = ('internal','public')
 USE_KINDS = ('copy','insert','link')
@@ -38,4 +40,9 @@ CREATE TABLE IF NOT EXISTS knowledge_revisions (
     visibility TEXT NOT NULL, author TEXT NOT NULL, saved_at TEXT NOT NULL, replaced_by TEXT NOT NULL, replaced_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS knowledge_revisions_article ON knowledge_revisions(article_id,replaced_at);
+CREATE TABLE IF NOT EXISTS knowledge_imports (
+    id TEXT PRIMARY KEY, file_name TEXT NOT NULL, kind TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL,
+    sections TEXT NOT NULL, drafts TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '{}',
+    ai TEXT NOT NULL CHECK(ai IN ('off','grouping','done','failed')), ai_note TEXT NOT NULL DEFAULT '', job_id TEXT
+);
 '''

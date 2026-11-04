@@ -9,9 +9,13 @@ DEFAULT_MODEL = 'gpt-4.1-mini'
 # into Thai or the team's reply into the customer's language (ai/translate.py); polish: a member's own reply made
 # more polite, shorter or free of typos before they send it (ai/polish.py); triage: the tags, priority and team a new
 # case looks like it needs, for staff to confirm (ai/triage.py); gather: what the customer said for the case fields the
-# chatbot asks for while they wait for a person (ai/gather.py).
-JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary','translate','polish','triage','gather')
+# chatbot asks for while they wait for a person (ai/gather.py); import: the articles a file the หัวหน้าทีม uploaded makes,
+# and the tone marks its PDF lost; rewrite: one of those drafts in clearer words (both knowledge/importer.py).
+JOB_MODES = ('draft','bot','test','article','brief','ask','mood','summary','translate','polish','triage','gather','import','rewrite')
 OWNER_MODES = ('article','brief')
+# The knowledge import's jobs: the หัวหน้าทีม's too, with their input in the payload, but one per file or draft, so a
+# second one is never answered with the first (enqueue).
+IMPORT_MODES = ('import','rewrite')
 # Jobs whose input was built when they were asked (the payload column), not read from a conversation.
 PAYLOAD_MODES = (*OWNER_MODES,'ask')
 # Background jobs nobody waits on, whose input is also in the payload column, checked only for their conversation.
@@ -24,7 +28,7 @@ FEEDBACK_COMMENT_MAX = 300
 JOBS_TABLE = '''CREATE TABLE IF NOT EXISTS {name} (
     id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id),
     trigger_id TEXT REFERENCES messages(id), requested_by TEXT,
-    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask','mood','summary','translate','polish','triage','gather')),
+    mode TEXT NOT NULL CHECK(mode IN ('draft','bot','test','article','brief','ask','mood','summary','translate','polish','triage','gather','import','rewrite')),
     status TEXT NOT NULL CHECK(status IN ('pending','running','done','failed','cancelled')),
     result TEXT NOT NULL DEFAULT '{{}}', error TEXT NOT NULL DEFAULT '',
     lease TEXT, config_version TEXT NOT NULL, input_tokens INTEGER NOT NULL DEFAULT 0,

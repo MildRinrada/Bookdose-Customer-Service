@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
-import type { ArticleActivity, ArticleInput, ArticlesPage, ArticleUseKind } from './types';
+import type { ArticleActivity, ArticleImport, ArticleInput, ArticlesPage, ArticleUseKind } from './types';
 
 /* Endpoints of backend/modules/knowledge/routes.py. Read the list with useApi(ARTICLES_PATH). Writing needs the
    admin or manager role (the server answers others with its own Thai message); using, marking and pinning an
@@ -60,3 +60,35 @@ export const TEMPLATES_PATH = '/api/article-templates';
 
 export const useTemplate = (id: string, visibility: 'public' | 'internal') =>
   api<{ id: string }>(`${TEMPLATES_PATH}/${id}/use`, { visibility });
+
+/* นำเข้าบทความ (backend/modules/knowledge/importer.py). The file goes up once, as base64 in the JSON body, and is
+   not kept: what stays is the drafts, for a week. */
+export const IMPORTS_PATH = '/api/article-imports';
+export const importPath = (id: string) => `${IMPORTS_PATH}/${id}`;
+/** As the server takes (importer.MAX_FILE_BYTES). */
+export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+export const IMPORT_ACCEPT = '.pdf,.docx,.txt,.md';
+
+function base64Of(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(new Error('อ่านไฟล์ในเครื่องไม่สำเร็จ ลองเลือกไฟล์ใหม่'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function startImport(file: File) {
+  return api<ArticleImport>(IMPORTS_PATH, { name: file.name, data: await base64Of(file) });
+}
+
+/** Save drafts as articles; an item carries the words changed in the editor, the rest keep the draft's. */
+export const saveDrafts = (id: string, items: Array<{ draft_id: string } & Partial<ArticleInput>>) =>
+  api<{ saved: Array<{ draft_id: string; article_id: string }>; finished: boolean }>(`${importPath(id)}/save`, { items });
+
+export type DraftAction = 'skip' | 'keep' | 'use_rewrite' | 'use_source' | 'drop_rewrite';
+export const setDraft = (id: string, draftId: string, action: DraftAction) =>
+  api<ArticleImport>(`${importPath(id)}/drafts/${draftId}`, { action }, 'PATCH');
+export const rewriteDraft = (id: string, draftId: string) => api<ArticleImport>(`${importPath(id)}/drafts/${draftId}/rewrite`, {});
+export const skipImportAi = (id: string) => api<ArticleImport>(`${importPath(id)}/skip-ai`, {});
+export const discardImport = (id: string) => api<{ deleted: string }>(importPath(id), undefined, 'DELETE');

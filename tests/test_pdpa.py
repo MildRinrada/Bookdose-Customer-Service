@@ -109,6 +109,38 @@ class PdpaTests(unittest.TestCase):
         # Organizations' admins do not have it.
         self.assertEqual(self.admin.call(PDPA)[0],403)
 
+    def test_the_letter_is_made_from_the_log(self):
+        """หนังสือแจ้งผล: the day the request came, the counts per organization taken when it was done, a number that
+        stays the same, and the provider as the legal documents name it; never the person's email."""
+        client,conv = self.visitor('alpha',EMAIL,'ของไม่ครบ','สั่งหนังสือแล้วได้ไม่ครบค่ะ')
+        self.ok(client,'/api/public/alpha/messages',{'body':'แนบใบเสร็จค่ะ','attachments':[{'name':'receipt.txt','data':base64.b64encode(b'RECEIPT 123').decode()}]})
+        self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})
+        self.ok(self.owner,'/api/platform/legal/company',{'name':'บริษัท ผู้ให้บริการ จำกัด','email':'privacy@example.com'})
+        record = next(r for r in self.find(EMAIL)['records'] if r['tenant_slug']=='alpha')
+        choice = {'query':EMAIL,'accounts':[],'records':[{'tenant_id':record['tenant_id'],'contact_id':record['contact_id']}]}
+        # A day that has not come yet is refused; none at all is allowed (the letter then leaves it out).
+        self.assertEqual(self.owner.call(PDPA+'/export',{**choice,'reason':'คำขอทางอีเมล','received_on':'2999-01-01'})[0],400)
+        self.assertEqual(self.owner.call(PDPA+'/export',{**choice,'reason':'คำขอทางอีเมล','received_on':'2026-09-25'})[0],200)
+        self.ok(self.owner,PDPA+'/erase',{**choice,'reason':'ลูกค้าขอลบข้อมูล','confirm':'ลบถาวร'})
+        erased,exported = self.ok(self.owner,PDPA)['history']
+
+        first = self.ok(self.owner,f"{PDPA}/requests/{exported['id']}/letter")
+        request = first['request']
+        self.assertEqual((request['kind'],request['received_on'],request['subject'],request['subject_kind']),
+                         ('export','2026-09-25','so***@example.com','email'))
+        self.assertEqual(request['scope']['organizations'],[{'organization':'องค์กร A','records':1,'conversations':1,'cases':1,'messages':2,'files':1}])
+        self.assertRegex(request['reference'],r'^PDPA-25\d\d-0001$')
+        self.assertEqual((first['company']['name'],first['company']['email'],first['company']['address']),('บริษัท ผู้ให้บริการ จำกัด','privacy@example.com',''))
+        self.assertNotIn(EMAIL,json.dumps(first))
+        # The erasure counted what there was before it emptied the record.
+        second = self.ok(self.owner,f"{PDPA}/requests/{erased['id']}/letter")['request']
+        self.assertEqual((second['kind'],second['received_on']),('erase',None))
+        self.assertEqual(second['scope']['organizations'][0]['messages'],2)
+        self.assertEqual(second['reference'],request['reference'][:-1]+'2')
+        self.assertEqual(self.ok(self.owner,f"{PDPA}/requests/{exported['id']}/letter")['request']['reference'],request['reference'])
+        self.assertEqual(self.owner.call(f'{PDPA}/requests/{"0"*32}/letter')[0],404)
+        self.assertEqual(self.admin.call(f"{PDPA}/requests/{exported['id']}/letter")[0],403)
+
     def test_deletion_requests_noted_by_organizations_are_listed(self):
         _,conv = self.visitor('alpha','asked@example.com','ขอลบ','ขอลบข้อมูลของฉันด้วยค่ะ')
         with D.tenant(self.org) as db:

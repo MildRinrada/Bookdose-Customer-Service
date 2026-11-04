@@ -9,28 +9,35 @@ import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { useToast } from '@/components/ui/Toast';
 import { date, number } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
-import { erasePerson, exportPerson, PDPA_PATH, searchPerson, type PdpaChoice, type PdpaOverview, type PdpaRecord, type PdpaSearch } from './api';
+import {
+  erasePerson,
+  exportPerson,
+  OTHER,
+  PDPA_PATH,
+  pdpaLetterPage,
+  searchPerson,
+  SOURCES,
+  type PdpaChoice,
+  type PdpaOverview,
+  type PdpaRecord,
+  type PdpaSearch,
+} from './api';
 
 /* Platform console → เครื่องมือ PDPA (backend modules/pdpa): a person asks for their data or to be erased. Search once
    (email, phone written any way, or name) and every organization answers: the customer account and each record, with
-   counts only. Tick what is theirs, say where the request came from, then give them the file (ZIP) or erase it -
-   typed confirmation, and each is logged here and in each organization's history. Beside it, the deletion requests
-   organizations have noted on their customers, and the log. Opened from a found account on บัญชีผู้ใช้ (?q=<email>),
+   counts only. Tick what is theirs, say where the request came from and the day it came, then give them the file
+   (ZIP) or erase it - typed confirmation, and each is logged here and in each organization's history. Beside it, the
+   deletion requests organizations have noted on their customers, and the log, each entry with the letter that tells
+   the person the outcome (PdpaLetter, a page of its own). Opened from a found account on บัญชีผู้ใช้ (?q=<email>),
    that email is searched straight away. Markup: pages/pdpa.css. */
 
 const kindWords = { email: 'อีเมล', phone: 'เบอร์โทร', name: 'ชื่อ' };
 
-/* The ways a request usually arrives. The last one asks for the words instead. */
-const OTHER = 'อื่น ๆ';
-const SOURCES = [
-  'เจ้าของข้อมูลขอทางอีเมล',
-  'เจ้าของข้อมูลขอทางแชทหรือเคส',
-  'เจ้าของข้อมูลขอทางโทรศัพท์',
-  'เจ้าของข้อมูลยื่นหนังสือหรือแบบฟอร์ม',
-  'องค์กรแจ้งแทนเจ้าของข้อมูล',
-  'คำสั่งของหน่วยงานรัฐหรือตามกฎหมาย',
-  OTHER,
-];
+/** Today on this computer, as a date field holds it (YYYY-MM-DD). */
+function todayHere() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function save(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
@@ -152,6 +159,10 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
                           {date(h.created_at, true)} โดย {h.by_name} {h.scope.organizations.map((o) => o.organization).join(', ') || 'บัญชีลูกค้าเท่านั้น'}
                         </small>
                         <small>ที่มา: {h.reason}</small>
+                        <Link className="pdpa-letter-link" href={pdpaLetterPage(h.id)} target="_blank" rel="noopener">
+                          <Icon name="file" />
+                          หนังสือแจ้งผลถึงเจ้าของข้อมูล
+                        </Link>
                       </span>
                     </li>
                   ))}
@@ -177,6 +188,8 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
   const [records, setRecords] = useState(() => new Set(found.records.filter((r) => !r.erased).map(key)));
   const [source, setSource] = useState('');
   const [detail, setDetail] = useState('');
+  // The day the request came, which the letter to the person states: today unless it waited somewhere first.
+  const [received, setReceived] = useState(todayHere);
   // What the history keeps: the way it came, then the detail typed (the server asks for 5-300 letters).
   const reason = source === OTHER ? detail.trim() : [source, detail.trim()].filter(Boolean).join(' ');
   const toggle = <T,>(set: Set<T>, value: T, apply: (next: Set<T>) => void) => {
@@ -193,7 +206,7 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
     records: chosen.map((r) => ({ tenant_id: r.tenant_id, contact_id: r.contact_id })),
   };
   const nothing = !accounts.size && !chosen.length;
-  const reasonOk = Boolean(source) && reason.length >= 5;
+  const reasonOk = Boolean(source) && reason.length >= 5 && Boolean(received);
   const total = (field: 'conversations' | 'cases' | 'files') => chosen.reduce((sum, r) => sum + r[field], 0);
 
   if (!found.accounts.length && !found.records.length)
@@ -211,9 +224,9 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
         summary={`บัญชีลูกค้า ${accounts.size} บัญชี, ข้อมูลลูกค้า ${chosen.length} รายการใน ${new Set(chosen.map((r) => r.tenant_id)).size} องค์กร, บทสนทนา ${total('conversations')}, เคส ${total('cases')}, ไฟล์ ${total('files')}`}
         onCancel={() => closeModal()}
         onConfirm={async (typed) => {
-          const done = await erasePerson({ ...choice, reason: reason.trim(), confirm: typed });
+          const done = await erasePerson({ ...choice, reason: reason.trim(), received_on: received, confirm: typed });
           closeModal(true);
-          toast(`ลบข้อมูลแล้ว ${done.organizations.length} องค์กร ไฟล์ ${done.files} ไฟล์`);
+          toast(`ลบข้อมูลแล้ว ${done.organizations.length} องค์กร ไฟล์ ${done.files} ไฟล์ หนังสือแจ้งผลอยู่ในประวัติการใช้เครื่องมือ`);
           await refresh(PDPA_PATH);
           onDone();
         }}
@@ -307,7 +320,8 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
             )}
           </p>
           {/* Where the request came from: picked from the ways it usually arrives, so nobody faces an empty box
-              wondering what to write. The detail is a reference to find it again, and only needed for "อื่น ๆ". */}
+              wondering what to write. The detail is a reference to find it again, and only needed for "อื่น ๆ"; both
+              are printed on the letter to the person as where the request came from, with the day it came. */}
           <div className="pdpa-reason">
             <label className="field">
               <span>คำขอนี้มาทางไหน</span>
@@ -321,8 +335,12 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
               </select>
             </label>
             <label className="field">
+              <span>วันที่ได้รับคำขอ</span>
+              <input type="date" value={received} max={todayHere()} onChange={(e) => setReceived(e.target.value)} />
+            </label>
+            <label className="field">
               <span>{source === OTHER ? 'ระบุที่มา' : 'รายละเอียดเพิ่มเติม (ไม่ใส่ก็ได้)'}</span>
-              <input value={detail} onChange={(e) => setDetail(e.target.value)} maxLength={200} placeholder="วันที่ได้รับ หรือเลขอ้างอิงของเรื่อง" />
+              <input value={detail} onChange={(e) => setDetail(e.target.value)} maxLength={200} placeholder="เลขอ้างอิงของเรื่อง" />
             </label>
           </div>
           <div className="flex wrap pdpa-actions">
@@ -332,9 +350,9 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
               disabled={nothing || !reasonOk}
               onClick={() =>
                 void run(async () => {
-                  const blob = await exportPerson({ ...choice, reason });
+                  const blob = await exportPerson({ ...choice, reason, received_on: received });
                   save(blob, `pdpa-export-${new Date().toISOString().slice(0, 10)}.zip`);
-                  toast('ออกไฟล์ข้อมูลแล้ว ส่งให้เจ้าของข้อมูลทางช่องทางที่ยืนยันตัวตนแล้ว');
+                  toast('ออกไฟล์ข้อมูลแล้ว ส่งให้เจ้าของข้อมูลทางช่องทางที่ยืนยันตัวตนแล้ว พร้อมหนังสือแจ้งผลจากประวัติการใช้เครื่องมือ');
                   await refresh(PDPA_PATH);
                 })
               }
@@ -349,7 +367,11 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
             {nothing ? (
               <span className="tiny muted">เลือกอย่างน้อย 1 รายการก่อน</span>
             ) : (
-              !reasonOk && <span className="tiny muted">{source === OTHER ? 'ระบุที่มาอย่างน้อย 5 ตัวอักษรก่อน' : 'เลือกที่มาของคำขอก่อน'}</span>
+              !reasonOk && (
+                <span className="tiny muted">
+                  {!source ? 'เลือกที่มาของคำขอก่อน' : reason.length < 5 ? 'ระบุที่มาอย่างน้อย 5 ตัวอักษรก่อน' : 'ระบุวันที่ได้รับคำขอก่อน'}
+                </span>
+              )
             )}
           </div>
         </div>

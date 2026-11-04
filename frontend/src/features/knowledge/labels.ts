@@ -30,3 +30,12 @@ export function reviewReason(a: Article, now = Date.now()): string | null {
   if (days >= STALE_DAYS) return `ไม่ได้อัปเดต ${Math.floor(days / 30)} เดือน`;
   return null;
 }
+
+/** Why the AI's rewriting of a draft is not offered (ai_jobs.error; knowledge/importer.py). */
+export const rewriteErrors: Record<string, string> = {
+  changed_facts: 'ฉบับที่ AI เรียบเรียงมีตัวเลข ลิงก์ หรืออีเมลไม่ตรงกับต้นฉบับ ระบบจึงไม่ใช้',
+  invalid_output: 'AI ตอบกลับมาไม่ครบ',
+  timeout: 'AI ตอบช้าเกินเวลา',
+  quota: 'ใช้ AI ครบจำนวนของวันนี้แล้ว',
+  stale: 'การตั้งค่า AI เปลี่ยนระหว่างรอ',
+};

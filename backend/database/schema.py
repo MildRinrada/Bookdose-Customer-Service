@@ -89,6 +89,9 @@ def create_control_tables(db):
     # An account suspended by a platform admin, staff or customer (platform/accounts.py).
     from backend.modules.platform import accounts
     accounts.upgrade(db)
+    # The day each PDPA request reached the platform, for the letter that answers it (pdpa/service.py).
+    from backend.modules.pdpa import service as pdpa_service
+    pdpa_service.upgrade(db)
 
 
 def create_tenant_tables(db):

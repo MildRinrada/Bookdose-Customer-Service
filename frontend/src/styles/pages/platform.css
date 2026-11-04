@@ -619,9 +619,6 @@
 .platform-settings-section {
   scroll-margin-top: 16px;
 }
-.platform-settings-section>.card.mt:first-child {
-  margin-top: 0;
-}
 /* ฟีเจอร์ของระบบ: one switch per row, its explanation under its name. */
 .platform-switches {
   display: grid;

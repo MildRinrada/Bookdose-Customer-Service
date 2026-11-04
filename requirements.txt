@@ -13,3 +13,6 @@ websockets==16.1.1
 # AES-256-GCM for the stored secrets: channel and OpenAI tokens, the SMTP password, two-factor secrets
 # (backend/utils/secret_box.py). The standard library has no authenticated cipher.
 cryptography==50.0.1
+# The text of a PDF for นำเข้าบทความ (backend/modules/knowledge/document.py): the standard library cannot read one, and
+# Thai from it needs a reader that follows the file's character maps. Pure Python.
+pypdf==6.21.4

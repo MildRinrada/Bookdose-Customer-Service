@@ -37,6 +37,7 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
       <div className="card-body">
         <Form
           key={saved?.version ?? 0}
+          className="stack"
           onSubmit={async (values, form) => {
             const result = await saveRegistrationSettings({
               enabled: (form.elements.namedItem('enabled') as HTMLInputElement).checked,
@@ -85,9 +86,11 @@ function RegistrationSettingsCard({ config }: { config: RegistrationConfig }) {
               placeholder={cfg.has_password ? 'บันทึกไว้แล้ว เว้นว่างเพื่อใช้ค่าเดิม' : 'รหัสผ่านสำหรับส่งอีเมล'}
             />
           </div>
-          <button className="btn primary" type="submit">
-            บันทึกอีเมลยืนยัน
-          </button>
+          <div>
+            <button className="btn primary" type="submit">
+              บันทึกอีเมลยืนยัน
+            </button>
+          </div>
         </Form>
       </div>
     </section>

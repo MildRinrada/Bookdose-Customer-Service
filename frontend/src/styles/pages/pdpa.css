@@ -223,3 +223,317 @@
 .pdpa-erase .pdpa-actions {
   justify-content: flex-end;
 }
+/* The link to the letter under each entry of the log: quiet, one line, like the entry's other lines. */
+.pdpa-letter-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  margin-top: 2px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--link);
+}
+
+/* หนังสือแจ้งผล (PdpaLetter, /platform/pdpa/letter/<id>): the few fields that fill the letter in, over the letter set
+   on an A4 sheet. On paper only the sheet prints, black on white in any theme, on pages of its own (@page
+   pdpa-letter) with no browser margin, so the browser has nowhere to print the page's address or date around it.
+   The sheet's own bands are the margins instead: the head and foot of .pdpa-letter-page, which the browser repeats on
+   every page, and the line with the letter's number, fixed to the foot of every page. Sizes are in pt and mm, so the
+   app's text size never changes the letter. */
+.pdpa-letter-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: start;
+  gap: 20px;
+  min-height: 100vh;
+  padding: 24px 16px 56px;
+  background: var(--soft);
+}
+.pdpa-letter-tools {
+  display: grid;
+  gap: 12px;
+  width: min(210mm, 100%);
+}
+.pdpa-letter-tools .back-link {
+  justify-self: start;
+  margin: 0;
+}
+.pdpa-letter-tools>p {
+  margin: 0;
+}
+.pdpa-letter-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pdpa-letter-heading h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.pdpa-letter-heading p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+.pdpa-letter-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(200px,100%),1fr));
+  gap: 8px 14px;
+}
+.pdpa-letter-fields .field {
+  margin: 0;
+}
+.pdpa-letter {
+  position: relative;
+  width: 210mm;
+  max-width: 100%;
+  min-height: 297mm;
+  padding: 0 20mm 0 25mm;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 1px 3px #0000001f, 0 10px 30px #00000014;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  text-wrap: pretty;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pdpa-letter * {
+  color: inherit;
+}
+.pdpa-letter tr:hover {
+  background: none;
+}
+.pdpa-letter .pdpa-letter-page {
+  table-layout: fixed;
+}
+.pdpa-letter .pdpa-letter-page>*>tr>td {
+  padding: 0;
+  border: 0;
+  font-size: inherit;
+  vertical-align: top;
+}
+.pdpa-letter-band {
+  height: 20mm;
+}
+.pdpa-letter-foot {
+  position: absolute;
+  right: 20mm;
+  bottom: 9mm;
+  left: 25mm;
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  padding-top: 1.5mm;
+  border-top: .5pt solid #8a8a8a;
+  font-size: 8.5pt;
+  color: #444 !important;
+}
+.pdpa-letter-letterhead {
+  display: grid;
+  justify-items: center;
+  gap: .5mm;
+  margin-bottom: 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 1.2pt solid #000;
+  font-size: 10pt;
+  text-align: center;
+}
+.pdpa-letter-letterhead strong {
+  font-size: 15pt;
+  line-height: 1.35;
+}
+.pdpa-letter-gap {
+  display: inline-block;
+  width: 5mm;
+}
+.pdpa-letter-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2mm 8mm;
+  margin-bottom: 5mm;
+}
+.pdpa-letter-lines {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 1mm 4mm;
+  margin: 0 0 5mm;
+}
+.pdpa-letter-lines div {
+  display: contents;
+}
+.pdpa-letter-lines dt {
+  font-weight: 700;
+}
+.pdpa-letter-lines dd {
+  margin: 0;
+}
+.pdpa-letter-para {
+  margin: 0 0 3mm;
+  text-indent: 12mm;
+}
+.pdpa-letter-section {
+  margin: 4mm 0;
+}
+.pdpa-letter-section h2 {
+  margin: 0 0 2mm;
+  font-size: 11pt;
+  font-weight: 700;
+  break-after: avoid;
+}
+.pdpa-letter-section>p {
+  margin: 0 0 2mm;
+}
+.pdpa-letter-section ul {
+  display: grid;
+  gap: 1mm;
+  margin: 0;
+  padding-left: 6mm;
+}
+.pdpa-letter .pdpa-letter-table {
+  width: 100%;
+  margin: 0 0 2mm;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 10.5pt;
+}
+.pdpa-letter .pdpa-letter-table caption {
+  margin-bottom: 1.5mm;
+  font-weight: 600;
+  text-align: left;
+  caption-side: top;
+}
+.pdpa-letter .pdpa-letter-table :is(th,td) {
+  padding: 1.1mm 2.4mm;
+  border: .6pt solid #000;
+  background: none;
+  font-size: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+.pdpa-letter .pdpa-letter-table th {
+  background: #f0f0f0;
+  font-weight: 600;
+}
+.pdpa-letter-table tr {
+  break-inside: avoid;
+}
+.pdpa-letter-table.is-facts th {
+  width: 36%;
+  text-align: left;
+}
+/* The counts: the number of the row and the organization's name, then a column per kind, figures on the right. */
+.pdpa-letter-table.is-counts thead th {
+  text-align: center;
+  vertical-align: bottom;
+}
+.pdpa-letter-table.is-counts th:first-child,.pdpa-letter-table.is-counts .is-place {
+  width: 14mm;
+  text-align: center;
+}
+.pdpa-letter-table.is-counts th:nth-child(2) {
+  width: 28%;
+}
+.pdpa-letter-table.is-counts .is-figure {
+  text-align: right;
+}
+.pdpa-letter-table.is-counts .is-total td {
+  font-weight: 700;
+}
+/* Said of the table above it, so it does not start the next page alone. */
+.pdpa-letter-note {
+  font-size: 10pt;
+  color: #333 !important;
+  break-before: avoid;
+}
+/* The closing words, the signature and the contacts stay together: a signature alone on a last page reads as
+   detached from what it signs. */
+.pdpa-letter-close {
+  margin-top: 5mm;
+  break-inside: avoid;
+}
+.pdpa-letter-sign {
+  display: grid;
+  justify-items: center;
+  width: 50%;
+  margin: 6mm 0 0 auto;
+  text-align: center;
+}
+.pdpa-letter-sign p {
+  margin: 0;
+}
+.pdpa-letter-signature {
+  height: 16mm;
+}
+.pdpa-letter-blank {
+  display: inline-block;
+  width: 50mm;
+  max-width: 70%;
+  height: 1em;
+  border-bottom: .6pt dotted #000;
+  vertical-align: baseline;
+}
+.pdpa-letter-contact {
+  display: grid;
+  gap: .5mm;
+  margin-top: 8mm;
+  font-size: 10pt;
+}
+/* A phone shows the letter to read, not to print: the page's margins would leave it a column of words. A4 is about
+   794px wide, so this is for screens only, or it would apply to the printed page too. */
+@media screen and (max-width: 800px) {
+  .pdpa-letter {
+    min-height: 0;
+    padding: 0 16px 40px;
+  }
+  .pdpa-letter-band {
+    height: 16px;
+  }
+  .pdpa-letter-foot {
+    right: 16px;
+    bottom: 12px;
+    left: 16px;
+  }
+}
+@page pdpa-letter {
+  size: A4;
+  margin: 0;
+}
+@media print {
+  body:has(.pdpa-letter) {
+    background: #fff !important;
+  }
+  .pdpa-letter-tools {
+    display: none !important;
+  }
+  .pdpa-letter-screen {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    background: none;
+  }
+  .pdpa-letter {
+    page: pdpa-letter;
+    width: auto;
+    max-width: none;
+    min-height: 0;
+    padding: 0 20mm 0 25mm;
+    box-shadow: none;
+  }
+  .pdpa-letter-band {
+    height: 20mm;
+  }
+  /* Fixed on paper: printed at the foot of every page, in the room the table's foot band keeps free. */
+  .pdpa-letter-foot {
+    position: fixed;
+    right: 20mm;
+    bottom: 9mm;
+    left: 25mm;
+  }
+}

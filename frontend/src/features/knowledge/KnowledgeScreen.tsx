@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useDialogs } from '@/components/ui/Dialogs';
+import { ImportArticlesButton, OpenImports } from './components/ImportArticles';
 import { TemplateLibraryButton } from './components/TemplateLibrary';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { FilterPill, FilterSelect, SearchInput } from '@/components/ui/filters';
@@ -212,6 +213,8 @@ function KnowledgeList({ openId }: { openId?: string }) {
                 {/* The answers every organization needs anyway, written once by the Bookdose team: taking one is a
                     copy this organization owns and edits (features/knowledge/components/TemplateLibrary). */}
                 <TemplateLibraryButton />
+                {/* A PDF, Word or text file read into drafts to check (features/knowledge/ImportScreen). */}
+                <ImportArticlesButton />
                 <button type="button" className="btn kb-new primary" onClick={() => edit()}>
                   <Icon name="plus" />
                   เขียนบทความใหม่
@@ -264,6 +267,7 @@ function KnowledgeList({ openId }: { openId?: string }) {
           ) : null}
         </dl>
       </section>
+      {canWrite && <OpenImports />}
       <section className="filters knowledge-filters">
         <FilterSelect
           id="article-filter-visibility"

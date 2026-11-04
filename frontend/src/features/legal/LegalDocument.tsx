@@ -114,7 +114,7 @@ export function LegalPage({ doc }: { doc: LegalKey }) {
     <main className="single-page legal-page">
       <TextSizeControls />
       <Brand />
-      <section className="card">
+      <section className="card mt">
         {found.error ? (
           <ErrorState error={found.error} onRetry={() => void found.refetch()} />
         ) : !found.data ? (

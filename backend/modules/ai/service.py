@@ -16,9 +16,10 @@ from backend.exceptions.errors import AIError
 from backend.extensions import ai_webhook, gemini_client, openai_client
 from backend.middleware.access import get_scoped
 from backend.modules.ai import gather, mood, polish, repository, schema, summary, translate, triage
-from backend.modules.ai.model import BACKGROUND_MODES, DEFAULT_MODEL, OWNER_MODES, PAYLOAD_MODES
+from backend.modules.ai.model import BACKGROUND_MODES, DEFAULT_MODEL, IMPORT_MODES, OWNER_MODES, PAYLOAD_MODES
 from backend.modules.channels import service as channels
 from backend.modules.conversations import repository as conversations
+from backend.modules.knowledge import importer
 from backend.modules.organization import repository as memberships
 from backend.modules.platform import repository as tenants
 from backend.modules.tickets import repository as tickets, service as ticket_service
@@ -178,7 +179,7 @@ def enqueue(db, tenant_id, mode, conversation_id=None, requested_by=None, payloa
     The owner's jobs (article, brief) and the assistant's (ask) carry their input in `payload` and count like a staff
     draft."""
     cfg = config(db)
-    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary','polish',*PAYLOAD_MODES) and not cfg['drafts_enabled']) \
+    if (mode=='bot' and not bot_enabled(db,conversation_id)) or (mode in ('draft','summary','polish',*PAYLOAD_MODES,*IMPORT_MODES) and not cfg['drafts_enabled']) \
             or (mode=='translate' and not cfg['translate_enabled']) or (mode=='triage' and not cfg['triage_enabled']):
         raise AIError('disabled')
     if not has_key(tenant_id):
@@ -366,7 +367,7 @@ def permitted(cd, tenant_id, job, db):
     membership = memberships.find_active_membership(cd,tenant_id,job['requested_by'])
     if not membership:
         return False
-    if job['mode']=='test' or job['mode'] in OWNER_MODES:
+    if job['mode']=='test' or job['mode'] in (*OWNER_MODES,*IMPORT_MODES):
         return membership['role']=='admin' and not membership.get('expires_at')
     if job['mode'] in ('ask','polish'):
         return not membership.get('expires_at')
@@ -401,7 +402,7 @@ def process_one(tenant_id):
             return True
         lease = uid()
         repository.claim(db,job['id'],lease)
-        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in (*BACKGROUND_MODES,'summary','polish')
+        owner = job['mode'] in PAYLOAD_MODES or job['mode'] in (*BACKGROUND_MODES,*IMPORT_MODES,'summary','polish')
         if job['mode']=='test':
             payload,articles,signature = {'test':'Bookdose connection check'},[],None
         elif owner:
@@ -440,6 +441,9 @@ def process_one(tenant_id):
         elif job['mode'] in ('polish','triage','gather'):
             raw,usage = ask()
             result = {'polish':polish,'triage':triage,'gather':gather}[job['mode']].validate(raw,payload)
+        elif job['mode'] in IMPORT_MODES:
+            raw,usage = ask()
+            result = importer.validate(job['mode'],raw,payload)
         elif owner:
             raw,usage = ask()
             result = validate_owner_result(raw,job['mode'],payload)
@@ -505,6 +509,10 @@ def process_one(tenant_id):
             return True
         if job['mode']=='polish':
             repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            return True
+        if job['mode'] in IMPORT_MODES:
+            repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
+            importer.apply(db,job,result,error or '')
             return True
         if job['mode']=='summary':
             if not error:

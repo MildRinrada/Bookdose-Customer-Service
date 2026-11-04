@@ -10,7 +10,7 @@ import type { RichFormat } from '@/features/rich/types';
 import { useInvalidate } from '@/lib/query';
 import { ARTICLE_PREFIXES, saveArticle } from '../api';
 import { visibilityLabels, wordCountText } from '../labels';
-import type { Article } from '../types';
+import type { Article, ArticleInput } from '../types';
 
 /* The article editor (pages/knowledge/article-form). Its pieces are exported for the global FAQ editor, which
    has the same title, category and body, with "ผู้อ่าน" in place of "สิทธิ์การอ่าน". */
@@ -126,17 +126,20 @@ export type ArticleDraft = Pick<Article, 'title' | 'category' | 'body'> & { visi
 
 /** Write or edit a knowledge article. Open with openModal(title, <ArticleForm/>, { wide: true }). Closing with
     unsaved words asks first, on top of the editor, so "keep writing" leaves the text where it was; a `draft` counts
-    as unsaved words from the start. */
+    as unsaved words from the start. `save` stands in for saving the article itself (an imported draft is saved
+    through its import, features/knowledge/ImportScreen). */
 export function ArticleForm({
   article,
   draft,
   categories,
   onSaved,
+  save,
 }: {
   article?: Article;
   draft?: ArticleDraft;
   categories: string[];
   onSaved?: (id: string) => unknown;
+  save?: (input: ArticleInput) => Promise<{ id: string }>;
 }) {
   const fill = article ?? draft;
   const editor = useRichEditor();
@@ -160,7 +163,8 @@ export function ArticleForm({
   useEffect(() => {
     const form = formOf();
     if (!form) return;
-    initial.current = draft ? '' : snapshot(form);
+    // A draft from elsewhere is lost on closing, unless something else keeps it (an import's draft, saved through `save`).
+    initial.current = draft && !save ? '' : snapshot(form);
     const dirty = () => !saved.current && initial.current !== null && initial.current !== snapshot(form);
     setCloseGuard(() => {
       if (!dirty()) return true;
@@ -192,12 +196,13 @@ export function ArticleForm({
       className="article-editor"
       onInput={check}
       onSubmit={async (values) => {
-        const { id } = await saveArticle(article?.id, {
+        const input = {
           title: values.title ?? '',
           category: values.category ?? '',
           body: values.body ?? '',
           visibility: values.visibility ?? 'internal',
-        });
+        };
+        const { id } = await (save ? save(input) : saveArticle(article?.id, input));
         saved.current = true;
         closeModal(true);
         toast('บันทึกบทความเรียบร้อยแล้ว');

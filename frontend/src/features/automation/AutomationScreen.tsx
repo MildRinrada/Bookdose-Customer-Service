@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { Icon } from '@/components/Icon';
+import { AskAiButton } from '@/features/ai/components/AskAi';
 import { EmptyState, ErrorState, PageLoading } from '@/components/ui/display';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { TextArea, TextField } from '@/components/ui/fields';
@@ -96,6 +97,10 @@ function AutomationView({ data, tab }: { data: AutomationPage; tab?: string }) {
       <div className="page-heading">
         <div>
           <h1>ระบบอัตโนมัติ</h1>
+        </div>
+        {/* ถาม AI: this screen's guide goes with the question (backend ai/settings_help.py). */}
+        <div className="flex">
+          <AskAiButton section="automation" />
         </div>
       </div>
       <div className="settings-frame">

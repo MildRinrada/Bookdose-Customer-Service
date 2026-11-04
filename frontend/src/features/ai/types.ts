@@ -104,6 +104,8 @@ export type AssistantGathered = {
   members: number;
   channels: number;
   history: number;
+  /** The settings page asked from, whose guide and state went with the question (backend ai/settings_help.py). */
+  settings?: string;
 };
 
 /** GET /api/ai/settings (admins only). */

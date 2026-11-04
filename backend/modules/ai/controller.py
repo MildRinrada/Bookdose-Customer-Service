@@ -90,3 +90,10 @@ def triage(req, ticket_id):
 
 def job(req, job_id):
     return req.send(200,service.job_view(req.db,req.ctx,job_id))
+
+
+
+@require_role('admin',message=ADMINS_ONLY)
+def settings_help(req, section):
+    from backend.modules.ai import settings_help
+    return req.send(200,settings_help.view(section))

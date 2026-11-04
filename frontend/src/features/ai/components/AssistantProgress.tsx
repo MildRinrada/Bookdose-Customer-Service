@@ -80,6 +80,7 @@ function gatheredParts(g: AssistantGathered): string[] {
     `ทีมงาน ${g.members} คน`,
     'สถานะช่องทาง การแจกเคส และ AI',
     g.history ? `แชทก่อนหน้า ${g.history} ข้อความ` : '',
+    g.settings ? `คู่มือและการตั้งค่าหน้า${g.settings}` : '',
   ].filter(Boolean);
 }
 

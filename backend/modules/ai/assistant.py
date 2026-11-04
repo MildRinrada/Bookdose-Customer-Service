@@ -5,7 +5,8 @@ ai/assistant_actions.py), or why something in their system does not work.
 What goes to the provider: the question, the last few turns of this chat (kept by the browser, sent back with each
 question), the organization's knowledge articles that match them, internal ones included (staff read those), and the
 workspace as this member may see it (ai/assistant_context.py: cases by number and subject, people, teams, tags, the
-case on screen, how the channels and the handing out are doing). Email addresses and phone numbers in what staff typed
+case on screen, how the channels and the handing out are doing), and from a settings page that page's guide and what it
+holds now (ai/settings_help.py: never a secret). Email addresses and phone numbers in what staff typed
 and in customers' messages are masked first; customers' names are never sent. The answer cites articles by id; a
 source that does not quote an article it was given is dropped (service.validate_owner_result)."""
 import re
@@ -48,11 +49,15 @@ def persona_of(user_id):
 def request(cd, db, ctx, body):
     """Queue the question: (job id, what was gathered for it). The browser waits for the job like a reply draft (GET
     /api/ai/jobs/<id>) and shows the member what was read meanwhile. body.page names the case or conversation open on
-    the member's screen ({ticket_id} or {conversation_id}), for "this case"."""
+    the member's screen ({ticket_id} or {conversation_id}), for "this case", or the settings page ({settings})."""
     question,turns = ask_form(body)
     asked = ' '.join([question,*(t['text'] for t in turns if t['role']=='user')])
     articles = service.retrieve(db,asked,public_only=False)
     context,refs = assistant_context.build(cd,db,ctx,asked,body.get('page'))
+    from backend.modules.ai import settings_help
+    settings_page = settings_help.context(cd,db,ctx,body.get('page'))
+    if settings_page:
+        context['settings_page'] = settings_page
     payload = {'asked_by':'owner' if ctx['role']=='admin' else 'agent','persona':persona_of(ctx['id']),
                'question':insights._mask(question),
                'history':[{'role':t['role'],'text':insights._mask(t['text'])} for t in turns],
@@ -61,7 +66,8 @@ def request(cd, db, ctx, body):
     current = context['current'] or {}
     gathered = {'cases':len(context['cases']),'cases_not_listed':context['cases_not_listed'],'articles':len(articles),
                 'current':current.get('case') or ('chat' if current else ''),'customers':len(context['customers_named']),
-                'members':len(context['members']),'channels':len(context['health']['channels']),'history':len(turns)}
+                'members':len(context['members']),'channels':len(context['health']['channels']),'history':len(turns),
+                'settings':settings_page['page'] if settings_page else ''}
     return insights._queue(db,ctx,'ask',payload),gathered
 
 

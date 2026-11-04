@@ -397,18 +397,6 @@
   gap: 8px 14px;
   margin-top: 10px;
 }
-/* เกลาข้อความ (features/ai/components/AiPolish.tsx): how to polish, then the result, in the draft's frame. */
-.ai-polish-note {
-  margin: 0 0 10px;
-  color: var(--muted);
-  font-size: .9375rem;
-  line-height: 1.55;
-}
-.ai-polish-styles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 .ai-result-actions .ai-citations {
   margin: 0;
   font-size: .9375rem;
@@ -440,6 +428,271 @@
 }
 .ai-result-empty .ai-result-close {
   margin-top: -4px;
+}
+
+/* เกลาข้อความ (features/ai/components/AiPolish.tsx), in the draft's ai-result frame but its own look, every rule under
+   .ai-polish so the draft keeps its own. The head carries the AI mark (the assistant button's grey-to-ink tile); the
+   three ways are cards with an icon and one line on what each does, the icon going dark on hover as a pressed tab
+   does; while the AI works the mark breathes and the line shimmers where the text will come; the result is the new
+   text on the soft fill, the not-sent note as an amber chip, and the other two ways as small buttons. On a narrow
+   panel (the phone's pinned box) the cards keep only the icon and the name, side by side, so the box stays short. */
+.ai-result.ai-polish {
+  container: ai-polish / inline-size;
+  margin: 4px 0 10px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  animation: ai-polish-in .18s ease-out;
+}
+@keyframes ai-polish-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.ai-polish .ai-result-head {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 8px;
+}
+.ai-polish-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ink) 62%, var(--paper)), var(--ink));
+  color: var(--paper);
+}
+.ai-polish .ai-polish-mark .icon {
+  width: 15px;
+  height: 15px;
+}
+.ai-polish .ai-result-head strong {
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.4;
+}
+/* ยังไม่ได้ส่ง ตรวจก่อนใช้: waiting on the member, so the app's amber for waiting. */
+.ai-polish .ai-result-head .muted {
+  justify-self: start;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: .8125rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.ai-polish .ai-result-close {
+  grid-column: -2 / -1;
+  grid-row: 1;
+  margin: -2px -4px -2px 0;
+}
+
+.ai-polish-styles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ai-polish-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px 6px 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.ai-polish-option-icon {
+  grid-row: 1 / 3;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--ink);
+  transition: background .15s, color .15s;
+}
+.ai-polish .ai-polish-option-icon .icon {
+  width: 17px;
+  height: 17px;
+}
+.ai-polish-option-label {
+  font-weight: 700;
+  line-height: 1.4;
+}
+.ai-polish-option-hint {
+  color: var(--muted);
+  font-size: .8125rem;
+  line-height: 1.45;
+}
+.ai-polish-option:hover {
+  border-color: var(--control-line);
+  background: var(--surface-hover);
+}
+.ai-polish-option:hover .ai-polish-option-icon {
+  background: var(--ink);
+  color: var(--paper);
+}
+.ai-polish-option:active {
+  transform: translateY(1px);
+}
+.ai-polish-option:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* While the AI works: the mark breathes and the line shimmers, ink passing over the muted words. */
+.ai-polish.is-working .ai-polish-mark .icon {
+  animation: ai-polish-breathe 1.4s ease-in-out infinite;
+}
+@keyframes ai-polish-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .55; transform: scale(.82) rotate(18deg); }
+}
+.ai-polish-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+.ai-polish .ai-polish-note .icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.ai-polish-note>span {
+  color: transparent;
+  background: linear-gradient(100deg, var(--muted) 0 40%, var(--ink) 50%, var(--muted) 60% 100%) 0 0/250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: ai-polish-shimmer 1.8s linear infinite;
+}
+@media (forced-colors: active) {
+  .ai-polish-note>span {
+    background: none;
+    color: CanvasText;
+  }
+}
+@keyframes ai-polish-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+/* The result: the new text on the soft fill, then ใช้ข้อความนี้ and the other two ways. */
+.ai-polish .ai-result-answer {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--soft);
+}
+.ai-polish .ai-result-actions {
+  gap: 8px;
+}
+.ai-polish-styles.again {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ai-polish .ai-polish-again {
+  gap: 6px;
+}
+.ai-polish .ai-polish-again .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+.ai-polish .ai-result-warn {
+  margin: 0 0 8px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+@container ai-polish (max-width: 36em) {
+  .ai-polish .ai-result-head {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .ai-polish .ai-result-head .muted {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+  .ai-polish-styles {
+    gap: 6px;
+  }
+  .ai-polish-option {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 2px;
+    padding: 7px 4px 6px;
+    text-align: center;
+  }
+  .ai-polish-option-icon {
+    grid-row: auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+  }
+  .ai-polish .ai-polish-option-icon .icon {
+    width: 15px;
+    height: 15px;
+  }
+  .ai-polish-option-hint {
+    display: none;
+  }
+  /* ใช้ข้อความนี้ across the box, the other two ways under it sharing a row (each on its own if the text is large). */
+  .ai-polish .ai-result-actions>.btn.primary,.ai-polish-styles.again {
+    flex: 1 1 100%;
+  }
+  .ai-polish .ai-polish-again {
+    flex: 1 1 auto;
+  }
+  .ai-polish .ai-polish-again .icon {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .ai-polish .ai-result-close {
+    width: 44px;
+    height: 44px;
+    margin: -8px -10px -8px 0;
+  }
+  .ai-polish .ai-result-actions .btn {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-result.ai-polish,.ai-polish.is-working .ai-polish-mark .icon {
+    animation: none;
+  }
+  .ai-polish-note>span {
+    background: none;
+    color: inherit;
+    animation: none;
+  }
+  .ai-polish-option,.ai-polish-option-icon {
+    transition: none;
+  }
+  .ai-polish-option:active {
+    transform: none;
+  }
 }
 /* ต่อจากเรื่องเดิม: the earlier chat the customer said this one carries on from, opened from the header. */
 .staff-chats .conv-facts .conv-follows {

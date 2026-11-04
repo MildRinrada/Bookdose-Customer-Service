@@ -18,6 +18,8 @@ import { BackupPanel, CategoriesPanel, ProfilePanel, ServicePanel } from './comp
 import { TeamSecurityPanel } from './components/TeamSecurityPanel';
 import { TeamsPanel } from './components/TeamsPanel';
 import { LegalPanel } from '@/features/legal/StaffLegal';
+import { settingsHelpOf } from '@/features/ai/askAi';
+import { AskAiButton } from '@/features/ai/components/AskAi';
 import { partsOf, settingsPlaceOf, settingsParts, settingsTabs, type SettingsPart, type SettingsTab } from './labels';
 
 /* Organization settings: the sections in the menu on the left (as before), one open on the right. A section with too
@@ -64,6 +66,8 @@ export function SettingsScreen({ tab }: { tab?: string }) {
   }, [current, place.part, setRemembered]);
   const nav = useRef<HTMLElement>(null);
   usePinnedMenu(nav);
+  // ถาม AI on the pages with a guide (backend ai/settings_help.py), the way the address names them.
+  const asks = settingsHelpOf('/settings', `?tab=${place.part ?? current}`);
 
   return (
     <>
@@ -74,6 +78,11 @@ export function SettingsScreen({ tab }: { tab?: string }) {
             {work.tenant.name} คุณเข้าใช้งานในฐานะ{roleLabels[work.role]}
           </p>
         </div>
+        {asks && (
+          <div className="flex">
+            <AskAiButton section={asks} />
+          </div>
+        )}
       </div>
       <div className="settings-frame">
         <nav ref={nav} className="settings-nav" aria-label="หมวดการตั้งค่า">

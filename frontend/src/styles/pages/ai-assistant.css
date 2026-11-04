@@ -1075,3 +1075,77 @@ textarea.assistant-action-text:focus-visible {
 .ai-not-ready .btn {
   margin-top: 8px;
 }
+
+/* ถาม AI on the settings pages (features/ai/components/AskAi): beside the page's title, beside a problem the page
+   shows, and in the panel the page's guide (read without an AI) and its other questions under an answer. */
+.btn.ask-ai .icon {
+  color: var(--purple);
+}
+.notice.ask-ai-problem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.ask-ai-about {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ask-ai-about:hover {
+  background: var(--soft);
+}
+.ask-ai-about:focus-visible {
+  outline: 3px solid #b4b4b4;
+  outline-offset: 2px;
+}
+.ask-ai-about .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--purple);
+}
+.assistant-guide {
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.assistant-guide h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: .95rem;
+}
+.assistant-guide h3 .icon {
+  width: 16px;
+  height: 16px;
+}
+.assistant-guide-reference {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.assistant-followups {
+  display: grid;
+  gap: 2px;
+  margin: -4px 0 4px;
+}
+@media (max-width:600px) {
+  .ask-ai-about {
+    min-height: 44px;
+  }
+}

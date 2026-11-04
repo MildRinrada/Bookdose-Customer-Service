@@ -131,6 +131,14 @@
   gap: 14px;
   margin: -6px 0 20px;
 }
+/* Under a card it stands apart from it (pulled up, it sat on the card's edge), and at the end of the page it stays
+   clear of the ผู้ช่วย AI button in the corner (fixed 22px from the bottom, 52px tall). */
+.card + .settings-save {
+  margin-top: 16px;
+}
+.card + .settings-save:last-child {
+  margin-bottom: 56px;
+}
 .settings-row-actions {
   display: flex;
   flex-wrap: wrap;

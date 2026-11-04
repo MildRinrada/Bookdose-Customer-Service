@@ -1746,6 +1746,35 @@ h1>.info-hint {
   top: auto;
   bottom: var(--y);
 }
+/* Kept open on a settings page with a guide it holds ถาม AI เพิ่ม (components/ui/InfoHint), so it takes the pointer. */
+.info-hint-pop[role="dialog"] {
+  pointer-events: auto;
+}
+.info-hint-ask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border: 1px solid #ffffff4d;
+  border-radius: 999px;
+  background: #ffffff1a;
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.info-hint-ask:hover {
+  background: #ffffff33;
+}
+.info-hint-ask:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.info-hint-ask .icon {
+  width: 14px;
+  height: 14px;
+}
 /* A few items explained in one (i): one per line. */
 .info-hint-list {
   display: grid;

@@ -1,6 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/Icon';
+import { AskAiAbout } from '@/features/ai/components/AskAi';
 import { useCopyText, useRunAction } from '@/components/ui/actions';
 import { useDialogs } from '@/components/ui/Dialogs';
 import { ErrorState, PageLoading } from '@/components/ui/display';
@@ -147,7 +148,12 @@ function FacebookCard({ c }: { c: FacebookSetting }) {
           </div>
         )}
         <div className="mt" role="status">
-          {c.last_error && <p className="notice">{c.last_error}</p>}
+          {c.last_error && (
+            <p className="notice ask-ai-problem">
+              {c.last_error}
+              <AskAiAbout section="facebook" problem={c.last_error} />
+            </p>
+          )}
           <p className="small muted">
             ตรวจล่าสุด: {c.last_checked ? date(c.last_checked, true) : '-'} รับข้อความล่าสุด: {c.last_received ? date(c.last_received, true) : '-'}
           </p>

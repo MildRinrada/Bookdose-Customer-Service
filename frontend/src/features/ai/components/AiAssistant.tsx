@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/Icon';
+import { Markdown } from '@/features/rich/Markdown';
 import { usePreferences } from '@/features/staff-account/prefs';
+import { useApi } from '@/lib/query';
 import { useBoot, useWork } from '@/lib/session';
 import { useToast } from '@/components/ui/Toast';
 import { ApiError } from '@/lib/api/client';
 import { askAssistant, stopAssistant, waitForAiJob } from '../api';
+import { ASK_AI_EVENT, settingsHelpHere, settingsHelpPath, type AskAiRequest, type SettingsHelp, type SettingsHelpSection } from '../askAi';
 import type { AiCitation, AssistantFeedback, AssistantResult } from '../types';
 import { AiCitations } from './AiCitations';
 import { useWorkspaceAi } from './AiControls';
@@ -43,8 +46,9 @@ type Turn = {
   feedback?: AssistantFeedback;
 };
 
-/** The case or chat open on the page: /tickets/<id> or /inbox/<id>. */
-function pageOf(pathname: string | null): { ticket_id?: string; conversation_id?: string } | null {
+/** The case or chat open on the page (/tickets/<id> or /inbox/<id>), or the settings page with a guide (askAi). */
+function pageOf(pathname: string | null, settings: SettingsHelpSection | null): { ticket_id?: string; conversation_id?: string; settings?: string } | null {
+  if (settings) return { settings };
   const found = /^\/(tickets|inbox)\/([a-f0-9]{32})(?:\/|$)/.exec(pathname ?? '');
   if (!found) return null;
   return found[1] === 'tickets' ? { ticket_id: found[2] } : { conversation_id: found[2] };
@@ -217,6 +221,11 @@ export function AiAssistant() {
     }
   });
   const [turns, setTurns] = useState<Turn[]>([]);
+  // The settings page it was opened on, its guide (its questions, and its words when no AI can be asked), and a
+  // question a button on the page handed over (askAi), asked once the panel can.
+  const [section, setSection] = useState<SettingsHelpSection | null>(null);
+  const help = useApi<SettingsHelp>(open && section ? settingsHelpPath(section) : null);
+  const [handed, setHanded] = useState<string | null>(null);
   // Whose chat `turns` holds: nothing is saved before this tab's chat was read, or the empty start would be written
   // over it (as it was on every reload in development, where effects run twice).
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -276,6 +285,9 @@ export function AiAssistant() {
   const ask = async (question: string) => {
     const q = question.trim();
     if (!q || busy) return;
+    // Where the member is now; on /settings with no section in the address, the one a button there named.
+    const here = settingsHelpHere() ?? (window.location.pathname === '/settings' ? section : null);
+    setSection(here);
     const history = turns.filter((t) => !t.failed && !t.local).slice(-HISTORY_SENT).map((t) => ({ role: t.role, text: historyText(t) }));
     setTurns((all) => [...all, { role: 'user', text: q, fresh: true }]);
     setText('');
@@ -285,7 +297,7 @@ export function AiAssistant() {
     const current = () => waitRef.current as AssistantWait;
     showWait({ started: Date.now(), phase: 'reading' });
     try {
-      const queued = await askAssistant(q, history, pageOf(pathname));
+      const queued = await askAssistant(q, history, pageOf(pathname, here));
       showWait({ ...current(), phase: 'queued', job: queued.id, gathered: queued.gathered, queuedAt: Date.now(), lastCheck: Date.now() });
       const job = await waitForAiJob(queued.id, () => alive.current, {
         onCheck: (checked) => showWait(afterCheck(current(), checked)),
@@ -354,9 +366,12 @@ export function AiAssistant() {
     }
   };
 
-  // Before the first question: a greeting and the question box in the middle of the panel.
+  // Before the first question: a greeting and the question box in the middle of the panel. On a settings page the
+  // questions are the ones people get stuck on there.
   const welcome = ready && turns.length === 0 && !thinking;
-  const typed = useTypingPlaceholder(SUGGESTIONS, open && welcome && !leaving && !text);
+  const pageQuestions = help.data?.questions;
+  const suggestions = useMemo(() => (pageQuestions?.length ? pageQuestions : SUGGESTIONS), [pageQuestions]);
+  const typed = useTypingPlaceholder(suggestions, open && welcome && !leaving && !text);
 
   // From the first screen into the chat: the screen fades up and away, then the chat comes in under it.
   const leaveWelcome = (then: () => void) => {
@@ -406,6 +421,27 @@ export function AiAssistant() {
     if (open && !welcome) input.current?.focus();
   }, [open, welcome]);
 
+  // ถาม AI from the page: open where the member is, and ask what the button asked once the panel can (after the
+  // personality is picked, with no other question waiting). Without an AI the page's guide is shown instead.
+  useEffect(() => {
+    const onAsk = (event: Event) => {
+      const detail = (event as CustomEvent<AskAiRequest>).detail ?? {};
+      setSection(detail.section ?? settingsHelpHere());
+      setOpen(true);
+      setHanded(detail.question?.trim() || null);
+    };
+    window.addEventListener(ASK_AI_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_AI_EVENT, onAsk);
+  }, []);
+  useEffect(() => {
+    if (!handed || !open) return;
+    if (!ready) return setHanded(null);
+    if (picking || busy || leaving || thinking) return;
+    setHanded(null);
+    send(handed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- send is this render's; the question goes once
+  }, [handed, open, ready, picking, busy, leaving, thinking]);
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     send(text);
@@ -426,7 +462,10 @@ export function AiAssistant() {
         aria-controls="ai-assistant"
         aria-label={open ? 'ปิดผู้ช่วย AI' : 'เปิดผู้ช่วย AI'}
         data-tip="ผู้ช่วย AI"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open) setSection(settingsHelpHere());
+          setOpen(!open);
+        }}
       >
         <Icon name={open ? 'close' : 'sparkle'} />
       </button>
@@ -483,7 +522,7 @@ export function AiAssistant() {
             <div className={`assistant-welcome${leaving ? ' leaving' : ''}`}>
               <div className="assistant-hello">
                 <h2>สวัสดี{userName ? ` คุณ${userName}` : ''}</h2>
-                <p>วันนี้ให้ช่วยเรื่องอะไรดี</p>
+                <p>{help.data ? `ถามเรื่องหน้า${help.data.title}ได้เลย` : 'วันนี้ให้ช่วยเรื่องอะไรดี'}</p>
               </div>
               <form className="assistant-ask" onSubmit={submit}>
                 <label className="sr-only" htmlFor="assistant-input">
@@ -505,7 +544,7 @@ export function AiAssistant() {
               </form>
               <div className="assistant-suggestions" role="group" aria-label="ลองถาม">
                 <span className="assistant-suggestions-title">ลองถาม</span>
-                {SUGGESTIONS.map((s) => (
+                {suggestions.map((s) => (
                   <button key={s} type="button" className="assistant-suggestion" onClick={() => send(s)}>
                     <Icon name="arrow" />
                     <span>{s}</span>
@@ -525,6 +564,7 @@ export function AiAssistant() {
                 {!ready ? (
                   <div className="assistant-empty">
                     <AiNotReady ai={ai} onGo={() => setOpen(false)} />
+                    {help.data && <PageGuide help={help.data} />}
                   </div>
                 ) : (
                   turns.map((t, i) => (
@@ -558,6 +598,23 @@ export function AiAssistant() {
                       ) : null}
                     </div>
                   ))
+                )}
+                {/* The AI could not answer on a settings page (on the AI page, often the very thing being set up): the
+                    page's own guide still can. */}
+                {ready && help.data && !busy && turns.at(-1)?.failed && <PageGuide help={help.data} />}
+                {/* After an answer on a settings page, the page's other questions, one press away. */}
+                {ready && help.data && !busy && !thinking && turns.at(-1)?.role === 'assistant' && !turns.at(-1)?.failed && !turns.at(-1)?.fresh && (
+                  <div className="assistant-followups" role="group" aria-label={`ถามต่อเรื่องหน้า${help.data.title}`}>
+                    {help.data.questions
+                      .filter((q) => !turns.some((t) => t.role === 'user' && t.text === q))
+                      .slice(0, 3)
+                      .map((q) => (
+                        <button key={q} type="button" className="assistant-suggestion" onClick={() => send(q)}>
+                          <Icon name="arrow" />
+                          <span>{q}</span>
+                        </button>
+                      ))}
+                  </div>
                 )}
                 {busy && wait ? (
                   <AssistantProgress wait={wait} onStop={() => void stopWaiting()} />
@@ -600,5 +657,19 @@ export function AiAssistant() {
         </section>
       )}
     </>
+  );
+}
+
+/** The settings page's guide, read without an AI to ask (backend ai/settings_guides.py). */
+function PageGuide({ help }: { help: SettingsHelp }) {
+  return (
+    <section className="assistant-guide" aria-labelledby="assistant-guide-title">
+      <h3 id="assistant-guide-title">
+        <Icon name="book" />
+        คู่มือหน้า{help.title}
+      </h3>
+      <Markdown className="article-content" text={help.guide} />
+      {help.reference && <Markdown className="article-content assistant-guide-reference" text={help.reference} />}
+    </section>
   );
 }

@@ -70,7 +70,7 @@ FastAPI ทำหน้าที่เป็นตัวรับส่งเท
 | `platform` | ผู้ดูแลแพลตฟอร์มเท่านั้น |
 | `workspace` | สมาชิกขององค์กรที่เลือกอยู่ ต้องส่ง `X-Tenant-ID` ให้ตรงกับเซสชัน |
 
-งานที่เป็นของเจ้าขององค์กรกั้นเพิ่มที่ controller ด้วย `@require_role('admin')`
+งานที่เป็นของหัวหน้าทีมกั้นเพิ่มที่ controller ด้วย `@require_role('admin')`
 
 ### ชั้นของโค้ดในแต่ละโมดูล
 
@@ -215,7 +215,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AB as เบราว์เซอร์เจ้าขององค์กร
+    participant AB as เบราว์เซอร์หัวหน้าทีม
     participant API as API
     participant CDB as ฐานข้อมูลกลาง
     participant TDB as ฐานข้อมูลองค์กร

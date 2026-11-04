@@ -103,6 +103,7 @@ export const botReasonLabels: Record<string, string> = {
   customer: 'ลูกค้าขอคุยกับเจ้าหน้าที่',
   insufficient_knowledge: 'ไม่มีบทความที่ตอบได้',
   attachment_requires_staff: 'ลูกค้าส่งไฟล์แนบ',
+  angry: 'ลูกค้าโกรธมาก',
   staff: 'เจ้าหน้าที่รับเรื่องเอง',
   member_asked: 'ลูกค้าขอเจ้าหน้าที่คนเดิม',
   timeout: 'AI ตอบช้าเกินเวลา',

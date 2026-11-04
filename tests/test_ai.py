@@ -222,6 +222,17 @@ class AITests(unittest.TestCase):
         self.assertEqual(self.ok(human,'/api/public/alpha/session')['ai']['mode'],'human')
         self.assertFalse(answered(self.run_job()))
 
+    def test_a_very_angry_customer_is_handed_to_a_person_at_once(self):
+        self.enable();self.article()
+        angry,_=self.visitor(body='ดาวน์โหลดรายงานการอ่านไม่ได้ แย่ที่สุด จะแจ้ง สคบ')
+        self.assertEqual(self.ok(angry,'/api/public/alpha/session')['ai']['mode'],'human')
+        with D.tenant(self.org) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM ai_jobs WHERE mode='bot'").fetchone()[0],0)
+            self.assertEqual(db.execute("SELECT reason FROM ai_conversations WHERE reason='angry'").fetchone()[0],'angry')
+        # A calm question still goes to the chatbot.
+        calm,_=self.visitor()
+        self.assertEqual(self.ok(calm,'/api/public/alpha/session')['ai']['mode'],'bot')
+
     def test_malformed_and_fabricated_citations_are_not_published(self):
         self.enable();self.article();visitor,conv=self.visitor()
         def fabricated(*args):

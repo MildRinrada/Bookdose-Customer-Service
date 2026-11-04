@@ -152,6 +152,12 @@ def handoff(db, conversation_id, reason='customer'):
     return tid
 
 
+def angry_with_bot(db, conversation_id):
+    """The chatbot is answering and the customer's latest reading is โกรธมาก (ai/mood.py)."""
+    reading = mood.of(db,conversation_id)
+    return bool(reading and reading['level']==mood.ANGRY and conversation_state(db,conversation_id)['mode']=='bot')
+
+
 def requests_human(text):
     return bool(re.search(r'คุยกับ(?:คน|เจ้าหน้าที่|พนักงาน)|ติดต่อเจ้าหน้าที่|ขอ(?:คน|เจ้าหน้าที่)|human\s*(?:agent|please)|talk to (?:a )?(?:person|human)',text,re.I))
 
@@ -213,6 +219,12 @@ def on_customer_message(db, tenant_id, conversation_id, body, is_new=False):
     mood.on_customer_message(db,tenant_id,conversation_id,body)
     if requests_human(body):
         handoff(db,conversation_id)
+        return
+    # A very angry customer is not left with the chatbot: angry customers grow less satisfied with one that talks like
+    # a person, and more so when it cannot fix the problem (Crolic et al. 2022). The AI's reading, when it comes, can
+    # still hand over a customer the words missed (handle_result, 'mood').
+    if angry_with_bot(db,conversation_id):
+        handoff(db,conversation_id,'angry')
         return
     if conversation_state(db,conversation_id)['mode']!='bot':
         # Answers to what the chatbot asked for while the customer waits (ai/gather.py).
@@ -466,7 +478,12 @@ def process_one(tenant_id):
             # A new reading moves the case in the lists; a failed one leaves the words' reading as it was.
             changed = not error and mood.apply_ai(db,job,result)
             repository.finish_job(db,job['id'],'failed' if error else 'done',json.dumps(result,ensure_ascii=False),error or '')
-            if changed:
+            if changed and angry_with_bot(db,job['conversation_id']):
+                # The AI saw an anger the words missed: a person takes over, and the answer the chatbot is still
+                # writing is not sent (on_customer_message).
+                repository.cancel_bot_jobs(db,job['conversation_id'])
+                handoff(db,job['conversation_id'],'angry')
+            elif changed:
                 realtime.conversation(db,job['conversation_id'],public=False)
             return True
         if job['mode']=='translate':

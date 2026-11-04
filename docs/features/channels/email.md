@@ -16,7 +16,7 @@ Gmail และ Outlook ที่เปิดการยืนยันตั�
 
 ## เชื่อมต่อด้วย OAuth
 
-รองรับ Google Workspace หรือ Gmail และ Microsoft 365 หรือ Outlook ด้วย Authorization Code Flow พร้อม PKCE (S256) ผู้ดูแลองค์กรต้องลงทะเบียน OAuth application ของตัวเองก่อน
+รองรับ Google Workspace หรือ Gmail และ Microsoft 365 หรือ Outlook ด้วย Authorization Code Flow พร้อม PKCE (S256) หัวหน้าทีมต้องลงทะเบียน OAuth application ของตัวเองก่อน
 
 ### Google
 

@@ -152,17 +152,24 @@ export function PdpaScreen({ initialQuery }: { initialQuery?: string }) {
                 <ul className="pdpa-history">
                   {history.map((h) => (
                     <li key={h.id}>
-                      <span className={`pdpa-kind is-${h.kind}`}>{h.kind === 'erase' ? 'ลบข้อมูล' : 'ออกไฟล์'}</span>
+                      <span className={`pdpa-kind is-${h.kind}`}>{h.kind === 'erase' ? (h.scope.incomplete ? 'ลบไม่ครบ' : 'ลบข้อมูล') : 'ออกไฟล์'}</span>
                       <span>
                         <strong>{h.subject}</strong>
                         <small>
                           {date(h.created_at, true)} โดย {h.by_name} {h.scope.organizations.map((o) => o.organization).join(', ') || 'บัญชีลูกค้าเท่านั้น'}
                         </small>
                         <small>ที่มา: {h.reason}</small>
-                        <Link className="pdpa-letter-link" href={pdpaLetterPage(h.id)} target="_blank" rel="noopener">
-                          <Icon name="file" />
-                          หนังสือแจ้งผลถึงเจ้าของข้อมูล
-                        </Link>
+                        {/* A letter says the request was carried out, so an erasure that stopped partway has none. */}
+                        {h.scope.incomplete ? (
+                          <small className="pdpa-incomplete">
+                            ระบบหยุดกลางทาง รายการนี้คือส่วนที่ลบไปแล้ว ค้นหาอีกครั้งแล้วลบส่วนที่เหลือ หนังสือแจ้งผลออกจากรายการที่ลบครบ
+                          </small>
+                        ) : (
+                          <Link className="pdpa-letter-link" href={pdpaLetterPage(h.id)} target="_blank" rel="noopener">
+                            <Icon name="file" />
+                            หนังสือแจ้งผลถึงเจ้าของข้อมูล
+                          </Link>
+                        )}
                       </span>
                     </li>
                   ))}
@@ -224,7 +231,11 @@ function Results({ found, query, confirmWord, onDone }: { found: PdpaSearch; que
         summary={`บัญชีลูกค้า ${accounts.size} บัญชี, ข้อมูลลูกค้า ${chosen.length} รายการใน ${new Set(chosen.map((r) => r.tenant_id)).size} องค์กร, บทสนทนา ${total('conversations')}, เคส ${total('cases')}, ไฟล์ ${total('files')}`}
         onCancel={() => closeModal()}
         onConfirm={async (typed) => {
-          const done = await erasePerson({ ...choice, reason: reason.trim(), received_on: received, confirm: typed });
+          const done = await erasePerson({ ...choice, reason: reason.trim(), received_on: received, confirm: typed }).catch(async (error: unknown) => {
+            // Stopped partway, what was erased is in the history as ลบไม่ครบ: show it there, and say so here.
+            await refresh(PDPA_PATH);
+            throw error;
+          });
           closeModal(true);
           toast(`ลบข้อมูลแล้ว ${done.organizations.length} องค์กร ไฟล์ ${done.files} ไฟล์ หนังสือแจ้งผลอยู่ในประวัติการใช้เครื่องมือ`);
           await refresh(PDPA_PATH);

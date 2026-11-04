@@ -1434,7 +1434,11 @@ input[type=file].attach-input {
     display: none;
   }
 }
-@container (max-width:1000px) {
+/* The tools' names show only where the mode switch, every tool with its name and the send button fit in one row
+   (about 87em with every tool there; em, so it holds at every text size). Shown as soon as the pane passed 1000px,
+   they pushed the row into three - the switch alone, the tools, the send button alone - with white between them,
+   which is what collapsing the menu did on a laptop screen. */
+@container (max-width:88em) {
   .composer-mode label .icon {
     display: none;
   }
@@ -1634,6 +1638,12 @@ input[type=file].attach-input {
   margin-left: auto;
 }
 @container (max-width:1180px) {
+  .composer:has(input[value=note]:checked) .note-hint {
+    display: none;
+  }
+}
+/* Nor beside the tools' names until it fits there too (above). */
+@container (min-width:88em) and (max-width:100em) {
   .composer:has(input[value=note]:checked) .note-hint {
     display: none;
   }

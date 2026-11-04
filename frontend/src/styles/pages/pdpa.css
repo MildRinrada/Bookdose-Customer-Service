@@ -204,6 +204,9 @@
   background: var(--red-soft);
   color: var(--red);
 }
+.pdpa-history small.pdpa-incomplete {
+  color: var(--red);
+}
 .pdpa-erase {
   display: grid;
   gap: 12px;

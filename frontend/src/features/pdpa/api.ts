@@ -50,6 +50,8 @@ export type PdpaSearch = { kind: 'email' | 'phone' | 'name'; subject: string; ac
 export type PdpaScope = {
   accounts: number;
   organizations: Array<{ organization: string; records: number; conversations?: number; cases?: number; messages?: number; files?: number }>;
+  /** The erasure stopped partway (backend pdpa/service.py erase): what is here was erased, the rest was not. */
+  incomplete?: boolean;
 };
 
 export type PdpaOverview = {

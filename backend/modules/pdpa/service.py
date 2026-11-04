@@ -16,7 +16,9 @@ keeps its row (so cases and reports still add up) with nothing left that says wh
 company, notes, profile gone; every message of their conversations emptied and its files deleted; subjects, AI
 summaries, translations, mood readings, channel addresses (LINE / email), guest browsers and links, ratings'
 comments and follow-up notes cleared; the recycle bin's copies thrown away. Backups made before still hold it until
-they age out; the console says so.
+they age out; the console says so. Each organization's part is committed on its own, so what was erased cannot be put
+back: when a later step fails, the log still records what was done, marked ไม่ครบ (scope.incomplete), and the letter
+waits for an erasure that finished.
 
 The letter (หนังสือแจ้งผล): what the platform tells the person afterwards, made from the log alone - the counts per
 organization taken at the time, the day the request came, the day it was done - and the provider's details the legal
@@ -29,12 +31,15 @@ import zipfile
 
 from backend.database import audit, db as D
 from backend.database.db import one, rows
+from backend.exceptions.errors import APIError
+from backend.extensions import monitor
 from backend.modules.pdpa.model import CONFIRM_WORD, ERASED_NAME, ERASED_TEXT
 from backend.utils.dates import now, today
 from backend.utils.security import token_hash, uid
 from backend.utils.validation import require
 
 MAX_RESULTS = 200
+INCOMPLETE = 'ลบข้อมูลไม่ครบ ระบบหยุดกลางทาง ส่วนที่ลบแล้วบันทึกในประวัติว่า "ลบไม่ครบ" ค้นหาอีกครั้งแล้วลบส่วนที่เหลือ'
 EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 
 
@@ -196,7 +201,8 @@ def _log(cd, session, kind, body, scope, reason, received_on):
                   VALUES(?,?,?,?,?,?,?,?,?,?)''',
                (uid(),kind,masked(what,value),token_hash(value),json.dumps(scope,ensure_ascii=False),reason,session['user_id'],actor,now(),
                 received_on))
-    audit.record(cd,session['user_id'],'pdpa.'+('exported' if kind=='export' else 'erased'),masked(what,value),reason)
+    action = 'exported' if kind=='export' else 'erase_incomplete' if scope.get('incomplete') else 'erased'
+    audit.record(cd,session['user_id'],'pdpa.'+action,masked(what,value),reason)
 
 
 # The file of everything
@@ -329,15 +335,23 @@ def _erase_contact(db, contact_id, files):
     return len(convs)
 
 
+def _present(db, tables):
+    """The tables of the list this database has. A feature taken out leaves its table only in databases made before
+    (org_join_uses, the join links' uses, went on 2026-10-19): erasing must still empty it there, and must not stop
+    where it was never made."""
+    have = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    return [table for table in tables if table in have]
+
+
 def _erase_account_everywhere(cd, account, tenants):
     for tenant_id in tenants:
         with D.tenant(tenant_id) as db:
-            for table in ('customer_contacts','customer_members','customer_line_links','customer_line_codes',
-                          'customer_alert_outbox','customer_notifications','customer_seen'):
+            for table in _present(db,('customer_contacts','customer_members','customer_line_links','customer_line_codes',
+                                      'customer_alert_outbox','customer_notifications','customer_seen')):
                 db.execute(f'DELETE FROM {table} WHERE account_id=?',(account['id'],))
             db.execute('UPDATE guest_visitors SET account_id=NULL WHERE account_id=?',(account['id'],))
-    for table in ('customer_sessions','customer_activity','customer_challenges','customer_login_challenges','customer_orgs',
-                  'customer_passkeys','customer_recovery_codes','customer_resets','customer_totp','org_join_uses'):
+    for table in _present(cd,('customer_sessions','customer_activity','customer_challenges','customer_login_challenges','customer_orgs',
+                              'customer_passkeys','customer_recovery_codes','customer_resets','customer_totp','org_join_uses')):
         cd.execute(f'DELETE FROM {table} WHERE account_id=?',(account['id'],))
     cd.execute('DELETE FROM customer_signups WHERE email=? COLLATE NOCASE',(account['email'],))
     cd.execute('DELETE FROM guest_verified_emails WHERE email=? COLLATE NOCASE',(account['email'],))
@@ -351,34 +365,54 @@ def erase(cd, session, body):
     received_on = _received(body)
     require(body.get('confirm')==CONFIRM_WORD,f'พิมพ์ "{CONFIRM_WORD}" เพื่อยืนยัน')
     accounts,chosen,tenants = _selection(cd,body)
-    scope,files = [],{}
-    for tenant_id,contact_ids in chosen.items():
-        with D.tenant(tenant_id) as db:
-            # Counted first, for the log and the letter: afterwards there is nothing left to count by.
-            counts = _counts(db,tenants[tenant_id],contact_ids)
-            D.begin(db)
-            conversations = sum(_erase_contact(db,contact_id,files.setdefault(tenant_id,[])) for contact_id in contact_ids)
-            audit.record(db,f"ผู้ดูแลแพลตฟอร์ม {session.get('name','')}",'pdpa.erased',','.join(contact_ids),reason)
-            db.commit()
-        scope.append({'organization':tenants[tenant_id]['name'],'records':len(contact_ids),**counts,'conversations':conversations})
-    for account in accounts:
-        _erase_account_everywhere(cd,account,tenants)
-    _log(cd,session,'erase',body,{'accounts':len(accounts),'organizations':scope},reason,received_on)
+    scope,files,erased = [],{},0
+    try:
+        for tenant_id,contact_ids in chosen.items():
+            keys = []
+            with D.tenant(tenant_id) as db:
+                # Counted first, for the log and the letter: afterwards there is nothing left to count by.
+                counts = _counts(db,tenants[tenant_id],contact_ids)
+                D.begin(db)
+                conversations = sum(_erase_contact(db,contact_id,keys) for contact_id in contact_ids)
+                audit.record(db,f"ผู้ดูแลแพลตฟอร์ม {session.get('name','')}",'pdpa.erased',','.join(contact_ids),reason)
+            # Only once the organization's part is committed are its files its to delete.
+            files[tenant_id] = keys
+            scope.append({'organization':tenants[tenant_id]['name'],'records':len(contact_ids),**counts,'conversations':conversations})
+        for account in accounts:
+            _erase_account_everywhere(cd,account,tenants)
+            cd.commit()
+            erased += 1
+    except Exception as failure:
+        cd.rollback()
+        if not (scope or erased):
+            raise
+        # What is gone stays gone: it is written down, marked ไม่ครบ, so an erasure is never left without a trace.
+        _log(cd,session,'erase',body,{'accounts':erased,'organizations':scope,'incomplete':True},reason,received_on)
+        cd.commit()
+        _delete_files(files)
+        if not isinstance(failure,APIError):
+            monitor.error('server',type(failure).__name__,'/api/platform/pdpa/erase')
+        raise APIError(500,INCOMPLETE) from failure
+    _log(cd,session,'erase',body,{'accounts':erased,'organizations':scope},reason,received_on)
     cd.commit()
+    _delete_files(files)
+    return {'accounts':erased,'organizations':scope,'files':sum(len(k) for k in files.values())}
+
+
+def _delete_files(files):
     for tenant_id,keys in files.items():
         for key in keys:
             try:
                 (D.DATA/'files'/tenant_id/key).unlink(missing_ok=True)
             except OSError:
                 pass
-    return {'accounts':len(accounts),'organizations':scope,'files':sum(len(k) for k in files.values())}
 
 
 # What the console shows beside the search
 def overview(cd):
     """The log of what the tool did, and the deletion requests organizations noted on their customers (ข้อมูลลูกค้า →
     ขอให้ลบข้อมูล) that are not erased yet."""
-    history = rows(cd,'SELECT id,kind,subject,scope,reason,by_name,created_at FROM pdpa_requests ORDER BY created_at DESC LIMIT 100')
+    history = rows(cd,'SELECT id,kind,subject,scope,reason,by_name,created_at FROM pdpa_requests ORDER BY created_at DESC,rowid DESC LIMIT 100')
     for item in history:
         item['scope'] = json.loads(item['scope'])
     requested = []
@@ -405,6 +439,8 @@ def letter(cd, request_id):
     than stored: the log is only ever added to, so a letter printed again carries the same number."""
     request = one(cd,'SELECT rowid AS position,id,kind,subject,scope,reason,received_on,created_at FROM pdpa_requests WHERE id=?',(request_id,))
     require(request,'ไม่พบรายการนี้',404)
+    # A letter says the request was carried out: not until an erasure has finished.
+    require(not json.loads(request['scope']).get('incomplete'),'รายการนี้ลบไม่ครบ ลบส่วนที่เหลือให้ครบก่อน แล้วออกหนังสือจากรายการที่ลบครบ',409)
     year = _thai_year(request['created_at'])
     # In the order they were written (rowid), not by time: two requests in the same second keep their numbers.
     place = sum(1 for r in rows(cd,'SELECT created_at FROM pdpa_requests WHERE rowid<=?',(request.pop('position'),))

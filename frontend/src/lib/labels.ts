@@ -69,6 +69,7 @@ export const eventLabels: Record<string, string> = {
   'contact.updated': 'แก้ไขข้อมูลลูกค้า',
   'contact.merged': 'รวมข้อมูลลูกค้าที่ซ้ำ',
   'article.saved': 'บันทึกบทความ',
+  'pdpa.erase_incomplete': 'ลบข้อมูลตามคำขอ PDPA ไม่ครบ',
   'article.imported': 'บันทึกบทความจากไฟล์ที่นำเข้า',
   'article.import_started': 'นำเข้าไฟล์บทความ',
   'article.import_discarded': 'ทิ้งไฟล์ที่นำเข้า',

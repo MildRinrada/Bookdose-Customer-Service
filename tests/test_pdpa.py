@@ -141,6 +141,48 @@ class PdpaTests(unittest.TestCase):
         self.assertEqual(self.owner.call(f'{PDPA}/requests/{"0"*32}/letter')[0],404)
         self.assertEqual(self.admin.call(f"{PDPA}/requests/{exported['id']}/letter")[0],403)
 
+    def test_a_table_only_older_databases_have_is_emptied_there_too(self):
+        """org_join_uses went with the join links: a database made before still holds the account's uses, one made after
+        has no such table, and erasing works in both (the other test is the newer kind)."""
+        self.setup_person()
+        found = self.find(EMAIL)
+        account = found['accounts'][0]['id']
+        with D.control() as cd:
+            cd.execute('CREATE TABLE org_join_uses (link_id TEXT NOT NULL, account_id TEXT NOT NULL, joined_at TEXT NOT NULL, PRIMARY KEY(link_id,account_id))')
+            cd.execute("INSERT INTO org_join_uses VALUES('l1',?,'2026-09-01T00:00:00+00:00')",(account,))
+            cd.commit()
+        choice = {'query':EMAIL,'accounts':[account],'records':[{'tenant_id':r['tenant_id'],'contact_id':r['contact_id']} for r in found['records']]}
+        self.assertEqual(self.ok(self.owner,PDPA+'/erase',{**choice,'reason':'ลูกค้าขอลบข้อมูล','confirm':'ลบถาวร'})['accounts'],1)
+        with D.control() as cd:
+            self.assertEqual(cd.execute('SELECT COUNT(*) FROM org_join_uses').fetchone()[0],0)
+        self.assertEqual([h['kind'] for h in self.ok(self.owner,PDPA)['history']],['erase'])
+
+    def test_an_erasure_that_stops_partway_is_still_logged_as_incomplete(self):
+        """The organizations' part is committed before the account's: when the account step fails, what is gone is
+        written down as ลบไม่ครบ (no letter for it), and searching again finds the rest to erase."""
+        from unittest.mock import patch
+        from backend.modules.pdpa import service as pdpa
+        self.setup_person()
+        found = self.find(EMAIL)
+        choice = {'query':EMAIL,'accounts':[found['accounts'][0]['id']],
+                  'records':[{'tenant_id':r['tenant_id'],'contact_id':r['contact_id']} for r in found['records']]}
+        erase = {**choice,'reason':'ลูกค้าขอลบข้อมูล','confirm':'ลบถาวร'}
+        with patch.object(pdpa,'_erase_account_everywhere',side_effect=RuntimeError('disk')):
+            status,body = self.owner.call(PDPA+'/erase',erase)
+        self.assertEqual(status,500)
+        self.assertIn('ลบไม่ครบ',body['error'])
+        entry, = self.ok(self.owner,PDPA)['history']
+        self.assertEqual((entry['kind'],entry['scope']['incomplete'],entry['scope']['accounts']),('erase',True,0))
+        self.assertEqual(len(entry['scope']['organizations']),len({r['tenant_id'] for r in found['records']}))
+        self.assertEqual(self.owner.call(f"{PDPA}/requests/{entry['id']}/letter")[0],409)
+        # The account is still there to erase, and the second time it finishes.
+        again = self.find(EMAIL)
+        self.assertEqual([a['email'] for a in again['accounts']],[EMAIL])
+        self.ok(self.owner,PDPA+'/erase',{**erase,'records':[]})
+        done,first = self.ok(self.owner,PDPA)['history']
+        self.assertEqual((done['scope'].get('incomplete'),done['scope']['accounts'],first['id']),(None,1,entry['id']))
+        self.assertEqual(self.owner.call(f"{PDPA}/requests/{done['id']}/letter")[0],200)
+
     def test_deletion_requests_noted_by_organizations_are_listed(self):
         _,conv = self.visitor('alpha','asked@example.com','ขอลบ','ขอลบข้อมูลของฉันด้วยค่ะ')
         with D.tenant(self.org) as db:

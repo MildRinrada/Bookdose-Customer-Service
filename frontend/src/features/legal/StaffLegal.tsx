@@ -118,7 +118,7 @@ export function StaffLegal({ admin, organization }: { admin: boolean; organizati
       {!admin && terms?.overdue && (
         <div className="terms-banner" role="status">
           <Icon name="file" />
-          <span>องค์กรของคุณยังไม่ได้ยอมรับข้อตกลงการใช้บริการฉบับใหม่ กรุณาแจ้งผู้ดูแลองค์กร คุณยังทำงานได้ตามปกติ</span>
+          <span>องค์กรของคุณยังไม่ได้ยอมรับข้อตกลงการใช้บริการฉบับใหม่ กรุณาแจ้งหัวหน้าทีม คุณยังทำงานได้ตามปกติ</span>
         </div>
       )}
       {privacy?.pending && privacy.current && (

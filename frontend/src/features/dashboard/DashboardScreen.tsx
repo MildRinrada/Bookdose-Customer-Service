@@ -229,7 +229,7 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
           <div>
             <h2 id="insights-title">
               AI และคลังความรู้
-              <InfoHint>เห็นเฉพาะเจ้าขององค์กร ข้อมูลอัปเดตเองทุก 2 นาที</InfoHint>
+              <InfoHint>เห็นเฉพาะหัวหน้าทีม ข้อมูลอัปเดตเองทุก 2 นาที</InfoHint>
             </h2>
           </div>
         </div>
@@ -247,6 +247,11 @@ function DashboardView({ dash, interval }: { dash: Overview | null; interval: nu
         <ManagerView manager={dash.manager} />
       </section>
     );
+  // แบบคนเดียว (backend platform/team_size.py): no next shift to hand over to, no team to oversee.
+  if (work.team_size.solo) {
+    delete cards.handover;
+    delete cards.manager;
+  }
 
   return (
     <>

@@ -13,7 +13,7 @@ import { memberStatusLabels } from '@/features/settings/labels';
 import type { MemberFilters } from '@/features/settings/types';
 import { date } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
-import { useWork } from '@/lib/session';
+import { useStaffUser, useWork } from '@/lib/session';
 import type { Member } from '@/lib/types';
 import { useUiState } from '@/lib/ui-state';
 
@@ -33,6 +33,12 @@ export function MembersScreen() {
       <MemberForm key={member?.id ?? 'new'} member={member} />,
     );
   const active = work.members.filter((m) => m.active).length;
+  // จำนวนทีมงาน (backend platform/team_size.py): members and open invitations take the seats the platform gave.
+  const seats = work.team_size;
+  const full = seats.members + seats.invited >= seats.limit;
+  // Teams are the หัวหน้าทีม's; a ผู้ดูแลสมาชิก puts people in them. แบบคนเดียว works as one team.
+  const lead = work.role === 'admin';
+  const addsTeams = lead && !seats.solo;
 
   return (
     <>
@@ -45,12 +51,19 @@ export function MembersScreen() {
         </div>
         <div className="flex">
           {/* Adding a team lives on the team card, where the teams are. */}
-          <button type="button" className="btn primary" onClick={() => openMember()}>
+          <button
+            type="button"
+            className="btn primary"
+            disabled={full}
+            title={full ? 'ทีมงานครบจำนวนแล้ว' : undefined}
+            onClick={() => openMember()}
+          >
             <Icon name={work.customer_email ? 'mail' : 'plus'} />
             {work.customer_email ? 'เชิญสมาชิก' : 'เพิ่มสมาชิก'}
           </button>
         </div>
       </div>
+      <SeatsNotice />
       {/* The list first. The invitations and the platform's requests are usually empty, and two empty boxes at the
           top pushed the thing the screen is for below the fold. */}
       <section className="card">
@@ -68,10 +81,12 @@ export function MembersScreen() {
           <div>
             <h2>ทีมในองค์กร</h2>
           </div>
-          <button type="button" className="btn" onClick={() => openModal('เพิ่มทีมใหม่', <TeamForm />)}>
-            <Icon name="plus" />
-            เพิ่มทีม
-          </button>
+          {addsTeams && (
+            <button type="button" className="btn" onClick={() => openModal('เพิ่มทีมใหม่', <TeamForm />)}>
+              <Icon name="plus" />
+              เพิ่มทีม
+            </button>
+          )}
         </div>
         <div className="card-body">
           <div className="team-grid">
@@ -86,6 +101,7 @@ export function MembersScreen() {
                   {t.description ? <span className="tiny muted team-about">{t.description}</span> : null}
                 </div>
                 {/* A name given once was a name for good: editing keeps the team's id, so nothing it owns moves. */}
+                {lead && (
                 <button
                   type="button"
                   className="icon-btn"
@@ -95,6 +111,7 @@ export function MembersScreen() {
                 >
                   <Icon name="edit" />
                 </button>
+                )}
               </div>
             ))}
           </div>
@@ -106,8 +123,28 @@ export function MembersScreen() {
   );
 }
 
+/** จำนวนทีมงาน: how many of the seats the platform gave are taken, and what to do when none is left. */
+function SeatsNotice() {
+  const { team_size: s } = useWork();
+  const taken = s.members + s.invited;
+  if (s.solo)
+    return (
+      <div className="notice">
+        องค์กรนี้ใช้แบบคนเดียว คุณตอบลูกค้าทุกเรื่องเอง และเคสใหม่เป็นของคุณทันที ถ้าต้องการเพิ่มทีมงาน ติดต่อผู้ดูแลแพลตฟอร์มเพื่อเปลี่ยนเป็นแบบหลายคน
+      </div>
+    );
+  return (
+    <div className={`notice${taken >= s.limit ? ' warning' : ''}`}>
+      ทีมงาน {taken} จาก {s.limit} คน
+      {s.invited ? ` (รวมคำเชิญที่ยังไม่ตอบรับ ${s.invited} คน)` : ''}
+      {taken >= s.limit ? ' ครบจำนวนแล้ว ปิดบัญชีสมาชิกที่ไม่ใช้ หรือยกเลิกคำเชิญ จึงจะเพิ่มคนใหม่ได้' : ''}
+    </div>
+  );
+}
+
 function MembersList({ onEdit }: { onEdit: (member: Member) => void }) {
   const work = useWork();
+  const me = useStaffUser().id;
   const [f, setFilters] = useUiState<MemberFilters>('settings:members', {});
   const all = work.members;
   const term = (f.q || '').toLowerCase();
@@ -206,10 +243,13 @@ function MembersList({ onEdit }: { onEdit: (member: Member) => void }) {
                         ) : null}
                       </td>
                       <td className="member-manage">
-                        <button type="button" className="btn sm subtle" data-id={m.id} onClick={() => onEdit(m)}>
-                          <Icon name="edit" />
-                          จัดการ
-                        </button>
+                        {/* A ผู้ดูแลสมาชิก changes neither a หัวหน้าทีม nor themselves (backend organization/service.py). */}
+                        {work.role !== 'people' || (m.role !== 'admin' && m.id !== me) ? (
+                          <button type="button" className="btn sm subtle" data-id={m.id} onClick={() => onEdit(m)}>
+                            <Icon name="edit" />
+                            จัดการ
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   );

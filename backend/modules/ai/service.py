@@ -359,7 +359,7 @@ def permitted(cd, tenant_id, job, db):
     if job['mode'] in ('ask','polish'):
         return not membership.get('expires_at')
     conv = conversations.find(db,job['conversation_id'])
-    return bool(conv and (membership['role']!='agent' or membership['team_id']==conv['team_id']))
+    return bool(conv and membership['role']!='people' and (membership['role']!='agent' or membership['team_id']==conv['team_id']))
 
 
 def process_one(tenant_id):
@@ -597,7 +597,7 @@ def job_view(db, ctx, job_id):
     if job['conversation_id']:
         get_scoped(db,'conversations',job['conversation_id'],ctx)
     else:
-        require(ctx['role']=='admin' or job['mode'] in ('ask','polish'),'เฉพาะผู้ดูแลองค์กร',403)
+        require(ctx['role']=='admin' or job['mode'] in ('ask','polish'),'เฉพาะหัวหน้าทีม',403)
     result = json.loads(job['result'])
     signature = result.pop('_context_hash',None)
     if job['mode']=='draft' and job['status']=='done' and (signature!=snapshot(db,job)[2] or job['config_version']!=config(db)['version']):

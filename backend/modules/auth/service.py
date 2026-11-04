@@ -416,7 +416,7 @@ def forgot_password(body, client=None):
     task = None
     with D.control() as db:
         require(platform.registration_ready(db),
-                'ยังส่งอีเมลไม่ได้ กรุณาติดต่อผู้ดูแลองค์กรหรือผู้ดูแลแพลตฟอร์มเพื่อขอตั้งรหัสผ่านใหม่',503)
+                'ยังส่งอีเมลไม่ได้ กรุณาติดต่อหัวหน้าทีมหรือผู้ดูแลแพลตฟอร์มเพื่อขอตั้งรหัสผ่านใหม่',503)
         D.begin(db)
         repository.purge_resets(db,after(seconds=-RESET_SECONDS))
         user = repository.find_user_by_email(db,email)

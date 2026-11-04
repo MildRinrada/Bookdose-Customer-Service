@@ -104,7 +104,7 @@ export function TicketTagsCard({ ticket }: { ticket: Ticket }) {
         owner ? (
           creator
         ) : (
-          <p className="tiny muted">เจ้าขององค์กรยังไม่ได้ตั้งรายการป้าย</p>
+          <p className="tiny muted">หัวหน้าทีมยังไม่ได้ตั้งรายการป้าย</p>
         )
       ) : editing ? (
         <>

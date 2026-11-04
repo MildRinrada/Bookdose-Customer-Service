@@ -5,24 +5,24 @@ from backend.middleware.rate_limit import limited
 from backend.modules.invitations import service
 
 
-@require_role('admin')
+@require_role('admin','people')
 def invitations(req):
     return req.send(200,service.invitations_of(req.cd,req.ctx))
 
 
-@require_role('admin')
+@require_role('admin','people')
 def invite(req):
     limited(('invite',req.ctx['tenant_id']),30,3600)
     return req.send(201,service.invite(req.cd,req.db,req.ctx,req.body))
 
 
-@require_role('admin')
+@require_role('admin','people')
 def resend(req, invite_id):
     limited(('invite',req.ctx['tenant_id']),30,3600)
     return req.send(200,service.resend(req.cd,req.db,req.ctx,invite_id))
 
 
-@require_role('admin')
+@require_role('admin','people')
 def cancel(req, invite_id):
     return req.send(200,service.cancel(req.cd,req.db,req.ctx,invite_id))
 

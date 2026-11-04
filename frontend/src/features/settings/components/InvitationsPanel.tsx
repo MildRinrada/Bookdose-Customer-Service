@@ -26,8 +26,10 @@ const REFRESH = [INVITATIONS_PATH, WORKSPACE_PATH, '/api/audit'];
 export function InvitationsPanel({ quiet = false }: { quiet?: boolean } = {}) {
   const work = useWork();
   const { openModal } = useDialogs();
-  const page = useApi<InvitationsPage>(work.role === 'admin' ? INVITATIONS_PATH : null);
-  if (work.role !== 'admin') return null;
+  // The หัวหน้าทีม's, and the ผู้ดูแลสมาชิก's, who looks after the members (backend organization/model.py).
+  const manages = work.role === 'admin' || work.role === 'people';
+  const page = useApi<InvitationsPage>(manages ? INVITATIONS_PATH : null);
+  if (!manages) return null;
   const rows = page.data?.invitations ?? [];
   const open = rows.filter((r) => r.state === 'pending');
   const past = rows.filter((r) => r.state !== 'pending').slice(0, 10);
@@ -134,7 +136,8 @@ function InviteRow({ invitation: r }: { invitation: Invitation }) {
         </span>
       </div>
       <span className={`badge support-status-${r.state === 'accepted' ? 'approved' : r.state}`}>{inviteStateLabels[r.state] ?? r.state}</span>
-      {r.state === 'pending' && (
+      {/* A ผู้ดูแลสมาชิก leaves a หัวหน้าทีม's invitation to the หัวหน้าทีม (backend invitations/service.py). */}
+      {r.state === 'pending' && (work.role !== 'people' || r.role !== 'admin') && (
         <div className="support-actions">
           <button type="button" className="btn sm" onClick={() => void resend()}>
             ส่งอีกครั้ง

@@ -210,7 +210,7 @@ class AutomationTests(unittest.TestCase):
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'reply','body':'@เจ้าหน้าที่ทดสอบ ไม่ใช่บันทึก'})
         self.ok(self.admin,f'/api/conversations/{conv}/messages',{'kind':'note','body':'@เจ้าหน้าที่ทดสอบ ช่วยดูเรื่องนี้หน่อย'})
         mentions = self.ok(agent,'/api/automation/alerts')['mentions']
-        self.assertEqual([(m['conversation_id'],m['author_name']) for m in mentions],[(conv,'ผู้ดูแลองค์กร A')])
+        self.assertEqual([(m['conversation_id'],m['author_name']) for m in mentions],[(conv,'หัวหน้าทีม A')])
         self.assertEqual(self.ok(outsider,'/api/automation/alerts')['mentions'],[])
         self.ok(agent,'/api/mentions/read',{'conversation_id':conv})
         self.assertEqual(self.ok(agent,'/api/automation/alerts')['mentions'],[])

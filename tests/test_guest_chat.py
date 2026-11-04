@@ -186,7 +186,7 @@ class GuestChatTests(unittest.TestCase):
         status,data,headers = self.start(page,name='สมศรี',category='สอบถามบริการ')
         self.assertEqual(status,201,data)
         cookie = headers['Set-Cookie']
-        self.assertRegex(cookie,r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=Lax; Max-Age=2592000$')
+        self.assertRegex(cookie,r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=Lax; Max-Age=86400$')
         conv = data['id']
         me = self.overview(page)
         self.assertEqual((me['guest']['name'],me['guest']['csrf'],me['guest']['remember'],me['guest']['email_masked']),('สมศรี',data['csrf'],True,''))
@@ -236,7 +236,7 @@ class GuestChatTests(unittest.TestCase):
         self.assertFalse(self.overview(page)['guest']['remember'])
         status,answer,headers = page.raw(GUEST+'/remember',{'remember':True})
         self.assertEqual((status,answer),(200,{'ok':True,'remember':True}))
-        self.assertIn('Max-Age=2592000',headers['Set-Cookie'])
+        self.assertIn('Max-Age=86400',headers['Set-Cookie'])
         self.assertTrue(self.overview(page)['guest']['remember'])
         self.assertEqual(self.status(page,GUEST+'/remember',{'remember':'yes'}),400)
         status,_,headers = page.raw(GUEST+'/remember',{'remember':False})
@@ -248,19 +248,20 @@ class GuestChatTests(unittest.TestCase):
         form = {'body':'จากปุ่มแชทบนเว็บ','website':'','started_ms':int(time.time()*1000)-5000}
         status,_,headers = embed.raw(GUEST+'/conversations',form,headers={'X-Embed':'1'})
         self.assertEqual(status,201)
-        self.assertRegex(headers['Set-Cookie'],r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=None; Secure; Partitioned; Max-Age=2592000$')
+        self.assertRegex(headers['Set-Cookie'],r'^g_alpha=[A-Za-z0-9_-]{43}; HttpOnly; Path=/api/; SameSite=None; Secure; Partitioned; Max-Age=86400$')
         rate_limit.RATES.clear()
         status,_,headers = self.browser().raw(GUEST+'/conversations',form)
         self.assertIn('SameSite=Lax; Secure;',headers['Set-Cookie'])
         self.server.secure_cookies = False
-        # A remembered cookie is sent again once a day while it is used.
+        # A remembered cookie is sent again, at most every 10 minutes, while it is used: it lasts 24 hours from then.
+        from backend.utils.dates import after
         self.ok(page,GUEST+'/remember',{'remember':True})
         _,_,headers = page.raw(GUEST)
         self.assertIsNone(headers.get('Set-Cookie'))
         with D.tenant(self.org) as db:
-            db.execute("UPDATE guest_devices SET last_seen_at='2000-01-01T00:00:00+00:00'")
+            db.execute('UPDATE guest_devices SET last_seen_at=?',(after(minutes=-11),))
         _,_,headers = page.raw(GUEST)
-        self.assertIn('Max-Age=2592000',headers['Set-Cookie'])
+        self.assertIn('Max-Age=86400',headers['Set-Cookie'])
         _,_,headers = page.raw(GUEST)
         self.assertIsNone(headers.get('Set-Cookie'))
         # An unknown or malformed cookie is no guest, and the answer clears it.
@@ -767,19 +768,27 @@ class GuestChatTests(unittest.TestCase):
         # Opening a case from the chat gives the one it has.
         self.assertEqual(self.ok(self.admin,f'/api/conversations/{conv}/ticket',{})['id'],ticket['id'])
 
-    def test_a_browser_remembers_the_chats_for_thirty_days_then_forgets_them(self):
+    def test_a_browser_forgets_the_chats_after_a_day_unused_or_a_week_in_all(self):
         from backend.utils.dates import after
+        for began,used in ((after(days=-8),after(minutes=-1)),(after(days=-2),after(hours=-25))):
+            page = self.browser()
+            self.started(page)
+            self.assertEqual(self.status(page,GUEST+'/session'),200)
+            with D.tenant(self.org) as db:
+                db.execute('UPDATE guest_devices SET created_at=?,last_seen_at=?',(began,used))
+                db.commit()
+            # Past its week however much it is used, or left a day: refused at once, and the worker deletes it.
+            self.assertNotEqual(self.status(page,GUEST+'/session'),200)
+            guest.cleanup(self.org)
+            with D.tenant(self.org) as db:
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM guest_devices').fetchone()[0],0)
+        # Opened within the day and inside its week: still remembered.
         page = self.browser()
         self.started(page)
-        self.assertEqual(self.status(page,GUEST+'/session'),200)
         with D.tenant(self.org) as db:
-            db.execute('UPDATE guest_devices SET created_at=?,last_seen_at=?',(after(days=-31),after(minutes=-1)))
+            db.execute('UPDATE guest_devices SET created_at=?,last_seen_at=?',(after(days=-6),after(hours=-23)))
             db.commit()
-        # Used yesterday or not, the browser is past its days: refused at once, and the worker deletes it.
-        self.assertNotEqual(self.status(page,GUEST+'/session'),200)
-        guest.cleanup(self.org)
-        with D.tenant(self.org) as db:
-            self.assertEqual(db.execute('SELECT COUNT(*) FROM guest_devices').fetchone()[0],0)
+        self.assertEqual(self.status(page,GUEST+'/session'),200)
 
     def test_a_chat_left_without_a_case_gets_one_from_the_worker(self):
         from backend.modules.automation import service as automation

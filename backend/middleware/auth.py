@@ -124,7 +124,7 @@ def refuse_stale_guest(req):
         require(False,'เซสชันไม่ถูกต้อง กรุณารีเฟรชหน้า',403)
 
 
-def require_role(*roles, message='เฉพาะผู้ดูแลองค์กร'):
+def require_role(*roles, message='เฉพาะหัวหน้าทีม'):
     """Controller decorator: only members with one of `roles` may call it."""
     def decorate(controller):
         @functools.wraps(controller)

@@ -25,7 +25,9 @@ is never given to another organization, or an old link would quietly open somebo
 tenants.quota_mb is how much of the shared disk one organization may take (its attachment files plus its own
 database file). Every organization's data sits on one disk, so without a ceiling one organization uploading until
 the disk is full stops every organization from writing at once. Only new uploads are refused when the ceiling is
-reached: reading, answering and everything already stored keep working."""
+reached: reading, answering and everything already stored keep working.
+
+tenants.member_limit is how many people may work in the organization, 1 (แบบคนเดียว) to 5 (team_size.py)."""
 
 TENANT_STATUSES = ('active','suspended')
 GLOBAL_AUDIENCES = ('platform','staff','customer')
@@ -63,7 +65,8 @@ CREATE TABLE IF NOT EXISTS tenants (
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','suspended')),
     created_at TEXT NOT NULL,
     quota_mb INTEGER NOT NULL DEFAULT 0,
-    logo TEXT NOT NULL DEFAULT ''
+    logo TEXT NOT NULL DEFAULT '',
+    member_limit INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS platform_settings (
     key TEXT PRIMARY KEY, value TEXT NOT NULL

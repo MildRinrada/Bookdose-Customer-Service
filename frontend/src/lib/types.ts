@@ -1,8 +1,12 @@
 /* Shapes of the API answers every part of the app reads. A feature's own shapes live in src/features/<feature>/types.ts.
    Field names are the server's (snake_case), so a response can be used as it arrives. */
 
-/** An organization's owner ('admin', เจ้าขององค์กร) or an agent who answers customers. */
-export type Role = 'admin' | 'agent';
+/** An organization's หัวหน้าทีม ('admin'), an agent who answers customers, or a ผู้ดูแลสมาชิก ('people') who looks
+    after the members and sees nothing of the customers (backend organization/model.py). */
+export type Role = 'admin' | 'agent' | 'people';
+
+/** จำนวนทีมงาน (backend platform/team_size.py): limit 1 is แบบคนเดียว; members and invited take the seats. */
+export type TeamSize = { limit: number; solo: boolean; members: number; invited: number; max: number };
 
 /** expires_at: when a support access approved by the organization ends (null for a permanent membership). */
 export type Membership = { id: string; name: string; slug: string; status: string; role: Role; has_logo?: boolean; expires_at?: string | null };
@@ -79,6 +83,7 @@ export type Workspace = {
   /** How full this organization's share of the shared disk is. `quota` 0 means the platform gave it no ceiling;
       `full` means new uploads are refused (answering and reading never are). Bytes. */
   storage: { used: number; quota: number; share: number; warn: boolean; full: boolean };
+  team_size: TeamSize;
   /** Which features this organization has. Something new can be on for one organization before the rest, so read
       this rather than assuming (backend platform/model.py FEATURES). */
   features: Record<string, boolean>;

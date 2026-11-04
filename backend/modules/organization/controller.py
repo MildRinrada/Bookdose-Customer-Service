@@ -133,17 +133,17 @@ def save_team(req, team_id):
     return req.send(200,service.save_team(req.db,req.ctx,team_id,req.body))
 
 
-@require_role('admin')
+@require_role('admin','people')
 def create_member(req, member_id=None):
     return req.send(200,{'id':service.save_member(req.cd,req.db,req.ctx,member_id,req.body,creating=True)})
 
 
-@require_role('admin')
+@require_role('admin','people')
 def update_member(req, member_id=None):
     return req.send(200,{'id':service.save_member(req.cd,req.db,req.ctx,member_id,req.body,creating=False)})
 
 
-@require_role('admin','manager',message='เฉพาะเจ้าขององค์กร')
+@require_role('admin','manager',message='เฉพาะหัวหน้าทีม')
 def audit_log(req):
     return req.send(200,{'events':service.audit_events(req.cd,req.db,req.ctx)})
 

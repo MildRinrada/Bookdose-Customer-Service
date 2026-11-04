@@ -16,17 +16,24 @@ export type StaffPage = {
 };
 
 /** The organization's screens, in menu order. */
+/** The roles that answer customers. A ผู้ดูแลสมาชิก ('people') looks after the members only, so the work's screens are
+    not theirs (the server refuses them too: backend middleware/access.people_only). */
+const CASE_ROLES: Role[] = ['admin', 'agent'];
+
 export const workspacePages: StaffPage[] = [
-  { key: 'dashboard', href: '/dashboard', label: 'ภาพรวม', icon: 'dashboard' },
-  { key: 'inbox', href: '/inbox', label: 'กล่องข้อความ', icon: 'inbox' },
-  { key: 'tickets', href: '/tickets', label: 'เคสบริการ', icon: 'ticket' },
-  { key: 'contacts', href: '/contacts', label: 'ข้อมูลลูกค้า', icon: 'users' },
-  { key: 'knowledge', href: '/knowledge', label: 'คลังความรู้', icon: 'book' },
-  { key: 'reports', href: '/reports', label: 'รายงาน', icon: 'chart' },
+  { key: 'dashboard', href: '/dashboard', label: 'ภาพรวม', icon: 'dashboard', roles: CASE_ROLES },
+  { key: 'inbox', href: '/inbox', label: 'กล่องข้อความ', icon: 'inbox', roles: CASE_ROLES },
+  { key: 'tickets', href: '/tickets', label: 'เคสบริการ', icon: 'ticket', roles: CASE_ROLES },
+  { key: 'contacts', href: '/contacts', label: 'ข้อมูลลูกค้า', icon: 'users', roles: CASE_ROLES },
+  { key: 'knowledge', href: '/knowledge', label: 'คลังความรู้', icon: 'book', roles: CASE_ROLES },
+  { key: 'reports', href: '/reports', label: 'รายงาน', icon: 'chart', roles: CASE_ROLES },
 ];
 
+/** Where a member lands: the overview, or ทีมและสมาชิก for a ผู้ดูแลสมาชิก. */
+export const homeOf = (role: Role | undefined) => (role === 'people' ? '/members' : '/dashboard');
+
 export const managePages: StaffPage[] = [
-  { key: 'members', href: '/members', label: 'ทีมและสมาชิก', icon: 'users', roles: ['admin'] },
+  { key: 'members', href: '/members', label: 'ทีมและสมาชิก', icon: 'users', roles: ['admin', 'people'] },
   { key: 'settings', href: '/settings', label: 'ตั้งค่าองค์กร', icon: 'settings', roles: ['admin'] },
 ];
 
@@ -41,7 +48,7 @@ export const settingsPages: StaffPage[] = [
 export const otherStaffPages: StaffPage[] = [
   ...settingsPages,
   { key: 'guides', href: '/guides', label: 'คู่มือจาก Bookdose', icon: 'list' },
-  { key: 'notifications', href: '/notifications', label: 'การแจ้งเตือน', icon: 'bell' },
+  { key: 'notifications', href: '/notifications', label: 'การแจ้งเตือน', icon: 'bell', roles: CASE_ROLES },
   { key: 'account', href: '/account', label: 'ตั้งค่าบัญชี', icon: 'settings' },
 ];
 

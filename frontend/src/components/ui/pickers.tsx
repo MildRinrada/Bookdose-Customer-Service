@@ -42,7 +42,8 @@ export function MemberPicker(props: { id: string; teamId: string | null | undefi
 
 function Picker({ id, teamId, value }: { id: string; teamId: string | null | undefined; value?: string | null }) {
   const work = useWork();
-  const members = work.members.filter((m) => m.active && m.team_id === teamId);
+  // A ผู้ดูแลสมาชิก answers nobody, so no case goes to them (backend organization/model.py).
+  const members = work.members.filter((m) => m.active && m.team_id === teamId && m.role !== 'people');
   return (
     <Combobox
       id={id}

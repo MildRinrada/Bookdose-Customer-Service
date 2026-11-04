@@ -25,7 +25,7 @@ from backend.modules.customers import notify, repository as accounts, schema as 
 from backend.modules.customers.line import NOT_AVAILABLE, unused_code
 from backend.modules.guest import repository, schema
 from backend.modules.guest.model import (CONTACT_SOURCE, COOKIE_PREFIX, COOKIE_REFRESH_SECONDS, DEFAULT_GUEST_CHAT, DEFAULT_WIDGET,
-                                         DEVICE_DAYS, GUEST_NAME, LINE_CODE_MINUTES, LINK_DAYS, MAX_NOTICE_ATTEMPTS,
+                                         DEVICE_DAYS, DEVICE_IDLE_HOURS, GUEST_NAME, LINE_CODE_MINUTES, LINK_DAYS, MAX_NOTICE_ATTEMPTS,
                                          START_PER_VISITOR_DAY)
 from backend.modules.platform import repository as tenants, service as platform
 from backend.modules.portal import same_member
@@ -131,8 +131,8 @@ def read_guest(db, token):
 
 
 def touch(db, guest):
-    """Write down that the browser is still used, at most once a day; True when written (the page's cookie is then
-    sent again, so a remembered cookie never lapses while it is used)."""
+    """Write down that the browser is still used, at most every COOKIE_REFRESH_SECONDS; True when written (the page's
+    cookie is then sent again, so a remembered cookie lasts the idle window from its last use)."""
     if (guest['device']['device_seen_at'] or '')>=after(seconds=-COOKIE_REFRESH_SECONDS):
         return False
     repository.touch_device(db,guest['device']['token_hash'])
@@ -547,14 +547,15 @@ def send_notices(tenant_id):
 
 
 def cleanup(tenant_id, force=False):
-    """Browsers past their DEVICE_DAYS go every round of the worker (they are refused already; this deletes them).
+    """Browsers past their DEVICE_DAYS, or left unused for DEVICE_IDLE_HOURS, go every round of the worker (they are
+    refused already; this deletes them).
     Dead links, expired LINE codes, held addresses whose days are over and the addresses of older chats go at most
     every 10 minutes."""
     from backend.modules.guest import blocks
     import time
     with D.tenant(tenant_id) as db:
         D.begin(db)
-        repository.delete_old_devices(db,after(days=-DEVICE_DAYS))
+        repository.delete_old_devices(db,after(days=-DEVICE_DAYS),after(hours=-DEVICE_IDLE_HOURS))
         db.commit()
     moment = time.monotonic()
     if not force and moment-_cleaned.get(tenant_id,-CLEANUP_SECONDS)<CLEANUP_SECONDS:

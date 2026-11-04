@@ -82,7 +82,7 @@ export function AiDraftButton({ draft }: { draft: AiDraft }) {
       data-id={draft.conversationId}
       disabled={!enabled || draft.busy}
       aria-label="AI ช่วยร่างคำตอบ"
-      title={enabled ? 'ร่างและตรวจแหล่งอ้างอิงก่อนส่ง' : 'ให้ผู้ดูแลองค์กรเปิด AI ในหน้าตั้งค่าองค์กร'}
+      title={enabled ? 'ร่างและตรวจแหล่งอ้างอิงก่อนส่ง' : 'ให้หัวหน้าทีมเปิด AI ในหน้าตั้งค่าองค์กร'}
       onClick={() => void draft.start()}
     >
       <Icon name="sparkle" />

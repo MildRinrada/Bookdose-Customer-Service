@@ -5,7 +5,7 @@ from backend.modules.organization.model import ROLES
 from backend.utils.dates import now
 from backend.utils.validation import require, field, email_field, new_password
 
-BAD_LINK = 'ลิงก์คำเชิญไม่ถูกต้อง หมดอายุ หรือถูกใช้ไปแล้ว กรุณาขอลิงก์ใหม่จากผู้ดูแลองค์กร'
+BAD_LINK = 'ลิงก์คำเชิญไม่ถูกต้อง หมดอายุ หรือถูกใช้ไปแล้ว กรุณาขอลิงก์ใหม่จากหัวหน้าทีม'
 
 
 def invite_form(body):

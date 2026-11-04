@@ -63,7 +63,7 @@ export function TrashRow({
             </button>
           </>
         ) : (
-          <span className="tiny muted">ต้องเป็นผู้ดูแลองค์กรจึงกู้คืนได้</span>
+          <span className="tiny muted">ต้องเป็นหัวหน้าทีมจึงกู้คืนได้</span>
         )}
       </div>
     </li>

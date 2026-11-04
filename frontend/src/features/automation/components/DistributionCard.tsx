@@ -75,7 +75,7 @@ function DistributionForm({ data }: { data: Distribution }) {
           </div>
           <label className="check distribution-owners">
             <input type="checkbox" checked={form.owners} disabled={!canEdit} onChange={(e) => set({ owners: e.target.checked })} />
-            แจกให้เจ้าขององค์กรด้วย
+            แจกให้หัวหน้าทีมด้วย
           </label>
         </div>
         {manyTeams && (

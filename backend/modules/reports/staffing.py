@@ -33,7 +33,7 @@ def _schedule(prefs, org, day):
 
 def overview(cd, db, ctx):
     from backend.modules.staff_prefs import service as staff_prefs
-    require(ctx['role']=='admin','เฉพาะเจ้าขององค์กร',403)
+    require(ctx['role']=='admin','เฉพาะหัวหน้าทีม',403)
     cfg = business_hours.config(db)
     uses = bool((cfg.get('enabled') or cfg.get('sla')) and any(cfg['days']))
     org = {'uses':uses,'holidays':{h['date']:h['name'] for h in cfg.get('holidays') or []},
@@ -43,7 +43,7 @@ def overview(cd, db, ctx):
     handled = dict(db.execute('SELECT assignee_id,COUNT(*) FROM tickets WHERE assignee_id IS NOT NULL AND resolved_at>=? GROUP BY assignee_id',
                               (after(days=-HANDLED_DAYS),)).fetchall())
     members = []
-    for m in organization.tenant_members(cd,ctx['tenant_id']):
+    for m in organization.case_members(cd,ctx['tenant_id']):
         if not m['active']:
             continue
         prefs = staff_prefs.prefs_of(cd,m['id'])

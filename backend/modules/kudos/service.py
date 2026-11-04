@@ -175,7 +175,7 @@ def hide(db, ctx, kudos_id):
     """Take an item down: the praised member, or the organization's owners."""
     begin(db)
     found = _find(db,kudos_id)
-    require(found['user_id']==ctx['id'] or ctx['role']=='admin','นำออกได้เฉพาะคำชมของคุณเอง หรือโดยเจ้าขององค์กร',403)
+    require(found['user_id']==ctx['id'] or ctx['role']=='admin','นำออกได้เฉพาะคำชมของคุณเอง หรือโดยหัวหน้าทีม',403)
     db.execute('UPDATE kudos SET hidden_at=?,hidden_by=? WHERE id=?',(now(),ctx['name'],kudos_id))
     audit.record(db,ctx['name'],'kudos.hidden',kudos_id,found['text'][:120])
     db.commit()

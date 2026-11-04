@@ -100,7 +100,7 @@ def _available_teams(tenant_id):
     from backend.modules.organization import repository as organization
     from backend.modules.staff_prefs import service as staff_prefs
     with D.control() as cd:
-        members = [m for m in organization.tenant_members(cd,tenant_id) if m['active'] and not m['expires_at']]
+        members = [m for m in organization.case_members(cd,tenant_id) if m['active'] and not m['expires_at']]
         state = staff_prefs.availability_of(cd,[m['id'] for m in members])
     here = [m for m in members if state[m['id']]['available']]
     return {m['team_id'] for m in here if m['team_id']},any(m['role']=='admin' for m in here)

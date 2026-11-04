@@ -38,7 +38,7 @@ class DormantTests(unittest.TestCase):
         # The platform's own organization (alpha) and a new one are never listed; nor is one still used.
         self.assertEqual(sorted(listed),['quiet'])
         quiet = listed['quiet']
-        self.assertEqual(quiet['admins'],[{'name':'ผู้ดูแลองค์กร A','email':'orgadmin@example.com'}])
+        self.assertEqual(quiet['admins'],[{'name':'หัวหน้าทีม A','email':'orgadmin@example.com'}])
         self.assertEqual(quiet['last_seen'][:10],after(days=-120)[:10])
         self.assertIsNone(quiet['contacted'])
         # On the overview's to-do list too.

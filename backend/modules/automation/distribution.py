@@ -16,7 +16,12 @@ tries again as people free up, the most urgent and then the oldest first. A case
 escalated to an owner (service.escalate_due), which runs after this in the same round. A rule that names an owner, or
 a member who assigns by hand, always wins: only cases without an owner are handed out.
 
-Settings are the organization's (ระบบอัตโนมัติ → แจกเคสอัตโนมัติ, owners only)."""
+Settings are the organization's (ระบบอัตโนมัติ → แจกเคสอัตโนมัติ, owners only). It is on for an organization that never
+chose: a case handed to someone at once waits less than one waiting for someone to notice it.
+
+แบบคนเดียว (platform/team_size.py) has nobody to choose between: its one หัวหน้าทีม takes every case as it comes,
+whatever the setting, their status or the ceiling, and hears about it as a new message rather than as a case given to
+them. A ผู้ดูแลสมาชิก ('people') answers nobody and is never given a case."""
 import json
 
 from backend.database import audit, db as D
@@ -29,7 +34,7 @@ from backend.utils.validation import require
 
 KEY = 'auto_assign'
 CAP_MIN, CAP_MAX = 1, 50
-DEFAULT = {'enabled':False,'cap':5,'all_teams':True,'teams':[],'owners':False}
+DEFAULT = {'enabled':True,'cap':5,'all_teams':True,'teams':[],'owners':False}
 ACTIVE_MINUTES = 10
 SYSTEM_ACTOR = 'ระบบอัตโนมัติ'
 WORKING = "('new','open','pending_internal')"
@@ -76,7 +81,7 @@ def people(cd, db, tenant_id, cfg=None):
     [{'id','name','role','team_id','load','ready','reason','last'}]."""
     from backend.modules.staff_prefs import service as staff_prefs
     cfg = cfg or config(db)
-    members = [m for m in organization.tenant_members(cd,tenant_id) if m['active']]
+    members = [m for m in organization.case_members(cd,tenant_id) if m['active']]
     states = staff_prefs.availability_of(cd,[m['id'] for m in members])
     seen,load = repository.last_seen(db),repository.backlog_by_assignee(db,now())
     last = dict(db.execute('SELECT user_id,MAX(assigned_at) FROM auto_assignments GROUP BY user_id').fetchall())
@@ -84,7 +89,7 @@ def people(cd, db, tenant_id, cfg=None):
     found = []
     for m in members:
         state,held = states[m['id']],load.get(m['id'],0)
-        reason = ('เจ้าขององค์กร (ไม่ได้เปิดให้แจก)' if m['role']=='admin' and not cfg['owners']
+        reason = ('หัวหน้าทีม (ไม่ได้เปิดให้แจก)' if m['role']=='admin' and not cfg['owners']
                   else state['reason'] if not state['available']
                   else 'ไม่ได้เปิดโปรแกรมอยู่' if (seen.get(m['id']) or '')<recent
                   else f"ถือเคสครบ {cfg['cap']} เคสแล้ว" if held>=cfg['cap'] else '')
@@ -99,6 +104,18 @@ def _pick(candidates, team_id, cap):
     return ready[0] if ready else None
 
 
+def _solo(cd, db, tenant_id):
+    """แบบคนเดียว: the organization's one หัวหน้าทีม, ready for every case; None for an organization of a team."""
+    from backend.modules.platform import team_size
+    if not team_size.solo(cd,tenant_id):
+        return None
+    lead = next((m for m in team_size.working(cd,tenant_id) if m['role']=='admin'),None)
+    if not lead:
+        return None
+    return {'id':lead['id'],'name':lead['name'],'load':repository.backlog_by_assignee(db,now()).get(lead['id'],0),
+            'last':None,'ready':True,'cap':None,'solo':True}
+
+
 def _give(db, ticket, person):
     """Make the case the person's (only while it still has no owner); False when someone got to it first."""
     from backend.modules.staff_prefs import service as staff_prefs
@@ -108,11 +125,14 @@ def _give(db, ticket, person):
     db.execute('INSERT INTO auto_assignments(ticket_id,user_id,assigned_at) VALUES(?,?,?)',(ticket['id'],person['id'],moment))
     audit.record(db,SYSTEM_ACTOR,'ticket.auto_assigned',ticket['id'],
                  json.dumps({'assignee_id':{'before':None,'after':person['id']},'held':person['load']},ensure_ascii=False))
-    staff_prefs.queue(db,person['id'],'assigned',f"เคส BD-{ticket['number']} มอบหมายให้คุณ",
-                      f"{ticket['subject']}\nโดยการแจกเคสอัตโนมัติ",f"/tickets/{ticket['id']}")
+    # Alone, every case is theirs: the customer's message already tells them, a second alert would say it again.
+    if not person.get('solo'):
+        staff_prefs.queue(db,person['id'],'assigned',f"เคส BD-{ticket['number']} มอบหมายให้คุณ",
+                          f"{ticket['subject']}\nโดยการแจกเคสอัตโนมัติ",f"/tickets/{ticket['id']}")
     person['load'] += 1
     person['last'] = moment
-    person['ready'] = person['load']<person['cap']
+    if person['cap'] is not None:
+        person['ready'] = person['load']<person['cap']
     return True
 
 
@@ -126,15 +146,18 @@ def _candidates(cd, db, tenant_id, cfg):
 def assign_new(db, ticket_id):
     """Right after a case is opened (tickets.service.open_ticket, after the routing rules), inside its transaction:
     hand it out when it has no owner. Returns the member id or None."""
-    cfg = config(db)
-    if not cfg['enabled']:
-        return None
     ticket = D.find_in_team(db,'tickets',ticket_id)
-    if not ticket or ticket['assignee_id'] or ticket['status'] not in ('new','open','pending_internal') or not _covers(cfg,ticket['team_id']):
+    if not ticket or ticket['assignee_id'] or ticket['status'] not in ('new','open','pending_internal'):
         return None
     from backend.modules.channels import repository as channel_repository
+    tenant_id = channel_repository.tenant_id_of(db)
     with D.control() as cd:
-        person = _pick(_candidates(cd,db,channel_repository.tenant_id_of(db),cfg),ticket['team_id'],cfg['cap'])
+        person = _solo(cd,db,tenant_id)
+        if not person:
+            cfg = config(db)
+            if not cfg['enabled'] or not _covers(cfg,ticket['team_id']):
+                return None
+            person = _pick(_candidates(cd,db,tenant_id,cfg),ticket['team_id'],cfg['cap'])
     return person['id'] if person and _give(db,ticket,person) else None
 
 
@@ -143,21 +166,23 @@ def waiting(db, cfg):
     urgent first, then the ones waiting longest."""
     found = db.execute(f'''SELECT * FROM tickets WHERE assignee_id IS NULL AND status IN {WORKING} AND snoozed_until IS NULL
                            ORDER BY {URGENCY},created_at,number''').fetchall()
-    return [dict(t) for t in found if _covers(cfg,t['team_id'])]
+    return [dict(t) for t in found if cfg is None or _covers(cfg,t['team_id'])]
 
 
 def run(cd, db, tenant_id):
     """The worker's round: place every waiting case someone can take. Returns how many were handed out."""
+    alone = _solo(cd,db,tenant_id)
     cfg = config(db)
-    if not cfg['enabled']:
+    if not alone and not cfg['enabled']:
         return 0
     D.begin(db)
-    cases = waiting(db,cfg)
+    # Alone, every waiting case of every team is the one member's.
+    cases = waiting(db,None if alone else cfg)
     given = 0
     if cases:
-        candidates = _candidates(cd,db,tenant_id,cfg)
+        candidates = None if alone else _candidates(cd,db,tenant_id,cfg)
         for ticket in cases:
-            person = _pick(candidates,ticket['team_id'],cfg['cap'])
+            person = alone or _pick(candidates,ticket['team_id'],cfg['cap'])
             if person and _give(db,ticket,person):
                 realtime.ticket(db,ticket['id'],teams=(ticket['team_id'],),conversations_listed=True)
                 given += 1
@@ -181,7 +206,7 @@ def overview(cd, db, tenant_id, day_start):
 def save(cd, db, ctx, body):
     cfg = form(body,{t['id'] for t in organization.teams(db)})
     db.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(KEY,json.dumps(cfg,ensure_ascii=False)))
-    words = (f"เปิด เพดาน {cfg['cap']} เคสต่อคน" + (' รวมเจ้าขององค์กร' if cfg['owners'] else '')
+    words = (f"เปิด เพดาน {cfg['cap']} เคสต่อคน" + (' รวมหัวหน้าทีม' if cfg['owners'] else '')
              + ('' if cfg['all_teams'] else f" เฉพาะ {len(cfg['teams'])} ทีม")) if cfg['enabled'] else 'ปิด'
     audit.record(db,ctx['name'],'automation.settings_updated',ctx['tenant_id'],f'แจกเคสอัตโนมัติ ({words})')
     db.commit()

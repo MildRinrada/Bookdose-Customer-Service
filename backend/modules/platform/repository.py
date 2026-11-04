@@ -9,8 +9,9 @@ from backend.utils import secret_box
 
 def insert_tenant(db, tenant_id, name, slug):
     from backend.modules.platform.model import NEW_TENANT_QUOTA_MB
-    db.execute('INSERT INTO tenants(id,name,slug,created_at,quota_mb) VALUES(?,?,?,?,?)',
-               (tenant_id,name,slug,now(),NEW_TENANT_QUOTA_MB))
+    from backend.modules.platform.team_size import NEW_TENANT
+    db.execute('INSERT INTO tenants(id,name,slug,created_at,quota_mb,member_limit) VALUES(?,?,?,?,?,?)',
+               (tenant_id,name,slug,now(),NEW_TENANT_QUOTA_MB,NEW_TENANT))
 
 
 def slug_taken(db, slug, except_tenant=None):
@@ -153,7 +154,7 @@ def list_with_member_count(db):
     """Each organization with how many of its own members are active (platform admins are never counted)."""
     # Every column but the logo, which is a picture of up to 128 KB: a console listing a hundred organizations would
     # carry megabytes of them. has_logo says whether there is one; the picture itself is fetched as an image.
-    return rows(db,'''SELECT t.id,t.name,t.slug,t.status,t.created_at,t.quota_mb,
+    return rows(db,'''SELECT t.id,t.name,t.slug,t.status,t.created_at,t.quota_mb,t.member_limit,
                       CASE WHEN t.logo='' THEN 0 ELSE 1 END AS has_logo,
                       (SELECT COUNT(*) FROM memberships m WHERE m.tenant_id=t.id AND m.active=1 AND m.expires_at IS NULL
                       AND m.user_id NOT IN (SELECT id FROM users WHERE platform_admin=1)) AS member_count FROM tenants t ORDER BY t.created_at''')

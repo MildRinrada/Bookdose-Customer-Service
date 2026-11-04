@@ -60,6 +60,11 @@ class AccountSwitcherTests(unittest.TestCase):
         self.assertEqual(self.admin.call('/api/accounts/switch',{'id':'x'})[0],400)
 
     def test_second_step_and_the_limit(self):
+        # Six accounts take more seats than an organization is given (platform/team_size.py MAX): the limit tested
+        # here is the browser's, so the organization is given the room.
+        with base.D.control() as cd:
+            cd.execute('UPDATE tenants SET member_limit=20')
+            cd.commit()
         browser,_ = self.create_member(email='a@example.com')
         guarded,_ = self.create_member(email='guarded@example.com')
         secret,_ = self.enable_totp(guarded)

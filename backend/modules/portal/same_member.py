@@ -46,8 +46,12 @@ def _last_helper(cd, db, contact_ids):
 
 
 def offer(cd, db, contact_ids):
-    """What the start form offers: {'name', 'finished_at'} of the member the customer may ask for, or None."""
+    """What the start form offers: {'name', 'finished_at'} of the member the customer may ask for, or None. แบบคนเดียว
+    offers nobody: the one member answers every chat anyway (platform/team_size.py)."""
     from backend.modules.automation import thanks
+    from backend.modules.platform import team_size
+    if team_size.solo(cd,D.tenant_id_of(db)):
+        return None
     found = _last_helper(cd,db,contact_ids)
     return {'name':thanks.member_name(cd,found[0]),'finished_at':found[1]} if found else None
 

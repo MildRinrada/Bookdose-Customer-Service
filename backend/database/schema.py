@@ -58,6 +58,9 @@ def create_control_tables(db):
     # keeps its read-only view of every team as an owner would see it.
     db.execute("UPDATE memberships SET role='admin' WHERE role='manager' AND expires_at IS NOT NULL")
     db.execute("UPDATE memberships SET role='agent' WHERE role='manager'")
+    # ผู้ดูแลสมาชิก ('people'), the third role (organization/model.py).
+    from backend.modules.organization import repository as organization_repository
+    organization_repository.allow_people_role(db)
     # The platform's owner (the account made at first-run setup) is the one who manages the platform admins.
     from backend.modules.platform import repository as platform_repository_owner
     platform_repository_owner.remember_owner(db)
@@ -76,6 +79,9 @@ def create_control_tables(db):
     # is what every organization had until now, so nothing changes for one that never sets a picture.
     if 'logo' not in {row[1] for row in db.execute('PRAGMA table_info(tenants)')}:
         db.execute("ALTER TABLE tenants ADD COLUMN logo TEXT NOT NULL DEFAULT ''")
+    # จำนวนทีมงาน (platform/team_size.py): an organization already working as a team stays one.
+    from backend.modules.platform import team_size
+    team_size.upgrade(db)
     # A problem report can come from a customer's account too (the ? in the customer's top bar): who sent it, so the
     # console tells a customer from a team member. Every report before this came from a team.
     if 'reporter' not in {row[1] for row in db.execute('PRAGMA table_info(problem_reports)')}:

@@ -206,7 +206,7 @@ def _mail_admins(tenant_id, requester, reason, hours):
             mail['Date'],mail['Message-ID'],mail['Auto-Submitted'] = formatdate(localtime=False,usegmt=True),make_msgid(),'auto-generated'
             mail.set_content(f"{requester} จากทีมผู้ดูแลแพลตฟอร์ม ขอเข้าพื้นที่ทำงานของ {org['name']} เพื่อช่วยเหลือ\n\n"
                              f"เหตุผล: {reason}\nระยะเวลาที่ขอ: {hours} ชั่วโมง\n\n"
-                             "ยังไม่มีใครเข้าองค์กรได้จนกว่าผู้ดูแลองค์กรจะอนุมัติ อนุมัติหรือปฏิเสธได้ที่ ตั้งค่าองค์กร → สมาชิก\n"
+                             "ยังไม่มีใครเข้าองค์กรได้จนกว่าหัวหน้าทีมจะอนุมัติ อนุมัติหรือปฏิเสธได้ที่ ตั้งค่าองค์กร → สมาชิก\n"
                              f"คำขอที่ไม่มีใครตัดสินภายใน {PENDING_HOURS} ชั่วโมงจะหมดอายุเอง\n\n{cfg.get('public_base_url','')}/settings\n")
             T.send_email(cfg,secret,admin['email'],mail)
     except Exception as error:

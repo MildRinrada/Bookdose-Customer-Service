@@ -66,7 +66,7 @@ def export_tickets(req):
                     {'Content-Disposition':'attachment; filename="bookdose-tickets.csv"'})
 
 
-@require_role('admin',message='เฉพาะผู้ดูแลองค์กรลบเคสได้')
+@require_role('admin',message='เฉพาะหัวหน้าทีมลบเคสได้')
 def delete_ticket(req, ticket_id):
     service.delete_ticket(req.db,req.ctx,ticket_id)
     return req.send(200,{'deleted':ticket_id})

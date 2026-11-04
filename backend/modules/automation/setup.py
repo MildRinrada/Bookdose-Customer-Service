@@ -56,7 +56,7 @@ def checklist(cd, db, ctx):
     talked = db.execute('SELECT COUNT(*) FROM conversations').fetchone()[0]
     steps = [
         _step('agents',any(m['role']=='agent' for m in members),'เพิ่มทีมและเจ้าหน้าที่',
-              'ยังไม่มีเจ้าหน้าที่ เรื่องจากลูกค้าทั้งหมดจึงรอเจ้าขององค์กรคนเดียว','เพิ่มสมาชิก','/members'),
+              'ยังไม่มีเจ้าหน้าที่ เรื่องจากลูกค้าทั้งหมดจึงรอหัวหน้าทีมคนเดียว','เพิ่มสมาชิก','/members'),
         _step('articles',public>=ARTICLE_TARGET,f'เขียนคำถามที่พบบ่อย {ARTICLE_TARGET} บทความ',
               'ลูกค้าหาคำตอบเองได้โดยไม่ต้องรอทีม และบอต AI ตอบจากบทความสาธารณะเหล่านี้',
               'เขียนบทความ','/knowledge',count=public,target=ARTICLE_TARGET),
@@ -83,7 +83,7 @@ def hide(cd, ctx, body):
     """POST /api/automation/setup {hidden}: close เริ่มต้นใช้งาน for good in this organization, or bring it back."""
     from backend.utils.validation import require
     from backend.modules.staff_prefs import service as prefs
-    require(ctx['role']=='admin' and not ctx.get('read_only'),'เฉพาะเจ้าขององค์กร',403)
+    require(ctx['role']=='admin' and not ctx.get('read_only'),'เฉพาะหัวหน้าทีม',403)
     hidden = body.get('hidden') if isinstance(body,dict) else None
     require(isinstance(hidden,bool),'ข้อมูลไม่ถูกต้อง')
     current = prefs.prefs_of(cd,ctx['id'])

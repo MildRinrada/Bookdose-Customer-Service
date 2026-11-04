@@ -23,7 +23,8 @@ def workspace_overview(cd, db, ctx):
     from backend.modules.staff_prefs import service as staff_prefs
     team_members = repository.tenant_members(cd,ctx['tenant_id'])
     if ctx['role']=='agent':
-        team_members = [m for m in team_members if m['team_id']==ctx['team_id'] and m['active']]
+        # Their team's colleagues they can give a case to or tag: a ผู้ดูแลสมาชิก is neither.
+        team_members = [m for m in team_members if m['team_id']==ctx['team_id'] and m['active'] and m['role']!='people']
     # Whether each member takes new cases now (ตั้งค่าบัญชี → สถานะการทำงาน), for the owner picker and the team list.
     states = staff_prefs.availability_of(cd,[m['id'] for m in team_members])
     team_members = [{**m,'availability':states[m['id']]} for m in team_members]
@@ -56,8 +57,16 @@ def workspace_overview(cd, db, ctx):
             # Which features this organization has, so something new can be tried with one organization before it
             # reaches the rest (platform/model.py FEATURES, switched per organization in the console).
             'features':_features(cd,ctx),
+            # จำนวนทีมงาน (platform/team_size.py): แบบคนเดียว hides what only colleagues use; the members page shows
+            # how many seats are taken.
+            'team_size':_team_size(cd,ctx),
             # polish_offered: เกลาข้อความ is on for the platform (platform/switches.py).
             'ai':{**ai.config(db),'key_configured':ai.has_key(ctx['tenant_id']),'polish_offered':switches.on('polish')}}
+
+
+def _team_size(cd, ctx):
+    from backend.modules.platform import team_size
+    return team_size.view(cd,ctx['tenant_id'])
 
 
 def _support_pending(cd, ctx):
@@ -82,7 +91,7 @@ def change_slug(cd, db, ctx, body):
     another organization once had is refused. Written to both histories - the organization's own and the
     platform's - because it changes what the public sees."""
     from backend.modules.platform import service as platform
-    result = platform.rename_tenant_slug(cd,None,ctx['tenant_id'],body,actor=f"{ctx['name']} (ผู้ดูแลองค์กร)")
+    result = platform.rename_tenant_slug(cd,None,ctx['tenant_id'],body,actor=f"{ctx['name']} (หัวหน้าทีม)")
     audit.record(db,ctx['name'],'settings.slug_changed',ctx['tenant_id'],f"{ctx['slug']} → {result['slug']}")
     db.commit()
     return result
@@ -168,12 +177,29 @@ def save_team(db, ctx, team_id, body):
     return {'name':name,'description':description}
 
 
+def _people_rules(cd, ctx, user_id, role):
+    """What a ผู้ดูแลสมาชิก may not do (organization/model.py): give the หัวหน้าทีม role, change a หัวหน้าทีม, or
+    change themselves - any of the three would let them reach the customers they are kept from."""
+    from backend.modules.organization.model import PEOPLE_GIVES
+    if ctx['role']!='people':
+        return
+    require(role in PEOPLE_GIVES,'ผู้ดูแลสมาชิกตั้งได้เฉพาะเจ้าหน้าที่และผู้ดูแลสมาชิก ให้หัวหน้าทีมตั้งหัวหน้าทีมเอง',403)
+    if user_id:
+        require(user_id!=ctx['id'],'แก้บัญชีของตัวเองไม่ได้ ให้หัวหน้าทีมแก้ให้',403)
+        current = repository.find_membership(cd,ctx['tenant_id'],user_id)
+        require(not current or current['role']!='admin','ผู้ดูแลสมาชิกแก้ไขหัวหน้าทีมไม่ได้',403)
+
+
 def save_member(cd, db, ctx, member_id, body, creating):
     """Add a new account to the organization, or change a member's role/team/active flag.
-    Deactivating or moving a member unassigns their cases outside the new team."""
+    Deactivating or moving a member unassigns their cases outside the new team, and so does making them a
+    ผู้ดูแลสมาชิก, who answers nobody. Someone new, or switched on again, needs a seat (platform/team_size.py)."""
+    from backend.modules.platform import team_size
     role,team_id = schema.role_and_team(body)
     validate_team(db,ctx,team_id)
+    _people_rules(cd,ctx,None if creating else member_id,role)
     if creating and not member_id:
+        team_size.require_room(cd,ctx['tenant_id'])
         email = schema.new_member_email(body)
         require(not users.find_user_by_email(cd,email),'อีเมลนี้มีบัญชีแล้ว ให้เจ้าของบัญชีติดต่อผู้ดูแลแพลตฟอร์มเพื่อเพิ่มสมาชิก',409)
         user_id = uid()
@@ -187,13 +213,15 @@ def save_member(cd, db, ctx, member_id, body, creating):
         user_id = member_id
         require(repository.find_membership(cd,ctx['tenant_id'],user_id),'ไม่พบสมาชิก',404)
         active = schema.member_active(body)
-        require(user_id!=ctx['id'] or (active and role=='admin'),'ไม่สามารถถอนสิทธิ์เจ้าขององค์กรของตัวเองได้')
+        require(user_id!=ctx['id'] or (active and role=='admin'),'ไม่สามารถถอนสิทธิ์หัวหน้าทีมของตัวเองได้')
         # There is always at least one owner who can run the organization.
         current = repository.find_membership(cd,ctx['tenant_id'],user_id)
         if current['role']=='admin' and current['active'] and not current['expires_at'] and (role!='admin' or not active):
-            require(len(repository.organization_admins(cd,ctx['tenant_id']))>1,'องค์กรต้องมีเจ้าของอย่างน้อย 1 คน',409)
+            require(len(repository.organization_admins(cd,ctx['tenant_id']))>1,'องค์กรต้องมีหัวหน้าทีมอย่างน้อย 1 คน',409)
+        if active and not (current['active'] and not current['expires_at']):
+            team_size.require_room(cd,ctx['tenant_id'])
         repository.update_membership(cd,ctx['tenant_id'],user_id,role,team_id,active)
-        tickets.unassign_member(db,user_id,active,team_id)
+        tickets.unassign_member(db,user_id,active and role!='people',team_id)
         if not active:
             # A support member switched off here: the approved request ends with it.
             from backend.modules.support_access import service as support

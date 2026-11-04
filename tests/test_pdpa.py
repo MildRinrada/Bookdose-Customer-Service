@@ -114,7 +114,7 @@ class PdpaTests(unittest.TestCase):
         with D.tenant(self.org) as db:
             contact = db.execute('SELECT contact_id FROM conversations WHERE id=?',(conv,)).fetchone()[0]
             db.execute("INSERT INTO contact_profiles(contact_id,deletion_requested_at,deletion_requested_by,updated_at) VALUES(?,?,?,?)",
-                       (contact,'2026-09-01T00:00:00+00:00','ผู้ดูแลองค์กร A','2026-09-01T00:00:00+00:00'))
+                       (contact,'2026-09-01T00:00:00+00:00','หัวหน้าทีม A','2026-09-01T00:00:00+00:00'))
             db.commit()
         requested = self.ok(self.owner,PDPA)['requested']
         self.assertEqual([(r['email'],r['tenant_name']) for r in requested],[('asked@example.com','องค์กร A')])

@@ -539,10 +539,13 @@ function StaffComposer({
             <Icon name="macro" />
             <span>Macro</span>
           </button>
-          <button type="button" className="tool-btn" aria-label="แท็กเพื่อนร่วมทีม" title="แท็กเพื่อนร่วมทีมในบันทึกภายใน (@) ลูกค้าไม่เห็น" onClick={openMentions}>
-            <Icon name="at" />
-            <span>แท็กทีม</span>
-          </button>
+          {/* แบบคนเดียว has no teammate to tag (backend platform/team_size.py). */}
+          {!work.team_size.solo && (
+            <button type="button" className="tool-btn" aria-label="แท็กเพื่อนร่วมทีม" title="แท็กเพื่อนร่วมทีมในบันทึกภายใน (@) ลูกค้าไม่เห็น" onClick={openMentions}>
+              <Icon name="at" />
+              <span>แท็กทีม</span>
+            </button>
+          )}
           <AiDraftButton draft={draft} />
           {/* เกลาข้อความ: off for the whole platform when the console says so (backend platform/switches.py). */}
           {work.ai.polish_offered !== false && <PolishButton polish={polish} />}

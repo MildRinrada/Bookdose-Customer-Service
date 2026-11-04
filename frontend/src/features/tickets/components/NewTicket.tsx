@@ -112,22 +112,29 @@ export function NewTicketForm({
           defaultValue={draft.category || 'ทั่วไป'}
           max={80}
         />
-        <div className="field">
-          <label htmlFor="new-team">
-            ทีมรับผิดชอบ
-            <InfoHint>ทีมที่ดูแลเคสนี้ เริ่มต้นเป็นทีมของคุณ ผู้ดูแลองค์กรเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
-          </label>
-          <select id="new-team" name="team_id" value={team} onChange={(e) => setTeam(e.target.value)}>
-            <TeamOptions />
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="new-assignee">
-            ผู้รับผิดชอบ
-            <InfoHint>เลือกได้เฉพาะคนในทีมที่เลือกไว้ ถ้าเว้นว่าง เคสจะรอคนรับ หรือระบบแจกให้เองถ้าเปิดแจกเคสอัตโนมัติไว้</InfoHint>
-          </label>
-          <MemberPicker id="new-assignee" teamId={team} value={draft.team_id === team ? draft.assignee_id : undefined} />
-        </div>
+        {/* แบบคนเดียว (backend platform/team_size.py): one team, one person, and the case is theirs once it opens. */}
+        {work.team_size.solo ? (
+          <input type="hidden" name="team_id" value={team} />
+        ) : (
+          <>
+            <div className="field">
+              <label htmlFor="new-team">
+                ทีมรับผิดชอบ
+                <InfoHint>ทีมที่ดูแลเคสนี้ เริ่มต้นเป็นทีมของคุณ หัวหน้าทีมเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
+              </label>
+              <select id="new-team" name="team_id" value={team} onChange={(e) => setTeam(e.target.value)}>
+                <TeamOptions />
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="new-assignee">
+                ผู้รับผิดชอบ
+                <InfoHint>เลือกได้เฉพาะคนในทีมที่เลือกไว้ ถ้าเว้นว่าง เคสจะรอคนรับ หรือระบบแจกให้เองถ้าเปิดแจกเคสอัตโนมัติไว้</InfoHint>
+              </label>
+              <MemberPicker id="new-assignee" teamId={team} value={draft.team_id === team ? draft.assignee_id : undefined} />
+            </div>
+          </>
+        )}
         <div className="field span-2">
           <label htmlFor="new-body">
             รายละเอียด / บันทึกภายใน

@@ -17,7 +17,7 @@ import { useBoot, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { bytesText } from './labels';
 import { closeTenant, HEALTH_PATH, PLATFORM_PREFIX, setTenantStatus, tenantExportPath, TENANTS_PATH, withdrawSupportAccess } from './api';
 import { QuotaForm } from './components/HealthCards';
-import { StaffSecurityList, SupportAccessForm, SuspendTenantForm, TenantAdminForm } from './components/TenantForms';
+import { StaffSecurityList, SupportAccessForm, SuspendTenantForm, TeamSizeForm, TenantAdminForm } from './components/TenantForms';
 import { FeatureForm, SlugForm, tenantAccess } from './OrganizationsScreen';
 import type { OrgUsage, SupportSummary, Tenant, TenantsPage } from './types';
 
@@ -173,12 +173,12 @@ function OrganizationView({
               )}
             </Row>
             <Row
-              label="ผู้ดูแลองค์กร"
+              label="หัวหน้าทีม"
               action={
                 <button
                   type="button"
                   className="btn sm"
-                  onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={page.can_invite} />)}
+                  onClick={() => openModal(`หัวหน้าทีม ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={page.can_invite} />)}
                 >
                   <Icon name="plus" />
                   {t.admins.length ? 'เพิ่มผู้ดูแล' : 'เชิญผู้ดูแล'}
@@ -223,6 +223,18 @@ function OrganizationView({
               </div>
             </div>
             <Row
+              label="จำนวนทีมงาน"
+              hint={`ใช้อยู่ ${t.member_count} คน`}
+              action={
+                <button type="button" className="btn sm" onClick={() => openModal(`จำนวนทีมงานของ ${t.name}`, <TeamSizeForm tenant={t} />)}>
+                  <Icon name="users" />
+                  เปลี่ยน
+                </button>
+              }
+            >
+              <span className="org-page-figure">{t.member_limit > 1 ? `หลายคน สูงสุด ${t.member_limit} คน` : 'คนเดียว'}</span>
+            </Row>
+            <Row
               label="สิทธิ์เข้าช่วยเหลือ"
               action={
                 'pending' in access ? (
@@ -255,7 +267,7 @@ function OrganizationView({
               {'pending' in access && (
                 <span className="org-access org-support-pending">
                   <Icon name="clock" />
-                  รอผู้ดูแลองค์กรอนุมัติ ขอ {access.pending.hours} ชม.
+                  รอหัวหน้าทีมอนุมัติ ขอ {access.pending.hours} ชม.
                 </span>
               )}
               {'canOpen' in access && <span className="org-access">ได้รับอนุมัติแล้ว</span>}
@@ -357,7 +369,7 @@ function OrganizationView({
   async function exportAll() {
     try {
       await download(tenantExportPath(t.id), `${t.slug}.zip`);
-      toast('ส่งออกแล้ว ส่งไฟล์นี้ให้เจ้าขององค์กรก่อนปิดถาวร');
+      toast('ส่งออกแล้ว ส่งไฟล์นี้ให้หัวหน้าทีมก่อนปิดถาวร');
       await refresh(PLATFORM_PREFIX);
     } catch (error) {
       toast(error instanceof Error ? error.message : String(error), true);

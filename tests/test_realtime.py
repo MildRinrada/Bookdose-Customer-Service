@@ -334,7 +334,7 @@ class RealtimeTests(unittest.TestCase):
             other_ws = self.joined(stranger,CUSTOMER)
             staff.send(json.dumps({'type':'typing','conversation_id':own}))
             self.assertEqual(self.frame(ws),{'type':'typing','conversation_id':own,'org':'alpha','who':'staff',
-                                             'name':'ผู้ดูแลองค์กร A','ttl_ms':6000})
+                                             'name':'หัวหน้าทีม A','ttl_ms':6000})
             self.assertEqual(self.quiet(other_ws,0.5),[])
             # A guest's typing, and an agent who cannot see the conversation cannot type in it.
             page = self.guest('สมศรี')

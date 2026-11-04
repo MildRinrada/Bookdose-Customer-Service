@@ -19,7 +19,7 @@ import { forceAccountReset, searchAccounts, suspendAccount, type AccountKind, ty
    เครื่องมือ PDPA with its email already searched, for a request about its data. Markup: pages/platform.css
    (account-*), the search as pages/pdpa.css. */
 
-const roleWords: Record<string, string> = { admin: 'เจ้าขององค์กร', agent: 'เจ้าหน้าที่' };
+const roleWords: Record<string, string> = { admin: 'หัวหน้าทีม', agent: 'เจ้าหน้าที่', people: 'ผู้ดูแลสมาชิก' };
 
 export function AccountsScreen() {
   const [query, setQuery] = useState('');

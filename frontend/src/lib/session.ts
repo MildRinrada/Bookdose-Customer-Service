@@ -54,14 +54,20 @@ export function useStaffUser(): NonNullable<Boot['user']> {
   return data.user;
 }
 
+/** The member works on cases: everyone but a ผู้ดูแลสมาชิก, whom the server keeps from them. */
+const worksCases = (boot: Boot | undefined) => {
+  const membership = activeMembership(boot);
+  return Boolean(boot?.user && membership && membership.role !== 'people');
+};
+
 export function useStaffTickets() {
   const { data: boot } = useBoot();
-  return useApi<{ tickets: TicketSummary[] }>('/api/tickets', { enabled: Boolean(boot?.user && activeMembership(boot)) });
+  return useApi<{ tickets: TicketSummary[] }>('/api/tickets', { enabled: worksCases(boot) });
 }
 
 export function useStaffAlerts() {
   const { data: boot } = useBoot();
-  return useApi<StaffAlerts>('/api/automation/alerts', { enabled: Boolean(boot?.user && activeMembership(boot)) });
+  return useApi<StaffAlerts>('/api/automation/alerts', { enabled: worksCases(boot) });
 }
 
 /** A member's name by id, or "ยังไม่มอบหมาย". */

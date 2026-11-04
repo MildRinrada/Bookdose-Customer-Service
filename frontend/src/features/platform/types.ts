@@ -10,6 +10,8 @@ export type Tenant = {
   status: 'active' | 'suspended' | (string & {});
   created_at: string;
   member_count: number;
+  /** จำนวนทีมงาน (backend platform/team_size.py): 1 is แบบคนเดียว, otherwise up to that many people. */
+  member_limit: number;
   /** Whether it set a picture of its own; the picture itself is fetched from /api/public/<slug>/logo. */
   has_logo?: boolean;
   /** Who runs the organization: its own admins (a platform admin never is one). */

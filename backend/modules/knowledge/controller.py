@@ -3,7 +3,7 @@ from backend.middleware.auth import require_role
 from backend.middleware.rate_limit import limited
 from backend.modules.knowledge import service
 
-MANAGERS_ONLY = 'เฉพาะเจ้าขององค์กรจัดการบทความได้'
+MANAGERS_ONLY = 'เฉพาะหัวหน้าทีมจัดการบทความได้'
 
 
 def list_articles(req):

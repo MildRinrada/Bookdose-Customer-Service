@@ -246,7 +246,7 @@ def _do(cd, db, ctx, action):
         for message_id in action['messages']:
             channels.retry_failed_delivery(db,ctx,message_id)
     elif kind=='auto_assign':
-        require(ctx['role']=='admin','เฉพาะเจ้าขององค์กรตั้งการแจกเคสอัตโนมัติได้',403)
+        require(ctx['role']=='admin','เฉพาะหัวหน้าทีมตั้งการแจกเคสอัตโนมัติได้',403)
         from backend.modules.automation import distribution
         cfg = distribution.config(db)
         distribution.save(cd,db,ctx,{**cfg,**{k:action[k] for k in ('enabled','cap') if k in action}})

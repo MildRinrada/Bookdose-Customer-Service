@@ -30,7 +30,7 @@ export function ManagerView({ manager: m }: { manager: ManagerOverview }) {
         <div>
           <h2 id="manager-title">
             มุมมองผู้ดูแล
-            <InfoHint>ภาพรวมของทีม สำหรับเจ้าขององค์กร อัปเดตเองทุก 30 วินาที</InfoHint>
+            <InfoHint>ภาพรวมของทีม สำหรับหัวหน้าทีม อัปเดตเองทุก 30 วินาที</InfoHint>
           </h2>
           <p>อัปเดตล่าสุด {clockTime(m.generated_at)}</p>
         </div>

@@ -56,7 +56,8 @@ def find_active_membership(db, tenant_id, user_id):
 
 
 def is_active_team_member(db, tenant_id, user_id, team_id):
-    return bool(one(db,f'SELECT 1 FROM memberships m WHERE tenant_id=? AND user_id=? AND active=1 AND {LIVE} AND {NOT_PLATFORM} AND team_id=?',
+    # A ผู้ดูแลสมาชิก ('people') sits in a team but answers nobody: never someone a case can go to.
+    return bool(one(db,f"SELECT 1 FROM memberships m WHERE tenant_id=? AND user_id=? AND active=1 AND {LIVE} AND {NOT_PLATFORM} AND team_id=? AND m.role!='people'",
                     (tenant_id,user_id,now(),team_id)))
 
 
@@ -64,6 +65,37 @@ def is_active_admin_session(db, tenant_id, user_id, session_token):
     """The user is still an active admin of an active organization and the session has not expired."""
     from backend.utils.dates import now
     return bool(one(db,f"SELECT 1 FROM memberships m JOIN tenants t ON t.id=m.tenant_id JOIN sessions s ON s.user_id=m.user_id WHERE m.tenant_id=? AND m.user_id=? AND m.role='admin' AND m.active=1 AND m.expires_at IS NULL AND {NOT_PLATFORM} AND t.status='active' AND s.token=? AND s.expires_at>?",(tenant_id,user_id,session_token,now())))
+
+
+def case_members(db, tenant_id):
+    """The members who answer customers (model.CASE_ROLES): the ones a case can go to, a tag can reach and a queue
+    counts. A ผู้ดูแลสมาชิก looks after people only."""
+    from backend.modules.organization.model import CASE_ROLES
+    return [m for m in tenant_members(db,tenant_id) if m['role'] in CASE_ROLES]
+
+
+def allow_people_role(db):
+    """memberships.role accepts 'people' (ผู้ดูแลสมาชิก). SQLite cannot change a CHECK in place, so an older table is
+    copied into one that has it, row for row and column for column; nothing else about it changes."""
+    sql = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='memberships'").fetchone()[0]
+    if "'people'" in sql:
+        return
+    old = "CHECK(role IN ('admin','manager','agent'))"
+    assert old in sql,'memberships.role has a CHECK this upgrade does not know'
+    db.commit()
+    db.execute('PRAGMA foreign_keys=OFF')
+    try:
+        db.execute('BEGIN IMMEDIATE')
+        db.execute(sql.replace(old,"CHECK(role IN ('admin','manager','agent','people'))").replace('CREATE TABLE memberships','CREATE TABLE memberships_new',1))
+        db.execute('INSERT INTO memberships_new SELECT * FROM memberships')
+        db.execute('DROP TABLE memberships')
+        db.execute('ALTER TABLE memberships_new RENAME TO memberships')
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.execute('PRAGMA foreign_keys=ON')
 
 
 def insert_membership(db, tenant_id, user_id, role, team_id):

@@ -111,7 +111,7 @@ def alert_new(cd, db, tenant_id):
     if not fresh:
         db.commit()
         return 0
-    members = organization.tenant_members(cd,tenant_id)
+    members = organization.case_members(cd,tenant_id)
     available = {user_id for user_id,state in staff_prefs.availability_of(cd,[m['id'] for m in members]).items() if state['available']}
     load = repository.open_count_by_assignee(db)
     what = {'response':'ตอบกลับครั้งแรก','resolution':'แก้ไขเคส'}

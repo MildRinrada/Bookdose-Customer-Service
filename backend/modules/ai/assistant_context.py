@@ -141,7 +141,7 @@ def _people(cd, db, ctx, refs):
     from backend.modules.organization import repository as organization
     team = visible_team(ctx)
     teams = [{'ref':refs.add('t',t['id']),'name':t['name']} for t in organization.teams(db) if not team or t['id']==team]
-    members = [m for m in organization.tenant_members(cd,ctx['tenant_id']) if m['active'] and (not team or m['team_id']==team)]
+    members = [m for m in organization.case_members(cd,ctx['tenant_id']) if m['active'] and (not team or m['team_id']==team)]
     held = dict(db.execute(f"SELECT assignee_id,COUNT(*) FROM tickets WHERE assignee_id IS NOT NULL AND status NOT IN {DONE} GROUP BY assignee_id").fetchall())
     ready = {p['id']:p for p in distribution.people(cd,db,ctx['tenant_id'])} if ctx['role']=='admin' else {}
     listed = []

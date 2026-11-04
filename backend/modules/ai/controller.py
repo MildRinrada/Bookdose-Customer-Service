@@ -3,7 +3,7 @@ from backend.middleware.auth import require_role
 from backend.middleware.rate_limit import limited
 from backend.modules.ai import service
 
-ADMINS_ONLY = 'เฉพาะผู้ดูแลองค์กรจัดการ AI ได้'
+ADMINS_ONLY = 'เฉพาะหัวหน้าทีมจัดการ AI ได้'
 
 
 @require_role('admin',message=ADMINS_ONLY)
@@ -22,7 +22,7 @@ def test_connection(req):
     return req.send(201,{'id':service.queue_connection_test(req.db,req.ctx),'status':'pending'})
 
 
-OWNERS_ONLY = 'เฉพาะเจ้าขององค์กร'
+OWNERS_ONLY = 'เฉพาะหัวหน้าทีม'
 
 
 @require_role('admin',message=OWNERS_ONLY)

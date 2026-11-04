@@ -344,6 +344,10 @@ def set_tenant_quota(req, tenant_id):
     return req.send(200,service.set_tenant_quota(req.cd,req.session,tenant_id,req.body))
 
 
+def set_tenant_team_size(req, tenant_id):
+    return req.send(200,service.set_tenant_team_size(req.cd,req.session,tenant_id,req.body))
+
+
 def article_templates(req):
     return req.send(200,service.article_templates(req.cd))
 

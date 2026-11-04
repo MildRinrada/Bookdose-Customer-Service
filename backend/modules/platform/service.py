@@ -85,6 +85,10 @@ def add_admin(cd, session, tenant_id, body):
     require(not (current and current['active'] and not current['expires_at'] and current['role']=='admin'),'อีเมลนี้เป็นผู้ดูแลขององค์กรนี้อยู่แล้ว',409)
     if not body.get('password'):
         return {'mode':'invited','sent':invitations.invite_admin(cd,session,tenant_id,email)}
+    # Someone already working there is only made its หัวหน้าทีม; anyone else needs a seat (team_size.py).
+    if not (current and current['active'] and not current['expires_at']):
+        from backend.modules.platform import team_size
+        team_size.require_room(cd,tenant_id,console=True)
     D.begin(cd)
     if user:
         admin_id = user['id']
@@ -221,6 +225,12 @@ def set_tenant_feature(cd, session, tenant_id, body):
     audit.record(cd,session['name'],'tenant.feature',tenant_id,f"{feature} = {'เปิด' if enabled else 'ปิด'}")
     cd.commit()
     return {'features':feature_state(cd,tenant_id)}
+
+
+def set_tenant_team_size(cd, session, tenant_id, body):
+    """จำนวนทีมงาน: แบบคนเดียว or up to five people (team_size.py)."""
+    from backend.modules.platform import team_size
+    return team_size.save(cd,session,tenant_id,body)
 
 
 def set_tenant_quota(cd, session, tenant_id, body):

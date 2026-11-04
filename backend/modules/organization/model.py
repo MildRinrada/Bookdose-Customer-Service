@@ -1,11 +1,22 @@
 """Organization membership (control database), and teams and settings (tenant database).
 
-An organization has two roles: its owners ('admin', shown as เจ้าขององค์กร: they run the organization - members,
-settings, channels, automation - and see every team; one or more, never none) and its agents ('agent', เจ้าหน้าที่:
-they answer customers in their own team). The team lead role ('manager') was taken out: the table still accepts the
-word so old rows can be read, and start-up turns them into agents (database/schema.py)."""
+An organization has three roles:
+  admin   หัวหน้าทีม (once shown as เจ้าขององค์กร): runs the organization - members, settings, channels, automation -
+          sees every team and answers customers; one or more, never none.
+  agent   เจ้าหน้าที่: answers customers in their own team.
+  people  ผู้ดูแลสมาชิก: looks after who works in the organization (ทีมและสมาชิก: invites, roles, teams, switching an
+          account off) and nothing else. They read no customer, case or chat, are never given a case, tagged or
+          counted as someone who can answer (middleware/access.people_only, CASE_ROLES). They may not make anyone a
+          หัวหน้าทีม, nor change a หัวหน้าทีม or themselves.
+The old team lead role ('manager') was taken out: the table still accepts the word so old rows can be read, and
+start-up turns them into agents (database/schema.py)."""
 
-ROLES = ('admin','agent')
+ROLES = ('admin','agent','people')
+# The roles that answer customers: everyone but a ผู้ดูแลสมาชิก.
+CASE_ROLES = ('admin','agent')
+# Who looks after the organization's people (ทีมและสมาชิก), and the roles a ผู้ดูแลสมาชิก may give.
+PEOPLE_MANAGERS = ('admin','people')
+PEOPLE_GIVES = ('agent','people')
 
 # The organization's own name, which it may correct itself (ตั้งค่าองค์กร → ภาพรวม). It was set once at sign-up and
 # then nothing in the system could change it - not the organization, not a platform admin - so a typo or a rebrand
@@ -15,7 +26,7 @@ ORG_NAME_MAX = 100
 CONTROL_TABLES = '''
 CREATE TABLE IF NOT EXISTS memberships (
     tenant_id TEXT NOT NULL REFERENCES tenants(id), user_id TEXT NOT NULL REFERENCES users(id),
-    role TEXT NOT NULL CHECK(role IN ('admin','manager','agent')), team_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('admin','manager','agent','people')), team_id TEXT NOT NULL,
     active INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(tenant_id,user_id)
 );
 '''

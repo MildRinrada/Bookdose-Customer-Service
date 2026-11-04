@@ -33,7 +33,7 @@ from backend.database import db as D
 from backend.exceptions.errors import APIError, RateLimited
 from backend.exceptions.handlers import error_response
 from backend.extensions import monitor
-from backend.middleware import auth
+from backend.middleware import access, auth
 from backend.middleware.rate_limit import limited
 from backend.middleware.security import SECURITY_HEADERS, check_host_and_origin, request_ip
 from backend.modules.achievements import routes as achievement_routes
@@ -233,6 +233,8 @@ def route_request(req, path):
             req.db = db
             # An organization that requires two-step sign-in lets a member without it no further than their account.
             team_security.check(req)
+            # A ผู้ดูแลสมาชิก looks after people only (middleware/access.py).
+            access.people_only(req,path)
             # For the live agent monitor: who is using the app right now (a platform admin looking in is not staff).
             if not req.ctx.get('read_only'):
                 automation.touch_activity(db,req.ctx)

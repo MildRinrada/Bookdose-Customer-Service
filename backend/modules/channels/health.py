@@ -173,7 +173,7 @@ def _send(mail, admin, organization, kind, change, since, error):
         text = (f'สวัสดีคุณ{admin["name"]}\n\nตั้งแต่ {clock(since)} ระบบรับหรือส่งข้อความทาง {name} ขององค์กร {organization} ไม่ได้\n'
                 f'สาเหตุ: {CHANNEL_ERRORS.get(error,CHANNEL_ERRORS["network"])}\n\n'
                 f'แก้ได้ที่ ตั้งค่าองค์กร → {SECTION} → {PARTS[kind]}\n{link}\n\n'
-                'เมื่อกลับมาใช้ได้ ระบบจะแจ้งอีกครั้ง อีเมลนี้ส่งถึงเจ้าขององค์กรทุกคน\n')
+                'เมื่อกลับมาใช้ได้ ระบบจะแจ้งอีกครั้ง อีเมลนี้ส่งถึงหัวหน้าทีมทุกคน\n')
     else:
         subject = f'{name} ของ {organization} กลับมาใช้ได้แล้ว'
         text = (f'สวัสดีคุณ{admin["name"]}\n\n{name} ขององค์กร {organization} กลับมารับส่งข้อความได้แล้ว '

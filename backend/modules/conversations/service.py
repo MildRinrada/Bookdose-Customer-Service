@@ -292,7 +292,7 @@ def _own_message(db, ctx, conversation_id, message_id, action):
     # something went to the wrong place and the writer has gone home.
     mine = message['author_id']==ctx['id']
     require(mine or (ctx['role']=='admin' and action=='delete'),
-            'แก้ไขได้เฉพาะข้อความของตัวเอง' if action=='edit' else 'ลบได้เฉพาะข้อความของตัวเอง หรือโดยเจ้าขององค์กร',403)
+            'แก้ไขได้เฉพาะข้อความของตัวเอง' if action=='edit' else 'ลบได้เฉพาะข้อความของตัวเอง หรือโดยหัวหน้าทีม',403)
     return message
 
 

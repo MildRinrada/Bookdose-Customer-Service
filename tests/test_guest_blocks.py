@@ -49,12 +49,12 @@ class GuestBlockTests(unittest.TestCase):
         # Only owners.
         agent,_ = self.create_member()
         status,data = agent.call(f'/api/conversations/{first}/guest-block',{})
-        self.assertEqual((status,data['error']),(403,'เฉพาะเจ้าขององค์กรที่บล็อกหรือปลดบล็อกผู้เยี่ยมชมได้'))
+        self.assertEqual((status,data['error']),(403,'เฉพาะหัวหน้าทีมที่บล็อกหรือปลดบล็อกผู้เยี่ยมชมได้'))
         result = self.ok(self.admin,f'/api/conversations/{first}/guest-block',{})
         self.assertEqual(result['closed'],2)
         # The test server sees the browser as loopback: never held.
         self.assertIsNone(result['block']['network_until'])
-        self.assertEqual(result['block']['blocked_by'],'ผู้ดูแลองค์กร A')
+        self.assertEqual(result['block']['blocked_by'],'หัวหน้าทีม A')
         with D.tenant(self.org) as db:
             status = dict(db.execute('SELECT id,status FROM conversations WHERE id IN (?,?,?)',(first,second,kept)).fetchall())
             self.assertEqual(status,{first:'closed',second:'closed',kept:'open'})

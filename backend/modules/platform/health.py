@@ -184,7 +184,7 @@ def checklist(cd, session, snapshot):
     items = []
     for org in _active_orgs(cd):
         if not organization.organization_admins(cd,org['id']):
-            items.append(_item(f"org-admin-{org['id']}",'critical',f"{org['name']} ยังไม่มีผู้ดูแลองค์กร",
+            items.append(_item(f"org-admin-{org['id']}",'critical',f"{org['name']} ยังไม่มีหัวหน้าทีม",
                                'เรื่องจากลูกค้ารอโดยไม่มีใครรับ และไม่มีใครตั้งค่าช่องทางหรือทีมขององค์กรนี้ได้',
                                'เชิญผู้ดูแล',f"/platform/organizations?admin={org['id']}"))
     stopped = [w['name'] for w in snapshot['workers'] if not w['running']]
@@ -268,9 +268,9 @@ def checklist(cd, session, snapshot):
 
 SUPPORT_NEWS_HOURS = 72     # a denied or ended support access stays in the bell this long
 SUPPORT_TEXT = {
-    'pending':  ('info',    'clock', 'รอ {org} อนุมัติสิทธิ์เข้าช่วยเหลือ', 'เจ้าขององค์กรได้รับอีเมลและแถบแจ้งในหน้าจอแล้ว'),
+    'pending':  ('info',    'clock', 'รอ {org} อนุมัติสิทธิ์เข้าช่วยเหลือ', 'หัวหน้าทีมได้รับอีเมลและแถบแจ้งในหน้าจอแล้ว'),
     'approved': ('info',    'lock',  '{org} อนุมัติสิทธิ์เข้าช่วยเหลือแล้ว', 'เปิดดูข้อมูลขององค์กรได้อย่างเดียว'),
-    'denied':   ('warning', 'close', '{org} ไม่อนุมัติสิทธิ์เข้าช่วยเหลือ', 'ติดต่อเจ้าขององค์กรถ้ายังต้องการตรวจสอบ'),
+    'denied':   ('warning', 'close', '{org} ไม่อนุมัติสิทธิ์เข้าช่วยเหลือ', 'ติดต่อหัวหน้าทีมถ้ายังต้องการตรวจสอบ'),
     'expired':  ('info',    'clock', 'สิทธิ์เข้าช่วยเหลือ {org} สิ้นสุดแล้ว', 'หมดเวลาหรือไม่มีใครตอบใน 24 ชั่วโมง ขอใหม่ได้จากหน้าจัดการองค์กร'),
 }
 

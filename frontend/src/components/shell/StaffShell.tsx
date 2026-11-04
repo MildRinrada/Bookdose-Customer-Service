@@ -20,7 +20,7 @@ import { useWorkAlerts } from '@/features/staff-account/useWorkAlerts';
 import { isDone } from '@/lib/format';
 import { roleLabels } from '@/lib/labels';
 import { RealtimeProvider } from '@/lib/realtime-provider';
-import { isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
+import { homeOf, isAccountPath, isPlatformPath, managePages, platformPages, staffPageOf, workspacePages, type StaffPage } from '@/lib/routes';
 import { AccountSwitcher } from '@/features/staff-account/AccountSwitcher';
 import { activeMembership, useBoot, useStaffAlerts, useStaffLogout, useStaffTickets, useSwitchTenant, useWorkspace } from '@/lib/session';
 import { AnnouncementBar } from './AnnouncementBar';
@@ -61,8 +61,10 @@ export function StaffShell({ children }: { children: ReactNode }) {
 
   const work = workspace.data;
   const readOnly = Boolean(work?.read_only);
+  // A ผู้ดูแลสมาชิก looks after the members only: no cases, chats or alerts about them (backend organization/model.py).
+  const peopleOnly = membership?.role === 'people';
   // The member's own desktop notifications and sound (ตั้งค่าบัญชี → การแจ้งเตือน), while an organization is open.
-  useWorkAlerts(user.id, Boolean(work) && !readOnly);
+  useWorkAlerts(user.id, Boolean(work) && !readOnly && !peopleOnly);
   // A platform admin's: the server or its security needing them now, wherever they are (also looking into an organization).
   usePlatformAlerts(Boolean(user.platform_admin) && !consoleLocked);
   const page = staffPageOf(pathname);
@@ -106,7 +108,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
     if (allowed) return;
     // A platform admin's home is the console; a member's is the overview of their organization.
     if (user.platform_admin) router.replace('/platform/system');
-    else if (work || isPlatformPath(pathname)) router.replace('/dashboard');
+    else if (work || isPlatformPath(pathname)) router.replace(homeOf(work?.role));
   }, [allowed, work, pathname, router, user.platform_admin]);
 
   // A copied article link (/knowledge/<id>?tenant=<id>) while the selected organization is not usable: the knowledge
@@ -133,7 +135,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  if (membership && (workspace.isPending || tickets.isPending || alerts.isPending)) return <InitialLoading />;
+  if (membership && (workspace.isPending || (!peopleOnly && (tickets.isPending || alerts.isPending)))) return <InitialLoading />;
   const failed = workspace.error ?? tickets.error ?? alerts.error;
   // The organization requires two-step sign-in and this account has none: only ตั้งค่าบัญชี opens, to add it.
   const needsTwoFactor = Boolean(membership) && failed?.reason === 'two_factor_required';
@@ -163,7 +165,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const visible = (p: StaffPage) => !p.roles || (work ? p.roles.includes(work.role) : false);
   const workspaceNav = work ? workspacePages.filter(visible) : [];
   const manageNav = work ? managePages.filter(visible) : [];
-  const crumb = platform ? { label: 'คอนโซลระบบกลาง', href: '/platform/system' } : { label: work?.tenant.name || 'พื้นที่ทำงาน', href: '/dashboard' };
+  const crumb = platform ? { label: 'คอนโซลระบบกลาง', href: '/platform/system' } : { label: work?.tenant.name || 'พื้นที่ทำงาน', href: homeOf(work?.role) };
   const photo = boot.avatar ? <ProfilePhoto src={boot.avatar} /> : <Avatar name={user.name} index={2} />;
   const roleLabel = user.platform_admin ? 'ผู้ดูแลแพลตฟอร์ม' : work ? roleLabels[work.role] : 'ผู้ดูแลระบบกลาง';
   const activeMemberships = boot.memberships.filter((m) => m.status === 'active');
@@ -305,11 +307,11 @@ export function StaffShell({ children }: { children: ReactNode }) {
       </aside>
       <SidebarTips />
       {/* ผู้ช่วย AI: for the organization's own team, not the console or a look in on support access. */}
-      {work && !readOnly && !platform && <AiAssistant />}
-      {work && !readOnly && !platform && <Celebrations userId={user.id} />}
-      {((work && !readOnly) || user.platform_admin) && <Popups />}
+      {work && !readOnly && !platform && !peopleOnly && <AiAssistant />}
+      {work && !readOnly && !platform && !peopleOnly && <Celebrations userId={user.id} />}
+      {((work && !readOnly && !peopleOnly) || user.platform_admin) && <Popups />}
       {/* Last month's summary, once, the first time the member opens the app in a new month. */}
-      {work && !readOnly && !platform && <RecapPopup />}
+      {work && !readOnly && !platform && !peopleOnly && <RecapPopup />}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
         {/* ข้อตกลงการใช้บริการ (its admin agrees, the team hears past the grace) and ประกาศความเป็นส่วนตัวสำหรับ
@@ -346,7 +348,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
             <b aria-current="page">{page?.label ?? 'เคสบริการ'}</b>
           </div>
           <div className="top-actions">
-            {work && (
+            {work && !peopleOnly && (
               <>
                 <QuickSearch inputRef={search} role={work.role} platformAdmin={Boolean(user.platform_admin)} shortcut={SEARCH_SHORTCUT} />
                 {/* สถานะการทำงาน is a platform switch (backend platform/switches.py). */}

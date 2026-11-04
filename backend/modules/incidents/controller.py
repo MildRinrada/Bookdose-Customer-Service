@@ -3,7 +3,7 @@ from backend.middleware.auth import require_role
 from backend.middleware.rate_limit import limited
 from backend.modules.incidents import service
 
-OWNERS = 'เฉพาะผู้ดูแลองค์กรประกาศปัญหาได้'
+OWNERS = 'เฉพาะหัวหน้าทีมประกาศปัญหาได้'
 
 
 def issues(req):

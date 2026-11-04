@@ -16,6 +16,8 @@ ROUTES = [
     ('POST',  '/api/platform/tenants',        controller.create_tenant,              'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}',  controller.set_tenant_status,          'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/quota', controller.set_tenant_quota,      'platform'),
+    # จำนวนทีมงาน (team_size.py): แบบคนเดียว, or up to five people.
+    ('PATCH', f'/api/platform/tenants/{ID}/team-size', controller.set_tenant_team_size, 'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/features', controller.set_tenant_feature, 'platform'),
     ('PATCH', f'/api/platform/tenants/{ID}/slug', controller.rename_tenant_slug,     'platform'),
     ('POST',  f'/api/platform/tenants/{ID}/admins', controller.add_admin,          'platform'),

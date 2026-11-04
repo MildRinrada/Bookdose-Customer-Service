@@ -239,14 +239,16 @@ export function GuestStartForm({
       <Step n={++n} title="ติดตามคำตอบ">
         {!known && (
           <label className="start-remember">
-            <input type="checkbox" name="remember" defaultChecked />
+            {/* Not ticked unless there is no other way back to the answer: on a shared device, the next person to
+                open the page would see the chat (backend guest/model.py DEVICE_DAYS, DEVICE_IDLE_HOURS). */}
+            <input type="checkbox" name="remember" defaultChecked={!reach} />
             <span>
               <strong>
                 จำแชทไว้ในเครื่องนี้
                 <InfoHint>
                   {reach
-                    ? 'กลับมาอ่านคำตอบในเบราว์เซอร์นี้ได้เลย ถ้าใช้เครื่องสาธารณะ ให้เอาเครื่องหมายออก'
-                    : 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้เท่านั้น ถ้าเอาเครื่องหมายออก จะกลับมาอ่านคำตอบไม่ได้'}
+                    ? 'กลับมาอ่านคำตอบในเบราว์เซอร์นี้ได้เลย เครื่องจำไว้นานสุด 7 วัน และลืมเองถ้าไม่ได้เปิดแชท 24 ชั่วโมง ถ้าใช้เครื่องร่วมกับคนอื่น ไม่ต้องเลือก แล้วรับลิงก์ติดตามแทน'
+                    : 'กลับมาอ่านคำตอบได้ที่เบราว์เซอร์นี้เท่านั้น เครื่องจำไว้นานสุด 7 วัน และลืมเองถ้าไม่ได้เปิดแชท 24 ชั่วโมง ถ้าเอาเครื่องหมายออก จะกลับมาอ่านคำตอบไม่ได้'}
                 </InfoHint>
               </strong>
             </span>

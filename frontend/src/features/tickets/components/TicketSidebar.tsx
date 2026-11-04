@@ -166,30 +166,40 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
           ))}
         </select>
       </div>
-      <div className="field">
-        <label htmlFor="case-team">
-          ทีมรับผิดชอบ
-          <InfoHint>ทีมที่ดูแลเคสนี้ ถ้าย้ายทีม ช่องผู้รับผิดชอบจะว่างจนกว่าจะเลือกคนในทีมใหม่ ผู้ดูแลองค์กรเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
-        </label>
-        <select
-          id="case-team"
-          name="team_id"
-          value={team}
-          onChange={(e) => {
-            setTeam(e.target.value);
-            setTeamChanged(true);
-          }}
-        >
-          <TeamOptions />
-        </select>
-      </div>
-      <div className="field">
-        <label htmlFor="case-assignee">
-          ผู้รับผิดชอบ
-          <InfoHint>เลือกได้เฉพาะคนในทีมที่เลือกไว้ ถ้าเว้นว่าง เคสจะรอคนรับ หรือระบบแจกให้เองถ้าเปิดแจกเคสอัตโนมัติไว้</InfoHint>
-        </label>
-        <MemberPicker id="case-assignee" teamId={team} value={teamChanged ? '' : (t.assignee_id ?? '')} />
-      </div>
+      {/* แบบคนเดียว (backend platform/team_size.py): the team and the person stay as they are. */}
+      {work.team_size.solo ? (
+        <>
+          <input type="hidden" name="team_id" value={team} />
+          <input type="hidden" name="assignee_id" value={t.assignee_id ?? ''} />
+        </>
+      ) : (
+        <>
+          <div className="field">
+            <label htmlFor="case-team">
+              ทีมรับผิดชอบ
+              <InfoHint>ทีมที่ดูแลเคสนี้ ถ้าย้ายทีม ช่องผู้รับผิดชอบจะว่างจนกว่าจะเลือกคนในทีมใหม่ หัวหน้าทีมเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
+            </label>
+            <select
+              id="case-team"
+              name="team_id"
+              value={team}
+              onChange={(e) => {
+                setTeam(e.target.value);
+                setTeamChanged(true);
+              }}
+            >
+              <TeamOptions />
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="case-assignee">
+              ผู้รับผิดชอบ
+              <InfoHint>เลือกได้เฉพาะคนในทีมที่เลือกไว้ ถ้าเว้นว่าง เคสจะรอคนรับ หรือระบบแจกให้เองถ้าเปิดแจกเคสอัตโนมัติไว้</InfoHint>
+            </label>
+            <MemberPicker id="case-assignee" teamId={team} value={teamChanged ? '' : (t.assignee_id ?? '')} />
+          </div>
+        </>
+      )}
       <button className="btn primary" type="submit">
         บันทึกการเปลี่ยนแปลง
       </button>

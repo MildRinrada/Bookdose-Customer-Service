@@ -25,6 +25,8 @@ export function MemberForm({ member }: { member?: Member }) {
   const inviting = !member && work.customer_email;
   // Like teamOptions(): an agent would only see their own team, but this screen is for admins.
   const teams = work.teams.filter((t) => work.role !== 'agent' || t.id === work.team_id);
+  // A ผู้ดูแลสมาชิก gives only these two roles (backend organization/model.py PEOPLE_GIVES).
+  const roles = Object.entries(roleLabels).filter(([value]) => work.role !== 'people' || value !== 'admin');
 
   return (
     <Form
@@ -73,12 +75,13 @@ export function MemberForm({ member }: { member?: Member }) {
         <div className="field">
           <label htmlFor="member-role">บทบาท</label>
           <select id="member-role" name="role" defaultValue={member?.role ?? 'agent'}>
-            {Object.entries(roleLabels).map(([value, label]) => (
+            {roles.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
             ))}
           </select>
+          <span className="tiny muted">ผู้ดูแลสมาชิกจัดการได้เฉพาะทีมและสมาชิก ไม่เห็นข้อมูลลูกค้า เคส หรือแชท</span>
         </div>
         <div className="field">
           <label htmlFor="member-team">ทีม</label>

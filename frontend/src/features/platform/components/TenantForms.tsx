@@ -10,8 +10,63 @@ import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useApi, useInvalidate } from '@/lib/query';
 import { customerHomeUrl } from '@/lib/routes';
-import { addTenantAdmin, createTenant, PLATFORM_PREFIX, requestSupportAccess, resetStaffSecurity, setTenantStatus, tenantMembersPath } from '../api';
-import type { TenantMember } from '../types';
+import { addTenantAdmin, createTenant, PLATFORM_PREFIX, requestSupportAccess, resetStaffSecurity, setTenantStatus, setTenantTeamSize, tenantMembersPath } from '../api';
+import type { Tenant, TenantMember } from '../types';
+
+// backend platform/team_size.py MAX
+const TEAM_MAX = 5;
+
+/** จำนวนทีมงาน: แบบคนเดียว (its หัวหน้าทีม answers every customer, a new case is theirs at once) or a team of up to
+    five. The server refuses a number below the people already working there. */
+export function TeamSizeForm({ tenant }: { tenant: Tenant }) {
+  const { closeModal } = useDialogs();
+  const toast = useToast();
+  const refresh = useInvalidate();
+  const [team, setTeam] = useState(tenant.member_limit > 1);
+  return (
+    <Form
+      data-form="tenant-team-size"
+      onSubmit={async (values) => {
+        const limit = team ? Number(values.member_limit ?? TEAM_MAX) : 1;
+        await setTenantTeamSize(tenant.id, limit);
+        closeModal();
+        toast(limit === 1 ? `${tenant.name} ใช้แบบคนเดียวแล้ว` : `${tenant.name} มีทีมงานได้สูงสุด ${limit} คนแล้ว`);
+        await refresh(PLATFORM_PREFIX);
+      }}
+    >
+      <p className="notice">ตอนนี้มีทีมงานที่เปิดใช้งาน {tenant.member_count} คน</p>
+      <div className="stack mb">
+        <label className="check">
+          <input type="radio" name="mode" checked={!team} onChange={() => setTeam(false)} />
+          <span>
+            <strong>คนเดียว</strong>
+            <span className="tiny muted"> หัวหน้าทีมคนเดียวตอบลูกค้าทุกเรื่อง เคสใหม่เป็นของเขาทันที เพิ่มทีมงานไม่ได้</span>
+          </span>
+        </label>
+        <label className="check">
+          <input type="radio" name="mode" checked={team} onChange={() => setTeam(true)} />
+          <span>
+            <strong>หลายคน</strong>
+            <span className="tiny muted"> เชิญทีมงานได้ตามจำนวนที่ตั้ง นับรวมคำเชิญที่ยังไม่ตอบรับ</span>
+          </span>
+        </label>
+      </div>
+      {team && (
+        <div className="field">
+          <label htmlFor="team-size-limit">จำนวนทีมงานสูงสุด (คน)</label>
+          <select id="team-size-limit" name="member_limit" defaultValue={String(Math.max(tenant.member_limit, 2))}>
+            {Array.from({ length: TEAM_MAX - 1 }, (_, i) => i + 2).map((n) => (
+              <option key={n} value={n}>
+                {n} คน
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <FormActions onCancel={() => closeModal()} label="บันทึก" />
+    </Form>
+  );
+}
 
 /* The organizations page's dialogs: a new organization (pages/platform/new-tenant.html), a platform admin's request
    to enter one for support (pages/platform/support-access.html), suspending one, and resetting a staff member's
@@ -175,7 +230,7 @@ export function TenantForm() {
       <section className="new-tenant-step" aria-labelledby="new-tenant-admin">
         <h3 id="new-tenant-admin">
           <span className="new-tenant-number">2</span>
-          ผู้ดูแลองค์กร
+          หัวหน้าทีม
         </h3>
         <div className="form-grid">
           <TextField label="ชื่อผู้ดูแล" name="admin_name" max={100} placeholder="ชื่อ-นามสกุล" personName />
@@ -251,7 +306,7 @@ export function TenantAdminForm({ id, name, canInvite }: { id: string; name: str
       }}
     >
       {!canInvite && <p className="notice">ระบบยังส่งอีเมลไม่ได้</p>}
-      <TextField label="อีเมลผู้ดูแลองค์กร" name="email" type="email" max={254} />
+      <TextField label="อีเมลหัวหน้าทีม" name="email" type="email" max={254} />
       {canInvite ? (
         <details className="admin-password-option">
           <summary>หรือสร้างบัญชีพร้อมรหัสผ่านเริ่มต้นแทนการส่งอีเมล</summary>

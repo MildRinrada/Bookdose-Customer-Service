@@ -47,8 +47,12 @@ def invitations_of(cd, ctx):
 
 def invite(cd, db, ctx, body):
     """Invite an email address as a member of this organization; an address invited again gets a fresh link."""
+    from backend.modules.organization.model import PEOPLE_GIVES
+    from backend.modules.platform import team_size
     email,role,team_id = schema.invite_form(body)
     validate_team(db,ctx,team_id)
+    # A ผู้ดูแลสมาชิก never brings in a หัวหน้าทีม (organization/model.py).
+    require(ctx['role']!='people' or role in PEOPLE_GIVES,'ผู้ดูแลสมาชิกเชิญได้เฉพาะเจ้าหน้าที่และผู้ดูแลสมาชิก',403)
     require(ready(cd),NO_MAILBOX,503)
     D.begin(cd)
     repository.purge(cd,after(days=-KEEP_DAYS))
@@ -61,6 +65,9 @@ def invite(cd, db, ctx, body):
     # Inviting the same address again (a mistyped role, a team that changed) replaces the open invitation: the
     # waiting period belongs to the plain "ส่งอีกครั้ง" button, which sends the very same invitation once more.
     open_row = repository.open_for(cd,ctx['tenant_id'],email)
+    # A new address takes a seat (platform/team_size.py); inviting the same one again keeps the one it holds.
+    if not open_row:
+        team_size.require_room(cd,ctx['tenant_id'])
     token = _issue(cd,ctx,open_row,email,role,team_id)
     audit.record(db,ctx['name'],'member.invited',ctx['tenant_id'],f'{email}, {role}')
     cd.commit()
@@ -74,6 +81,7 @@ def resend(cd, db, ctx, invite_id):
     D.begin(cd)
     row = repository.find(cd,schema.invite_id(invite_id))
     require(row and row['tenant_id']==ctx['tenant_id'],'ไม่พบคำเชิญนี้',404)
+    require(ctx['role']!='people' or row['role']!='admin','ผู้ดูแลสมาชิกจัดการคำเชิญหัวหน้าทีมไม่ได้',403)
     require(not row['accepted_at'] and not row['cancelled_at'],'คำเชิญนี้ถูกตอบรับหรือยกเลิกไปแล้ว',409)
     require(row['last_sent_at']<=after(seconds=-RESEND_SECONDS),TOO_SOON,429)
     known = bool(users.find_user_by_email(cd,row['email']))
@@ -89,6 +97,7 @@ def cancel(cd, db, ctx, invite_id):
     D.begin(cd)
     row = repository.find(cd,schema.invite_id(invite_id))
     require(row and row['tenant_id']==ctx['tenant_id'],'ไม่พบคำเชิญนี้',404)
+    require(ctx['role']!='people' or row['role']!='admin','ผู้ดูแลสมาชิกจัดการคำเชิญหัวหน้าทีมไม่ได้',403)
     require(repository.cancel(cd,row['id'])==1,'คำเชิญนี้ถูกตอบรับหรือยกเลิกไปแล้ว',409)
     audit.record(db,ctx['name'],'member.invite_cancelled',ctx['tenant_id'],row['email'])
     cd.commit()
@@ -106,7 +115,13 @@ def invite_admin(cd, session, tenant_id, email):
         D.begin(db)
         repository.purge(cd,after(days=-KEEP_DAYS))
         user = users.find_user_by_email(cd,email)
-        token = _issue(cd,ctx,repository.open_for(cd,tenant_id,email),email,'admin',memberships.first_team_id(db))
+        open_row = repository.open_for(cd,tenant_id,email)
+        current = memberships.find_membership(cd,tenant_id,user['id']) if user else None
+        # Someone already working there is only made its หัวหน้าทีม; anyone else needs a seat (platform/team_size.py).
+        if not open_row and not (current and current['active'] and not current['expires_at']):
+            from backend.modules.platform import team_size
+            team_size.require_room(cd,tenant_id,console=True)
+        token = _issue(cd,ctx,open_row,email,'admin',memberships.first_team_id(db))
         audit.record(db,session['name'],'member.invited',tenant_id,f'{email}, admin')
         cd.commit()
         db.commit()
@@ -142,7 +157,7 @@ def view(cd, query):
     value = schema.token((query.get('token') or [''])[0])
     row = repository.find_by_token(cd,token_hash(value))
     require(row and not row['accepted_at'] and not row['cancelled_at'] and row['expires_at']>now(),schema.BAD_LINK)
-    require(row['tenant_status']=='active','องค์กรนี้หยุดให้บริการชั่วคราว กรุณาติดต่อผู้ดูแลองค์กร',409)
+    require(row['tenant_status']=='active','องค์กรนี้หยุดให้บริการชั่วคราว กรุณาติดต่อหัวหน้าทีม',409)
     return {'organization':row['tenant_name'],'email':row['email'],'role':row['role'],
             'needs_account':not users.find_user_by_email(cd,row['email'])}
 
@@ -156,10 +171,16 @@ def accept(cookie_header, body, client=None):
     with D.control() as cd:
         row = repository.find_by_token(cd,token_hash(value))
         require(row and not row['accepted_at'] and not row['cancelled_at'] and row['expires_at']>now(),schema.BAD_LINK)
-        require(row['tenant_status']=='active','องค์กรนี้หยุดให้บริการชั่วคราว กรุณาติดต่อผู้ดูแลองค์กร',409)
+        require(row['tenant_status']=='active','องค์กรนี้หยุดให้บริการชั่วคราว กรุณาติดต่อหัวหน้าทีม',409)
         user = users.find_user_by_email(cd,row['email'])
         require(not (user and user['platform_admin']),PLATFORM_ACCOUNT,409)
         name,password = (None,None) if user else schema.accept_form(body)
+        # The number may have been lowered since the link was sent (platform/team_size.py); someone already working
+        # there, given a new role or team by the invitation, keeps the seat they hold.
+        from backend.modules.platform import team_size
+        existing = memberships.find_membership(cd,row['tenant_id'],user['id']) if user else None
+        if not (existing and existing['active'] and not existing['expires_at']):
+            team_size.require_seat_on_accept(cd,row['tenant_id'])
         with D.tenant(row['tenant_id']) as db:
             # The team of the invitation may have been removed while the link was on its way.
             team_id = row['team_id'] if row['team_id'] and memberships.team_exists(db,row['team_id']) else memberships.first_team_id(db)

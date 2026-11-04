@@ -82,7 +82,7 @@ def _csv(name, records):
 
 def build(cd, db, ctx, query):
     """(ZIP bytes, file name) of the period's tables. Recorded in the activity log."""
-    require(ctx['role'] in LEADS,'เฉพาะเจ้าขององค์กรส่งออกชุดข้อมูลได้',403)
+    require(ctx['role'] in LEADS,'เฉพาะหัวหน้าทีมส่งออกชุดข้อมูลได้',403)
     since,until,_,first = period(query)
     team = visible_team(ctx) or _arg(query,'team') or None
     moment = now()

@@ -495,7 +495,7 @@ function AuthPage({ boot, setup, register, initialTab, org, signupOrg, info, nex
                         </Link>
                       </>
                     ) : (
-                      <span>รอให้ครบเวลา หรือติดต่อผู้ดูแลองค์กร</span>
+                      <span>รอให้ครบเวลา หรือติดต่อหัวหน้าทีม</span>
                     )
                   }
                 />

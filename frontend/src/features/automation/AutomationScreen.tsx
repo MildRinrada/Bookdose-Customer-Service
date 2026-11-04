@@ -14,7 +14,7 @@ import type { RichFormat } from '@/features/rich/types';
 import { useCaseTags } from '@/features/tickets/tags';
 import { plainText } from '@/lib/format';
 import { useApi, useInvalidate } from '@/lib/query';
-import { useMemberName, useTeamName } from '@/lib/session';
+import { useMemberName, useTeamName, useWork } from '@/lib/session';
 import { useUiState } from '@/lib/ui-state';
 import { AUTOMATION_PATH, deleteMacro, deleteRule, saveAutomationSettings, saveRule } from './api';
 import { DistributionCard } from './components/DistributionCard';
@@ -50,8 +50,12 @@ export function AutomationScreen({ tab }: { tab?: string }) {
 
 function AutomationView({ data, tab }: { data: AutomationPage; tab?: string }) {
   const [remembered, setRemembered] = useUiState<Tab>('automation:tab', 'rules');
+  // แบบคนเดียว (backend platform/team_size.py): every case is the one member's, there is nobody to hand one out to.
+  const solo = useWork().team_size.solo;
+  const shown = (Object.keys(tabs) as Tab[]).filter((key) => !solo || key !== 'distribution');
   // /automation alone opens the part used last.
-  const current: Tab = isTab(tab) ? tab : remembered;
+  const asked: Tab = isTab(tab) ? tab : remembered;
+  const current: Tab = shown.includes(asked) ? asked : 'rules';
   useEffect(() => {
     setRemembered(current);
     document.title = `${tabs[current].label} - ระบบอัตโนมัติ`;
@@ -96,7 +100,7 @@ function AutomationView({ data, tab }: { data: AutomationPage; tab?: string }) {
       </div>
       <div className="settings-frame">
         <nav ref={nav} className="settings-nav" aria-label="ส่วนของระบบอัตโนมัติ">
-          {(Object.keys(tabs) as Tab[]).map((key) => {
+          {shown.map((key) => {
             const active = key === current;
             return (
               <Link

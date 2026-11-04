@@ -42,9 +42,10 @@ export function ConversationView({ data }: { data: ConversationDetail }) {
   const open = c.status === 'open';
   const guest = c.guest ?? contact.guest;
   // รับเคส: an open chat nobody has taken is taken before it is answered, by a member of its team (backend
-  // conversations/service.accept). Members of other teams and support access read it as it is.
+  // conversations/service.accept). Members of other teams and support access read it as it is. แบบคนเดียว has nobody
+  // to take it from: every case is the one member's at once (backend automation/distribution.py).
   const owner = t?.assignee_id ? work.members.find((m) => m.id === t.assignee_id) : undefined;
-  const mustAccept = open && c.channel !== 'manual' && !work.read_only && work.team_id === c.team_id && !t?.assignee_id;
+  const mustAccept = open && c.channel !== 'manual' && !work.read_only && !work.team_size.solo && work.team_id === c.team_id && !t?.assignee_id;
 
   return (
     <>

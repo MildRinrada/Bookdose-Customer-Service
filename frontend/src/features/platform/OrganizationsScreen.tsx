@@ -82,7 +82,7 @@ function OrganizationsView({ data, tab, admin }: { data: TenantsPage; tab?: stri
     if (!admin || adminOpened.current) return;
     adminOpened.current = true;
     const t = data.tenants.find((x) => x.id === admin);
-    if (t) openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={data.can_invite} />);
+    if (t) openModal(`หัวหน้าทีม ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={data.can_invite} />);
     router.replace(tabHref(tabOf(tab)), { scroll: false });
   }, [admin, tab, data.tenants, data.can_invite, openModal, router]);
 
@@ -181,7 +181,7 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
     <>
       {withoutAdmin.length > 0 && (
         <p className="notice warning" role="status">
-          {withoutAdmin.map((t) => t.name).join(', ')} ยังไม่มีผู้ดูแลองค์กร
+          {withoutAdmin.map((t) => t.name).join(', ')} ยังไม่มีหัวหน้าทีม
         </p>
       )}
       <section className="card">
@@ -215,7 +215,7 @@ function OrganizationsList({ data }: { data: TenantsPage }) {
                   <thead>
                     <tr>
                       <th>องค์กร</th>
-                      <th>ผู้ดูแลองค์กร</th>
+                      <th>หัวหน้าทีม</th>
                       <th>สมาชิก</th>
                       <th>สถานะ</th>
                       <th>สิทธิ์เข้าช่วยเหลือ</th>
@@ -309,7 +309,7 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
             <button
               type="button"
               className="btn sm"
-              onClick={() => openModal(`ผู้ดูแลองค์กร ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={canInvite} />)}
+              onClick={() => openModal(`หัวหน้าทีม ${t.name}`, <TenantAdminForm id={t.id} name={t.name} canInvite={canInvite} />)}
             >
               <Icon name="plus" />
               เชิญผู้ดูแล
@@ -326,9 +326,9 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
             title={
               t.terms.accepted
                 ? t.terms.overdue
-                  ? 'เลยกำหนดยอมรับข้อตกลงฉบับใหม่แล้ว ผู้ดูแลองค์กรต้องยอมรับก่อนใช้งานต่อ ทีมงานและลูกค้ายังใช้งานได้'
+                  ? 'เลยกำหนดยอมรับข้อตกลงฉบับใหม่แล้ว หัวหน้าทีมต้องยอมรับก่อนใช้งานต่อ ทีมงานและลูกค้ายังใช้งานได้'
                   : `ยังไม่ได้ยอมรับข้อตกลงฉบับใหม่ ครบกำหนด ${date(t.terms.due ?? '')}`
-                : 'ผู้ดูแลองค์กรยังไม่เคยยอมรับข้อตกลง ระบบจะขอให้ยอมรับเมื่อเข้าใช้งาน'
+                : 'หัวหน้าทีมยังไม่เคยยอมรับข้อตกลง ระบบจะขอให้ยอมรับเมื่อเข้าใช้งาน'
             }
           >
             {t.terms.accepted ? (t.terms.overdue ? 'ข้อตกลงเลยกำหนด' : 'รอยอมรับข้อตกลงใหม่') : 'ยังไม่ยอมรับข้อตกลง'}
@@ -345,7 +345,7 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
         {'pending' in access && (
           <span className="org-access org-support-pending">
             <Icon name="clock" />
-            <span>รอผู้ดูแลองค์กรอนุมัติ ขอ {access.pending.hours} ชม.</span>
+            <span>รอหัวหน้าทีมอนุมัติ ขอ {access.pending.hours} ชม.</span>
             <button type="button" className="btn sm subtle" onClick={() => withdraw(access.pending, false)}>
               ยกเลิกคำขอ
             </button>
@@ -375,7 +375,7 @@ function TenantRow({ tenant: t, index, support, canInvite }: { tenant: Tenant; i
             <button
               type="button"
               className="btn sm"
-              title="ส่งคำขอให้ผู้ดูแลองค์กรอนุมัติ พร้อมเหตุผลและระยะเวลา เมื่ออนุมัติจะดูข้อมูลได้อย่างเดียว"
+              title="ส่งคำขอให้หัวหน้าทีมอนุมัติ พร้อมเหตุผลและระยะเวลา เมื่ออนุมัติจะดูข้อมูลได้อย่างเดียว"
               onClick={() => openModal('ขอสิทธิ์ Support Access', <SupportAccessForm id={t.id} name={t.name} />)}
             >
               <Icon name="shield" />

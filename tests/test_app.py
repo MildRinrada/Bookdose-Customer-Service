@@ -165,6 +165,16 @@ class IntegrationTests(unittest.TestCase):
         with D.control() as cd:
             platform_repository.save_setting(cd,switches.KEY,json.dumps({'customer_accounts':True,'no_rush':True,'translate':True,'work_status':True}))
         switches._cache['value']=None
+        # A new organization is แบบคนเดียว and hands cases out by itself (platform/team_size.py,
+        # automation/distribution.py). The tests were written for a team that takes cases by hand: they keep one, and
+        # test_team_size.py tests the defaults.
+        from backend.modules.automation import distribution
+        from backend.modules.platform import team_size
+        self.team_default=patch.object(team_size,'NEW_TENANT',team_size.MAX)
+        self.handout_default=patch.dict(distribution.DEFAULT,{'enabled':False})
+        for patcher in (self.team_default,self.handout_default):
+            patcher.start()
+            self.addCleanup(patcher.stop)
         # The console's two-step rule follows this computer's .env otherwise (security/admin_guard.py); the tests of
         # that rule turn it on themselves (test_admin_guard.py).
         environment=patch.dict(os.environ,{'BOOKDOSE_PLATFORM_2FA':'off'})
@@ -178,7 +188,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.owner.call('/api/setup',{'name':'เจ้าของระบบ','email':'admin@example.com','password':'Test-password-123!','organization':'องค์กร A','slug':'alpha','demo':True})[0],200)
         self.owner.boot()
         self.org=next(t['id'] for t in self.ok(self.owner,'/api/platform/tenants')['tenants'] if t['slug']=='alpha')
-        self.ok(self.owner,f'/api/platform/tenants/{self.org}/admins',{'email':'orgadmin@example.com','admin_name':'ผู้ดูแลองค์กร A','password':'Test-password-123!'})
+        self.ok(self.owner,f'/api/platform/tenants/{self.org}/admins',{'email':'orgadmin@example.com','admin_name':'หัวหน้าทีม A','password':'Test-password-123!'})
         self.admin=Client(self.base)
         self.boot=self.admin.login('orgadmin@example.com')
         self.work=self.ok(self.admin,'/api/workspace')
@@ -231,7 +241,7 @@ class IntegrationTests(unittest.TestCase):
         return client,client.conversation
 
     def registration(self,**overrides):
-        return {'name':'ผู้ดูแลองค์กรใหม่','email':'new@example.com','password':'New-password-123!',
+        return {'name':'หัวหน้าทีมใหม่','email':'new@example.com','password':'New-password-123!',
                 'password_confirm':'New-password-123!','organization':'องค์กรใหม่','slug':'new-org',
                 'terms':True,'privacy':True,**overrides}
 

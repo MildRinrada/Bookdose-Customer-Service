@@ -272,7 +272,7 @@ def escalate_due(cd, db, tenant_id):
         repository.insert_escalation(db,t['id'],'unclaimed',None,lead['id'] if lead else None)
         realtime.ticket(db,t['id'])
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
-                     f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
+                     f"ไม่มีผู้รับเรื่องภายใน {minutes} นาที {'ย้ายให้ '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
     for t in at_risk:
         lead = team_lead(members,load,t['team_id'],available)
         repository.insert_escalation(db,t['id'],'sla_risk',t['assignee_id'],lead['id'] if lead else None)
@@ -280,7 +280,7 @@ def escalate_due(cd, db, tenant_id):
         staff_prefs.queue(db,t['assignee_id'],'sla',f"เคส BD-{t['number']} ใกล้ครบกำหนด SLA",
                           f"{t['subject']}\nยังไม่ได้ตอบกลับลูกค้าครั้งแรก",f"/tickets/{t['id']}")
         audit.record(db,SYSTEM_ACTOR,'ticket.escalated',t['id'],
-                     f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA {'แจ้ง '+lead['name'] if lead else 'ไม่พบเจ้าขององค์กรที่ใช้งานอยู่'}")
+                     f"{names.get(t['assignee_id'],'ผู้รับผิดชอบ')} ยังไม่ตอบกลับครั้งแรก ใกล้ครบ SLA {'แจ้ง '+lead['name'] if lead else 'ไม่พบหัวหน้าทีมที่ใช้งานอยู่'}")
     db.commit()
     return len(unclaimed)+len(at_risk)
 
@@ -479,7 +479,7 @@ def record_mentions(cd, db, ctx, conv, message_id, text):
     see the conversation are notified; the writer never notifies themselves. Returns the member ids."""
     if cd is None or '@' not in text:
         return []
-    members = [m for m in organization.tenant_members(cd,ctx['tenant_id']) if m['active'] and m['id']!=ctx['id']
+    members = [m for m in organization.case_members(cd,ctx['tenant_id']) if m['active'] and m['id']!=ctx['id']
                and (m['role']!='agent' or m['team_id']==conv['team_id'])]
     everyone = TEAM_MENTION in text
     picked = [m for m in members if (everyone and m['team_id']==conv['team_id']) or '@'+m['name'] in text]
@@ -561,7 +561,7 @@ def manager_overview(cd, db, ctx, tz):
     agents = [{'id':m['id'],'name':m['name'],'role':m['role'],'team_id':m['team_id'],'last_seen':seen.get(m['id']),
                'open':open_by.get(m['id'],0),'resolved_today':resolved.get(m['id'],0),'replies_today':replies.get(m['id'],0),
                'avg_first_response':speed.get(m['id']),'csat':ratings[m['id']]['average'] if m['id'] in ratings else None}
-              for m in organization.tenant_members(cd,ctx['tenant_id']) if m['active']]
+              for m in organization.case_members(cd,ctx['tenant_id']) if m['active']]
     cfg = settings(db)
     # The busy hours and the full satisfaction figures live in the service report (reports/service.py).
     return {'agents':agents,'csat':csat_summary(db,since),

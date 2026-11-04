@@ -16,8 +16,9 @@ from backend.utils.validation import require
 
 
 def cookie_header(req, slug, token, remember, clear=False):
-    """The guest cookie g_<org>: only for the API, never readable by page scripts. Kept DEVICE_DAYS (30) when remembered,
-    else until the browser closes. Inside the widget's frame on another website (X-Embed: 1, behind HTTPS) it must
+    """The guest cookie g_<org>: only for the API, never readable by page scripts. Kept DEVICE_IDLE_HOURS (24) from its
+    last use when remembered (sent again as it is used, never past DEVICE_DAYS: model.py), else until the browser
+    closes. Inside the widget's frame on another website (X-Embed: 1, behind HTTPS) it must
     be SameSite=None; Secure; Partitioned, or the browser would not keep it."""
     parts = [f'{COOKIE_PREFIX}{slug}={token}','HttpOnly','Path=/api/']
     if req.server.secure_cookies and req.headers.get('X-Embed')=='1':
@@ -221,7 +222,7 @@ def save_settings(req):
 
 
 # บล็อกผู้ก่อกวน (blocks.py): the organization's owners only
-OWNERS_ONLY = 'เฉพาะเจ้าขององค์กรที่บล็อกหรือปลดบล็อกผู้เยี่ยมชมได้'
+OWNERS_ONLY = 'เฉพาะหัวหน้าทีมที่บล็อกหรือปลดบล็อกผู้เยี่ยมชมได้'
 
 
 @require_role('admin',message=OWNERS_ONLY)

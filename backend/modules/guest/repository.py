@@ -93,13 +93,13 @@ def insert_device(db, token_hash, visitor_id, csrf, remember, user_agent, ip):
 
 
 def device(db, token_hash):
-    """The browser and its visitor (not merged into an account), or None; a browser past model.DEVICE_DAYS counts as
-    none (cleanup deletes it)."""
-    from backend.modules.guest.model import DEVICE_DAYS
-    since = after(days=-DEVICE_DAYS)
+    """The browser and its visitor (not merged into an account), or None; a browser past model.DEVICE_DAYS, or left
+    unused for model.DEVICE_IDLE_HOURS, counts as none (cleanup deletes it)."""
+    from backend.modules.guest.model import DEVICE_DAYS, DEVICE_IDLE_HOURS
     return one(db,'''SELECT d.token_hash,d.visitor_id,d.csrf,d.remember,d.last_seen_at AS device_seen_at FROM guest_devices d
-                     JOIN guest_visitors v ON v.id=d.visitor_id WHERE d.token_hash=? AND v.account_id IS NULL AND d.created_at>=?''',
-               (token_hash,since))
+                     JOIN guest_visitors v ON v.id=d.visitor_id WHERE d.token_hash=? AND v.account_id IS NULL AND d.created_at>=?
+                     AND d.last_seen_at>=?''',
+               (token_hash,after(days=-DEVICE_DAYS),after(hours=-DEVICE_IDLE_HOURS)))
 
 
 def touch_device(db, token_hash):
@@ -114,8 +114,9 @@ def delete_device(db, token_hash):
     db.execute('DELETE FROM guest_devices WHERE token_hash=?',(token_hash,))
 
 
-def delete_old_devices(db, before):
-    return db.execute('DELETE FROM guest_devices WHERE created_at<?',(before,)).rowcount
+def delete_old_devices(db, began_before, used_before):
+    """Browsers that began before `began_before` or were last used before `used_before`."""
+    return db.execute('DELETE FROM guest_devices WHERE created_at<? OR last_seen_at<?',(began_before,used_before)).rowcount
 
 
 # Conversations

@@ -131,11 +131,14 @@ class StaffIdentity:
         return None
 
     def wants(self, audience):
-        return (audience[0]=='staff' and audience[1]==self.tenant_id
+        # A ผู้ดูแลสมาชิก ('people') looks after people only: nothing about customers, cases or chats reaches them.
+        return (audience[0]=='staff' and audience[1]==self.tenant_id and self.role!='people'
                 and (self.role!='agent' or audience[2] is None or self.team_id in audience[2]))
 
     def _repliable(self, db, conversation_id):
         """The conversation when this member may reply in it, else None."""
+        if self.role=='people':
+            return None
         conv = D.find_in_team(db,'conversations',conversation_id,self.team_id if self.role=='agent' else None)
         return conv if conv and conv['channel'] in REPLY_CHANNELS else None
 

@@ -20,7 +20,7 @@ WORK_TZ = dt.timezone(dt.timedelta(hours=7))
 STATUSES = {'online':'พร้อมรับเรื่อง','break':'พักเบรก / ทานข้าว','busy':'ยุ่งอยู่','offline':'ไม่อยู่'}
 EVENTS = {'assigned':'มีเคสมอบหมายให้ฉัน','customer_reply':'ลูกค้าส่งข้อความในเคสของฉัน หรือในแชทที่ยังไม่มีใครดูแล (แชทที่ยังไม่มีใครดูแลเตือนเฉพาะในระบบ ไม่ส่งอีเมล)','sla':'เคสของฉันใกล้หรือเกินกำหนด SLA',
           'snoozed':'เคสที่ฉันพักไว้ครบเวลาแล้ว','help':'เพื่อนยกมือขอช่วยในเคสที่ฉันเห็น (บนหน้าจอและเสียงเท่านั้น)',
-          'weekly_report':'สรุปรายงานประจำสัปดาห์ ทุกวันจันทร์ (เฉพาะเจ้าขององค์กร)'}
+          'weekly_report':'สรุปรายงานประจำสัปดาห์ ทุกวันจันทร์ (เฉพาะหัวหน้าทีม)'}
 # Emails written as a formal memo: the subject is the notice's own (it names the organization), and the body opens
 # with เรียน and closes with จึงเรียนมาเพื่อโปรดทราบ (reports/weekly.py).
 FORMAL_EVENTS = ('weekly_report',)

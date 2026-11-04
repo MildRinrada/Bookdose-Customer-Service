@@ -26,11 +26,17 @@ import json
 CONTACT_SOURCE = 'guest'
 GUEST_NAME = 'ผู้เยี่ยมชม'
 COOKIE_PREFIX = 'g_'
-# A browser remembers the guest's chats for DEVICE_DAYS from when it began, used or not: a shared or lost device does
-# not keep showing a private chat. Past that the device is refused at once and deleted within a minute (cleanup).
-DEVICE_DAYS = 30
-COOKIE_MAX_AGE = DEVICE_DAYS*86400
-COOKIE_REFRESH_SECONDS = 86400      # a remembered cookie is sent again when the device was last seen longer ago
+# A browser remembers the guest's chats while it keeps being used, DEVICE_IDLE_HOURS since it was last opened, and for
+# DEVICE_DAYS from when it began at most, used or not: a shared, borrowed or lost device does not keep showing a
+# private chat to whoever opens it next. Two limits, one for leaving it and one overall, as NIST SP 800-63B asks of a
+# session. Past either the device is refused at once and deleted within a minute (cleanup); the guest comes back by a
+# follow link (email, SMS, LINE).
+DEVICE_DAYS = 7
+DEVICE_IDLE_HOURS = 24
+# The remembered cookie lasts the idle window and is sent again as the browser is used (no more often than
+# COOKIE_REFRESH_SECONDS, which is also how often its last use is written down).
+COOKIE_MAX_AGE = DEVICE_IDLE_HOURS*3600
+COOKIE_REFRESH_SECONDS = 600
 LINK_DAYS = 30
 LINK_USES = 20
 LINE_CODE_MINUTES = 10

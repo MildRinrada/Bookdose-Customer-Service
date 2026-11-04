@@ -111,6 +111,9 @@ class TeamSizeTests(unittest.TestCase):
         self.ok(people,f'/api/members/{agent_id}',{'role':'agent','team_id':self.team,'active':False},'PATCH')
         self.assertEqual(people.call(f'/api/members/{self.admin_id()}',{'role':'agent','team_id':self.team,'active':True},'PATCH')[0],403)
         self.assertEqual(people.call(f'/api/members/{people_id}',{'role':'admin','team_id':self.team,'active':True},'PATCH')[0],403)
+        # The teams they put people in are theirs to add and rename too: a name and what it looks after, no customer.
+        team_id = self.ok(people,'/api/teams',{'name':'ทีมใหม่','description':''})['id']
+        self.ok(people,f'/api/teams/{team_id}',{'name':'ทีมใหม่กว่า','description':'ดูแลเรื่องใหม่'},'PATCH')
         # Never someone a case goes to, nor a colleague an agent sees in the team.
         from backend.middleware.access import validate_assignee
         from backend.exceptions.errors import APIError

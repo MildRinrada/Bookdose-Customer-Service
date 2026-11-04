@@ -120,7 +120,7 @@ export function NewTicketForm({
             <div className="field">
               <label htmlFor="new-team">
                 ทีมรับผิดชอบ
-                <InfoHint>ทีมที่ดูแลเคสนี้ เริ่มต้นเป็นทีมของคุณ หัวหน้าทีมเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
+                <InfoHint>ทีมที่ดูแลเคสนี้ เริ่มต้นเป็นทีมของคุณ หัวหน้าทีมและผู้ดูแลสมาชิกเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
               </label>
               <select id="new-team" name="team_id" value={team} onChange={(e) => setTeam(e.target.value)}>
                 <TeamOptions />

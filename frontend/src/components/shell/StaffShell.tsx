@@ -268,7 +268,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         )}
-        <div className="nav-label nav-workspace">WORKSPACE</div>
+        {/* A ผู้ดูแลสมาชิก has no workspace page, and a heading over nothing reads like a menu that failed to load. */}
+        {workspaceNav.length > 0 && <div className="nav-label nav-workspace">WORKSPACE</div>}
         <nav className="nav-workspace">
           {workspaceNav.map(nav)}
           {manageNav.length > 0 && (

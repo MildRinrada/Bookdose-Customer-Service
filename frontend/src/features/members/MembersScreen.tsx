@@ -36,8 +36,9 @@ export function MembersScreen() {
   // จำนวนทีมงาน (backend platform/team_size.py): members and open invitations take the seats the platform gave.
   const seats = work.team_size;
   const full = seats.members + seats.invited >= seats.limit;
-  // Teams are the หัวหน้าทีม's; a ผู้ดูแลสมาชิก puts people in them. แบบคนเดียว works as one team.
-  const lead = work.role === 'admin';
+  // A team is a name and what it looks after, no customer in it, so a ผู้ดูแลสมาชิก keeps them as well as the
+  // หัวหน้าทีม. แบบคนเดียว works as one team.
+  const lead = work.role === 'admin' || work.role === 'people';
   const addsTeams = lead && !seats.solo;
 
   return (

@@ -12,6 +12,7 @@ from backend.utils.validation import require
 PEOPLE_ROUTES = [(method,re.compile(pattern)) for method,pattern in (
     ('GET','/api/workspace'),
     ('POST',f'/api/members(?:/{ID})?'), ('PATCH',f'/api/members(?:/{ID})?'),
+    ('POST','/api/teams'), ('PATCH',f'/api/teams/{ID}'),
     ('GET','/api/invitations'), ('POST','/api/invitations'),
     ('POST',f'/api/invitations/{ID}/resend'), ('DELETE',f'/api/invitations/{ID}'),
     ('GET','/api/legal/organization'),

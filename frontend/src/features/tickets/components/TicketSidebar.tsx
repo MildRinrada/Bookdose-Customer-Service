@@ -177,7 +177,7 @@ function TicketUpdateForm({ data, onSaved }: { data: TicketDetail; onSaved: () =
           <div className="field">
             <label htmlFor="case-team">
               ทีมรับผิดชอบ
-              <InfoHint>ทีมที่ดูแลเคสนี้ ถ้าย้ายทีม ช่องผู้รับผิดชอบจะว่างจนกว่าจะเลือกคนในทีมใหม่ หัวหน้าทีมเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
+              <InfoHint>ทีมที่ดูแลเคสนี้ ถ้าย้ายทีม ช่องผู้รับผิดชอบจะว่างจนกว่าจะเลือกคนในทีมใหม่ หัวหน้าทีมและผู้ดูแลสมาชิกเพิ่มหรือแก้ทีมได้ที่เมนูทีมและสมาชิก</InfoHint>
             </label>
             <select
               id="case-team"

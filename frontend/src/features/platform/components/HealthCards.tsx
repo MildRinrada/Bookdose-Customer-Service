@@ -28,6 +28,7 @@ import {
 import { bytesText } from '../labels';
 import type { Announcement, BackupFile, BackupsView, OffsiteSettings, OffsiteView, OrgChannels, OrgUsage, SecuritySummary, TodoItem } from '../types';
 import { RestoreDialog, uploadBackupFile } from './RestoreDialog';
+import { AnnouncementBar } from '@/components/shell/AnnouncementBar';
 
 /* The cards of ภาพรวมระบบ that look across the whole platform (backend platform/health.py and backups.py): what needs
    doing, the backups, every organization's channels, how busy each organization is, security at a glance, and the
@@ -684,24 +685,52 @@ const toLocal = (iso: string | undefined) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
+/** A local date-time field value as a Thai reader would say it ("ศ. 20 พ.ย. 2569 22:00"): the field itself is drawn
+    in the browser's own language and may read mm/dd/yyyy. */
+const thaiWhen = (value: string) =>
+  new Intl.DateTimeFormat('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(
+    new Date(value),
+  );
+
 /* One message to every organization: shown at the top of every staff screen (and customers', when chosen) until it
-   ends. */
+   ends. The card says what it is and whether one is up, and shows the bar as it will look while it is written
+   (components/shell/AnnouncementBar, the same markup). Markup: pages/platform.css (announce-). */
 export function AnnouncementCard({ current }: { current: Announcement | null }) {
   const toast = useToast();
   const run = useRunAction();
   const refresh = useInvalidate();
-  const ended = Boolean(current?.ends_at && current.ends_at < new Date().toISOString());
+  const { confirm } = useDialogs();
+  const [text, setText] = useState(current?.text ?? '');
+  const [level, setLevel] = useState<'info' | 'warning'>(current?.level === 'warning' ? 'warning' : 'info');
+  const [audience, setAudience] = useState(current?.audience === 'all' ? 'all' : 'staff');
+  const [starts, setStarts] = useState(toLocal(current?.starts_at));
+  const [ends, setEnds] = useState(toLocal(current?.ends_at));
+  const moment = new Date().toISOString();
+  const ended = Boolean(current?.ends_at && current.ends_at < moment);
+  const waiting = Boolean(current?.starts_at && current.starts_at > moment);
+  const status = !current
+    ? { label: 'ไม่มีประกาศ', tone: 'announce-none' }
+    : ended
+      ? { label: 'สิ้นสุดแล้ว', tone: 'announce-none' }
+      : waiting
+        ? { label: 'ตั้งเวลาไว้', tone: 'health-warning' }
+        : { label: 'กำลังแสดง', tone: 'health-ok' };
+  const backwards = Boolean(starts && ends && ends <= starts);
+
   return (
-    <section className="card" id="announcement">
-      <div className="card-header">
-        <div>
-          <h2>ประกาศถึงทุกองค์กร</h2>
+    <section className="card announce-card" id="announcement" aria-labelledby="announcement-title">
+      <div className="card-header announce-head">
+        <span className="announce-mark">
+          <Icon name="bell" />
+        </span>
+        <div className="grow">
+          <h2 id="announcement-title">ประกาศถึงทุกองค์กร</h2>
+          <p>แถบบนสุดของทุกหน้าในระบบ สำหรับเรื่องที่รู้ล่วงหน้า แสดงจนถึงเวลาสิ้นสุด</p>
         </div>
-        {current && !ended && <span className={`health-pill health-${current.level === 'warning' ? 'warning' : 'ok'}`}>กำลังแสดง</span>}
+        <span className={`health-pill ${status.tone}`}>{status.label}</span>
       </div>
       <Form
-        key={JSON.stringify(current)}
-        className="card-body announcement-form"
+        className="card-body stack announce-form announcement-form"
         data-form="announcement"
         onSubmit={async (values) => {
           await saveAnnouncement({
@@ -715,49 +744,71 @@ export function AnnouncementCard({ current }: { current: Announcement | null }) 
           toast('ประกาศแล้ว ทุกองค์กรจะเห็นในการเปิดหน้าครั้งถัดไป');
         }}
       >
-        <label className="field">
-          <span>ข้อความ (ไม่เกิน 300 ตัวอักษร)</span>
-          <textarea name="text" rows={2} maxLength={300} required defaultValue={current?.text} placeholder="เช่น ปิดปรับปรุงระบบวันเสาร์ที่ 20 ก.ย. 22:00-23:00 น." />
-        </label>
+        <div className="field">
+          <label htmlFor="announcement-text">ข้อความ</label>
+          <textarea
+            id="announcement-text"
+            name="text"
+            rows={3}
+            maxLength={300}
+            required
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="เช่น ปิดปรับปรุงระบบวันเสาร์ที่ 20 ก.ย. 22:00-23:00 น."
+          />
+          <small className="muted announce-count">{text.length}/300 ตัวอักษร</small>
+        </div>
         <div className="announcement-options">
-          <label className="field">
-            <span>ระดับ</span>
-            <select name="level" defaultValue={current?.level ?? 'info'}>
+          <div className="field">
+            <label htmlFor="announcement-level">ระดับ</label>
+            <select id="announcement-level" name="level" value={level} onChange={(e) => setLevel(e.target.value === 'warning' ? 'warning' : 'info')}>
               <option value="info">แจ้งให้ทราบ</option>
               <option value="warning">สำคัญ (สีส้ม)</option>
             </select>
-          </label>
-          <label className="field">
-            <span>ผู้เห็น</span>
-            <select name="audience" defaultValue={current?.audience ?? 'staff'}>
+          </div>
+          <div className="field">
+            <label htmlFor="announcement-audience">ผู้เห็น</label>
+            <select id="announcement-audience" name="audience" value={audience} onChange={(e) => setAudience(e.target.value === 'all' ? 'all' : 'staff')}>
               <option value="staff">ทีมงานทุกองค์กร</option>
               <option value="all">ทีมงานและลูกค้าที่เข้าสู่ระบบ</option>
             </select>
-          </label>
-          <label className="field">
-            <span>เริ่มแสดง (ไม่บังคับ)</span>
-            <input type="datetime-local" name="starts_at" defaultValue={toLocal(current?.starts_at)} />
-          </label>
-          <label className="field">
-            <span>สิ้นสุด (ไม่บังคับ)</span>
-            <input type="datetime-local" name="ends_at" defaultValue={toLocal(current?.ends_at)} />
-          </label>
+          </div>
+          <div className="field">
+            <label htmlFor="announcement-starts">เริ่มแสดง (ไม่บังคับ)</label>
+            <input id="announcement-starts" type="datetime-local" name="starts_at" value={starts} onChange={(e) => setStarts(e.target.value)} />
+            <small className="muted">{starts ? thaiWhen(starts) : 'ไม่ระบุ แสดงทันทีที่บันทึก'}</small>
+          </div>
+          <div className="field">
+            <label htmlFor="announcement-ends">สิ้นสุด (ไม่บังคับ)</label>
+            <input id="announcement-ends" type="datetime-local" name="ends_at" value={ends} onChange={(e) => setEnds(e.target.value)} />
+            <small className={backwards ? 'announce-bad' : 'muted'}>
+              {backwards ? 'สิ้นสุดก่อนเวลาเริ่มแสดง' : ends ? thaiWhen(ends) : 'ไม่ระบุ แสดงจนกว่าจะลบประกาศ'}
+            </small>
+          </div>
         </div>
-        {ended && <p className="tiny muted">ประกาศนี้สิ้นสุดแล้ว</p>}
-        <div className="security-actions">
-          <button className="btn primary" type="submit">
-            <Icon name="send" />
-            {current ? 'บันทึกประกาศ' : 'ประกาศ'}
-          </button>
+        {/* The bar as the organizations will see it, from what is typed now. */}
+        <div className="announce-preview">
+          <span className="announce-preview-label">ตัวอย่างที่{audience === 'all' ? 'ทีมงานและลูกค้า' : 'ทีมงาน'}จะเห็นบนสุดของทุกหน้า</span>
+          <AnnouncementBar announcement={{ text: text.trim() || 'ข้อความประกาศจะขึ้นตรงนี้', level, ends_at: ends ? toIso(ends) : null }} />
+        </div>
+        <div className="form-actions">
           {current && (
             <button
               type="button"
               className="btn danger"
               onClick={() =>
-                void run(async () => {
-                  await clearAnnouncement();
-                  await refresh(HEALTH_PATH, '/api/bootstrap');
-                  toast('ลบประกาศแล้ว');
+                confirm({
+                  title: 'ลบประกาศนี้?',
+                  message: 'แถบประกาศจะหายจากทุกองค์กรทันที',
+                  confirmLabel: 'ลบประกาศ',
+                  cancelLabel: 'ยังไม่ลบ',
+                  tone: 'danger',
+                  run: () =>
+                    run(async () => {
+                      await clearAnnouncement();
+                      await refresh(HEALTH_PATH, '/api/bootstrap');
+                      toast('ลบประกาศแล้ว');
+                    }),
                 })
               }
             >
@@ -765,6 +816,10 @@ export function AnnouncementCard({ current }: { current: Announcement | null }) 
               ลบประกาศ
             </button>
           )}
+          <button className="btn primary" type="submit" disabled={backwards}>
+            <Icon name="send" />
+            {current ? 'บันทึกประกาศ' : 'ประกาศ'}
+          </button>
         </div>
       </Form>
     </section>

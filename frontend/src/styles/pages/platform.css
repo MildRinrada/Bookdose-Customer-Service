@@ -842,26 +842,6 @@
   color: var(--muted);
 }
 
-/* ประกาศสถานะระบบ: the notice standing now, at the top of its own screen. */
-.status-live .card-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-.status-live .icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--amber);
-}
-.status-live .grow {
-  flex: 1;
-  min-width: 0;
-}
-.status-live p {
-  margin: 4px 0;
-  overflow-wrap: anywhere;
-}
-
 /* สุขภาพองค์กร: one row per organization, built for a console with a hundred of them. The columns share the width
    the page gives them, so a long list never pushes the page sideways; below 1100px the least useful column goes
    first rather than everything getting narrower. */
@@ -926,34 +906,158 @@
   .health-table .col-signal { width: 15%; }
 }
 
-/* ประกาศ: the two kinds side by side. Stacked full width they ran off the screen and the second was never seen; one
-   at a time behind tabs left half the screen blank. Two columns use the width for something and show the difference
-   between the two without a word of explanation. */
+/* ประกาศ (features/platform/AnnouncementsScreen): the two kinds side by side, as two cards built alike - what it is
+   and who sees it, whether one is up now, the form, the button at the foot. Stacked full width they ran off the screen
+   and the second was never seen; one at a time behind tabs left half the screen blank. The cards share a height, so
+   the pair reads as one row and their buttons line up. */
 .announce-split {
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
-.announce-column {
-  display: grid;
-  gap: 12px;
+.announce-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+}
+.announce-head {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.announce-head .grow {
+  flex: 1;
   min-width: 0;
 }
-.announce-column>.card {
+.announce-head h2 {
   margin: 0;
 }
-.announce-quiet {
-  display: block;
+.announce-head p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.announce-head .health-pill {
+  flex-shrink: 0;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.health-pill.announce-none {
+  background: var(--soft);
+  color: var(--muted);
+}
+.announce-mark {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--soft);
+  color: var(--ink);
+}
+.announce-mark .icon {
+  width: 19px;
+  height: 19px;
+}
+/* The notice up now, inside its card above the form that would change it. */
+.announce-live {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 22px 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--amber-soft);
+}
+.announce-live .grow {
+  flex: 1;
+  min-width: 0;
+}
+.announce-live p {
+  margin: 4px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.announce-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.announce-form .form-actions {
+  margin-top: auto;
+}
+.announce-form .form-actions .btn.danger {
+  margin-right: auto;
+}
+.notice.announce-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 0;
+  border-color: transparent;
+  background: var(--amber-soft);
+  color: var(--ink);
+}
+.announce-warning .icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 5px;
+  color: var(--amber);
+}
+.announce-count {
+  justify-self: end;
+  text-align: right;
+}
+.announce-bad {
+  color: var(--red);
+  font-weight: 600;
 }
 /* Four short fields in a narrow column read better two by two than in one long row. */
-.announce-column .announcement-options {
+.announce-card .announcement-options {
   grid-template-columns: repeat(2,minmax(0,1fr));
+  margin: 0;
+}
+/* The bar as the organizations will see it: the real bar's markup, in a frame of its own. */
+.announce-preview {
+  display: grid;
+  gap: 6px;
+}
+.announce-preview-label {
+  color: var(--muted);
+  font-size: .875rem;
+}
+.announce-preview .announcement-bar {
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
 @media (max-width: 1000px) {
   .announce-split {
     grid-template-columns: 1fr;
+  }
+}
+/* On a phone the words take the width: the state under the title, the button under the notice. */
+@media (max-width: 560px) {
+  .announce-card .announcement-options {
+    grid-template-columns: 1fr;
+  }
+  .announce-head {
+    flex-wrap: wrap;
+  }
+  .announce-head .grow {
+    flex-basis: calc(100% - 50px);
+  }
+  .announce-head .health-pill {
+    margin-left: 50px;
+  }
+  .announce-live {
+    flex-wrap: wrap;
+  }
+  .announce-live .grow {
+    flex-basis: 100%;
   }
 }
 

@@ -19,11 +19,12 @@ export const POLISH_STYLES: Array<[PolishStyle, string]> = [
 const styleLabel = (style: PolishStyle) => POLISH_STYLES.find(([key]) => key === style)?.[1] ?? '';
 
 /* Each choice's icon and one line on what it does, as the AI is told to (POLISH_INSTRUCTIONS in
-   backend/extensions/openai_client.py). The line is the button's description, so a screen reader hears it too. */
+   backend/extensions/openai_client.py), short enough for one line beside a laptop's narrower composer and not
+   repeating the choice's own name. The line is the button's description, so a screen reader hears it too. */
 const STYLE_LOOK: Record<PolishStyle, { icon: IconName; hint: string }> = {
-  polite: { icon: 'smile', hint: 'สุภาพและอบอุ่นขึ้น ใจความเดิม' },
-  short: { icon: 'shrink', hint: 'สั้นและชัดขึ้น ข้อมูลยังครบ' },
-  fix: { icon: 'check', hint: 'แก้เฉพาะคำผิดและวรรคตอน' },
+  polite: { icon: 'smile', hint: 'อบอุ่นขึ้น ใจความเดิม' },
+  short: { icon: 'shrink', hint: 'กระชับ ข้อมูลยังครบ' },
+  fix: { icon: 'check', hint: 'แก้คำผิดและวรรคตอนเท่านั้น' },
 };
 
 type PolishView =

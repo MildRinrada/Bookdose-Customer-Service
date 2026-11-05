@@ -8,6 +8,13 @@ that real customers use.
   org admin        org.admin@example.com      Org-admin-123        (องค์กรทดสอบ, with sample cases and articles)
   org agent        org.agent@example.com      Org-agent-123
   customer         customer.test@example.com  Customer-test-123   (connected with องค์กรทดสอบ)
+
+and องค์กรทดสอบไกด์ (tour-test), one account per role, for trying the role guides (frontend features/tour) on each
+computer: the guide is remembered in the browser, so the same account shows it again on every computer it opens on.
+
+  หัวหน้าทีม        tour.lead@example.com      Tour-lead-123
+  ผู้ดูแลสมาชิก     tour.people@example.com    Tour-people-123
+  เจ้าหน้าที่        tour.agent@example.com     Tour-agent-123
 """
 from backend.database import db as D
 from backend.modules.auth import repository as users
@@ -15,6 +22,7 @@ from backend.modules.customers import repository as customers, service as custom
 from backend.modules.customers.model import CONSENT_VERSION
 from backend.modules.organization import repository as organization
 from backend.modules.platform import repository as tenants, service as platform
+from backend.modules.platform.team_size import MAX
 from backend.utils.dates import now
 from backend.utils.security import password_hash, uid
 
@@ -23,7 +31,10 @@ PLATFORM_ADMIN = ('Rinrada Laiad', 'mildppgd@gmail.com', 'Platform-admin-123')
 ORG_ADMIN = ('แอดมินองค์กรทดสอบ', 'org.admin@example.com', 'Org-admin-123')
 ORG_AGENT = ('เจ้าหน้าที่องค์กรทดสอบ', 'org.agent@example.com', 'Org-agent-123')
 CUSTOMER = ('ลูกค้าทดสอบ', 'customer.test@example.com', 'Customer-test-123', '081-234-5678')
-ACCOUNTS = (OWNER, PLATFORM_ADMIN, ORG_ADMIN, ORG_AGENT, CUSTOMER)
+TOUR_LEAD = ('หัวหน้าทีม ทดสอบ', 'tour.lead@example.com', 'Tour-lead-123')
+TOUR_PEOPLE = ('ผู้ดูแลสมาชิก ทดสอบ', 'tour.people@example.com', 'Tour-people-123')
+TOUR_AGENT = ('เจ้าหน้าที่ ทดสอบ', 'tour.agent@example.com', 'Tour-agent-123')
+ACCOUNTS = (OWNER, PLATFORM_ADMIN, ORG_ADMIN, ORG_AGENT, CUSTOMER, TOUR_LEAD, TOUR_PEOPLE, TOUR_AGENT)
 
 
 def create_demo_users():
@@ -51,4 +62,26 @@ def create_demo_users():
                                                 'consent_version':CONSENT_VERSION,'consent_at':now()})
         cd.commit()
         customer_service._join(cd,account_id,tenants.find_active(cd,tenant_id))
+        _tour_organization(cd)
     return ACCOUNTS
+
+
+def _tour_organization(cd):
+    """องค์กรทดสอบไกด์: the sample data, a second team, room for five, and the agent owning two of the sample cases so
+    their overview has work in it."""
+    ids = {}
+    for name,email,password in (TOUR_LEAD,TOUR_PEOPLE,TOUR_AGENT):
+        ids[email] = uid()
+        users.insert_user(cd,ids[email],name,email,password_hash(password))
+    tenant_id = platform.create_tenant(cd,'องค์กรทดสอบไกด์','tour-test',ids[TOUR_LEAD[1]],demo=True)
+    cd.execute('UPDATE tenants SET member_limit=? WHERE id=?',(MAX,tenant_id))
+    agent_id = ids[TOUR_AGENT[1]]
+    with D.tenant(tenant_id) as td:
+        team_id = organization.first_team_id(td)
+        organization.insert_team(td,uid(),'ฝ่ายเทคนิค','ปัญหาการใช้งานระบบและการแสดงผล')
+        td.execute("UPDATE tickets SET assignee_id=? WHERE subject IN ('เข้าใช้งานห้องสมุดออนไลน์ไม่ได้','สอบถามการออกรายงานการอ่าน')",
+                   (agent_id,))
+        td.commit()
+    organization.insert_membership(cd,tenant_id,ids[TOUR_PEOPLE[1]],'people',team_id)
+    organization.insert_membership(cd,tenant_id,agent_id,'agent',team_id)
+    cd.commit()

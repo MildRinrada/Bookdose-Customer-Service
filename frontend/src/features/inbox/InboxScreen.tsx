@@ -19,6 +19,7 @@ import { ConversationView } from './components/ConversationView';
 import { InboxItem } from './components/InboxItem';
 import { needsReply, useMarkMentionsSeen, useModalOpen, useRefreshFailure, useSinglePane } from './hooks';
 import type { ConversationDetail, ConversationSummary } from './types';
+import { useFlip } from '@/lib/motion';
 
 /* The inbox (the old pages/inbox/inbox.js): every channel in one filterable list, and the open conversation beside
    it. Wide screens open the first conversation of the current tab; narrow screens show the list first. The list and
@@ -117,6 +118,8 @@ export function InboxScreen({ id }: { id?: string }) {
   }, [detailReady, singlePane, selectedId]);
 
   // Alt+↑ / Alt+↓ moves to the previous / next conversation in the list.
+  // A chat a message just moved to the top glides there, so the eye follows it (lib/motion.ts).
+  useFlip(listBox, shown.map((c) => c.id));
   const order = useRef<{ ids: string[]; selected?: string }>({ ids: [] });
   useEffect(() => {
     order.current = { ids: shown.map((c) => c.id), selected: selectedId };

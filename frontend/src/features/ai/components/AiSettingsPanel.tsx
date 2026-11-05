@@ -90,9 +90,11 @@ function AiSettingsCard({ a }: { a: AiSettings }) {
       key={`${a.version}:${a.key_configured}:${a.provider}`}
       data-form="ai-settings"
       onSubmit={async (values, form) => {
-          const checked = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).checked;
+          // A switch not on the page (แปลภาษาสองทาง while the platform does not offer it) keeps what was saved.
+          const checked = (name: 'drafts_enabled' | 'chatbot_enabled' | 'mood_enabled' | 'translate_enabled' | 'triage_enabled') =>
+            (form.elements.namedItem(name) as HTMLInputElement | null)?.checked ?? Boolean(a[name]);
           const body: Record<string, unknown> = { ...values };
-          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'triage_enabled']) body[key] = checked(key);
+          for (const key of ['drafts_enabled', 'chatbot_enabled', 'mood_enabled', 'translate_enabled', 'triage_enabled'] as const) body[key] = checked(key);
           for (const key of ['daily_limit', 'conversation_limit', 'max_output_tokens']) body[key] = Number(values[key]);
           await saveAiSettings(body);
           // The form opens again with what was saved (the URL, the secret's ending); the key and secret boxes stay empty.

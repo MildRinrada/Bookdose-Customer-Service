@@ -1158,3 +1158,53 @@ a.settings-nav-item,a.settings-nav-item:hover {
   font-size: .9rem;
   font-weight: 600;
 }
+
+/* บันทึกแล้ว: the save button that worked says so for a moment, where the eye already is, instead of only the toast in
+   the corner (components/ui/Form sets data-saved). Its own words and icon step aside under a tick and บันทึกแล้ว; the
+   button keeps its place and is wide enough for them. Settings screens only: organization, automation, platform. */
+:is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"] {
+  position: relative;
+  min-width: 8.5em;
+  color: transparent;
+}
+:is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"] .icon {
+  visibility: hidden;
+}
+:is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"]::after {
+  content: 'บันทึกแล้ว';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 1.3em;
+  color: #fff;
+  animation: saved-in .25s ease-out;
+}
+:is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"]::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(50% - 2.75em);
+  width: .3em;
+  height: .6em;
+  border: solid #fff;
+  border-width: 0 .14em .14em 0;
+  transform: translateY(-65%) rotate(45deg);
+  animation: saved-in .25s ease-out;
+}
+html:is([data-theme='dark'],[data-theme='black']) :is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"]::after {
+  color: var(--bg);
+}
+html:is([data-theme='dark'],[data-theme='black']) :is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"]::before {
+  border-color: var(--bg);
+}
+@keyframes saved-in {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"]::after,
+  :is(.settings-frame,.platform-settings-section) form[data-saved] .btn.primary[type="submit"]::before {
+    animation: none;
+  }
+}

@@ -594,3 +594,19 @@
 .dormant-contact .btn {
   justify-self: start;
 }
+
+/* The announcement bar comes down into place once, when the app opens with one up, pushing the page down smoothly
+   rather than all at once. */
+.announcement-bar {
+  overflow: hidden;
+  animation: announcement-in .4s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes announcement-in {
+  from { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; }
+  to { max-height: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .announcement-bar {
+    animation: none;
+  }
+}

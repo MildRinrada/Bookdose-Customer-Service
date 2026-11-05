@@ -49,6 +49,7 @@ export function InboxItem({ c, selected }: { c: ConversationSummary; selected: b
     <Link
       className={`inbox-item staff-chat-item inbox-row${selected ? ' selected' : ''}${waiting ? ' needs-reply' : ''}`}
       href={`/inbox/${c.id}`}
+      data-flip={c.id}
       aria-current={selected ? 'true' : undefined}
       title={`${channelName}${guest}`}
     >

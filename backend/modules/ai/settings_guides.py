@@ -120,6 +120,53 @@ GUIDES = {
 - การบันทึกยกเลิกข้อความที่ยังรอส่ง
 - **ลบการเชื่อมต่อ** ปิดทั้ง Facebook และ Instagram ทันที ข้อความที่รอส่งจะไม่ถูกส่ง แชทเดิมยังอยู่
 - ปิดสวิตช์ Instagram แล้ว DM ไม่เข้าและตอบไม่ได้ แต่ Messenger ยังทำงาน''',
+        'reference': '''สรุปจากเอกสารของ Meta ที่อ่านเมื่อ 2026-11-05 เมนูและปุ่มของ Meta อาจเปลี่ยนได้
+# ขั้นตอนในเว็บของ Meta
+## สร้างแอป
+1. เปิด developers.facebook.com/apps/creation ใส่ชื่อแอปและอีเมล กด Next
+2. Use cases (กรณีการใช้งาน) เลือก Engage with customers on Messenger from Meta
+3. Business เลือกพอร์ตโฟลิโอธุรกิจที่เป็นเจ้าของเพจ แล้วกดต่อจนถึง Go to dashboard
+4. ถ้าจะรับ DM Instagram ที่ Dashboard → Customize the Engage with customers on Messenger from Meta use case กด Add ที่ instagram_basic และ instagram_manage_messages
+## Messenger API Setup (หน้าตั้งค่า Messenger ของแอป)
+1. **Configure webhooks** วาง **Callback URL** และ **Verify Token** ของหน้านี้ (มีหลังกด **บันทึก Facebook และ Instagram** ครั้งแรก) ต้องเป็น HTTPS ที่ใบรับรองไม่ได้เซ็นเอง
+2. **Generate access tokens** กด Connect → Continue เลือกเพจ → Continue → Save → Got it แล้วนำ token ของเพจมาใส่ช่อง **Page Access Token** คนที่ออก token ต้องทำงาน MESSAGING และ MODERATE บนเพจได้
+3. **Add Subscriptions** (สมัครรับข้อมูลของเพจ) เลือก messages → Confirm ปกติระบบสั่งให้เองตอนบันทึก
+4. **App Secret (Meta App)** อยู่ที่ Settings → Basic ของแอปเดียวกัน
+## Token ที่ไม่หมดอายุ (Meta แนะนำ)
+token ที่ผูกกับบัญชีของคนอาจใช้ไม่ได้เมื่อคนนั้นทำบางอย่าง Meta แนะนำ token ที่ผูกกับ System User ของธุรกิจ แอปและเพจต้องเป็นของธุรกิจเดียวกัน
+1. business.facebook.com/settings → System Users → +Add ตั้งชื่อ เลือก Admin หรือ Employee
+2. คลิกชื่อ → Assign assets เลือกแอปให้ Manage app จนขึ้น Full control และมอบเพจนี้ด้วย
+3. Generate token เลือกแอป อายุ token (ไม่หมดอายุ หรือ 60 วันที่ Meta ว่าปลอดภัยกว่าแต่ต้องต่ออายุ) และสิทธิ์ business_management, pages_show_list, pages_read_engagement, pages_messaging, pages_manage_metadata (Instagram เพิ่ม instagram_basic, instagram_manage_messages)
+4. token นี้ยังไม่ใช่ Page token ให้นักพัฒนาเรียก me/accounts ด้วย token นี้ แล้วนำ access_token ของเพจไปใส่ช่อง **Page Access Token**
+## ให้ลูกค้าทั่วไปทักได้
+- ก่อนได้ Advanced Access (ผ่าน App Review ที่ Review → App Review และยืนยันธุรกิจ) Meta ส่ง webhook เฉพาะข้อความจากคนที่มีบทบาทในแอป เช่น admin, developer, tester แม้หน้า Overview ของ Meta บอกว่าใช้กับเพจของตัวเองไม่ต้อง App Review
+- แอปต้อง Publish (เมนูซ้าย Publish) ต้องมีไอคอนแอป Privacy Policy URL และ URL หรือ callback ลบข้อมูล แอปที่ยังไม่ publish ไม่ได้รับ webhook ของ Instagram
+## DM Instagram
+1. ใช้บัญชี Instagram แบบมืออาชีพ ผูกกับเพจ: บน Facebook สลับเป็นเพจ → Settings and privacy → Settings → Permissions → Linked accounts → Instagram → Connect account
+2. ในแอป Instagram: Settings → Messages and story replies → Message controls → Connected Tools → เปิด Allow Access to Messages
+3. Page Access Token ต้องมี instagram_manage_messages เพิ่มสิทธิ์ทีหลังต้องสร้าง token ใหม่แล้วบันทึกอีกครั้ง
+4. ตั้ง Webhooks ของ Instagram ได้ที่ Messenger → Instagram Settings ใช้ Callback URL และ Verify Token เดิม
+## แก้ข้อความที่ระบบแสดง
+- "ข้อมูลบัญชีหรือสิทธิ์การเชื่อมต่อไม่ถูกต้อง" token ใช้ไม่ได้แล้ว (Meta error 190) ออก token ใหม่แล้วบันทึก ถ้าเปิด Require App Secret ที่ App Settings → Advanced → Security ให้ปิด ระบบนี้ไม่ส่ง appsecret_proof ที่ Meta บังคับเมื่อเปิด
+- "Token นี้เป็นของบัญชีส่วนตัว" ใส่ User token หรือ token ของ System User ตรง ๆ ต้องใช้ Page token
+- "App Secret ไม่ตรงกับแอป" คัดลอกจากแอปเดียวกับที่ออก token
+- "ยังสั่งให้เพจส่งข้อความเข้าระบบไม่ได้" token ต้องมี pages_messaging และ pages_manage_metadata และคนที่ออกต้องทำงาน MODERATE บนเพจได้ หรือกด Add Subscriptions เลือก messages เอง
+- เคยรับได้แล้วหยุด: Meta ส่งไม่สำเร็จต่อเนื่อง 1 ชั่วโมงจะแจ้ง Webhooks Disabled และเลิกส่งของเพจและ Instagram แก้สาเหตุแล้วกด **ทดสอบบัญชีที่บันทึกไว้** ให้ระบบสมัครใหม่
+- "บริการปลายทางปฏิเสธข้อความ" ตอบเกิน 24 ชั่วโมงหลังข้อความล่าสุดของลูกค้า หรือแอปมีแค่ Standard Access ซึ่ง Instagram ส่งได้เฉพาะคนที่มีบทบาทในแอป
+## แหล่งที่มา
+- https://developers.facebook.com/documentation/development/create-an-app
+- https://developers.facebook.com/docs/development/create-an-app/messenger-use-case
+- https://developers.facebook.com/documentation/business-messaging/messenger-platform/overview
+- https://developers.facebook.com/documentation/business-messaging/messenger-platform/webhooks
+- https://developers.facebook.com/documentation/business-messaging/messenger-platform/introduction/general-best-practices
+- https://developers.facebook.com/docs/business-management-apis/system-users/install-apps-and-generate-tokens/
+- https://developers.facebook.com/documentation/business-messaging/whatsapp/access-tokens/
+- https://developers.facebook.com/docs/business-management-apis/business-manager/guides/on-behalf-of
+- https://developers.facebook.com/docs/graph-api/guides/secure-requests
+- https://developers.facebook.com/documentation/business-messaging/instagram-messaging/get-started
+- https://developers.facebook.com/documentation/business-messaging/instagram-messaging/webhooks
+- https://developers.facebook.com/documentation/business-messaging/instagram-messaging/features/send-message
+- https://www.facebook.com/help/1148909221857370''',
     },
     'ai': {
         'title': 'เชื่อม AI',

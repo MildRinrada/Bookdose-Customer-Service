@@ -44,6 +44,10 @@ import { useSnippets } from './SnippetSuggest';
 const ACCEPT = '.png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.pdf,.txt';
 /** A reply's longest text on each provider (the server checks the same: channels/schema, channels/facebook). */
 const REPLY_LIMITS: Record<string, number> = { line: 5000, facebook: 2000, instagram: 1000 };
+/** Instagram counts bytes, not letters (backend channels/facebook TEXT_LIMITS): a Thai letter is three. */
+const INSTAGRAM_BYTES = 1000;
+const INSTAGRAM_TOO_LONG = 'Instagram รับข้อความได้ครั้งละไม่เกิน 1,000 ไบต์ หรือภาษาไทยราว 330 ตัวอักษร ตัดให้สั้นลง หรือแบ่งส่งเป็นหลายข้อความ';
+const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 /** Replies that wait in the delivery queue instead of appearing in the web chat at once. */
 const QUEUED_CHANNELS = ['line', 'email', 'facebook', 'instagram'];
 
@@ -273,6 +277,9 @@ function StaffComposer({
   // What is in the box now, for the warning that a file was promised and none is attached.
   const [text, setText] = useState(initialDraft);
   const forgotFile = MENTIONS_FILE.test(text) && pills.files.length === 0;
+  // Said while it is being written, not after Send: the box itself stops at 1,000 letters, Instagram far earlier.
+  const igBytes = channel === 'instagram' && kind === 'reply' ? utf8Bytes(text) : 0;
+  const igTooLong = igBytes > INSTAGRAM_BYTES;
   // A Thai reply to a customer who writes another language goes out translated, unless the member turns it off for
   // what they are writing now (back on for the next conversation).
   const [translateOn, setTranslateOn] = useState(true);
@@ -417,8 +424,9 @@ function StaffComposer({
       data-channel={channel}
       {...drop.handlers}
       onSubmit={async (values, form) => {
-        const attachments = await readFiles(filesOf(form));
         const sent = (values.kind as 'reply' | 'note') || 'reply';
+        if (sent === 'reply' && channel === 'instagram' && utf8Bytes(values.body ?? '') > INSTAGRAM_BYTES) throw new Error(INSTAGRAM_TOO_LONG);
+        const attachments = await readFiles(filesOf(form));
         await postMessage(id, { kind: sent, body: values.body ?? '', attachments, ...(translateTo ? { translate: translateOn } : {}) });
         followThread(form);
         editor.setValue('');
@@ -488,6 +496,12 @@ function StaffComposer({
       />
       {snippetMenu}
       <FilePills files={pills.files} onRemove={pills.remove} />
+      {igTooLong && (
+        <p className="composer-warn" role="status">
+          <Icon name="info" />
+          ยาวเกินที่ Instagram รับต่อข้อความ ({igBytes.toLocaleString('en-US')}/{INSTAGRAM_BYTES.toLocaleString('en-US')} ไบต์ ภาษาไทยราว 330 ตัวอักษร) ตัดให้สั้นลง หรือแบ่งส่งเป็นหลายข้อความ
+        </p>
+      )}
       {forgotFile && (
         <p className="composer-warn" role="status">
           <Icon name="paperclip" />

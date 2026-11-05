@@ -61,6 +61,8 @@ function ChannelWordsCard({ c }: { c: ChannelSetting }) {
       <Form
         key={JSON.stringify([v.sender_name, v.signature, v.welcome_enabled, v.welcome_message])}
         className="card-body"
+        data-form="channel-presentation"
+        data-kind={c.kind}
         onSubmit={async (values, form) => {
           await saveChannelPresentation(
             c.kind,

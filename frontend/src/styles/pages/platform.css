@@ -1245,3 +1245,7 @@ a.report-image:hover {
 .form-actions .report-attach {
   margin-right: auto;
 }
+
+.announce-preview .announcement-bar {
+  animation: none;
+}

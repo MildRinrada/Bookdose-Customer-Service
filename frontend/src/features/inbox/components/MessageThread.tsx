@@ -24,6 +24,7 @@ import { clockTime, date, dayLabel } from '@/lib/format';
 import { useReadAt, useRealtime, useTyping } from '@/lib/realtime-provider';
 import type { Message, Reaction } from '../types';
 import { MessageTranslation, thaiSide } from './MessageTranslation';
+import { useArrivals } from '@/lib/motion';
 
 /** What the reader may do with a message of this conversation, through the ⋯ beside it: absent wherever the
     conversation cannot be touched at all (only a web chat can: a reply a provider delivered is already read). The
@@ -94,6 +95,8 @@ export function Messages({
   onReact,
   ownPhoto,
 }: MessagesProps & { receipt?: Receipt | null; manage?: ManageMessage }) {
+  // A new message, not the ones the conversation opened with (lib/motion.ts).
+  useArrivals(messages.map((m) => m.id));
   if (!messages.length) return <EmptyState title="ยังไม่มีข้อความ" icon="chat" />;
   return (
     <>

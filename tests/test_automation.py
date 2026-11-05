@@ -408,6 +408,46 @@ class FacebookTests(unittest.TestCase):
         self.assertEqual(len([m for m in self.ok(self.admin,f'/api/conversations/{fb}')['messages'] if m['kind']=='customer']),2)
         self.assertNotIn('instagram',{c['kind'] for c in self.admin.call('/api/public/alpha')[1]['channels']})
 
+    def instagram_conversation(self):
+        with patch.object(T,'facebook_instagram',return_value={'identity':IG,'display_name':'bookdose.th'}):
+            route = self.configure(instagram_enabled=True)['route_id']
+        self.instagram(route,[self.dm()])
+        return self.channel_convs('instagram')[0]['id']
+
+    def test_an_instagram_reply_is_measured_in_bytes(self):
+        """Meta takes 1,000 bytes in one DM, not 1,000 letters: about 330 Thai letters, three bytes each, counted on the
+        plain text that goes out (Markdown's marks are not sent)."""
+        path = f'/api/conversations/{self.instagram_conversation()}/messages'
+        status,body = self.admin.call(path,{'kind':'reply','body':'ก'*334})
+        self.assertEqual(status,400)
+        self.assertIn('1,000 ไบต์',body['error'])
+        self.ok(self.admin,path,{'kind':'reply','body':'**'+'ก'*333+'**'})
+        self.ok(self.admin,path,{'kind':'reply','body':'a'*1000})
+
+    def test_a_long_notice_goes_to_instagram_in_parts_with_its_buttons_under_the_last(self):
+        notice = ('ได้รับข้อความของคุณแล้วค่ะ ทีมงานจะอ่านและตอบกลับในแชทนี้โดยเร็วที่สุด ' * 8).strip()[:480]
+        self.ok(self.admin,'/api/settings/receipt',{'enabled':True,'message':notice})
+        self.instagram_conversation()
+        with patch.object(T,'send_facebook',return_value='ig.out') as send:
+            self.assertTrue(F.process_outbox(self.org))
+        texts = [c.args[2] for c in send.call_args_list]
+        self.assertGreater(len(texts),1)
+        self.assertTrue(all(len(t.encode('utf-8'))<=1000 for t in texts))
+        self.assertEqual(' '.join(texts).split(),notice.split())
+        self.assertTrue(all(c.args[3] is None for c in send.call_args_list[:-1]))
+        # No part starts with a vowel or tone mark torn from its letter, even in a run with no space to cut at.
+        for part in F.text_parts('instagram','กี่ที่นี่น้ำ'*120):
+            self.assertNotIn(part[0],F._MARKS)
+
+    def test_a_notice_cut_off_halfway_is_not_sent_again_by_itself(self):
+        self.ok(self.admin,'/api/settings/receipt',{'enabled':True,'message':('ทีมงานได้รับเรื่องแล้วค่ะ ' * 30).strip()[:480]})
+        conv = self.instagram_conversation()
+        from backend.exceptions.errors import ChannelError
+        with patch.object(T,'send_facebook',side_effect=['ig.1',ChannelError('rejected')]):
+            F.process_outbox(self.org)
+        notice = next(m for m in self.ok(self.admin,f'/api/conversations/{conv}')['messages'] if m['author_name']=='ระบบ')
+        self.assertEqual(notice['delivery'],'unknown')
+
     def test_failed_send_can_be_retried_and_settings_are_admin_only(self):
         cfg = self.configure()
         self.webhook(cfg['route_id'],[self.event(text='สวัสดี')])

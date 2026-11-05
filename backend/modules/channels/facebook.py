@@ -30,8 +30,16 @@ KIND = 'facebook'
 IG_KIND = 'instagram'
 KINDS = (KIND,IG_KIND)
 NAMES = {KIND:'Facebook',IG_KIND:'Instagram'}
-TEXT_LIMITS = {KIND:2000,IG_KIND:1000}   # one text message on Messenger / in an Instagram DM
+# Meta's limit on one text message: Messenger 2,000 characters; an Instagram DM 1,000 bytes of UTF-8 (its send API
+# says bytes), which is about 330 Thai letters at three bytes each. Measured on the plain text that actually goes out.
+TEXT_LIMITS = {KIND:2000,IG_KIND:1000}
 TEXT_LIMIT = TEXT_LIMITS[KIND]
+TOO_LONG = {KIND:'Facebook ส่งข้อความได้ไม่เกิน 2,000 ตัวอักษร',
+            IG_KIND:'Instagram รับข้อความได้ครั้งละไม่เกิน 1,000 ไบต์ หรือภาษาไทยราว 330 ตัวอักษร ตัดให้สั้นลง หรือแบ่งส่งเป็นหลายข้อความ'}
+# Where a message may not be cut: before a Thai vowel or tone mark above or below its letter, or after a vowel that
+# is written before its letter (เ แ โ ใ ไ).
+_MARKS = set('\u0e31\u0e34\u0e35\u0e36\u0e37\u0e38\u0e39\u0e3a\u0e47\u0e48\u0e49\u0e4a\u0e4b\u0e4c\u0e4d\u0e4e\u0e33')
+_LEADING = set('\u0e40\u0e41\u0e42\u0e43\u0e44')
 LEASE_SECONDS = 120
 PSID = re.compile(r'[0-9]{1,40}')
 
@@ -270,9 +278,43 @@ def _identity(row, kind):
     return row['config'].get('instagram_id' if kind==IG_KIND else 'page_id')
 
 
-def check_reply(db, tenant_id, conv, body):
+def _size(kind, text):
+    return len(text.encode('utf-8')) if kind==IG_KIND else len(text)
+
+
+def text_fits(kind, text):
+    """The text, as it goes out (its Markdown made plain), fits in one message on this platform."""
+    return _size(kind,markdown.to_plain(text))<=TEXT_LIMITS[kind]
+
+
+def text_parts(kind, text):
+    """Plain text as messages that each fit (a notice the system wrote, or a reply its translation made longer, which
+    nobody is there to shorten): cut at a line end, else a space, in the latter half of what fits, else as late as a
+    Thai letter allows."""
+    limit,parts,rest = TEXT_LIMITS[kind],[],text.strip()
+    while _size(kind,rest)>limit:
+        cut,used = 0,0
+        while cut<len(rest) and used+_size(kind,rest[cut])<=limit:
+            used += _size(kind,rest[cut])
+            cut += 1
+        window = rest[:cut]
+        for gap in ('\n',' '):
+            at = window.rfind(gap)
+            if at>cut//2:
+                cut = at+1
+                break
+        else:
+            while cut>1 and (rest[cut] in _MARKS or rest[cut-1] in _LEADING):
+                cut -= 1
+        parts.append(rest[:cut].strip())
+        rest = rest[cut:].strip()
+    return [p for p in [*parts,rest] if p]
+
+
+def check_reply(db, tenant_id, conv, body, length=True):
     """A reply can go out on this conversation's Page (or Instagram account) right now: text only, within the
-    platform's length limit."""
+    platform's length limit. A message sent again (retry) is not measured: a notice the system wrote may be longer, and
+    it goes out in parts (text_parts)."""
     kind = IG_KIND if conv['channel']==IG_KIND else KIND
     row = repository.find_facebook_setting(db)
     link = repository.link_for_conversation(db,conv['id'])
@@ -282,9 +324,10 @@ def check_reply(db, tenant_id, conv, body):
         raise ChannelError('changed')
     if not ready(read_secret(tenant_id)):
         raise ChannelError('credentials')
-    text,limit = body.get('body',''),TEXT_LIMITS[kind]
+    text = body.get('body','')
     require(not body.get('attachments'),f'{NAMES[kind]} รองรับเฉพาะข้อความ กรุณาส่งไฟล์เป็นลิงก์')
-    require(isinstance(text,str) and text.strip() and len(text)<=limit,f'{NAMES[kind]} ส่งข้อความได้ไม่เกิน {limit:,} ตัวอักษร')
+    # A member's reply is checked here, before it is queued, so they decide how to shorten or split it.
+    require(isinstance(text,str) and text.strip() and (not length or text_fits(kind,text)),TOO_LONG[kind])
     return row
 
 
@@ -302,7 +345,7 @@ def retry(db, ctx, job):
     require(job['status']=='failed','ส่งซ้ำได้เฉพาะรายการที่ยืนยันว่าส่งไม่สำเร็จ')
     message = conversations.find_message(db,job['message_id'])
     conv = conversations.find(db,message['conversation_id'])
-    row = check_reply(db,ctx['tenant_id'],conv,{'body':message['body']})
+    row = check_reply(db,ctx['tenant_id'],conv,{'body':message['body']},length=False)
     repository.requeue_outbox(db,job['id'],ctx['id'],row['generation'])
     conversations.set_delivery(db,job['message_id'],'queued')
     realtime.delivery(db,job['message_id'])
@@ -354,10 +397,16 @@ def process_outbox(tenant_id):
         # The buttons under a receipt (channels/receipt.py).
         extra = json.loads(repository.outbox_payload(db,job['id']) or '{}')
     error = provider_id = None
+    # One message, or several when it is longer than one may be (text_parts); the buttons go under the last.
+    parts = text_parts(job['kind'],markdown.to_plain(message['body']))
+    sent = 0
     try:
-        provider_id = T.send_facebook(secret['page_access_token'],link['recipient'],markdown.to_plain(message['body']),extra.get('quick_replies'))
+        for number,part in enumerate(parts,1):
+            provider_id = T.send_facebook(secret['page_access_token'],link['recipient'],part,extra.get('quick_replies') if number==len(parts) else None)
+            sent += 1
     except ChannelError as failure:
-        error = failure
+        # Part of it went already: sending again would repeat that part, so it is not tried again by itself.
+        error = ChannelError(failure.code,uncertain=True) if sent else failure
     except Exception:
         error = ChannelError('unknown',uncertain=True)
     with D.tenant(tenant_id) as db:

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { CountUp } from './CountUp';
 import { InfoHint } from '@/components/ui/InfoHint';
 import { ApiError } from '@/lib/api/client';
 import { channelIcons, channelNames, priorityLabels, statusLabels, tenantStatusLabels } from '@/lib/labels';
@@ -92,7 +93,9 @@ export function StatCard({
           <Icon name={icon} />
         </span>
       </div>
-      <div className="stat-value mono">{value}</div>
+      <div className="stat-value mono">
+        <CountUp value={value} />
+      </div>
       <div className={`stat-foot ${color === 'green' ? 'good' : ''}`}>
         {foot} <Icon name="arrow" />
       </div>

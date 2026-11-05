@@ -67,7 +67,23 @@ export function setEmbedded(embedded: boolean) {
 export type RequestOptions = {
   /** The customer's or guest's chat the call acts on (/session, /messages, /handoff, /csat of a portal). */
   conversation?: string;
+  /** Wait as long as it takes (a file being downloaded), instead of READ_TIMEOUT_MS. */
+  patient?: boolean;
 };
+
+/* A read that has had no answer for this long is given up as an error the page can offer to try again, rather than a
+   screen that waits for good (a request the server or the proxy in front of it never answers). Writes are not cut
+   off: one may have been done although its answer was lost. */
+const READ_TIMEOUT_MS = 30000;
+const TIMED_OUT = 'เซิร์ฟเวอร์ตอบช้าผิดปกติ ลองใหม่อีกครั้ง';
+
+/** What is on its way now (path and when it was asked): the loading screen names what it still waits for. */
+const inFlight = new Map<number, { path: string; since: number }>();
+let nextRequest = 0;
+export function waitingRequests(): Array<{ path: string; seconds: number }> {
+  const moment = Date.now();
+  return [...inFlight.values()].map((r) => ({ path: r.path, seconds: Math.round((moment - r.since) / 1000) }));
+}
 
 /** The browser's time zone, which a platform admin's sign-in is compared with (backend security/sign_in_alerts.py). */
 let timeZone: string | null = null;
@@ -118,6 +134,8 @@ async function send(path: string, body?: unknown, method?: Method, options: Requ
   const hasBody = body !== undefined;
   const verb = method ?? (hasBody ? 'POST' : 'GET');
   let response: Response;
+  const id = nextRequest++;
+  inFlight.set(id, { path: path.split('?')[0], since: Date.now() });
   try {
     response = await fetch(path, {
       method: verb,
@@ -125,9 +143,13 @@ async function send(path: string, body?: unknown, method?: Method, options: Requ
       body: hasBody ? JSON.stringify(body) : undefined,
       credentials: 'same-origin',
       cache: 'no-store',
+      signal: verb === 'GET' && !options.patient ? AbortSignal.timeout(READ_TIMEOUT_MS) : undefined,
     });
-  } catch {
+  } catch (failure) {
+    if (failure instanceof DOMException && failure.name === 'TimeoutError') throw new ApiError(TIMED_OUT, 0);
     throw new ApiError('ติดต่อโปรแกรมไม่ได้ กรุณาตรวจสอบว่าหน้าต่าง Bookdose ยังเปิดอยู่', 0);
+  } finally {
+    inFlight.delete(id);
   }
   noteServerDate(response.headers.get('date'));
   if (!response.ok) {
@@ -165,7 +187,7 @@ export async function api<T = unknown>(path: string, body?: unknown, method?: Me
 
 /** Fetch a file through the API (with the session's headers) and save it under the given name. */
 export async function download(path: string, filename: string) {
-  const blob = await (await send(path)).blob();
+  const blob = await (await send(path, undefined, undefined, { patient: true })).blob();
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

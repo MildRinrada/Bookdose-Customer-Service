@@ -349,6 +349,18 @@ html.sidebar-collapsed .platform-scope {
 .initial-loading p {
   font-size: 1rem;
 }
+/* Still waiting after a while (components/ui/SlowNotice): what it waits for, and a way out. */
+.initial-loading-slow {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  max-width: min(480px, calc(100vw - 32px));
+  text-align: center;
+}
+.initial-loading-slow p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .mobile-toggle {
   display: none;
 }

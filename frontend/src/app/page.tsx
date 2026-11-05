@@ -17,17 +17,28 @@ export default function Home() {
   const customer = useCustomerAccount();
 
   useEffect(() => {
-    const legacy = legacyPath(window.location.hash, window.location.search);
-    if (legacy) {
-      router.replace(legacy);
-      return;
-    }
-    if (!boot.data || !customer.data) return;
     const search = window.location.search;
+    const legacy = legacyPath(window.location.hash, search);
     // A platform admin looks after the server: their home is the console, not an organization's overview.
-    if (boot.data.user) router.replace(boot.data.user.platform_admin ? '/platform/system' : '/dashboard');
-    else if (customer.data.signed_in) router.replace(`/customer/chats${search}`);
-    else router.replace(`/login${search}`);
+    const next = legacy
+      ? legacy
+      : !boot.data || !customer.data
+        ? null
+        : boot.data.user
+          ? boot.data.user.platform_admin
+            ? '/platform/system'
+            : '/dashboard'
+          : customer.data.signed_in
+            ? `/customer/chats${search}`
+            : `/login${search}`;
+    if (!next) return;
+    const go = () => router.replace(next);
+    // Chrome may open this address while it is still being typed (prerendering it): it moves on once it is shown.
+    if ((document as Document & { prerendering?: boolean }).prerendering) {
+      document.addEventListener('prerenderingchange', go, { once: true });
+      return () => document.removeEventListener('prerenderingchange', go);
+    }
+    go();
   }, [boot.data, customer.data, router]);
 
   const error = boot.error ?? customer.error;

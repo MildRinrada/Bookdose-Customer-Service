@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { CountUp } from './CountUp';
+import { SlowNotice } from './SlowNotice';
 import { InfoHint } from '@/components/ui/InfoHint';
 import { ApiError } from '@/lib/api/client';
 import { channelIcons, channelNames, priorityLabels, statusLabels, tenantStatusLabels } from '@/lib/labels';
@@ -160,13 +161,14 @@ export function PrivacyTag({ org }: { org: string | null | undefined }) {
   );
 }
 
-/** The whole-screen wait before the first answer from the server. */
+/** The whole-screen wait before the first answer from the server; if it lasts, SlowNotice says so and offers a reload. */
 export function InitialLoading({ text = 'กำลังเปิดพื้นที่ทำงาน…' }: { text?: string }) {
   return (
     <div className="initial-loading" role="status">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" width={48} height={48} alt="Bookdose" />
       <p>{text}</p>
+      <SlowNotice />
     </div>
   );
 }

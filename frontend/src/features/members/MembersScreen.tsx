@@ -55,6 +55,7 @@ export function MembersScreen() {
           <button
             type="button"
             className="btn primary"
+            data-tour="invite"
             disabled={full}
             title={full ? 'ทีมงานครบจำนวนแล้ว' : undefined}
             onClick={() => openMember()}
@@ -67,7 +68,7 @@ export function MembersScreen() {
       <SeatsNotice />
       {/* The list first. The invitations and the platform's requests are usually empty, and two empty boxes at the
           top pushed the thing the screen is for below the fold. */}
-      <section className="card">
+      <section className="card" data-tour="members">
         <div className="card-header">
           <div>
             <h2>สมาชิกในองค์กร</h2>
@@ -77,7 +78,7 @@ export function MembersScreen() {
           <MembersList onEdit={openMember} />
         </div>
       </section>
-      <section className="card">
+      <section className="card" data-tour="teams">
         <div className="card-header">
           <div>
             <h2>ทีมในองค์กร</h2>

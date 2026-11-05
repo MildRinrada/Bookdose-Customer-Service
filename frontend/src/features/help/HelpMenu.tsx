@@ -9,6 +9,7 @@ import { useDialogs } from '@/components/ui/Dialogs';
 import { Form } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { readFile } from '@/lib/files';
+import { startTour } from '@/features/tour/Tour';
 import { reportProblem, reportProblemAsCustomer } from './api';
 
 /* The ? in the top bar: the three things a member reaches for when the screen does not do what they expected -
@@ -35,7 +36,8 @@ const SHORTCUTS: { keys: string; what: string; where: string }[] = [
   { keys: 'Esc', what: 'ปิดเมนู กล่องข้อความ หรือหน้าต่างที่เปิดอยู่', where: 'ทุกหน้า' },
 ];
 
-export function HelpMenu({ audience = 'staff' }: { audience?: Audience }) {
+/** tour: the member's ไกด์การใช้งาน can be opened here (features/tour), in an organization they work in. */
+export function HelpMenu({ audience = 'staff', tour = false }: { audience?: Audience; tour?: boolean }) {
   const [open, setOpen] = useOpenOnThisPage();
   const { openModal } = useDialogs();
   const pathname = usePathname();
@@ -85,6 +87,12 @@ export function HelpMenu({ audience = 'staff' }: { audience?: Audience }) {
           </Link>
         ) : (
           <>
+            {tour && (
+              <button type="button" className="menu-item" onClick={() => startTour()}>
+                <Icon name="sparkle" />
+                ไกด์การใช้งาน
+              </button>
+            )}
             <button type="button" className="menu-item" onClick={() => openModal('คีย์ลัดทั้งหมด', <ShortcutList />)}>
               <Icon name="bolt" />
               คีย์ลัดทั้งหมด

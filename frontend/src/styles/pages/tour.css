@@ -1,0 +1,160 @@
+/* ไกด์การใช้งาน (features/tour/Tour.tsx): the page dimmed except for one lit box, and a card beside it. The script
+   sets --x/--y/--w/--h on the light and --x/--y on the card (no inline style attributes under the CSP). Over the
+   page's own layers (the AI assistant, pop-ups, celebrations), under the legal documents (legal.css, 300) and the
+   dialogs, which open in the top layer. */
+.tour-layer {
+  --tour-shade: rgb(17 19 22 / 58%);
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+}
+.tour-block {
+  position: absolute;
+  inset: 0;
+}
+.tour-spot {
+  position: fixed;
+  top: var(--y, 50vh);
+  left: var(--x, 50vw);
+  width: var(--w, 0);
+  height: var(--h, 0);
+  border-radius: 12px;
+  box-shadow: 0 0 0 200vmax var(--tour-shade);
+  pointer-events: none;
+  transition: top .35s cubic-bezier(.3,.9,.3,1), left .35s cubic-bezier(.3,.9,.3,1), width .35s cubic-bezier(.3,.9,.3,1), height .35s cubic-bezier(.3,.9,.3,1);
+}
+.tour-spot[data-lit='true'] {
+  outline: 2px solid #fff;
+  outline-offset: 0;
+  animation: tour-glow 2.4s ease-in-out infinite;
+}
+@keyframes tour-glow {
+  50% { outline-color: rgb(255 255 255 / 45%); }
+}
+
+.tour-card {
+  position: fixed;
+  top: var(--y, 50%);
+  left: var(--x, 50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 60px -14px rgb(17 19 22 / 45%), 0 2px 6px rgb(17 19 22 / 8%);
+  animation: tour-in .3s cubic-bezier(.2,1.2,.4,1);
+}
+@keyframes tour-in {
+  from { opacity: 0; transform: translateY(8px) scale(.97); }
+}
+.tour-card[data-place='above'] { animation-name: tour-in-above; }
+@keyframes tour-in-above {
+  from { opacity: 0; transform: translateY(-8px) scale(.97); }
+}
+.tour-card[data-place='right'] { animation-name: tour-in-right; }
+@keyframes tour-in-right {
+  from { opacity: 0; transform: translateX(-8px) scale(.97); }
+}
+.tour-card[data-place='left'] { animation-name: tour-in-left; }
+@keyframes tour-in-left {
+  from { opacity: 0; transform: translateX(8px) scale(.97); }
+}
+.tour-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -4px -8px 0 0;
+}
+.tour-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.tour-label .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--amber);
+}
+.tour-card h2 {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.35;
+}
+.tour-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.tour-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.tour-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.tour-count {
+  color: var(--muted);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+.tour-track {
+  position: relative;
+  flex: 1;
+  max-width: 90px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--soft);
+}
+.tour-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ink);
+  transform: scaleX(var(--done, 0));
+  transform-origin: left;
+  transition: transform .35s ease;
+}
+.tour-foot .btn {
+  flex-shrink: 0;
+}
+
+/* A phone: a sheet across the bottom (or the top, when what it talks about is down there). */
+.tour-card[data-place='sheet'],
+.tour-card[data-place='sheet-top'] {
+  left: 12px;
+  right: 12px;
+  width: auto;
+}
+.tour-card[data-place='sheet'] {
+  top: auto;
+  bottom: 12px;
+}
+.tour-card[data-place='sheet-top'] {
+  top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot,
+  .tour-fill {
+    transition: none;
+  }
+  .tour-spot[data-lit='true'],
+  .tour-card {
+    animation: none;
+  }
+}

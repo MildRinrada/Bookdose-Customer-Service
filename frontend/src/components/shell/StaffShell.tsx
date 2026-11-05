@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { AiAssistant } from '@/features/ai/components/AiAssistant';
 import { HelpMenu } from '@/features/help/HelpMenu';
 import { RecapPopup } from '@/features/achievements/components/RecapPopup';
+import { Tour } from '@/features/tour/Tour';
 import { Celebrations } from '@/features/staff-account/Celebrations';
 import { Popups } from '@/components/ui/Popups';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
@@ -313,6 +314,10 @@ export function StaffShell({ children }: { children: ReactNode }) {
       {((work && !readOnly && !peopleOnly) || user.platform_admin) && <Popups />}
       {/* Last month's summary, once, the first time the member opens the app in a new month. */}
       {work && !readOnly && !platform && !peopleOnly && <RecapPopup />}
+      {/* ไกด์การใช้งาน of the member's role: by itself once per account in each browser, and from the ?. */}
+      {work && !readOnly && !platform && !needsTwoFactor && allowed && (
+        <Tour role={work.role} userId={user.id} organization={work.tenant.name} home={homeOf(work.role)} searchKey={SEARCH_SHORTCUT} />
+      )}
       <div className="app-main">
         <AnnouncementBar announcement={boot.announcement} />
         {/* ข้อตกลงการใช้บริการ (its admin agrees, the team hears past the grace) and ประกาศความเป็นส่วนตัวสำหรับ
@@ -359,7 +364,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
             )}
             {platform && !consoleLocked && <PlatformBell />}
             {/* Switched per organization in the platform console (platform/model.py FEATURES). */}
-            {work && work.features?.help_menu !== false && <HelpMenu />}
+            {work && work.features?.help_menu !== false && <HelpMenu tour={!readOnly && !platform && !needsTwoFactor} />}
             <TextSizeMenu />
             <ProfileMenu photo={photo} label="เมนูโปรไฟล์และสลับบัญชี">
               <AccountSwitcher roleLabel={roleLabel} onLogout={() => logout()} />
